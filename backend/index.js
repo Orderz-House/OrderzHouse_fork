@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
@@ -7,6 +8,14 @@ require("./models/db");
 app.use(cors());
 app.use(express.json());
  
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,                 
+  message: "try again later",
+});
+
+app.use(limiter);
+// app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 const usersRouter = require("./router/user");
 
 app.use("/users", usersRouter);
