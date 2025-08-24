@@ -27,7 +27,42 @@ const getOrders = async (req, res) => {
       .json({ success: false, error: "Internal server error" });
   }
 };
+const deleteOrder = async (req, res) => {
+  try {
+    const clientId = req.token.userId;
+    const orderId = req.params.id;
+
+    if (!clientId) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Unauthorized: client_id missing" });
+    }
+
+    const deleteQuery = `
+      UPDATE orders
+SET is_deleted = TRUE
+WHERE id = $1 AND client_id = $2
+RETURNING *;
+    `;
+
+    const { rows } = await pool.query(deleteQuery, [orderId, clientId]);
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Order not found or unauthorized" });
+    }
+
+    return res.status(200).json({ success: true, message: "Order deleted" });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
 
 module.exports = {
   getOrders,
+  deleteOrder,
 };
