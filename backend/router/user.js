@@ -11,6 +11,18 @@ const {
 const authentiction = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 
+const {
+  register,
+  login,
+  viewUsers,
+  deleteUser,
+  editUser,
+  createPortfolio,
+  editPortfolioFreelancer,
+} = require("../controller/user");
+const authentiction = require("../middleware/authentication");
+const authorization = require("../middleware/authorization");
+
 const usersRouter = express.Router();
 
 usersRouter.post("/register", register);
@@ -27,6 +39,16 @@ usersRouter.put(
   authentiction,
   authorization("edit_user"),
   editUser
+);
+usersRouter.post(
+  "/freelancer/portfolio/create",
+  authentiction,
+  /*authorization("create_portfolio"),*/ createPortfolio
+);
+usersRouter.put(
+  "/freelancer/portfolio/edit/:userId",
+  authentiction,
+  /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
 
 module.exports = usersRouter;
