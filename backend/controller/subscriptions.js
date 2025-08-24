@@ -86,3 +86,5 @@ module.exports = {
     subscriptionToPlan,
     getSubscriptionByUserId
 };
+
+//git commit -m "add subscriptions router and controller"
