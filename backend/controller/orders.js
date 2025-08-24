@@ -127,9 +127,45 @@ RETURNING *;
   }
 };
 
+const chooseOrder = (req, res) => {
+  const freelancerId = req.token.userId;
+  const { order_id } = req.body;
+
+  if (!freelancerId || !order_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing freelancer_id or order_id",
+    });
+  }
+
+  pool
+    .query(
+      `INSERT INTO order_assignments (order_id, freelancer_id, status)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+      [order_id, freelancerId, "assigned"]
+    )
+    .then((result) => {
+      res.status(201).json({
+        success: true,
+        message: "Order assigned successfully",
+        assignment: result.rows[0],
+      });
+    })
+    .catch((error) => {
+      console.error("Error assigning order:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
+    });
+};
+
 module.exports = {
   getOrders,
   deleteOrder,
   createOrders,
   getOrdersByCategory,
+  chooseOrder,
 };
