@@ -23,13 +23,12 @@ app.use(limiter);
 // app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 const usersRouter = require("./router/user");
 const plansRouter = require("./router/plans");
-const ordersRouter = require("./router/orders");
 
 app.use("/users", usersRouter);
 const coursesRouter = require("./router/courses");
 app.use("/courses", coursesRouter);
 app.use("/plans", plansRouter);
-app.use("/orders", ordersRouter);
+
 //app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 
 app.listen(PORT, () => {
