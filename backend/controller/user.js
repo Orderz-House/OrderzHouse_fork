@@ -18,8 +18,9 @@ pool.query(
 ).then((result) => {
     res.status(201).json({
         success: true,
-         message: "User registered successfully", 
-         user: result.rows[0] });
+        message: "User registered successfully", 
+        user: result.rows[0] 
+    });
     }).catch((err) => {
         res.status(405).json({
             success: false,
@@ -36,7 +37,7 @@ const login = async (req, res) => {
 
     pool.query(query, data)
     .then(async (result) => {
-        if(result.row.length){
+        if(result.rows.length){
             bcrypt.compare(password, result.rows[0].password, (err, response) =>{
                 if(err) res.json(err);
                 if(response){
