@@ -3,9 +3,9 @@ const {
   getOrders,
   getOrdersByCategory,
   createOrders,
-  deleteOrder,
-  getOrderByid,
+  chooseOrder,
 } = require("../controller/orders");
+const authentication = require("../middleware/authentication");
 
 const ordersRouter = express.Router();
 const authentication = require("../middleware/authentication");
@@ -17,5 +17,13 @@ ordersRouter.post("/create", authentication, authorization("create_order"), crea
 ordersRouter.delete("/delete/:id", authentication, authorization("delete_order"), deleteOrder);
 ordersRouter.get("/gerorder/:id",getOrderByid);
 
+ordersRouter.get("/getOrders", authentication, getOrders);
+ordersRouter.get(
+  "/getOrders/category/:category_id",
+  authentication,
+  getOrdersByCategory
+);
+ordersRouter.post("/create", authentication, createOrders);
+ordersRouter.post("/choose", authentication, chooseOrder);
 
 module.exports = ordersRouter;
