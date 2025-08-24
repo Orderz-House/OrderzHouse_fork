@@ -1,4 +1,3 @@
-const { createRef } = require("react");
 const pool = require("../models/db");
 
 const createOrders = (req, res) => {
@@ -33,8 +32,10 @@ const createOrders = (req, res) => {
     })
     .catch((error) => {
       console.error("Error creating order:", error);
+
       res.status(500).json({ success: false, error: "Failed to create order" });
     });
+  console.log(client_id);
 };
 
 const getOrders = (req, res) => {
@@ -126,6 +127,26 @@ RETURNING *;
       .json({ success: false, error: "Internal server error" });
   }
 };
+const getOrderByid = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const query = `
+      SELECT id, client_id, category_id, title, description, budget, status, created_at, due_date
+      FROM orders
+      WHERE id = $1 AND is_deleted = FALSE
+    `;
+    const { rows } = await pool.query(query, [orderId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+    return res.status(200).json({ success: true, order: rows[0] });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
 
 const chooseOrder = (req, res) => {
   const freelancerId = req.token.userId;
@@ -168,4 +189,5 @@ module.exports = {
   createOrders,
   getOrdersByCategory,
   chooseOrder,
+  getOrderByid,
 };

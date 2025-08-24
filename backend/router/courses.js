@@ -6,6 +6,8 @@ const { getCourses } = require("../controller/courses");
 const { createCourse } = require("../controller/courses");
 const { deleteCourse } = require("../controller/courses");
 const { updateCourse } = require("../controller/courses");
+const { enrollFreelancer } = require("../controller/courses");
+
 const coursesRouter = express.Router();
 coursesRouter.get(
   "/view",
@@ -37,4 +39,7 @@ coursesRouter.get(
   authorization("view_courses"),
   getCourseById
 );
+
+coursesRouter.post("/enroll/:course_id", authentication, enrollFreelancer);
+
 module.exports = coursesRouter;

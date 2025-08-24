@@ -20,12 +20,15 @@ const register = async (req, res) => {
       .json({ success: false, message: "All fields are required" });
   }
 
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const Email = email.toLowerCase();
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(process.env.SECRET)
+  );
+  const Email = email.toLowerCase();
 
-    const result = await pool.query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+  pool
+    .query(
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
       [
         role_id,
         first_name,
@@ -36,73 +39,75 @@ const register = async (req, res) => {
         country,
         username,
       ]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: result.rows[0],
+    )
+    .then((result) => {
+      res.status(201).json({
+        success: true,
+        message: "User registered successfully",
+        user: result.rows[0],
+      });
+    })
+    .catch((err) => {
+      res.status(405).json({
+        success: false,
+        //message : "Email already exists",
+        error: err,
+      });
     });
-  } catch (err) {
-    res.status(405).json({
-      success: false,
-      error: err.message,
-    });
-  }
 };
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  const query = "SELECT * FROM Users WHERE email = $1";
+  const query = "SELECT * FROM users WHERE email = $1";
   const data = [email.toLowerCase()];
 
-  try {
-    const result = await pool.query(query, data);
+  pool
+    .query(query, data)
+    .then(async (result) => {
+      if (result.rows.length > 0) {
+        bcrypt.compare(password, result.rows[0].password, (err, response) => {
+          if (err) res.json(err);
+          if (response) {
+            const payload = {
+              userId: result.rows[0].id,
+              role: result.rows[0].role_id,
+            };
 
-    if (result.rows.length) {
-      const user = result.rows[0];
-      const match = await bcrypt.compare(password, user.password);
-      if (match) {
-        const payload = {
-          userId: user.id,
-          role: user.role_id,
-        };
-
-        const options = { expiresIn: "1d" };
-        const secret = process.env.JWT_SECRET;
-        const token = jwt.sign(payload, secret, options);
-
-        res.status(200).json({
-          token,
-          success: true,
-          message: "Valid login credentials",
-          userId: user.id,
-          role: user.role_id,
-          userInfo: user,
+            const options = { expiresIn: "1d" };
+            const secret = process.env.JWT_SECRET;
+            const token = jwt.sign(payload, secret, options);
+            if (token) {
+              res.status(200).json({
+                token,
+                success: true,
+                message: "Valid login credentials",
+                userId: result.rows[0].id,
+                role: result.rows[0].role_id,
+                userInfo: result.rows[0],
+              });
+            } else {
+              throw Error;
+            }
+          } else {
+            res.status(403).json({
+              success: false,
+              message:
+                "The email desn't exist or the password you've entered is incorrect",
+              error: err.message,
+            });
+          }
         });
-      } else {
-        res.status(403).json({
-          success: false,
-          message:
-            "The email doesn't exist or the password you've entered is incorrect",
-        });
-      }
-    } else {
+      } else throw Error;
+    })
+    .catch((err) => {
       res.status(403).json({
         success: false,
         message:
-          "The email doesn't exist or the password you've entered is incorrect",
+          "The email desn't exist or the password you've entered is incorrect",
+        error: err.message,
       });
-    }
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: err.message,
     });
-  }
 };
-
 const viewUsers = async (req, res) => {
   try {
     const result = await pool.query(
@@ -120,7 +125,6 @@ const viewUsers = async (req, res) => {
     });
   }
 };
-
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -136,52 +140,80 @@ const deleteUser = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "User deleted successfully",
       user: result.rows[0],
     });
   } catch (err) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Error deleting user",
       error: err.message,
     });
   }
 };
+const editUser = async (req, res) => {
+  const { userId } = req.params;
+  const {
+    first_name,
+    last_name,
+    email,
+    phone_number,
+    country,
+    username,
+    role_id,
+  } = req.body;
 
-const getOrders = async (req, res) => {
   try {
-    const clientId = req.token.userId;
+    const result = await pool.query(
+      `UPDATE Users 
+       SET 
+         first_name = COALESCE($1, first_name),
+         last_name = COALESCE($2, last_name),
+         email = COALESCE($3, email),
+         phone_number = COALESCE($4, phone_number),
+         country = COALESCE($5, country),
+         username = COALESCE($6, username),
+         role_id = COALESCE($7, role_id)
+       WHERE id=$8 AND is_deleted = FALSE
+       RETURNING *`,
+      [
+        first_name,
+        last_name,
+        email?.toLowerCase(),
+        phone_number,
+        country,
+        username,
+        role_id,
+        userId,
+      ]
+    );
 
-    if (!clientId) {
+    if (result.rows.length === 0) {
       return res
-        .status(401)
-        .json({ success: false, error: "Unauthorized: client_id missing" });
+        .status(404)
+        .json({ success: false, message: "User not found or deleted" });
     }
 
-    const query = `
-      SELECT id, client_id, category_id, title, description, budget, status, created_at, due_date
-      FROM orders
-      WHERE client_id = $1
-      ORDER BY created_at DESC
-    `;
-
-    const { rows } = await pool.query(query, [clientId]);
-
-    return res.status(200).json({ success: true, orders: rows });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return res
-      .status(500)
-      .json({ success: false, error: "Internal server error" });
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: err.message,
+    });
   }
 };
 
 module.exports = {
-  getOrders,
   register,
   login,
   viewUsers,
   deleteUser,
+  editUser,
 };
