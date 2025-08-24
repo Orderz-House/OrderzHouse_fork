@@ -7,6 +7,11 @@ const PORT = process.env.PORT
 require("./models/db");
 app.use(cors());
 app.use(express.json());
+// app.use(cors({
+//   origin: ["https://mywebsite.com"], 
+//   methods: ["GET", "POST"],
+//   credentials: true
+// }));
  
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
