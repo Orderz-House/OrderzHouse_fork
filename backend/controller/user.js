@@ -1,3 +1,4 @@
+const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
@@ -35,14 +36,14 @@ const login = async (req, res) => {
 
     pool.query(query, data)
     .then(async (result) => {
-      if (result.row.length) {
-        bcrypt.compare(password, result.rows[0].password, (err, response) => {
-          if (err) res.json(err);
-          if (response) {
-            const payload = {
-              userId: result.rows[0].id,
-              role: result.rows[0].role_id,
-            };
+        if(result.rows.length > 0){
+            bcrypt.compare(password, result.rows[0].password, (err, response) =>{
+                if(err) res.json(err);
+                if(response){
+                    const payload = {
+                        userId : result.rows[0].id,
+                        role: result.rows[0].role_id,
+                    };
 
                     const options = { expiresIn : "1d" };
                     const secret = process.env.JWT_SECRET;
@@ -102,46 +103,66 @@ const deleteUser = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message:
-          "The email desn't exist or the password you've entered is incorrect",
-        error: err.message,
+        message: "User not found"
       });
-    });
-};
-
-const pool = require("../models/db");
-
-const getOrders = async (req, res) => {
-  try {
-    const clientId = req.token.userId;
-
-    if (!clientId) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Unauthorized: client_id missing" });
     }
 
-    const query = `
-      SELECT id, client_id, category_id, title, description, budget, status, created_at, due_date
-      FROM orders
-      WHERE client_id = $1
-      ORDER BY created_at DESC
-    `;
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      user: result.rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting user",
+      error: err.message
+    });
+  }
+}
+const editUser = async (req, res) => {
+  const { userId } = req.params;
+  const { first_name, last_name, email, phone_number, country, username, role_id } = req.body;
 
-    const { rows } = await pool.query(query, [clientId]);
+  try {
+    const result = await pool.query(
+      `UPDATE Users 
+       SET 
+         first_name = COALESCE($1, first_name),
+         last_name = COALESCE($2, last_name),
+         email = COALESCE($3, email),
+         phone_number = COALESCE($4, phone_number),
+         country = COALESCE($5, country),
+         username = COALESCE($6, username),
+         role_id = COALESCE($7, role_id)
+       WHERE id=$8 AND is_deleted = FALSE
+       RETURNING *`,
+      [first_name, last_name, email?.toLowerCase(), phone_number, country, username, role_id, userId]
+    );
 
-    return res.status(200).json({ success: true, orders: rows });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return res
-      .status(500)
-      .json({ success: false, error: "Internal server error" });
+    if(result.rows.length === 0){
+      return res.status(404).json({ success: false, message: "User not found or deleted" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: result.rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: err.message
+    });
   }
 };
 
 
-module.exports = {
-  getOrders,
-  register,
-  login,
+module.exports = { 
+register, 
+login ,
+viewUsers,
+deleteUser
+, editUser
 };
