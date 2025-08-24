@@ -77,8 +77,23 @@ const login = async (req, res) => {
         });
     });
 }
-
+const viewUsers = async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM Users WHERE is_deleted = FALSE");
+    res.status(200).json({
+      success: true,
+      users: result.rows
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: err.message
+    });
+  }
+};
 module.exports = { 
 register, 
-login 
+login ,
+viewUsers
 };
