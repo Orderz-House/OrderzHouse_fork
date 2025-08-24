@@ -42,5 +42,6 @@ ordersRouter.get(
 );
 ordersRouter.post("/create", authentication, createOrders);
 ordersRouter.post("/choose", authentication, chooseOrder);
+ordersRouter.get("/getorder/:id", authentication, getOrderByid);
 
 module.exports = ordersRouter;
