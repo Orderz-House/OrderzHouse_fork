@@ -33,7 +33,8 @@ ordersRouter.delete(
 );
 ordersRouter.get("/getorder/:id", getOrderByid);
 
-ordersRouter.get("/getOrders", authentication, getOrders);
+ordersRouter.delete("/delete/:id", authentication, deleteOrder);
+
 ordersRouter.get(
   "/getOrders/category/:category_id",
   authentication,
