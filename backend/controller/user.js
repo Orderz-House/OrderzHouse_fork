@@ -120,9 +120,49 @@ const deleteUser = async (req, res) => {
     });
   }
 }
+const editUser = async (req, res) => {
+  const { userId } = req.params;
+  const { first_name, last_name, email, phone_number, country, username, role_id } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE Users 
+       SET 
+         first_name = COALESCE($1, first_name),
+         last_name = COALESCE($2, last_name),
+         email = COALESCE($3, email),
+         phone_number = COALESCE($4, phone_number),
+         country = COALESCE($5, country),
+         username = COALESCE($6, username),
+         role_id = COALESCE($7, role_id)
+       WHERE id=$8 AND is_deleted = FALSE
+       RETURNING *`,
+      [first_name, last_name, email?.toLowerCase(), phone_number, country, username, role_id, userId]
+    );
+
+    if(result.rows.length === 0){
+      return res.status(404).json({ success: false, message: "User not found or deleted" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: result.rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: err.message
+    });
+  }
+};
+
+
 module.exports = { 
 register, 
 login ,
 viewUsers,
 deleteUser
+, editUser
 };
