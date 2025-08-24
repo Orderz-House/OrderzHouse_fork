@@ -6,6 +6,7 @@ const {
   chooseOrder,
   deleteOrder,
   getOrderByid,
+  viewOrders,
 } = require("../controller/orders");
 
 const ordersRouter = express.Router();
@@ -43,5 +44,11 @@ ordersRouter.get(
 ordersRouter.post("/create", authentication, createOrders);
 ordersRouter.post("/choose", authentication, chooseOrder);
 ordersRouter.get("/getorder/:id", authentication, getOrderByid);
+ordersRouter.get(
+  "/allOrders",
+  authentication,
+  authorization("view_orders"),
+  viewOrders
+);
 
 module.exports = ordersRouter;
