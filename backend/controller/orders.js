@@ -1,10 +1,8 @@
-const { createRef } = require("react");
 const pool = require("../models/db");
 
 const createOrders = (req, res) => {
-  const client_id = req.token.userId;
-  const { category_id, title, description, budget, status, due_date } =
-    req.body;
+  const client_id = req.token.userId; 
+  const { category_id, title, description, budget, status, due_date } = req.body;
 
   const query = `
     INSERT INTO orders (client_id, category_id, title, description, budget, status, due_date)
@@ -12,18 +10,9 @@ const createOrders = (req, res) => {
     RETURNING *
   `;
 
-  const values = [
-    client_id,
-    category_id,
-    title,
-    description,
-    budget,
-    status,
-    due_date,
-  ];
+  const values = [client_id, category_id, title, description, budget, status, due_date];
 
-  pool
-    .query(query, values)
+  pool.query(query, values)
     .then((result) => {
       res.status(201).json({
         success: true,
@@ -33,9 +22,13 @@ const createOrders = (req, res) => {
     })
     .catch((error) => {
       console.error("Error creating order:", error);
+      
       res.status(500).json({ success: false, error: "Failed to create order" });
     });
+          console.log(client_id);
+
 };
+
 
 const getOrders = (req, res) => {
   const clientId = req.token.userId;
@@ -126,10 +119,32 @@ RETURNING *;
       .json({ success: false, error: "Internal server error" });
   }
 };
+const getOrderByid = async (req, res) => {
+  try {
+
+    const orderId = req.params.id;
+    const query = `
+      SELECT id, client_id, category_id, title, description, budget, status, created_at, due_date
+      FROM orders
+      WHERE id = $1 AND is_deleted = FALSE
+    `;
+    const { rows } = await pool.query(query, [orderId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+    return res.status(200).json({ success: true, order: rows[0] });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+}
 
 module.exports = {
   getOrders,
   deleteOrder,
   createOrders,
   getOrdersByCategory,
+  getOrderByid
 };
