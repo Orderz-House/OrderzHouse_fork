@@ -229,7 +229,7 @@ const editPortfolioFreelancer = async (req, res) => {
 
 module.exports = { 
 register, 
-login,
+login ,
 viewUsers,
 deleteUser,
 editUser,

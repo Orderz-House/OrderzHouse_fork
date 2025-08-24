@@ -2,6 +2,9 @@ const { Pool } = require("pg");
 const connectionString = process.env.DB_URL;
 const pool = new Pool({
   connectionString,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 pool
   .connect()
@@ -30,4 +33,4 @@ const createTable = (req, res) => {
 };
 // createTable()
 
-module.exports = pool;
+module.exports = {pool};
