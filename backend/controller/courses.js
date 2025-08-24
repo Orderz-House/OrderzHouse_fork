@@ -1,14 +1,14 @@
 const pool = require("../models/db");
- 
+
 const createCourse = async (req, res) => {
-  try { 
-    const { title, description,price}=req.body;
+  try {
+    const { title, description, price } = req.body;
     const insertQuery = `
       INSERT INTO courses (title, description ,price)
       VALUES ($1, $2 ,$3)
       RETURNING *;
     `;
-    const { rows } = await pool.query(insertQuery, [title, description ,price]);
+    const { rows } = await pool.query(insertQuery, [title, description, price]);
     return res.status(201).json({ success: true, course: rows[0] });
   } catch (error) {
     console.error("Error creating course:", error);
@@ -16,7 +16,7 @@ const createCourse = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Internal server error" });
   }
-}
+};
 const getCourses = async (req, res) => {
   try {
     const query = `
@@ -33,7 +33,7 @@ const getCourses = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Internal server error" });
   }
-}
+};
 const deleteCourse = async (req, res) => {
   try {
     const courseId = req.params.id;
@@ -45,7 +45,9 @@ const deleteCourse = async (req, res) => {
     `;
     const { rows } = await pool.query(deleteQuery, [courseId]);
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found" });
     }
     return res.status(200).json({ success: true, message: "Course deleted" });
   } catch (error) {
@@ -53,12 +55,12 @@ const deleteCourse = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });
-    }
-}
+  }
+};
 const updateCourse = async (req, res) => {
   try {
     const courseId = req.params.id;
-    const { title, description ,price} = req.body;
+    const { title, description, price } = req.body;
     const updateQuery = `
       UPDATE courses
       SET 
@@ -68,9 +70,16 @@ const updateCourse = async (req, res) => {
       WHERE id = $4
       RETURNING *;
     `;
-    const { rows } = await pool.query(updateQuery, [title, description ,price, courseId]);
+    const { rows } = await pool.query(updateQuery, [
+      title,
+      description,
+      price,
+      courseId,
+    ]);
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found" });
     }
     return res.status(200).json({ success: true, course: rows[0] });
   } catch (error) {
@@ -79,7 +88,7 @@ const updateCourse = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Internal server error" });
   }
-}
+};
 const getCourseById = async (req, res) => {
   try {
     const courseId = req.params.id;
@@ -90,22 +99,57 @@ const getCourseById = async (req, res) => {
     `;
     const { rows } = await pool.query(query, [courseId]);
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found" });
     }
     return res.status(200).json({ success: true, course: rows[0] });
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
-    catch (error) {
-        console.error("Error fetching course:", error);
-        return res
-        .status(500)
-        .json({ success: false, error: "Internal server error" });
+};
+
+const enrollFreelancer = async (req, res) => {
+  try {
+    const freelancer_id = req.token.userId;
+    const course_id = req.params.course_id;
+
+    if (!course_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Course ID is required to enroll",
+      });
     }
-}
+
+    const insertQuery = `
+      INSERT INTO enrollments (course_id, freelancer_id)
+      VALUES ($1, $2)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(insertQuery, [course_id, freelancer_id]);
+
+    res.status(201).json({
+      success: true,
+      message: "Enrolled successfully",
+      enrollment: rows[0],
+    });
+  } catch (error) {
+    console.error("Error enrolling freelancer:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
 
 module.exports = {
-  createCourse,     
-    getCourses, 
-    deleteCourse,
-    updateCourse
-    ,getCourseById
+  createCourse,
+  getCourses,
+  deleteCourse,
+  updateCourse,
+  getCourseById,
+  enrollFreelancer,
 };
