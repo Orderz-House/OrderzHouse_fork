@@ -161,8 +161,8 @@ const editUser = async (req, res) => {
 
 module.exports = { 
 register, 
-login ,
+login,
 viewUsers,
-deleteUser
-, editUser
+deleteUser,
+editUser
 };
