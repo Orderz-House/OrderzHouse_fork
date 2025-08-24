@@ -62,7 +62,7 @@ const login = async (req, res) => {
   pool
     .query(query, data)
     .then(async (result) => {
-        if(result.row.length){
+        if(result.rows.length){
             bcrypt.compare(password, result.rows[0].password, (err, response) =>{
                 if(err) res.json(err);
                 if(response){
