@@ -5,6 +5,7 @@ const {
   createOrders,
   chooseOrder,
   deleteOrder,
+  getOrderByid,
 } = require("../controller/orders");
 
 const ordersRouter = express.Router();
@@ -20,6 +21,7 @@ ordersRouter.get(
 ordersRouter.delete(
   "/delete/:id",
   authentication,
+  authorization("delete_order"),
   deleteOrder
 );
 
@@ -30,5 +32,6 @@ ordersRouter.get(
 );
 ordersRouter.post("/create", authentication, createOrders);
 ordersRouter.post("/choose", authentication, chooseOrder);
+ordersRouter.get("/getorder/:id", authentication, getOrderByid);
 
 module.exports = ordersRouter;

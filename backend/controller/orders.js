@@ -1,9 +1,10 @@
-const { Pool } = require('pg');
+const { Pool } = require("pg");
 const pool = new Pool({ connectionString: process.env.DB_URL });
 
 const createOrders = (req, res) => {
-  const client_id = req.token.userId; 
-  const { category_id, title, description, budget, status, due_date } = req.body;
+  const client_id = req.token.userId;
+  const { category_id, title, description, budget, status, due_date } =
+    req.body;
 
   const query = `
     INSERT INTO orders (client_id, category_id, title, description, budget, status, due_date)
@@ -11,9 +12,18 @@ const createOrders = (req, res) => {
     RETURNING *
   `;
 
-  const values = [client_id, category_id, title, description, budget, status, due_date];
+  const values = [
+    client_id,
+    category_id,
+    title,
+    description,
+    budget,
+    status,
+    due_date,
+  ];
 
-  pool.query(query, values)
+  pool
+    .query(query, values)
     .then((result) => {
       res.status(201).json({
         success: true,
@@ -23,12 +33,10 @@ const createOrders = (req, res) => {
     })
     .catch((error) => {
       console.error("Error creating order:", error);
-      
+
       res.status(500).json({ success: false, error: "Failed to create order" });
     });
-
 };
-
 
 const getOrders = (req, res) => {
   const clientId = req.token.userId;
@@ -121,7 +129,6 @@ RETURNING *;
 };
 const getOrderByid = async (req, res) => {
   try {
-
     const orderId = req.params.id;
     const query = `
       SELECT id, client_id, category_id, title, description, budget, status, created_at, due_date
@@ -139,7 +146,7 @@ const getOrderByid = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Internal server error" });
   }
-}
+};
 
 const chooseOrder = (req, res) => {
   const freelancerId = req.token.userId;
@@ -176,10 +183,12 @@ const chooseOrder = (req, res) => {
     });
 };
 
+
 module.exports = {
   getOrders,
   deleteOrder,
   createOrders,
   getOrdersByCategory,
   chooseOrder,
+  getOrderByid,
 };
