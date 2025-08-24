@@ -21,7 +21,7 @@ const register = async (req, res) => {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10); // Use 10 as salt rounds
+    const hashedPassword = await bcrypt.hash(password, 10);
     const Email = email.toLowerCase();
 
     const result = await pool.query(

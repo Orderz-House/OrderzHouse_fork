@@ -7,8 +7,10 @@ const {
   deleteUser,
   editUser,
 } = require("../controller/user");
+
 const authentiction = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
+
 const usersRouter = express.Router();
 
 usersRouter.post("/register", register);
