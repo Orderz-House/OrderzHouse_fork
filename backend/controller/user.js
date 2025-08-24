@@ -92,8 +92,37 @@ const viewUsers = async (req, res) => {
     });
   }
 };
+const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const result = await pool.query(
+      "UPDATE Users SET is_deleted = TRUE WHERE id = $1 RETURNING *",
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      user: result.rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting user",
+      error: err.message
+    });
+  }
+}
 module.exports = { 
 register, 
 login ,
-viewUsers
+viewUsers,
+deleteUser
 };
