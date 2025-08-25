@@ -1,9 +1,8 @@
-const pool = require('../models/db');
+const {pool} = require('../models/db');
 
 const subscriptionToPlan = (req, res) => {
     const { freelancer_id, plan_id, status } = req.body;
 
-    // التحقق من الحقول الأساسية
     if (!freelancer_id || !plan_id || !status) {
         return res.status(400).json({ success: false, message: "freelancer_id, plan_id, and status are required" });
     }

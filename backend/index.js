@@ -32,6 +32,9 @@ app.use("/orders", require("./router/orders"));
 
 //app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 
-app.listen(PORT, () => {
-  console.log(`Server listening at http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, () => {
+    console.log(`Server listening at http://localhost:${PORT}`);
+  });
+}
+module.exports = app;

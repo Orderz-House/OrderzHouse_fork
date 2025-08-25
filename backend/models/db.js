@@ -14,23 +14,5 @@ pool
   .catch((err) => {
     console.log(err);
   });
-const createTable = (req, res) => {
-  pool
-    .query(
-      `=
-`
-    )
-    .then((result) => {
-      res.json({
-        message: "created",
-      });
-    })
-    .catch((err) => {
-      res.json({
-        err: err.message,
-      });
-    });
-};
-// createTable()
 
-module.exports = {pool};
+module.exports = { pool };

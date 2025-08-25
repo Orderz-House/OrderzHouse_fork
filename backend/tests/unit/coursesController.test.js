@@ -6,7 +6,7 @@ const {
   getCourseById,
 } = require("../../controller/courses");
 
-const pool = require("../../models/db");
+const {pool} = require("../../models/db");
 
 jest.mock("../../models/db"); 
 
