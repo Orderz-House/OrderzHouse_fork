@@ -1,6 +1,7 @@
 const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const cron = require('node-cron');
 
 const register = async (req, res) => {
 const {role_id, first_name, last_name, email, password, phone_number, country , username} = req.body;
@@ -252,7 +253,34 @@ const editPortfolioFreelancer = async (req, res) => {
 }
 
 
+const deactivateInactiveUsers = async () => {
+  const query = `
+    UPDATE Users
+    SET is_deleted = TRUE,
+    reason_for_disruption = 'Deactivated due to inactivity or Order for 30 days'
+    WHERE role_id = 2
+    AND is_deleted = FALSE
+    AND created_at < NOW() - INTERVAL '30 days'
+    AND id NOT IN (
+    SELECT DISTINCT client_id FROM orders
+    );
+  `;
 
+  try {
+    const result = await pool.query(query); 
+    console.log(`Deactivated ${result.rowCount} inactive users.`);
+  } catch (err) {
+    console.error("Error deactivating inactive users:", err);
+  }
+};
+
+
+
+
+cron.schedule('0 3 * * *', () => {
+  deactivateInactiveUsers();
+  console.log('Ran deactivate Inactive Users at 3AM daily');
+});
 
 
 
