@@ -112,37 +112,61 @@ const getCourseById = async (req, res) => {
   }
 };
 
-const enrollFreelancer = async (req, res) => {
-  try {
-    const freelancer_id = req.token.userId;
-    const course_id = req.params.course_id;
+const enrollInCourse = (req, res) => {
+  const freelancer_id = req.token?.userId;
 
-    if (!course_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Course ID is required to enroll",
-      });
-    }
-
-    const insertQuery = `
-      INSERT INTO enrollments (course_id, freelancer_id)
-      VALUES ($1, $2)
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(insertQuery, [course_id, freelancer_id]);
-
-    res.status(201).json({
-      success: true,
-      message: "Enrolled successfully",
-      enrollment: rows[0],
-    });
-  } catch (error) {
-    console.error("Error enrolling freelancer:", error);
-    res.status(500).json({
+  if (!freelancer_id) {
+    return res.status(401).json({
       success: false,
-      error: "Internal server error",
+      message: "Unauthorized: Freelancer ID missing in token",
     });
   }
+
+  const { course_id } = req.body;
+
+  if (!course_id) {
+    return res.status(400).json({
+      success: false,
+      message: "course_id is required",
+    });
+  }
+
+  pool
+    .query(
+      "SELECT * FROM course_enrollments WHERE freelancer_id = $1 AND course_id = $2",
+      [freelancer_id, course_id]
+    )
+    .then((checkResult) => {
+      if (checkResult.rowCount > 0) {
+        return res.status(409).json({
+          success: false,
+          message: "You are already enrolled in this course",
+        });
+      }
+
+      return pool
+        .query(
+          `INSERT INTO course_enrollments (freelancer_id, course_id)
+           VALUES ($1, $2)
+           RETURNING *`,
+          [freelancer_id, course_id]
+        )
+        .then((enrollResult) => {
+          res.status(201).json({
+            success: true,
+            message: "Enrolled successfully",
+            enrollment: enrollResult.rows[0],
+          });
+        });
+    })
+    .catch((error) => {
+      console.error("Error enrolling in course:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error during enrollment",
+        error: error.message,
+      });
+    });
 };
 
 module.exports = {
@@ -151,5 +175,5 @@ module.exports = {
   deleteCourse,
   updateCourse,
   getCourseById,
-  enrollFreelancer,
+  enrollInCourse,
 };
