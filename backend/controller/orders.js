@@ -183,8 +183,35 @@ const chooseOrder = (req, res) => {
     });
 };
 
+const viewOrders = (req, res) => {
+  const query = `
+    SELECT 
+      o.*, 
+      c.first_name AS client_first_name, c.email AS client_email,
+      f.first_name AS freelancer_first_name, f.email AS freelancer_email,
+    FROM orders o
+    LEFT JOIN users c ON o.client_id = c.id
+    LEFT JOIN order_assignments oa ON o.id = oa.order_id
+    LEFT JOIN users f ON oa.freelancer_id = f.id
+    WHERE o.is_deleted = FALSE
+  `;
+
+  pool
+    .query(query)
+    .then((result) => {
+      res.json({ success: true, orders: result.rows });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        success: false,
+        message: "Error fetching orders",
+        error: error.message,
+      });
+    });
+};
 
 module.exports = {
+  viewOrders,
   getOrders,
   deleteOrder,
   createOrders,
