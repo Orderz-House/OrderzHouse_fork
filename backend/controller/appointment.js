@@ -142,7 +142,7 @@ const getAllAppointments = (req, res) => {
       a.appointment_date,
       a.message,
       a.status,
-      a.appointment_type,  -- ✅ Include this line
+      a.appointment_type,  
       a.created_at
     FROM appointments a
     ORDER BY a.created_at DESC;
