@@ -107,5 +107,5 @@ module.exports = {
     getCourses, 
     deleteCourse,
     updateCourse
-    ,getCourseById
+    ,getCourseById 
 };
