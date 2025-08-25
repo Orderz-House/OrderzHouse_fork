@@ -37,6 +37,7 @@ usersRouter.delete('/delete/:userId',authentiction, authorization("delete_user")
 usersRouter.put('/edit/:userId',authentiction, authorization("edit_user"), editUser);
 usersRouter.post('/freelancer/portfolio/create',authentiction, /*authorization("create_portfolio"),*/  createPortfolio);
 usersRouter.put('/freelancer/portfolio/edit/:userId',authentiction, /*authorization("edit_freelancer_profile"),*/  editPortfolioFreelancer);
+
 usersRouter.post('/freelancers', authentiction, authorization("view_freelancers"), getAllFreelancers);
 usersRouter.delete('/freelancer/delete/:userId', authentiction, authorization("delete_freelancer"), deleteFreelancerById);
 module.exports = usersRouter;
