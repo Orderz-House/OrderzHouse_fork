@@ -1,6 +1,6 @@
+const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const pool = require("../models/db");
 
 const register = async (req, res) => {
   const {
@@ -237,81 +237,50 @@ const createPortfolio = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Unauthorized: User ID missing in token",
+      message: "Error creating portfolio",
+      error: err.message,
     });
   }
 };
 
-const editProfile = (req, res) => {
-  const userId = req.params.userId;
+const editPortfolioFreelancer = async (req, res) => {
+  const { userId } = req.params;
+  const { title, description, skills, hourly_rate, work_url } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE Portfolios 
+       SET 
+         title = COALESCE($1, title),
+         description = COALESCE($2, description),
+         skills = COALESCE($3, skills),
+         hourly_rate = COALESCE($4, hourly_rate),
+         work_url = COALESCE($5, work_url)
+       WHERE freelancer_id=$6
+       RETURNING *`,
+      [title, description, skills, hourly_rate, work_url, userId]
+    );
 
-  const {
-    first_name,
-    last_name,
-    email,
-    phone_number,
-    country,
-    username,
-    profile_pic_url,
-  } = req.body;
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Portfolio not found for this freelancer",
+        });
+    }
 
-  if (!userId) {
-    return res.status(400).json({
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      portfolio: result.rows[0],
+    });
+  } catch (err) {
+    res.status(500).json({
       success: false,
-      message: "User ID is required",
+      message: "Error updating profile",
+      error: err.message,
     });
   }
-
-  const Email = email ? email.toLowerCase() : null;
-
-  const query = `
-    UPDATE Users
-    SET first_name = $1,
-        last_name = $2,
-        email = $3,
-        phone_number = $4,
-        country = $5,
-        username = $6,
-        profile_pic_url = $7
-    WHERE id = $8
-    RETURNING *;
-  `;
-
-  const values = [
-    first_name,
-    last_name,
-    Email,
-    phone_number,
-    country,
-    username,
-    profile_pic_url,
-    userId,
-  ];
-
-  pool
-    .query(query, values)
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Profile updated successfully",
-        user: result.rows[0],
-      });
-    })
-    .catch((error) => {
-      console.error("Error updating profile:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
-    });
 };
 
 module.exports = {
@@ -320,7 +289,6 @@ module.exports = {
   viewUsers,
   deleteUser,
   editUser,
-  editProfile,
   createPortfolio,
-  // editPortfolioFreelancer
+  editPortfolioFreelancer,
 };

@@ -2,11 +2,13 @@ const express = require("express");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 require("dotenv").config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 require("./models/db");
 app.use(cors());
 app.use(express.json());
+app.set("trust proxy", true);
 // app.use(cors({
 //   origin: ["https://mywebsite.com"],
 //   methods: ["GET", "POST"],
@@ -32,7 +34,7 @@ app.use("/orders", require("./router/orders"));
 
 //app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   const server = app.listen(PORT, () => {
     console.log(`Server listening at http://localhost:${PORT}`);
   });
