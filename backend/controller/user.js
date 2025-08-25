@@ -274,12 +274,31 @@ const deactivateInactiveUsers = async () => {
   }
 };
 
-
+const deactivateInactiveFreelancers = async () => {
+  const query = `
+  UPDATE Users 
+  Set is_deleted = TRUE,
+  reason_for_disruption = 'Deactivated due to inactivity or Order Assaignments for 30 days'
+  WHERE role_id = 3
+  AND is_deleted = FALSE
+  AND created_at < NOW() - INTERVAL '30 days'
+  AND id NOT IN (
+    SELECT DISTINCT freelancer_id FROM order_assignments
+  );
+  `;
+  try {
+    const result = await pool.query(query); 
+    console.log(`Deactivated ${result.rowCount} inactive freelancers.`);
+  } catch (err) {
+    console.error("Error deactivating inactive freelancers:", err);
+  }
+};
 
 
 cron.schedule('0 3 * * *', () => {
   deactivateInactiveUsers();
-  console.log('Ran deactivate Inactive Users at 3AM daily');
+  deactivateInactiveFreelancers();
+  console.log('Ran deactivate Inactive for Client & Freelancers at 3AM daily');
 });
 
 
@@ -293,3 +312,5 @@ editUser,
 createPortfolio,
 editPortfolioFreelancer
 };
+
+//
