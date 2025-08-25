@@ -6,6 +6,7 @@ const {
   viewUsers,
   deleteUser,
   editUser,
+  editProfile,
   createPortfolio,
   editPortfolioFreelancer,
 } = require("../controller/user");
@@ -23,21 +24,17 @@ usersRouter.delete(
   authorization("delete_user"),
   deleteUser
 );
-usersRouter.put(
-  "/edit/:userId",
-  authentiction,
-  authorization("edit_user"),
-  editUser
-);
+
+usersRouter.put("/edit/:userId", authentiction, editUser);
 usersRouter.post(
   "/freelancer/portfolio/create",
-  authentiction,
-  /*authorization("create_portfolio"),*/ createPortfolio
+  authentiction
+  // /*authorization("create_portfolio"),*/ createPortfolio
 );
 usersRouter.put(
   "/freelancer/portfolio/edit/:userId",
-  authentiction,
-  /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
+  authentiction
+  // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
 
 module.exports = usersRouter;

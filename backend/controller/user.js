@@ -210,10 +210,83 @@ const editUser = async (req, res) => {
   }
 };
 
+const editProfile = (req, res) => {
+  const userId = req.params.userId;
+
+  const {
+    first_name,
+    last_name,
+    email,
+    phone_number,
+    country,
+    username,
+    profile_pic_url,
+  } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: "User ID is required",
+    });
+  }
+
+  const Email = email ? email.toLowerCase() : null;
+
+  const query = `
+    UPDATE Users
+    SET first_name = $1,
+        last_name = $2,
+        email = $3,
+        phone_number = $4,
+        country = $5,
+        username = $6,
+        profile_pic_url = $7
+    WHERE id = $8
+    RETURNING *;
+  `;
+
+  const values = [
+    first_name,
+    last_name,
+    Email,
+    phone_number,
+    country,
+    username,
+    profile_pic_url,
+    userId,
+  ];
+
+  pool
+    .query(query, values)
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        user: result.rows[0],
+      });
+    })
+    .catch((error) => {
+      console.error("Error updating profile:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error.message,
+      });
+    });
+};
+
 module.exports = {
   register,
   login,
   viewUsers,
   deleteUser,
   editUser,
+  editProfile,
 };
