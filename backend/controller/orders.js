@@ -1,5 +1,5 @@
-const { Pool } = require("pg");
-const pool = new Pool({ connectionString: process.env.DB_URL });
+const { pool } = require("../models/db"); // Import the pool correctly
+
 const createOrders = (req, res) => {
   const client_id = req.token.userId;
   const { category_id, title, description, budget, status, due_date } =
@@ -32,7 +32,6 @@ const createOrders = (req, res) => {
     })
     .catch((error) => {
       console.error("Error creating order:", error);
-
       res.status(500).json({ success: false, error: "Failed to create order" });
     });
 };
@@ -92,6 +91,7 @@ const getOrdersByCategory = (req, res) => {
       res.status(500).json({ success: false, error: "Internal server error" });
     });
 };
+
 const deleteOrder = async (req, res) => {
   try {
     const clientId = req.token.userId;
@@ -105,9 +105,9 @@ const deleteOrder = async (req, res) => {
 
     const deleteQuery = `
       UPDATE orders
-SET is_deleted = TRUE
-WHERE id = $1 AND client_id = $2
-RETURNING *;
+      SET is_deleted = TRUE
+      WHERE id = $1 AND client_id = $2
+      RETURNING *
     `;
 
     const { rows } = await pool.query(deleteQuery, [orderId, clientId]);
@@ -126,6 +126,7 @@ RETURNING *;
       .json({ success: false, error: "Internal server error" });
   }
 };
+
 const getOrderByid = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -161,8 +162,8 @@ const chooseOrder = (req, res) => {
   pool
     .query(
       `INSERT INTO order_assignments (order_id, freelancer_id, status)
-     VALUES ($1, $2, $3)
-     RETURNING *`,
+       VALUES ($1, $2, $3)
+       RETURNING *`,
       [order_id, freelancerId, "assigned"]
     )
     .then((result) => {
@@ -209,12 +210,7 @@ const viewOrders = (req, res) => {
     });
 };
 
-
-
-
-
 module.exports = {
-  viewOrders,
   getOrders,
   deleteOrder,
   createOrders,
@@ -222,4 +218,3 @@ module.exports = {
   chooseOrder,
   getOrderByid,
 };
-  
