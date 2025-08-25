@@ -1,6 +1,6 @@
-const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const pool = require("../models/db");
 
 const register = async (req, res) => {
   const {
@@ -209,9 +209,15 @@ const editUser = async (req, res) => {
     });
   }
 };
-
 const editProfile = (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.token?.userId;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: User ID missing in token",
+    });
+  }
 
   const {
     first_name,
@@ -222,13 +228,6 @@ const editProfile = (req, res) => {
     username,
     profile_pic_url,
   } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({
-      success: false,
-      message: "User ID is required",
-    });
-  }
 
   const Email = email ? email.toLowerCase() : null;
 
@@ -282,11 +281,51 @@ const editProfile = (req, res) => {
     });
 };
 
+const editPortfolioFreelancer = async (req, res) => {
+  const { userId } = req.params;
+  const { title, description, skills, hourly_rate, work_url } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE Portfolios 
+       SET 
+         title = COALESCE($1, title),
+         description = COALESCE($2, description),
+         skills = COALESCE($3, skills),
+         hourly_rate = COALESCE($4, hourly_rate),
+         work_url = COALESCE($5, work_url)
+       WHERE freelancer_id=$6
+       RETURNING *`,
+      [title, description, skills, hourly_rate, work_url, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Portfolio not found for this freelancer",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      portfolio: result.rows[0],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating profile",
+      error: err.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   viewUsers,
   deleteUser,
   editUser,
+  // createPortfolio,
+  editPortfolioFreelancer,
   editProfile,
 };
