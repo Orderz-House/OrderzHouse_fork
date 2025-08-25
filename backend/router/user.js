@@ -29,15 +29,16 @@ usersRouter.put(
   authorization("edit_user"),
   editUser
 );
+/*
 usersRouter.post(
   "/freelancer/portfolio/create",
   authentiction,
-  /*authorization("create_portfolio"),*/ createPortfolio
+  authorization("create_portfolio"), createPortfolio
 );
 usersRouter.put(
   "/freelancer/portfolio/edit/:userId",
   authentiction,
-  /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
+  authorization("edit_freelancer_profile"), editPortfolioFreelancer
 );
-
+*/
 module.exports = usersRouter;
