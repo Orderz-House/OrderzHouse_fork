@@ -382,6 +382,50 @@ const getAllFreelancers = async (req, res) => {
   }
 };
 
+const deleteFreelancerById = async (req, res) => {
+const { userId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE Users 
+       SET is_deleted = NOT is_deleted 
+       WHERE id = $1 AND role_id = 3 
+       RETURNING *`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+    if(result.rows[0].is_deleted){
+      res.status(200).json({
+      success: true,
+      message: `Freelancer deactivated successfully`,
+      freelancer: result.rows[0],
+    }
+  );
+  }else {
+    res.status(200).json({
+      success: true,
+      message: `Freelancer activated successfully`,
+      freelancer: result.rows[0],
+    });
+  }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error toggling freelancer deletion status",
+      error: err.message,
+    });
+  }
+}
+
+
+
+
 module.exports = {
   register,
   login,
@@ -391,7 +435,7 @@ module.exports = {
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
+  deleteFreelancerById,
 };
 
 
-//git commit -m "get all freelancers with filter active,deactivated,all and include ip addresses and orders count for super admin"
