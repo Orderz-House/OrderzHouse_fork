@@ -149,7 +149,7 @@ const updateCourse = async (req, res) => {
       course: rows[0],
     });
   } catch (error) {
-    console.error("Error updating course:", error);
+    console.error("Error deleting course:", error);
     return res.status(500).json({
       success: false,
       error: "Internal server error",
@@ -188,7 +188,7 @@ const getCourseById = async (req, res) => {
       course: rows[0],
     });
   } catch (error) {
-    console.error("Error fetching course:", error);
+    console.error("Error fetching course:", error.message);
     return res.status(500).json({
       success: false,
       error: "Internal server error",

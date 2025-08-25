@@ -2,7 +2,6 @@ const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
-const { get } = require("..");
 
 const register = async (req, res) => {
   const {
@@ -121,7 +120,7 @@ const login = async (req, res) => {
     const ipAddressData = [user.id, "127.25.14.5"];
     if (user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
 
-    return res.status(200).json({
+    return res.status(201).json({
       token,
       success: true,
       message: "Valid login credentials",
@@ -130,7 +129,7 @@ const login = async (req, res) => {
       userInfo: user,
     });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("Login error:", err.message);
     return res.status(500).json({
       success: false,
       message: "An error occurred during login",

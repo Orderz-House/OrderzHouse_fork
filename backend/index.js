@@ -1,5 +1,5 @@
 const express = require("express");
-const rateLimit=require("express-rate-limit");
+const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
@@ -7,10 +7,11 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+if (process.env.NODE_ENV !== "test") {
+  app.set("trust proxy", 1);
+}
 app.use(cors());
 app.use(express.json());
-app.set("trust proxy", true);
 
 // rate limiter
 const limiter = rateLimit({
