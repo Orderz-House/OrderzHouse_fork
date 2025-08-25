@@ -2,7 +2,7 @@ const { pool } = require("../models/db");
 
 const authorization = (permission) => {
   return async (req, res, next) => {
-    try {
+    try { 
       const role_id = req.token.role;
 
       const query = `

@@ -1,7 +1,8 @@
-const pool = require("../models/db");
+const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
+const { get } = require("..");
 
 const register = async (req, res) => {
   const {
@@ -15,18 +16,22 @@ const register = async (req, res) => {
     username,
   } = req.body;
 
-  if (!role_id || !email || !password || !phone_number || !country) {
-    return res
-      .status(400)
-      .json({ success: false, message: "All fields are required" });
-  }
-  const hashedPassword = await bcrypt.hash(password, 10);
+    if (!role_id || !first_name || !last_name || !email || !password || !phone_number || !country || !username) {
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required"
+        });
+    }
 
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(process.env.SECRET)
+  );
   const Email = email.toLowerCase();
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
       [
         role_id,
         first_name,
@@ -46,11 +51,18 @@ const register = async (req, res) => {
       });
     })
     .catch((err) => {
-      res.status(409).json({
-        success: false,
-        message: "Email already exists",
-        error: err,
-      });
+      if (err.constraint === "users_email_key") {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Internal server error",
+          error: err.message,
+        });
+      }
     });
 };
 
@@ -74,22 +86,25 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message:
-          "The email doesn't exist or the password you've entered is incorrect",
+          "The email desn't exist or the password you've entered is incorrect",
       });
     }
 
     const user = result.rows[0];
-    const match = await bcrypt.compare(password, user.password);
 
+    const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(403).json({
         success: false,
         message:
-          "The email doesn't exist or the password you've entered is incorrect",
+          "The email desn't exist or the password you've entered is incorrect",
       });
     }
+    const payload = {
+      userId: user.id,
+      role: user.role_id,
+    };
 
-    const payload = { userId: user.id, role: user.role_id };
     const options = { expiresIn: "1d" };
     const secret = process.env.JWT_SECRET;
     const token = jwt.sign(payload, secret, options);
@@ -100,15 +115,11 @@ const login = async (req, res) => {
         message: "Token generation failed",
       });
     }
-
     const ipAddress = getClientIp(req);
     const ipAddressQuery =
-      "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
-    const ipAddressData = [user.id, ipAddress];
-
-    if (user.role_id === 3) {
-      await pool.query(ipAddressQuery, ipAddressData);
-    }
+      "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
+    const ipAddressData = [user.id, "127.25.14.5"];
+    if (user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
 
     return res.status(200).json({
       token,
@@ -127,7 +138,6 @@ const login = async (req, res) => {
     });
   }
 };
-
 const viewUsers = async (req, res) => {
   try {
     const result = await pool.query(
@@ -235,10 +245,12 @@ const createPortfolio = async (req, res) => {
     req.body;
 
   if (!freelancer_id || !title) {
-    return res.status(400).json({
-      success: false,
-      message: "freelancer_id and title are required",
-    });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "freelancer_id and title are required",
+      });
   }
 
   try {
@@ -279,10 +291,12 @@ const editPortfolioFreelancer = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found for this freelancer",
-      });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Portfolio not found for this freelancer",
+        });
     }
 
     res.status(200).json({
@@ -298,6 +312,7 @@ const editPortfolioFreelancer = async (req, res) => {
     });
   }
 };
+
 const deactivateInactiveUsers = async () => {
   const query = `
     UPDATE Users
@@ -318,32 +333,99 @@ const deactivateInactiveUsers = async () => {
     console.error("Error deactivating inactive users:", err);
   }
 };
-const deactivateInactiveFreelancers = async () => {
-  const query = `
-  UPDATE Users 
-  Set is_deleted = TRUE,
-  reason_for_disruption = 'Deactivated due to inactivity or Order Assaignments for 30 days'
-  WHERE role_id = 3
-  AND is_deleted = FALSE
-  AND created_at < NOW() - INTERVAL '30 days'
-  AND id NOT IN (
-    SELECT DISTINCT freelancer_id FROM order_assignments
-  );
-  `;
-  try {
-    const result = await pool.query(query);
-    console.log(`Deactivated ${result.rowCount} inactive freelancers.`);
-  } catch (err) {
-    console.error("Error deactivating inactive freelancers:", err);
-  }
-};
 
 cron.schedule("0 3 * * *", () => {
   deactivateInactiveUsers();
   console.log("Ran deactivate Inactive Users at 3AM daily");
-  deactivateInactiveFreelancers();
-  console.log("Ran deactivate Inactive for Client & Freelancers at 3AM daily");
 });
+
+
+const getAllFreelancers = async (req, res) => {
+  const filterValue = (req.body.filter || "").toLowerCase();
+
+  const validFilters = ["active", "deactivated", "all"];
+  if (!validFilters.includes(filterValue)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
+    });
+  }
+
+  let whereCondition = "users.role_id = 3";
+  if (filterValue === "active") {
+    whereCondition += " AND users.is_deleted = FALSE";
+  } else if (filterValue === "deactivated") {
+    whereCondition += " AND users.is_deleted = TRUE";
+  }
+
+  const sqlQuery = ` SELECT users.id, users.first_name, users.last_name, users.email, COUNT(order_assignments.id) AS orders_count, COALESCE( json_agg(json_build_object('ip_address', ip_adress.ip_address)) FILTER (WHERE ip_adress.ip_address IS NOT NULL), '[]' ) AS ip_addresses FROM users LEFT JOIN ip_adress ON users.id = ip_adress.user_id LEFT JOIN order_assignments ON users.id = order_assignments.freelancer_id WHERE ${whereCondition} GROUP BY users.id, users.first_name, users.last_name, users.email;`;
+
+  try {
+    const result = await pool.query(sqlQuery);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No freelancers found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      freelancers: result.rows,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching freelancers",
+      error: err.message,
+    });
+  }
+};
+
+const deleteFreelancerById = async (req, res) => {
+const { userId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE Users 
+       SET is_deleted = NOT is_deleted 
+       WHERE id = $1 AND role_id = 3 
+       RETURNING *`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+    if(result.rows[0].is_deleted){
+      res.status(200).json({
+      success: true,
+      message: `Freelancer deactivated successfully`,
+      freelancer: result.rows[0],
+    }
+  );
+  }else {
+    res.status(200).json({
+      success: true,
+      message: `Freelancer activated successfully`,
+      freelancer: result.rows[0],
+    });
+  }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error toggling freelancer deletion status",
+      error: err.message,
+    });
+  }
+}
+
+
+
 
 module.exports = {
   register,
@@ -353,4 +435,6 @@ module.exports = {
   editUser,
   createPortfolio,
   editPortfolioFreelancer,
+  getAllFreelancers,
+  deleteFreelancerById,
 };

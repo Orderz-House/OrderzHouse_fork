@@ -46,5 +46,9 @@ coursesRouter.post(
   authorization("enroll_course"),
   enrollInCourse
 );
+<<<<<<< HEAD
+=======
+
+>>>>>>> 458ea86109a5ecb53ca50a4c1d84991fa49a3fd7
 
 module.exports = coursesRouter;
