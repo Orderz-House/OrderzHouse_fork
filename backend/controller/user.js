@@ -312,5 +312,3 @@ editUser,
 createPortfolio,
 editPortfolioFreelancer
 };
-
-//
