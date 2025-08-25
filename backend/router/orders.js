@@ -44,11 +44,6 @@ ordersRouter.get(
 ordersRouter.post("/create", authentication, createOrders);
 ordersRouter.post("/choose", authentication, chooseOrder);
 ordersRouter.get("/getorder/:id", authentication, getOrderByid);
-ordersRouter.get(
-  "/allOrders",
-  authentication,
-  authorization("view_orders"),
-  viewOrders
-);
+ordersRouter.get("/allOrders", authentication, viewOrders);
 
 module.exports = ordersRouter;

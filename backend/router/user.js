@@ -6,17 +6,6 @@ const {
   viewUsers,
   deleteUser,
   editUser,
-} = require("../controller/user");
-
-const authentiction = require("../middleware/authentication");
-const authorization = require("../middleware/authorization");
-
-const {
-  register,
-  login,
-  viewUsers,
-  deleteUser,
-  editUser,
   createPortfolio,
   editPortfolioFreelancer,
 } = require("../controller/user");
