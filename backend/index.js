@@ -26,6 +26,7 @@ app.use(limiter);
 const usersRouter = require("./router/user");
 const plansRouter = require("./router/plans");
 const feedbackRouter = require("./router/feedback");
+const appointmentsRouter = require("./router/appointment");
 
 app.use("/users", usersRouter);
 const coursesRouter = require("./router/courses");
@@ -33,6 +34,7 @@ app.use("/courses", coursesRouter);
 app.use("/plans", plansRouter);
 app.use("/orders", require("./router/orders"));
 app.use("/feedbacks", feedbackRouter);
+app.use("/appointments", appointmentsRouter);
 
 //app.use("*", (req, res) => res.status(404).json("NO content at this path"));
 
