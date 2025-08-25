@@ -1,12 +1,12 @@
 const request = require("supertest");
-const app = require("../app"); 
+const app = require("../../index"); 
 
 describe("Orders Integration Tests", () => {
   let token = { userId: 1 }; 
 
-  test("POST /orders/create - create new order", async () => {
+  test("POST /orders - create new order", async () => {
     const res = await request(app)
-      .post("/orders")
+      .post("/orders/create")
       .set("Authorization", "Bearer faketoken") 
       .send({
         category_id: 2,
@@ -22,9 +22,9 @@ describe("Orders Integration Tests", () => {
     expect(res.body.order).toHaveProperty("title", "Integration Test Order");
   });
 
-  test("GET /orders/getOrders - should return list", async () => {
+  test("GET /orders - should return list", async () => {
     const res = await request(app)
-      .get("/orders")
+      .get("/orders/getOrders")
       .set("Authorization", "Bearer faketoken");
 
     expect(res.statusCode).toBe(200);
