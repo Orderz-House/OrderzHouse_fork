@@ -20,16 +20,13 @@ const register = async (req, res) => {
       .status(400)
       .json({ success: false, message: "All fields are required" });
   }
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  const hashedPassword = await bcrypt.hash(
-    password,
-    Number(process.env.SECRET)
-  );
   const Email = email.toLowerCase();
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [
         role_id,
         first_name,
@@ -63,9 +60,11 @@ const login = async (req, res) => {
   const data = [email.toLowerCase()];
 
   function getClientIp(req) {
-    const forwarded = req.headers['x-forwarded-for'];
-    const ip = forwarded ? forwarded.split(',')[0] : req.connection.remoteAddress;
-    return ip === '::1' ? '127.0.0.1' : ip;
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = forwarded
+      ? forwarded.split(",")[0]
+      : req.connection.remoteAddress;
+    return ip === "::1" ? "127.0.0.1" : ip;
   }
 
   try {
@@ -74,7 +73,8 @@ const login = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(403).json({
         success: false,
-        message: "The email doesn't exist or the password you've entered is incorrect"
+        message:
+          "The email doesn't exist or the password you've entered is incorrect",
       });
     }
 
@@ -84,7 +84,8 @@ const login = async (req, res) => {
     if (!match) {
       return res.status(403).json({
         success: false,
-        message: "The email doesn't exist or the password you've entered is incorrect"
+        message:
+          "The email doesn't exist or the password you've entered is incorrect",
       });
     }
 
@@ -96,33 +97,33 @@ const login = async (req, res) => {
     if (!token) {
       return res.status(500).json({
         success: false,
-        message: "Token generation failed"
+        message: "Token generation failed",
       });
     }
 
     const ipAddress = getClientIp(req);
-    const ipAddressQuery = "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
+    const ipAddressQuery =
+      "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
     const ipAddressData = [user.id, ipAddress];
 
-    // نحفظ IP فقط إذا كان role_id = 3 (مثلاً فريلانسر)
     if (user.role_id === 3) {
       await pool.query(ipAddressQuery, ipAddressData);
     }
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       token,
       success: true,
       message: "Valid login credentials",
       userId: user.id,
       role: user.role_id,
-      userInfo: user
+      userInfo: user,
     });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({
       success: false,
       message: "An error occurred during login",
-      error: err.message
+      error: err.message,
     });
   }
 };
