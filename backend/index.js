@@ -26,11 +26,17 @@ require("./models/db");
 // routes
 const usersRouter = require("./router/user");
 const plansRouter = require("./router/plans");
+const feedbackRouter = require("./router/feedback");
+const appointmentsRouter = require("./router/appointment");
 const coursesRouter = require("./router/courses");
 const ordersRouter = require("./router/orders");
 
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
+app.use("/orders", require("./router/orders"));
+app.use("/feedbacks", feedbackRouter);
+app.use("/appointments", appointmentsRouter);
+
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 
