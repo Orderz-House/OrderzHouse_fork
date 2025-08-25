@@ -6,7 +6,7 @@ const { getCourses } = require("../controller/courses");
 const { createCourse } = require("../controller/courses");
 const { deleteCourse } = require("../controller/courses");
 const { updateCourse } = require("../controller/courses");
-// const { enrollFreelancer } = require("../controller/courses");
+const { enrollInCourse } = require("../controller/courses");
 
 const coursesRouter = express.Router();
 coursesRouter.get(
@@ -40,6 +40,11 @@ coursesRouter.get(
   getCourseById
 );
 
-// coursesRouter.post("/enroll/:course_id", authentication, enrollFreelancer);
+coursesRouter.post(
+  "/enroll",
+  authentication,
+  authorization("enroll_course"),
+  enrollInCourse
+);
 
 module.exports = coursesRouter;
