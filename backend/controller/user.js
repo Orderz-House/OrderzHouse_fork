@@ -1,7 +1,8 @@
-const pool = require("../models/db");
+const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
+const { get } = require("..");
 
 const register = async (req, res) => {
   const {
@@ -337,6 +338,50 @@ cron.schedule("0 3 * * *", () => {
   console.log("Ran deactivate Inactive Users at 3AM daily");
 });
 
+
+const getAllFreelancers = async (req, res) => {
+  const filterValue = (req.body.filter || "").toLowerCase();
+
+  const validFilters = ["active", "deactivated", "all"];
+  if (!validFilters.includes(filterValue)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
+    });
+  }
+
+  let whereCondition = "users.role_id = 3";
+  if (filterValue === "active") {
+    whereCondition += " AND users.is_deleted = FALSE";
+  } else if (filterValue === "deactivated") {
+    whereCondition += " AND users.is_deleted = TRUE";
+  }
+
+  const sqlQuery = ` SELECT users.id, users.first_name, users.last_name, users.email, COUNT(order_assignments.id) AS orders_count, COALESCE( json_agg(json_build_object('ip_address', ip_adress.ip_address)) FILTER (WHERE ip_adress.ip_address IS NOT NULL), '[]' ) AS ip_addresses FROM users LEFT JOIN ip_adress ON users.id = ip_adress.user_id LEFT JOIN order_assignments ON users.id = order_assignments.freelancer_id WHERE ${whereCondition} GROUP BY users.id, users.first_name, users.last_name, users.email;`;
+
+  try {
+    const result = await pool.query(sqlQuery);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No freelancers found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      freelancers: result.rows,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching freelancers",
+      error: err.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -345,4 +390,8 @@ module.exports = {
   editUser,
   createPortfolio,
   editPortfolioFreelancer,
+  getAllFreelancers,
 };
+
+
+//git commit -m "get all freelancers with filter active,deactivated,all and include ip addresses and orders count for super admin"
