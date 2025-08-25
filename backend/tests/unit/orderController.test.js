@@ -5,13 +5,17 @@ const {
   deleteOrder,
   getOrderByid,
   chooseOrder,
-} = require("../controllers/ordersController");
+} = require("../../controller/orders");
 
-const pool = require("../models/db");
-
-jest.mock("../models/db", () => ({
-  query: jest.fn(),
+// Mock the entire db module
+jest.mock("../../models/db", () => ({
+  pool: {
+    query: jest.fn()
+  }
 }));
+
+// Import after mocking
+const { pool } = require("../../models/db");
 
 describe("Orders Controller Unit Tests", () => {
   let req;
@@ -27,7 +31,7 @@ describe("Orders Controller Unit Tests", () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-    pool.query.mockClear();
+    jest.clearAllMocks();
   });
 
   test("createOrders - success", async () => {
@@ -39,7 +43,11 @@ describe("Orders Controller Unit Tests", () => {
       status: "open",
       due_date: "2025-12-01",
     };
-    pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
+    
+    // Mock successful query
+    pool.query.mockResolvedValue({ 
+      rows: [{ id: 1, title: "Test Order" }] 
+    });
 
     await createOrders(req, res);
 
@@ -48,7 +56,7 @@ describe("Orders Controller Unit Tests", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        order: expect.any(Object),
+        message: "Order created successfully",
       })
     );
   });
@@ -72,11 +80,28 @@ describe("Orders Controller Unit Tests", () => {
 
   test("deleteOrder - not found", async () => {
     req.params.id = "1";
+    // Mock empty result (no rows affected)
     pool.query.mockResolvedValue({ rows: [] });
 
     await deleteOrder(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  test("deleteOrder - success", async () => {
+    req.params.id = "1";
+    // Mock successful deletion
+    pool.query.mockResolvedValue({ 
+      rows: [{ id: 1, is_deleted: true }] 
+    });
+
+    await deleteOrder(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: "Order deleted"
+    });
   });
 
   test("chooseOrder - missing data", async () => {
@@ -85,5 +110,16 @@ describe("Orders Controller Unit Tests", () => {
     await chooseOrder(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("chooseOrder - success", async () => {
+    req.body = { order_id: 123 };
+    pool.query.mockResolvedValue({ 
+      rows: [{ id: 1, order_id: 123, freelancer_id: 1 }] 
+    });
+
+    await chooseOrder(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 });
