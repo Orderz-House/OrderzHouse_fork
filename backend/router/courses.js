@@ -47,4 +47,5 @@ coursesRouter.post(
   enrollInCourse
 );
 
+
 module.exports = coursesRouter;

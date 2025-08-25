@@ -1,6 +1,7 @@
 const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const cron = require("node-cron");
 
 const register = async (req, res) => {
   const {
@@ -48,11 +49,18 @@ const register = async (req, res) => {
       });
     })
     .catch((err) => {
-      res.status(405).json({
-        success: false,
-        //message : "Email already exists",
-        error: err,
-      });
+      if (err.constraint === "users_email_key") {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Internal server error",
+          error: err.message,
+        });
+      }
     });
 };
 
@@ -61,52 +69,72 @@ const login = async (req, res) => {
   const query = "SELECT * FROM users WHERE email = $1";
   const data = [email.toLowerCase()];
 
-  pool
-    .query(query, data)
-    .then(async (result) => {
-      if (result.rows.length > 0) {
-        bcrypt.compare(password, result.rows[0].password, (err, response) => {
-          if (err) res.json(err);
-          if (response) {
-            const payload = {
-              userId: result.rows[0].id,
-              role: result.rows[0].role_id,
-            };
+  function getClientIp(req) {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = forwarded
+      ? forwarded.split(",")[0]
+      : req.connection.remoteAddress;
+    return ip === "::1" ? "127.0.0.1" : ip;
+  }
 
-            const options = { expiresIn: "1d" };
-            const secret = process.env.JWT_SECRET;
-            const token = jwt.sign(payload, secret, options);
-            if (token) {
-              res.status(200).json({
-                token,
-                success: true,
-                message: "Valid login credentials",
-                userId: result.rows[0].id,
-                role: result.rows[0].role_id,
-                userInfo: result.rows[0],
-              });
-            } else {
-              throw Error;
-            }
-          } else {
-            res.status(403).json({
-              success: false,
-              message:
-                "The email desn't exist or the password you've entered is incorrect",
-              error: err.message,
-            });
-          }
-        });
-      } else throw Error;
-    })
-    .catch((err) => {
-      res.status(403).json({
+  try {
+    const result = await pool.query(query, data);
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({
         success: false,
         message:
           "The email desn't exist or the password you've entered is incorrect",
-        error: err.message,
       });
+    }
+
+    const user = result.rows[0];
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "The email desn't exist or the password you've entered is incorrect",
+      });
+    }
+    const payload = {
+      userId: user.id,
+      role: user.role_id,
+    };
+
+    const options = { expiresIn: "1d" };
+    const secret = process.env.JWT_SECRET;
+    const token = jwt.sign(payload, secret, options);
+
+    if (!token) {
+      return res.status(500).json({
+        success: false,
+        message: "Token generation failed",
+      });
+    }
+    const ipAddress = getClientIp(req);
+    const ipAddressQuery =
+      "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
+    const ipAddressData = [user.id, "127.25.14.5"];
+    if (user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
+
+    return res.status(200).json({
+      token,
+      success: true,
+      message: "Valid login credentials",
+      userId: user.id,
+      role: user.role_id,
+      userInfo: user,
     });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred during login",
+      error: err.message,
+    });
+  }
 };
 const viewUsers = async (req, res) => {
   try {
@@ -282,6 +310,32 @@ const editPortfolioFreelancer = async (req, res) => {
     });
   }
 };
+
+const deactivateInactiveUsers = async () => {
+  const query = `
+    UPDATE Users
+    SET is_deleted = TRUE,
+    reason_for_disruption = 'Deactivated due to inactivity or Order for 30 days'
+    WHERE role_id = 2
+    AND is_deleted = FALSE
+    AND created_at < NOW() - INTERVAL '30 days'
+    AND id NOT IN (
+    SELECT DISTINCT client_id FROM orders
+    );
+  `;
+
+  try {
+    const result = await pool.query(query);
+    console.log(`Deactivated ${result.rowCount} inactive users.`);
+  } catch (err) {
+    console.error("Error deactivating inactive users:", err);
+  }
+};
+
+cron.schedule("0 3 * * *", () => {
+  deactivateInactiveUsers();
+  console.log("Ran deactivate Inactive Users at 3AM daily");
+});
 
 module.exports = {
   register,
