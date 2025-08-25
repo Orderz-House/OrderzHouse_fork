@@ -1,4 +1,4 @@
-const { pool } = require("../models/db"); // Import the pool correctly
+const { pool } = require("../models/db");
 
 const createOrders = (req, res) => {
   const client_id = req.token.userId;
