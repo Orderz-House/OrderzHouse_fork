@@ -6,13 +6,17 @@ const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
-pool
-  .connect()
-  .then((res) => {
-    console.log(`DB connected to ${res.database}`);
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+
+// Only connect if not running tests
+if (process.env.NODE_ENV !== "test") {
+  pool
+    .connect()
+    .then((res) => {
+      console.log(`DB connected to ${res.database}`);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+}
 
 module.exports = { pool };

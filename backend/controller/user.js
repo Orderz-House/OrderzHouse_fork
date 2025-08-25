@@ -21,62 +21,65 @@ pool.query(
          message: "User registered successfully", 
          user: result.rows[0] });
     }).catch((err) => {
-        res.status(405).json({
+        res.status(409).json({
             success: false,
-            //message : "Email already exists",
+            message : "Email already exists",
             error: err
         })
     });
 };
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
-    const query = "SELECT * FROM users WHERE email = $1";
-    const data = [email.toLowerCase()];
+  const { email, password } = req.body;
+  const query = "SELECT * FROM users WHERE email = $1";
+  const data = [email.toLowerCase()];
 
-    pool.query(query, data)
+  pool.query(query, data)
     .then(async (result) => {
-        if(result.rows.length > 0){
-            bcrypt.compare(password, result.rows[0].password, (err, response) =>{
-                if(err) res.json(err);
-                if(response){
-                    const payload = {
-                        userId : result.rows[0].id,
-                        role: result.rows[0].role_id,
-                    };
+      if (result.rows.length > 0) {
+        bcrypt.compare(password, result.rows[0].password, (err, response) => {
+          if (err) return res.status(500).json({ success: false, message: "Error comparing password" });
 
-                    const options = { expiresIn : "1d" };
-                    const secret = process.env.JWT_SECRET;
-                    const token = jwt.sign(payload, secret, options);
-                    if(token){
-                        res.status(200).json({
-                            token,
-                            success : true,
-                            message : "Valid login credentials",
-                            userId : result.rows[0].id,
-                            role: result.rows[0].role_id,
-                            userInfo : result.rows[0]
-                        });
-                    } else {
-                        throw Error;
-                    }
-                } else {
-                    res.status(403).json({
-                        success : false,
-                        message : "The email desn't exist or the password you've entered is incorrect",
-                        error: err.message
-                    });
-                }
+          if (response) {
+            const payload = {
+              userId: result.rows[0].id,
+              role: result.rows[0].role_id,
+            };
+
+            const options = { expiresIn: "1d" };
+            const secret = process.env.JWT_SECRET;
+            const token = jwt.sign(payload, secret, options);
+
+            return res.status(200).json({
+              token,
+              success: true,
+              message: "Valid login credentials",
+              userId: result.rows[0].id,
+              role: result.rows[0].role_id,
+              userInfo: result.rows[0]
             });
-        } else throw Error 
-    }).catch((err) => {
-        res.status(403).json({
-            success : false,
-            message : "The email desn't exist or the password you've entered is incorrect",
-            error: err.message
+          } else {
+            return res.status(403).json({
+              success: false,
+              message: "The email desn't exist or the password you've entered is incorrect"
+            });
+          }
         });
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: "The email desn't exist or the password you've entered is incorrect"
+        });
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message
+      });
     });
-}
+};
 const viewUsers = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM Users WHERE is_deleted = FALSE");
