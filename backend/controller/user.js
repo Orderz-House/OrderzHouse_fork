@@ -21,16 +21,13 @@ const register = async (req, res) => {
       .status(400)
       .json({ success: false, message: "All fields are required" });
   }
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  const hashedPassword = await bcrypt.hash(
-    password,
-    Number(process.env.SECRET)
-  );
   const Email = email.toLowerCase();
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [
         role_id,
         first_name,
@@ -85,7 +82,8 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message:
-          "The email desn't exist or the password you've entered is incorrect",
+
+          "The email desn't exist or the password you've entered is incorrect"
       });
     }
 
@@ -96,8 +94,8 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message:
-          "The email desn't exist or the password you've entered is incorrect",
-      });
+
+          "The email desn't exist or the password you've entered is incorrect"      });
     }
     const payload = {
       userId: user.id,
@@ -116,9 +114,13 @@ const login = async (req, res) => {
     }
     const ipAddress = getClientIp(req);
     const ipAddressQuery =
-      "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
-    const ipAddressData = [user.id, "127.25.14.5"];
-    if (user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
+      "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
+    const ipAddressData = [user.id, ipAddress];
+
+    if (user.role_id === 3) {
+      await pool.query(ipAddressQuery, ipAddressData);
+    }
+
 
     return res.status(200).json({
       token,
@@ -382,6 +384,50 @@ const getAllFreelancers = async (req, res) => {
   }
 };
 
+const deleteFreelancerById = async (req, res) => {
+const { userId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE Users 
+       SET is_deleted = NOT is_deleted 
+       WHERE id = $1 AND role_id = 3 
+       RETURNING *`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+    if(result.rows[0].is_deleted){
+      res.status(200).json({
+      success: true,
+      message: `Freelancer deactivated successfully`,
+      freelancer: result.rows[0],
+    }
+  );
+  }else {
+    res.status(200).json({
+      success: true,
+      message: `Freelancer activated successfully`,
+      freelancer: result.rows[0],
+    });
+  }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error toggling freelancer deletion status",
+      error: err.message,
+    });
+  }
+}
+
+
+
+
 module.exports = {
   register,
   login,
@@ -391,7 +437,7 @@ module.exports = {
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
+  deleteFreelancerById,
 };
 
 
-//git commit -m "get all freelancers with filter active,deactivated,all and include ip addresses and orders count for super admin"
