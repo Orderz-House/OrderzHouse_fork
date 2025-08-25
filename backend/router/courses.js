@@ -40,6 +40,6 @@ coursesRouter.get(
   getCourseById
 );
 
-coursesRouter.post("/enroll/:course_id", authentication, enrollFreelancer);
+// coursesRouter.post("/enroll/:course_id", authentication, enrollFreelancer);
 
 module.exports = coursesRouter;

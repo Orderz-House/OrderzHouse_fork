@@ -24,7 +24,6 @@ usersRouter.delete(
   authorization("delete_user"),
   deleteUser
 );
-<<<<<<<<< Temporary merge branch 1
 usersRouter.put(
   "/edit/:userId",
   authentiction,
@@ -41,19 +40,17 @@ usersRouter.put(
   "/freelancer/portfolio/edit/:userId",
   authentiction,
   authorization("edit_freelancer_profile"), editPortfolioFreelancer
-=========
 
 usersRouter.put("/edit/:userId", authentiction, editUser);
 usersRouter.post(
   "/freelancer/portfolio/create",
   authentiction
-  // /*authorization("create_portfolio"),*/ createPortfolio
-);
+  /*authorization("create_portfolio"),*/
+// );
 usersRouter.put(
   "/freelancer/portfolio/edit/:userId",
   authentiction
   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
->>>>>>>>> Temporary merge branch 2
 );
-*/
+
 module.exports = usersRouter;

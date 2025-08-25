@@ -210,12 +210,17 @@ const editUser = async (req, res) => {
   }
 };
 
-<<<<<<<<< Temporary merge branch 1
- const createPortfolio = async (req, res) => {
-  const { freelancer_id, title, description, skills, hourly_rate, work_url } = req.body;
+const createPortfolio = async (req, res) => {
+  const { freelancer_id, title, description, skills, hourly_rate, work_url } =
+    req.body;
 
   if (!freelancer_id || !title) {
-    return res.status(400).json({ success: false, message: "freelancer_id and title are required" });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "freelancer_id and title are required",
+      });
   }
 
   try {
@@ -227,7 +232,7 @@ const editUser = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Portfolio created successfully",
-      portfolio: result.rows[0]
+      portfolio: result.rows[0],
     });
   } catch (err) {
     res.status(500).json({
@@ -235,23 +240,8 @@ const editUser = async (req, res) => {
       message: "Unauthorized: User ID missing in token",
     });
   }
+};
 
-}
-
-
-
-
-
-
-module.exports = { 
-register, 
-login ,
-viewUsers,
-deleteUser,
-editUser,
-createPortfolio,
-editPortfolioFreelancer
-=========
 const editProfile = (req, res) => {
   const userId = req.params.userId;
 
@@ -331,5 +321,6 @@ module.exports = {
   deleteUser,
   editUser,
   editProfile,
->>>>>>>>> Temporary merge branch 2
+  createPortfolio,
+  // editPortfolioFreelancer
 };
