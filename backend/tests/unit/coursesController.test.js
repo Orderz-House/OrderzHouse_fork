@@ -4,11 +4,11 @@ const {
   deleteCourse,
   updateCourse,
   getCourseById,
-} = require("../../controllers/coursesController");
+} = require("../../controller/courses");
 
 const pool = require("../../models/db");
 
-jest.mock("../../models/db"); // mock DB
+jest.mock("../../models/db"); 
 
 describe("Courses Controller Unit Tests", () => {
   let req, res;

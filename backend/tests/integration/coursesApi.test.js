@@ -1,6 +1,6 @@
 
 const request = require("supertest");
-const app = require("../../app");
+const app = require("../../index");
 
 describe("Courses API Integration", () => {
   it("POST /courses → should create a course", async () => {

@@ -5,11 +5,11 @@ const {
   deleteOrder,
   getOrderByid,
   chooseOrder,
-} = require("../controllers/ordersController");
+} = require("../../controller/orders");
 
-const pool = require("../models/db");
+const pool = require("../../models/db");
 
-jest.mock("../models/db", () => ({
+jest.mock("../../models/db", () => ({
   query: jest.fn(),
 }));
 
