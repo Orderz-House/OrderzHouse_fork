@@ -1,7 +1,6 @@
-const {pool} = require("../models/db");
+const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const cron = require('node-cron');
 
 const register = async (req, res) => {
 const {role_id, first_name, last_name, email, password, phone_number, country , username} = req.body;
@@ -22,91 +21,65 @@ pool.query(
          message: "User registered successfully", 
          user: result.rows[0] });
     }).catch((err) => {
-        if (err.constraint === "users_email_key") {
-            return res.status(409).json({
-                success: false,
-                message : "Email already exists"
-            });
-        }else {
-          return res.status(500).json({
+        res.status(409).json({
             success: false,
-            message : "Internal server error",
-            error: err.message
-          });
-        }
+            message : "Email already exists",
+            error: err
+        })
     });
 };
 
-
-
-
 const login = async (req, res) => {
-    const { email, password } = req.body;
-    const query = "SELECT * FROM users WHERE email = $1";
-    const data = [email.toLowerCase()];
+  const { email, password } = req.body;
+  const query = "SELECT * FROM users WHERE email = $1";
+  const data = [email.toLowerCase()];
 
-    function getClientIp(req) {
-      const forwarded = req.headers['x-forwarded-for'];
-      const ip = forwarded ? forwarded.split(',')[0] : req.connection.remoteAddress;
-      return ip === '::1' ? '127.0.0.1' : ip;
-    }
+  pool.query(query, data)
+    .then(async (result) => {
+      if (result.rows.length > 0) {
+        bcrypt.compare(password, result.rows[0].password, (err, response) => {
+          if (err) return res.status(500).json({ success: false, message: "Error comparing password" });
 
-    try {
-      const result = await pool.query(query, data);
+          if (response) {
+            const payload = {
+              userId: result.rows[0].id,
+              role: result.rows[0].role_id,
+            };
 
-      if(result.rows.length === 0){
-      return res.status(403).json({
-        success : false,
-        message : "The email desn't exist or the password you've entered is incorrect"
-      });
-      }
+            const options = { expiresIn: "1d" };
+            const secret = process.env.JWT_SECRET;
+            const token = jwt.sign(payload, secret, options);
 
-      const user = result.rows[0];
-
-      const match = await bcrypt.compare(password, user.password);
-      if(!match){
+            return res.status(200).json({
+              token,
+              success: true,
+              message: "Valid login credentials",
+              userId: result.rows[0].id,
+              role: result.rows[0].role_id,
+              userInfo: result.rows[0]
+            });
+          } else {
+            return res.status(403).json({
+              success: false,
+              message: "The email desn't exist or the password you've entered is incorrect"
+            });
+          }
+        });
+      } else {
         return res.status(403).json({
-          success : false,
-          message : "The email desn't exist or the password you've entered is incorrect"
+          success: false,
+          message: "The email desn't exist or the password you've entered is incorrect"
         });
       }
-      const payload = {
-        userId : user.id,
-        role: user.role_id,
-      };
-
-      const options = { expiresIn : "1d" };
-      const secret = process.env.JWT_SECRET;
-      const token = jwt.sign(payload, secret, options);
-
-      if(!token){
-        return res.status(500).json({
-          success : false,
-          message : "Token generation failed"
-        });
-      } 
-      const ipAddress = getClientIp(req);
-      const ipAddressQuery = "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
-      const ipAddressData = [user.id, "127.25.14.5"];
-      if(user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
-      
-      return res.status(200).json({
-        token,
-        success : true,
-        message : "Valid login credentials",
-        userId : user.id,
-        role: user.role_id,
-        userInfo : user
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message
       });
-    } catch (err) {
-        console.error("Login error:", err);
-        return res.status(500).json({
-          success : false,
-          message : "An error occurred during login",
-          error: err.message
-        });
-    }
-}
+    });
+};
 const viewUsers = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM Users WHERE is_deleted = FALSE");
@@ -253,53 +226,7 @@ const editPortfolioFreelancer = async (req, res) => {
 }
 
 
-const deactivateInactiveUsers = async () => {
-  const query = `
-    UPDATE Users
-    SET is_deleted = TRUE,
-    reason_for_disruption = 'Deactivated due to inactivity or Order for 30 days'
-    WHERE role_id = 2
-    AND is_deleted = FALSE
-    AND created_at < NOW() - INTERVAL '30 days'
-    AND id NOT IN (
-    SELECT DISTINCT client_id FROM orders
-    );
-  `;
 
-  try {
-    const result = await pool.query(query); 
-    console.log(`Deactivated ${result.rowCount} inactive users.`);
-  } catch (err) {
-    console.error("Error deactivating inactive users:", err);
-  }
-};
-
-const deactivateInactiveFreelancers = async () => {
-  const query = `
-  UPDATE Users 
-  Set is_deleted = TRUE,
-  reason_for_disruption = 'Deactivated due to inactivity or Order Assaignments for 30 days'
-  WHERE role_id = 3
-  AND is_deleted = FALSE
-  AND created_at < NOW() - INTERVAL '30 days'
-  AND id NOT IN (
-    SELECT DISTINCT freelancer_id FROM order_assignments
-  );
-  `;
-  try {
-    const result = await pool.query(query); 
-    console.log(`Deactivated ${result.rowCount} inactive freelancers.`);
-  } catch (err) {
-    console.error("Error deactivating inactive freelancers:", err);
-  }
-};
-
-
-cron.schedule('0 3 * * *', () => {
-  deactivateInactiveUsers();
-  deactivateInactiveFreelancers();
-  console.log('Ran deactivate Inactive for Client & Freelancers at 3AM daily');
-});
 
 
 
@@ -312,5 +239,3 @@ editUser,
 createPortfolio,
 editPortfolioFreelancer
 };
-
-//
