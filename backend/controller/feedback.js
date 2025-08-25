@@ -1,4 +1,4 @@
-const pool = require("../models/db");
+const {pool} = require("../models/db");
 
 const addFeedback = (req, res) => {
   const { user_id, content, type } = req.body;
