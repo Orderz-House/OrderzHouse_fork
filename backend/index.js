@@ -39,7 +39,7 @@ app.use("/appointments", appointmentsRouter);
 
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
-
+app.use("/chats", require("./router/chats"));
 const server = http.createServer(app);
 const initSocket = require("./sockets/socket");
 const io = initSocket(server);
