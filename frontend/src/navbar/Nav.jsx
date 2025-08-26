@@ -76,13 +76,29 @@ export default function EnhancedNavbar() {
   ];
 
   const contactInfo = [
-    { name: "Call Us", desc: "+1 (555) 123-4567", icon: Phone },
-    { name: "Email Us", desc: "hello@orderzhouse.com", icon: Mail },
+    {
+      name: "Call Us",
+      desc: "00971543210343",
+      icon: Phone,
+      link: "tel:00971543210343",
+    },
+    {
+      name: "Email Us",
+      desc: "houseorderz@gmail.com",
+      icon: Mail,
+      link: "mailto:houseorderz@gmail.com",
+    },
     {
       name: "Visit Us",
       desc: "Albasem complex, Amman, Jordan floor 4 room 405",
       icon: MapPin,
       link: "https://www.google.com/maps/place/Albasem+complex/@31.9978945,35.8692204,17z/data=!3m1!4b1!4m6!3m5!1s0x151ca1c4e5bc3da5:0xbaee8769e23ba42d!8m2!3d31.9978945!4d35.8717953!16s%2Fg%2F11gyysglb3?entry=ttu&g_ep=EgoyMDI1MDgxOS4wIKXMDSoASAFQAw%3D%3D",
+    },
+    {
+      name: "whatsapp",
+      desc: "Chat with us on WhatsApp",
+      icon: Globe,
+      link: "https://wa.me/971543210343",
     },
   ];
 
