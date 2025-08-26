@@ -1,72 +1,65 @@
-import { useState } from "react";
+
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { setLogin } from "../src/slice/auth/authSlice";
+import { setLogin } from "../slice/auth/authSlice";
 import axios from "axios";
 
-export default function Login() {
+const Login = () => {
   const dispatch = useDispatch();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState(false);
 
-  const onChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const onSubmit = async (e) => {
+  const login = (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await axios.post("http://localhost:5000/users/login", form, {
-        headers: { "Content-Type": "application/json" },
+    axios
+      .post("http://localhost:5000/users/login", {
+        email,
+        password,
+      })
+      .then((res) => {
+        dispatch(
+          setLogin({
+            token: res.data.token,
+            userId: res.data.userId,
+            roleId: res.data.role,
+          })
+        );
+        setStatus(true);
+        setMessage("Login successful");
+      })
+      .catch((err) => {
+        setStatus(false);
+        setMessage(err.response?.data?.message || "Login failed");
       });
-      dispatch(
-        setLogin({
-          token: res.data.token,
-          userId: res.data.userId,
-          roleId: res.data.role,
-        })
-      );
-    } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto" }}>
-      <h2>Login</h2>
-      <form onSubmit={onSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={onChange}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={onChange}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <button type="submit" disabled={loading} style={{ marginTop: 12 }}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+    <div className="Form">
+      <form onSubmit={login}>
+        <p className="Title">Login</p>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <br />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <br />
+        <button>Login</button>
       </form>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {status
+        ? message && <div className="SuccessMessage">{message}</div>
+        : message && <div className="ErrorMessage">{message}</div>}
     </div>
   );
-}
+};
+
+export default Login;

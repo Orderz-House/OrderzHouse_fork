@@ -1,116 +1,103 @@
-import { useState } from "react";
+
+import React, { useState } from "react";
 import axios from "axios";
-console.log("test");
 
-export default function Register() {
-  const [form, setForm] = useState({
-    role_id: "",
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
-    phone_number: "",
-    country: "",
-    username: "",
-  });
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+const Register = () => {
+  const [role_id, setRole_id] = useState("");
+  const [first_name, setFirst_name] = useState("");
+  const [last_name, setLast_name] = useState("");
+  const [phone_number, setPhone_number] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [country, setCountry] = useState("");
+  const [username, setUsername] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState(false);
 
-  const onChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const onSubmit = async (e) => {
+  const register = (e) => {
     e.preventDefault();
-    setMessage(null);
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/users/register",
-        form,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      setMessage(res.data.message || "Registration successful.");
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
+    axios
+      .post("http://localhost:5000/users/register", {
+        role_id,
+        first_name,
+        last_name,
+        email,
+        password,
+        phone_number,
+        country,
+        username,
+      })
+      .then((result) => {
+        console.log(result);
+        setStatus(true);
+        setMessage(result.data.message || "Registration successful");
+      })
+      .catch((error) => {
+        console.log(error);
+        setStatus(false);
+        setMessage(error.response?.data?.message || "Registration failed");
+      });
   };
 
   return (
-    <div style={{ maxWidth: 640, margin: "40px auto" }}>
-      <h2>Register</h2>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
+    <div className="Form">
+      <form onSubmit={register}>
+        <p className="Title">Register Form</p>
         <input
-          name="role_id"
+          type="text"
           placeholder="Role ID"
-          value={form.role_id}
-          onChange={onChange}
-          required
+          value={role_id}
+          onChange={(e) => setRole_id(e.target.value)}
         />
         <input
-          name="first_name"
-          placeholder="First name"
-          value={form.first_name}
-          onChange={onChange}
-          required
+          type="text"
+          placeholder="First Name"
+          value={first_name}
+          onChange={(e) => setFirst_name(e.target.value)}
         />
         <input
-          name="last_name"
-          placeholder="Last name"
-          value={form.last_name}
-          onChange={onChange}
-          required
+          type="text"
+          placeholder="Last Name"
+          value={last_name}
+          onChange={(e) => setLast_name(e.target.value)}
         />
         <input
-          name="email"
-          placeholder="Email"
+          type="number"
+          placeholder="Phone Number"
+          value={phone_number}
+          onChange={(e) => setPhone_number(e.target.value)}
+        />
+        <input
           type="email"
-          value={form.email}
-          onChange={onChange}
-          required
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <input
-          name="password"
-          placeholder="Password"
           type="password"
-          value={form.password}
-          onChange={onChange}
-          required
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <input
-          name="phone_number"
-          placeholder="Phone number"
-          value={form.phone_number}
-          onChange={onChange}
-          required
-        />
-        <input
-          name="country"
+          type="text"
           placeholder="Country"
-          value={form.country}
-          onChange={onChange}
-          required
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
         />
         <input
-          name="username"
+          type="text"
           placeholder="Username"
-          value={form.username}
-          onChange={onChange}
-          required
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Register"}
-        </button>
+        <button>Register</button>
       </form>
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {status
+        ? message && <div className="SuccessMessage">{message}</div>
+        : message && <div className="ErrorMessage">{message}</div>}
     </div>
   );
-}
+};
+
+export default Register;
