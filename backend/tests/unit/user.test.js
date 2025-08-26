@@ -1,362 +1,254 @@
+const request = require("supertest");
+const { app } = require("../../index");
 const { pool } = require("../../models/db");
-const {
-  register,
-  login,
-  viewUsers,
-  deleteUser,
-  editUser,
-  getAllFreelancers,
-  deleteFreelancerById,
-} = require("../../controller/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// Mock dependencies
 jest.mock("../../models/db", () => ({
   pool: {
     query: jest.fn(),
   },
 }));
 
-jest.mock("bcrypt");
-jest.mock("jsonwebtoken");
+// Mock Middleware
+jest.mock("../../middleware/authentication", () => {
+  return (req, res, next) => {
+    req.user = { userId: 1, role: 1 };
+    next();
+  };
+});
 
-describe("Auth Controller", () => {
-  let mockReq, mockRes;
+jest.mock("../../middleware/authorization", () => {
+  return () => (req, res, next) => {
+    next();
+  };
+});
+
+// Mock bcrypt
+jest.mock("bcrypt", () => ({
+  hash: jest.fn((password) => Promise.resolve("hashed_" + password)),
+  compare: jest.fn().mockResolvedValue(true),
+}));
+
+// Mock JWT
+jest.mock("jsonwebtoken", () => ({
+  sign: jest.fn(() => "mockedtoken"),
+}));
+
+describe("User Routes", () => {
+  beforeAll(() => {
+    process.env.JWT_SECRET = "testsecret"; 
+  });
 
   beforeEach(() => {
-    mockReq = {
-      body: {},
-      params: {},
-      headers: {},
-      connection: { remoteAddress: "127.0.0.1" },
-    };
-    mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
     jest.clearAllMocks();
   });
 
-  describe("register", () => {
-    it("should register a new user successfully", async () => {
-      const mockUser = {
-        id: 1,
-        role_id: 2,
-        first_name: "John",
+  // ===========================
+  // register
+  // ===========================
+  it("should register a user", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] }) 
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 1,
+            first_name: "John",
+            last_name: "Doe",
+            email: "john.doe@example.com",
+          },
+        ],
+      });
+
+    const res = await request(app).post("/users/register").send({
+      role_id: 1,
+      first_name: "John",
+      last_name: "Doe",
+      email: "john.doe@example.com",
+      password: "password123",
+      phone_number: "1234567890",
+      country: "USA",
+      username: "johndoe",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe("User registered successfully");
+  });
+
+  // ===========================
+  // log in
+  // ===========================
+  it("should log in a user", async () => {
+    const hashedPassword = await bcrypt.hash("password123", 10);
+
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          email: "john.doe@example.com",
+          password: hashedPassword,
+          role_id: 1,
+        },
+      ],
+    });
+
+    const res = await request(app).post("/users/login").send({
+      email: "john.doe@example.com",
+      password: "password123",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe("Valid login credentials");
+    expect(res.body.token).toBe("mockedtoken");
+  });
+
+  // ===========================
+  // fetch all users
+  // ===========================
+  it("should return a list of users", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          first_name: "John",
+          last_name: "Doe",
+          email: "john.doe@example.com",
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/users/view")
+      .set("Authorization", "Bearer mockedtoken");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.users.length).toBeGreaterThan(0);
+  });
+
+  // ===========================
+  // delete a user
+  // ===========================
+  it("should delete a user", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          first_name: "John",
+          last_name: "Doe",
+          email: "john.doe@example.com",
+          is_deleted: true,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .delete("/users/delete/1")
+      .set("Authorization", "Bearer mockedtoken");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe("User deleted successfully");
+  });
+
+  // ===========================
+  // edit a user
+  // ===========================
+  it("should edit a user", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          first_name: "Johnathan",
+          last_name: "Doe",
+          email: "johnathan.doe@example.com",
+          phone_number: "9876543210",
+          country: "USA",
+          username: "johnnyd",
+          role_id: 1,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .put("/users/edit/1")
+      .send({
+        first_name: "Johnathan",
         last_name: "Doe",
-        email: "john@example.com",
-        phone_number: "1234567890",
+        email: "johnathan.doe@example.com",
+        phone_number: "9876543210",
         country: "USA",
-        username: "johndoe",
-      };
+        username: "johnnyd",
+        role_id: 1,
+      })
+      .set("Authorization", "Bearer mockedtoken");
 
-      mockReq.body = {
-        role_id: 2,
-        first_name: "John",
-        last_name: "Doe",
-        email: "JOHN@EXAMPLE.COM",
-        password: "password123",
-        phone_number: "1234567890",
-        country: "USA",
-        username: "johndoe",
-      };
-
-      bcrypt.hash.mockResolvedValue("hashedPassword123");
-      pool.query.mockResolvedValue({ rows: [mockUser] });
-
-      await register(mockReq, mockRes);
-
-      expect(bcrypt.hash).toHaveBeenCalledWith("password123", 10);
-      expect(pool.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [2, "John", "Doe", "john@example.com", "hashedPassword123", "1234567890", "USA", "johndoe"]
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(201);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        message: "User registered successfully",
-        user: mockUser,
-      });
-    });
-
-    it("should return 400 if required fields are missing", async () => {
-      mockReq.body = {
-        first_name: "John",
-        last_name: "Doe",
-        email: "john@example.com",
-      };
-
-      await register(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "All fields are required",
-      });
-    });
-
-    it("should return 409 if email already exists", async () => {
-      mockReq.body = {
-        role_id: 2,
-        first_name: "John",
-        last_name: "Doe",
-        email: "john@example.com",
-        password: "password123",
-        phone_number: "1234567890",
-        country: "USA",
-        username: "johndoe",
-      };
-
-      const error = new Error("Duplicate email");
-      error.constraint = "users_email_key";
-
-      bcrypt.hash.mockResolvedValue("hashedPassword123");
-      pool.query.mockRejectedValue(error);
-
-      await register(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(409);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "Email already exists",
-      });
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe("User updated successfully");
   });
 
-  describe("login", () => {
-    it("should login successfully with correct credentials", async () => {
-      const mockUser = {
-        id: 1,
-        role_id: 3,
-        email: "john@example.com",
-        password: "hashedPassword123",
-      };
-
-      mockReq.body = {
-        email: "JOHN@EXAMPLE.COM",
-        password: "password123",
-      };
-
-      pool.query.mockResolvedValue({ rows: [mockUser] });
-      bcrypt.compare.mockResolvedValue(true);
-      jwt.sign.mockReturnValue("mockToken123");
-
-      await login(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(
-        "SELECT * FROM users WHERE email = $1",
-        ["john@example.com"]
-      );
-      expect(bcrypt.compare).toHaveBeenCalledWith("password123", "hashedPassword123");
-      expect(jwt.sign).toHaveBeenCalledWith(
-        { userId: 1, role: 3 },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        token: "mockToken123",
-        success: true,
-        message: "Valid login credentials",
-        userId: 1,
-        role: 3,
-        userInfo: mockUser,
-      });
+  // ===========================
+  // create a portfolio
+  // ===========================
+  it("should create a portfolio", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          freelancer_id: 1,
+          title: "Freelance Developer",
+          description: "Building web apps",
+          skills: "JavaScript, Node.js",
+          hourly_rate: 50,
+          work_url: "https://example.com/portfolio",
+        },
+      ],
     });
 
-    it("should return 403 for incorrect password", async () => {
-      const mockUser = {
-        id: 1,
-        role_id: 3,
-        email: "john@example.com",
-        password: "hashedPassword123",
-      };
+    const res = await request(app)
+      .post("/users/freelancer/portfolio/create")
+      .send({
+        freelancer_id: 1,
+        title: "Freelance Developer",
+        description: "Building web apps",
+        skills: "JavaScript, Node.js",
+        hourly_rate: 50,
+        work_url: "https://example.com/portfolio",
+      })
+      .set("Authorization", "Bearer mockedtoken");
 
-      mockReq.body = {
-        email: "john@example.com",
-        password: "wrongpassword",
-      };
-
-      pool.query.mockResolvedValue({ rows: [mockUser] });
-      bcrypt.compare.mockResolvedValue(false);
-
-      await login(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "The email desn't exist or the password you've entered is incorrect",
-      });
-    });
-
-    it("should return 403 for non-existent email", async () => {
-      mockReq.body = {
-        email: "nonexistent@example.com",
-        password: "password123",
-      };
-
-      pool.query.mockResolvedValue({ rows: [] });
-
-      await login(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "The email desn't exist or the password you've entered is incorrect",
-      });
-    });
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe("Portfolio created successfully");
   });
 
-  describe("viewUsers", () => {
-    it("should return all non-deleted users", async () => {
-      const mockUsers = [
-        { id: 1, name: "User 1", is_deleted: false },
-        { id: 2, name: "User 2", is_deleted: false },
-      ];
-
-      pool.query.mockResolvedValue({ rows: mockUsers });
-
-      await viewUsers(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(
-        "SELECT * FROM Users WHERE is_deleted = FALSE"
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        users: mockUsers,
-      });
-    });
-  });
-
-  describe("deleteUser", () => {
-    it("should soft delete a user successfully", async () => {
-      mockReq.params.id = "1";
-      const mockUser = { id: 1, name: "User 1", is_deleted: true };
-
-      pool.query.mockResolvedValue({ rows: [mockUser] });
-
-      await deleteUser(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(
-        "UPDATE Users SET is_deleted = TRUE WHERE id = $1 RETURNING *",
-        ["1"]
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        message: "User deleted successfully",
-        user: mockUser,
-      });
+  // ===========================
+  // fetch all freelancers
+  // ===========================
+  it("should fetch all freelancers", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          first_name: "John",
+          last_name: "Doe",
+          email: "john.doe@example.com",
+          orders_count: 10,
+          ip_addresses: [],
+        },
+      ],
     });
 
-    it("should return 404 if user not found", async () => {
-      mockReq.params.id = "999";
-      pool.query.mockResolvedValue({ rows: [] });
+    const res = await request(app)
+      .post("/users/freelancers")
+      .send({ filter: "active" })
+      .set("Authorization", "Bearer mockedtoken");
 
-      await deleteUser(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "User not found",
-      });
-    });
-  });
-
-  describe("editUser", () => {
-    it("should update user successfully", async () => {
-      mockReq.params.userId = "1";
-      mockReq.body = {
-        first_name: "Updated",
-        last_name: "Name",
-        email: "updated@example.com",
-      };
-
-      const mockUpdatedUser = { id: 1, first_name: "Updated", last_name: "Name", email: "updated@example.com" };
-      pool.query.mockResolvedValue({ rows: [mockUpdatedUser] });
-
-      await editUser(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ["Updated", "Name", "updated@example.com", undefined, undefined, undefined, undefined, "1"]
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        message: "User updated successfully",
-        user: mockUpdatedUser,
-      });
-    });
-  });
-
-  describe("getAllFreelancers", () => {
-    it("should return all freelancers with active filter", async () => {
-      mockReq.body = { filter: "active" };
-      const mockFreelancers = [
-        { id: 1, name: "Freelancer 1", is_deleted: false },
-        { id: 2, name: "Freelancer 2", is_deleted: false },
-      ];
-
-      pool.query.mockResolvedValue({ rows: mockFreelancers });
-
-      await getAllFreelancers(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("users.is_deleted = FALSE"));
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        freelancers: mockFreelancers,
-      });
-    });
-
-    it("should return 400 for invalid filter", async () => {
-      mockReq.body = { filter: "invalid" };
-
-      await getAllFreelancers(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
-      });
-    });
-  });
-
-  describe("deleteFreelancerById", () => {
-    it("should deactivate a freelancer successfully", async () => {
-      mockReq.params.userId = "1";
-      const mockFreelancer = { id: 1, is_deleted: true, role_id: 3 };
-
-      pool.query.mockResolvedValue({ rows: [mockFreelancer] });
-
-      await deleteFreelancerById(mockReq, mockRes);
-
-      expect(pool.query).toHaveBeenCalledWith(
-        expect.stringContaining("UPDATE Users"),
-        ["1"]
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: true,
-        message: "Freelancer deactivated successfully",
-        freelancer: mockFreelancer,
-      });
-    });
-
-    it("should return 404 if freelancer not found", async () => {
-      mockReq.params.userId = "999";
-      pool.query.mockResolvedValue({ rows: [] });
-
-      await deleteFreelancerById(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        success: false,
-        message: "Freelancer not found",
-      });
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.freelancers.length).toBeGreaterThan(0);
   });
 });

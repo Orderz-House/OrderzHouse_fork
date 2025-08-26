@@ -1,4 +1,4 @@
-const {pool} = require('../models/db');
+const pool = require('../models/db');
 
 const getPlans = (req, res) => {
     pool.query('SELECT * FROM Plans')

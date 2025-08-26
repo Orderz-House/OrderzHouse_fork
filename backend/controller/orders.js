@@ -217,5 +217,5 @@ module.exports = {
   getOrdersByCategory,
   chooseOrder,
   getOrderByid,
-  viewOrders,
+  viewOrders
 };
