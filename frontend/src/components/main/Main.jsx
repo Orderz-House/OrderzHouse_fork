@@ -9,6 +9,7 @@ import {
   Award,
   Shield,
 } from "lucide-react";
+import { Link } from "react-router";
 
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
@@ -373,7 +374,14 @@ export default function OrderzHousePage() {
             time.
           </p>
           <button className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transition-colors duration-300 flex items-center justify-center mx-auto">
-            <span>Get Started</span>
+            {" "}
+            <Link
+              to="https://studyzhouse.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Get Started</span>{" "}
+            </Link>
             <ChevronRight className="w-5 h-5 ml-2" />
           </button>
         </div>

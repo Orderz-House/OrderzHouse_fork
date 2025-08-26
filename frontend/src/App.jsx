@@ -6,6 +6,7 @@ import EnhancedFooter from "./components/footer/Footer";
 import PrivacyPolicyPage from "./components/policy/Policy";
 import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
+import Ask from "./components/ask/Ask";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/about" element={<ModernAboutPage />} />
+        <Route path="/ask-more" element={<Ask />} />
       </Routes>
       <EnhancedFooter />
     </>
