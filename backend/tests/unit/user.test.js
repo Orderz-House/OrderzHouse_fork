@@ -37,7 +37,7 @@ jest.mock("jsonwebtoken", () => ({
 
 describe("User Routes", () => {
   beforeAll(() => {
-    process.env.JWT_SECRET = "testsecret"; // لتجنب أخطاء JWT
+    process.env.JWT_SECRET = "testsecret"; 
   });
 
   beforeEach(() => {
@@ -49,7 +49,7 @@ describe("User Routes", () => {
   // ===========================
   it("should register a user", async () => {
     pool.query
-      .mockResolvedValueOnce({ rows: [] }) // تحقق من عدم وجود المستخدم
+      .mockResolvedValueOnce({ rows: [] }) 
       .mockResolvedValueOnce({
         rows: [
           {
