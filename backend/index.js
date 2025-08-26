@@ -40,32 +40,11 @@ app.use("/appointments", appointmentsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 
-// create http server
 const server = http.createServer(app);
+const initSocket = require("./sockets/socket");
+const io = initSocket(server);
 
-// socket.io server
-const io = new Server(server, {
-  cors: {
-    origin: "*", // غيرها لفرونتك بال production
-    methods: ["GET", "POST"],
-  },
-});
 
-// socket events
-io.on("connection", (socket) => {
-  console.log("🔌 client connected:", socket.id);
-
-  socket.on("message", (msg) => {
-    console.log("📩 message:", msg);
-    io.emit("message", msg);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("❌ client disconnected:", socket.id);
-  });
-});
-
-// start server only if not in test mode
 if (process.env.NODE_ENV !== "test") {
   server.listen(PORT, () => {
     console.log(`✅ Server listening at http://localhost:${PORT}`);

@@ -10,7 +10,7 @@ const {
 } = require("../controller/orders");
 
 const ordersRouter = express.Router();
-const authentication = require("../middleware/authentication");
+const {authentication} = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 
 ordersRouter.get(

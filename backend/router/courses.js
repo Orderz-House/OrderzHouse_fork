@@ -1,5 +1,5 @@
 const express = require("express");
-const authentication = require("../middleware/authentication");
+const {authentication} = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 const { getCourseById } = require("../controller/courses");
 const { getCourses } = require("../controller/courses");

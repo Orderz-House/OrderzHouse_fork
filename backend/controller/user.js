@@ -114,7 +114,7 @@ const login = async (req, res) => {
     }
     const ipAddress = getClientIp(req);
     const ipAddressQuery =
-      "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
+      "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
     const ipAddressData = [user.id, ipAddress];
 
     if (user.role_id === 3) {

@@ -4,7 +4,7 @@ const {
   viewFeedbacksById,
   viewAllFeedbacks,
 } = require("../controller/feedback");
-const authentication = require("../middleware/authentication");
+const {authentication} = require("../middleware/authentication");
 
 const feedbackRouter = express.Router();
 
