@@ -4,6 +4,8 @@ const express = require("express");
 const {register, login, viewUsers, deleteUser, editUser, createPortfolio, editPortfolioFreelancer, getAllFreelancers, deleteFreelancerById} = require('../controller/user');
 const {authentication}= require('../middleware/authentication');
 const authorization= require('../middleware/authorization');
+const usersRouter = express.Router();
+
 /*
 usersRouter.post(
   "/freelancer/portfolio/create",
