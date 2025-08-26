@@ -2,7 +2,6 @@ const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
-const { get } = require("..");
 
 const register = async (req, res) => {
   const {
@@ -16,18 +15,22 @@ const register = async (req, res) => {
     username,
   } = req.body;
 
-  if (!role_id || !email || !password || !phone_number || !country) {
-    return res
-      .status(400)
-      .json({ success: false, message: "All fields are required" });
-  }
-  const hashedPassword = await bcrypt.hash(password, 10);
+    if (!role_id || !first_name || !last_name || !email || !password || !phone_number || !country || !username) {
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required"
+        });
+    }
 
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(process.env.SECRET)
+  );
   const Email = email.toLowerCase();
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
       [
         role_id,
         first_name,
@@ -82,8 +85,7 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message:
-
-          "The email desn't exist or the password you've entered is incorrect"
+          "The email desn't exist or the password you've entered is incorrect",
       });
     }
 
@@ -94,8 +96,8 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message:
-
-          "The email desn't exist or the password you've entered is incorrect"      });
+          "The email desn't exist or the password you've entered is incorrect",
+      });
     }
     const payload = {
       userId: user.id,
@@ -114,15 +116,11 @@ const login = async (req, res) => {
     }
     const ipAddress = getClientIp(req);
     const ipAddressQuery =
-      "INSERT INTO ip_address (user_id, ip_address) VALUES ($1, $2)";
-    const ipAddressData = [user.id, ipAddress];
+      "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
+    const ipAddressData = [user.id, "127.25.14.5"];
+    if (user.role_id === 3) await pool.query(ipAddressQuery, ipAddressData);
 
-    if (user.role_id === 3) {
-      await pool.query(ipAddressQuery, ipAddressData);
-    }
-
-
-    return res.status(200).json({
+    return res.status(201).json({
       token,
       success: true,
       message: "Valid login credentials",
@@ -131,7 +129,7 @@ const login = async (req, res) => {
       userInfo: user,
     });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("Login error:", err.message);
     return res.status(500).json({
       success: false,
       message: "An error occurred during login",
@@ -439,5 +437,3 @@ module.exports = {
   getAllFreelancers,
   deleteFreelancerById,
 };
-
-
