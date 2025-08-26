@@ -3,6 +3,7 @@ import "./App.css";
 import Counter from "./counter/Counter";
 import Navbar from "./navbar/Nav";
 import EnhancedFooter from "./footer/Footer";
+import PrivacyPolicyPage from "./policy/Policy";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <h1 className="text-3xl font-bold underline">Hello world!</h1>
           }
         />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
       </Routes>
       <EnhancedFooter />
     </>

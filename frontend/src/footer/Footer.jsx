@@ -15,6 +15,7 @@ import {
   Award,
   Instagram,
 } from "lucide-react";
+import { Link } from "react-router";
 
 export default function EnhancedFooter() {
   const [hoveredSocial, setHoveredSocial] = useState(null);
@@ -67,8 +68,8 @@ export default function EnhancedFooter() {
       name: "Instagram",
       color: "hover:text-red-500",
       bgColor: "hover:bg-red-500/10",
-        link: "https://www.instagram.com/bat_techno/ "
-    }
+      link: "https://www.instagram.com/bat_techno/ ",
+    },
   ];
 
   const quickLinks = [
@@ -281,7 +282,7 @@ export default function EnhancedFooter() {
                   href="#"
                   className="text-gray-400 hover:text-teal-400 text-sm transition-colors duration-200"
                 >
-                  Privacy Policy
+                  <Link to="/privacy">Privacy Policy</Link>
                 </a>
                 <a
                   href="#"
