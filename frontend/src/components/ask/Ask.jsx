@@ -7,6 +7,7 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
+import { Link } from "react-router";
 
 export default function Ask() {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -165,8 +166,7 @@ export default function Ask() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <br />
-          <br />
+         
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Frequently Asked{" "}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -242,7 +242,10 @@ export default function Ask() {
 
           <div className="text-center mt-8">
             <button className="px-8 py-3 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transition-colors duration-300">
-              Contact Us Now
+              <Link to="/contact" >
+               
+                Contact Us Now
+              </Link>
             </button>
           </div>
         </div>

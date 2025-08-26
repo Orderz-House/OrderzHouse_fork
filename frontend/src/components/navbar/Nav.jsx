@@ -207,7 +207,6 @@ export default function EnhancedNavbar() {
                                 <h4 className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors">
                                   {service.name}
                                 </h4>
-                              
                               </div>
                             </div>
                           </a>
@@ -295,13 +294,13 @@ export default function EnhancedNavbar() {
             </div>
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+            {/* <button className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-            </button>
+            </button> */}
 
             {/* User Menu */}
-            <div className="relative" ref={userMenuRef}>
+            {/* <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -338,7 +337,7 @@ export default function EnhancedNavbar() {
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* CTA Buttons */}
             <div className="flex items-center space-x-3">
