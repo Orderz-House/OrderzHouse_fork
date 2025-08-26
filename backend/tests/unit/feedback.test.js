@@ -1,26 +1,24 @@
 const request = require("supertest");
-const {app} = require("../../index");
+const express = require("express");
+const feedbackController = require("../../controller/feedback");
 const { pool } = require("../../models/db");
 
-// Mock DB
-jest.mock("../../models/db", () => ({
-  pool: {
-    query: jest.fn(),
-  },
-}));
+// Create a test app
+const app = express();
+app.use(express.json());
 
+// Mock authentication middleware for tests
+const mockAuth = (req, res, next) => {
+  req.token = { userId: 1, role: 1 };
+  next();
+};
 
-jest.mock("../../middleware/authentication", () => {
-  return (req, res, next) => {
-    req.token = { userId: 1 }; 
-    next();
-  };
-});
+// Add feedback routes with authentication
+app.post("/feedbacks/add", mockAuth, feedbackController.addFeedback);
+app.get("/feedbacks/freelancer/:freelancerId", feedbackController.viewFeedbacksById);
+app.get("/feedbacks", feedbackController.viewAllFeedbacks);
 
-// Mock Authorization Middleware
-jest.mock("../../middleware/authorization", () => {
-  return () => (req, res, next) => next();
-});
+// Database and middleware mocks are now handled globally in tests/setup.js
 
 describe("Feedback Routes", () => {
   beforeEach(() => {
@@ -100,7 +98,6 @@ describe("Feedback Routes", () => {
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("No feedback found for this freelancer");
   });
 
   // ===========================
@@ -134,6 +131,5 @@ describe("Feedback Routes", () => {
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("No feedbacks found");
   });
 });

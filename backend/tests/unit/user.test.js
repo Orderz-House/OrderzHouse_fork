@@ -1,28 +1,26 @@
 const request = require("supertest");
-const { app } = require("../../index");
+const express = require("express");
+const userController = require("../../controller/user");
 const { pool } = require("../../models/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-jest.mock("../../models/db", () => ({
-  pool: {
-    query: jest.fn(),
-  },
-}));
+// Create a test app
+const app = express();
+app.use(express.json());
 
-// Mock Middleware
-jest.mock("../../middleware/authentication", () => {
-  return (req, res, next) => {
-    req.user = { userId: 1, role: 1 };
-    next();
-  };
-});
+// Add user routes
+app.post("/users/register", userController.register);
+app.post("/users/login", userController.login);
+app.get("/users/view", userController.viewUsers);
+app.delete("/users/delete/:userId", userController.deleteUser);
+app.put("/users/edit/:userId", userController.editUser);
+app.post("/users/freelancer/portfolio/create", userController.createPortfolio);
+app.put("/users/freelancer/portfolio/edit/:userId", userController.editPortfolioFreelancer);
+app.post("/users/freelancers", userController.getAllFreelancers);
+app.delete("/users/freelancer/delete/:userId", userController.deleteFreelancerById);
 
-jest.mock("../../middleware/authorization", () => {
-  return () => (req, res, next) => {
-    next();
-  };
-});
+// Database and middleware mocks are now handled globally in tests/setup.js
 
 // Mock bcrypt
 jest.mock("bcrypt", () => ({

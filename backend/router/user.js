@@ -23,11 +23,12 @@ usersRouter.post(
   authentiction
   /*authorization("create_portfolio"),*/
 // );
-usersRouter.put(
-  "/freelancer/portfolio/edit/:userId",
-  authentication
-  // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
-);
+// This route is already defined below with the handler
+// usersRouter.put(
+//   "/freelancer/portfolio/edit/:userId",
+//   authentication
+//   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
+// );
 
 usersRouter.post('/register', register);
 usersRouter.post('/login', login);
