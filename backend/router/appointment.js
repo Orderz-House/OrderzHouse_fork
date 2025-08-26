@@ -6,7 +6,7 @@ const {
   getAllAppointments,
   getAppointmentsByFreelancer,
 } = require("../controller/appointment");
-const authentication = require("../middleware/authentication");
+const {authentication} = require("../middleware/authentication");
 
 const appointmentsRouter = express.Router();
 
