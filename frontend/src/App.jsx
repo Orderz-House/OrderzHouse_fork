@@ -1,9 +1,11 @@
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
 import Counter from "./counter/Counter";
-import Navbar from "./navbar/Nav";
-import EnhancedFooter from "./footer/Footer";
-import PrivacyPolicyPage from "./policy/Policy";
+import Navbar from "./components/navbar/Nav";
+import EnhancedFooter from "./components/footer/Footer";
+import PrivacyPolicyPage from "./components/policy/Policy";
+import ModernAboutPage from "./components/about/About";
+import OrderzHousePage from "./components/main/Main";
 
 function App() {
   return (
@@ -11,13 +13,9 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/test" element={<Counter />} />
-        <Route
-          path="/"
-          element={
-            <h1 className="text-3xl font-bold underline">Hello world!</h1>
-          }
-        />
+        <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/about" element={<ModernAboutPage />} />
       </Routes>
       <EnhancedFooter />
     </>

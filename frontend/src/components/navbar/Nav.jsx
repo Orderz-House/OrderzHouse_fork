@@ -67,12 +67,41 @@ export default function EnhancedNavbar() {
   }, []);
 
   const services = [
-    { name: "Web Development", desc: "Custom websites & web apps", icon: "💻" },
-    { name: "Mobile Apps", desc: "iOS & Android development", icon: "📱" },
-    { name: "Digital Marketing", desc: "SEO, SEM & Social Media", icon: "📈" },
-    { name: "E-commerce", desc: "Online stores & platforms", icon: "🛒" },
-    { name: "UI/UX Design", desc: "User experience design", icon: "🎨" },
-    { name: "Cloud Solutions", desc: "AWS, Azure & GCP", icon: "☁️" },
+    {
+      name: "Programming",
+      desc: "Software Developer, Data Analyst, Network Engineer",
+      icon: "💻",
+    },
+    {
+      name: "Photographer",
+      desc: "Photography is the art of capturing moments, emotions, and stories through the lens to create lasting visual impressions.",
+      icon: "📷",
+    },
+    {
+      name: "Admin + Project Management",
+      desc: "Administrative Assistant, Project Manager, and Process Analyst",
+      icon: "📊",
+    },
+    {
+      name: "Music & Audio",
+      desc: "Sound Engineer, Music Producer, Audio Editor",
+      icon: "🎵",
+    },
+    {
+      name: "Graphic Design",
+      desc: "Graphic design is the art of visual communication that combines images, typography, and creativity to deliver impactful messages.",
+      icon: "🎨",
+    },
+    {
+      name: "Remote Work",
+      desc: "Customer Service Representative, Financial Analyst",
+      icon: "🏠",
+    },
+    {
+      name: "Content Creator",
+      desc: "A content writer creates clear, engaging, and informative text tailored to attract and inform a specific audience.",
+      icon: "✏️",
+    },
   ];
 
   const contactInfo = [
@@ -178,9 +207,7 @@ export default function EnhancedNavbar() {
                                 <h4 className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors">
                                   {service.name}
                                 </h4>
-                                <p className="text-sm text-gray-500 mt-1">
-                                  {service.desc}
-                                </p>
+                              
                               </div>
                             </div>
                           </a>
