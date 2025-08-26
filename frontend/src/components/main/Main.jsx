@@ -539,7 +539,7 @@ export default function OrderzHousePage() {
 
           <div className="text-center mt-12">
             <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
-              Contact Our Team
+              <Link to="/ask-more"> Ask More</Link>
             </button>
           </div>
         </div>
