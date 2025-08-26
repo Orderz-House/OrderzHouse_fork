@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+console.log("test");
 
 export default function Register() {
   const [form, setForm] = useState({
