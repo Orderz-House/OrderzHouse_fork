@@ -1,37 +1,72 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
-require("dotenv").config();
-const app = express();
-const PORT = process.env.PORT || 5000;
-require("./models/db");
-app.use(cors());
-app.use(express.json());
-// app.use(cors({
-//   origin: ["https://mywebsite.com"],
-//   methods: ["GET", "POST"],
-//   credentials: true
-// }));
+const { Server } = require("socket.io");
+const http = require("http");
+const { AdminInit } = require("./Admin");
 
+require("dotenv").config();
+
+const app = express();
+const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 3003;
+if (process.env.NODE_ENV !== "test") {
+  app.set("trust proxy", 1);
+}
+app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+// rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
   message: "try again later",
 });
-
 app.use(limiter);
-// app.use("*", (req, res) => res.status(404).json("NO content at this path"));
+
+// db connection
+require("./models/db");
+
+// routes
 const usersRouter = require("./router/user");
 const plansRouter = require("./router/plans");
+const feedbackRouter = require("./router/feedback");
+const appointmentsRouter = require("./router/appointment");
+const coursesRouter = require("./router/courses");
+const ordersRouter = require("./router/orders");
+const logsRouter = require("./router/logs");
 
 app.use("/users", usersRouter);
-const coursesRouter = require("./router/courses");
-app.use("/courses", coursesRouter);
 app.use("/plans", plansRouter);
-app.use("/orders", require("./router/orders"));
+// app.use("/orders", require("./router/orders"));
+app.use("/feedbacks", feedbackRouter);
+app.use("/appointments", appointmentsRouter);
+app.use("/logs", logsRouter);
+app.use("/courses", coursesRouter);
+app.use("/orders", ordersRouter);
+app.use("/chats", require("./router/chats"));
 
-//app.use("*", (req, res) => res.status(404).json("NO content at this path"));
+(async () => {
+  await AdminInit(app);
+})();
 
-app.listen(PORT, () => {
-  console.log(`Server listening at http://localhost:${PORT}`);
-});
+let server, io;
+
+if (process.env.NODE_ENV !== "test") {
+  server = http.createServer(app);
+  const initSocket = require("./sockets/socket");
+  io = initSocket(server);
+
+  server.listen(PORT, () => {
+    console.log(`✅ Server listening at http://localhost:${PORT}`);
+  });
+} else {
+  // For tests, create minimal server without socket.io
+  server = http.createServer(app);
+  io = null;
+}
+
+module.exports = { app, server, io };

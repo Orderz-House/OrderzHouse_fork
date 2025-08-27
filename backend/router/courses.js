@@ -1,11 +1,13 @@
 const express = require("express");
-const authentication = require("../middleware/authentication");
+const {authentication} = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 const { getCourseById } = require("../controller/courses");
 const { getCourses } = require("../controller/courses");
 const { createCourse } = require("../controller/courses");
 const { deleteCourse } = require("../controller/courses");
 const { updateCourse } = require("../controller/courses");
+const { enrollInCourse } = require("../controller/courses");
+
 const coursesRouter = express.Router();
 coursesRouter.get(
   "/view",
@@ -37,4 +39,12 @@ coursesRouter.get(
   authorization("view_courses"),
   getCourseById
 );
+
+coursesRouter.post(
+  "/enroll",
+  authentication,
+  authorization("enroll_course"),
+  enrollInCourse
+);
+
 module.exports = coursesRouter;

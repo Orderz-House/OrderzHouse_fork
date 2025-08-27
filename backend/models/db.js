@@ -6,31 +6,17 @@ const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
-pool
-  .connect()
-  .then((res) => {
-    console.log(`DB connected to ${res.database}`);
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-const createTable = (req, res) => {
+
+// Only connect if not running tests
+if (process.env.NODE_ENV !== "test") {
   pool
-    .query(
-      `=
-`
-    )
-    .then((result) => {
-      res.json({
-        message: "created",
-      });
+    .connect()
+    .then((res) => {
+      console.log(`DB connected to ${res.database}`);
     })
     .catch((err) => {
-      res.json({
-        err: err.message,
-      });
+      console.log(err);
     });
-};
-// createTable()
+}
 
 module.exports = {pool};
