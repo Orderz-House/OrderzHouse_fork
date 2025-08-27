@@ -41,9 +41,24 @@ const messageHandler = (socket, io) => {
                 data.image_url
             ];
 
-            const result = await pool.query(query, values);
-            console.log("Message saved:", result.rows[0]);
+            pool.query(query, values)
+                .then(result => {
+                    return pool.query(
+                        `INSERT INTO message_logs (message_id, sender_id, receiver_id, conversation_id) VALUES ($1,$2,$3,$4)`,
+                        [result.rows[0].id, result.rows[0].sender_id, result.rows[0].receiver_id, result.rows[0].conversation_id]
+                    );
+                })
+                .then(() => {
+                    console.log("Message logged successfully");
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+            
 
+             
+
+            
             const room = socket.roomId;
             socket.to(room).emit("message", data);
             socket.emit("message", data);

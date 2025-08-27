@@ -6,7 +6,7 @@ const http = require("http");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.NODE_ENV === "test" ? 0 : (process.env.PORT || 3003);
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
 }
@@ -31,25 +31,32 @@ const feedbackRouter = require("./router/feedback");
 const appointmentsRouter = require("./router/appointment");
 const coursesRouter = require("./router/courses");
 const ordersRouter = require("./router/orders");
+const logsRouter = require("./router/logs");
 
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/orders", require("./router/orders"));
 app.use("/feedbacks", feedbackRouter);
 app.use("/appointments", appointmentsRouter);
-
+app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 app.use("/chats", require("./router/chats"));
-const server = http.createServer(app);
-const initSocket = require("./sockets/socket");
-const io = initSocket(server);
 
+let server, io;
 
 if (process.env.NODE_ENV !== "test") {
+  server = http.createServer(app);
+  const initSocket = require("./sockets/socket");
+  io = initSocket(server);
+  
   server.listen(PORT, () => {
     console.log(`✅ Server listening at http://localhost:${PORT}`);
   });
+} else {
+  // For tests, create minimal server without socket.io
+  server = http.createServer(app);
+  io = null;
 }
 
 module.exports = { app, server, io };

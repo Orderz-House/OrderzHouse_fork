@@ -1,4 +1,4 @@
-const {pool} = require("../models/db");
+const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
@@ -15,12 +15,21 @@ const register = async (req, res) => {
     username,
   } = req.body;
 
-    if (!role_id || !first_name || !last_name || !email || !password || !phone_number || !country || !username) {
-        return res.status(400).json({
-            success: false,
-            message: "All fields are required"
-        });
-    }
+  if (
+    !role_id ||
+    !first_name ||
+    !last_name ||
+    !email ||
+    !password ||
+    !phone_number ||
+    !country ||
+    !username
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required",
+    });
+  }
 
   const hashedPassword = await bcrypt.hash(
     password,
@@ -30,7 +39,7 @@ const register = async (req, res) => {
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [
         role_id,
         first_name,
@@ -42,7 +51,12 @@ const register = async (req, res) => {
         username,
       ]
     )
-    .then((result) => {
+    .then( async(result) => {
+      //console.log(result.rows[0].id);
+      const user = result.rows[0]
+      const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" : "Freelancer";
+      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
+      await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
       res.status(201).json({
         success: true,
         message: "User registered successfully",
@@ -122,7 +136,9 @@ const login = async (req, res) => {
     if (user.role_id === 3) {
       await pool.query(ipAddressQuery, ipAddressData);
     }
-
+      const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" : "Freelancer";
+      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has logged in successfully.`;
+      await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
     return res.status(201).json({
       token,
       success: true,
@@ -247,12 +263,10 @@ const createPortfolio = async (req, res) => {
     req.body;
 
   if (!freelancer_id || !title) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "freelancer_id and title are required",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id and title are required",
+    });
   }
 
   try {
@@ -293,12 +307,10 @@ const editPortfolioFreelancer = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Portfolio not found for this freelancer",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Portfolio not found for this freelancer",
+      });
     }
 
     res.status(200).json({
@@ -341,7 +353,6 @@ cron.schedule("0 3 * * *", () => {
   console.log("Ran deactivate Inactive Users at 3AM daily");
 });
 
-
 const getAllFreelancers = async (req, res) => {
   const filterValue = (req.body.filter || "").toLowerCase();
 
@@ -349,7 +360,8 @@ const getAllFreelancers = async (req, res) => {
   if (!validFilters.includes(filterValue)) {
     return res.status(400).json({
       success: false,
-      message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
+      message:
+        "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
     });
   }
 
@@ -386,7 +398,7 @@ const getAllFreelancers = async (req, res) => {
 };
 
 const deleteFreelancerById = async (req, res) => {
-const { userId } = req.params;
+  const { userId } = req.params;
 
   try {
     const result = await pool.query(
@@ -403,20 +415,19 @@ const { userId } = req.params;
         message: "Freelancer not found",
       });
     }
-    if(result.rows[0].is_deleted){
+    if (result.rows[0].is_deleted) {
       res.status(200).json({
-      success: true,
-      message: `Freelancer deactivated successfully`,
-      freelancer: result.rows[0],
+        success: true,
+        message: `Freelancer deactivated successfully`,
+        freelancer: result.rows[0],
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        message: `Freelancer activated successfully`,
+        freelancer: result.rows[0],
+      });
     }
-  );
-  }else {
-    res.status(200).json({
-      success: true,
-      message: `Freelancer activated successfully`,
-      freelancer: result.rows[0],
-    });
-  }
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -424,38 +435,60 @@ const { userId } = req.params;
       error: err.message,
     });
   }
-}
+};
 
-const listOnlineUsers = async(req, res) =>{
+const listOnlineUsers = async (req, res) => {
   try {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE is_online = TRUE"
+    );
 
-    const result = await pool.query("SELECT * FROM users WHERE is_online = TRUE")
-
-    if(result.rows.length === 0){
+    if (result.rows.length === 0) {
       return res.status(404).json({
-        success : true,
-        message : "No one is active"
-      })
+        success: true,
+        message: "No one is active",
+      });
     }
 
     return res.status(200).json({
-      success : true,
-      message : "Active Users found",
-      users : result.rows
-    })
-
-
+      success: true,
+      message: "Active Users found",
+      users: result.rows,
+    });
   } catch (err) {
     return res.status(500).json({
-      success : false,
-      messagge : "Server Error",
-      error : err
-    })
+      success: false,
+      messagge: "Server Error",
+      error: err,
+    });
   }
-}
+};
+const getUserById = async (req, res) => {
+  const { userId } = req.token;
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
+      userId,
+    ]);
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
-
+    return res.status(200).json({
+      success: true,
+      user: result.rows[0],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: err.message,
+    });
+  }
+};
 
 module.exports = {
   register,
@@ -467,5 +500,6 @@ module.exports = {
   editPortfolioFreelancer,
   getAllFreelancers,
   deleteFreelancerById,
-  listOnlineUsers
+  listOnlineUsers,
+  getUserById,
 };

@@ -3,9 +3,15 @@ const express = require("express");
 
 const coursesController = require("../../controller/courses");
 
+// Mock the database module
 jest.mock("../../models/db", () => ({
-  pool: { query: jest.fn() }
+  pool: { 
+    query: jest.fn(),
+    connect: jest.fn(),
+    end: jest.fn()
+  }
 }));
+
 const { pool } = require("../../models/db");
 
 const app = express();
@@ -23,6 +29,15 @@ app.post("/courses/enroll", (req, res, next) => {
 }, coursesController.enrollInCourse);
 
 describe("Courses Controller Unit Tests", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset console.error mock for each test
+    if (console.error.mockRestore) {
+      console.error.mockRestore();
+    }
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
