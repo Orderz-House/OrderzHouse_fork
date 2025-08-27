@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import {
   ChevronDown,
   Menu,
@@ -13,7 +13,11 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { setLogout } from "../../slice/auth/authSlice";
+import axios from "axios";
+import { setUserData } from "../../slice/auth/authSlice";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -28,6 +32,38 @@ export default function EnhancedNavbar() {
   const servicesRef = useRef(null);
   const contactRef = useRef(null);
   const userMenuRef = useRef(null);
+  const dispatch = useDispatch();
+  const { token, userData } = useSelector((state) => {
+    return {
+      token: state.auth.token,
+      userData: state.auth.userData,
+    };
+  });
+
+  const navigate = useNavigate();
+  // Handle user logout
+  const handleLogout = () => {
+    dispatch(setLogout());
+    navigate("/");
+  };
+
+  useEffect(() => {
+    axios
+      .get(`http://localhost:5000/users/getUserdata`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        dispatch(setUserData(res.data.user));
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user data:", err.message);
+        console.log(token);
+      });
+  }, [dispatch]);
+  console.log(userData);
+
   // NAVBAR LINKS
   const navLinks = [
     { label: "HOME", path: "/" },
@@ -307,7 +343,7 @@ export default function EnhancedNavbar() {
             </button> */}
 
             {/* User Menu */}
-            {/* <div className="relative" ref={userMenuRef}>
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -321,20 +357,29 @@ export default function EnhancedNavbar() {
                   }`}
                 />
               </button>
-
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
                   <div className="p-4 border-b border-gray-100">
-                    <p className="font-medium text-gray-900">John Doe</p>
-                    <p className="text-sm text-gray-500">john@example.com</p>
+                    <p className="font-medium text-gray-900">
+                      {userData.first_name} {userData.last_name}
+                    </p>
+                    <br />
+                    <p className="text-sm text-gray-500 break-all">
+                      {userData.email}
+                    </p>
                   </div>
                   <div className="py-2">
                     {[
-                      { name: "Profile Settings", icon: Settings },
-                      { name: "Sign Out", icon: LogOut },
+                      {
+                        name: "Profile Settings",
+                        icon: Settings,
+                        action: () => navigate("/profile"),
+                      },
+                      { name: "Sign Out", icon: LogOut, action: handleLogout },
                     ].map((item, index) => (
                       <button
                         key={index}
+                        onClick={item.action}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                       >
                         <item.icon className="h-4 w-4" />
@@ -344,7 +389,7 @@ export default function EnhancedNavbar() {
                   </div>
                 </div>
               )}
-            </div> */}
+            </div>
 
             {/* CTA Buttons */}
             <div className="flex items-center space-x-3">

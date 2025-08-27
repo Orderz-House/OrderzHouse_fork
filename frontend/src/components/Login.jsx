@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Link,
 } from "lucide-react";
+import { useNavigate } from "react-router";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -21,7 +22,7 @@ const Login = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const navigate = useNavigate();
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -42,6 +43,9 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful");
         setIsLoading(false);
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
       })
       .catch((err) => {
         setStatus(false);

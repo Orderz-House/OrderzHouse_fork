@@ -1,9 +1,20 @@
-
 const express = require("express");
 
-const {register, login, viewUsers, deleteUser, editUser, createPortfolio, editPortfolioFreelancer, getAllFreelancers, deleteFreelancerById, listOnlineUsers} = require('../controller/user');
-const {authentication}= require('../middleware/authentication');
-const authorization= require('../middleware/authorization');
+const {
+  register,
+  login,
+  viewUsers,
+  deleteUser,
+  editUser,
+  createPortfolio,
+  editPortfolioFreelancer,
+  getAllFreelancers,
+  deleteFreelancerById,
+  listOnlineUsers,
+  getUserById,
+} = require("../controller/user");
+const { authentication } = require("../middleware/authentication");
+const authorization = require("../middleware/authorization");
 const usersRouter = express.Router();
 
 /*
@@ -29,7 +40,6 @@ usersRouter.post(
 //   authentication
 //   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 // );
-
 usersRouter.post('/register', register);
 usersRouter.post('/login', login);
 usersRouter.post('/view',authentication, authorization("view_users"), viewUsers);

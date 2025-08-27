@@ -1,4 +1,4 @@
-const {pool} = require("../models/db");
+const pool = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
@@ -15,6 +15,7 @@ const register = async (req, res) => {
     country,
     username,
   } = req.body;
+
   // Validate that all fields are provided
   if (!role_id || !first_name || !last_name || !email || !password || !phone_number ||!country || !username) {
       return res.status(400).json({
@@ -313,12 +314,10 @@ const createPortfolio = async (req, res) => {
     req.body;
   // Validate required fields
   if (!freelancer_id || !title) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "freelancer_id and title are required",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id and title are required",
+    });
   }
 
   try {
@@ -378,12 +377,10 @@ const editPortfolioFreelancer = async (req, res) => {
     );
     // If no portfolio found for this freelancer, return 404
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Portfolio not found for this freelancer",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Portfolio not found for this freelancer",
+      });
     }
     // Get updated portfolio + freelancer info
     const user = result.rows[0];
@@ -444,7 +441,6 @@ cron.schedule("0 3 * * *", () => {
   console.log("Ran deactivate Inactive Users at 3AM daily");
 });
 
-
 const getAllFreelancers = async (req, res) => {
   // Get filter value from request body and convert to lowercase
   // Default to empty string if not provided
@@ -455,7 +451,8 @@ const getAllFreelancers = async (req, res) => {
     // Return 400 if filter is invalid
     return res.status(400).json({
       success: false,
-      message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
+      message:
+        "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
     });
   }
   // Base WHERE condition: only users with role_id = 3 (freelancers)
@@ -499,9 +496,11 @@ const getAllFreelancers = async (req, res) => {
 };
 
 const deleteFreelancerById = async (req, res) => {
+
   // Get the freelancer ID from route parameters and the admin's user ID from the token
   const { freelancerid } = req.params;
   const { userId } = req.token;
+
 
   try {
     // Toggle the is_deleted flag for the freelancer (only if role_id = 3)
@@ -521,6 +520,7 @@ const deleteFreelancerById = async (req, res) => {
         message: "Freelancer not found",
       });
     }
+    
     // Fetch admin's details for logging
     const adminResult = await pool.query(
       "SELECT first_name, last_name FROM Users WHERE id = $1",
@@ -536,12 +536,14 @@ const deleteFreelancerById = async (req, res) => {
       'INSERT INTO logs (user_id, action) VALUES ($1, $2)',
       [userId, actionUser]
     );
+    
     // Send successful response
     res.status(200).json({
       success: true,
       message: `Freelancer ${action} successfully`,
       freelancer,
     });
+
 
   } catch (err) {
     // Handle any errors
@@ -553,8 +555,9 @@ const deleteFreelancerById = async (req, res) => {
   }
 };
 
-const listOnlineUsers = async(req, res) =>{
+const listOnlineUsers = async (req, res) => {
   try {
+
     // Query the database for users where is_online is TRUE
     const result = await pool.query("SELECT * FROM users WHERE is_online = TRUE")
 
@@ -567,24 +570,45 @@ const listOnlineUsers = async(req, res) =>{
     }
     // Return the list of online users
     return res.status(200).json({
-      success : true,
-      message : "Active Users found",
-      users : result.rows
-    })
-
-
+      success: true,
+      message: "Active Users found",
+      users: result.rows,
+    });
   } catch (err) {
     // Handle any database or server errors
     return res.status(500).json({
-      success : false,
-      messagge : "Server Error",
-      error : err
-    })
+      success: false,
+      messagge: "Server Error",
+      error: err,
+    });
   }
-}
+};
+const getUserById = async (req, res) => {
+  const { userId } = req.token;
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
+      userId,
+    ]);
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
-
+    return res.status(200).json({
+      success: true,
+      user: result.rows[0],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: err.message,
+    });
+  }
+};
 
 module.exports = {
   register,
@@ -596,5 +620,6 @@ module.exports = {
   editPortfolioFreelancer,
   getAllFreelancers,
   deleteFreelancerById,
-  listOnlineUsers
+  listOnlineUsers,
+  getUserById,
 };
