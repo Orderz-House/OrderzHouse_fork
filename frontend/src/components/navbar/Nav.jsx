@@ -28,7 +28,12 @@ export default function EnhancedNavbar() {
   const servicesRef = useRef(null);
   const contactRef = useRef(null);
   const userMenuRef = useRef(null);
-
+  // NAVBAR LINKS
+  const navLinks = [
+    { label: "HOME", path: "/" },
+    { label: "ABOUT US", path: "/about" },
+    { label: "BLOGS", path: "/blogs" },
+  ];
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -157,18 +162,19 @@ export default function EnhancedNavbar() {
           {/* Desktop Navigation */}
           <div className="hidden lg:block">
             <div className="flex items-center space-x-1">
-              {["HOME", "ABOUT US", "BLOGS"].map((link) => (
-                <button
-                  key={link}
-                  onClick={() => setActiveLink(link)}
+              {navLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  onClick={() => setActiveLink(item.label)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    activeLink === link
+                    activeLink === item.label
                       ? "text-teal-600 bg-teal-50"
                       : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
                   }`}
                 >
-                  {link}
-                </button>
+                  {item.label}
+                </Link>
               ))}
 
               {/* Services Mega Menu */}
@@ -392,21 +398,20 @@ export default function EnhancedNavbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 border-t border-gray-200 bg-white/95 backdrop-blur-md">
-              {["HOME", "ABOUT US", "SERVICES", "CONTACT", "BLOGS"].map(
-                (link) => (
-                  <button
-                    key={link}
-                    onClick={() => setActiveLink(link)}
-                    className={`w-full text-left px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 ${
-                      activeLink === link
-                        ? "text-teal-600 bg-teal-50"
-                        : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {link}
-                  </button>
-                )
-              )}
+              {navLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  onClick={() => setActiveLink(item.label)}
+                  className={`w-full text-left px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 ${
+                    activeLink === item.label
+                      ? "text-teal-600 bg-teal-50"
+                      : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
 
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <button className="w-full px-4 py-3 text-left text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200">
