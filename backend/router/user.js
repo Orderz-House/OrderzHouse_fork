@@ -12,6 +12,7 @@ const {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
+  updateUser
 } = require("../controller/user");
 const { authentication } = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
@@ -90,4 +91,6 @@ usersRouter.get(
   listOnlineUsers
 ),
   usersRouter.get("/getUserdata", authentication, getUserById);
+
+  usersRouter.put("/update/:userId", authentication, updateUser);
 module.exports = usersRouter;
