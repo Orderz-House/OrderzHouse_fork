@@ -31,13 +31,14 @@ const feedbackRouter = require("./router/feedback");
 const appointmentsRouter = require("./router/appointment");
 const coursesRouter = require("./router/courses");
 const ordersRouter = require("./router/orders");
+const logsRouter = require("./router/logs");
 
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/orders", require("./router/orders"));
 app.use("/feedbacks", feedbackRouter);
 app.use("/appointments", appointmentsRouter);
-
+app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 app.use("/chats", require("./router/chats"));
