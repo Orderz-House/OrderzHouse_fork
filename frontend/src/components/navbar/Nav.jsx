@@ -69,6 +69,9 @@ export default function EnhancedNavbar() {
       })
       .then((res) => {
         dispatch(setUserData(res.data.user));
+        if(JSON.parse(Cookies.get("userData")) !== null){
+          Cookies.set("userData", JSON.stringify(res.data.user), {expires : 1, secure: true, sameSite: "Strict"})
+        }
         setIsAuthenticated(true);
       })
       .catch((err) => {
