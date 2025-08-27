@@ -8,6 +8,8 @@ import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
 import Ask from "./components/ask/Ask";
 import ContactUsPage from "./components/contact/Contact";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/about" element={<ModernAboutPage />} />
         <Route path="/ask-more" element={<Ask />} />
         <Route path="/contact" element={<ContactUsPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
       <EnhancedFooter />
     </>

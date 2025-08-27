@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import axios from "axios";
 
@@ -42,7 +41,7 @@ const Register = () => {
   return (
     <div className="Form">
       <form onSubmit={register}>
-        <p className="Title">Register Form</p>
+        <p className="Title">Register Form </p>
         <input
           type="text"
           placeholder="Role ID"

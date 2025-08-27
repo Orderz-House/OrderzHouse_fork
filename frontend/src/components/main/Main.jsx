@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronRight,
   Play,
@@ -10,9 +10,29 @@ import {
   Shield,
 } from "lucide-react";
 import { Link } from "react-router";
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { setPlans } from "../../slice/planSlice";
 
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
+  const dispatch = useDispatch();
+  const { plans } = useSelector((state) => {
+    return {
+      plans: state.plan.plans,
+    };
+  });
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/plans")
+      .then((response) => {
+        dispatch(setPlans(response.data));
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching plans:", error.message);
+      });
+  }, [dispatch]);
 
   const categories = [
     {
