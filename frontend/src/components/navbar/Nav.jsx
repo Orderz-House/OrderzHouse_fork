@@ -13,6 +13,7 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
+import { Link } from "react-router";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -342,10 +343,10 @@ export default function EnhancedNavbar() {
             {/* CTA Buttons */}
             <div className="flex items-center space-x-3">
               <button className="px-4 py-2 text-gray-700 hover:text-teal-600 font-medium transition-all duration-200 hover:bg-gray-50 rounded-lg">
-                Sign In
+                <Link to="/login"> Sign In</Link>
               </button>
               <button className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                Register
+                <Link to="/register"> Register</Link>
               </button>
             </div>
           </div>

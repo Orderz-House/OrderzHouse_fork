@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../slice/auth/authSlice";
@@ -38,7 +37,7 @@ const Login = () => {
   return (
     <div className="Form">
       <form onSubmit={login}>
-        <p className="Title">Login</p>
+        <p className="Title">Login Form </p>
         <input
           type="email"
           placeholder="Email"
