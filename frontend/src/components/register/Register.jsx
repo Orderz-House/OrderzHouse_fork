@@ -1,9 +1,282 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
-import "./Register.css";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
+  MapPin,
+  UserPlus,
+  AlertCircle,
+  CheckCircle,
+  Briefcase,
+} from "lucide-react";
+import { useNavigate } from "react-router";
+
+const countries = [
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "American Samoa",
+  "Andorra",
+  "Angola",
+  "Anguilla",
+  "Antarctica",
+  "Antigua and Barbuda",
+  "Argentina",
+  "Armenia",
+  "Aruba",
+  "Australia",
+  "Austria",
+  "Azerbaijan",
+  "Bahamas (the)",
+  "Bahrain",
+  "Bangladesh",
+  "Barbados",
+  "Belarus",
+  "Belgium",
+  "Belize",
+  "Benin",
+  "Bermuda",
+  "Bhutan",
+  "Bolivia (Plurinational State of)",
+  "Bonaire, Sint Eustatius and Saba",
+  "Bosnia and Herzegovina",
+  "Botswana",
+  "Bouvet Island",
+  "Brazil",
+  "British Indian Ocean Territory (the)",
+  "Brunei Darussalam",
+  "Bulgaria",
+  "Burkina Faso",
+  "Burundi",
+  "Cabo Verde",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Cayman Islands (the)",
+  "Central African Republic (the)",
+  "Chad",
+  "Chile",
+  "China",
+  "Christmas Island",
+  "Cocos (Keeling) Islands (the)",
+  "Colombia",
+  "Comoros (the)",
+  "Congo (the Democratic Republic of the)",
+  "Congo (the)",
+  "Cook Islands (the)",
+  "Costa Rica",
+  "Croatia",
+  "Cuba",
+  "Curaçao",
+  "Cyprus",
+  "Czechia",
+  "Côte d'Ivoire",
+  "Denmark",
+  "Djibouti",
+  "Dominica",
+  "Dominican Republic (the)",
+  "Ecuador",
+  "Egypt",
+  "El Salvador",
+  "Equatorial Guinea",
+  "Eritrea",
+  "Estonia",
+  "Eswatini",
+  "Ethiopia",
+  "Falkland Islands (the) [Malvinas]",
+  "Faroe Islands (the)",
+  "Fiji",
+  "Finland",
+  "France",
+  "French Guiana",
+  "French Polynesia",
+  "French Southern Territories (the)",
+  "Gabon",
+  "Gambia (the)",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Gibraltar",
+  "Greece",
+  "Greenland",
+  "Grenada",
+  "Guadeloupe",
+  "Guam",
+  "Guatemala",
+  "Guernsey",
+  "Guinea",
+  "Guinea-Bissau",
+  "Guyana",
+  "Haiti",
+  "Heard Island and McDonald Islands",
+  "Holy See (the)",
+  "Honduras",
+  "Hong Kong",
+  "Hungary",
+  "Iceland",
+  "India",
+  "Indonesia",
+  "Iran (Islamic Republic of)",
+  "Iraq",
+  "Ireland",
+  "Isle of Man",
+  "Israel",
+  "Italy",
+  "Jamaica",
+  "Japan",
+  "Jersey",
+  "Jordan",
+  "Kazakhstan",
+  "Kenya",
+  "Kiribati",
+  "Korea (the Democratic People's Republic of)",
+  "Korea (the Republic of)",
+  "Kuwait",
+  "Kyrgyzstan",
+  "Lao People's Democratic Republic (the)",
+  "Latvia",
+  "Lebanon",
+  "Lesotho",
+  "Liberia",
+  "Libya",
+  "Liechtenstein",
+  "Lithuania",
+  "Luxembourg",
+  "Macao",
+  "Madagascar",
+  "Malawi",
+  "Malaysia",
+  "Maldives",
+  "Mali",
+  "Malta",
+  "Marshall Islands (the)",
+  "Martinique",
+  "Mauritania",
+  "Mauritius",
+  "Mayotte",
+  "Mexico",
+  "Micronesia (Federated States of)",
+  "Moldova (the Republic of)",
+  "Monaco",
+  "Mongolia",
+  "Montenegro",
+  "Montserrat",
+  "Morocco",
+  "Mozambique",
+  "Myanmar",
+  "Namibia",
+  "Nauru",
+  "Nepal",
+  "Netherlands (the)",
+  "New Caledonia",
+  "New Zealand",
+  "Nicaragua",
+  "Niger (the)",
+  "Nigeria",
+  "Niue",
+  "Norfolk Island",
+  "Northern Mariana Islands (the)",
+  "Norway",
+  "Oman",
+  "Pakistan",
+  "Palau",
+  "Palestine, State of",
+  "Panama",
+  "Papua New Guinea",
+  "Paraguay",
+  "Peru",
+  "Philippines (the)",
+  "Pitcairn",
+  "Poland",
+  "Portugal",
+  "Puerto Rico",
+  "Qatar",
+  "Republic of North Macedonia",
+  "Romania",
+  "Russian Federation (the)",
+  "Rwanda",
+  "Réunion",
+  "Saint Barthélemy",
+  "Saint Helena, Ascension and Tristan da Cunha",
+  "Saint Kitts and Nevis",
+  "Saint Lucia",
+  "Saint Martin (French part)",
+  "Saint Pierre and Miquelon",
+  "Saint Vincent and the Grenadines",
+  "Samoa",
+  "San Marino",
+  "Sao Tome and Principe",
+  "Saudi Arabia",
+  "Senegal",
+  "Serbia",
+  "Seychelles",
+  "Sierra Leone",
+  "Singapore",
+  "Sint Maarten (Dutch part)",
+  "Slovakia",
+  "Slovenia",
+  "Solomon Islands",
+  "Somalia",
+  "South Africa",
+  "South Georgia and the South Sandwich Islands",
+  "South Sudan",
+  "Spain",
+  "Sri Lanka",
+  "Sudan (the)",
+  "Suriname",
+  "Svalbard and Jan Mayen",
+  "Sweden",
+  "Switzerland",
+  "Syrian Arab Republic",
+  "Taiwan",
+  "Tajikistan",
+  "Tanzania, United Republic of",
+  "Thailand",
+  "Timor-Leste",
+  "Togo",
+  "Tokelau",
+  "Tonga",
+  "Trinidad and Tobago",
+  "Tunisia",
+  "Turkey",
+  "Turkmenistan",
+  "Turks and Caicos Islands (the)",
+  "Tuvalu",
+  "Uganda",
+  "Ukraine",
+  "United Arab Emirates (the)",
+  "United Kingdom of Great Britain and Northern Ireland (the)",
+  "United States Minor Outlying Islands (the)",
+  "United States of America (the)",
+  "Uruguay",
+  "Uzbekistan",
+  "Vanuatu",
+  "Venezuela (Bolivarian Republic of)",
+  "Viet Nam",
+  "Virgin Islands (British)",
+  "Virgin Islands (U.S.)",
+  "Wallis and Futuna",
+  "Western Sahara",
+  "Yemen",
+  "Zambia",
+  "Zimbabwe",
+  "Åland Islands",
+];
+
+const roles = [
+  { id: 2, label: "Customer" },
+  { id: 3, label: "Freelancer" },
+];
 
 const Register = () => {
-  const [role, setRole] = useState("2");
+  const dispatch = useDispatch();
+  const [role_id, setRole_id] = useState("");
   const [first_name, setFirst_name] = useState("");
   const [last_name, setLast_name] = useState("");
   const [phone_number, setPhone_number] = useState("");
@@ -13,82 +286,14 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [countries, setCountries] = useState([]);
-
-  // Load countries on component mount
-  useEffect(() => {
-    const loadCountries = async () => {
-      try {
-        // Using REST Countries API to get all countries
-        const response = await axios.get("https://restcountries.com/v3.1/all");
-        const countryData = response.data.map(country => ({
-          name: country.name.common,
-          code: country.cca2
-        }));
-        
-        // Sort countries alphabetically
-        countryData.sort((a, b) => a.name.localeCompare(b.name));
-        setCountries(countryData);
-        
-        // Set default country if needed
-        if (!country) {
-          setCountry(countryData[0]?.name || "");
-        }
-      } catch (error) {
-        console.error("Failed to load countries:", error);
-        // Fallback to a basic list if API fails
-        setCountries([
-          { name: "United States", code: "US" },
-          { name: "United Kingdom", code: "GB" },
-          { name: "Canada", code: "CA" },
-          { name: "Australia", code: "AU" },
-          { name: "Germany", code: "DE" },
-          { name: "France", code: "FR" },
-          { name: "Japan", code: "JP" },
-          { name: "India", code: "IN" },
-          { name: "Brazil", code: "BR" },
-          { name: "South Africa", code: "ZA" }
-        ]);
-      }
-    };
-
-    loadCountries();
-  }, []);
-
-  // Auto-dismiss messages after 5 seconds
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        setMessage("");
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
-  // Check password strength
-  useEffect(() => {
-    if (password) {
-      let strength = 0;
-      if (password.length >= 8) strength++;
-      if (/[A-Z]/.test(password)) strength++;
-      if (/[0-9]/.test(password)) strength++;
-      if (/[^A-Za-z0-9]/.test(password)) strength++;
-      
-      setPasswordStrength(strength);
-    } else {
-      setPasswordStrength(0);
-    }
-  }, [password]);
+  const navigate = useNavigate();
 
   const register = (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    const role_id = role;
-    
+
     axios
       .post("http://localhost:5000/users/register", {
         role_id,
@@ -101,300 +306,380 @@ const Register = () => {
         username,
       })
       .then((result) => {
-        console.log(result);
         setStatus(true);
         setMessage(result.data.message || "Registration successful");
-        
-        if (result.data.success) {
-          setRole("2");
-          setFirst_name("");
-          setLast_name("");
-          setPhone_number("");
-          setEmail("");
-          setPassword("");
-          setCountry("");
-          setUsername("");
-        }
+
+        // Auto login after successful registration
+        axios
+          .post("http://localhost:5000/users/login", { email, password })
+          .then((res) => {
+            dispatch(
+              setLogin({
+                token: res.data.token,
+                userId: res.data.userId,
+                roleId: res.data.role,
+              })
+            );
+            setIsLoading(false);
+            navigate("/");
+          })
+          .catch((err) => {
+            console.error("Auto login failed:", err);
+            setIsLoading(false);
+          });
       })
       .catch((error) => {
-        console.log(error);
         setStatus(false);
         setMessage(error.response?.data?.message || "Registration failed");
-      })
-      .finally(() => {
         setIsLoading(false);
       });
   };
 
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength === 0) return "transparent";
-    if (passwordStrength === 1) return "#ff4d4d";
-    if (passwordStrength === 2) return "#ffa64d";
-    if (passwordStrength === 3) return "#ffcc00";
-    return "#2ecc71";
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength === 0) return "";
-    if (passwordStrength === 1) return "Weak";
-    if (passwordStrength === 2) return "Fair";
-    if (passwordStrength === 3) return "Good";
-    return "Strong";
-  };
-
   return (
-    <div className="register-page">
-      {/* Notification message that appears outside the form container */}
-      {message && (
-        <div className={`global-message ${status ? "success" : "error"} ${message ? "visible" : ""}`}>
-          <div className="message-content">
-            <span className="message-icon">
-              {status ? "✓" : "!"}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-4">
+            Join{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              ORDERZHOUSE
             </span>
-            {message}
-            <button 
-              className="message-close"
-              onClick={() => setMessage("")}
-            >
-              ×
-            </button>
-          </div>
+          </h1>
+          <p className="text-gray-600">
+            Create your account and start your journey with us
+          </p>
         </div>
-      )}
 
-      <div className="register-container">
-        <div className="register-card">
-          <div className="card-header">
-            <h1>Create Your Account</h1>
-            <p>Join our community of professionals and clients</p>
+        {/* Registration Form */}
+        <div className="bg-white rounded-3xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
+              <UserPlus className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Create your account
+            </h2>
           </div>
 
-          <form onSubmit={register} className="register-form">
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">👥</span>
-                Account Type
-              </h3>
-              <div className="role-selection">
-                <div className={`role-option ${role === "2" ? "selected" : ""}`}>
-                  <input
-                    type="radio"
-                    id="user"
-                    name="role"
-                    value="2"
-                    checked={role === "2"}
-                    onChange={(e) => setRole(e.target.value)}
-                  />
-                  <label htmlFor="user" className="role-label">
-                    <div className="role-icon">👤</div>
-                    <div className="role-info">
-                      <h4>Client</h4>
-                      <p>I want to hire freelancers for projects</p>
-                    </div>
-                  </label>
+          <form onSubmit={register} className="space-y-4">
+            {/* Role Selection */}
+            <div>
+              <label
+                htmlFor="role_id"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                I want to register as
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Briefcase className="h-5 w-5 text-gray-400" />
                 </div>
-                
-                <div className={`role-option ${role === "3" ? "selected" : ""}`}>
-                  <input
-                    type="radio"
-                    id="freelancer"
-                    name="role"
-                    value="3"
-                    checked={role === "3"}
-                    onChange={(e) => setRole(e.target.value)}
-                  />
-                  <label htmlFor="freelancer" className="role-label">
-                    <div className="role-icon">💼</div>
-                    <div className="role-info">
-                      <h4>Freelancer</h4>
-                      <p>I want to offer my services</p>
-                    </div>
-                  </label>
-                </div>
+                <select
+                  id="role_id"
+                  value={role_id}
+                  onChange={(e) => setRole_id(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                >
+                  <option value="">Select Role</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">📝</span>
-                Personal Information
-              </h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="first_name">First Name</label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    placeholder="Enter your first name"
-                    value={first_name}
-                    onChange={(e) => setFirst_name(e.target.value)}
-                    required
-                  />
+            {/* First Name */}
+            <div>
+              <label
+                htmlFor="first_name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                First Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
-                
-                <div className="form-group">
-                  <label htmlFor="last_name">Last Name</label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    placeholder="Enter your last name"
-                    value={last_name}
-                    onChange={(e) => setLast_name(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="username">Username</label>
-                  <input
-                    type="text"
-                    id="username"
-                    placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">🔒</span>
-                Security
-              </h3>
-              <div className="form-group">
-                <label htmlFor="password">
-                  Password
-                  {password && (
-                    <span className="password-strength">
-                      Strength: <span style={{color: getPasswordStrengthColor()}}>
-                        {getPasswordStrengthText()}
-                      </span>
-                    </span>
-                  )}
-                </label>
                 <input
-                  type="password"
+                  type="text"
+                  id="first_name"
+                  placeholder="Enter your first name"
+                  value={first_name}
+                  onChange={(e) => setFirst_name(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Last Name */}
+            <div>
+              <label
+                htmlFor="last_name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Last Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="last_name"
+                  placeholder="Enter your last name"
+                  value={last_name}
+                  onChange={(e) => setLast_name(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label
+                htmlFor="phone_number"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Phone Number
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  id="phone_number"
+                  placeholder="Enter your phone number"
+                  value={phone_number}
+                  onChange={(e) => setPhone_number(e.target.value)}
+                  pattern="^[0-9+\-\s()]*$"
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
                   id="password"
-                  placeholder="Create a strong password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="pl-10 pr-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <div className="password-strength-meter">
-                  <div 
-                    className="password-strength-bar" 
-                    style={{
-                      width: `${passwordStrength * 25}%`,
-                      backgroundColor: getPasswordStrengthColor()
-                    }}
-                  ></div>
-                </div>
-                <div className="password-tips">
-                  <p>Use at least 8 characters with a mix of letters, numbers and symbols</p>
-                </div>
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
               </div>
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">📞</span>
-                Contact Information
-              </h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="phone_number">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone_number"
-                    placeholder="Your phone number"
-                    value={phone_number}
-                    onChange={(e) => setPhone_number(e.target.value)}
-                  />
+            {/* Country */}
+            <div>
+              <label
+                htmlFor="country"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Country
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MapPin className="h-5 w-5 text-gray-400" />
                 </div>
-                
-                <div className="form-group">
-                  <label htmlFor="country">Country</label>
-                  <select
-                    id="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                  >
-                    <option value="">Select your country</option>
-                    {countries.map((country) => (
-                      <option key={country.code} value={country.name}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                >
+                  <option value="">Select Country</option>
+                  {countries.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              className={`submit-btn ${isLoading ? "loading" : ""}`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="spinner"></span>
-                  Creating Account...
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </button>
+            {/* Username */}
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="username"
+                  placeholder="Choose a username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Terms */}
+            <div className="flex items-center">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                required
+              />
+              <label
+                htmlFor="terms"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                I agree to the{" "}
+                <a href="#" className="text-blue-600 hover:text-blue-500">
+                  Terms and Conditions
+                </a>
+              </label>
+            </div>
+
+            {/* Submit */}
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    Create Account
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          <div className="card-footer">
-            <p>Already have an account? <a href="/login">Sign in</a></p>
+          {/* Status */}
+          {message && (
+            <div
+              className={`mt-6 p-4 rounded-xl flex items-start ${
+                status ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+              }`}
+            >
+              {status ? (
+                <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-green-500 flex-shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
+              )}
+              <p>{message}</p>
+            </div>
+          )}
+
+          {/* Login Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <a
+                href="/login"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
+                Sign in
+              </a>
+            </p>
           </div>
         </div>
-        
-        <div className="register-graphics">
-          <div className="graphic-content">
-            <h2>Join Our Growing Community</h2>
-            <div className="features-list">
-              <div className="feature-item">
-                <div className="feature-icon">🚀</div>
-                <div className="feature-text">
-                  <h3>Fast Onboarding</h3>
-                  <p>Get started in minutes with our simple registration process</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">🔐</div>
-                <div className="feature-text">
-                  <h3>Secure Platform</h3>
-                  <p>Your data is protected with enterprise-grade security</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">🌍</div>
-                <div className="feature-text">
-                  <h3>Global Reach</h3>
-                  <p>Connect with professionals from around the world</p>
-                </div>
-              </div>
-            </div>
-          </div>
+
+        {/* Info */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-gray-500">
+            By creating an account, you agree to our{" "}
+            <a href="#" className="text-blue-600 hover:text-blue-500">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="text-blue-600 hover:text-blue-500">
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </div>
     </div>
