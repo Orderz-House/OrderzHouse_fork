@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "./Register.css";
+import "../register/Register.css";
 
 const Register = () => {
   const [role, setRole] = useState("2");
@@ -17,28 +17,23 @@ const Register = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [countries, setCountries] = useState([]);
 
-  // Load countries on component mount
   useEffect(() => {
     const loadCountries = async () => {
       try {
-        // Using REST Countries API to get all countries
         const response = await axios.get("https://restcountries.com/v3.1/all");
         const countryData = response.data.map(country => ({
           name: country.name.common,
           code: country.cca2
         }));
         
-        // Sort countries alphabetically
         countryData.sort((a, b) => a.name.localeCompare(b.name));
         setCountries(countryData);
         
-        // Set default country if needed
         if (!country) {
           setCountry(countryData[0]?.name || "");
         }
       } catch (error) {
         console.error("Failed to load countries:", error);
-        // Fallback to a basic list if API fails
         setCountries([
           { name: "United States", code: "US" },
           { name: "United Kingdom", code: "GB" },
@@ -62,7 +57,7 @@ const Register = () => {
     if (message) {
       const timer = setTimeout(() => {
         setMessage("");
-      }, 5000);
+      }, 3000);
       
       return () => clearTimeout(timer);
     }
@@ -144,7 +139,6 @@ const Register = () => {
 
   return (
     <div className="register-page">
-      {/* Notification message that appears outside the form container */}
       {message && (
         <div className={`global-message ${status ? "success" : "error"} ${message ? "visible" : ""}`}>
           <div className="message-content">
@@ -165,16 +159,13 @@ const Register = () => {
       <div className="register-container">
         <div className="register-card">
           <div className="card-header">
-            <h1>Create Your Account</h1>
-            <p>Join our community of professionals and clients</p>
+            <h1>Create new account</h1>
+            <p>Access a world of freelance opportunities</p>
           </div>
 
           <form onSubmit={register} className="register-form">
             <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">👥</span>
-                Account Type
-              </h3>
+              <h3 className="section-title">I want to join as a:</h3>
               <div className="role-selection">
                 <div className={`role-option ${role === "2" ? "selected" : ""}`}>
                   <input
@@ -186,10 +177,9 @@ const Register = () => {
                     onChange={(e) => setRole(e.target.value)}
                   />
                   <label htmlFor="user" className="role-label">
-                    <div className="role-icon">👤</div>
                     <div className="role-info">
                       <h4>Client</h4>
-                      <p>I want to hire freelancers for projects</p>
+                      <p>Hire talented freelancers</p>
                     </div>
                   </label>
                 </div>
@@ -204,146 +194,80 @@ const Register = () => {
                     onChange={(e) => setRole(e.target.value)}
                   />
                   <label htmlFor="freelancer" className="role-label">
-                    <div className="role-icon">💼</div>
                     <div className="role-info">
                       <h4>Freelancer</h4>
-                      <p>I want to offer my services</p>
+                      <p>Offer your services</p>
                     </div>
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">📝</span>
-                Personal Information
-              </h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="first_name">First Name</label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    placeholder="Enter your first name"
-                    value={first_name}
-                    onChange={(e) => setFirst_name(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="last_name">Last Name</label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    placeholder="Enter your last name"
-                    value={last_name}
-                    onChange={(e) => setLast_name(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="username">Username</label>
-                  <input
-                    type="text"
-                    id="username"
-                    placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">🔒</span>
-                Security
-              </h3>
+            <div className="form-row">
               <div className="form-group">
-                <label htmlFor="password">
-                  Password
-                  {password && (
-                    <span className="password-strength">
-                      Strength: <span style={{color: getPasswordStrengthColor()}}>
-                        {getPasswordStrengthText()}
-                      </span>
-                    </span>
-                  )}
-                </label>
+                <label htmlFor="first_name">First Name</label>
                 <input
-                  type="password"
-                  id="password"
-                  placeholder="Create a strong password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="text"
+                  id="first_name"
+                  placeholder="Enter your first name"
+                  value={first_name}
+                  onChange={(e) => setFirst_name(e.target.value)}
                   required
                 />
-                <div className="password-strength-meter">
-                  <div 
-                    className="password-strength-bar" 
-                    style={{
-                      width: `${passwordStrength * 25}%`,
-                      backgroundColor: getPasswordStrengthColor()
-                    }}
-                  ></div>
-                </div>
-                <div className="password-tips">
-                  <p>Use at least 8 characters with a mix of letters, numbers and symbols</p>
-                </div>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="last_name">Last Name</label>
+                <input
+                  type="text"
+                  id="last_name"
+                  placeholder="Enter your last name"
+                  value={last_name}
+                  onChange={(e) => setLast_name(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">
-                <span className="title-icon">📞</span>
-                Contact Information
-              </h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="phone_number">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone_number"
-                    placeholder="Your phone number"
-                    value={phone_number}
-                    onChange={(e) => setPhone_number(e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="country">Country</label>
-                  <select
-                    id="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                  >
-                    <option value="">Select your country</option>
-                    {countries.map((country) => (
-                      <option key={country.code} value={country.name}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">
+                Password
+                {password && (
+                  <span className="password-strength">
+                    <span style={{color: getPasswordStrengthColor()}}>
+                      {getPasswordStrengthText()}
+                    </span>
+                  </span>
+                )}
+              </label>
+              <input
+                type="password"
+                id="password"
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <div className="password-strength-meter">
+                <div 
+                  className="password-strength-bar" 
+                  style={{
+                    width: `${passwordStrength * 25}%`,
+                    backgroundColor: getPasswordStrengthColor()
+                  }}
+                ></div>
               </div>
             </div>
 
@@ -370,27 +294,27 @@ const Register = () => {
         
         <div className="register-graphics">
           <div className="graphic-content">
-            <h2>Join Our Growing Community</h2>
+            <h2>Launch Your Freelance Career</h2>
             <div className="features-list">
               <div className="feature-item">
-                <div className="feature-icon">🚀</div>
+                <div className="feature-icon">💼</div>
                 <div className="feature-text">
-                  <h3>Fast Onboarding</h3>
-                  <p>Get started in minutes with our simple registration process</p>
+                  <h3>Find Projects</h3>
+                  <p>Access quality projects that match your skills</p>
                 </div>
               </div>
               <div className="feature-item">
-                <div className="feature-icon">🔐</div>
+                <div className="feature-icon">💰</div>
                 <div className="feature-text">
-                  <h3>Secure Platform</h3>
-                  <p>Your data is protected with enterprise-grade security</p>
+                  <h3>Get Paid Securely</h3>
+                  <p>Receive payments with protection for both clients and freelancers</p>
                 </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">🌍</div>
                 <div className="feature-text">
-                  <h3>Global Reach</h3>
-                  <p>Connect with professionals from around the world</p>
+                  <h3>Work From Anywhere</h3>
+                  <p>Connect with clients globally and work on your own terms</p>
                 </div>
               </div>
             </div>
