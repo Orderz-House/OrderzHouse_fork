@@ -22,11 +22,10 @@ const Login = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const navigate = useNavigate();
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const navigate = useNavigate();
 
     axios
       .post("http://localhost:5000/users/login", {
@@ -44,7 +43,9 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful");
         setIsLoading(false);
-        navigate("/");
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
       })
       .catch((err) => {
         setStatus(false);
