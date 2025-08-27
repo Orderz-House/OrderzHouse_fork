@@ -1,4 +1,4 @@
-const pool = require("../models/db");
+const {pool} = require("../models/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
@@ -274,6 +274,65 @@ const editUser = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  // Get the user ID from route parameters
+  const { userId } = req.params;
+
+  // Extract the fields to update from request body
+  const {
+    first_name,
+    last_name,
+    phone_number,
+    country,
+    username,
+  } = req.body;
+
+  try {
+    // Update the user in the database
+    // COALESCE ensures that if a field is not provided, the existing value is kept
+    const result = await pool.query(
+      `UPDATE Users
+        SET
+          first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          phone_number = COALESCE($3, phone_number),
+          country = COALESCE($4, country),
+          username = COALESCE($5, username)
+        WHERE id = $6 AND is_deleted = FALSE
+        RETURNING *;`,
+      [
+        first_name,
+        last_name,
+        phone_number,
+        country,
+        username,
+        userId,
+      ]
+    );
+
+    // If no user found or the user is deleted, return 404
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found or deleted" });
+    }
+
+    // Return the updated user
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    // Handle database or server errors
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: err.message,
+    });
+  }
+};
+
 const createPortfolio = async (req, res) => {
   const { freelancer_id, title, description, skills, hourly_rate, work_url } =
     req.body;
@@ -518,4 +577,5 @@ module.exports = {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
+  updateUser
 };
