@@ -8,8 +8,8 @@ import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
 import Ask from "./components/ask/Ask";
 import ContactUsPage from "./components/contact/Contact";
-import Login from "./components/Login";
-import Register from "./components/Register";
+import Login from "./components/login/Login";
+import Register from "./components/register/Register";
 
 function App() {
   return (
