@@ -1,12 +1,33 @@
 const {pool} = require('../models/db');
 
+const createConversation = async (req,res)=>{
+    const { orderAssignmentsId , freelancerId} = req.body;
+    const userId = req.token.userId
+    pool.query
+    ("INSERT INTO conversations  (owner_id ,freelancer_id, order_assignments_id) VALUES ($1, $2, $3) RETURNING *", 
+        [userId, freelancerId,orderAssignmentsId]).then((result)=>{
+
+            res.status(201).json({
+                success : true,
+                message : "Successfully Create Chat",
+                result : result.rows
+            })
+        }).catch((err)=>{
+            res.status(500).json({
+                success : false,
+                message : "Server Error",
+                err
+            })
+        })
+
+    
+}
+
 const getConversationId = async (req, res) => {
     const {userId} = req.token;
     try {
 
-        const conversationQuery = `
-            SELECT * FROM conversations WHERE owner_id = $1 OR user_id = $1
-        `;
+        const conversationQuery = `SELECT * FROM conversations WHERE owner_id = $1 OR user_id = $1`;
 
         const conversationResult = await pool.query(conversationQuery, [userId]);
 
@@ -61,5 +82,11 @@ const getChatOneToOne = async (req, res) => {
 
 }
 
-module.exports = {getConversationId , getChatOneToOne};
+
+
+module.exports = {
+    getConversationId,
+    getChatOneToOne,
+    createConversation    
+};
 
