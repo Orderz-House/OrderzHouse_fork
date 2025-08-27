@@ -26,7 +26,7 @@ export default function OrderzHousePage() {
     axios
       .get("http://localhost:5000/plans")
       .then((response) => {
-        dispatch(setPlans(response.data));
+        dispatch(setPlans(response.data.plans));
         console.log(response.data);
       })
       .catch((error) => {
@@ -259,122 +259,37 @@ export default function OrderzHousePage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Basic Plan */}
-            <div
-              className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
-                activePlan === "basic" ? "border-blue-500" : "border-gray-200"
-              } transition-all duration-300 cursor-pointer`}
-              onClick={() => setActivePlan("basic")}
-            >
-              <h3 className="text-2xl font-bold mb-4">Basic Plan</h3>
-              <div className="text-3xl font-bold text-blue-600 mb-6">
-                $20.00
-              </div>
-              <p className="text-gray-600 mb-6">Duration: 1 Month</p>
-              <p className="mb-6">
-                Kickstart your freelance journey with our Basic Plan! Perfect
-                for beginners looking to get started.
-              </p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Submit a limited number of proposals</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Appear in freelancer search results</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Direct messaging with clients</span>
-                </li>
-              </ul>
-              <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors duration-300">
-                Get Started
-              </button>
-            </div>
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
+                  activePlan === plan.id ? "border-blue-500" : "border-gray-200"
+                } transition-all duration-300 cursor-pointer`}
+                onClick={() => setActivePlan(plan.id)}
+              >
+                <h3 className="text-2xl font-bold mb-4">{plan.name}</h3>
+                <div className="text-3xl font-bold text-blue-600 mb-6">
+                  ${parseFloat(plan.price).toFixed(2)}
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Duration: {plan.duration} Days
+                </p>
+                <p className="mb-6">{plan.description}</p>
 
-            {/* Pro Plan */}
-            <div
-              className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
-                activePlan === "pro" ? "border-purple-500" : "border-gray-200"
-              } transition-all duration-300 cursor-pointer`}
-              onClick={() => setActivePlan("pro")}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl font-bold">Pro Plan</h3>
-                <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                  POPULAR
-                </span>
-              </div>
-              <div className="text-3xl font-bold text-purple-600 mb-6">
-                $45.00
-              </div>
-              <p className="text-gray-600 mb-6">Duration: 1 Year</p>
-              <p className="mb-6">
-                Ideal for committed freelancers who want long-term growth.
-              </p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>More proposal submissions</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Higher visibility in search results</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Verified Freelancer badge</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Priority customer support</span>
-                </li>
-              </ul>
-              <button className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-colors duration-300">
-                Get Started
-              </button>
-            </div>
+                <ul className="space-y-3 mb-8">
+                  {plan.features?.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
 
-            {/* Elite Plan */}
-            <div
-              className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
-                activePlan === "elite" ? "border-pink-500" : "border-gray-200"
-              } transition-all duration-300 cursor-pointer`}
-              onClick={() => setActivePlan("elite")}
-            >
-              <h3 className="text-2xl font-bold mb-4">Elite Plan</h3>
-              <div className="text-3xl font-bold text-pink-600 mb-6">
-                $65.00
+                <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors duration-300">
+                  Get Started
+                </button>
               </div>
-              <p className="text-gray-600 mb-6">Duration: 2 Years</p>
-              <p className="mb-6">
-                Designed for professionals who aim for stability and premium
-                exposure.
-              </p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Nearly unlimited proposal submissions</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Featured Freelancer badge</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Priority listing on top projects</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Dedicated account manager</span>
-                </li>
-              </ul>
-              <button className="w-full py-3 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 transition-colors duration-300">
-                Get Started
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       </section>
