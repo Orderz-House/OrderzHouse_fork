@@ -9,7 +9,8 @@ import OrderzHousePage from "./components/main/Main";
 import Ask from "./components/ask/Ask";
 import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/login/Login";
-import Register from "./components/Register/Register";
+
+import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 function App() {
   return (
