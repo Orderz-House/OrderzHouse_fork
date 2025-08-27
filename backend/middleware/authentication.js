@@ -39,12 +39,18 @@ const authSocket = (socket, next) => {
       console.log("🔐 Socket authenticated:", decoded);
       const conversation_id = headers.conversation_id;
       const consversation = await pool.query(`SELECT * FROM conversations WHERE id = $1`, [conversation_id]);
-
+      console.log("consversation =>", consversation.rows);
+      
         //if(consversation.rows.length === 0) return;
-      const roomId = `${consversation.rows[0].id}-${consversation.rows[0].owner_id}-${consversation.rows[0].user_id}`;
+      const roomId = `${consversation.rows[0].id}-${consversation.rows[0].owner_id}-${consversation.rows[0].freelancer_id}`;
+
+      console.log("this roomId =>", roomId);
+      
       socket.join(roomId);
       socket.roomId = roomId;
       socket.dataroom = consversation.rows[0];
+      console.log("socket.dataroom", socket.dataroom);
+      
       socket.user = decoded;
       next();
     }
