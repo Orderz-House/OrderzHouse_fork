@@ -1,7 +1,10 @@
-const AdminJS = require("adminjs").default;
-const Connect = require("connect-pg-simple");
-const session = require("express-session");
-require("dotenv").config();
+import AdminJS from "adminjs";
+import Connect from "connect-pg-simple";
+import session from "express-session";
+import dotenv from "dotenv";
+import { Adapter, Database, Resource } from "@adminjs/sql";
+
+dotenv.config();
 
 const DEFAULT_ADMIN = {
   email: "admin@example.com",
@@ -15,10 +18,33 @@ const authenticate = async (email, password) => {
   return null;
 };
 
-const AdminInit = async (app) => {
+export const AdminInit = async (app) => {
   const AdminJSExpress = (await import("@adminjs/express")).default;
 
-  const admin = new AdminJS({ rootPath: "/admin" });
+  AdminJS.registerAdapter({
+    Database,
+    Resource,
+  });
+
+  const db = await new Adapter("postgresql", {
+    connectionString: process.env.DB_URL,
+    database: "OrderzHouse",
+  }).init();
+
+  const admin = new AdminJS({
+    rootPath: "/admin",
+    resources: [
+      {
+        resource: db.table("users"),
+        options: {
+          properties: {
+            created_at: { isVisible: false },
+            updated_at: { isVisible: false },
+          },
+        },
+      },
+    ],
+  });
 
   const ConnectSession = Connect(session);
   const sessionStore = new ConnectSession({
@@ -54,5 +80,3 @@ const AdminInit = async (app) => {
   app.use(admin.options.rootPath, adminRouter);
   console.log(`✅ AdminJS mounted at ${admin.options.rootPath}`);
 };
-
-module.exports = { AdminInit };
