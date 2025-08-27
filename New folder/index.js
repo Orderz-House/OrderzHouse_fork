@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
+
 import { AdminInit } from "./Admin.js";
 
 import dotenv from "dotenv";
@@ -51,9 +52,11 @@ app.use("/orders", ordersRouter);
 import chatsRouter from "./router/chats.js";
 app.use("/chats", chatsRouter);
 
+=======
 (async () => {
   await AdminInit(app);
 })();
+
 
 let server, io;
 
@@ -66,9 +69,10 @@ if (process.env.NODE_ENV !== "test") {
     // Attach error handler before calling listen
     server.once("error", (err) => {
       if (err && err.code === "EADDRINUSE") {
-        console.error(
-          `⚠️ Port ${portToUse} in use. Retrying with a random free port...`
+        console.error(`⚠️ Port ${portToUse} in use. Retrying with a random free port...`);
+
         );
+
         server.close(() => startServer(0));
         return;
       }
@@ -81,6 +85,7 @@ if (process.env.NODE_ENV !== "test") {
         typeof addressInfo === "object" && addressInfo
           ? addressInfo.port
           : portToUse;
+
       console.log(`✅ Server listening at http://localhost:${boundPort}`);
     });
   };
