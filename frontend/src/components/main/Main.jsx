@@ -27,7 +27,6 @@ export default function OrderzHousePage() {
       .get("http://localhost:5000/plans")
       .then((response) => {
         dispatch(setPlans(response.data.plans));
-        console.log(response.data);
       })
       .catch((error) => {
         console.error("Error fetching plans:", error.message);
