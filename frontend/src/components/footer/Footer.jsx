@@ -269,27 +269,21 @@ export default function EnhancedFooter() {
         <div className="border-t border-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <div className="flex items-center space-x-4">
-                <p className="text-gray-400 text-sm">
-                  Powered By{" "}
-                  <span className="text-teal-400 font-semibold">Bat</span> ©
-                  Through Battechno 2025
-                </p>
-              </div>
-
               <div className="flex items-center space-x-6">
-                <a
-                  href="#"
+                <Link
+                  to="/privacy"
                   className="text-gray-400 hover:text-teal-400 text-sm transition-colors duration-200"
                 >
-                  <Link to="/privacy">Privacy Policy</Link>
-                </a>
-                <a
-                  href="#"
+                  Privacy Policy
+                </Link>
+
+                <Link
+                  to="/terms"
                   className="text-gray-400 hover:text-teal-400 text-sm transition-colors duration-200"
                 >
                   Terms of Service
-                </a>
+                </Link>
+
                 <button
                   onClick={scrollToTop}
                   className="p-2 bg-gradient-to-br from-teal-400 to-blue-500 text-white rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-300 group"

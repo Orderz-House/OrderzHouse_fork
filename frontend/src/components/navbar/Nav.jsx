@@ -28,6 +28,7 @@ export default function EnhancedNavbar() {
   const [activeLink, setActiveLink] = useState("HOME");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [IsAuthenticated, setIsAuthenticated] = useState(false);
   const searchRef = useRef(null);
   const servicesRef = useRef(null);
   const contactRef = useRef(null);
@@ -76,7 +77,6 @@ export default function EnhancedNavbar() {
         setIsAuthenticated(false);
       });
   }, [dispatch, token]);
-  console.log(userData);
 
   // NAVBAR LINKS
   const navLinks = [
