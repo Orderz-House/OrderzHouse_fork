@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Link,
 } from "lucide-react";
+import { useNavigate } from "react-router";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -25,6 +26,7 @@ const Login = () => {
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
+    const navigate = useNavigate();
 
     axios
       .post("http://localhost:5000/users/login", {
@@ -42,6 +44,7 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful");
         setIsLoading(false);
+        navigate("/");
       })
       .catch((err) => {
         setStatus(false);

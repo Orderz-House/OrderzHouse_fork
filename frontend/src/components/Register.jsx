@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Briefcase,
 } from "lucide-react";
+import { useNavigate } from "react-router";
 
 const countries = [
   "Afghanistan",
@@ -287,6 +288,7 @@ const Register = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const register = (e) => {
     e.preventDefault();
@@ -319,6 +321,7 @@ const Register = () => {
               })
             );
             setIsLoading(false);
+            navigate("/");
           })
           .catch((err) => {
             console.error("Auto login failed:", err);
