@@ -30,7 +30,7 @@ const register = async (req, res) => {
 
   pool
     .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [
         role_id,
         first_name,
@@ -42,7 +42,12 @@ const register = async (req, res) => {
         username,
       ]
     )
-    .then((result) => {
+    .then( async(result) => {
+      //console.log(result.rows[0].id);
+      const user = result.rows[0]
+      const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" : "Freelancer";
+      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
+      await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
       res.status(201).json({
         success: true,
         message: "User registered successfully",
@@ -122,7 +127,9 @@ const login = async (req, res) => {
     if (user.role_id === 3) {
       await pool.query(ipAddressQuery, ipAddressData);
     }
-
+      const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" : "Freelancer";
+      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has logged in successfully.`;
+      await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
     return res.status(201).json({
       token,
       success: true,
