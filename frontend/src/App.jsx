@@ -8,8 +8,8 @@ import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
 import Ask from "./components/ask/Ask";
 import ContactUsPage from "./components/contact/Contact";
-import Login from "./components/Login";
-import Register from "./components/Register";
+import Login from "./components/login/Login";
+import Register from "./components/Register/Register";
 import EditProfile from "./components/profile/EditProfile";
 function App() {
   return (
@@ -25,7 +25,7 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={<EditProfile/>}/>
+        <Route path="/profile" element={<EditProfile />} />
       </Routes>
       <EnhancedFooter />
     </>
