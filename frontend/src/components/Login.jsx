@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../slice/auth/authSlice";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import {
   Mail,
@@ -10,7 +12,9 @@ import {
   LogIn,
   AlertCircle,
   CheckCircle,
-  Link,
+  UserPlus,
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 import { useNavigate } from "react-router";
 
@@ -23,6 +27,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -41,7 +46,7 @@ const Login = () => {
           })
         );
         setStatus(true);
-        setMessage("Login successful");
+        setMessage("Login successful! Redirecting...");
         setIsLoading(false);
         setTimeout(() => {
           navigate("/");
@@ -49,36 +54,44 @@ const Login = () => {
       })
       .catch((err) => {
         setStatus(false);
-        setMessage(err.response?.data?.message || "Login failed");
+        setMessage(err.response?.data?.message || "Login failed. Please check your credentials.");
         setIsLoading(false);
       });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Enhanced Header */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute -inset-3 bg-gradient-to-r from-blue-600 to-purple-600 blur-lg opacity-30 rounded-full"></div>
+              <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 p-4 rounded-2xl shadow-lg">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Welcome to{" "}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               ORDERZHOUSE
             </span>
           </h1>
-          <p className="text-gray-600">
-            Sign in to access your account and continue your journey
+          <p className="text-gray-600 text-lg">
+            Sign in to continue your journey
           </p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-3xl shadow-lg p-8">
+        {/* Enhanced Login Form */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
-              <LogIn className="w-8 h-8 text-white" />
-            </div>
             <h2 className="text-2xl font-bold text-gray-900">
               Sign in to your account
             </h2>
+            <p className="text-gray-500 mt-2">
+              Enter your credentials to access your dashboard
+            </p>
           </div>
 
           <form onSubmit={login} className="space-y-6">
@@ -101,7 +114,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                  className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm focus:shadow-md"
                 />
               </div>
             </div>
@@ -125,11 +138,11 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10 pr-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                  className="pl-10 pr-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm focus:shadow-md"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -161,9 +174,9 @@ const Login = () => {
               <div className="text-sm">
                 <a
                   href="#"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 >
-                  Forgot your password?
+                  Forgot password?
                 </a>
               </div>
             </div>
@@ -173,7 +186,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 flex items-center justify-center"
+                className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 {isLoading ? (
                   <>
@@ -207,13 +220,58 @@ const Login = () => {
                 )}
               </button>
             </div>
+            
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+            
+            {/* Google Login */}
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={(credentialResponse) => {
+                  const decoded = jwtDecode(credentialResponse.credential);
+                  console.log("Google User:", decoded);
+
+                  dispatch(
+                    setLogin({
+                      token: credentialResponse.credential,
+                      userId: decoded.sub,
+                      roleId: "2",
+                    })
+                  );
+
+                  setStatus(true);
+                  setMessage("Google login successful! Redirecting...");
+
+                  setTimeout(() => {
+                    navigate("/");
+                  }, 1000);
+                }}
+                onError={() => {
+                  setStatus(false);
+                  setMessage("Google login failed. Please try again.");
+                }}
+                theme="filled_blue"
+                size="large"
+                shape="pill"
+                text="signin_with"
+              />
+            </div>
           </form>
 
           {/* Status Message */}
           {message && (
             <div
-              className={`mt-6 p-4 rounded-xl flex items-start ${
-                status ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+              className={`mt-6 p-4 rounded-xl flex items-start border ${
+                status 
+                  ? "bg-green-50 text-green-800 border-green-200" 
+                  : "bg-red-50 text-red-800 border-red-200"
               }`}
             >
               {status ? (
@@ -221,33 +279,33 @@ const Login = () => {
               ) : (
                 <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
               )}
-              <p>{message}</p>
+              <p className="text-sm">{message}</p>
             </div>
           )}
 
           {/* Sign Up Link */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <a
                 href="/register"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-medium text-blue-600 hover:text-blue-500 inline-flex items-center transition-colors"
               >
-                Sign up now
+                Sign up now <ArrowRight className="ml-1 h-4 w-4" />
               </a>
             </p>
           </div>
         </div>
 
         {/* Additional Info */}
-        <div className="mt-8 text-center">
+        <div className="text-center">
           <p className="text-xs text-gray-500">
             By signing in, you agree to our{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-500">
+            <a href="#" className="text-blue-600 hover:text-blue-500 transition-colors">
               Terms of Service
             </a>{" "}
             and{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-500">
+            <a href="#" className="text-blue-600 hover:text-blue-500 transition-colors">
               Privacy Policy
             </a>
           </p>
