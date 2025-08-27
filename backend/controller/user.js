@@ -426,6 +426,34 @@ const { userId } = req.params;
   }
 }
 
+const listOnlineUsers = async(req, res) =>{
+  try {
+
+    const result = await pool.query("SELECT * FROM users WHERE is_online = TRUE")
+
+    if(result.rows.length === 0){
+      return res.status(404).json({
+        success : true,
+        message : "No one is active"
+      })
+    }
+
+    return res.status(200).json({
+      success : true,
+      message : "Active Users found",
+      users : result.rows
+    })
+
+
+  } catch (err) {
+    return res.status(500).json({
+      success : false,
+      messagge : "Server Error",
+      error : err
+    })
+  }
+}
+
 
 
 
@@ -439,4 +467,5 @@ module.exports = {
   editPortfolioFreelancer,
   getAllFreelancers,
   deleteFreelancerById,
+  listOnlineUsers
 };
