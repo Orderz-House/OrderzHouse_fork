@@ -43,9 +43,8 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful");
         setIsLoading(false);
-        setTimeout(() => {
           navigate("/");
-        }, 1000);
+      
       })
       .catch((err) => {
         setStatus(false);
