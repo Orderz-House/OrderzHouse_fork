@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { setLogin } from "../slice/auth/authSlice";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
@@ -14,9 +13,10 @@ import {
   CheckCircle,
   UserPlus,
   ArrowRight,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { setLogin } from "../../slice/auth/authSlice";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -27,7 +27,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,13 +48,14 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful! Redirecting...");
         setIsLoading(false);
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
+        navigate("/");
       })
       .catch((err) => {
         setStatus(false);
-        setMessage(err.response?.data?.message || "Login failed. Please check your credentials.");
+        setMessage(
+          err.response?.data?.message ||
+            "Login failed. Please check your credentials."
+        );
         setIsLoading(false);
       });
   };
@@ -220,17 +221,19 @@ const Login = () => {
                 )}
               </button>
             </div>
-            
+
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
-            
+
             {/* Google Login */}
             <div className="flex justify-center">
               <GoogleLogin
@@ -269,8 +272,8 @@ const Login = () => {
           {message && (
             <div
               className={`mt-6 p-4 rounded-xl flex items-start border ${
-                status 
-                  ? "bg-green-50 text-green-800 border-green-200" 
+                status
+                  ? "bg-green-50 text-green-800 border-green-200"
                   : "bg-red-50 text-red-800 border-red-200"
               }`}
             >
@@ -301,11 +304,17 @@ const Login = () => {
         <div className="text-center">
           <p className="text-xs text-gray-500">
             By signing in, you agree to our{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-500 transition-colors">
+            <a
+              href="#"
+              className="text-blue-600 hover:text-blue-500 transition-colors"
+            >
               Terms of Service
             </a>{" "}
             and{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-500 transition-colors">
+            <a
+              href="#"
+              className="text-blue-600 hover:text-blue-500 transition-colors"
+            >
               Privacy Policy
             </a>
           </p>
