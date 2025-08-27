@@ -11,7 +11,6 @@ import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import EditProfile from "./components/profile/EditProfile";
-
 function App() {
   return (
     <>
