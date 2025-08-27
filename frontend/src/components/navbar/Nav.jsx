@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
   Menu,
@@ -28,6 +28,7 @@ export default function EnhancedNavbar() {
   const [activeLink, setActiveLink] = useState("HOME");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [IsAuthenticated, setIsAuthenticated] = useState(false);
   const searchRef = useRef(null);
   const servicesRef = useRef(null);
   const contactRef = useRef(null);
@@ -69,9 +70,6 @@ export default function EnhancedNavbar() {
       })
       .then((res) => {
         dispatch(setUserData(res.data.user));
-        if(JSON.parse(Cookies.get("userData")) !== null){
-          Cookies.set("userData", JSON.stringify(res.data.user), {expires : 1, secure: true, sameSite: "Strict"})
-        }
         setIsAuthenticated(true);
       })
       .catch((err) => {
@@ -79,7 +77,6 @@ export default function EnhancedNavbar() {
         setIsAuthenticated(false);
       });
   }, [dispatch, token]);
-  console.log(userData);
 
   // NAVBAR LINKS
   const navLinks = [
@@ -426,7 +423,10 @@ export default function EnhancedNavbar() {
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                       >
                         <Settings className="h-4 w-4" />
-                        <span>Profile Settings</span>
+                        <Link to="/profile">
+                          {" "}
+                          <span>Profile Settings</span>
+                        </Link>
                       </button>
                       <button
                         onClick={handleLogout}
@@ -604,7 +604,9 @@ export default function EnhancedNavbar() {
                       className="w-full text-left px-4 py-3 text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
                     >
                       <Settings className="h-4 w-4" />
-                      <span>Profile Settings</span>
+                      <Link to="/profile">
+                        <span>Profile Settings</span>
+                      </Link>
                     </button>
                     <button
                       onClick={() => {
