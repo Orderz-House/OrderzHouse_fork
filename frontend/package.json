@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@adminjs/express": "^6.1.1",
+    "@adminjs/sql": "^2.2.6",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.12",
+    "adminjs": "^7.8.17",
     "axios": "^1.11.0",
     "lucide-react": "^0.541.0",
     "react": "^19.1.1",
