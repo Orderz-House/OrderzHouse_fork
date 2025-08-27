@@ -3,6 +3,8 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
+const { AdminInit } = require("./Admin");
+
 require("dotenv").config();
 
 const app = express();
@@ -39,13 +41,17 @@ const logsRouter = require("./router/logs");
 
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
-app.use("/orders", require("./router/orders"));
+// app.use("/orders", require("./router/orders"));
 app.use("/feedbacks", feedbackRouter);
 app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 app.use("/chats", require("./router/chats"));
+
+(async () => {
+  await AdminInit(app);
+})();
 
 let server, io;
 
