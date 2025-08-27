@@ -6,13 +6,17 @@ const http = require("http");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.NODE_ENV === "test" ? 0 : (process.env.PORT || 3003);
+const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 3003;
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
 }
-app.use(cors());
 app.use(express.json());
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 // rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -49,7 +53,7 @@ if (process.env.NODE_ENV !== "test") {
   server = http.createServer(app);
   const initSocket = require("./sockets/socket");
   io = initSocket(server);
-  
+
   server.listen(PORT, () => {
     console.log(`✅ Server listening at http://localhost:${PORT}`);
   });

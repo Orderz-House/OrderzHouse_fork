@@ -47,7 +47,7 @@ const register = async (req, res) => {
         username,
       ]
     )
-    .then( async(result) => {
+    .then(async (result) => {
       //console.log(result.rows[0].id);
       const user = result.rows[0]
 
@@ -56,11 +56,7 @@ const register = async (req, res) => {
       
       // Create a clear log message
       const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
-      
-      // Insert the log into the logs table
       await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
-      
-      // Respond with success and the created user
       res.status(201).json({
         success: true,
         message: "User registered successfully",
@@ -153,15 +149,9 @@ const login = async (req, res) => {
     if (user.role_id === 3) {
       await pool.query(ipAddressQuery, ipAddressData);
     }
-
-    // Prepare clear login action message for logs
-    const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" :"Freelancer";
-    const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${usercountry}, has logged in successfully.`;
-
-    // Insert the login action into logs
-    await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id,actionUser])
-
-    // Return successful login response
+      const positionRole = user.role_id === 1 ? "Admin" : user.role_id === 2 ? "Client" : "Freelancer";
+      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has logged in successfully.`;
+      await pool.query('INSERT INTO logs (user_id, action) VALUES ($1,$2)', [user.id, actionUser])
     return res.status(201).json({
       token,
       success: true,
