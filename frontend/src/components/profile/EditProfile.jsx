@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Save,
     Upload,
@@ -18,16 +18,21 @@ import {
     Briefcase,
     FileText,
     CreditCard,
-    UserCog
+    UserCog,
+    Lock
 } from "lucide-react";
-
+import Cookies from "js-cookie"
+import axios from "axios";
 const EditProfile = () => {
     const [activeSection, setActiveSection] = useState("profile");
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState("");
-    
+    const [profileData, setProfileData] = useState(JSON.parse(Cookies.get("userData")));
+    const token = localStorage.getItem("token");
+
+
     const navigationItems = [
         {
             id: "profile",
@@ -61,22 +66,7 @@ const EditProfile = () => {
         }
     ];
 
-    const [profileData, setProfileData] = useState({
-        first_name: "John",
-        last_name: "Doe",
-        email: "john.doe@example.com",
-        password: "",
-        phone_number: "+1234567890",
-        country: "United States",
-        profile_pic_url: "",
-        username: "johndoe123",
-        reason_for_disruption: "",
-        created_at: "2024-01-15T10:30:00Z",
-        is_online: true,
-        socket_id: "socket_abc123",
-        violation_count: 0,
-        is_deleted: false
-    });
+    
 
     const [errors, setErrors] = useState({});
 
@@ -100,6 +90,9 @@ const EditProfile = () => {
         if (saveError) {
             setSaveError("");
         }
+
+        
+        
     };
 
     const validateForm = () => {
@@ -162,8 +155,26 @@ const EditProfile = () => {
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             console.log("Saving profile data:", profileData);
-            setSaveSuccess(true);
             
+            axios.put(`http://localhost:5000/users/update/${profileData.id}`, {
+                first_name: profileData.first_name,
+                last_name: profileData.last_name,
+                phone_number: profileData.phone_number,
+                country: profileData.country,
+                username: profileData.username
+            },{
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      }).then((result)=>{
+                console.log(result);
+                setSaveSuccess(true);
+                setProfileData(result.data.user);
+                Cookies.set("userData", JSON.stringify(result.data.user), {expires : 1, secure: true, sameSite: "Strict"})
+            }).catch((err)=>{
+                console.log(err);
+                
+            })
             setTimeout(() => {
                 setSaveSuccess(false);
             }, 3000);
@@ -397,12 +408,15 @@ const EditProfile = () => {
                                             type="email"
                                             value={profileData.email}
                                             onChange={(e) => handleInputChange('email', e.target.value)}
-                                            className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                                            disabled={true}
+                                            className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-400 ${
                                                 errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                                             }`}
                                             placeholder="Enter email address"
-                                            disabled={isSubmitting}
+                                            //disabled={isSubmitting}
+                                            //readOnly={true}
                                         />
+                                        <Lock className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
                                     </div>
                                     {errors.email && (
                                         <p className="text-red-600 text-sm mt-1">{errors.email}</p>
@@ -477,7 +491,7 @@ const EditProfile = () => {
                                         id="password"
                                         name="password"
                                         type={showPassword ? "text" : "password"}
-                                        value={profileData.password}
+                                        // value={profileData.password}
                                         onChange={(e) => handleInputChange('password', e.target.value)}
                                         className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                         placeholder="Leave empty to keep current password"
