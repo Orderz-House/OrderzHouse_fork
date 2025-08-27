@@ -5,6 +5,7 @@ const initialState = {
   userId: localStorage.getItem("userId") || null,
   roleId: localStorage.getItem("roleId") || null,
   isLoggedIn: !!localStorage.getItem("token"),
+  userData: null,
 };
 
 const authSlice = createSlice({
