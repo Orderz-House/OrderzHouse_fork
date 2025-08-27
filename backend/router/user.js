@@ -40,10 +40,9 @@ usersRouter.post(
 //   authentication
 //   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 // );
-
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
-usersRouter.get(
+usersRouter.post(
   "/view",
   authentication,
   authorization("view_users"),
@@ -67,7 +66,7 @@ usersRouter.post(
   /*authorization("create_portfolio"),*/ createPortfolio
 );
 usersRouter.put(
-  "/freelancer/portfolio/edit/:userId",
+  "/freelancer/portfolio/edit/:portfolioId",
   authentication,
   /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
@@ -79,7 +78,7 @@ usersRouter.post(
   getAllFreelancers
 );
 usersRouter.delete(
-  "/freelancer/delete/:userId",
+  "/freelancer/delete/:freelancerid",
   authentication,
   authorization("delete_freelancer"),
   deleteFreelancerById
