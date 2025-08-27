@@ -12,9 +12,13 @@ const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 3003;
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
 }
-app.use(cors());
 app.use(express.json());
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 // rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
