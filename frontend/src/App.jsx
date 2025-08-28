@@ -12,6 +12,8 @@ import Login from "./components/login/Login";
 
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
+import CreateProject from "./components/createProject/CreateProject";
+import ProjectDetails from "./components/projects/ProjectDetails";
 function App() {
   return (
     <>
@@ -27,6 +29,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<EditProfile />} />
+        <Route path="/create-project" element={<CreateProject />} />
+        <Route path="/projects/:projectId" element={<ProjectDetails />} />
       </Routes>
       <EnhancedFooter />
     </>

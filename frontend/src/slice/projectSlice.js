@@ -35,7 +35,13 @@ const projectSlice = createSlice({
   },
 });
 
-export const { clearProjectError, setCreating, setLoadingRelated, setError, setCurrentProject, addProject, setRelatedFreelancers } = projectSlice.actions;
+export const {
+  clearProjectError,
+  setCreating,
+  setLoadingRelated,
+  setError,
+  setCurrentProject,
+  addProject,
+  setRelatedFreelancers,
+} = projectSlice.actions;
 export default projectSlice.reducer;
-
-
