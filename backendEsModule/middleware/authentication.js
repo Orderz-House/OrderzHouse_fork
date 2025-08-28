@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import pool from "../models/db";
+import pool from "../models/db.js";
 const authentication = (req, res, next) => {
   try {
     if (!req.headers.authorization)

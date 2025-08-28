@@ -21,11 +21,12 @@ import {
     UserCog,
     Lock
 } from "lucide-react";
-import Cookies from "js-cookie"
 import axios from "axios";
+import { useSelector } from "react-redux";
 
 const Billing = () => {
-    const profileData = JSON.parse(Cookies.get("userData"))
+    const {userData} = useSelector((state) => state.auth);
+    const profileData = userData
     const [billingData, setBillingData] = useState({
         first_name: profileData.first_name || '',
         last_name: profileData.last_name || '',

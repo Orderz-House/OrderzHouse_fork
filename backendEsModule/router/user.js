@@ -12,8 +12,13 @@ import {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
+
+  getPortfolioByUserId,
+  deletePortfolioFreelancer
+
   rateFreelancer,
   getTopFreelancers,
+
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
@@ -67,11 +72,15 @@ usersRouter.post(
   authentication,
   /*authorization("create_portfolio"),*/ createPortfolio
 );
+
+usersRouter.get("/freelancer/:userId/portfolio", authentication, getPortfolioByUserId)
 usersRouter.put(
   "/freelancer/portfolio/edit/:portfolioId",
   authentication,
   /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
+
+usersRouter.delete(`/freelancer/portfolio/delete`, authentication, deletePortfolioFreelancer)
 
 usersRouter.post(
   "/freelancers",
