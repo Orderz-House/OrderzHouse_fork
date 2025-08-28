@@ -16,6 +16,8 @@ import { setPlans } from "../../slice/planSlice";
 
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
+  const [categories, setCategories] = useState([]);
+
   const dispatch = useDispatch();
   const { plans, token } = useSelector((state) => {
     return {
@@ -23,6 +25,16 @@ export default function OrderzHousePage() {
       token: state.auth.token,
     };
   });
+  const API_BASE = "http://localhost:5000";
+
+  useEffect(() => {
+    axios
+      .get(`${API_BASE}/projects/public/categories`)
+      .then((res) => {
+        setCategories(res.data.categories || []);
+      })
+      .catch((e) => console.error(e.message));
+  }, []);
   useEffect(() => {
     axios
       .get("http://localhost:5000/plans")
@@ -34,47 +46,47 @@ export default function OrderzHousePage() {
       });
   }, [dispatch]);
 
-  const categories = [
-    {
-      title: "Programming",
-      description: "Software Developer, Data Analyst, Network Engineer",
-      icon: "💻",
-    },
-    {
-      title: "Photographer",
-      description:
-        "Photography is the art of capturing moments, emotions, and stories through the lens to create lasting visual impressions.",
-      icon: "📷",
-    },
-    {
-      title: "Admin + Project Management",
-      description:
-        "Administrative Assistant, Project Manager, and Process Analyst",
-      icon: "📊",
-    },
-    {
-      title: "Music & Audio",
-      description: "Sound Engineer, Music Producer, Audio Editor",
-      icon: "🎵",
-    },
-    {
-      title: "Graphic Design",
-      description:
-        "Graphic design is the art of visual communication that combines images, typography, and creativity to deliver impactful messages.",
-      icon: "🎨",
-    },
-    {
-      title: "Remote Work",
-      description: "Customer Service Representative, Financial Analyst",
-      icon: "🏠",
-    },
-    {
-      title: "Content Creator",
-      description:
-        "A content writer creates clear, engaging, and informative text tailored to attract and inform a specific audience.",
-      icon: "✏️",
-    },
-  ];
+  // const categories = [
+  //   {
+  //     title: "Programming",
+  //     description: "Software Developer, Data Analyst, Network Engineer",
+  //     icon: "💻",
+  //   },
+  //   {
+  //     title: "Photographer",
+  //     description:
+  //       "Photography is the art of capturing moments, emotions, and stories through the lens to create lasting visual impressions.",
+  //     icon: "📷",
+  //   },
+  //   {
+  //     title: "Admin + Project Management",
+  //     description:
+  //       "Administrative Assistant, Project Manager, and Process Analyst",
+  //     icon: "📊",
+  //   },
+  //   {
+  //     title: "Music & Audio",
+  //     description: "Sound Engineer, Music Producer, Audio Editor",
+  //     icon: "🎵",
+  //   },
+  //   {
+  //     title: "Graphic Design",
+  //     description:
+  //       "Graphic design is the art of visual communication that combines images, typography, and creativity to deliver impactful messages.",
+  //     icon: "🎨",
+  //   },
+  //   {
+  //     title: "Remote Work",
+  //     description: "Customer Service Representative, Financial Analyst",
+  //     icon: "🏠",
+  //   },
+  //   {
+  //     title: "Content Creator",
+  //     description:
+  //       "A content writer creates clear, engaging, and informative text tailored to attract and inform a specific audience.",
+  //     icon: "✏️",
+  //   },
+  // ];
 
   const topFreelancers = [
     {
@@ -165,7 +177,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Categories Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -179,16 +190,13 @@ export default function OrderzHousePage() {
                 key={index}
                 className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300"
               >
-                <div className="text-4xl mb-4">{category.icon}</div>
-                <h3 className="text-xl font-bold mb-3">{category.title}</h3>
+                <h3 className="text-xl font-bold mb-3">{category.name}</h3>
                 <p className="text-gray-600">{category.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* Work With The Best */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -212,12 +220,15 @@ export default function OrderzHousePage() {
             ))}
           </div>
 
-          <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto">
-            {!token ? <span>Sign in</span> : <></>}
-          </button>
+          {!token ? (
+            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto">
+              <span>Sign in</span>{" "}
+            </button>
+          ) : (
+            <></>
+          )}
         </div>
       </section>
-
       {/* Freelancer, Employer, Community */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -249,7 +260,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Pricing Plans */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-50 to-white">
         <div className="max-w-7xl mx-auto">
@@ -296,7 +306,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Learning Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto text-center">
@@ -324,7 +333,6 @@ export default function OrderzHousePage() {
           </button>
         </div>
       </section>
-
       {/* Mobile App Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -391,7 +399,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Top Freelancers */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -451,7 +458,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

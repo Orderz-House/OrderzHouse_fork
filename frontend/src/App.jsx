@@ -14,10 +14,12 @@ import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
+import TopRatedFreelancers from "./components/topRated/TopRate";
 
 function App() {
     const token = useSelector((state) => state.auth.token);
@@ -46,6 +48,7 @@ function App() {
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
+        <Route path="/rate" element={<TopRatedFreelancers />} />
       </Routes>
       <EnhancedFooter />
     </>

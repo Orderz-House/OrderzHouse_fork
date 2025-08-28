@@ -222,10 +222,55 @@ const getAppointmentsByFreelancer = (req, res) => {
     });
 };
 
+const rejectAppointment = (req, res) => {
+  const { appointment_id } = req.params
+
+  if (!appointment_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Appointment ID is required",
+    })
+  }
+
+  const query = `
+    UPDATE appointments
+    SET status = 'rejected'
+    WHERE id = $1
+    RETURNING *
+  `
+
+  pool
+    .query(query, [appointment_id])
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Appointment not found",
+        })
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Appointment rejected successfully",
+        appointment: result.rows[0],
+      })
+    })
+    .catch((err) => {
+      console.error("Error rejecting appointment:", err)
+      res.status(500).json({
+        success: false,
+        message: "Server error while rejecting appointment",
+        error: err.message,
+      })
+    })
+}
+
+
 export {
   makeAppointment,
   rescheduleAppointment,
   acceptAppointment,
   getAllAppointments,
   getAppointmentsByFreelancer,
+  rejectAppointment
 };
