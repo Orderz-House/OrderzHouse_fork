@@ -1,10 +1,22 @@
+// Admin.js (or wherever you have AdminInit defined)
 import AdminJS from "adminjs";
 import session from "express-session";
 import Connect from "connect-pg-simple";
 import dotenv from "dotenv";
 import { Adapter, Database, Resource } from "@adminjs/sql";
+import { componentLoader, Components } from "./Admin/adminUi.js";
+import pg from "pg";
 
 dotenv.config();
+
+const { Pool } = pg;
+const pool = new Pool({
+  connectionString: process.env.DB_URL,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
+});
 
 const DEFAULT_ADMIN = {
   email: "admin@example.com",
@@ -28,22 +40,84 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
+  // ✅ fixed dashboard handler
+  const dashboardHandler = async () => {
+    const client = await pool.connect();
+    try {
+      const [{ count: usersCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM users`)
+      ).rows;
+
+      const [{ count: coursesCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
+      ).rows;
+
+      const [{ count: pendingAppointments }] = (
+        await client.query(
+          `SELECT COUNT(*)::int AS count FROM appointments WHERE status = $1`,
+          ["pending"]
+        )
+      ).rows;
+
+      const recentUsers = (
+        await client.query(
+          `SELECT id, first_name, email, created_at
+             FROM users
+             ORDER BY created_at DESC
+             LIMIT 5`
+        )
+      ).rows;
+
+      const recentAppointments = (
+        await client.query(
+          `SELECT id, message, status, appointment_date, created_at
+             FROM appointments
+             ORDER BY created_at DESC
+             LIMIT 5`
+        )
+      ).rows;
+
+      return {
+        metrics: {
+          usersCount,
+          coursesCount,
+          pendingAppointments,
+        },
+        recentUsers,
+        recentAppointments,
+        message: "Hello World",
+      };
+    } finally {
+      client.release();
+    }
+  };
+
   const admin = new AdminJS({
     rootPath: "/admin",
+    componentLoader,
+    dashboard: {
+      component: Components.Dashboard,
+      handler: dashboardHandler,
+    },
+    branding: {
+      companyName: "OrderzHouse Admin",
+      logo: false,
+      softwareBrothers: false,
+    },
     resources: [
       {
         resource: db.table("users"),
         options: {
           id: "users",
-          navigation: { name: "Users" }, 
-          filterProperties: ["email", "name", "role"],
+          navigation: { name: "Users" },
+          filterProperties: ["email", "first_name", "role_id"],
         },
       },
       {
         resource: db.table("categories"),
         options: {
           id: "freelancing_types",
-          navigation: { name: "Freelancing" }, 
+          navigation: { name: "Freelancing" },
         },
       },
       {
@@ -75,6 +149,10 @@ export const AdminInit = async (app) => {
       },
     ],
   });
+
+  if (process.env.NODE_ENV !== "production") {
+    admin.watch();
+  }
 
   const ConnectSession = Connect(session);
   const sessionStore = new ConnectSession({
