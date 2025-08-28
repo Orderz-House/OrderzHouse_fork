@@ -1,165 +1,115 @@
-// Admin/components/Dashboard.jsx
 import React, { useEffect, useState } from "react"
-import { ApiClient, useTranslation } from "adminjs"
-
-const api = new ApiClient()
+import { Users, BookOpen, Calendar, ShoppingBag, Briefcase, BarChart3 } from "lucide-react"
 
 export default function Dashboard() {
-  const { translateMessage } = useTranslation()
   const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
-    api
-      .getDashboard()
-      .then((res) => setData(res.data))
-      .catch((err) => setError(err?.message || "Failed to load dashboard"))
-      .finally(() => setLoading(false))
+    fetch("/admin/api/dashboard")
+      .then((res) => res.json())
+      .then((res) => setData(res))
+      .catch((err) => console.error("Dashboard fetch error:", err))
   }, [])
 
-  if (loading) return <div style={{ padding: 24 }}>Loading dashboard…</div>
-  if (error) return <div style={{ padding: 24, color: "crimson" }}>{error}</div>
+  const sections = [
+    { title: "Users", link: "/admin/resources/users", color: "#E0F2FE", icon: <Users size={28} color="#0369a1" /> },
+    { title: "Courses", link: "/admin/resources/courses", color: "#F3E8FF", icon: <BookOpen size={28} color="#6b21a8" /> },
+    { title: "Appointments", link: "/admin/resources/appointments", color: "#FEF9C3", icon: <Calendar size={28} color="#ca8a04" /> },
+    { title: "Orders", link: "/admin/resources/orders", color: "#FEE2E2", icon: <ShoppingBag size={28} color="#b91c1c" /> },
+    { title: "Freelancing", link: "/admin/resources/categories", color: "#DCFCE7", icon: <Briefcase size={28} color="#166534" /> },
+  ]
 
-  const { metrics = {}, recentUsers = [], recentAppointments = [], message } = data || {}
+  const analytics = [
+    { label: "Total Users", value: data?.metrics?.usersCount || 0, color: "#0369a1" },
+    { label: "Total Courses", value: data?.metrics?.coursesCount || 0, color: "#6b21a8" },
+    { label: "Pending Appointments", value: data?.metrics?.pendingAppointments || 0, color: "#ca8a04" },
+  ]
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ marginBottom: 8 }}>
-        {translateMessage("dashboard")} – {message || "Overview"}
-      </h1>
+      {/* Header */}
+      <header style={{ marginBottom: 40 }}>
+        <h1 style={{ fontSize: 32, fontWeight: "700", color: "#111827", marginBottom: 6 }}>
+          Dashboard
+        </h1>
+        <p style={{ fontSize: 15, color: "#6b7280" }}>
+          OrderzHouse Administration Panel
+        </p>
+      </header>
 
-      {/* KPI cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 16,
-          marginTop: 16,
-          marginBottom: 24,
-        }}
-      >
-        <KPI title="Users" value={metrics.usersCount} />
-        <KPI title="Courses" value={metrics.coursesCount} />
-        <KPI title="Pending Appointments" value={metrics.pendingAppointments} />
-      </div>
+      {/* Analytics Section */}
+      <section style={{ marginBottom: 40 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart3 size={22} /> Analytics
+        </h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 20,
+          }}
+        >
+          {analytics.map((a) => (
+            <div
+              key={a.label}
+              style={{
+                background: "white",
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                borderLeft: `5px solid ${a.color}`,
+              }}
+            >
+              <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 6 }}>{a.label}</div>
+              <div style={{ fontSize: 28, fontWeight: "700", color: a.color }}>{a.value}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-        }}
-      >
-        <Card title="Recent Users">
-          <Table
-            columns={["ID", "Name", "Email", "Created"]}
-            rows={recentUsers.map((u) => [
-              u.id,
-              u.first_name ?? "-",
-              u.email,
-              formatDate(u.created_at),
-            ])}
-          />
-        </Card>
-
-        <Card title="Recent Appointments">
-          <Table
-            columns={["ID", "Message", "Status", "Date", "Created"]}
-            rows={recentAppointments.map((a) => [
-              a.id,
-              a.message ?? "-",
-              a.status ?? "-",
-              formatDate(a.appointment_date),
-              formatDate(a.created_at),
-            ])}
-          />
-        </Card>
-      </div>
+      {/* Management Sections */}
+      <section>
+        <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>Management</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 24,
+          }}
+        >
+          {sections.map((s) => (
+            <a
+              key={s.title}
+              href={s.link}
+              style={{
+                background: s.color,
+                borderRadius: 20,
+                padding: 24,
+                textDecoration: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)"
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.1)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)"
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"
+              }}
+            >
+              <div style={{ marginBottom: 16 }}>{s.icon}</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: "#111827" }}>{s.title}</div>
+              <div style={{ fontSize: 14, color: "#374151", marginTop: 4 }}>
+                Manage all {s.title.toLowerCase()} here →
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
     </div>
   )
-}
-
-function KPI({ title, value }) {
-  return (
-    <div
-      style={{
-        background: "white",
-        border: "1px solid #ececec",
-        borderRadius: 16,
-        padding: 20,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-      }}
-    >
-      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 700 }}>{value ?? 0}</div>
-    </div>
-  )
-}
-
-function Card({ title, children }) {
-  return (
-    <div
-      style={{
-        background: "white",
-        border: "1px solid #ececec",
-        borderRadius: 16,
-        padding: 16,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-      }}
-    >
-      <div style={{ fontWeight: 600, marginBottom: 12 }}>{title}</div>
-      {children}
-    </div>
-  )
-}
-
-function Table({ columns, rows }) {
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            {columns.map((c) => (
-              <th
-                key={c}
-                style={{ textAlign: "left", fontSize: 12, color: "#6b7280", padding: "8px 6px" }}
-              >
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} style={{ padding: 8, color: "#6b7280" }}>
-                No data
-              </td>
-            </tr>
-          ) : (
-            rows.map((r, i) => (
-              <tr key={i} style={{ borderTop: "1px solid #ececec" }}>
-                {r.map((cell, j) => (
-                  <td key={j} style={{ padding: "10px 6px" }}>
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function formatDate(d) {
-  if (!d) return "-"
-  try {
-    const date = typeof d === "string" ? new Date(d) : d
-    return date.toLocaleString()
-  } catch {
-    return "-"
-  }
 }
