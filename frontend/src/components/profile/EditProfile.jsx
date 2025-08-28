@@ -23,23 +23,37 @@ import {
 } from "lucide-react";
 import Cookies from "js-cookie"
 import axios from "axios";
+import EditPortfolio from "./EditPortfolio";
+
+import Identity from "./Identity";
+import Billing from "./Billing";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+
+
 const EditProfile = () => {
+     const navigate = useNavigate();
+    const { token , userData} = useSelector((state) => state.auth);
+    
+    useEffect(() => {
+      if (!token) {
+        navigate("/login"); // لو ما في توكن يرجعه ع صفحة تسجيل الدخول
+      }
+    }, [token, navigate]);
     const [activeSection, setActiveSection] = useState("profile");
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState("");
-  const [profileData, setProfileData] = useState(() => {
-  try {
-    const raw = Cookies.get("userData");
-    return raw ? JSON.parse(raw) : {}; 
-  } catch (err) {
-    console.error("Failed to parse userData cookie:", err);
-    return {};
-  }
-});
-    const token = localStorage.getItem("token");
 
+    const [profileData, setProfileData] = useState(userData);
+  const [online, setOnline] = useState(profileData?.is_online ?? false);
+
+  useEffect(() => {
+    if (profileData) {
+      setOnline(profileData.is_online);
+    }
+  }, [profileData]);
 
     const navigationItems = [
         {
@@ -221,6 +235,7 @@ const EditProfile = () => {
         }
     };
 
+    /*
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -230,7 +245,7 @@ const EditProfile = () => {
             minute: '2-digit'
         });
     };
-
+*/
     const renderProfileSection = () => {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -241,9 +256,9 @@ const EditProfile = () => {
                         <div className="text-center">
                             <div className="relative inline-block mb-4">
                                 <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
-                                    {profileData.profile_pic_url ? (
+                                    {profileData?.profile_pic_url ? (
                                         <img
-                                            src={profileData.profile_pic_url}
+                                            src={profileData?.profile_pic_url}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
                                         />
@@ -289,9 +304,9 @@ const EditProfile = () => {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Status</span>
                                 <div className="flex items-center space-x-1.5">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${profileData.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                    <span className={`font-medium ${profileData.is_online ? 'text-green-700' : 'text-gray-600'}`}>
-                                        {profileData.is_online ? 'Online' : 'Offline'}
+                                    <div className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                    <span className={`font-medium ${online ? 'text-green-700' : 'text-gray-600'}`}>
+                                        {online ? 'Online' : 'Offline'}
                                     </span>
                                 </div>
                             </div>
@@ -299,7 +314,7 @@ const EditProfile = () => {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Joined</span>
                                 <span className="text-gray-900 font-medium">
-                                    {new Date(profileData.created_at).toLocaleDateString('en-US', {
+                                    {new Date(profileData?.created_at).toLocaleDateString('en-US', {
                                         month: 'short',
                                         year: 'numeric'
                                     })}
@@ -308,17 +323,17 @@ const EditProfile = () => {
                             
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Account</span>
-                                <span className={`font-medium ${profileData.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
-                                    {profileData.is_deleted ? 'Suspended' : 'Active'}
+                                <span className={`font-medium ${profileData?.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
+                                    {profileData?.is_deleted ? 'Suspended' : 'Active'}
                                 </span>
                             </div>
                             
-                            {profileData.violation_count > 0 && (
+                            {profileData?.violation_count > 0 && (
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-600">Violations</span>
                                     <div className="flex items-center space-x-1">
                                         <AlertTriangle className="w-3 h-3 text-amber-500" />
-                                        <span className="text-amber-700 font-medium">{profileData.violation_count}</span>
+                                        <span className="text-amber-700 font-medium">{profileData?.violation_count}</span>
                                     </div>
                                 </div>
                             )}
@@ -342,7 +357,7 @@ const EditProfile = () => {
                                         id="first_name"
                                         name="first_name"
                                         type="text"
-                                        value={profileData.first_name}
+                                        value={profileData?.first_name}
                                         onChange={(e) => handleInputChange('first_name', e.target.value)}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                                             errors.first_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
@@ -363,7 +378,7 @@ const EditProfile = () => {
                                         id="last_name"
                                         name="last_name"
                                         type="text"
-                                        value={profileData.last_name}
+                                        value={profileData?.last_name}
                                         onChange={(e) => handleInputChange('last_name', e.target.value)}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                                             errors.last_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
@@ -385,7 +400,7 @@ const EditProfile = () => {
                                     id="username"
                                     name="username"
                                     type="text"
-                                    value={profileData.username}
+                                    value={profileData?.username}
                                     onChange={(e) => handleInputChange('username', e.target.value)}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                                         errors.username ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
@@ -414,7 +429,7 @@ const EditProfile = () => {
                                             id="email"
                                             name="email"
                                             type="email"
-                                            value={profileData.email}
+                                            value={profileData?.email}
                                             onChange={(e) => handleInputChange('email', e.target.value)}
                                             disabled={true}
                                             className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-400 ${
@@ -442,7 +457,7 @@ const EditProfile = () => {
                                                 id="phone_number"
                                                 name="phone_number"
                                                 type="tel"
-                                                value={profileData.phone_number}
+                                                value={profileData?.phone_number}
                                                 onChange={(e) => handleInputChange('phone_number', e.target.value)}
                                                 className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                                                     errors.phone_number ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
@@ -465,7 +480,7 @@ const EditProfile = () => {
                                             <select
                                                 id="country"
                                                 name="country"
-                                                value={profileData.country}
+                                                value={profileData?.country}
                                                 onChange={(e) => handleInputChange('country', e.target.value)}
                                                 className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                                 disabled={isSubmitting}
@@ -485,7 +500,7 @@ const EditProfile = () => {
                             </div>
                         </div>
 
-                        {/* Security */}
+                        {/* Security 
                         <div className="bg-white rounded-xl border border-gray-200 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6">Security</h2>
                             
@@ -519,9 +534,9 @@ const EditProfile = () => {
                                 </p>
                             </div>
                         </div>
-
+                        */}
                         {/* Reason for Disruption - Only show if exists */}
-                        {profileData.reason_for_disruption && (
+                        {profileData?.reason_for_disruption && (
                             <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                                 <h2 className="text-lg font-semibold text-red-800 mb-4 flex items-center">
                                     <AlertTriangle className="w-5 h-5 mr-2" />
@@ -535,7 +550,7 @@ const EditProfile = () => {
                                     <textarea
                                         id="reason_for_disruption"
                                         name="reason_for_disruption"
-                                        value={profileData.reason_for_disruption}
+                                        value={profileData?.reason_for_disruption}
                                         className="w-full px-3 py-2.5 border border-red-300 rounded-lg bg-red-50 text-red-800 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                         rows="3"
                                         readOnly
@@ -552,17 +567,17 @@ const EditProfile = () => {
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-gray-600">Socket ID</span>
                                     <span className="font-mono text-gray-900 bg-white px-2 py-1 rounded border">
-                                        {profileData.socket_id}
+                                        {profileData?.socket_id}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-gray-600">Account Status</span>
                                     <span className={`font-medium px-2 py-1 rounded-full text-xs ${
-                                        profileData.is_deleted 
+                                        profileData?.is_deleted 
                                             ? 'bg-red-100 text-red-700' 
                                             : 'bg-green-100 text-green-700'
                                     }`}>
-                                        {profileData.is_deleted ? 'Suspended' : 'Active'}
+                                        {profileData?.is_deleted ? 'Suspended' : 'Active'}
                                     </span>
                                 </div>
                             </div>
@@ -603,45 +618,6 @@ const EditProfile = () => {
         );
     };
 
-    const renderPortfolioSection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Manage Portfolio</h2>
-                <div className="text-center py-12">
-                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Portfolio management features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Upload your work samples, projects, and showcase your skills.</p>
-                </div>
-            </div>
-        );
-    };
-
-    const renderIdentitySection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Identity Information</h2>
-                <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Identity verification features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Upload ID documents and complete identity verification.</p>
-                </div>
-            </div>
-        );
-    };
-
-    const renderBillingSection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Information</h2>
-                <div className="text-center py-12">
-                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Billing management features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Manage payment methods, invoices, and billing preferences.</p>
-                </div>
-            </div>
-        );
-    };
-
     const renderAccountSection = () => {
         return (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -676,9 +652,9 @@ const EditProfile = () => {
                         </div>
                         <div className="flex items-center space-x-3">
                             <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${profileData.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                <div className={`w-2 h-2 rounded-full ${profileData?.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                                 <span className="text-sm text-gray-600">
-                                    {profileData.is_online ? 'Online' : 'Offline'}
+                                    {profileData?.is_online ? 'Online' : 'Offline'}
                                 </span>
                             </div>
                         </div>
@@ -734,9 +710,9 @@ const EditProfile = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-4">
                         {activeSection === "profile" && renderProfileSection()}
-                        {activeSection === "portfolio" && renderPortfolioSection()}
-                        {activeSection === "identity" && renderIdentitySection()}
-                        {activeSection === "billing" && renderBillingSection()}
+                        {activeSection === "portfolio" && <EditPortfolio/>}
+                        {activeSection === "identity" && <Identity/>}
+                        {activeSection === "billing" && <Billing/>}
                         {activeSection === "account" && renderAccountSection()}
                     </div>
                 </div>

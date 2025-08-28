@@ -1,8 +1,10 @@
 import { pool } from "../models/db.js";
 import filterMessage from "../middleware/filterMessages.js";
+import { authSocket } from "../middleware/authentication.js";
 
 const messageHandler = (socket, io) => {
     socket.on("message", async (data) => {
+        io.use(authSocket); 
         try {
             if (!socket.dataroom || !socket.user) {
                 console.error("Missing socket.dataroom or socket.user");
@@ -73,4 +75,3 @@ const messageHandler = (socket, io) => {
 };
 
 export default messageHandler;
-
