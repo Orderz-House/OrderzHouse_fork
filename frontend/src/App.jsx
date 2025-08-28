@@ -14,6 +14,7 @@ import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
+import TopRatedFreelancers from "./components/topRated/TopRate";
 function App() {
   return (
     <>
@@ -31,6 +32,7 @@ function App() {
         <Route path="/profile" element={<EditProfile />} />
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
+        <Route path="/rate" element={<TopRatedFreelancers />} />
       </Routes>
       <EnhancedFooter />
     </>
