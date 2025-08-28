@@ -1,6 +1,6 @@
 import AdminJS from "adminjs";
-import Connect from "connect-pg-simple";
 import session from "express-session";
+import Connect from "connect-pg-simple";
 import dotenv from "dotenv";
 import { Adapter, Database, Resource } from "@adminjs/sql";
 
@@ -13,7 +13,7 @@ const DEFAULT_ADMIN = {
 
 const authenticate = async (email, password) => {
   if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
-    return Promise.resolve(DEFAULT_ADMIN);
+    return DEFAULT_ADMIN;
   }
   return null;
 };
@@ -21,10 +21,7 @@ const authenticate = async (email, password) => {
 export const AdminInit = async (app) => {
   const AdminJSExpress = (await import("@adminjs/express")).default;
 
-  AdminJS.registerAdapter({
-    Database,
-    Resource,
-  });
+  AdminJS.registerAdapter({ Database, Resource });
 
   const db = await new Adapter("postgresql", {
     connectionString: process.env.DB_URL,
@@ -37,9 +34,42 @@ export const AdminInit = async (app) => {
       {
         resource: db.table("users"),
         options: {
+          id: "users",
+          navigation: { name: "Users" }, 
+          filterProperties: ["email", "name", "role"],
+        },
+      },
+      {
+        resource: db.table("categories"),
+        options: {
+          id: "freelancing_types",
+          navigation: { name: "Freelancing" }, 
+        },
+      },
+      {
+        resource: db.table("appointments"),
+        options: { id: "appointments", navigation: { name: "Appointments" } },
+      },
+      {
+        resource: db.table("courses"),
+        options: { id: "courses", navigation: { name: "Courses" } },
+      },
+      {
+        resource: db.table("course_materials"),
+        options: {
+          id: "course_materials",
+          navigation: { name: "Courses" },
+          properties: { course_id: { reference: "courses" } },
+        },
+      },
+      {
+        resource: db.table("course_enrollments"),
+        options: {
+          id: "course_enrollments",
+          navigation: { name: "Courses" },
           properties: {
-            created_at: { isVisible: false },
-            updated_at: { isVisible: false },
+            course_id: { reference: "courses" },
+            freelancer_id: { reference: "users" },
           },
         },
       },

@@ -52,7 +52,6 @@ app.use("/orders", ordersRouter);
 import chatsRouter from "./router/chats.js";
 app.use("/chats", chatsRouter);
 
-=======
 (async () => {
   await AdminInit(app);
 })();
@@ -71,13 +70,11 @@ if (process.env.NODE_ENV !== "test") {
       if (err && err.code === "EADDRINUSE") {
         console.error(`⚠️ Port ${portToUse} in use. Retrying with a random free port...`);
 
-        );
-
         server.close(() => startServer(0));
         return;
       }
       throw err;
-    });
+    })
 
     server.listen(portToUse, () => {
       const addressInfo = server.address();
