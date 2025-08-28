@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
@@ -45,12 +44,13 @@ export default function EnhancedNavbar() {
       userData: state.auth.userData,
     };
   });
-  const isAuthenticated = !!token;
   const navigate = useNavigate();
   // Handle user logout
   const handleLogout = () => {
     disconnectSocket();
     dispatch(setLogout());
+    window.location.reload();
+
     navigate("/");
   };
   const handleNavigation = (path, label) => {
@@ -65,6 +65,7 @@ export default function EnhancedNavbar() {
   const handleRegister = () => {
     navigate("/register");
   };
+
   useEffect(() => {
     if (!token) return;
 
@@ -87,6 +88,7 @@ export default function EnhancedNavbar() {
         setIsAuthenticated(false);
       });
   }, [dispatch, token]);
+  console.log(userData);
 
   // NAVBAR LINKS
   const navLinks = [
@@ -387,7 +389,7 @@ export default function EnhancedNavbar() {
             </div>
 
             {/* Notifications - Only show when authenticated */}
-            {isAuthenticated && (
+            {IsAuthenticated && (
               <button
                 className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
                 aria-label="Notifications"
@@ -398,7 +400,7 @@ export default function EnhancedNavbar() {
             )}
 
             {/* User Menu or Auth Buttons */}
-            {isAuthenticated ? (
+            {IsAuthenticated ? (
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -434,7 +436,6 @@ export default function EnhancedNavbar() {
                       >
                         <Settings className="h-4 w-4" />
                         <Link to="/profile">
-                          {" "}
                           <span>Profile Settings</span>
                         </Link>
                       </button>
@@ -614,9 +615,7 @@ export default function EnhancedNavbar() {
                       className="w-full text-left px-4 py-3 text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
                     >
                       <Settings className="h-4 w-4" />
-                      <Link to="/profile">
-                        <span>Profile Settings</span>
-                      </Link>
+                      <span>Profile Settings</span>
                     </button>
                     <button
                       onClick={() => {
@@ -663,12 +662,12 @@ v className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 border bor
         <button
           onClick={() => setIsAuthenticated(!isAuthenticated)}
           className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
-            isAuthenticated
+            IsAuthenticated
               ? "bg-red-100 text-red-700 hover:bg-red-200"
               : "bg-green-100 text-green-700 hover:bg-green-200"
           }`}
         >
-          {isAuthenticated ? "Logout Demo User" : "Login Demo User"}
+          {IsAuthenticated ? "Logout Demo User" : "Login Demo User"}
         </button>
       </div> */}
     </nav>

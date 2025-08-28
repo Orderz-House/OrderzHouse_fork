@@ -33,8 +33,15 @@ const EditProfile = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState("");
-    const [profileData, setProfileData] = useState(JSON.parse(Cookies.get("userData")));
-    
+  const [profileData, setProfileData] = useState(() => {
+  try {
+    const raw = Cookies.get("userData");
+    return raw ? JSON.parse(raw) : {}; 
+  } catch (err) {
+    console.error("Failed to parse userData cookie:", err);
+    return {};
+  }
+});
     const token = localStorage.getItem("token");
 
 
