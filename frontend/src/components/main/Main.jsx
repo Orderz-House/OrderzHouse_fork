@@ -17,9 +17,10 @@ import { setPlans } from "../../slice/planSlice";
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
   const dispatch = useDispatch();
-  const { plans } = useSelector((state) => {
+  const { plans, token } = useSelector((state) => {
     return {
       plans: state.plan.plans,
+      token: state.auth.token,
     };
   });
   useEffect(() => {
@@ -155,9 +156,12 @@ export default function OrderzHousePage() {
             <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
               Explore the talent pool
             </button>
-            <button className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300">
-              Post a New Project
-            </button>
+            <Link to="/create-project">
+              {" "}
+              <button className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300">
+                Post a New Project
+              </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -209,7 +213,7 @@ export default function OrderzHousePage() {
           </div>
 
           <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto">
-            <span>Sign in</span>
+            {!token ? <span>Sign in</span> : <></>}
           </button>
         </div>
       </section>

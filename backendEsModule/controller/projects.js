@@ -180,4 +180,107 @@ export const listUsersByRole = async (req, res) => {
   }
 };
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole };
+// Public: list categories
+export const getCategories = async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name, description FROM categories ORDER BY id ASC`
+    );
+    return res.json({ success: true, categories: rows });
+  } catch (error) {
+    console.error("getCategories error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Public: list sub categories by category id (if table exists)
+export const getSubCategories = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { rows } = await pool.query(
+      `SELECT id, name FROM sub_categories WHERE category_id = $1 ORDER BY id ASC`,
+      [categoryId]
+    );
+    return res.json({ success: true, subCategories: rows });
+  } catch (error) {
+    console.error("getSubCategories error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Get related freelancers for a project by category and optional subcategory
+export const getRelatedFreelancers = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    // Load project to get its category/subcategory
+    const { rows: projectRows } = await pool.query(
+      `SELECT p.id, p.category_id, p.sub_category_id, c.name AS category_name
+       FROM projects p
+       LEFT JOIN categories c ON c.id = p.category_id
+       WHERE p.id = $1 AND p.is_deleted = false`,
+      [projectId]
+    );
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const { category_id, sub_category_id, category_name } = projectRows[0];
+
+    // Find freelancers (role 3) in the same category (and sub-category if provided)
+    // using the mapping table freelancer_categories and optionally freelancer_sub_categories.
+    const params = [category_id];
+    let sql = `
+      WITH pa_count AS (
+        SELECT freelancer_id, COUNT(*) AS assignments_count
+        FROM project_assignments
+        GROUP BY freelancer_id
+      )
+      SELECT u.id,
+             u.first_name,
+             u.last_name,
+             u.email,
+             u.username,
+             u.profile_pic_url,
+             COALESCE(pa_count.assignments_count, 0) AS assignments_count,
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', pf.id,
+                   'title', pf.title,
+                   'description', pf.description,
+                   'skills', pf.skills,
+                   'hourly_rate', pf.hourly_rate,
+                   'work_url', pf.work_url
+                 )
+               ) FILTER (WHERE pf.id IS NOT NULL),
+               '[]'
+             ) AS portfolios
+      FROM users u
+      JOIN freelancer_categories fc ON fc.freelancer_id = u.id AND fc.category_id = $1
+      LEFT JOIN pa_count ON pa_count.freelancer_id = u.id
+      LEFT JOIN portfolios pf ON pf.freelancer_id = u.id
+      WHERE u.role_id = 3 AND u.is_deleted = false`;
+
+    if (sub_category_id) {
+      sql += ` AND EXISTS (
+        SELECT 1 FROM freelancer_sub_categories fsc
+        WHERE fsc.freelancer_id = u.id AND fsc.sub_category_id = $2
+      )`;
+      params.push(sub_category_id);
+    }
+
+    sql += `
+      GROUP BY u.id, pa_count.assignments_count
+      ORDER BY assignments_count DESC, u.id ASC
+      LIMIT 50`;
+
+    const { rows } = await pool.query(sql, params);
+    return res.json({ success: true, freelancers: rows });
+  } catch (error) {
+    console.error("getRelatedFreelancers error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export default { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories };
