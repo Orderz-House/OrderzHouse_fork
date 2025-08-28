@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { pool } from "../models/db.js";
+import pool from "../models/db";
 const authentication = (req, res, next) => {
   try {
     if (!req.headers.authorization)
@@ -24,20 +24,19 @@ const authentication = (req, res, next) => {
 };
 
 const authSocket = (socket, next) => {
-  const headers = socket.handshake.headers;
+  const {token, conversation_id } = socket.handshake.auth;
   //console.log(headers);
   
-  if (!headers.token) {
+  if (!token) {
     return next(new Error("Authentication error: Token required"));
   }
 
-  jwt.verify(headers.token, process.env.JWT_SECRET,async (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET,async (err, decoded) => {
     if (err) {
       return next(new Error("Authentication error: Invalid token"));
     }else{
-      //const room = headers.user
+      //const room = user
       console.log("🔐 Socket authenticated:", decoded);
-      const conversation_id = headers.conversation_id;
       const consversation = await pool.query(`SELECT * FROM conversations WHERE id = $1`, [conversation_id]);
       console.log("consversation =>", consversation.rows);
       
@@ -56,6 +55,5 @@ const authSocket = (socket, next) => {
     }
   });
 };
-
 export { authentication, authSocket };
 export default authentication;

@@ -31,12 +31,14 @@ const register = async (req, res) => {
     });
   }
 
+
   const configuredRounds = Number(process.env.SECRET);
   const saltRounds =
     Number.isFinite(configuredRounds) && configuredRounds > 0
       ? configuredRounds
       : 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
+
   const Email = email.toLowerCase();
 
   pool
@@ -276,6 +278,99 @@ const editUser = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  // Get the user ID from route parameters
+  const { userId } = req.params;
+
+  // Extract the fields to update from request body
+  const {
+    first_name,
+    last_name,
+    phone_number,
+    country,
+    username,
+  } = req.body;
+
+  try {
+    // Update the user in the database
+    // COALESCE ensures that if a field is not provided, the existing value is kept
+    const result = await pool.query(
+      `UPDATE Users
+        SET
+          first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          phone_number = COALESCE($3, phone_number),
+          country = COALESCE($4, country),
+          username = COALESCE($5, username)
+        WHERE id = $6 AND is_deleted = FALSE
+        RETURNING *;`,
+      [
+        first_name,
+        last_name,
+        phone_number,
+        country,
+        username,
+        userId,
+      ]
+    );
+
+    // If no user found or the user is deleted, return 404
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found or deleted" });
+    }
+
+    // Return the updated user
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    // Handle database or server errors
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: err.message,
+    });
+  }
+};
+
+const getPortfolioByUserId = async (req,res)=>{
+  const {userId} = req.params;
+
+  if(!userId){
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id required",
+    });
+  }
+
+  try{
+    const result = await pool.query("SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC", [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No portfolio found",
+      });
+    }
+
+    res.status(200).json({
+      success : true,
+      message : `Get All portfolio For ${userId}`,
+      portfolios : result.rows
+    })
+  } catch (err){
+    res.status(500).json({
+      success : false,
+      message : `server error`,
+      error : err
+    })
+  }
+}
+
 const createPortfolio = async (req, res) => {
   const { freelancer_id, title, description, skills, hourly_rate, work_url } =
     req.body;
@@ -308,20 +403,25 @@ const createPortfolio = async (req, res) => {
 };
 
 const editPortfolioFreelancer = async (req, res) => {
-  const { userId } = req.params;
+  const { portfolioId } = req.params;
+  console.log(portfolioId);
+  
   const { title, description, skills, hourly_rate, work_url } = req.body;
+  console.log("skills =>", req.body);
+  
   try {
     const result = await pool.query(
-      `UPDATE Portfolios 
+      `UPDATE portfolios
        SET 
          title = COALESCE($1, title),
          description = COALESCE($2, description),
          skills = COALESCE($3, skills),
          hourly_rate = COALESCE($4, hourly_rate),
-         work_url = COALESCE($5, work_url)
-       WHERE freelancer_id=$6
+         work_url = COALESCE($5, work_url),
+         edit_at = NOW()
+       WHERE id = $6
        RETURNING *`,
-      [title, description, skills, hourly_rate, work_url, userId]
+      [title, description, skills, hourly_rate, work_url, portfolioId]
     );
 
     if (result.rows.length === 0) {
@@ -333,7 +433,7 @@ const editPortfolioFreelancer = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Portfolio updated successfully",
       portfolio: result.rows[0],
     });
   } catch (err) {
@@ -344,6 +444,36 @@ const editPortfolioFreelancer = async (req, res) => {
     });
   }
 };
+
+const deletePortfolioFreelancer = async (req,res)=>{
+  const {freelnacerId, portfolioId} = req.body;
+  console.log(typeof freelnacerId)
+  console.log(typeof portfolioId)
+  pool.query(
+    "DELETE FROM portfolios WHERE freelancer_id = $1 AND id = $2 RETURNING *",
+    [freelnacerId, portfolioId]
+  )
+  .then((result) => {
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Portfolio ID: ${portfolioId} not found or does not belong to freelancer ${freelnacerId}`,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: `Deleted Portfolio ID: ${portfolioId} Successfully`,
+    });
+  })
+  .catch((err) => {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      err,
+    });
+  });
+}
 
 const deactivateInactiveUsers = async () => {
   const query = `
@@ -629,6 +759,8 @@ export {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
+
   rateFreelancer,
   getTopFreelancers,
+
 };
