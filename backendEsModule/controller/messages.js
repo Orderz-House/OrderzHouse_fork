@@ -1,6 +1,6 @@
 import { pool } from "../models/db.js";
 import filterMessage from "../middleware/filterMessages.js";
-import { authSocket } from "../middleware/authentication";
+import { authSocket } from "../middleware/authentication.js";
 
 const messageHandler = (socket, io) => {
     socket.on("message", async (data) => {

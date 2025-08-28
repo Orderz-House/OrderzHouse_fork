@@ -362,7 +362,7 @@ const getPortfolioByUserId = async (req,res)=>{
     res.status(500).json({
       success : false,
       message : `server error`,
-      error : err
+      error : err.message
     })
   }
 }

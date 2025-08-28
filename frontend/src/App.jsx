@@ -14,7 +14,22 @@ import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { initSocket, disconnectSocket } from "./services/socketService";
+
 function App() {
+    const token = useSelector((state) => state.auth.token);
+    const userId = useSelector((state) => state.auth.userId);
+    useEffect(() => {
+    
+    const socket = initSocket(token, userId);
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [token, userId]);
   return (
     <>
       {" "}
@@ -28,7 +43,7 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={<EditProfile />} />
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
       </Routes>
@@ -36,5 +51,5 @@ function App() {
     </>
   );
 }
-
+ 
 export default App;
