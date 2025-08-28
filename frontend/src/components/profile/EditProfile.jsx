@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import Cookies from "js-cookie"
 import axios from "axios";
+import EditPortfolio from "./EditPortfolio";
+import Identity from "./Identity";
+import Billing from "./Billing";
+
 const EditProfile = () => {
     const [activeSection, setActiveSection] = useState("profile");
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +34,7 @@ const EditProfile = () => {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState("");
     const [profileData, setProfileData] = useState(JSON.parse(Cookies.get("userData")));
+    
     const token = localStorage.getItem("token");
 
 
@@ -213,6 +218,7 @@ const EditProfile = () => {
         }
     };
 
+    /*
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -222,7 +228,7 @@ const EditProfile = () => {
             minute: '2-digit'
         });
     };
-
+*/
     const renderProfileSection = () => {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -595,45 +601,6 @@ const EditProfile = () => {
         );
     };
 
-    const renderPortfolioSection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Manage Portfolio</h2>
-                <div className="text-center py-12">
-                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Portfolio management features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Upload your work samples, projects, and showcase your skills.</p>
-                </div>
-            </div>
-        );
-    };
-
-    const renderIdentitySection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Identity Information</h2>
-                <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Identity verification features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Upload ID documents and complete identity verification.</p>
-                </div>
-            </div>
-        );
-    };
-
-    const renderBillingSection = () => {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Information</h2>
-                <div className="text-center py-12">
-                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Billing management features coming soon.</p>
-                    <p className="text-sm text-gray-500 mt-2">Manage payment methods, invoices, and billing preferences.</p>
-                </div>
-            </div>
-        );
-    };
-
     const renderAccountSection = () => {
         return (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -726,9 +693,9 @@ const EditProfile = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-4">
                         {activeSection === "profile" && renderProfileSection()}
-                        {activeSection === "portfolio" && renderPortfolioSection()}
-                        {activeSection === "identity" && renderIdentitySection()}
-                        {activeSection === "billing" && renderBillingSection()}
+                        {activeSection === "portfolio" && <EditPortfolio userId={JSON.parse(Cookies.get("userData")).id}/>}
+                        {activeSection === "identity" && <Identity/>}
+                        {activeSection === "billing" && <Billing/>}
                         {activeSection === "account" && renderAccountSection()}
                     </div>
                 </div>

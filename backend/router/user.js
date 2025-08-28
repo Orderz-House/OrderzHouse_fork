@@ -12,35 +12,14 @@ const {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
-  updateUser
+  updateUser,
+  getPortfolioByUserId,
+  deletePortfolioFreelancer
 } = require("../controller/user");
 const { authentication } = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 const usersRouter = express.Router();
 
-/*
-usersRouter.post(
-  "/freelancer/portfolio/create",
-  authentiction,
-  authorization("create_portfolio"), createPortfolio
-);
-usersRouter.put(
-  "/freelancer/portfolio/edit/:userId",
-  authentiction,
-  authorization("edit_freelancer_profile"), editPortfolioFreelancer
-
-usersRouter.put("/edit/:userId", authentiction, editUser);
-usersRouter.post(
-  "/freelancer/portfolio/create",
-  authentiction
-  /*authorization("create_portfolio"),*/
-// );
-// This route is already defined below with the handler
-// usersRouter.put(
-//   "/freelancer/portfolio/edit/:userId",
-//   authentication
-//   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
-// );
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
 usersRouter.post(
@@ -61,6 +40,9 @@ usersRouter.put(
   authorization("edit_user"),
   editUser
 );
+
+usersRouter.get(`/freelancer/:userId/portfolio`, authentication, getPortfolioByUserId);
+
 usersRouter.post(
   "/freelancer/portfolio/create",
   authentication,
@@ -71,6 +53,8 @@ usersRouter.put(
   authentication,
   /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
+
+usersRouter.delete("/freelancer/portfolio/delete", authentication, deletePortfolioFreelancer);
 
 usersRouter.post(
   "/freelancers",

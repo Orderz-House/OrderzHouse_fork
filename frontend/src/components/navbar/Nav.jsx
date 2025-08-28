@@ -20,6 +20,9 @@ import { setLogout } from "../../slice/auth/authSlice";
 import axios from "axios";
 import { setUserData } from "../../slice/auth/authSlice";
 import Cookies from "js-cookie";
+import { io } from "socket.io-client";
+import { disconnectSocket } from "../../services/socketService";
+
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -46,6 +49,7 @@ export default function EnhancedNavbar() {
   const navigate = useNavigate();
   // Handle user logout
   const handleLogout = () => {
+    disconnectSocket();
     dispatch(setLogout());
     navigate("/");
   };

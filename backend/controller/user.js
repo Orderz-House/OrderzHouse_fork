@@ -333,6 +333,40 @@ const updateUser = async (req, res) => {
   }
 };
 
+const getPortfolioByUserId = async (req,res)=>{
+  const {userId} = req.params;
+
+  if(!userId){
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id required",
+    });
+  }
+
+  try{
+    const result = await pool.query("SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC", [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No portfolio found",
+      });
+    }
+
+    res.status(200).json({
+      success : true,
+      message : `Get All portfolio For ${userId}`,
+      portfolios : result.rows
+    })
+  } catch (err){
+    res.status(500).json({
+      success : false,
+      message : `server error`,
+      error : err
+    })
+  }
+}
+
 const createPortfolio = async (req, res) => {
   const { freelancer_id, title, description, skills, hourly_rate, work_url } =
     req.body;
@@ -365,20 +399,25 @@ const createPortfolio = async (req, res) => {
 };
 
 const editPortfolioFreelancer = async (req, res) => {
-  const { userId } = req.params;
+  const { portfolioId } = req.params;
+  console.log(portfolioId);
+  
   const { title, description, skills, hourly_rate, work_url } = req.body;
+  console.log("skills =>", req.body);
+  
   try {
     const result = await pool.query(
-      `UPDATE Portfolios 
+      `UPDATE portfolios
        SET 
          title = COALESCE($1, title),
          description = COALESCE($2, description),
          skills = COALESCE($3, skills),
          hourly_rate = COALESCE($4, hourly_rate),
-         work_url = COALESCE($5, work_url)
-       WHERE freelancer_id=$6
+         work_url = COALESCE($5, work_url),
+         edit_at = NOW()
+       WHERE id = $6
        RETURNING *`,
-      [title, description, skills, hourly_rate, work_url, userId]
+      [title, description, skills, hourly_rate, work_url, portfolioId]
     );
 
     if (result.rows.length === 0) {
@@ -390,7 +429,7 @@ const editPortfolioFreelancer = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Portfolio updated successfully",
       portfolio: result.rows[0],
     });
   } catch (err) {
@@ -401,6 +440,36 @@ const editPortfolioFreelancer = async (req, res) => {
     });
   }
 };
+
+const deletePortfolioFreelancer = async (req,res)=>{
+  const {freelnacerId, portfolioId} = req.body;
+  console.log(typeof freelnacerId)
+  console.log(typeof portfolioId)
+  pool.query(
+    "DELETE FROM portfolios WHERE freelancer_id = $1 AND id = $2 RETURNING *",
+    [freelnacerId, portfolioId]
+  )
+  .then((result) => {
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Portfolio ID: ${portfolioId} not found or does not belong to freelancer ${freelnacerId}`,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: `Deleted Portfolio ID: ${portfolioId} Successfully`,
+    });
+  })
+  .catch((err) => {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      err,
+    });
+  });
+}
 
 const deactivateInactiveUsers = async () => {
   const query = `
@@ -577,5 +646,7 @@ module.exports = {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
-  updateUser
+  updateUser,
+  getPortfolioByUserId,
+  deletePortfolioFreelancer
 };

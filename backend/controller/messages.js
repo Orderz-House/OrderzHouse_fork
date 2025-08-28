@@ -1,8 +1,10 @@
 const { pool } = require("../models/db");
 const filterMessage = require("../middleware/filterMessages");
+const { authSocket } = require("../middleware/authentication");
 
 const messageHandler = (socket, io) => {
     socket.on("message", async (data) => {
+        io.use(authSocket); 
         try {
             if (!socket.dataroom || !socket.user) {
                 console.error("Missing socket.dataroom or socket.user");
