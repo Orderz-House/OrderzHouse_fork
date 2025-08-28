@@ -40,7 +40,9 @@ import appointmentsRouter from "./router/appointment.js";
 import coursesRouter from "./router/courses.js";
 import ordersRouter from "./router/orders.js";
 import logsRouter from "./router/logs.js";
+import projectsRouter from "./router/projects.js";
 
+app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/orders", ordersRouter);
@@ -56,7 +58,6 @@ app.use("/chats", chatsRouter);
   await AdminInit(app);
 })();
 
-
 let server, io;
 
 if (process.env.NODE_ENV !== "test") {
@@ -68,13 +69,17 @@ if (process.env.NODE_ENV !== "test") {
     // Attach error handler before calling listen
     server.once("error", (err) => {
       if (err && err.code === "EADDRINUSE") {
-        console.error(`⚠️ Port ${portToUse} in use. Retrying with a random free port...`);
+        console.error(
+          `⚠️ Port ${portToUse} in use. Retrying with a random free port...`
+        );
+      }
 
+      {
         server.close(() => startServer(0));
         return;
       }
       throw err;
-    })
+    });
 
     server.listen(portToUse, () => {
       const addressInfo = server.address();
