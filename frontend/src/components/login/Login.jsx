@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { setLogin } from "../../slice/auth/authSlice";
+import { connectSocket } from "../../services/socketService";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -27,6 +28,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
 
   const login = (e) => {
     e.preventDefault();
@@ -48,6 +50,7 @@ const Login = () => {
         setStatus(true);
         setMessage("Login successful! Redirecting...");
         setIsLoading(false);
+        connectSocket(res.data.token, res.data.userId);
         navigate("/");
       })
       .catch((err) => {
