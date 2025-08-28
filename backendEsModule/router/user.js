@@ -14,8 +14,7 @@ import {
   getUserById,
 
   getPortfolioByUserId,
-  deletePortfolioFreelancer
-
+  deletePortfolioFreelancer,
   rateFreelancer,
   getTopFreelancers,
 
