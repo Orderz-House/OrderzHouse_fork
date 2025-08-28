@@ -1,9 +1,9 @@
 import { pool } from "../models/db.js";
 
-// Create a new project by the authenticated user (client/employer)
+// Create a new project by the authenticated user (Role 1 or 2)
 export const createProject = async (req, res) => {
   try {
-    const userId = req.token?.userId;
+    const userId = req.token?.userId; // Use userId from the token
 
     // Fetch role of current user
     const { rows: userRows } = await pool.query(
@@ -11,14 +11,15 @@ export const createProject = async (req, res) => {
       [userId]
     );
 
-    // Only role 2 (clients) can create projects
-    if (!userRows.length || userRows[0].role_id !== 2) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only users with role 2 can create projects",
-        });
+    // Allow creation if user is Role 1 or Role 2
+    if (
+      !userRows.length ||
+      (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Only users with role 1 or role 2 can create projects",
+      });
     }
 
     const {
@@ -91,6 +92,7 @@ export const createProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 // Get projects created by the authenticated user
 export const getMyProjects = async (req, res) => {
   try {
@@ -110,7 +112,7 @@ export const getMyProjects = async (req, res) => {
   }
 };
 
-// Assign a freelancer/employee to a project
+// Assign a freelancer to a project
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
