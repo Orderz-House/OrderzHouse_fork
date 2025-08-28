@@ -32,7 +32,10 @@ const register = async (req, res) => {
   }
 
   const configuredRounds = Number(process.env.SECRET);
-  const saltRounds = Number.isFinite(configuredRounds) && configuredRounds > 0 ? configuredRounds : 10;
+  const saltRounds =
+    Number.isFinite(configuredRounds) && configuredRounds > 0
+      ? configuredRounds
+      : 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   const Email = email.toLowerCase();
 
@@ -504,7 +507,116 @@ const getUserById = async (req, res) => {
     });
   }
 };
+const rateFreelancer = async (req, res) => {
+  // ReviewerId comes from JWT token
+  const reviewerId = req.token.userId;
+  const { freelancerId, rating } = req.body;
 
+  if (!freelancerId || !rating) {
+    return res.status(400).json({
+      success: false,
+      message: "freelancerId and rating are required",
+    });
+  }
+
+  try {
+    // 1. Validate reviewer (must exist and must have role_id = 1 or 2)
+    const reviewerResult = await pool.query(
+      "SELECT role_id FROM users WHERE id = $1 AND is_deleted = FALSE",
+      [reviewerId]
+    );
+    if (reviewerResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Reviewer not found",
+      });
+    }
+    const reviewerRole = reviewerResult.rows[0].role_id;
+    if (![1, 2].includes(reviewerRole)) {
+      return res.status(403).json({
+        success: false,
+        message: "Only Admins or Clients can rate freelancers",
+      });
+    }
+
+    // 2. Validate freelancer (must exist and have role_id = 3)
+    const freelancerResult = await pool.query(
+      "SELECT role_id, rating_sum, rating_count FROM users WHERE id = $1 AND is_deleted = FALSE",
+      [freelancerId]
+    );
+    if (freelancerResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+    const freelancer = freelancerResult.rows[0];
+    if (freelancer.role_id !== 3) {
+      return res.status(403).json({
+        success: false,
+        message: "Target user is not a freelancer",
+      });
+    }
+
+    // 3. Calculate new average rating
+    const newSum = Number(freelancer.rating_sum) + Number(rating);
+    const newCount = Number(freelancer.rating_count) + 1;
+    const newAvg = (newSum / newCount).toFixed(2);
+
+    // 4. Update freelancer record with new rating
+    const updateResult = await pool.query(
+      `UPDATE users 
+       SET rating_sum = $1,
+           rating_count = $2,
+           rating = $3
+       WHERE id = $4
+       RETURNING id, first_name, last_name, rating, rating_count`,
+      [newSum, newCount, newAvg, freelancerId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Freelancer rated successfully",
+      freelancer: updateResult.rows[0],
+    });
+  } catch (err) {
+    console.error("Rating error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during rating",
+      error: err.message,
+    });
+  }
+};
+const getTopFreelancers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, first_name, last_name, country, username, rating, profile_pic_url 
+       FROM users 
+       WHERE role_id = 3 AND is_deleted = FALSE
+       ORDER BY rating DESC
+       LIMIT 10`
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No freelancers found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      freelancers: result.rows,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching top freelancers",
+      error: err.message,
+    });
+  }
+};
 export {
   register,
   login,
@@ -517,4 +629,6 @@ export {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
+  rateFreelancer,
+  getTopFreelancers,
 };
