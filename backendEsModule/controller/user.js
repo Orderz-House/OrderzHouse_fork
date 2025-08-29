@@ -362,7 +362,7 @@ const getPortfolioByUserId = async (req,res)=>{
     res.status(500).json({
       success : false,
       message : `server error`,
-      error : err
+      error : err.message
     })
   }
 }
@@ -401,10 +401,10 @@ const createPortfolio = async (req, res) => {
 const editPortfolioFreelancer = async (req, res) => {
   const { portfolioId } = req.params;
   console.log(portfolioId);
-  
+
   const { title, description, skills, hourly_rate, work_url } = req.body;
   console.log("skills =>", req.body);
-  
+
   try {
     const result = await pool.query(
       `UPDATE portfolios
@@ -450,7 +450,7 @@ const deletePortfolioFreelancer = async (req,res)=>{
     [freelnacerId, portfolioId]
   )
   .then((result) => {
-    
+
     if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,

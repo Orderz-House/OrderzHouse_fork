@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   value: 0,
+  user: null
 };
 
 export const counterSlice = createSlice({
@@ -20,6 +21,8 @@ export const counterSlice = createSlice({
   },
 });
 
-export const { increment, decrement, incrementByAmount } = counterSlice.actions;
+
+
+export const { increment, decrement, incrementByAmount, setUser, clearUser } = counterSlice.actions;
 
 export default counterSlice.reducer;

@@ -48,6 +48,7 @@ export default function EnhancedNavbar() {
   // Handle user logout
   const handleLogout = () => {
     disconnectSocket();
+    Cookies.remove("userData");
     dispatch(setLogout());
     window.location.reload();
 
@@ -76,11 +77,8 @@ export default function EnhancedNavbar() {
         },
       })
       .then((res) => {
-        dispatch(setUserData(res.data.user));
-
-        //if(JSON.parse(Cookies.get("userData")) === null){
-          Cookies.set("userData", JSON.stringify(res.data.user), {expires : 1, secure: true, sameSite: "Strict"})
-        //}
+        const user = { ...res.data.user, is_online: true };
+        dispatch(setUserData(user));
         setIsAuthenticated(true);
       })
       .catch((err) => {
@@ -88,7 +86,6 @@ export default function EnhancedNavbar() {
         setIsAuthenticated(false);
       });
   }, [dispatch, token]);
-  console.log(userData);
 
   // NAVBAR LINKS
   const navLinks = [
@@ -435,7 +432,7 @@ export default function EnhancedNavbar() {
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                       >
                         <Settings className="h-4 w-4" />
-                        <Link to="/profile">
+                        <Link to="/edit-profile">
                           <span>Profile Settings</span>
                         </Link>
                       </button>
