@@ -33,11 +33,11 @@ export default function Dashboard() {
     if (!data?.metrics) return [];
     const { metrics: m } = data;
     return [
-      { title: "Total Users", value: m.usersCount, color: "#3b82f6", icon: "👥", change: "+12%", resourceId: "clients" },
-      { title: "Active Clients", value: m.clientsCount, color: "#10b981", icon: "👤", change: "+8%", resourceId: "clients" },
-      { title: "Freelancers", value: m.freelancersCount, color: "#8b5cf6", icon: "💼", change: "+15%", resourceId: "freelancers" },
-      { title: "Courses", value: m.coursesCount, color: "#f59e0b", icon: "📚", change: "+3%", resourceId: "courses" },
-      { title: "Plans", value: m.plansCount, color: "#06b6d4", icon: "💎", change: "0%", resourceId: "plans" },
+      { title: "Total Users", value: m.usersCount, color: "#3b82f6", icon: "👥", resourceId: "clients" },
+      { title: "Active Clients", value: m.clientsCount, color: "#10b981", icon: "👤", resourceId: "clients" },
+      { title: "Freelancers", value: m.freelancersCount, color: "#8b5cf6", icon: "💼", resourceId: "freelancers" },
+      { title: "Courses", value: m.coursesCount, color: "#f59e0b", icon: "📚", resourceId: "courses" },
+      { title: "Plans", value: m.plansCount, color: "#06b6d4", icon: "💎", resourceId: "plans" },
       { title: "Pending", value: m.pendingAppointments, color: "#ef4444", icon: "⏰", urgent: true, resourceId: "appointments" },
     ];
   }, [data]);
@@ -201,15 +201,6 @@ export default function Dashboard() {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-        }
-        
-        .metric-change {
-          font-size: 12px;
-          font-weight: 600;
-          padding: 2px 8px;
-          border-radius: 12px;
-          background: #f0f9ff;
-          color: #0284c7;
         }
         
         .content-grid {
@@ -550,7 +541,6 @@ export default function Dashboard() {
               <div className="metric-icon">{metric.icon}</div>
             </div>
             <div className="metric-value">{metric.value ?? 0}</div>
-            <div className="metric-change">{metric.change}</div>
           </div>
         ))}
       </div>
