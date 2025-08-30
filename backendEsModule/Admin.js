@@ -59,15 +59,11 @@ export const AdminInit = async (app) => {
       ).rows;
 
       const [{ count: coursesCount }] = (
-        await client.query(
-          `SELECT COUNT(*)::int AS count FROM courses WHERE is_deleted = false`
-        )
+        await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
       ).rows;
 
-      const [{ count: enrollmentsCount }] = (
-        await client.query(
-          `SELECT COUNT(*)::int AS count FROM course_enrollments`
-        )
+      const [{ count: plansCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM plans`)
       ).rows;
 
       const [{ count: pendingAppointments }] = (
@@ -86,18 +82,12 @@ export const AdminInit = async (app) => {
         )
       ).rows;
 
-      const recentEnrollments = (
+      const recentPlans = (
         await client.query(
-          `SELECT ce.id, 
-                  c.title as course_title, 
-                  u.first_name as freelancer_name, 
-                  ce.progress, 
-                  ce.enrolled_at
-             FROM course_enrollments ce
-             JOIN courses c ON ce.course_id = c.id
-             JOIN users u ON ce.freelancer_id = u.id
-             ORDER BY ce.enrolled_at DESC
-             LIMIT 5`
+          `SELECT id, name, price, duration, description
+             FROM plans
+             ORDER BY id DESC
+             LIMIT 3`
         )
       ).rows;
 
@@ -116,13 +106,13 @@ export const AdminInit = async (app) => {
           clientsCount,
           freelancersCount,
           coursesCount,
-          enrollmentsCount,
+          plansCount,
           pendingAppointments,
         },
         recentUsers,
-        recentEnrollments,
+        recentPlans,
         recentAppointments,
-        message: "Course Management System",
+        message: "OrderzHouse Management System",
       };
     } finally {
       client.release();
@@ -138,7 +128,7 @@ export const AdminInit = async (app) => {
     },
     branding: {
       companyName: "OrderzHouse Admin",
-      logo: false,
+      logo: "https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png",
       softwareBrothers: false,
     },
     resources: [
@@ -261,6 +251,16 @@ export const AdminInit = async (app) => {
         options: {
           id: "freelancing_types",
           navigation: { name: "Freelancing" },
+          listProperties: ["id", "name", "description"],
+          showProperties: [
+            "id",
+            "name",
+            "description",
+            "created_at",
+            "updated_at",
+          ],
+          editProperties: ["name", "description"],
+          filterProperties: ["name"],
         },
       },
       {
@@ -324,7 +324,43 @@ export const AdminInit = async (app) => {
       },
       {
         resource: db.table("appointments"),
-        options: { id: "appointments", navigation: { name: "Appointments" } },
+        options: {
+          id: "appointments",
+          navigation: { name: "Appointments" },
+          listProperties: [
+            "id",
+            "message",
+            "status",
+            "appointment_date",
+            "created_at",
+          ],
+          showProperties: [
+            "id",
+            "message",
+            "status",
+            "appointment_date",
+            "created_at",
+            "updated_at",
+          ],
+          editProperties: ["message", "status", "appointment_date"],
+          filterProperties: ["status", "appointment_date"],
+          properties: {
+            status: {
+              availableValues: [
+                { value: "pending", label: "Pending" },
+                { value: "confirmed", label: "Confirmed" },
+                { value: "completed", label: "Completed" },
+                { value: "cancelled", label: "Cancelled" },
+              ],
+            },
+            appointment_date: {
+              type: "datetime",
+            },
+            message: {
+              type: "textarea",
+            },
+          },
+        },
       },
       {
         resource: db.table("courses"),
@@ -485,4 +521,54 @@ export const AdminInit = async (app) => {
 
   app.use(admin.options.rootPath, adminRouter);
   console.log(`✅ AdminJS mounted at ${admin.options.rootPath}`);
+
+  app.get("/api/admin/dashboard", async (req, res) => {
+    try {
+      const dashboardData = await dashboardHandler();
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Dashboard API error:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  app.get("/api/admin/users/clients", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const clients = await client.query(
+        "SELECT * FROM users WHERE role_id = 2 ORDER BY created_at DESC"
+      );
+      res.json(clients.rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch clients" });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.get("/api/admin/users/freelancers", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const freelancers = await client.query(
+        "SELECT * FROM users WHERE role_id = 3 ORDER BY created_at DESC"
+      );
+      res.json(freelancers.rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch freelancers" });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.get("/api/admin/plans", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const plans = await client.query("SELECT * FROM plans ORDER BY id DESC");
+      res.json(plans.rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch plans" });
+    } finally {
+      client.release();
+    }
+  });
 };
