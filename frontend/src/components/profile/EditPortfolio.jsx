@@ -1,35 +1,21 @@
 import { useState, useEffect } from "react";
-import {
-    Save,
-    Upload,
-    Eye,
-    EyeOff,
-    User,
-    Mail,
-    Phone,
-    Globe,
-    Camera,
-    Shield,
-    AlertTriangle,
-    CheckCircle,
-    XCircle,
-    ArrowLeft,
-    Settings,
-    Briefcase,
-    FileText,
-    CreditCard,
-    UserCog,
-    Lock
+import { Globe,
+    Briefcase
     , Plus, Edit, Trash2, ExternalLink
 } from "lucide-react";
 import axios from "axios";
+import { useSelector } from "react-redux";
 
-const EditPortfolio = (userId) => {
+
+const EditPortfolio = () => {
+    
+    const { token , userData} = useSelector((state) => state.auth);
+    const userId = userData.id;
     const [portfolioItems, setPortfolioItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    console.log("userId=>", userId?.userId);
+    console.log("userId=>", userId);
     
    // const [freelancerId, setFreelancerId] = useState(null)
     /*
@@ -48,8 +34,6 @@ const EditPortfolio = (userId) => {
         work_url: ''
     });
     const [errors, setErrors] = useState({});
-    const token = localStorage.getItem("token");
-
 
     // Fetch portfolio items on component mount
     useEffect(() => {
@@ -62,7 +46,7 @@ const fetchPortfolioItems = async () => {
     setIsLoading(true);
 
     const response = await axios.get(
-      `http://localhost:5000/users/freelancer/${30}/portfolio`,
+      `http://localhost:5000/users/freelancer/${userId}/portfolio`,
       {
         headers: {
           authorization: `Bearer ${token}`,
@@ -75,6 +59,8 @@ const fetchPortfolioItems = async () => {
     setPortfolioItems(response.data.portfolios);
   } catch (error) {
     console.error("Error fetching portfolio items:", error);
+    console.log(error);
+    
   } finally {
     setIsLoading(false);
   }
@@ -140,7 +126,7 @@ const fetchPortfolioItems = async () => {
                     console.log("Update error", err);
                 });
             } else {
-                axios.post("http://localhost:5000/users/freelancer/portfolio/create", {...formData, freelancer_id: 30}, {
+                axios.post("http://localhost:5000/users/freelancer/portfolio/create", {...formData, freelancer_id: userId}, {
                     headers:{
                         authorization : `Bearer  ${token}`
                     }
