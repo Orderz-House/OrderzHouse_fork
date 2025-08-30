@@ -1,7 +1,7 @@
 import { pool } from "../models/db.js";
 
 // Ensures the authenticated user has an approved verification record
-const requireVerified = async (req, res, next) => {
+export const requireVerified = async (req, res, next) => {
   try {
     const userId = req.token?.userId;
     const roleId = req.token?.role;
