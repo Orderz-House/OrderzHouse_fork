@@ -39,9 +39,11 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
+  // Enhanced dashboard data handler with analytics
   const dashboardHandler = async () => {
     const client = await pool.connect();
     try {
+      // Basic counts
       const [{ count: usersCount }] = (
         await client.query(`SELECT COUNT(*)::int AS count FROM users`)
       ).rows;
@@ -72,6 +74,54 @@ export const AdminInit = async (app) => {
           ["pending"]
         )
       ).rows;
+
+      // Analytics data - User registration trends (last 7 days)
+      const userTrends = (
+        await client.query(`
+          SELECT 
+            DATE(created_at) as date,
+            COUNT(CASE WHEN role_id = 2 THEN 1 END)::int as clients,
+            COUNT(CASE WHEN role_id = 3 THEN 1 END)::int as freelancers
+          FROM users 
+          WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+          GROUP BY DATE(created_at)
+          ORDER BY date
+        `)
+      ).rows.map((row) => ({
+        date: new Date(row.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        clients: row.clients,
+        freelancers: row.freelancers,
+      }));
+
+      // Appointment status distribution
+      const appointmentStats = (
+        await client.query(`
+          SELECT 
+            status,
+            COUNT(*)::int as count
+          FROM appointments 
+          GROUP BY status
+        `)
+      ).rows;
+
+      // Course enrollment progress (last 8 weeks)
+      const courseProgress = (
+        await client.query(`
+          SELECT 
+            DATE_TRUNC('week', enrolled_at) as week,
+            COUNT(*)::int as enrollments
+          FROM course_enrollments
+          WHERE enrolled_at >= CURRENT_DATE - INTERVAL '8 weeks'
+          GROUP BY DATE_TRUNC('week', enrolled_at)
+          ORDER BY week
+        `)
+      ).rows.map((row, index) => ({
+        week: `Week ${index + 1}`,
+        enrollments: row.enrollments,
+      }));
 
       const recentUsers = (
         await client.query(
@@ -109,6 +159,11 @@ export const AdminInit = async (app) => {
           plansCount,
           pendingAppointments,
         },
+        chartData: {
+          userTrends,
+          appointmentStats,
+          courseProgress,
+        },
         recentUsers,
         recentPlans,
         recentAppointments,
@@ -132,6 +187,7 @@ export const AdminInit = async (app) => {
       softwareBrothers: false,
     },
     resources: [
+      // Clients (role_id = 2)
       {
         resource: db.table("users"),
         options: {
@@ -189,6 +245,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Freelancers (role_id = 3)
       {
         resource: db.table("users"),
         options: {
@@ -246,6 +303,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Categories/Freelancing Types
       {
         resource: db.table("categories"),
         options: {
@@ -263,6 +321,7 @@ export const AdminInit = async (app) => {
           filterProperties: ["name"],
         },
       },
+      // Subscription Plans
       {
         resource: db.table("plans"),
         options: {
@@ -322,6 +381,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Appointments
       {
         resource: db.table("appointments"),
         options: {
@@ -362,6 +422,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Courses Management
       {
         resource: db.table("courses"),
         options: {
@@ -406,6 +467,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Course Materials (related to Courses)
       {
         resource: db.table("course_materials"),
         options: {
@@ -426,6 +488,7 @@ export const AdminInit = async (app) => {
           },
         },
       },
+      // Course Enrollments (related to both Courses and Freelancers)
       {
         resource: db.table("course_enrollments"),
         options: {
@@ -522,6 +585,7 @@ export const AdminInit = async (app) => {
   app.use(admin.options.rootPath, adminRouter);
   console.log(`✅ AdminJS mounted at ${admin.options.rootPath}`);
 
+  // API endpoints for frontend dashboard consumption
   app.get("/api/admin/dashboard", async (req, res) => {
     try {
       const dashboardData = await dashboardHandler();
@@ -532,6 +596,7 @@ export const AdminInit = async (app) => {
     }
   });
 
+  // API endpoints for individual resource data
   app.get("/api/admin/users/clients", async (req, res) => {
     const client = await pool.connect();
     try {
