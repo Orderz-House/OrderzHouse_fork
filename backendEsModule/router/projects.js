@@ -1,6 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories } from "../controller/projects.js";
+import { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
 

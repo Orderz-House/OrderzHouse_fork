@@ -15,8 +15,8 @@ import {
 
   getPortfolioByUserId,
   deletePortfolioFreelancer,
-  rateFreelancer,
-  getTopFreelancers,
+  // rateFreelancer,
+  // getTopFreelancers,
 
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
@@ -98,9 +98,9 @@ usersRouter.get(
   authentication,
   authorization("show_online"),
   listOnlineUsers
-),
+), 
   usersRouter.get("/getUserdata", authentication, getUserById);
-usersRouter.post("/rate", authentication, rateFreelancer);
-usersRouter.get("/freelancers/top-rated", getTopFreelancers);
+// usersRouter.post("/rate", authentication, rateFreelancer);
+// usersRouter.get("/freelancers/top-rated", getTopFreelancers);
 
 export default usersRouter;

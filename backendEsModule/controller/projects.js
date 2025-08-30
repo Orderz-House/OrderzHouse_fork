@@ -3,19 +3,14 @@ import { pool } from "../models/db.js";
 // Create a new project by the authenticated user (Role 1 or 2)
 export const createProject = async (req, res) => {
   try {
-    const userId = req.token?.userId; // Use userId from the token
+    const userId = req.token?.userId;
 
-    // Fetch role of current user
     const { rows: userRows } = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
 
-    // Allow creation if user is Role 1 or Role 2
-    if (
-      !userRows.length ||
-      (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)
-    ) {
+    if (!userRows.length || (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)) {
       return res.status(403).json({
         success: false,
         message: "Only users with role 1 or role 2 can create projects",
@@ -33,28 +28,19 @@ export const createProject = async (req, res) => {
       location,
     } = req.body;
 
-    // Validate required fields
-    if (
-      !category_id ||
-      !title ||
-      !description ||
-      budget_min === undefined ||
-      budget_max === undefined
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields" });
+    if (!category_id || !title || !description || budget_min === undefined || budget_max === undefined) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    // Insert new project
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, sub_category_id, title, description,
         budget_min, budget_max, duration, location, status, is_deleted
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,'', false
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,'available', false
       ) RETURNING *;
     `;
+
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
@@ -69,23 +55,10 @@ export const createProject = async (req, res) => {
 
     const project = rows[0];
 
-    // Fetch freelancers (role 3) who match the project's category
-    // Assuming there is a table `freelancer_categories` with columns freelancer_id, category_id
-    const { rows: eligibleUsers } = await pool.query(
-      `SELECT u.id, u.first_name, u.last_name, u.email, u.username
-       FROM users u
-       JOIN freelancer_categories fc ON fc.freelancer_id = u.id
-       WHERE u.role_id = 3
-       AND fc.category_id = $1
-       AND u.is_deleted = false`,
-      [category_id]
-    );
-
-    // Return project and eligible freelancers
+    // رجّع المشروع فقط
     return res.status(201).json({
       success: true,
       project,
-      eligibleUsers,
     });
   } catch (error) {
     console.error("createProject error:", error);
@@ -210,77 +183,26 @@ export const getSubCategories = async (req, res) => {
 
 // Get related freelancers for a project by category and optional subcategory
 export const getRelatedFreelancers = async (req, res) => {
-  try {
-    const { projectId } = req.params;
+  const { projectId } = req.params;
 
-    // Load project to get its category/subcategory
-    const { rows: projectRows } = await pool.query(
-      `SELECT p.id, p.category_id, p.sub_category_id, c.name AS category_name
-       FROM projects p
-       LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.id = $1 AND p.is_deleted = false`,
-      [projectId]
-    );
-    if (!projectRows.length) {
-      return res.status(404).json({ success: false, message: "Project not found" });
-    }
+  const { rows: projectRows } = await pool.query(
+    `SELECT id, category_id FROM projects WHERE id = $1 AND is_deleted = false`,
+    [projectId]
+  );
 
-    const { category_id, sub_category_id, category_name } = projectRows[0];
-
-    // Find freelancers (role 3) in the same category (and sub-category if provided)
-    // using the mapping table freelancer_categories and optionally freelancer_sub_categories.
-    const params = [category_id];
-    let sql = `
-      WITH pa_count AS (
-        SELECT freelancer_id, COUNT(*) AS assignments_count
-        FROM project_assignments
-        GROUP BY freelancer_id
-      )
-      SELECT u.id,
-             u.first_name,
-             u.last_name,
-             u.email,
-             u.username,
-             u.profile_pic_url,
-             COALESCE(pa_count.assignments_count, 0) AS assignments_count,
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', pf.id,
-                   'title', pf.title,
-                   'description', pf.description,
-                   'skills', pf.skills,
-                   'hourly_rate', pf.hourly_rate,
-                   'work_url', pf.work_url
-                 )
-               ) FILTER (WHERE pf.id IS NOT NULL),
-               '[]'
-             ) AS portfolios
-      FROM users u
-      JOIN freelancer_categories fc ON fc.freelancer_id = u.id AND fc.category_id = $1
-      LEFT JOIN pa_count ON pa_count.freelancer_id = u.id
-      LEFT JOIN portfolios pf ON pf.freelancer_id = u.id
-      WHERE u.role_id = 3 AND u.is_deleted = false`;
-
-    if (sub_category_id) {
-      sql += ` AND EXISTS (
-        SELECT 1 FROM freelancer_sub_categories fsc
-        WHERE fsc.freelancer_id = u.id AND fsc.sub_category_id = $2
-      )`;
-      params.push(sub_category_id);
-    }
-
-    sql += `
-      GROUP BY u.id, pa_count.assignments_count
-      ORDER BY assignments_count DESC, u.id ASC
-      LIMIT 50`;
-
-    const { rows } = await pool.query(sql, params);
-    return res.json({ success: true, freelancers: rows });
-  } catch (error) {
-    console.error("getRelatedFreelancers error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+  if (!projectRows.length) {
+    return res.status(404).json({ success: false, message: "Project not found" });
   }
+
+  const { category_id } = projectRows[0];
+
+  const { rows: freelancers } = await pool.query(
+    `SELECT * FROM users WHERE role_id = 3 AND category_id = $1 AND is_deleted = false`,
+    [category_id]
+  );
+
+  res.status(200).json({ success: true, freelancers });
 };
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories };
+
+export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers };

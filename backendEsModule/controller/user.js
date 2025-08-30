@@ -13,6 +13,7 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
+    category_id, 
   } = req.body;
 
   if (
@@ -23,7 +24,8 @@ const register = async (req, res) => {
     !password ||
     !phone_number ||
     !country ||
-    !username
+    !username ||
+    (role_id === 3 && !category_id) 
   ) {
     return res.status(400).json({
       success: false,
@@ -37,9 +39,10 @@ const register = async (req, res) => {
   );
   const Email = email.toLowerCase();
 
-  pool
-    .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+  try {
+    // إدخال المستخدم في جدول users
+    const { rows: userRows } = await pool.query(
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username, category_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
       [
         role_id,
         first_name,
@@ -49,43 +52,50 @@ const register = async (req, res) => {
         phone_number,
         country,
         username,
+        category_id, // هنا يتم إدخال category_id
       ]
-    )
-    .then(async (result) => {
-      //console.log(result.rows[0].id);
-      const user = result.rows[0];
-      const positionRole =
-        user.role_id === 1
-          ? "Admin"
-          : user.role_id === 2
-          ? "Client"
-          : "Freelancer";
-      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
-      await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
-        user.id,
-        actionUser,
-      ]);
-      res.status(201).json({
-        success: true,
-        message: "User registered successfully",
-        user: result.rows[0],
-      });
-    })
-    .catch((err) => {
-      if (err.constraint === "users_email_key") {
-        return res.status(409).json({
-          success: false,
-          message: "Email already exists",
-        });
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: "Internal server error",
-          error: err.message,
-        });
-      }
+    );
+
+    const user = userRows[0];
+
+    // إذا كان الفريلانسر، يجب ربطه بكاتيجوري
+    if (role_id === 3 && category_id) {
+      // هذه الخطوة تتم تلقائيًا في الدالة أعلاه عبر الـ INSERT
+    }
+
+    const positionRole =
+      user.role_id === 1
+        ? "Admin"
+        : user.role_id === 2
+        ? "Client"
+        : "Freelancer";
+    const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
+      user.id,
+      actionUser,
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: userRows[0],
     });
+  } catch (err) {
+    if (err.constraint === "users_email_key") {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: err.message,
+      });
+    }
+  }
 };
+
 
 const login = async (req, res) => {
   const { email, password } = req.body;
