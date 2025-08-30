@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
 import messageHandler from "../controller/messages.js";
+import { authSocket } from "../middleware/authentication.js";
+
 import {authSocket} from "../middleware/authentication.js"; 
 import { pool } from "../models/db.js";
 
@@ -11,6 +13,12 @@ function initSocket(server) {
     },
   });
 
+  io.on("connection", async (socket) => {
+    const { userId } = socket.handshake.auth;
+
+    await pool.query("UPDATE users SET is_online = TRUE WHERE id = $1", [
+      userId,
+    ]);
   
   io.on("connection", async(socket) => {
    const {userId} = socket.handshake.auth;
@@ -20,9 +28,11 @@ function initSocket(server) {
 
     messageHandler(socket, io);
 
-    socket.on("disconnect", async() => {
+    socket.on("disconnect", async () => {
       console.log("❌ Client disconnected:", socket.id);
-      await pool.query("UPDATE users SET is_online = FALSE WHERE id = $1", [userId]);
+      await pool.query("UPDATE users SET is_online = FALSE WHERE id = $1", [
+        userId,
+      ]);
     });
   });
   return io;

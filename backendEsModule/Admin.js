@@ -1,4 +1,3 @@
-// Admin.js (or wherever you have AdminInit defined)
 import AdminJS from "adminjs";
 import session from "express-session";
 import Connect from "connect-pg-simple";
@@ -40,18 +39,15 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
-  // ✅ fixed dashboard handler
   const dashboardHandler = async () => {
     const client = await pool.connect();
     try {
       const [{ count: usersCount }] = (
         await client.query(`SELECT COUNT(*)::int AS count FROM users`)
       ).rows;
-
       const [{ count: coursesCount }] = (
         await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
       ).rows;
-
       const [{ count: pendingAppointments }] = (
         await client.query(
           `SELECT COUNT(*)::int AS count FROM appointments WHERE status = $1`,
@@ -59,33 +55,9 @@ export const AdminInit = async (app) => {
         )
       ).rows;
 
-      const recentUsers = (
-        await client.query(
-          `SELECT id, first_name, email, created_at
-             FROM users
-             ORDER BY created_at DESC
-             LIMIT 5`
-        )
-      ).rows;
-
-      const recentAppointments = (
-        await client.query(
-          `SELECT id, message, status, appointment_date, created_at
-             FROM appointments
-             ORDER BY created_at DESC
-             LIMIT 5`
-        )
-      ).rows;
-
       return {
-        metrics: {
-          usersCount,
-          coursesCount,
-          pendingAppointments,
-        },
-        recentUsers,
-        recentAppointments,
-        message: "Hello World",
+        metrics: { usersCount, coursesCount, pendingAppointments },
+        message: "Dashboard ready",
       };
     } finally {
       client.release();
@@ -107,18 +79,11 @@ export const AdminInit = async (app) => {
     resources: [
       {
         resource: db.table("users"),
-        options: {
-          id: "users",
-          navigation: { name: "Users" },
-          filterProperties: ["email", "first_name", "role_id"],
-        },
+        options: { id: "users", navigation: { name: "Users" } },
       },
       {
         resource: db.table("categories"),
-        options: {
-          id: "freelancing_types",
-          navigation: { name: "Freelancing" },
-        },
+        options: { id: "categories", navigation: { name: "Freelancing" } },
       },
       {
         resource: db.table("appointments"),
@@ -147,7 +112,56 @@ export const AdminInit = async (app) => {
           },
         },
       },
+
+      {
+        resource: db.table("subscriptions"),
+        options: {
+          id: "subscriptions",
+          navigation: { name: "Freelancing" },
+          properties: {
+            freelancer_id: { reference: "users" },
+            plan_id: { reference: "plans" },
+          },
+        },
+      },
+      {
+        resource: db.table("projects"),
+        options: {
+          id: "projects",
+          navigation: { name: "Freelancing" },
+          properties: {
+            user_id: { reference: "users" },
+            category_id: { reference: "categories" },
+            sub_category_id: { reference: "sub_categories" },
+            assigned_freelancer_id: { reference: "users" },
+          },
+        },
+      },
+      {
+        resource: db.table("plans"),
+        options: {
+          id: "plans",
+          navigation: { name: "Freelancing" },
+        },
+      },
+      {
+        resource: db.table("categories"),
+        options: {
+          id: "freelancing_categories",
+          navigation: { name: "Freelancing" },
+        },
+      },
     ],
+    pages: {
+      analytics: { label: "Analytics", component: Components.Analytics },
+      usersPage: { label: "Users", component: Components.UsersPage },
+      coursesPage: { label: "Courses", component: Components.CoursesPage },
+      appointmentsPage: {
+        label: "Appointments",
+        component: Components.AppointmentsPage,
+      },
+      ordersPage: { label: "Orders", component: Components.OrdersPage },
+    },
   });
 
   if (process.env.NODE_ENV !== "production") {
