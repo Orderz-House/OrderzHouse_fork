@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
+import { useNavigate } from "react-router";
 import {
   Mail,
   Lock,
@@ -15,7 +16,6 @@ import {
   CheckCircle,
   Briefcase,
 } from "lucide-react";
-import { useNavigate } from "react-router";
 
 const countries = [
   "Afghanistan",
@@ -276,6 +276,8 @@ const roles = [
 
 const Register = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const [role_id, setRole_id] = useState("");
   const [first_name, setFirst_name] = useState("");
   const [last_name, setLast_name] = useState("");
@@ -288,23 +290,44 @@ const Register = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [categories, setCategories] = useState([]); // For storing the categories
+  const [selectedCategory, setSelectedCategory] = useState(""); // Selected category
+
+  // Fetch categories from API when the component mounts
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/projects/public/categories")
+      .then((response) => {
+        setCategories(response.data.categories || []);
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
 
   const register = (e) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Prepare the data to send
+    const userData = {
+      role_id,
+      first_name,
+      last_name,
+      email,
+      password,
+      phone_number,
+      country,
+      username,
+    };
+
+    // Add category_id only if the user is a freelancer
+    if (role_id === "3") {
+      userData.category_id = selectedCategory;
+    }
+
     axios
-      .post("http://localhost:5000/users/register", {
-        role_id,
-        first_name,
-        last_name,
-        email,
-        password,
-        phone_number,
-        country,
-        username,
-      })
+      .post("http://localhost:5000/users/register", userData)
       .then((result) => {
         setStatus(true);
         setMessage(result.data.message || "Registration successful");
@@ -391,6 +414,37 @@ const Register = () => {
                 </select>
               </div>
             </div>
+
+            {/* Category Selection (Freelancer Only) */}
+            {role_id === "3" && (
+              <div>
+                <label
+                  htmlFor="category_id"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Select Category
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Briefcase className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    id="category_id"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    required
+                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* First Name */}
             <div>
