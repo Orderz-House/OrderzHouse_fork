@@ -1,4 +1,3 @@
-// Admin.js (or wherever you have AdminInit defined)
 import AdminJS from "adminjs";
 import session from "express-session";
 import Connect from "connect-pg-simple";
@@ -40,7 +39,6 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
-  // ✅ fixed dashboard handler
   const dashboardHandler = async () => {
     const client = await pool.connect();
     try {
@@ -48,8 +46,20 @@ export const AdminInit = async (app) => {
         await client.query(`SELECT COUNT(*)::int AS count FROM users`)
       ).rows;
 
+      const [{ count: clientsCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM users WHERE role_id = 2`)
+      ).rows;
+
+      const [{ count: freelancersCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM users WHERE role_id = 3`)
+      ).rows;
+
       const [{ count: coursesCount }] = (
-        await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
+        await client.query(`SELECT COUNT(*)::int AS count FROM courses WHERE is_deleted = false`)
+      ).rows;
+
+      const [{ count: enrollmentsCount }] = (
+        await client.query(`SELECT COUNT(*)::int AS count FROM course_enrollments`)
       ).rows;
 
       const [{ count: pendingAppointments }] = (
@@ -61,9 +71,24 @@ export const AdminInit = async (app) => {
 
       const recentUsers = (
         await client.query(
-          `SELECT id, first_name, email, created_at
+          `SELECT id, first_name, email, created_at, role_id
              FROM users
              ORDER BY created_at DESC
+             LIMIT 5`
+        )
+      ).rows;
+
+      const recentEnrollments = (
+        await client.query(
+          `SELECT ce.id, 
+                  c.title as course_title, 
+                  u.first_name as freelancer_name, 
+                  ce.progress, 
+                  ce.enrolled_at
+             FROM course_enrollments ce
+             JOIN courses c ON ce.course_id = c.id
+             JOIN users u ON ce.freelancer_id = u.id
+             ORDER BY ce.enrolled_at DESC
              LIMIT 5`
         )
       ).rows;
@@ -80,12 +105,16 @@ export const AdminInit = async (app) => {
       return {
         metrics: {
           usersCount,
+          clientsCount,
+          freelancersCount,
           coursesCount,
+          enrollmentsCount,
           pendingAppointments,
         },
         recentUsers,
+        recentEnrollments,
         recentAppointments,
-        message: "Hello World",
+        message: "Course Management System",
       };
     } finally {
       client.release();
@@ -108,9 +137,77 @@ export const AdminInit = async (app) => {
       {
         resource: db.table("users"),
         options: {
-          id: "users",
-          navigation: { name: "Users" },
-          filterProperties: ["email", "first_name", "role_id"],
+          id: "clients",
+          navigation: { name: "Manage Clients" },
+          filterProperties: ["email", "first_name"],
+          listProperties: ["id", "first_name", "last_name", "email", "created_at"],
+          showProperties: ["id", "first_name", "last_name", "email", "role_id", "created_at", "updated_at"],
+          editProperties: ["first_name", "last_name", "email", "password"],
+          properties: {
+            role_id: {
+              isVisible: { list: false, filter: false, show: true, edit: false },
+            },
+            password: {
+              type: "password",
+            },
+          },
+          actions: {
+            list: {
+              before: async (request, context) => {
+                request.query = {
+                  ...request.query,
+                  "filters.role_id": "2"
+                };
+                return request;
+              },
+            },
+            new: {
+              before: async (request, context) => {
+                if (request.payload) {
+                  request.payload.role_id = 2;
+                }
+                return request;
+              },
+            },
+          },
+        },
+      },
+      {
+        resource: db.table("users"),
+        options: {
+          id: "freelancers",
+          navigation: { name: "Manage Freelancers" },
+          filterProperties: ["email", "first_name"],
+          listProperties: ["id", "first_name", "last_name", "email", "created_at"],
+          showProperties: ["id", "first_name", "last_name", "email", "role_id", "created_at", "updated_at"],
+          editProperties: ["first_name", "last_name", "email", "password"],
+          properties: {
+            role_id: {
+              isVisible: { list: false, filter: false, show: true, edit: false },
+            },
+            password: {
+              type: "password",
+            },
+          },
+          actions: {
+            list: {
+              before: async (request, context) => {
+                request.query = {
+                  ...request.query,
+                  "filters.role_id": "3"
+                };
+                return request;
+              },
+            },
+            new: {
+              before: async (request, context) => {
+                if (request.payload) {
+                  request.payload.role_id = 3;
+                }
+                return request;
+              },
+            },
+          },
         },
       },
       {
@@ -121,19 +218,101 @@ export const AdminInit = async (app) => {
         },
       },
       {
+        resource: db.table("plans"),
+        options: {
+          id: "plans",
+          navigation: { name: "Subscription Plans" },
+          listProperties: ["id", "name", "price", "duration", "description"],
+          showProperties: ["id", "name", "price", "duration", "description", "features"],
+          editProperties: ["name", "price", "duration", "description", "features"],
+          filterProperties: ["name", "price", "duration"],
+          properties: {
+            name: {
+              type: "string",
+              isRequired: true,
+            },
+            price: {
+              type: "currency",
+              isRequired: true,
+              props: {
+                currency: "USD"
+              }
+            },
+            duration: {
+              type: "number",
+              isRequired: true,
+              props: {
+                min: 1,
+                step: 1
+              },
+              description: "Duration in days"
+            },
+            description: {
+              type: "textarea",
+              props: {
+                rows: 4
+              }
+            },
+            features: {
+              type: "mixed",
+              isArray: true,
+              props: {
+                placeholder: "Enter plan features (one per line)"
+              }
+            }
+          }
+        },
+      },
+      {
         resource: db.table("appointments"),
         options: { id: "appointments", navigation: { name: "Appointments" } },
       },
       {
         resource: db.table("courses"),
-        options: { id: "courses", navigation: { name: "Courses" } },
+        options: {
+          id: "courses",
+          navigation: { name: "Courses" },
+          listProperties: ["id", "title", "price", "created_at", "is_deleted"],
+          showProperties: ["id", "title", "description", "title_ar", "description_ar", "price", "is_deleted", "created_at"],
+          editProperties: ["title", "description", "title_ar", "description_ar", "price", "is_deleted"],
+          filterProperties: ["title", "is_deleted"],
+          properties: {
+            price: {
+              type: "currency",
+              props: {
+                currency: "USD"
+              }
+            },
+            is_deleted: {
+              type: "boolean"
+            },
+            description: {
+              type: "textarea"
+            },
+            description_ar: {
+              type: "textarea"
+            }
+          }
+        },
       },
       {
         resource: db.table("course_materials"),
         options: {
           id: "course_materials",
           navigation: { name: "Courses" },
-          properties: { course_id: { reference: "courses" } },
+          listProperties: ["id", "course_id", "file_url"],
+          showProperties: ["id", "course_id", "file_url"],
+          editProperties: ["course_id", "file_url"],
+          filterProperties: ["course_id"],
+          properties: {
+            course_id: {
+              reference: "courses",
+              type: "reference"
+            },
+            file_url: {
+              type: "url"
+            }
+          }
         },
       },
       {
@@ -141,9 +320,42 @@ export const AdminInit = async (app) => {
         options: {
           id: "course_enrollments",
           navigation: { name: "Courses" },
+          listProperties: ["id", "course_id", "freelancer_id", "enrolled_at", "progress"],
+          showProperties: ["id", "course_id", "freelancer_id", "enrolled_at", "progress"],
+          editProperties: ["course_id", "freelancer_id", "progress"],
+          filterProperties: ["course_id", "freelancer_id", "progress"],
           properties: {
-            course_id: { reference: "courses" },
-            freelancer_id: { reference: "users" },
+            course_id: {
+              reference: "courses",
+              type: "reference"
+            },
+            freelancer_id: {
+              reference: "freelancers", 
+              type: "reference"
+            },
+            progress: {
+              type: "number",
+              props: {
+                min: 0,
+                max: 100,
+                step: 0.01
+              }
+            },
+            enrolled_at: {
+              type: "datetime",
+              isVisible: { edit: false } 
+            }
+          },
+          actions: {
+            new: {
+              before: async (request, context) => {
+                
+                if (request.payload && !request.payload.enrolled_at) {
+                  request.payload.enrolled_at = new Date();
+                }
+                return request;
+              },
+            },
           },
         },
       },
