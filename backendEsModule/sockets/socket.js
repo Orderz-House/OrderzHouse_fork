@@ -1,8 +1,6 @@
 import { Server } from "socket.io";
 import messageHandler from "../controller/messages.js";
 import { authSocket } from "../middleware/authentication.js";
-
-import {authSocket} from "../middleware/authentication.js"; 
 import { pool } from "../models/db.js";
 
 function initSocket(server) {
@@ -15,13 +13,6 @@ function initSocket(server) {
 
   io.on("connection", async (socket) => {
     const { userId } = socket.handshake.auth;
-
-    await pool.query("UPDATE users SET is_online = TRUE WHERE id = $1", [
-      userId,
-    ]);
-  
-  io.on("connection", async(socket) => {
-   const {userId} = socket.handshake.auth;
     console.log(userId);
     
     await pool.query("UPDATE users SET is_online = TRUE WHERE id = $1", [userId]);
@@ -35,6 +26,7 @@ function initSocket(server) {
       ]);
     });
   });
+
   return io;
 }
 
