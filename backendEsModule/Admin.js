@@ -39,7 +39,7 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
-  // Enhanced dashboard data handler with analytics
+  // ✅ fixed dashboard handler
   const dashboardHandler = async () => {
     const client = await pool.connect();
     try {
@@ -48,24 +48,8 @@ export const AdminInit = async (app) => {
         await client.query(`SELECT COUNT(*)::int AS count FROM users`)
       ).rows;
 
-      const [{ count: clientsCount }] = (
-        await client.query(
-          `SELECT COUNT(*)::int AS count FROM users WHERE role_id = 2`
-        )
-      ).rows;
-
-      const [{ count: freelancersCount }] = (
-        await client.query(
-          `SELECT COUNT(*)::int AS count FROM users WHERE role_id = 3`
-        )
-      ).rows;
-
       const [{ count: coursesCount }] = (
         await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
-      ).rows;
-
-      const [{ count: plansCount }] = (
-        await client.query(`SELECT COUNT(*)::int AS count FROM plans`)
       ).rows;
 
       const [{ count: pendingAppointments }] = (
@@ -75,69 +59,12 @@ export const AdminInit = async (app) => {
         )
       ).rows;
 
-      // Analytics data - User registration trends (last 7 days)
-      const userTrends = (
-        await client.query(`
-          SELECT 
-            DATE(created_at) as date,
-            COUNT(CASE WHEN role_id = 2 THEN 1 END)::int as clients,
-            COUNT(CASE WHEN role_id = 3 THEN 1 END)::int as freelancers
-          FROM users 
-          WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
-          GROUP BY DATE(created_at)
-          ORDER BY date
-        `)
-      ).rows.map((row) => ({
-        date: new Date(row.date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        }),
-        clients: row.clients,
-        freelancers: row.freelancers,
-      }));
-
-      // Appointment status distribution
-      const appointmentStats = (
-        await client.query(`
-          SELECT 
-            status,
-            COUNT(*)::int as count
-          FROM appointments 
-          GROUP BY status
-        `)
-      ).rows;
-
-      // Course enrollment progress (last 8 weeks)
-      const courseProgress = (
-        await client.query(`
-          SELECT 
-            DATE_TRUNC('week', enrolled_at) as week,
-            COUNT(*)::int as enrollments
-          FROM course_enrollments
-          WHERE enrolled_at >= CURRENT_DATE - INTERVAL '8 weeks'
-          GROUP BY DATE_TRUNC('week', enrolled_at)
-          ORDER BY week
-        `)
-      ).rows.map((row, index) => ({
-        week: `Week ${index + 1}`,
-        enrollments: row.enrollments,
-      }));
-
       const recentUsers = (
         await client.query(
-          `SELECT id, first_name, email, created_at, role_id
+          `SELECT id, first_name, email, created_at
              FROM users
              ORDER BY created_at DESC
              LIMIT 5`
-        )
-      ).rows;
-
-      const recentPlans = (
-        await client.query(
-          `SELECT id, name, price, duration, description
-             FROM plans
-             ORDER BY id DESC
-             LIMIT 3`
         )
       ).rows;
 
@@ -153,21 +80,12 @@ export const AdminInit = async (app) => {
       return {
         metrics: {
           usersCount,
-          clientsCount,
-          freelancersCount,
           coursesCount,
-          plansCount,
           pendingAppointments,
         },
-        chartData: {
-          userTrends,
-          appointmentStats,
-          courseProgress,
-        },
         recentUsers,
-        recentPlans,
         recentAppointments,
-        message: "OrderzHouse Management System",
+        message: "Hello World",
       };
     } finally {
       client.release();
@@ -249,76 +167,16 @@ export const AdminInit = async (app) => {
       {
         resource: db.table("users"),
         options: {
-          id: "freelancers",
-          navigation: { name: "Manage Freelancers" },
-          filterProperties: ["email", "first_name"],
-          listProperties: [
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "created_at",
-          ],
-          showProperties: [
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "role_id",
-            "created_at",
-            "updated_at",
-          ],
-          editProperties: ["first_name", "last_name", "email", "password"],
-          properties: {
-            role_id: {
-              isVisible: {
-                list: false,
-                filter: false,
-                show: true,
-                edit: false,
-              },
-            },
-            password: {
-              type: "password",
-            },
-          },
-          actions: {
-            list: {
-              before: async (request, context) => {
-                request.query = {
-                  ...request.query,
-                  "filters.role_id": "3",
-                };
-                return request;
-              },
-            },
-            new: {
-              before: async (request, context) => {
-                if (request.payload) {
-                  request.payload.role_id = 3;
-                }
-                return request;
-              },
-            },
-          },
+          id: "users",
+          navigation: { name: "Users" },
+          filterProperties: ["email", "first_name", "role_id"],
         },
       },
-      // Categories/Freelancing Types
       {
         resource: db.table("categories"),
         options: {
           id: "freelancing_types",
           navigation: { name: "Freelancing" },
-          listProperties: ["id", "name", "description"],
-          showProperties: [
-            "id",
-            "name",
-            "description",
-            "created_at",
-            "updated_at",
-          ],
-          editProperties: ["name", "description"],
-          filterProperties: ["name"],
         },
       },
       // Subscription Plans
@@ -544,7 +402,56 @@ export const AdminInit = async (app) => {
           },
         },
       },
+
+      {
+        resource: db.table("subscriptions"),
+        options: {
+          id: "subscriptions",
+          navigation: { name: "Freelancing" },
+          properties: {
+            freelancer_id: { reference: "users" },
+            plan_id: { reference: "plans" },
+          },
+        },
+      },
+      {
+        resource: db.table("projects"),
+        options: {
+          id: "projects",
+          navigation: { name: "Freelancing" },
+          properties: {
+            user_id: { reference: "users" },
+            category_id: { reference: "categories" },
+            sub_category_id: { reference: "sub_categories" },
+            assigned_freelancer_id: { reference: "users" },
+          },
+        },
+      },
+      {
+        resource: db.table("plans"),
+        options: {
+          id: "plans",
+          navigation: { name: "Freelancing" },
+        },
+      },
+      {
+        resource: db.table("categories"),
+        options: {
+          id: "freelancing_categories",
+          navigation: { name: "Freelancing" },
+        },
+      },
     ],
+    pages: {
+      analytics: { label: "Analytics", component: Components.Analytics },
+      usersPage: { label: "Users", component: Components.UsersPage },
+      coursesPage: { label: "Courses", component: Components.CoursesPage },
+      appointmentsPage: {
+        label: "Appointments",
+        component: Components.AppointmentsPage,
+      },
+      ordersPage: { label: "Orders", component: Components.OrdersPage },
+    },
   });
 
   if (process.env.NODE_ENV !== "production") {
