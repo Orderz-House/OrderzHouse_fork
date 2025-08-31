@@ -319,6 +319,4 @@ export const getProjectById = async (req,res)=>{
 
 }
 
-
-
 export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers ,getProjectById, updateAssignmentStatus};

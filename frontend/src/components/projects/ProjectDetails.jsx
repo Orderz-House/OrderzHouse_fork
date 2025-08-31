@@ -20,6 +20,7 @@ import { setLoadingRelated, setRelatedFreelancers, setError } from "../../slice/
 import axios from "axios";
 
 export default function ProjectDetails() {
+
   const { projectId } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export default function ProjectDetails() {
   const [sortBy, setSortBy] = useState("assignments");
   const [skillFilter, setSkillFilter] = useState("");
   const [selected, setSelected] = useState({});
+
 
   useEffect(() => {
     if (!projectId) return;

@@ -15,6 +15,7 @@ function initSocket(server) {
   io.use(authSocket);
 
   io.on("connection", async (socket) => {
+
     console.log("User connected:", socket.user.userId);
 
     try {
@@ -42,6 +43,7 @@ function initSocket(server) {
           socket.emit("join_error", { error: "Project not found" });
           return;
         }
+
 
         const dataroom = result.rows[0];
         const roomId = `${dataroom.id}`;
