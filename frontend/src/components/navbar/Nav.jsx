@@ -424,40 +424,35 @@ export default function EnhancedNavbar() {
                       </p>
                     </div>
                     <div className="py-2">
-                      {userData.role_id === 3 ? <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          console.log("Navigate to profile");
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                      >
-                        <Settings className="h-4 w-4" />
-                        <Link to="/edit-profile">
+                      {userData.role_id === 3 && (
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                        >
+                          <Settings className="h-4 w-4" />
                           <span>Dashboard</span>
                         </Link>
-                      </button>: <></>}
+                      )}
                       
 
-                      <button
+                      <Link to="/edit-profile"
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          console.log("Navigate to profile");
                         }}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                       >
                         <Settings className="h-4 w-4" />
-                        <Link to="/edit-profile">
-                          <span>Profile Settings</span>
-                        </Link>
-                      </button>
+                        <span>Profile Settings</span>
+                      </Link>
 
-                      <button
+                      <Link
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Sign Out</span>
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 )}
