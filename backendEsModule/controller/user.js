@@ -13,7 +13,7 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
-    category_id, 
+    category_id,
   } = req.body;
 
   if (
@@ -25,7 +25,7 @@ const register = async (req, res) => {
     !phone_number ||
     !country ||
     !username ||
-    (role_id === 3 && !category_id) 
+    (role_id === 3 && !category_id)
   ) {
     return res.status(400).json({
       success: false,
@@ -95,7 +95,6 @@ const register = async (req, res) => {
     }
   }
 };
-
 
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -743,6 +742,27 @@ const getTopFreelancers = async (req, res) => {
     });
   }
 };
+const getFreelance = async (req, res) => {
+  try {
+    const query = `
+      SELECT *
+      FROM users
+      WHERE role_id = 3 AND is_deleted = FALSE
+    `;
+
+    const { rows } = await pool.query(query);
+    return res.status(200).json({
+      success: true,
+      freelancers: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching freelancers:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
 export {
   register,
   login,
@@ -760,4 +780,5 @@ export {
   deletePortfolioFreelancer,
   rateFreelancer,
   getTopFreelancers,
+  getFreelance
 };

@@ -6,4 +6,4 @@ subscriptionsRouter.post('/subscribe', subscriptionToPlan);
 subscriptionsRouter.get('/user/:userId', getSubscriptionByUserId);
 
 
-export default subscriptionsRouter;
+export default subscriptionsRouter; 
