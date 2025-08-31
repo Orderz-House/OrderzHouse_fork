@@ -20,6 +20,8 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
+import FreelancerDashboard from "./components/dashboard/Dashboard";
+import Dashboard from "./components/dashboard/Dashboard";
 
 function App() {
     const token = useSelector((state) => state.auth.token);
@@ -49,8 +51,9 @@ function App() {
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
+        <Route path="/dashboard" element={<Dashboard/>}/>
       </Routes>
-      <EnhancedFooter />
+     <EnhancedFooter />
     </>
   );
 }
