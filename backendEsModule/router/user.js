@@ -12,15 +12,18 @@ import {
   deleteFreelancerById,
   listOnlineUsers,
   getUserById,
-
   getPortfolioByUserId,
   deletePortfolioFreelancer,
-  // rateFreelancer,
-  // getTopFreelancers,
-
+  getFreelance,
+  rateFreelancer,
+  getTopFreelancers,
+  getFreelanceById,
+  checkVerificationStatus,
+  updateVerificationStatus,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
+import requireVerified from "../middleware/requireVerification.js";
 const usersRouter = express.Router();
 
 /*
@@ -72,14 +75,25 @@ usersRouter.post(
   /*authorization("create_portfolio"),*/ createPortfolio
 );
 
-usersRouter.get("/freelancer/:userId/portfolio", authentication, getPortfolioByUserId)
+usersRouter.get(
+  "/freelancer/:userId/portfolio",
+  authentication,
+  requireVerified,
+  getPortfolioByUserId
+);
 usersRouter.put(
   "/freelancer/portfolio/edit/:portfolioId",
   authentication,
+  requireVerified,
   /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
 
-usersRouter.delete(`/freelancer/portfolio/delete`, authentication, deletePortfolioFreelancer)
+usersRouter.delete(
+  `/freelancer/portfolio/delete`,
+  authentication,
+  requireVerified,
+  deletePortfolioFreelancer
+);
 
 usersRouter.post(
   "/freelancers",
@@ -98,9 +112,23 @@ usersRouter.get(
   authentication,
   authorization("show_online"),
   listOnlineUsers
-), 
-  usersRouter.get("/getUserdata", authentication, getUserById);
-// usersRouter.post("/rate", authentication, rateFreelancer);
-// usersRouter.get("/freelancers/top-rated", getTopFreelancers);
+);
+usersRouter.get("/getUserdata", authentication, getUserById);
+usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
+usersRouter.get("/freelancers/top-rated", getTopFreelancers);
+usersRouter.get(`/allfreelance`, getFreelance);
+usersRouter.get(`/freelance/:id`, getFreelanceById);
+
+// Verification routes
+usersRouter.get(
+  "/verification/status",
+  authentication,
+  checkVerificationStatus
+);
+usersRouter.post(
+  "/verification/update",
+  authentication,
+  updateVerificationStatus
+);
 
 export default usersRouter;

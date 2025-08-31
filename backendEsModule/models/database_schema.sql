@@ -24,6 +24,10 @@ CREATE TABLE Users (
     country VARCHAR(100),
     national_number VARCHAR(50),
     profile_pic_url TEXT,
+    bio TEXT,
+    skills TEXT,
+    location VARCHAR(100),
+    is_verified BOOLEAN DEFAULT FALSE,
     date_started TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
