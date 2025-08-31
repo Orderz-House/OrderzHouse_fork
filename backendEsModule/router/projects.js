@@ -7,7 +7,7 @@ const projectsRouter = express.Router();
 projectsRouter.post("/", authentication, createProject);
 projectsRouter.get("/mine", authentication, getMyProjects);
 projectsRouter.post("/:projectId/assign", authentication, assignProject);
-projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
+projectsRouter.get("/:projectId/related-freelancers/", authentication, getRelatedFreelancers);
 // public listing
 projectsRouter.get("/public/categories", getCategories);
 projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);

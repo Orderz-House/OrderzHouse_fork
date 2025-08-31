@@ -211,26 +211,10 @@ export const getSubCategories = async (req, res) => {
 // Get related freelancers for a project by category and optional subcategory
 export const getRelatedFreelancers = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const { cat } = req.params; // ناخد category_id مباشرة من الزبون
 
-    // Load project to get its category/subcategory
-    const { rows: projectRows } = await pool.query(
-      `SELECT p.id, p.category_id, p.sub_category_id, c.name AS category_name
-       FROM projects p
-       LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.id = $1 AND p.is_deleted = false`,
-      [projectId]
-    );
-    if (!projectRows.length) {
-      return res.status(404).json({ success: false, message: "Project not found" });
-    }
-
-    const { category_id, sub_category_id, category_name } = projectRows[0];
-
-    // Find freelancers (role 3) in the same category (and sub-category if provided)
-    // using the mapping table freelancer_categories and optionally freelancer_sub_categories.
-    const params = [category_id];
-    let sql = `
+    // استعلام لجلب كل الفريلانسرز اللي عندهم نفس الـ category
+    const sql = `
       WITH pa_count AS (
         SELECT freelancer_id, COUNT(*) AS assignments_count
         FROM project_assignments
@@ -257,30 +241,27 @@ export const getRelatedFreelancers = async (req, res) => {
                '[]'
              ) AS portfolios
       FROM users u
-      JOIN freelancer_categories fc ON fc.freelancer_id = u.id AND fc.category_id = $1
-      LEFT JOIN pa_count ON pa_count.freelancer_id = u.id
-      LEFT JOIN portfolios pf ON pf.freelancer_id = u.id
-      WHERE u.role_id = 3 AND u.is_deleted = false`;
-
-    if (sub_category_id) {
-      sql += ` AND EXISTS (
-        SELECT 1 FROM freelancer_sub_categories fsc
-        WHERE fsc.freelancer_id = u.id AND fsc.sub_category_id = $2
-      )`;
-      params.push(sub_category_id);
-    }
-
-    sql += `
+      JOIN freelancer_categories fc 
+          ON fc.freelancer_id = u.id
+      LEFT JOIN pa_count 
+          ON pa_count.freelancer_id = u.id
+      LEFT JOIN portfolios pf 
+          ON pf.freelancer_id = u.id
+      WHERE u.role_id = 3
+        AND u.is_deleted = false
+        AND fc.category_id = $1
       GROUP BY u.id, pa_count.assignments_count
       ORDER BY assignments_count DESC, u.id ASC
-      LIMIT 50`;
+      LIMIT 50;
+    `;
 
-    const { rows } = await pool.query(sql, params);
+    const { rows } = await pool.query(sql, [cat]);
     return res.json({ success: true, freelancers: rows });
   } catch (error) {
     console.error("getRelatedFreelancers error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 export default { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories };
