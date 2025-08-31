@@ -9,7 +9,6 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isNavOpen, setIsNavOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -17,7 +16,6 @@ export default function Dashboard() {
         setLoading(true);
         console.log("Fetching dashboard data...");
         
-        // Try to get dashboard data from the handler
         const response = await api.getDashboard();
         console.log("Dashboard response:", response);
         setData(response.data);
@@ -26,7 +24,6 @@ export default function Dashboard() {
         console.error("Dashboard error:", err);
         setError(err?.message || "Failed to load dashboard data");
         
-        // Set fallback data
         setData({
           metrics: {
             usersCount: 0,
@@ -47,7 +44,6 @@ export default function Dashboard() {
     };
 
     fetchData();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -66,7 +62,7 @@ export default function Dashboard() {
           width: '40px',
           height: '40px',
           border: '4px solid #e5e7eb',
-          borderTop: '4px solid #8b5cf6',
+          borderTop: '4px solid #3b82f6',
           borderRadius: '50%',
           animation: 'spin 1s linear infinite',
           marginBottom: '16px'
@@ -87,13 +83,12 @@ export default function Dashboard() {
   const recentAppointments = data?.recentAppointments || [];
 
   const statsCards = [
-    { title: "Total Users", value: metrics.usersCount || 0, color: "#8b5cf6", icon: "👥" },
-    { title: "Active Clients", value: metrics.clientsCount || 0, color: "#10b981", icon: "👤" },
-    { title: "Freelancers", value: metrics.freelancersCount || 0, color: "#f59e0b", icon: "💼" },
-    { title: "Courses", value: metrics.coursesCount || 0, color: "#06b6d4", icon: "📚" },
-    { title: "Plans", value: metrics.plansCount || 0, color: "#8b5cf6", icon: "💎" },
-    { title: "Projects", value: metrics.projectsCount || 0, color: "#3b82f6", icon: "📋" },
-    { title: "Pending Appointments", value: metrics.pendingAppointments || 0, color: "#ef4444", icon: "⏰" },
+    { title: "Total Users", value: metrics.usersCount || 0 },
+    { title: "Active Clients", value: metrics.clientsCount || 0 },
+    { title: "Freelancers", value: metrics.freelancersCount || 0 },
+    { title: "Courses", value: metrics.coursesCount || 0 },
+    { title: "Plans", value: metrics.plansCount || 0 },
+    { title: "Projects", value: metrics.projectsCount || 0 },
   ];
 
   const formatDate = (dateString) => {
@@ -120,455 +115,148 @@ export default function Dashboard() {
   return (
     <div style={{
       padding: '24px',
-      background: 'linear-gradient(135deg, #fef7ff 0%, #f0f9ff 100%)',
+      background: '#f8fafc',
       minHeight: '100vh',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      {/* Advanced Navigation Bar */}
+      {/* Header */}
       <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
-        padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        marginBottom: '24px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <img
-            src="https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png"
-            alt="OrderzHouse"
-            style={{ height: '36px', width: 'auto' }}
-          />
-          <div style={{
-            height: '24px',
-            width: '1px',
-            background: 'rgba(139, 92, 246, 0.2)'
-          }}></div>
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center'
-          }}>
-            <button 
-              onClick={() => window.location.href = '/admin'}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                background: '#8b5cf6',
-                color: 'white',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Dashboard
-            </button>
-            <button 
-              onClick={() => window.location.href = '/admin/resources/users'}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                background: 'transparent',
-                color: '#4b5563',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Users
-            </button>
-            <button 
-              onClick={() => window.location.href = '/admin/resources/appointments'}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                background: 'transparent',
-                color: '#4b5563',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Appointments
-            </button>
-            <button 
-              onClick={() => window.location.href = '/admin/resources/projects'}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                background: 'transparent',
-                color: '#4b5563',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Projects
-            </button>
-          </div>
+        <div>
+          <h1 style={{ margin: '0', fontSize: '24px', fontWeight: '600', color: '#1e293b' }}>
+            Dashboard
+          </h1>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button 
-            onClick={() => window.location.href = '/admin/pages/analytics'}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-              color: 'white',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>📊</span>
-            Analytics
-          </button>
-          
-          <button 
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            style={{
-              padding: '8px',
-              borderRadius: '8px',
-              background: 'transparent',
-              color: '#4b5563',
-              border: '1px solid #e5e7eb',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-        
-        {/* Dropdown menu */}
-        {isNavOpen && (
+        {error && (
           <div style={{
-            position: 'absolute',
-            top: '100%',
-            right: '24px',
-            background: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-            padding: '12px',
-            minWidth: '200px',
-            border: '1px solid #f3f4f6',
-            zIndex: 60
+            padding: '6px 12px',
+            background: '#fee2e2',
+            color: '#dc2626',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '500'
           }}>
-            <div style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#4b5563'
-            }}>
-              Profile
-            </div>
-            <div style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#4b5563'
-            }}>
-              Settings
-            </div>
-            <div style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#ef4444'
-            }}>
-              Logout
-            </div>
+            {error}
           </div>
         )}
       </div>
 
-      {/* Main Content */}
-      <div style={{ marginTop: '70px' }}>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '32px',
-          padding: '24px',
-          background: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 4px 20px rgba(139, 92, 246, 0.1)',
-          border: '1px solid #e0e7ff'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div>
-              <h1 style={{ margin: '0 0 4px 0', fontSize: '28px', fontWeight: '700', color: '#5b21b6' }}>
-                OrderzHouse Dashboard
-              </h1>
-              <p style={{ margin: 0, color: '#7c3aed', fontSize: '14px' }}>
-                Real-time business insights and management
-              </p>
-            </div>
-          </div>
-          
-          {error && (
-            <div style={{
-              padding: '8px 12px',
-              background: '#fee2e2',
-              color: '#dc2626',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '500'
-            }}>
-              {error}
-            </div>
-          )}
+      {/* Stats Overview */}
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        marginBottom: '24px',
+        padding: '20px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+            Overview
+          </h2>
         </div>
-
-        {/* Stats Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px',
-          marginBottom: '32px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '16px'
         }}>
           {statsCards.map((stat, index) => (
             <div
               key={index}
               style={{
-                background: 'white',
-                padding: '24px',
-                borderRadius: '16px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-                border: '1px solid #f1f5f9',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.06)';
+                textAlign: 'center',
+                padding: '16px 12px'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#64748b',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  {stat.title}
-                </div>
-                <div style={{ fontSize: '24px', opacity: '0.8' }}>
-                  {stat.icon}
-                </div>
-              </div>
               <div style={{
-                fontSize: '36px',
+                fontSize: '24px',
                 fontWeight: '700',
-                color: stat.color,
-                marginBottom: '8px'
+                color: '#1e293b',
+                marginBottom: '4px'
               }}>
                 {stat.value}
               </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#64748b',
+                fontWeight: '500'
+              }}>
+                {stat.title}
+              </div>
             </div>
           ))}
-          
-          {/* Analytics Card */}
-          <div
-            onClick={() => window.location.href = '/admin/pages/analytics'}
-            style={{
-              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-              padding: '24px',
-              borderRadius: '16px',
-              boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3)',
-              border: '1px solid rgba(139, 92, 246, 0.2)',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer',
-              color: 'white',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(139, 92, 246, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(139, 92, 246, 0.3)';
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                opacity: '0.9'
-              }}>
-                Advanced Analytics
-              </div>
-              <div style={{ fontSize: '24px' }}>
-                📊
-              </div>
-            </div>
-            <div style={{
-              fontSize: '36px',
-              fontWeight: '700',
-              marginBottom: '8px'
-            }}>
-              View Reports
-            </div>
-            <div style={{
-              fontSize: '12px',
-              opacity: '0.8',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              Explore detailed analytics <span>→</span>
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Content Grid */}
+      {/* Main Content Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '2fr 1fr',
+        gap: '24px'
+      }}>
+        {/* Recent Activity */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
           gap: '24px'
         }}>
-          {/* Recent Users */}
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid #f1f5f9',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid #f3f4f6',
-              background: '#fafafa'
-            }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
-                Recent Users
-              </h3>
-            </div>
-            
-            {recentUsers.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic' }}>
-                No recent users
-              </div>
-            ) : (
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                {recentUsers.map((user, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      borderBottom: i === recentUsers.length - 1 ? 'none' : '1px solid #f3f4f6'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '500', color: '#111827' }}>
-                        {user.first_name} {user.last_name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {user.email}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        background: user.role_id === 2 ? '#dcfce7' : '#ede9fe',
-                        color: user.role_id === 2 ? '#166534' : '#7c3aed'
-                      }}>
-                        {getRoleName(user.role_id)}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                        {formatDate(user.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Recent Appointments */}
           <div style={{
             background: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid #f1f5f9',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
             overflow: 'hidden'
           }}>
             <div style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid #f3f4f6',
-              background: '#fafafa'
+              padding: '16px 20px',
+              borderBottom: '1px solid #e2e8f0'
             }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
                 Recent Appointments
               </h3>
             </div>
             
             {recentAppointments.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic' }}>
+              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
                 No recent appointments
               </div>
             ) : (
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                {recentAppointments.map((apt, i) => (
+              <div>
+                {recentAppointments.slice(0, 5).map((apt, i) => (
                   <div
                     key={i}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '12px 24px',
-                      borderBottom: i === recentAppointments.length - 1 ? 'none' : '1px solid #f3f4f6'
+                      padding: '12px 20px',
+                      borderBottom: i === recentAppointments.slice(0, 5).length - 1 ? 'none' : '1px solid #f1f5f9'
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: '500', color: '#111827' }}>
-                        Appointment #{apt.id}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {formatDate(apt.appointment_date)}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: 
+                          apt.status === 'pending' ? '#f59e0b' :
+                          apt.status === 'accepted' ? '#10b981' :
+                          apt.status === 'rejected' ? '#ef4444' : '#6b7280'
+                      }}></div>
+                      <div>
+                        <div style={{ fontWeight: '500', color: '#1e293b', fontSize: '14px' }}>
+                          Appointment #{apt.id}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {formatDate(apt.appointment_date)}
+                        </div>
                       </div>
                     </div>
                     <div style={{
-                      padding: '4px 8px',
+                      padding: '2px 8px',
                       borderRadius: '12px',
                       fontSize: '12px',
                       fontWeight: '500',
@@ -589,106 +277,200 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Recent Users */}
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+                Recent Users
+              </h3>
+            </div>
+            
+            {recentUsers.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+                No recent users
+              </div>
+            ) : (
+              <div>
+                {recentUsers.slice(0, 5).map((user, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 20px',
+                      borderBottom: i === recentUsers.slice(0, 5).length - 1 ? 'none' : '1px solid #f1f5f9'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: user.role_id === 2 ? '#10b981' : '#3b82f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white'
+                      }}>
+                        {user.first_name?.charAt(0)}{user.last_name?.charAt(0)}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '500', color: '#1e293b', fontSize: '14px' }}>
+                          {user.first_name} {user.last_name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: user.role_id === 2 ? '#dcfce7' : '#dbeafe',
+                      color: user.role_id === 2 ? '#166534' : '#1e40af'
+                    }}>
+                      {getRoleName(user.role_id)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div style={{
+          display: 'grid',
+          gap: '24px'
+        }}>
           {/* Quick Actions */}
           <div style={{
             background: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid #f1f5f9',
-            padding: '24px'
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            padding: '20px'
           }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
               Quick Actions
             </h3>
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div style={{ display: 'grid', gap: '8px' }}>
               <button
                 onClick={() => window.location.href = '/admin/resources/appointments'}
                 style={{
-                  padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                  padding: '10px 12px',
+                  background: '#3b82f6',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
+                  textAlign: 'left'
                 }}
               >
-                📅 Manage Appointments
+                Manage Appointments
               </button>
               
               <button
                 onClick={() => window.location.href = '/admin/resources/clients'}
                 style={{
-                  padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  padding: '10px 12px',
+                  background: '#10b981',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
+                  textAlign: 'left'
                 }}
               >
-                👥 View Users
+                View Users
               </button>
               
               <button
                 onClick={() => window.location.href = '/admin/resources/projects'}
                 style={{
-                  padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                  padding: '10px 12px',
+                  background: '#8b5cf6',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
+                  textAlign: 'left'
                 }}
               >
-                📋 Manage Projects
+                Manage Projects
+              </button>
+
+              <button
+                onClick={() => window.location.href = '/admin/pages/analytics'}
+                style={{
+                  padding: '10px 12px',
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                View Analytics
               </button>
             </div>
           </div>
-        </div>
 
+          {/* Status Summary */}
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            padding: '20px'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+              Status
+            </h3>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#64748b' }}>Pending Appointments</span>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#f59e0b' }}>
+                  {metrics.pendingAppointments || 0}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#64748b' }}>Total Users</span>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#3b82f6' }}>
+                  {metrics.usersCount || 0}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#64748b' }}>Active Projects</span>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#10b981' }}>
+                  {metrics.projectsCount || 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }
