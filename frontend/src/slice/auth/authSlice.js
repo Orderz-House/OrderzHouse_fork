@@ -6,7 +6,9 @@ const initialState = {
   userId: localStorage.getItem("userId") || null,
   roleId: localStorage.getItem("roleId") || null,
   isLoggedIn: !!localStorage.getItem("token"),
-  userData: Cookies.get("userData") ? JSON.parse(Cookies.get("userData")) : null,
+  userData: Cookies.get("userData")
+    ? JSON.parse(Cookies.get("userData"))
+    : null,
 };
 
 const authSlice = createSlice({
@@ -39,9 +41,10 @@ const authSlice = createSlice({
       state.userData = action.payload;
       Cookies.set("userData", JSON.stringify(action.payload));
     },
+  
   },
 });
 
-export const { setLogin, setUserId, setLogout, setUserData } =
+export const { setLogin, setUserId, setLogout, setUserData,setFreeLance } =
   authSlice.actions;
 export default authSlice.reducer;

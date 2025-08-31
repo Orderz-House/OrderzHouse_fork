@@ -22,12 +22,12 @@ import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/dashboard/Dashboard";
 import Dashboard from "./components/dashboard/Dashboard";
+import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 
 function App() {
-    const token = useSelector((state) => state.auth.token);
-    const userId = useSelector((state) => state.auth.userId);
-    useEffect(() => {
-    
+  const token = useSelector((state) => state.auth.token);
+  const userId = useSelector((state) => state.auth.userId);
+  useEffect(() => {
     const socket = initSocket(token, userId);
 
     return () => {
@@ -47,15 +47,23 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
-        <Route path="/dashboard" element={<Dashboard/>}/>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/freelancers" element={<AllFreeLance />} />
       </Routes>
-     <EnhancedFooter />
+      <EnhancedFooter />
     </>
   );
 }
- 
+
 export default App;

@@ -9,7 +9,7 @@ import {
   Award,
   Shield,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setPlans } from "../../slice/planSlice";
@@ -17,7 +17,7 @@ import { setPlans } from "../../slice/planSlice";
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
   const [categories, setCategories] = useState([]);
-
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { plans, token } = useSelector((state) => {
     return {
@@ -87,7 +87,15 @@ export default function OrderzHousePage() {
   //     icon: "✏️",
   //   },
   // ];
-
+  const handleExploreTalent = () => {
+    if (!token) {
+      navigate("/login", {
+        state: { message: "Please login to explore our talent pool" },
+      });
+    } else {
+      navigate("/freelancers");
+    }
+  };
   const topFreelancers = [
     {
       name: "MAEN NJAR",
@@ -165,18 +173,34 @@ export default function OrderzHousePage() {
             and limitless opportunities.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
+            <button
+              onClick={handleExploreTalent}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+            >
               Explore the talent pool
             </button>
-            <Link to="/create-project">
-              {" "}
-              <button className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300">
+            {token ? (
+              <Link to="/create-project">
+                <button className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300">
+                  Post a New Project
+                </button>
+              </Link>
+            ) : (
+              <button
+                onClick={() =>
+                  navigate("/login", {
+                    state: { message: "Please login to post a project" },
+                  })
+                }
+                className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300"
+              >
                 Post a New Project
               </button>
-            </Link>
+            )}
           </div>
         </div>
       </section>
+
       {/* Categories Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -197,6 +221,8 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
+
+      {/* Brands Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -221,14 +247,22 @@ export default function OrderzHousePage() {
           </div>
 
           {!token ? (
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto">
-              <span>Sign in</span>{" "}
+            <button
+              onClick={() => navigate("/login")}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto"
+            >
+              <span>Sign in to get started</span>
             </button>
           ) : (
-            <></>
+            <Link to="/dashboard">
+              <button className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center justify-center mx-auto">
+                <span>Go to Dashboard</span>
+              </button>
+            </Link>
           )}
         </div>
       </section>
+
       {/* Freelancer, Employer, Community */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -240,6 +274,16 @@ export default function OrderzHousePage() {
                 Apply for positions as a freelancer and take control of your
                 career
               </p>
+              {!token && (
+                <button
+                  onClick={() =>
+                    navigate("/register", { state: { role: "freelancer" } })
+                  }
+                  className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                >
+                  Join as Freelancer
+                </button>
+              )}
             </div>
 
             <div className="text-center p-8 bg-white rounded-2xl shadow-lg">
@@ -248,6 +292,16 @@ export default function OrderzHousePage() {
               <p className="text-gray-600">
                 Hire key staff as an employer and build your dream team
               </p>
+              {!token && (
+                <button
+                  onClick={() =>
+                    navigate("/register", { state: { role: "employer" } })
+                  }
+                  className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                >
+                  Join as Employer
+                </button>
+              )}
             </div>
 
             <div className="text-center p-8 bg-white rounded-2xl shadow-lg">
@@ -256,10 +310,19 @@ export default function OrderzHousePage() {
               <p className="text-gray-600">
                 Collaborate as a community and achieve more together
               </p>
+              {!token && (
+                <button
+                  onClick={() => navigate("/register")}
+                  className="mt-4 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                >
+                  Join Community
+                </button>
+              )}
             </div>
           </div>
         </div>
       </section>
+
       {/* Pricing Plans */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-50 to-white">
         <div className="max-w-7xl mx-auto">
@@ -277,8 +340,7 @@ export default function OrderzHousePage() {
                 key={plan.id}
                 className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
                   activePlan === plan.id ? "border-blue-500" : "border-gray-200"
-                } transition-all duration-300 cursor-pointer`}
-                onClick={() => setActivePlan(plan.id)}
+                } transition-all duration-300`}
               >
                 <h3 className="text-2xl font-bold mb-4">{plan.name}</h3>
                 <div className="text-3xl font-bold text-blue-600 mb-6">
@@ -298,14 +360,18 @@ export default function OrderzHousePage() {
                   ))}
                 </ul>
 
-                <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors duration-300">
-                  Get Started
+                <button
+                  onClick={() => handleGetStarted(plan.id)}
+                  className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors duration-300"
+                >
+                  {token ? "Get Started" : "Sign Up Now"}
                 </button>
               </div>
             ))}
           </div>
         </div>
       </section>
+
       {/* Learning Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto text-center">
@@ -321,18 +387,18 @@ export default function OrderzHousePage() {
             time.
           </p>
           <button className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transition-colors duration-300 flex items-center justify-center mx-auto">
-            {" "}
             <Link
               to="https://studyzhouse.com"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <span>Get Started</span>{" "}
+              <span>Get Started</span>
             </Link>
             <ChevronRight className="w-5 h-5 ml-2" />
           </button>
         </div>
       </section>
+
       {/* Mobile App Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -399,6 +465,7 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
+
       {/* Top Freelancers */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -450,7 +517,10 @@ export default function OrderzHousePage() {
                   {freelancer.category}
                 </div>
 
-                <button className="w-full mt-6 py-2 bg-gray-100 text-gray-800 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300">
+                <button
+                  onClick={() => handleViewProfile(index + 1)}
+                  className="w-full mt-6 py-2 bg-gray-100 text-gray-800 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300"
+                >
                   View Profile
                 </button>
               </div>
@@ -458,6 +528,7 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
+
       {/* FAQ Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -483,7 +554,7 @@ export default function OrderzHousePage() {
 
           <div className="text-center mt-12">
             <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
-              <Link to="/ask-more"> Ask More</Link>
+              <Link to="/ask-more">Ask More</Link>
             </button>
           </div>
         </div>
