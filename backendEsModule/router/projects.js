@@ -1,13 +1,15 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories } from "../controller/projects.js";
+import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus } from "../controller/projects.js";
 import {requireVerified} from "../middleware/requireVerification.js";
 const projectsRouter = express.Router();
 
 projectsRouter.post("/", authentication, requireVerified, createProject);
 projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
+projectsRouter.get("/:projectId", authentication, requireVerified, getProjectById)
 projectsRouter.post("/:projectId/assign", authentication, requireVerified, assignProject);
 projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
+projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
 // public listing
 projectsRouter.get("/public/categories", getCategories);
 projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);

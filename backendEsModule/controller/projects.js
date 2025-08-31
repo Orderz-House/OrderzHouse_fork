@@ -137,6 +137,71 @@ export const assignProject = async (req, res) => {
   }
 };
 
+// Update freelancer assignment status
+export const updateAssignmentStatus = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { freelancer_id, status } = req.body;
+
+    if (!freelancer_id || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "freelancer_id and status are required",
+      });
+    }
+
+    // ✅ السماح فقط بالقيم المحددة
+    const validStatuses = ["active", "kicked", "quit", "banned"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    // تحقق أن المشروع موجود
+    const projectResult = await pool.query(
+      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectResult.rows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
+    }
+
+    // تحديث الحالة
+    const updateQuery = `
+      UPDATE project_assignments
+      SET status = $3
+      WHERE project_id = $1 AND freelancer_id = $2
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(updateQuery, [
+      projectId,
+      freelancer_id,
+      status,
+    ]);
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignment not found for this freelancer in the project",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Assignment status updated to '${status}'`,
+      assignment: rows[0],
+    });
+  } catch (error) {
+    console.error("updateAssignmentStatus error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 // List users by role id (helper for frontend selection)
 export const listUsersByRole = async (req, res) => {
   try {
@@ -204,5 +269,56 @@ export const getRelatedFreelancers = async (req, res) => {
   res.status(200).json({ success: true, freelancers });
 };
 
+export const getProjectById = async (req,res)=>{
+  const {projectId} = req.params;
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers };
+  
+  const project = await pool.query(
+    `
+    SELECT 
+      p.*,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'freelancer_id', pa.freelancer_id,
+            'assigned_at', pa.assigned_at,
+            'status', pa.status,
+            'user', json_build_object(
+              'id', u.id,
+              'first_name', u.first_name,
+              'last_name', u.last_name,
+              'email', u.email,
+              'username', u.username
+            )
+          )
+        ) FILTER (WHERE pa.freelancer_id IS NOT NULL), '[]'
+      ) AS assignments
+    FROM projects p
+    LEFT JOIN project_assignments pa 
+      ON p.id = pa.project_id
+    LEFT JOIN users u 
+      ON pa.freelancer_id = u.id
+    WHERE p.id = $1 
+      AND p.is_deleted = FALSE
+    GROUP BY p.id
+    `,
+    [projectId]
+  );
+
+  if(!project.rows.length){
+    return res.status(404).json({
+      success : false,
+      message : "No Project Found", 
+    })
+  }
+
+  res.status(200).json({
+    success : true,
+    project
+  })
+
+}
+
+
+
+export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers ,getProjectById, updateAssignmentStatus};

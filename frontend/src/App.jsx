@@ -22,6 +22,7 @@ import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/dashboard/Dashboard";
 import Dashboard from "./components/dashboard/Dashboard";
+import ManageProject from "./components/manageProject/ManageProject";
 
 function App() {
     const token = useSelector((state) => state.auth.token);
@@ -49,9 +50,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/create-project" element={<CreateProject />} />
-        <Route path="/projects/:projectId" element={<ProjectDetails />} />
+        <Route path="/projects/:projectId" element={<ProjectDetails/>} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
-        <Route path="/dashboard" element={<Dashboard/>}/>
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
+        <Route path="/manage-project/:projectId" element={<ManageProject/>}/>
       </Routes>
      <EnhancedFooter />
     </>
