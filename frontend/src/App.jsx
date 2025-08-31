@@ -12,6 +12,7 @@ import Login from "./components/login/Login";
 
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
+import VerifyProfile from "./components/profile/VerifyProfile";
 import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
 
@@ -23,6 +24,7 @@ import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/dashboard/Dashboard";
 import Dashboard from "./components/dashboard/Dashboard";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
+import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail"
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -55,11 +57,20 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/create-project" element={<CreateProject />} />
+        <Route
+          path="/verify-profile"
+          element={
+            <ProtectedRoute>
+              <VerifyProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/create-project" element={<ProtectedRoute/><CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/freelancers" element={<AllFreeLance />} />
+        <Route path="/freelancer/:id" element={<FreeLanceDetail/>} />
       </Routes>
       <EnhancedFooter />
     </>

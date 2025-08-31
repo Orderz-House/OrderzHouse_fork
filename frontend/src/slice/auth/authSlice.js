@@ -8,7 +8,7 @@ const initialState = {
   isLoggedIn: !!localStorage.getItem("token"),
   userData: Cookies.get("userData")
     ? JSON.parse(Cookies.get("userData"))
-    : null,
+    : null,  isVerified: false,
 };
 
 const authSlice = createSlice({
@@ -41,6 +41,9 @@ const authSlice = createSlice({
       state.userData = action.payload;
       Cookies.set("userData", JSON.stringify(action.payload));
     },
+    updateVerification: (state, action) => {
+      state.isVerified = action.payload;
+    }
   
   },
 });

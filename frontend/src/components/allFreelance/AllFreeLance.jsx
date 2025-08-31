@@ -16,20 +16,37 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const AllFreeLance = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Access the correct state structure - adjust this based on your actual Redux state
   const { freelancers, loading, error, searchTerm, selectedCountry } =
-    useSelector((state) => state.freelance);
+    useSelector((state) => state.freelance || {});
 
   useEffect(() => {
     dispatch(fetchAllFreelancers());
   }, [dispatch]);
 
-  console.log(freelancers.freelancers);
+  console.log("Freelancers data:", freelancers); // Debug log
 
-  // Ensure freelancers is always an array before filtering
-  const safeFreelancers = Array.isArray(freelancers.freelancers) ? freelancers.freelancers : [];
+  // Handle different possible structures of the freelancers data
+  let safeFreelancers = [];
+
+  if (Array.isArray(freelancers)) {
+    // If freelancers is directly an array
+    safeFreelancers = freelancers;
+  } else if (freelancers && Array.isArray(freelancers.freelancers)) {
+    // If freelancers is an object with a freelancers array property
+    safeFreelancers = freelancers.freelancers;
+  } else if (freelancers && Array.isArray(freelancers.data)) {
+    // If freelancers is an object with a data array property
+    safeFreelancers = freelancers.data;
+  }
+
+  console.log("Safe freelancers:", safeFreelancers); // Debug log
 
   // Filter freelancers based on search term and country
   const filteredFreelancers = safeFreelancers.filter((freelancer) => {
@@ -73,6 +90,10 @@ export const AllFreeLance = () => {
   const handleRetry = () => {
     dispatch(clearError());
     dispatch(fetchAllFreelancers());
+  };
+
+  const handleViewProfile = (freelancerId) => {
+    navigate(`/freelancer/${freelancerId}`);
   };
 
   if (loading) {
@@ -187,10 +208,11 @@ export const AllFreeLance = () => {
               const violationCount = freelancer?.violation_count || 0;
               const createdAt = freelancer?.created_at;
               const profilePic = freelancer?.profile_pic_url;
+              const freelancerId = freelancer?.id;
 
               return (
                 <div
-                  key={freelancer.id}
+                  key={freelancerId}
                   className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
                 >
                   {/* Profile Header */}
@@ -282,7 +304,10 @@ export const AllFreeLance = () => {
                   )}
 
                   {/* Action Button */}
-                  <button className="w-full py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+                  <button
+                    className="w-full py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                    onClick={() => handleViewProfile(freelancerId)}
+                  >
                     View Profile
                   </button>
                 </div>

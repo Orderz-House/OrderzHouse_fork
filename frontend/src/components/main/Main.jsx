@@ -17,6 +17,8 @@ import { setPlans } from "../../slice/planSlice";
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
   const [categories, setCategories] = useState([]);
+  const [isVerified, setIsVerified] = useState(true);
+  const [showWarning, setShowWarning] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { plans, token } = useSelector((state) => {
@@ -45,6 +47,30 @@ export default function OrderzHousePage() {
         console.error("Error fetching plans:", error.message);
       });
   }, [dispatch]);
+
+  // Check freelancer verification status
+  useEffect(() => {
+    if (token) {
+      axios
+        .get("http://localhost:5000/verification/status", {
+          withCredentials: true,
+        })
+        .then((response) => {
+          if (response.data.status !== "approved") {
+            setIsVerified(false);
+            setShowWarning(true);
+          } else {
+            setIsVerified(true);
+            setShowWarning(false);
+          }
+        })
+        .catch((error) => {
+          console.error("Verification check failed:", error);
+          setIsVerified(false);
+          setShowWarning(true);
+        });
+    }
+  }, [token]);
 
   // const categories = [
   //   {
@@ -159,6 +185,15 @@ export default function OrderzHousePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {showWarning && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Warning: </strong>
+          <span className="block sm:inline">You must verify your account and complete your portfolio before using this feature.</span>
+          <Link to="/verify-profile" className="ml-4 underline hover:no-underline">
+            Go to Verification
+          </Link>
+        </div>
+      )}
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600/5 to-purple-600/5">
         <div className="max-w-7xl mx-auto text-center">

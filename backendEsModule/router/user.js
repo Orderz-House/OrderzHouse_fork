@@ -17,11 +17,13 @@ import {
   getFreelance,
   rateFreelancer,
   getTopFreelancers,
-  // rateFreelancer,
-  // getTopFreelancers,
+  getFreelanceById,
+  checkVerificationStatus,
+  updateVerificationStatus,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
+import requireVerified from "../middleware/requireVerification.js";
 const usersRouter = express.Router();
 
 /*
@@ -76,17 +78,20 @@ usersRouter.post(
 usersRouter.get(
   "/freelancer/:userId/portfolio",
   authentication,
+  requireVerified,
   getPortfolioByUserId
 );
 usersRouter.put(
   "/freelancer/portfolio/edit/:portfolioId",
   authentication,
+  requireVerified,
   /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
 );
 
 usersRouter.delete(
   `/freelancer/portfolio/delete`,
   authentication,
+  requireVerified,
   deletePortfolioFreelancer
 );
 
@@ -107,10 +112,23 @@ usersRouter.get(
   authentication,
   authorization("show_online"),
   listOnlineUsers
-),
-  usersRouter.get("/getUserdata", authentication, getUserById);
-usersRouter.post("/rate", authentication, rateFreelancer);
+);
+usersRouter.get("/getUserdata", authentication, getUserById);
+usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
 usersRouter.get("/freelancers/top-rated", getTopFreelancers);
-usersRouter.get(`/allfreelance`, getFreelance); 
+usersRouter.get(`/allfreelance`, getFreelance);
+usersRouter.get(`/freelance/:id`, getFreelanceById);
+
+// Verification routes
+usersRouter.get(
+  "/verification/status",
+  authentication,
+  checkVerificationStatus
+);
+usersRouter.post(
+  "/verification/update",
+  authentication,
+  updateVerificationStatus
+);
 
 export default usersRouter;
