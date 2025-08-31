@@ -71,11 +71,15 @@ export const getMyProjects = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { rows } = await pool.query(
-      `SELECT p.*, pa.freelancer_id AS assigned_freelancer_id
-       FROM projects p
-       LEFT JOIN project_assignments pa ON pa.project_id = p.id
-       WHERE p.user_id = $1 AND p.is_deleted = false
-       ORDER BY p.created_at DESC`,
+      `SELECT 
+  p.*, 
+  array_agg(pa.freelancer_id) AS assigned_freelancers
+FROM projects p
+LEFT JOIN project_assignments pa ON pa.project_id = p.id
+WHERE p.user_id = $1 AND p.is_deleted = false
+GROUP BY p.id
+ORDER BY p.created_at DESC;
+`,
       [userId]
     );
     return res.json({ success: true, projects: rows });
@@ -318,5 +322,30 @@ export const getProjectById = async (req,res)=>{
   })
 
 }
+export const getAllProjectForOffer = (req,res)=>{
+  pool.query(`SELECT 
+       p.*, 
+       u.id AS user_id, 
+       u.first_name, 
+       u.last_name, 
+       u.email, 
+       u.username FROM projects p JOIN users u ON u.id = p.user_id WHERE p.status = 'available'`).then((result) => {
+    res.status(200).json({
+      success : true,
+      message : `All Project available`,
+      projects : result.rows
+    })
+  }).catch((err) => {
+    res.status(500).json({
+      success : false,
+      message : `Server Error`,
+      error : err
+    })
+  });
+}
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers ,getProjectById, updateAssignmentStatus};
+
+
+
+
+export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers ,getProjectById, updateAssignmentStatus, getAllProjectForOffer};

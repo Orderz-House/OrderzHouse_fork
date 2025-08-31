@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef} from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   FileText,
@@ -14,12 +14,20 @@ import {
   Send,
   Search,
   Filter,
-  MoreVertical,
   Eye,
   Trash2,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Check,
+  X,
+  User,
+  Briefcase,
+  Star,
+  Mail,
+  Phone,
+  Award,
+
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -29,20 +37,19 @@ import { getSocket } from "../../services/socketService";
 const ManageProject = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { token, userData} = useSelector((state) => state.auth);
+  const { token, userData } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState("overview");
   const [project, setProject] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [files, setFiles] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const socket = getSocket();
-  const messagesEndRef = useRef(null);
-
-   const containerRef = useRef(null);
+  const containerRef = useRef(null);
 
   const scrollToBottom = () => {
     if (containerRef.current) {
@@ -54,7 +61,6 @@ const ManageProject = () => {
     scrollToBottom();
   }, [messages, activeTab]);
 
-  
   // Fetch project data
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -66,34 +72,47 @@ const ManageProject = () => {
             headers: { Authorization: `Bearer ${token}` }
           }
         ).then((projectRes) => {
-            setProject(projectRes.data.project.rows[0]);
-            console.log(projectRes.data.project.rows[0]);
-            setAssignments(projectRes.data.project.rows[0].assignments || [])
+          setProject(projectRes.data.project.rows[0]);
+          setAssignments(projectRes.data.project.rows[0].assignments || []);
         }).catch((err) => {
-            console.log("Manage Project ===>", err.message);
-            
-        });;
+          console.log("Manage Project ===>", err.message);
+        });
         
-
-        // Fetch files
-        /*
-        const filesRes = await axios.get(
-          `http://localhost:5000/projects/${projectId}/files`,
+        // Fetch offers (mock data for demonstration)
+        const mockOffers = [
           {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-        setFiles(filesRes.data.files || []);
-
-        // Fetch messages
-        const messagesRes = await axios.get(
-          `http://localhost:5000/projects/${projectId}/messages`,
+            id: 1,
+            freelancer: {
+              id: 101,
+              name: "John Doe",
+              avatar: null,
+              rating: 4.8,
+              completed_projects: 24
+            },
+            proposal: "I have extensive experience in React and Node.js development...",
+            bid_amount: 1200,
+            delivery_time: "2 weeks",
+            submitted_at: "2023-10-15T14:30:00Z",
+            status: "pending"
+          },
           {
-            headers: { Authorization: `Bearer ${token}` }
+            id: 2,
+            freelancer: {
+              id: 102,
+              name: "Sarah Wilson",
+              avatar: null,
+              rating: 4.9,
+              completed_projects: 32
+            },
+            proposal: "As a full-stack developer with 5+ years of experience...",
+            bid_amount: 1500,
+            delivery_time: "3 weeks",
+            submitted_at: "2023-10-14T10:15:00Z",
+            status: "pending"
           }
-        );
-        setMessages(messagesRes.data.messages || []);
-        */
+        ];
+        setOffers(mockOffers);
+
       } catch (error) {
         console.error("Error fetching project data:", error);
         alert("Failed to load project data");
@@ -107,60 +126,52 @@ const ManageProject = () => {
     }
   }, [projectId, token]);
 
-useEffect(() => {
-  if (!socket || !projectId) return;
-    console.log("socket.connected ==>", socket.connected);
-  const joinRoom = () => {
-    console.log("Emitting join_room for project:", projectId);
-    socket.emit("join_room", { project_id: projectId });
-  };
+  useEffect(() => {
+    if (!socket || !projectId) return;
 
-  const handleRoomJoined = (data) => {
-    console.log("Successfully joined room:", data);
-  };
+    const joinRoom = () => {
+      socket.emit("join_room", { project_id: projectId });
+    };
 
-  const handleJoinError = (data) => {
-    console.error("Failed to join room:", data.error);
-  };
+    const handleRoomJoined = (data) => {
+      console.log("Successfully joined room:", data);
+    };
 
-  // Join room if already connected
- if (socket.connected) {
-    // ضع تأخير صغير لتجنب مشاكل التهيئة
-    setTimeout(joinRoom, 50);
-  }
+    const handleJoinError = (data) => {
+      console.error("Failed to join room:", data.error);
+    };
 
-  // Also join when socket connects
-  socket.on("connect", joinRoom);
-
-  const handleMessage = (data) => setMessages((prev) => [...prev, data]);
-  const handleBlocked = (data) => alert(data.error);
-  const handleError = (data) => console.error(data.error);
-
-  // Add listeners for room events
-  socket.on("room_joined", handleRoomJoined);
-  socket.on("join_error", handleJoinError);
-  socket.on("message", handleMessage);
-  socket.on("message_blocked", handleBlocked);
-  socket.on("message_error", handleError);
-
-  return () => {
-    // Cleanup function
     if (socket.connected) {
-      console.log("Leaving room:", projectId);
-      socket.emit("leave_room", { project_id: projectId });
+      setTimeout(joinRoom, 50);
     }
-    
-    // Remove all listeners
-    socket.off("connect", joinRoom);
-    socket.off("room_joined", handleRoomJoined);
-    socket.off("join_error", handleJoinError);
-    socket.off("message", handleMessage);
-    socket.off("message_blocked", handleBlocked);
-    socket.off("message_error", handleError);
-  };
-}, [socket, projectId]);
 
-    useEffect(() => {
+    socket.on("connect", joinRoom);
+
+    const handleMessage = (data) => setMessages((prev) => [...prev, data]);
+    const handleBlocked = (data) => alert(data.error);
+    const handleError = (data) => console.error(data.error);
+
+    socket.on("room_joined", handleRoomJoined);
+    socket.on("join_error", handleJoinError);
+    socket.on("message", handleMessage);
+    socket.on("message_blocked", handleBlocked);
+    socket.on("message_error", handleError);
+
+    return () => {
+      if (socket.connected) {
+        socket.emit("leave_room", { project_id: projectId });
+      }
+      
+      socket.off("connect", joinRoom);
+      socket.off("room_joined", handleRoomJoined);
+      socket.off("join_error", handleJoinError);
+      socket.off("message", handleMessage);
+      socket.off("message_blocked", handleBlocked);
+      socket.off("message_error", handleError);
+    };
+  }, [socket, projectId]);
+
+  useEffect(() => {
     if (!projectId || !token) return;
 
     const fetchMessages = async () => {
@@ -170,13 +181,9 @@ useEffect(() => {
           { headers: { Authorization: `Bearer ${token}` } }
         ).then((result) => {
           setMessages(result.data.messages.rows);
-          console.log("res.data message =>", result.data.messages.rows);
-          
         }).catch((err) => {
-            console.log(err);
-            
-        });;
-        
+          console.log(err);
+        });
       } catch (err) {
         console.error("Error fetching messages:", err);
       }
@@ -185,7 +192,6 @@ useEffect(() => {
     fetchMessages();
   }, [projectId, token]);
 
-  // Handle file upload
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -219,39 +225,30 @@ useEffect(() => {
     }
   };
 
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !socket) return;
 
-    const handleSendMessage = (e) => {
-       e.preventDefault();
-       if (!newMessage.trim() || !socket) return;
-
-       setIsSubmitting(true);
-       socket.emit("message", { text: newMessage, image_url: null });
-       setNewMessage("");
-       setIsSubmitting(false);
-     };
-
-  // Handle assign freelancer
-  /*
-  const handleAssignFreelancer = async (freelancerId) => {
-    try {
-      setIsSubmitting(true);
-      const res = await axios.post(
-        `http://localhost:5000/projects/${projectId}/assign`,
-        { freelancer_id: freelancerId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      setAssignments([...assignments, res.data.assignment]);
-      alert("Freelancer assigned successfully");
-    } catch (error) {
-      console.error("Error assigning freelancer:", error);
-      alert("Failed to assign freelancer");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setIsSubmitting(true);
+    socket.emit("message", { text: newMessage, image_url: null });
+    setNewMessage("");
+    setIsSubmitting(false);
   };
-*/
+
+  const handleAcceptOffer = (offerId) => {
+    setOffers(offers.map(offer => 
+      offer.id === offerId ? { ...offer, status: "accepted" } : offer
+    ));
+    alert("Offer accepted! Freelancer has been added to your team.");
+  };
+
+  const handleRejectOffer = (offerId) => {
+    setOffers(offers.map(offer => 
+      offer.id === offerId ? { ...offer, status: "rejected" } : offer
+    ));
+    alert("Offer rejected.");
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -312,10 +309,10 @@ useEffect(() => {
         {/* Tabs */}
         <div className="bg-white rounded-xl border border-gray-200 mb-6 overflow-hidden">
           <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+            <nav className="flex -mb-px overflow-x-auto">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center ${
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
                   activeTab === "overview"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -326,7 +323,7 @@ useEffect(() => {
               </button>
               <button
                 onClick={() => setActiveTab("files")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center ${
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
                   activeTab === "files"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -337,7 +334,7 @@ useEffect(() => {
               </button>
               <button
                 onClick={() => setActiveTab("chat")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center ${
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
                   activeTab === "chat"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -347,15 +344,26 @@ useEffect(() => {
                 Chat ({messages.length})
               </button>
               <button
-                onClick={() => setActiveTab("assignments")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center ${
-                  activeTab === "assignments"
+                onClick={() => setActiveTab("teams")}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
+                  activeTab === "teams"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
                 <Users className="w-4 h-4 mr-2" />
-                Assignments ({assignments.length})
+                Teams ({assignments.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("offers")}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
+                  activeTab === "offers"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Offers ({offers.length})
               </button>
             </nav>
           </div>
@@ -515,7 +523,7 @@ useEffect(() => {
             {/* Chat Tab */}
             {activeTab === "chat" && (
               <div className="flex flex-col h-150">
-                <div ref={containerRef} className="flex-1 overflow-y-auto mb-4 space-y-4 p-2">
+                <div ref={containerRef} className="flex-1 overflow-y-auto mb-4 space-y-4 p-2 max-h-96">
                   {messages.length === 0 ? (
                     <div className="text-center py-12">
                       <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -546,11 +554,9 @@ useEffect(() => {
                             {new Date(message.time_sent).toLocaleTimeString()}
                           </p>
                         </div>
-                        
                       </div>
                     ))
                   )}
-                  
                 </div>
 
                 <form onSubmit={handleSendMessage} className="flex items-center">
@@ -573,127 +579,166 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Assignments Tab */}
-            {activeTab === "assignments" && (
+            {/* Teams Tab */}
+            {activeTab === "teams" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-900">Freelancer Assignments</h2>
-                  <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    <Users className="w-4 h-4 mr-2" />
-                    Assign Freelancer
-                  </button>
+                  <h2 className="text-lg font-semibold text-gray-900">Project Team</h2>
+                  <span className="text-sm text-gray-600">
+                    {assignments.filter(a => a.status === 'active').length} active members
+                  </span>
                 </div>
 
                 {assignments.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No freelancers assigned yet</p>
+                    <p className="text-gray-600">No team members yet</p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Assign a freelancer to this project to get started.
+                      {userData.role_id === 1 || userData.role_id === 2 
+                        ? "Accept offers from freelancers to build your team." 
+                        : "You haven't been assigned to this project yet."}
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Freelancer
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Assigned At
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {assignments.map((assignment) => (
-                          <tr key={assignment.freelancer_id}>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10">
-                                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                    <Users className="w-6 h-6 text-gray-600" />
-                                  </div>
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    Freelancer #{assignment.freelancer_id}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {assignment.user.first_name} {assignment.user.last_name}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(assignment.assigned_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                assignment.status === 'active'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {assignment.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button className="text-blue-600 hover:text-blue-900 mr-3">
-                                View Profile
-                              </button>
-                              {assignment.status === "active" ? 
-                              <button className="text-red-600 hover:text-red-900" onClick={()=>{
-                                axios.put(`http://localhost:5000/projects/assigned/${project.id}`, {
-                                    freelancer_id: assignment.freelancer_id,
-                                    status :"kicked"
-                                },
-                                {
-                                  headers: { Authorization: `Bearer ${token}` }
-                                })
-                                setAssignments(prev =>
-                                  prev.map(a =>
-                                    a.freelancer_id === assignment.freelancer_id
-                                      ? { ...a, status: "kicked" }
-                                      : a
-                                  )
-                                );
-                              }}>
-                                kick
-                              </button> :
-                              <button className="text-green-600 hover:text-green-900" onClick={()=>{
-                                axios.put(`http://localhost:5000/projects/assigned/${project.id}`, {
-                                    freelancer_id: assignment.freelancer_id,
-                                    status :"active"
-                                },
-                                {
-                                  headers: { Authorization: `Bearer ${token}` }
-                                })
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {assignments.map((assignment) => (
+                      <div key={assignment.freelancer_id} className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                              <User className="w-6 h-6 text-gray-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-900">
+                                {assignment.user.first_name} {assignment.user.last_name}
+                              </h3>
+                              <p className="text-sm text-gray-500">Freelancer</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            assignment.status === 'active' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {assignment.status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                            <span>4.8 rating</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Briefcase className="w-4 h-4 text-blue-500 mr-1" />
+                            <span>24 projects</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <button className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
+                            <Mail className="w-4 h-4 inline mr-1" />
+                            Message
+                          </button>
+                          <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                            <User className="w-4 h-4 inline mr-1" />
+                            Profile
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-                                setAssignments(prev =>
-                                  prev.map(a =>
-                                    a.freelancer_id === assignment.freelancer_id
-                                      ? { ...a, status: "active" }
-                                      : a
-                                  )
-                                );
-                              }}>
-                                active
-                              </button>
-                            
-                                }
-                              
-                              
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            {/* Offers Tab */}
+            {activeTab === "offers" && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-900">Freelancer Offers</h2>
+                  <span className="text-sm text-gray-600">
+                    {offers.filter(o => o.status === 'pending').length} pending offers
+                  </span>
+                </div>
+
+                {offers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No offers received yet</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Freelancers will submit offers for your project here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {offers.map((offer) => (
+                      <div key={offer.id} className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                              <User className="w-6 h-6 text-gray-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-900">{offer.freelancer.name}</h3>
+                              <div className="flex items-center mt-1">
+                                <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                                <span className="text-sm text-gray-600 mr-3">{offer.freelancer.rating}</span>
+                                <Briefcase className="w-4 h-4 text-blue-500 mr-1" />
+                                <span className="text-sm text-gray-600">{offer.freelancer.completed_projects} projects</span>
+                              </div>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            offer.status === 'pending' 
+                              ? 'bg-yellow-100 text-yellow-800' 
+                              : offer.status === 'accepted'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                          }`}>
+                            {offer.status}
+                          </span>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">{offer.proposal}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="bg-blue-50 rounded-lg p-3">
+                            <div className="text-sm font-medium text-blue-800">Bid Amount</div>
+                            <div className="text-lg font-bold">${offer.bid_amount}</div>
+                          </div>
+                          <div className="bg-green-50 rounded-lg p-3">
+                            <div className="text-sm font-medium text-green-800">Delivery Time</div>
+                            <div className="text-lg font-bold">{offer.delivery_time}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-gray-500 mb-4">
+                          Submitted on {new Date(offer.submitted_at).toLocaleDateString()}
+                        </div>
+                        
+                        {offer.status === 'pending' && (
+                          <div className="flex space-x-3">
+                            <button 
+                              onClick={() => handleAcceptOffer(offer.id)}
+                              className="flex-1 py-2 bg-green-600 text-white rounded-lg flex items-center justify-center hover:bg-green-700"
+                            >
+                              <Check className="w-4 h-4 mr-2" />
+                              Accept Offer
+                            </button>
+                            <button 
+                              onClick={() => handleRejectOffer(offer.id)}
+                              className="flex-1 py-2 bg-red-600 text-white rounded-lg flex items-center justify-center hover:bg-red-700"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Reject Offer
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

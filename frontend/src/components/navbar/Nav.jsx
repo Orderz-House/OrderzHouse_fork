@@ -12,6 +12,8 @@ import {
   Phone,
   Mail,
   MapPin,
+  Briefcase,
+  LayoutDashboard 
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
@@ -424,16 +426,23 @@ export default function EnhancedNavbar() {
                       </p>
                     </div>
                     <div className="py-2">
-                      {userData.role_id === 3 && (
+                      {userData.role_id === 3 ? (
                         <Link
                           to="/dashboard"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                         >
-                          <Settings className="h-4 w-4" />
+                          <LayoutDashboard className="h-4 w-4" />
                           <span>Dashboard</span>
                         </Link>
-                      )}
+                      ) : <Link
+                          to="/projects"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                        >
+                          <Briefcase className="h-4 w-4" />
+                          <span>Projects</span>
+                        </Link>}
                       
 
                       <Link to="/edit-profile"
