@@ -10,7 +10,7 @@ const componentLoader = new ComponentLoader();
 const Components = {
   Dashboard: componentLoader.add(
     "Dashboard",
-    path.join(__dirname, "../../frontend/admin-components/Dashboard.jsx")
+    path.join(__dirname, "../../frontend/admin-components/dashboard.jsx")
   ),
   Analytics: componentLoader.add(
     "Analytics",
