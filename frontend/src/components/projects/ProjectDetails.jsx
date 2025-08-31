@@ -8,13 +8,15 @@ import axios from "axios";
 export default function ProjectDetails() {
     const { projectId } = useParams();
     const dispatch = useDispatch();
-    const { relatedFreelancers, loadingRelated, error } = useSelector((s) => s.project);
+    const { relatedFreelancers, loadingRelated, error, project } = useSelector((s) => s.project);
     const token = useSelector((s) => s.auth.token);
     const roleId = useSelector((s) => s.auth.roleId);
     const API_BASE =  "http://localhost:5000";
     const [sortBy, setSortBy] = useState("assignments");
     const [skillFilter, setSkillFilter] = useState("");
     const [selected, setSelected] = useState({});
+
+
     // import.meta.env.VITE_API_BASE ||
     useEffect(() => {
         if (!projectId) return;
@@ -22,13 +24,15 @@ export default function ProjectDetails() {
         dispatch(setLoadingRelated(true));
         dispatch(setError(""));
         axios
-            .get(`${API_BASE}/projects/${projectId}/related-freelancers`, {
+            .get(`${API_BASE}/projects/${projectId}/related-freelancers/`, {
                 headers: { Authorization: `Bearer ${token}` },
                 withCredentials: true,
             })
             .then((res) => {
                 if (!isMounted) return;
                 dispatch(setRelatedFreelancers(res.data.freelancers || []));
+                    console.log(res.data);
+
             })
             .catch((err) => {
                 if (!isMounted) return;
@@ -42,6 +46,7 @@ export default function ProjectDetails() {
             isMounted = false;
         };
     }, [dispatch, projectId, token]);
+    
 
     const filteredSorted = useMemo(() => {
         let list = Array.isArray(relatedFreelancers) ? [...relatedFreelancers] : [];

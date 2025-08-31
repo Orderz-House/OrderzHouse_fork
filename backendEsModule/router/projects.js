@@ -16,5 +16,3 @@ projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
 
 export default projectsRouter;
-
-
