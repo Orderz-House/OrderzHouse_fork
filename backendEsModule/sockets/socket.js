@@ -13,9 +13,9 @@ function initSocket(server) {
 
   io.on("connection", async (socket) => {
     const { userId } = socket.handshake.auth;
-    console.log(userId);
-    
+
     await pool.query("UPDATE users SET is_online = TRUE WHERE id = $1", [userId]);
+    console.log("✅ User connected:", userId);
 
     messageHandler(socket, io);
 
