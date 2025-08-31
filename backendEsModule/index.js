@@ -22,12 +22,12 @@ app.use(
   })
 );
 // rate limiter
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: "try again later",
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100,
+//   message: "try again later",
+// });
+// app.use(limiter);
 
 // db connection
 import "./models/db.js";
