@@ -74,44 +74,15 @@ const ManageProject = () => {
         ).then((projectRes) => {
           setProject(projectRes.data.project.rows[0]);
           setAssignments(projectRes.data.project.rows[0].assignments || []);
+          setOffers(projectRes.data.project.rows[0].offers)
+
+
         }).catch((err) => {
           console.log("Manage Project ===>", err.message);
         });
-        
-        // Fetch offers (mock data for demonstration)
-        const mockOffers = [
-          {
-            id: 1,
-            freelancer: {
-              id: 101,
-              name: "John Doe",
-              avatar: null,
-              rating: 4.8,
-              completed_projects: 24
-            },
-            proposal: "I have extensive experience in React and Node.js development...",
-            bid_amount: 1200,
-            delivery_time: "2 weeks",
-            submitted_at: "2023-10-15T14:30:00Z",
-            status: "pending"
-          },
-          {
-            id: 2,
-            freelancer: {
-              id: 102,
-              name: "Sarah Wilson",
-              avatar: null,
-              rating: 4.9,
-              completed_projects: 32
-            },
-            proposal: "As a full-stack developer with 5+ years of experience...",
-            bid_amount: 1500,
-            delivery_time: "3 weeks",
-            submitted_at: "2023-10-14T10:15:00Z",
-            status: "pending"
-          }
-        ];
-        setOffers(mockOffers);
+
+
+
 
       } catch (error) {
         console.error("Error fetching project data:", error);
@@ -125,7 +96,7 @@ const ManageProject = () => {
       fetchProjectData();
     }
   }, [projectId, token]);
-
+  console.log(offers);
   useEffect(() => {
     if (!socket || !projectId) return;
 
@@ -161,7 +132,7 @@ const ManageProject = () => {
       if (socket.connected) {
         socket.emit("leave_room", { project_id: projectId });
       }
-      
+
       socket.off("connect", joinRoom);
       socket.off("room_joined", handleRoomJoined);
       socket.off("join_error", handleJoinError);
@@ -236,14 +207,14 @@ const ManageProject = () => {
   };
 
   const handleAcceptOffer = (offerId) => {
-    setOffers(offers.map(offer => 
+    setOffers(offers.map(offer =>
       offer.id === offerId ? { ...offer, status: "accepted" } : offer
     ));
     alert("Offer accepted! Freelancer has been added to your team.");
   };
 
   const handleRejectOffer = (offerId) => {
-    setOffers(offers.map(offer => 
+    setOffers(offers.map(offer =>
       offer.id === offerId ? { ...offer, status: "rejected" } : offer
     ));
     alert("Offer rejected.");
@@ -291,13 +262,12 @@ const ManageProject = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                project.status === 'completed' 
-                  ? 'bg-green-100 text-green-800' 
-                  : project.status === 'in_progress'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-yellow-100 text-yellow-800'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${project.status === 'completed'
+                ? 'bg-green-100 text-green-800'
+                : project.status === 'in_progress'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-yellow-100 text-yellow-800'
+                }`}>
                 {project.status?.replace('_', ' ') || 'active'}
               </span>
             </div>
@@ -312,55 +282,50 @@ const ManageProject = () => {
             <nav className="flex -mb-px overflow-x-auto">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "overview"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${activeTab === "overview"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab("files")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "files"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${activeTab === "files"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Paperclip className="w-4 h-4 mr-2" />
                 Files ({files.length})
               </button>
               <button
                 onClick={() => setActiveTab("chat")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "chat"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${activeTab === "chat"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Chat ({messages.length})
               </button>
               <button
                 onClick={() => setActiveTab("teams")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "teams"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${activeTab === "teams"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Users className="w-4 h-4 mr-2" />
                 Teams ({assignments.length})
               </button>
               <button
                 onClick={() => setActiveTab("offers")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "offers"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${activeTab === "offers"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Briefcase className="w-4 h-4 mr-2" />
                 Offers ({offers.length})
@@ -420,13 +385,12 @@ const ManageProject = () => {
                   <h3 className="text-md font-semibold text-gray-900 mb-4">Project Status</h3>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-2 ${
-                        project.status === 'completed' 
-                          ? 'bg-green-500' 
-                          : project.status === 'in_progress'
-                            ? 'bg-blue-500'
-                            : 'bg-yellow-500'
-                      }`}></div>
+                      <div className={`w-3 h-3 rounded-full mr-2 ${project.status === 'completed'
+                        ? 'bg-green-500'
+                        : project.status === 'in_progress'
+                          ? 'bg-blue-500'
+                          : 'bg-yellow-500'
+                        }`}></div>
                       <span className="text-sm font-medium text-gray-700 capitalize">
                         {project.status?.replace('_', ' ') || 'active'}
                       </span>
@@ -539,18 +503,16 @@ const ManageProject = () => {
                         className={`flex ${message.sender_id === userData.id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                            message.sender_id === userData.id
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-200 text-gray-900'
-                          }`}
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === userData.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-900'
+                            }`}
                         >
                           <p className="text-sm">{message.text}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.sender_id === userData.id
-                              ? 'text-blue-200'
-                              : 'text-gray-500'
-                          }`}>
+                          <p className={`text-xs mt-1 ${message.sender_id === userData.id
+                            ? 'text-blue-200'
+                            : 'text-gray-500'
+                            }`}>
                             {new Date(message.time_sent).toLocaleTimeString()}
                           </p>
                         </div>
@@ -594,8 +556,8 @@ const ManageProject = () => {
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">No team members yet</p>
                     <p className="text-sm text-gray-500 mt-2">
-                      {userData.role_id === 1 || userData.role_id === 2 
-                        ? "Accept offers from freelancers to build your team." 
+                      {userData.role_id === 1 || userData.role_id === 2
+                        ? "Accept offers from freelancers to build your team."
                         : "You haven't been assigned to this project yet."}
                     </p>
                   </div>
@@ -615,15 +577,14 @@ const ManageProject = () => {
                               <p className="text-sm text-gray-500">Freelancer</p>
                             </div>
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            assignment.status === 'active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${assignment.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                            }`}>
                             {assignment.status}
                           </span>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center text-sm text-gray-600">
                             <Star className="w-4 h-4 text-yellow-400 mr-1" />
@@ -634,7 +595,7 @@ const ManageProject = () => {
                             <span>24 projects</span>
                           </div>
                         </div>
-                        
+
                         <div className="flex space-x-2">
                           <button className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
                             <Mail className="w-4 h-4 inline mr-1" />
@@ -680,7 +641,7 @@ const ManageProject = () => {
                               <User className="w-6 h-6 text-gray-600" />
                             </div>
                             <div>
-                              <h3 className="font-medium text-gray-900">{offer.freelancer.name}</h3>
+                              <h3 className="font-medium text-gray-900">{offer.freelancer.first_name} {offer.freelancer.last_name}</h3>
                               <div className="flex items-center mt-1">
                                 <Star className="w-4 h-4 text-yellow-400 mr-1" />
                                 <span className="text-sm text-gray-600 mr-3">{offer.freelancer.rating}</span>
@@ -689,22 +650,22 @@ const ManageProject = () => {
                               </div>
                             </div>
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            offer.status === 'pending' 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : offer.status === 'accepted'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                          }`}>
-                            {offer.status}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${offer.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : offer.status === 'accepted'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                            }`}>
+                            {offer.status_offer}
                           </span>
                         </div>
-                        
+
                         <div className="mb-4">
                           <p className="text-sm text-gray-600 mb-2">{offer.proposal}</p>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4 mb-4">
+                          
                           <div className="bg-blue-50 rounded-lg p-3">
                             <div className="text-sm font-medium text-blue-800">Bid Amount</div>
                             <div className="text-lg font-bold">${offer.bid_amount}</div>
@@ -714,21 +675,21 @@ const ManageProject = () => {
                             <div className="text-lg font-bold">{offer.delivery_time}</div>
                           </div>
                         </div>
-                        
+
                         <div className="text-xs text-gray-500 mb-4">
                           Submitted on {new Date(offer.submitted_at).toLocaleDateString()}
                         </div>
-                        
-                        {offer.status === 'pending' && (
+
+                        {offer.status_offer === 'pending' && (
                           <div className="flex space-x-3">
-                            <button 
+                            <button
                               onClick={() => handleAcceptOffer(offer.id)}
                               className="flex-1 py-2 bg-green-600 text-white rounded-lg flex items-center justify-center hover:bg-green-700"
                             >
                               <Check className="w-4 h-4 mr-2" />
                               Accept Offer
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleRejectOffer(offer.id)}
                               className="flex-1 py-2 bg-red-600 text-white rounded-lg flex items-center justify-center hover:bg-red-700"
                             >
