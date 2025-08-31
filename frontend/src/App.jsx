@@ -23,6 +23,8 @@ import Dashboard from "./components/dashboard/Dashboard";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
+import ProjectsDashboard from "./components/projects/ProjectsDashboard";
+import FreelancerProjects from "./components/projects/FreelancerProjects";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -88,8 +90,15 @@ function App() {
         {/* ✅ صفحات عامة */}
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
+
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
+        <Route path="/manage-project/:projectId" element={<ManageProject/>}/>
+        <Route path="/projects" element={<ProjectsDashboard/>}/>
+        <Route path="/projects/offer/available" element={<FreelancerProjects/>}/>
+
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
+
       </Routes>
       <EnhancedFooter />
     </>
