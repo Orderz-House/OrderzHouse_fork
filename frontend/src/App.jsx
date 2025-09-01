@@ -25,6 +25,8 @@ import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import FreelancerProjects from "./components/projects/FreelancerProjects";
+import CourseDetail from "./components/courseDetilas/CourseDetails";
+import CoursesManagement from "./components/coursesManagement/CoursesManagement";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -91,14 +93,53 @@ function App() {
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
 
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
-        <Route path="/manage-project/:projectId" element={<ManageProject/>}/>
-        <Route path="/projects" element={<ProjectsDashboard/>}/>
-        <Route path="/projects/offer/available" element={<FreelancerProjects/>}/>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manage-project/:projectId"
+          element={
+            <ProtectedRoute>
+              <ManageProject />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/offer/available"
+          element={<FreelancerProjects />}
+        />
 
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
-
+        <Route
+          path="/courses"
+          element={
+            <ProtectedRoute>
+              <CoursesManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses/:id"
+          element={
+            <ProtectedRoute>
+              <CourseDetail />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       <EnhancedFooter />
     </>

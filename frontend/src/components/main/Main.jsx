@@ -18,7 +18,6 @@ export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
   const [categories, setCategories] = useState([]);
   const [isVerified, setIsVerified] = useState(true);
-  const [showWarning, setShowWarning] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { plans, token } = useSelector((state) => {
@@ -51,24 +50,30 @@ export default function OrderzHousePage() {
   // Check freelancer verification status
   useEffect(() => {
     if (token) {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      };
+
       axios
-        .get("http://localhost:5000/verification/status", {
-          withCredentials: true,
-        })
+        .get("http://localhost:5000/verification/status", config)
         .then((response) => {
-          if (response.data.status !== "approved") {
-            setIsVerified(false);
-            setShowWarning(true);
-          } else {
+          // Only set false if NOT approved
+          if (response.data.status === "approved") {
             setIsVerified(true);
-            setShowWarning(false);
+            console.log(response.data.status);
+          } else {
+            setIsVerified(false);
           }
         })
         .catch((error) => {
           console.error("Verification check failed:", error);
           setIsVerified(false);
-          setShowWarning(true);
         });
+    } else {
+      setIsVerified(true);
     }
   }, [token]);
 
@@ -185,11 +190,20 @@ export default function OrderzHousePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {showWarning && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4" role="alert">
+      {!isVerified && token && (
+        <div
+          className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
           <strong className="font-bold">Warning: </strong>
-          <span className="block sm:inline">You must verify your account and complete your portfolio before using this feature.</span>
-          <Link to="/verify-profile" className="ml-4 underline hover:no-underline">
+          <span className="block sm:inline">
+            You must verify your account and complete your portfolio before
+            using this feature.
+          </span>
+          <Link
+            to="/verify-profile"
+            className="ml-4 underline hover:no-underline font-semibold"
+          >
             Go to Verification
           </Link>
         </div>

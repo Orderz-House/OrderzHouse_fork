@@ -30,8 +30,6 @@ export const AllFreeLance = () => {
     dispatch(fetchAllFreelancers());
   }, [dispatch]);
 
-  console.log("Freelancers data:", freelancers); // Debug log
-
   // Handle different possible structures of the freelancers data
   let safeFreelancers = [];
 
@@ -45,8 +43,6 @@ export const AllFreeLance = () => {
     // If freelancers is an object with a data array property
     safeFreelancers = freelancers.data;
   }
-
-  console.log("Safe freelancers:", safeFreelancers); // Debug log
 
   // Filter freelancers based on search term and country
   const filteredFreelancers = safeFreelancers.filter((freelancer) => {

@@ -1,5 +1,5 @@
+// routes/users.js
 import express from "express";
-
 import {
   register,
   login,
@@ -20,37 +20,51 @@ import {
   getFreelanceById,
   checkVerificationStatus,
   updateVerificationStatus,
+  getPortfolioByfreelance,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import requireVerified from "../middleware/requireVerification.js";
+
 const usersRouter = express.Router();
 
-/*
-usersRouter.post(
-  "/freelancer/portfolio/create",
-  authentiction,
-  authorization("create_portfolio"), createPortfolio
-);
-usersRouter.put(
-  "/freelancer/portfolio/edit/:userId",
-  authentiction,
-  authorization("edit_freelancer_profile"), editPortfolioFreelancer
-
-usersRouter.put("/edit/:userId", authentiction, editUser);
-usersRouter.post(
-  "/freelancer/portfolio/create",
-  authentiction
-  /*authorization("create_portfolio"),*/
-// );
-// This route is already defined below with the handler
-// usersRouter.put(
-//   "/freelancer/portfolio/edit/:userId",
-//   authentication
-//   // /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
-// );
+// Public routes
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
+
+// Authenticated routes
+usersRouter.get("/getUserdata", authentication, getUserById);
+
+// Freelancer profile routes
+usersRouter.get("/freelancers/:id", authentication, getFreelanceById); // Get single freelancer
+usersRouter.get("/freelancers", authentication, getFreelance); // Get all freelancers
+usersRouter.get("/freelancers/top-rated", getTopFreelancers); // Public top-rated
+
+// Portfolio routes
+usersRouter.get(
+  "/freelancers/:id/portfolio",
+  authentication,
+  getPortfolioByUserId
+);
+usersRouter.post(
+  "/freelancers/portfolio/create",
+  authentication,
+  createPortfolio
+);
+usersRouter.put(
+  "/freelancers/portfolio/edit/:portfolioId",
+  authentication,
+  requireVerified,
+  editPortfolioFreelancer
+);
+usersRouter.delete(
+  "/freelancers/portfolio/delete",
+  authentication,
+  requireVerified,
+  deletePortfolioFreelancer
+);
+
+// Admin or authorized routes
 usersRouter.post(
   "/view",
   authentication,
@@ -63,46 +77,15 @@ usersRouter.delete(
   authorization("delete_user"),
   deleteUser
 );
-usersRouter.put(
-  "/edit/:userId",
-  authentication,
-  authorization("edit_user"),
-  editUser
-);
-usersRouter.post(
-  "/freelancer/portfolio/create",
-  authentication,
-  /*authorization("create_portfolio"),*/ createPortfolio
-);
-
+usersRouter.put("/edit/:userId", authentication, editUser);
 usersRouter.get(
-  "/freelancer/:userId/portfolio",
-  authentication,
-  requireVerified,
-  getPortfolioByUserId
-);
-usersRouter.put(
-  "/freelancer/portfolio/edit/:portfolioId",
-  authentication,
-  requireVerified,
-  /*authorization("edit_freelancer_profile"),*/ editPortfolioFreelancer
-);
-
-usersRouter.delete(
-  `/freelancer/portfolio/delete`,
-  authentication,
-  requireVerified,
-  deletePortfolioFreelancer
-);
-
-usersRouter.post(
-  "/freelancers",
+  "/freelancers/all",
   authentication,
   authorization("view_freelancers"),
   getAllFreelancers
 );
 usersRouter.delete(
-  "/freelancer/delete/:freelancerid",
+  "/freelancers/delete/:freelancerid",
   authentication,
   authorization("delete_freelancer"),
   deleteFreelancerById
@@ -113,13 +96,11 @@ usersRouter.get(
   authorization("show_online"),
   listOnlineUsers
 );
-usersRouter.get("/getUserdata", authentication, getUserById);
-usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
-usersRouter.get("/freelancers/top-rated", getTopFreelancers);
-usersRouter.get(`/allfreelance`, getFreelance);
-usersRouter.get(`/freelance/:id`, getFreelanceById);
 
-// Verification routes
+// Rating
+usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
+
+// Verification
 usersRouter.get(
   "/verification/status",
   authentication,
@@ -130,5 +111,11 @@ usersRouter.post(
   authentication,
   updateVerificationStatus
 );
+usersRouter.get(
+  `/freelances/:userId/port`,
+  authentication,
+  getPortfolioByfreelance
+); // routes/users.js
+usersRouter.get("/allfreelance", getFreelance);
 
 export default usersRouter;

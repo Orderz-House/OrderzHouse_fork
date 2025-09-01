@@ -122,6 +122,8 @@ const login = async (req, res) => {
 
     const user = result.rows[0];
 
+    console.log("Login user.is_verified:", user.is_verified);
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(403).json({
@@ -133,6 +135,7 @@ const login = async (req, res) => {
     const payload = {
       userId: user.id,
       role: user.role_id,
+      is_verified: user.is_verified,
     };
 
     const options = { expiresIn: "1d" };
@@ -171,6 +174,7 @@ const login = async (req, res) => {
       userId: user.id,
       role: user.role_id,
       userInfo: user,
+      is_verified: user.is_verified,
     });
   } catch (err) {
     console.error("Login error:", err.message);
@@ -330,7 +334,7 @@ const updateUser = async (req, res) => {
 };
 
 const getPortfolioByUserId = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.token;
 
   if (!userId) {
     return res.status(400).json({
@@ -934,7 +938,7 @@ const checkVerificationStatus = async (req, res) => {
         skills: user.skills,
         location: user.location,
         profile_pic_url: user.profile_pic_url,
-      }
+      },
     });
   } catch (err) {
     res.status(500).json({
@@ -965,8 +969,13 @@ const updateVerificationStatus = async (req, res) => {
     const user = userResult.rows[0];
 
     // Check profile completeness
-    const isProfileComplete = user.first_name && user.last_name && user.bio &&
-                             user.skills && user.location && user.profile_pic_url;
+    const isProfileComplete =
+      user.first_name &&
+      user.last_name &&
+      user.bio &&
+      user.skills &&
+      user.location &&
+      user.profile_pic_url;
 
     // Check portfolio items
     const portfolioResult = await pool.query(
@@ -987,7 +996,7 @@ const updateVerificationStatus = async (req, res) => {
         success: true,
         message: "Profile verified successfully",
         isVerified: true,
-        user: updateResult.rows[0]
+        user: updateResult.rows[0],
       });
     } else {
       const missingFields = [];
@@ -1001,8 +1010,9 @@ const updateVerificationStatus = async (req, res) => {
 
       res.status(400).json({
         success: false,
-        message: "Profile is not complete. Please complete all required fields and add at least one portfolio item.",
-        missingFields: missingFields
+        message:
+          "Profile is not complete. Please complete all required fields and add at least one portfolio item.",
+        missingFields: missingFields,
       });
     }
   } catch (err) {
@@ -1014,7 +1024,7 @@ const updateVerificationStatus = async (req, res) => {
   }
 };
 
-
+const getAllFreelancerforMain = (req, res) => {};
 export {
   register,
   login,
@@ -1032,8 +1042,9 @@ export {
   deletePortfolioFreelancer,
   rateFreelancer,
   getTopFreelancers,
-  getFreelance,
   getFreelanceById,
   checkVerificationStatus,
   updateVerificationStatus,
+  getPortfolioByfreelance,
+  getFreelance,
 };

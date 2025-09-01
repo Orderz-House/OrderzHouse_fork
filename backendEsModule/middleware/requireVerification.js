@@ -1,82 +1,98 @@
 import pool from "../models/db.js";
 
-// Ensures the authenticated user has an approved verification record and complete profile
 export const requireVerified = async (req, res, next) => {
   try {
-    const userId = req.token?.userId;
-    const roleId = req.token?.role;
-    if (!userId || !roleId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+    const user_id = req.token?.userId;
+    const role_id = req.token?.role;
+
+    if (!user_id || !role_id) {
+      return res.status(401).json({ success: false, message: "غير مصرح" });
     }
 
-    // For freelancers (role 3), check verification status and profile completeness
-    if (roleId === 3) {
-      // Check if user is verified
-      const userResult = await pool.query(
-        "SELECT is_verified, first_name, last_name, bio, skills, location, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
-        [userId]
+    // Check if user is verified
+    const userResult = await pool.query(
+      `SELECT is_verified, role_id, profile_pic_url FROM users WHERE id = $1 AND deleted = FALSE`,
+      [user_id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "المستخدم غير موجود أو محذوف" });
+    }
+
+    const { is_verified, role_id: userRoleId, profile_pic_url } = userResult.rows[0];
+
+    // If already verified, allow access immediately
+    if (is_verified) {
+      return next();
+    }
+
+    // Not verified → check why
+    let missingFields = [];
+
+    if (!profile_pic_url) missingFields.push("profile_image");
+
+    // Role-specific checks
+    if (userRoleId === 3) {
+      // Freelancer: check verification record
+      const verificationRes = await pool.query(
+        `SELECT bio, skills, portfolio_url 
+         FROM freelancer_verification 
+         WHERE user_id = $1 
+         ORDER BY id DESC 
+         LIMIT 1`,
+        [user_id]
       );
 
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: "User not found" });
-      }
-
-      const user = userResult.rows[0];
-
-      // Check if user is verified
-      if (!user.is_verified) {
-        // Check profile completeness
-        const missingFields = [];
-        if (!user.first_name) missingFields.push("first_name");
-        if (!user.last_name) missingFields.push("last_name");
-        if (!user.bio) missingFields.push("bio");
-        if (!user.skills) missingFields.push("skills");
-        if (!user.location) missingFields.push("location");
-        if (!user.profile_pic_url) missingFields.push("profile_image");
-
-        // Check if user has at least one portfolio item
-        const portfolioResult = await pool.query(
-          "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
-          [userId]
-        );
-
-        const hasPortfolio = portfolioResult.rows[0].count > 0;
-
-        if (!hasPortfolio) {
-          missingFields.push("portfolio_item");
-        }
-
+      if (verificationRes.rows.length === 0) {
         return res.status(403).json({
           success: false,
-          message: "You must verify your account and complete your profile before using this feature.",
-          missingFields: missingFields,
-          redirectTo: "/verify-profile"
+          message: "يجب تقديم طلب التحقق أولاً",
+          missingFields: ["bio", "skills", "portfolio_url", "profile_image", "portfolio_item"],
+          redirectTo: "/verify-profile",
         });
       }
-    } else {
-      // For other roles, check verification status from verification tables
-      let tableName = roleId === 2 ? "customer_verifications" : "freelancer_verifications";
 
-      const { rows } = await pool.query(
-        `SELECT status FROM ${tableName} WHERE user_id = $1 ORDER BY id DESC LIMIT 1`,
-        [userId]
+      const v = verificationRes.rows[0];
+      if (!v.bio) missingFields.push("bio");
+      if (!v.skills) missingFields.push("skills");
+      if (!v.portfolio_url) missingFields.push("portfolio_url");
+
+      // Check at least one portfolio item
+      const portfolioRes = await pool.query(
+        "SELECT COUNT(*)::int AS count FROM portfolios WHERE freelancer_id = $1",
+        [user_id]
+      );
+      if (portfolioRes.rows[0].count === 0) {
+        missingFields.push("portfolio_item");
+      }
+    } else if (userRoleId === 2) {
+      // Customer: check customer verification
+      const verificationRes = await pool.query(
+        `SELECT id FROM customer_verification WHERE user_id = $1 AND status = 'approved' LIMIT 1`,
+        [user_id]
       );
 
-      if (!rows.length || rows[0].status !== "approved") {
+      if (verificationRes.rows.length === 0) {
         return res.status(403).json({
           success: false,
-          message: "Account not verified. Please submit verification and wait for approval.",
+          message: "حساب العميل غير موثق. يرجى تقديم المستندات المطلوبة.",
+          missingFields: ["documents"],
+          redirectTo: "/verify-profile",
         });
       }
     }
 
-    return next();
+    // Return 403 with details
+    return res.status(403).json({
+      success: false,
+      message: "حسابك غير موثق بعد. يرجى إكمال ملفك الشخصي.",
+      missingFields,
+      redirectTo: "/verify-profile",
+    });
   } catch (err) {
     console.error("requireVerified error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "خطأ في الخادم" });
   }
 };
- 
-export default requireVerified; 
 
-
+export default requireVerified;

@@ -39,7 +39,6 @@ export default function CreateProject() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const roleId = useSelector((s) => s.auth.roleId);
-  console.log("roleId =>", roleId);
   
   useEffect(() => {
     // guard: only role 1 or 2 can create projects
