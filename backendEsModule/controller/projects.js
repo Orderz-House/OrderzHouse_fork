@@ -3,15 +3,13 @@ import { pool } from "../models/db.js";
 // Create a new project by the authenticated user (Role 1 or 2)
 export const createProject = async (req, res) => {
   try {
-    const userId = req.token?.userId; // Use userId from the token
+    const userId = req.token?.userId;
 
-    // Fetch role of current user
     const { rows: userRows } = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
 
-    // Allow creation if user is Role 1 or Role 2
     if (
       !userRows.length ||
       (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)
@@ -33,7 +31,6 @@ export const createProject = async (req, res) => {
       location,
     } = req.body;
 
-    // Validate required fields
     if (
       !category_id ||
       !title ||
@@ -46,15 +43,15 @@ export const createProject = async (req, res) => {
         .json({ success: false, message: "Missing required fields" });
     }
 
-    // Insert new project
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, sub_category_id, title, description,
         budget_min, budget_max, duration, location, status, is_deleted
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,'', false
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,'available', false
       ) RETURNING *;
     `;
+
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
@@ -69,23 +66,10 @@ export const createProject = async (req, res) => {
 
     const project = rows[0];
 
-    // Fetch freelancers (role 3) who match the project's category
-    // Assuming there is a table `freelancer_categories` with columns freelancer_id, category_id
-    const { rows: eligibleUsers } = await pool.query(
-      `SELECT u.id, u.first_name, u.last_name, u.email, u.username
-       FROM users u
-       JOIN freelancer_categories fc ON fc.freelancer_id = u.id
-       WHERE u.role_id = 3
-       AND fc.category_id = $1
-       AND u.is_deleted = false`,
-      [category_id]
-    );
-
-    // Return project and eligible freelancers
+    // رجّع المشروع فقط
     return res.status(201).json({
       success: true,
       project,
-      eligibleUsers,
     });
   } catch (error) {
     console.error("createProject error:", error);
@@ -98,11 +82,15 @@ export const getMyProjects = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { rows } = await pool.query(
-      `SELECT p.*, pa.freelancer_id AS assigned_freelancer_id
-       FROM projects p
-       LEFT JOIN project_assignments pa ON pa.project_id = p.id
-       WHERE p.user_id = $1 AND p.is_deleted = false
-       ORDER BY p.created_at DESC`,
+      `SELECT 
+  p.*, 
+  array_agg(pa.freelancer_id) AS assigned_freelancers
+FROM projects p
+LEFT JOIN project_assignments pa ON pa.project_id = p.id
+WHERE p.user_id = $1 AND p.is_deleted = false
+GROUP BY p.id
+ORDER BY p.created_at DESC;
+`,
       [userId]
     );
     return res.json({ success: true, projects: rows });
@@ -147,6 +135,17 @@ export const assignProject = async (req, res) => {
       });
     }
 
+    const existsResult = await pool.query(
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancer_id]
+    );
+    if (existsResult.rows.length) {
+      return res.status(400).json({
+        success: false,
+        message: "This freelancer is already assigned to the project",
+      });
+    }
+
     // Insert assignment into the database; ignore if already exists
     const insertAssign = `
       INSERT INTO project_assignments (project_id, freelancer_id, status)
@@ -160,6 +159,70 @@ export const assignProject = async (req, res) => {
     return res.status(201).json({ success: true, assignment: rows[0] || null });
   } catch (error) {
     console.error("assignProject error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Update freelancer assignment status
+export const updateAssignmentStatus = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { freelancer_id, status } = req.body;
+
+    if (!freelancer_id || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "freelancer_id and status are required",
+      });
+    }
+
+    // ✅ السماح فقط بالقيم المحددة
+    const validStatuses = ["active", "kicked", "quit", "banned"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    // تحقق أن المشروع موجود
+    const projectResult = await pool.query(
+      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectResult.rows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
+    }
+
+    // تحديث الحالة
+    const updateQuery = `
+      UPDATE project_assignments
+      SET status = $3
+      WHERE project_id = $1 AND freelancer_id = $2
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(updateQuery, [
+      projectId,
+      freelancer_id,
+      status,
+    ]);
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignment not found for this freelancer in the project",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Assignment status updated to '${status}'`,
+      assignment: rows[0],
+    });
+  } catch (error) {
+    console.error("updateAssignmentStatus error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -210,77 +273,505 @@ export const getSubCategories = async (req, res) => {
 
 // Get related freelancers for a project by category and optional subcategory
 export const getRelatedFreelancers = async (req, res) => {
-  try {
-    const { projectId } = req.params;
+  const { projectId } = req.params;
 
-    // Load project to get its category/subcategory
-    const { rows: projectRows } = await pool.query(
-      `SELECT p.id, p.category_id, p.sub_category_id, c.name AS category_name
-       FROM projects p
-       LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.id = $1 AND p.is_deleted = false`,
-      [projectId]
-    );
-    if (!projectRows.length) {
-      return res.status(404).json({ success: false, message: "Project not found" });
-    }
+  const { rows: projectRows } = await pool.query(
+    `SELECT id, category_id FROM projects WHERE id = $1 AND is_deleted = false`,
+    [projectId]
+  );
 
-    const { category_id, sub_category_id, category_name } = projectRows[0];
+  if (!projectRows.length) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Project not found" });
+  }
 
-    // Find freelancers (role 3) in the same category (and sub-category if provided)
-    // using the mapping table freelancer_categories and optionally freelancer_sub_categories.
-    const params = [category_id];
-    let sql = `
-      WITH pa_count AS (
-        SELECT freelancer_id, COUNT(*) AS assignments_count
-        FROM project_assignments
-        GROUP BY freelancer_id
+  const { category_id } = projectRows[0];
+
+  const { rows: freelancers } = await pool.query(
+    `SELECT * FROM users WHERE role_id = 3 AND category_id = $1 AND is_deleted = false`,
+    [category_id]
+  );
+
+  res.status(200).json({ success: true, freelancers });
+};
+
+export const getProjectById = async (req, res) => {
+  const { projectId } = req.params;
+
+  const project = await pool.query(
+    `SELECT
+  p.*,
+  (
+    SELECT COALESCE(json_agg(json_build_object(
+      'assigned_at', pa.assigned_at,
+      'status', pa.status,
+      'freelancer', json_build_object(
+        'id', u.id,
+        'first_name', u.first_name,
+        'last_name', u.last_name,
+        'email', u.email,
+        'username', u.username
       )
-      SELECT u.id,
-             u.first_name,
-             u.last_name,
-             u.email,
-             u.username,
-             u.profile_pic_url,
-             COALESCE(pa_count.assignments_count, 0) AS assignments_count,
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', pf.id,
-                   'title', pf.title,
-                   'description', pf.description,
-                   'skills', pf.skills,
-                   'hourly_rate', pf.hourly_rate,
-                   'work_url', pf.work_url
-                 )
-               ) FILTER (WHERE pf.id IS NOT NULL),
-               '[]'
-             ) AS portfolios
-      FROM users u
-      JOIN freelancer_categories fc ON fc.freelancer_id = u.id AND fc.category_id = $1
-      LEFT JOIN pa_count ON pa_count.freelancer_id = u.id
-      LEFT JOIN portfolios pf ON pf.freelancer_id = u.id
-      WHERE u.role_id = 3 AND u.is_deleted = false`;
+    )), '[]')
+    FROM project_assignments pa
+    JOIN users u ON pa.freelancer_id = u.id
+    WHERE pa.project_id = p.id
+  ) AS assignments,
 
-    if (sub_category_id) {
-      sql += ` AND EXISTS (
-        SELECT 1 FROM freelancer_sub_categories fsc
-        WHERE fsc.freelancer_id = u.id AND fsc.sub_category_id = $2
-      )`;
-      params.push(sub_category_id);
+  (
+    SELECT COALESCE(json_agg(json_build_object(
+      'id', o.id,
+      'bid_amount', o.bid_amount,
+      'delivery_time', o.delivery_time,
+      'proposal', o.proposal,
+      'status_offer', o.offer_status,
+      'freelancer', json_build_object(
+        'id', uf.id,
+        'first_name', uf.first_name,
+        'last_name', uf.last_name,
+        'email', uf.email,
+        'username', uf.username,
+        'image', uf.profile_pic_url
+      )
+    )), '[]')
+    FROM offers o
+    JOIN users uf ON o.freelancer_id = uf.id
+    WHERE o.project_id = p.id
+  ) AS offers
+
+FROM projects p
+WHERE p.id = $1 AND p.is_deleted = false;
+`,
+    [projectId]
+  );
+
+  if (!project.rows.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No Project Found",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    project,
+  });
+};
+
+
+export const getAllProjectForOffer = (req, res) => {
+  pool
+    .query(
+      `SELECT 
+       p.*, 
+       u.id AS user_id, 
+       u.first_name, 
+       u.last_name, 
+       u.email, 
+       u.username FROM projects p JOIN users u ON u.id = p.user_id WHERE p.status = 'available'`
+    )
+    .then((result) => {
+      res.status(200).json({
+        success: true,
+        message: `All Project available`,
+        projects: result.rows,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: `Server Error`,
+        error: err,
+      });
+    });
+};
+
+export const sendOffer = async (req, res) => {
+  const freelancerId = req.token.userId;
+  const { projectId } = req.params;
+  const { bid_amount, delivery_time, proposal } = req.body;
+  const values = [freelancerId, projectId, bid_amount, delivery_time, proposal];
+  await pool
+    .query(
+      `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal) VALUES ($1,$2,$3,$4,$5)`,
+      values
+    )
+    .then((result) => {
+      res.status(200).json({
+        success: true,
+        message: `send offer successflly`,
+        result,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: `server error`,
+        err,
+      });
+    });
+};
+
+export const approveOrRejectOffer = async (req, res) => {
+  const { action, offer_id } = req.body;
+  const client = await pool.connect();
+
+  try {
+    if (action === "approve") {
+      await client.query("BEGIN");
+
+      // 1. Get offer details (freelancer + project + amount)
+      const offerResult = await client.query(
+        `SELECT o.id, o.bid_amount, o.project_id, o.freelancer_id, p.user_id AS client_id
+         FROM offers o
+         JOIN projects p ON o.project_id = p.id
+         WHERE o.id = $1 AND o.offer_status IS NULL`,
+        [offer_id]
+      );
+
+      if (offerResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ success: false, message: "Offer not found" });
+      }
+
+      const { bid_amount, project_id, freelancer_id, client_id } = offerResult.rows[0];
+
+      // 2. Check client balance
+      const walletCheck = await client.query(
+        `SELECT wallet FROM users WHERE id = $1 FOR UPDATE`,
+        [client_id]
+      );
+
+      if (walletCheck.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ success: false, message: "Client not found" });
+      }
+
+      if (walletCheck.rows[0].wallet < bid_amount) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ success: false, message: "Insufficient balance" });
+      }
+
+      // 3. Deduct from client wallet
+      await client.query(
+        `UPDATE users SET wallet = wallet - $1 WHERE id = $2`,
+        [bid_amount, client_id]
+      );
+
+      // 4. Update offer status
+      await client.query(
+        `UPDATE offers 
+         SET offer_status = 'approved' 
+         WHERE id = $1`,
+        [offer_id]
+      );
+
+      // 5. Assign project
+      await client.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status)
+         VALUES ($1, $2, NOW(), 'active')`,
+        [project_id, freelancer_id]
+      );
+
+      // 6. Insert escrow record
+      await client.query(
+        `INSERT INTO escrow (project_id, freelancer_id, client_id, amount, status)
+         VALUES ($1, $2, $3, $4, 'held')`,
+        [project_id, freelancer_id, client_id, bid_amount]
+      );
+
+      await client.query("COMMIT");
+
+      return res.json({
+        success: true,
+        message: "Offer approved, freelancer assigned, funds held in escrow"
+      });
+
+    } else if (action === "reject") {
+      await client.query(
+        `UPDATE offers 
+         SET offer_status = 'rejected' 
+         WHERE id = $1`,
+        [offer_id]
+      );
+
+      return res.json({ success: true, message: "Offer rejected" });
     }
 
-    sql += `
-      GROUP BY u.id, pa_count.assignments_count
-      ORDER BY assignments_count DESC, u.id ASC
-      LIMIT 50`;
+    res.status(400).json({ success: false, message: "Invalid action" });
 
-    const { rows } = await pool.query(sql, params);
-    return res.json({ success: true, freelancers: rows });
-  } catch (error) {
-    console.error("getRelatedFreelancers error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
   }
 };
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories };
+
+// Get project completion status and history
+export const getProjectCompletion = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.token?.userId;
+
+    // Check if user has access to this project
+    const projectCheck = await pool.query(
+      `SELECT p.user_id, pa.freelancer_id 
+       FROM projects p 
+       LEFT JOIN project_assignments pa ON p.id = pa.project_id 
+       WHERE p.id = $1 AND p.is_deleted = false 
+       AND (p.user_id = $2 OR pa.freelancer_id = $2)`,
+      [projectId, userId]
+    );
+
+    if (!projectCheck.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found or access denied"
+      });
+    }
+
+    // Get completion status
+    const completionResult = await pool.query(
+      `SELECT status, completion_requested_at, payment_released_at 
+       FROM project_completion 
+       WHERE project_id = $1`,
+      [projectId]
+    );
+
+    // Get completion history
+    const historyResult = await pool.query(
+      `SELECT ch.event, ch.timestamp, ch.actor, 
+              u.first_name, u.last_name 
+       FROM completion_history ch
+       JOIN users u ON ch.actor = u.id
+       WHERE ch.project_id = $1 
+       ORDER BY ch.timestamp ASC`,
+      [projectId]
+    );
+
+    const status = completionResult.rows.length > 0 
+      ? completionResult.rows[0].status 
+      : 'not_started';
+
+    res.json({
+      success: true,
+      status,
+      history: historyResult.rows.map(record => ({
+        event: record.event,
+        timestamp: record.timestamp,
+        actor: record.actor,
+        actor_name: `${record.first_name} ${record.last_name}`
+      }))
+    });
+
+  } catch (error) {
+    console.error("getProjectCompletion error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Submit work completion request
+export const submitWorkCompletion = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.token?.userId;
+
+    // Check if user is assigned to this project as freelancer
+    const assignmentCheck = await pool.query(
+      `SELECT pa.id 
+       FROM project_assignments pa 
+       WHERE pa.project_id = $1 AND pa.freelancer_id = $2 
+       AND pa.status = 'active'`,
+      [projectId, userId]
+    );
+
+    if (!assignmentCheck.rows.length) {
+      return res.status(403).json({
+        success: false,
+        message: "Only assigned freelancers can submit completion requests"
+      });
+    }
+
+    // Check if completion already exists
+    const existingCompletion = await pool.query(
+      `SELECT status FROM project_completion WHERE project_id = $1`,
+      [projectId]
+    );
+
+    if (existingCompletion.rows.length > 0) {
+      const currentStatus = existingCompletion.rows[0].status;
+      if (currentStatus !== 'not_started') {
+        return res.status(400).json({
+          success: false,
+          message: `Completion request already exists with status: ${currentStatus}`
+        });
+      }
+    }
+
+    await pool.query('BEGIN');
+
+    // Insert or update completion record
+    if (existingCompletion.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO project_completion (project_id, status, completion_requested_at) 
+         VALUES ($1, 'pending_review', NOW())`,
+        [projectId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE project_completion 
+         SET status = 'pending_review', completion_requested_at = NOW() 
+         WHERE project_id = $1`,
+        [projectId]
+      );
+    }
+
+    // Add to history
+    await pool.query(
+      `INSERT INTO completion_history (project_id, event, timestamp, actor) 
+       VALUES ($1, 'completion_requested', NOW(), $2)`,
+      [projectId, userId]
+    );
+
+    await pool.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: "Work completion request submitted successfully"
+    });
+
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("submitWorkCompletion error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Release payment for completed work
+export const releasePayment = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { projectId } = req.params;
+    const userId = req.token?.userId;
+
+    // Check if user is the project owner
+    const projectCheck = await client.query(
+      `SELECT user_id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectCheck.rows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    if (projectCheck.rows[0].user_id !== userId) {
+      return res.status(403).json({ success: false, message: "Only project owner can release payment" });
+    }
+
+    // Check if completion is in pending_review status
+    const completionCheck = await client.query(
+      `SELECT status FROM project_completion WHERE project_id = $1`,
+      [projectId]
+    );
+
+    if (!completionCheck.rows.length || completionCheck.rows[0].status !== "pending_review") {
+      return res.status(400).json({
+        success: false,
+        message: "Project completion is not in pending review status",
+      });
+    }
+
+    // Get freelancer and offer amount
+    const offerCheck = await client.query(
+      `SELECT pa.freelancer_id, o.bid_amount
+       FROM project_assignments pa
+       JOIN offers o 
+         ON pa.project_id = o.project_id 
+        AND pa.freelancer_id = o.freelancer_id
+       WHERE pa.project_id = $1
+       LIMIT 1;`,
+      [projectId]
+    );
+
+    if (!offerCheck.rows.length) {
+      return res.status(404).json({ success: false, message: "No freelancer offer found" });
+    }
+
+    // 👇 استخدام الاسم الصحيح
+    const { freelancer_id, bid_amount } = offerCheck.rows[0];
+
+    await client.query("BEGIN");
+
+    // Check client balance
+    const balanceCheck = await client.query(
+      `SELECT wallet FROM users WHERE id = $1 FOR UPDATE`,
+      [userId]
+    );
+
+    if (balanceCheck.rows[0].wallet < bid_amount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Insufficient balance in client wallet" });
+    }
+
+    // Deduct from client wallet
+    await client.query(
+      `UPDATE users SET wallet = wallet - $1 WHERE id = $2`,
+      [bid_amount, userId]
+    );
+
+    // Add to freelancer wallet
+    await client.query(
+      `UPDATE users SET wallet = wallet + $1 WHERE id = $2`,
+      [bid_amount, freelancer_id]
+    );
+
+    // Update completion status
+    await client.query(
+      `UPDATE project_completion 
+         SET status = 'completed', payment_released_at = NOW() 
+       WHERE project_id = $1`,
+      [projectId]
+    );
+
+    // Add to history
+    await client.query(
+      `INSERT INTO completion_history (project_id, event, timestamp, actor) 
+       VALUES ($1, 'payment_released', NOW(), $2)`,
+      [projectId, userId]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({ success: true, message: "Payment released successfully" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("releasePayment error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
+
+
+export default {
+  createProject,
+  getMyProjects,
+  assignProject,
+  listUsersByRole,
+  getCategories,
+  getSubCategories,
+  getRelatedFreelancers,
+  getProjectById,
+  updateAssignmentStatus,
+  getAllProjectForOffer,
+  sendOffer,
+  approveOrRejectOffer,
+  getProjectCompletion,        
+  submitWorkCompletion,        
+  releasePayment             
+};

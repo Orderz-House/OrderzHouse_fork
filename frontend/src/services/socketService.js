@@ -14,6 +14,8 @@ export const connectSocket = (token, userId) => {
           },
         });
     }
+
+    localStorage.setItem("socket", socket);
     return socket;
 };
 

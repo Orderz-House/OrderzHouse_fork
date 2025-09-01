@@ -1,4 +1,3 @@
-// Admin.js (or wherever you have AdminInit defined)
 import AdminJS from "adminjs";
 import session from "express-session";
 import Connect from "connect-pg-simple";
@@ -6,6 +5,13 @@ import dotenv from "dotenv";
 import { Adapter, Database, Resource } from "@adminjs/sql";
 import { componentLoader, Components } from "./Admin/adminUi.js";
 import pg from "pg";
+import bcrypt from "bcryptjs";
+
+// Import separated modules
+import { dashboardHandler, analyticsHandler } from "./Admin/handlers.js";
+import { logAdminAction } from "./Admin/logger.js";
+import { createResourceConfigs } from "./Admin/resources.js";
+import { checkTableExists } from "./Admin/utils.js";
 
 dotenv.config();
 
@@ -18,21 +24,8 @@ const pool = new Pool({
       : false,
 });
 
-const DEFAULT_ADMIN = {
-  email: "admin@example.com",
-  password: "password",
-};
-
-const authenticate = async (email, password) => {
-  if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
-    return DEFAULT_ADMIN;
-  }
-  return null;
-};
-
 export const AdminInit = async (app) => {
   const AdminJSExpress = (await import("@adminjs/express")).default;
-
   AdminJS.registerAdapter({ Database, Resource });
 
   const db = await new Adapter("postgresql", {
@@ -40,119 +33,53 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
-  // ✅ fixed dashboard handler
-  const dashboardHandler = async () => {
-    const client = await pool.connect();
-    try {
-      const [{ count: usersCount }] = (
-        await client.query(`SELECT COUNT(*)::int AS count FROM users`)
-      ).rows;
+  // Check which tables exist
+  const [subCategoriesTableExists, paymentsTableExists, receiptsTableExists] =
+    await Promise.all([
+      checkTableExists("sub_categories", pool),
+      checkTableExists("payments", pool),
+      checkTableExists("receipts", pool),
+    ]);
 
-      const [{ count: coursesCount }] = (
-        await client.query(`SELECT COUNT(*)::int AS count FROM courses`)
-      ).rows;
-
-      const [{ count: pendingAppointments }] = (
-        await client.query(
-          `SELECT COUNT(*)::int AS count FROM appointments WHERE status = $1`,
-          ["pending"]
-        )
-      ).rows;
-
-      const recentUsers = (
-        await client.query(
-          `SELECT id, first_name, email, created_at
-             FROM users
-             ORDER BY created_at DESC
-             LIMIT 5`
-        )
-      ).rows;
-
-      const recentAppointments = (
-        await client.query(
-          `SELECT id, message, status, appointment_date, created_at
-             FROM appointments
-             ORDER BY created_at DESC
-             LIMIT 5`
-        )
-      ).rows;
-
-      return {
-        metrics: {
-          usersCount,
-          coursesCount,
-          pendingAppointments,
-        },
-        recentUsers,
-        recentAppointments,
-        message: "Hello World",
-      };
-    } finally {
-      client.release();
-    }
-  };
+  // Get resource configurations
+  const resources = await createResourceConfigs(
+    db,
+    { subCategoriesTableExists, paymentsTableExists, receiptsTableExists },
+    logAdminAction
+  );
 
   const admin = new AdminJS({
     rootPath: "/admin",
     componentLoader,
     dashboard: {
       component: Components.Dashboard,
-      handler: dashboardHandler,
+      handler: () => dashboardHandler(pool),
     },
     branding: {
       companyName: "OrderzHouse Admin",
-      logo: false,
+      logo: "https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png",
       softwareBrothers: false,
+      theme: {
+        colors: {
+          primary100: "#3b82f6",
+          primary80: "#60a5fa",
+          primary60: "#93c5fd",
+          primary40: "#bfdbfe",
+          primary20: "#dbeafe",
+        },
+      },
     },
-    resources: [
-      {
-        resource: db.table("users"),
-        options: {
-          id: "users",
-          navigation: { name: "Users" },
-          filterProperties: ["email", "first_name", "role_id"],
-        },
+    pages: {
+      analytics: {
+        component: Components.Analytics,
+        handler: (request) => analyticsHandler(request, pool),
+        icon: "BarChart3",
       },
-      {
-        resource: db.table("categories"),
-        options: {
-          id: "freelancing_types",
-          navigation: { name: "Freelancing" },
-        },
-      },
-      {
-        resource: db.table("appointments"),
-        options: { id: "appointments", navigation: { name: "Appointments" } },
-      },
-      {
-        resource: db.table("courses"),
-        options: { id: "courses", navigation: { name: "Courses" } },
-      },
-      {
-        resource: db.table("course_materials"),
-        options: {
-          id: "course_materials",
-          navigation: { name: "Courses" },
-          properties: { course_id: { reference: "courses" } },
-        },
-      },
-      {
-        resource: db.table("course_enrollments"),
-        options: {
-          id: "course_enrollments",
-          navigation: { name: "Courses" },
-          properties: {
-            course_id: { reference: "courses" },
-            freelancer_id: { reference: "users" },
-          },
-        },
-      },
-    ],
+    },
+    resources,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    admin.watch();
-  }
+  if (process.env.NODE_ENV !== "production") admin.watch();
 
   const ConnectSession = Connect(session);
   const sessionStore = new ConnectSession({
@@ -164,27 +91,156 @@ export const AdminInit = async (app) => {
     createTableIfMissing: true,
   });
 
-  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
-    admin,
-    {
-      authenticate,
-      cookieName: "adminjs",
-      cookiePassword: process.env.ADMIN_COOKIE_SECRET,
-    },
-    null,
-    {
-      store: sessionStore,
-      resave: true,
-      saveUninitialized: true,
-      secret: process.env.ADMIN_COOKIE_SECRET,
-      cookie: {
-        httpOnly: process.env.NODE_ENV === "production",
-        secure: process.env.NODE_ENV === "production",
-      },
-      name: "adminjs",
-    }
-  );
+  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(admin, {
+    authenticate: async (email, password) => {
+      const { rows } = await pool.query(
+        "SELECT * FROM users WHERE email = $1 AND role_id = 1",
+        [email.toLowerCase()]
+      );
+      const user = rows[0];
 
-  app.use(admin.options.rootPath, adminRouter);
+      if (user) {
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (isPasswordValid) {
+          // Log successful login (remove console.log)
+          await logAdminAction(
+            user.id,
+            user.email,
+            `Admin login successful for ${user.first_name} ${user.last_name} (${user.email})`,
+            pool
+          );
+          return user;
+        } else {
+          // Log failed login attempt
+          await logAdminAction(
+            null,
+            email,
+            `Failed login attempt for ${email} - Invalid password`,
+            pool
+          );
+        }
+      } else {
+        // Log failed login attempt - user not found or not admin
+        await logAdminAction(
+          null,
+          email,
+          `Failed login attempt for ${email} - User not found or not admin`,
+          pool
+        );
+      }
+      return null;
+    },
+    cookiePassword: process.env.COOKIE_SECRET || "some-secret",
+  });
+
+  // Simple middleware for logging admin actions
+  const logAdminActionMiddleware = (req, res, next) => {
+    const originalSend = res.send;
+    const originalJson = res.json;
+
+    const logAction = () => {
+      if (shouldLogAction(req)) {
+        const action = `${req.method} ${req.originalUrl}`;
+        const resourceInfo = extractResourceInfo(req.originalUrl);
+        const logMessage = `Admin ${req.user.email} performed ${req.method}${resourceInfo} - Status: ${res.statusCode}`;
+
+        logAdminAction(req.user.id, req.user.email, logMessage, pool).catch(
+          () => {
+            // Silently handle logging errors
+          }
+        );
+      }
+    };
+
+    res.send = function (body) {
+      logAction();
+      return originalSend.call(this, body);
+    };
+
+    res.json = function (body) {
+      logAction();
+      return originalJson.call(this, body);
+    };
+
+    next();
+  };
+
+  function shouldLogAction(req) {
+    return (
+      req.user &&
+      req.originalUrl.startsWith("/admin/api") &&
+      !req.originalUrl.includes("/dashboard") &&
+      !req.originalUrl.includes("/analytics") &&
+      !req.originalUrl.includes("/logs") &&
+      req.method !== "GET"
+    );
+  }
+
+  function extractResourceInfo(url) {
+    const urlParts = url.split("/");
+    if (urlParts.includes("resources")) {
+      const resourceIndex = urlParts.indexOf("resources");
+      if (resourceIndex + 1 < urlParts.length) {
+        const resource = urlParts[resourceIndex + 1];
+        const recordId = urlParts[resourceIndex + 2] || null;
+        return recordId ? ` on ${resource} ID: ${recordId}` : ` on ${resource}`;
+      }
+    }
+    return "";
+  }
+
+  app.use(admin.options.rootPath, logAdminActionMiddleware, adminRouter);
+
+  // API Endpoints
+  app.get("/api/admin/dashboard", async (req, res) => {
+    try {
+      const dashboardData = await dashboardHandler(pool);
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Dashboard API error:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      const analyticsData = await analyticsHandler(req, pool);
+      res.json(analyticsData);
+    } catch (error) {
+      console.error("Analytics API error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics data" });
+    }
+  });
+
+  app.get("/api/admin/dashboard/logs", async (req, res) => {
+    try {
+      const client = await pool.connect();
+      const result = await client.query(`
+        SELECT l.id, l.user_id, l.action, l.created_at,
+               COALESCE(u.first_name, 'System') as first_name, 
+               COALESCE(u.last_name, 'Admin') as last_name,
+               COALESCE(u.email, 'system@admin') as email,
+               COALESCE(u.role_id, 1) as role_id
+        FROM logs l 
+        LEFT JOIN users u ON u.id = l.user_id 
+        ORDER BY l.created_at DESC 
+        LIMIT 20
+      `);
+      client.release();
+
+      res.json({
+        success: true,
+        recentLogs: result.rows || [],
+      });
+    } catch (error) {
+      console.error("Logs API error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch logs",
+        recentLogs: [],
+      });
+    }
+  });
+
   console.log(`✅ AdminJS mounted at ${admin.options.rootPath}`);
 };

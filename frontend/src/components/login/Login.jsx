@@ -29,7 +29,6 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -45,6 +44,7 @@ const Login = () => {
             token: res.data.token,
             userId: res.data.userId,
             roleId: res.data.role,
+            is_verified: res.data.is_verified,
           })
         );
         setStatus(true);

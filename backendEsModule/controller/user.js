@@ -13,6 +13,7 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
+    category_id,
   } = req.body;
 
   if (
@@ -23,7 +24,8 @@ const register = async (req, res) => {
     !password ||
     !phone_number ||
     !country ||
-    !username
+    !username ||
+    (role_id === 3 && !category_id)
   ) {
     return res.status(400).json({
       success: false,
@@ -37,9 +39,10 @@ const register = async (req, res) => {
   );
   const Email = email.toLowerCase();
 
-  pool
-    .query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+  try {
+    // إدخال المستخدم في جدول users
+    const { rows: userRows } = await pool.query(
+      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username, category_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
       [
         role_id,
         first_name,
@@ -49,42 +52,48 @@ const register = async (req, res) => {
         phone_number,
         country,
         username,
+        category_id, // هنا يتم إدخال category_id
       ]
-    )
-    .then(async (result) => {
-      //console.log(result.rows[0].id);
-      const user = result.rows[0];
-      const positionRole =
-        user.role_id === 1
-          ? "Admin"
-          : user.role_id === 2
-          ? "Client"
-          : "Freelancer";
-      const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
-      await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
-        user.id,
-        actionUser,
-      ]);
-      res.status(201).json({
-        success: true,
-        message: "User registered successfully",
-        user: result.rows[0],
-      });
-    })
-    .catch((err) => {
-      if (err.constraint === "users_email_key") {
-        return res.status(409).json({
-          success: false,
-          message: "Email already exists",
-        });
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: "Internal server error",
-          error: err.message,
-        });
-      }
+    );
+
+    const user = userRows[0];
+
+    // إذا كان الفريلانسر، يجب ربطه بكاتيجوري
+    if (role_id === 3 && category_id) {
+      // هذه الخطوة تتم تلقائيًا في الدالة أعلاه عبر الـ INSERT
+    }
+
+    const positionRole =
+      user.role_id === 1
+        ? "Admin"
+        : user.role_id === 2
+        ? "Client"
+        : "Freelancer";
+    const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
+      user.id,
+      actionUser,
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: userRows[0],
     });
+  } catch (err) {
+    if (err.constraint === "users_email_key") {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: err.message,
+      });
+    }
+  }
 };
 
 const login = async (req, res) => {
@@ -113,6 +122,8 @@ const login = async (req, res) => {
 
     const user = result.rows[0];
 
+    console.log("Login user.is_verified:", user.is_verified);
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(403).json({
@@ -124,6 +135,7 @@ const login = async (req, res) => {
     const payload = {
       userId: user.id,
       role: user.role_id,
+      is_verified: user.is_verified,
     };
 
     const options = { expiresIn: "1d" };
@@ -162,6 +174,7 @@ const login = async (req, res) => {
       userId: user.id,
       role: user.role_id,
       userInfo: user,
+      is_verified: user.is_verified,
     });
   } catch (err) {
     console.error("Login error:", err.message);
@@ -321,7 +334,7 @@ const updateUser = async (req, res) => {
 };
 
 const getPortfolioByUserId = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.token;
 
   if (!userId) {
     return res.status(400).json({
@@ -335,13 +348,6 @@ const getPortfolioByUserId = async (req, res) => {
       "SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC",
       [userId]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No portfolio found",
-      });
-    }
 
     res.status(200).json({
       success: true,
@@ -624,70 +630,117 @@ const getUserById = async (req, res) => {
   }
 };
 const rateFreelancer = async (req, res) => {
-  // ReviewerId comes from JWT token
-  const reviewerId = req.token.userId;
-  const { freelancerId, rating } = req.body;
+  const reviewerId = req.token.userId; // العميل الذي يقيم
+  const { userId, rating, projectId } = req.body; // Changed freelancerId to userId to match frontend
 
-  if (!freelancerId || !rating) {
+  if (!userId || !rating) {
     return res.status(400).json({
       success: false,
-      message: "freelancerId and rating are required",
+      message: "userId and rating are required",
     });
   }
 
   try {
-    // 1. Validate reviewer (must exist and must have role_id = 1 or 2)
+    // 1. تحقق من reviewer
     const reviewerResult = await pool.query(
       "SELECT role_id FROM users WHERE id = $1 AND is_deleted = FALSE",
       [reviewerId]
     );
-    if (reviewerResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Reviewer not found",
-      });
-    }
+    if (reviewerResult.rows.length === 0)
+      return res
+        .status(404)
+        .json({ success: false, message: "Reviewer not found" });
+
     const reviewerRole = reviewerResult.rows[0].role_id;
-    if (![1, 2].includes(reviewerRole)) {
+    if (![1, 2].includes(reviewerRole))
       return res.status(403).json({
         success: false,
         message: "Only Admins or Clients can rate freelancers",
       });
-    }
 
-    // 2. Validate freelancer (must exist and have role_id = 3)
+    // 2. تحقق من الفريلانس
     const freelancerResult = await pool.query(
       "SELECT role_id, rating_sum, rating_count FROM users WHERE id = $1 AND is_deleted = FALSE",
-      [freelancerId]
+      [userId]
     );
-    if (freelancerResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer not found",
-      });
-    }
+    if (freelancerResult.rows.length === 0)
+      return res
+        .status(404)
+        .json({ success: false, message: "Freelancer not found" });
+
     const freelancer = freelancerResult.rows[0];
-    if (freelancer.role_id !== 3) {
-      return res.status(403).json({
-        success: false,
-        message: "Target user is not a freelancer",
-      });
+    if (freelancer.role_id !== 3)
+      return res
+        .status(403)
+        .json({ success: false, message: "Target user is not a freelancer" });
+
+    // 3. If projectId provided, validate project; otherwise allow general rating
+    if (projectId) {
+      const projectCheck = await pool.query(
+        `SELECT * FROM projects
+         WHERE id = $1 AND client_id = $2 AND freelancer_id = $3 AND status = 'completed'`,
+        [projectId, reviewerId, userId]
+      );
+      if (projectCheck.rows.length === 0)
+        return res.status(403).json({
+          success: false,
+          message:
+            "You cannot rate this freelancer because you haven't completed a project with them",
+        });
+
+      // 4. تحقق من عدم وجود تقييم سابق لنفس المشروع
+      const existingRating = await pool.query(
+        `SELECT * FROM freelancer_ratings
+         WHERE project_id = $1 AND client_id = $2 AND freelancer_id = $3`,
+        [projectId, reviewerId, userId]
+      );
+      if (existingRating.rows.length > 0)
+        return res.status(409).json({
+          success: false,
+          message: "You have already rated this freelancer for this project",
+        });
+
+      // 5. إدخال التقييم الجديد في جدول freelancer_ratings
+      await pool.query(
+        `INSERT INTO freelancer_ratings (project_id, client_id, freelancer_id, rating, created_at)
+         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [projectId, reviewerId, userId, rating]
+      );
+    } else {
+      // General rating without project
+      // Check if reviewer has already rated this freelancer
+      const existingRating = await pool.query(
+        `SELECT * FROM freelancer_ratings
+         WHERE project_id IS NULL AND client_id = $1 AND freelancer_id = $2`,
+        [reviewerId, userId]
+      );
+      if (existingRating.rows.length > 0)
+        return res.status(409).json({
+          success: false,
+          message: "You have already rated this freelancer",
+        });
+
+      // Insert general rating
+      await pool.query(
+        `INSERT INTO freelancer_ratings (client_id, freelancer_id, rating, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+        [reviewerId, userId, rating]
+      );
     }
 
-    // 3. Calculate new average rating
+    // 6. تحديث متوسط التقييم في users
     const newSum = Number(freelancer.rating_sum) + Number(rating);
     const newCount = Number(freelancer.rating_count) + 1;
     const newAvg = (newSum / newCount).toFixed(2);
 
-    // 4. Update freelancer record with new rating
     const updateResult = await pool.query(
-      `UPDATE users 
+      `UPDATE users
        SET rating_sum = $1,
            rating_count = $2,
            rating = $3
        WHERE id = $4
        RETURNING id, first_name, last_name, rating, rating_count`,
-      [newSum, newCount, newAvg, freelancerId]
+      [newSum, newCount, newAvg, userId]
     );
 
     return res.status(200).json({
@@ -733,6 +786,245 @@ const getTopFreelancers = async (req, res) => {
     });
   }
 };
+const getFreelance = async (req, res) => {
+  try {
+    const query = `
+      SELECT *
+      FROM users
+      WHERE role_id = 3 AND is_deleted = FALSE
+    `;
+
+    const { rows } = await pool.query(query);
+    return res.status(200).json({
+      success: true,
+      freelancers: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching freelancers:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
+const getFreelanceById = async (req, res) => {
+  try {
+    const freelancerId = req.params.id;
+
+    if (!freelancerId || isNaN(freelancerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid freelancer ID",
+      });
+    }
+
+    const query = `
+      SELECT id, first_name, last_name, username, country, profile_pic_url,
+             rating, rating_count, rating_sum
+      FROM users
+      WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE
+    `;
+
+    const { rows } = await pool.query(query, [freelancerId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      freelancer: rows[0],
+    });
+  } catch (error) {
+    console.error("Error fetching freelancer:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+const getPortfolioByfreelance = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id required",
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC",
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No portfolio found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Get All portfolio For ${userId}`,
+      portfolios: result.rows,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: `server error`,
+      error: err.message,
+    });
+  }
+};
+
+const checkVerificationStatus = async (req, res) => {
+  const userId = req.token.userId;
+
+  try {
+    // Get user profile information
+    const userResult = await pool.query(
+      "SELECT first_name, last_name, bio, skills, location, profile_pic_url, is_verified FROM users WHERE id = $1 AND is_deleted = FALSE",
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Check profile completeness
+    const missingFields = [];
+    if (!user.first_name) missingFields.push("first_name");
+    if (!user.last_name) missingFields.push("last_name");
+    if (!user.bio) missingFields.push("bio");
+    if (!user.skills) missingFields.push("skills");
+    if (!user.location) missingFields.push("location");
+    if (!user.profile_pic_url) missingFields.push("profile_pic_url");
+
+    // Check portfolio items
+    const portfolioResult = await pool.query(
+      "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
+      [userId]
+    );
+
+    const portfolioCount = parseInt(portfolioResult.rows[0].count);
+
+    if (portfolioCount === 0) {
+      missingFields.push("portfolio_item");
+    }
+
+    const isProfileComplete = missingFields.length === 0;
+
+    res.status(200).json({
+      success: true,
+      isVerified: user.is_verified,
+      isProfileComplete: isProfileComplete,
+      missingFields: missingFields,
+      portfolioCount: portfolioCount,
+      profile: {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        bio: user.bio,
+        skills: user.skills,
+        location: user.location,
+        profile_pic_url: user.profile_pic_url,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+const updateVerificationStatus = async (req, res) => {
+  const userId = req.token.userId;
+
+  try {
+    // Check if profile is complete and has portfolio
+    const userResult = await pool.query(
+      "SELECT first_name, last_name, bio, skills, location, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Check profile completeness
+    const isProfileComplete =
+      user.first_name &&
+      user.last_name &&
+      user.bio &&
+      user.skills &&
+      user.location &&
+      user.profile_pic_url;
+
+    // Check portfolio items
+    const portfolioResult = await pool.query(
+      "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
+      [userId]
+    );
+
+    const hasPortfolio = parseInt(portfolioResult.rows[0].count) > 0;
+
+    if (isProfileComplete && hasPortfolio) {
+      // Update verification status
+      const updateResult = await pool.query(
+        "UPDATE users SET is_verified = TRUE WHERE id = $1 RETURNING id, is_verified",
+        [userId]
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Profile verified successfully",
+        isVerified: true,
+        user: updateResult.rows[0],
+      });
+    } else {
+      const missingFields = [];
+      if (!user.first_name) missingFields.push("first_name");
+      if (!user.last_name) missingFields.push("last_name");
+      if (!user.bio) missingFields.push("bio");
+      if (!user.skills) missingFields.push("skills");
+      if (!user.location) missingFields.push("location");
+      if (!user.profile_pic_url) missingFields.push("profile_image");
+      if (!hasPortfolio) missingFields.push("portfolio_item");
+
+      res.status(400).json({
+        success: false,
+        message:
+          "Profile is not complete. Please complete all required fields and add at least one portfolio item.",
+        missingFields: missingFields,
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+const getAllFreelancerforMain = (req, res) => {};
 export {
   register,
   login,
@@ -750,4 +1042,9 @@ export {
   deletePortfolioFreelancer,
   rateFreelancer,
   getTopFreelancers,
+  getFreelanceById,
+  checkVerificationStatus,
+  updateVerificationStatus,
+  getPortfolioByfreelance,
+  getFreelance,
 };

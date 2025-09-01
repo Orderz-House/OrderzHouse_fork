@@ -15,7 +15,6 @@ const EditPortfolio = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    console.log("userId=>", userId);
     
    // const [freelancerId, setFreelancerId] = useState(null)
     /*
@@ -53,7 +52,6 @@ const fetchPortfolioItems = async () => {
         },
       }
     );
-    console.log("dataaaaaaaaaa =>", response.data.portfolios);
 
 
     setPortfolioItems(response.data.portfolios);
@@ -117,7 +115,6 @@ const fetchPortfolioItems = async () => {
                     authorization: `Bearer ${token}`,
                   },
                 }).then((result) => {
-                    console.log("Update successflly", result);
                     setPortfolioItems(prevItems => prevItems.map(item =>
                     item.id === editingItem.id ? { ...item, ...formData } : item
                     ));

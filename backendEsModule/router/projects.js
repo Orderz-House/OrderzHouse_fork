@@ -1,13 +1,22 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories } from "../controller/projects.js";
-
+import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment } from "../controller/projects.js";
+import {requireVerified} from "../middleware/requireVerification.js";
 const projectsRouter = express.Router();
 
-projectsRouter.post("/", authentication, createProject);
-projectsRouter.get("/mine", authentication, getMyProjects);
-projectsRouter.post("/:projectId/assign", authentication, assignProject);
+projectsRouter.post("/", authentication, requireVerified, createProject);
+projectsRouter.get("/offers/available", authentication, requireVerified, getAllProjectForOffer);
+projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
+projectsRouter.get("/:projectId", authentication, requireVerified, getProjectById);
+projectsRouter.post(`/:projectId/offers`, authentication, requireVerified, sendOffer)
+projectsRouter.post("/:projectId/assign", authentication, requireVerified, assignProject);
 projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
+projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
+projectsRouter.post('/offer/action', authentication, requireVerified, approveOrRejectOffer);
+projectsRouter.get('/:projectId/completion', authentication , requireVerified, getProjectCompletion);
+
+projectsRouter.post('/:projectId/complete',authentication, submitWorkCompletion);
+projectsRouter.post('/:projectId/release-payment', authentication, requireVerified, releasePayment)
 // public listing
 projectsRouter.get("/public/categories", getCategories);
 projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
@@ -16,5 +25,3 @@ projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
 
 export default projectsRouter;
-
-

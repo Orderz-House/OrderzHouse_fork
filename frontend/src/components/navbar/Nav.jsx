@@ -12,6 +12,8 @@ import {
   Phone,
   Mail,
   MapPin,
+  Briefcase,
+  LayoutDashboard,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,7 +23,6 @@ import { setUserData } from "../../slice/auth/authSlice";
 import Cookies from "js-cookie";
 import { io } from "socket.io-client";
 import { disconnectSocket } from "../../services/socketService";
-
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -91,7 +92,8 @@ export default function EnhancedNavbar() {
   const navLinks = [
     { label: "HOME", path: "/" },
     { label: "ABOUT US", path: "/about" },
-    { label: "BLOGS", path: "/blogs" },
+    { label: "NEWS", path: "/news" },
+    { label: "CONTACT", path: "/contact" },
   ];
   // Handle scroll effect
   useEffect(() => {
@@ -198,7 +200,7 @@ export default function EnhancedNavbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50"
           : "bg-white shadow-sm border-b border-gray-200"
@@ -238,8 +240,8 @@ export default function EnhancedNavbar() {
                 </button>
               ))}
 
-              {/* Services Mega Menu */}
-              <div className="relative" ref={servicesRef}>
+              {/* Services Mega Menu - COMMENTED OUT */}
+              {/* <div className="relative" ref={servicesRef}>
                 <button
                   onClick={() => setIsServicesOpen(!isServicesOpen)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all duration-200 ${
@@ -254,8 +256,7 @@ export default function EnhancedNavbar() {
                       isServicesOpen ? "rotate-180" : ""
                     }`}
                   />
-                </button>
-
+                </button> 
                 {isServicesOpen && (
                   <div className="absolute left-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 border border-gray-100 overflow-hidden transform opacity-100 scale-100 transition-all duration-200">
                     <div className="p-6">
@@ -290,10 +291,10 @@ export default function EnhancedNavbar() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
-              {/* Contact Dropdown */}
-              <div className="relative" ref={contactRef}>
+              {/* Contact Dropdown - COMMENTED OUT */}
+              {/* <div className="relative" ref={contactRef}>
                 <button
                   onClick={() => setIsContactOpen(!isContactOpen)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all duration-200 ${
@@ -348,7 +349,7 @@ export default function EnhancedNavbar() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -414,7 +415,7 @@ export default function EnhancedNavbar() {
                   />
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100">
                       <p className="font-medium text-gray-900">
                         {userData.first_name} {userData.last_name}
@@ -424,25 +425,44 @@ export default function EnhancedNavbar() {
                       </p>
                     </div>
                     <div className="py-2">
-                      <button
+                      {userData.role_id === 3 ? (
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/projects"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                        >
+                          <Briefcase className="h-4 w-4" />
+                          <span>Projects</span>
+                        </Link>
+                      )}
+
+                      <Link
+                        to="/edit-profile"
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          console.log("Navigate to profile");
                         }}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                       >
                         <Settings className="h-4 w-4" />
-                        <Link to="/edit-profile">
-                          <span>Profile Settings</span>
-                        </Link>
-                      </button>
-                      <button
+                        <span>Profile Settings</span>
+                      </Link>
+
+                      <Link
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Sign Out</span>
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -524,8 +544,8 @@ export default function EnhancedNavbar() {
                 </button>
               ))}
 
-              {/* Mobile Services */}
-              <div className="pt-2">
+              {/* Mobile Services - COMMENTED OUT */}
+              {/* <div className="pt-2">
                 <button
                   onClick={() => setIsServicesOpen(!isServicesOpen)}
                   className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
@@ -553,10 +573,10 @@ export default function EnhancedNavbar() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div> */}
 
-              {/* Mobile Contact */}
-              <div className="pt-2">
+              {/* Mobile Contact - COMMENTED OUT */}
+              {/* <div className="pt-2">
                 <button
                   onClick={() => setIsContactOpen(!isContactOpen)}
                   className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
@@ -590,11 +610,11 @@ export default function EnhancedNavbar() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Mobile Auth Section */}
               <div className="pt-4 border-t border-gray-200 space-y-3">
-                {isAuthenticated ? (
+                {IsAuthenticated ? (
                   <>
                     <div className="px-4 py-2">
                       <p className="font-medium text-gray-900">
@@ -654,7 +674,7 @@ export default function EnhancedNavbar() {
       </div>
       {/* Demo Controls */}
       {/* 
-v className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 border border-gray-200 z-40">
+      <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 border border-gray-200 z-40">
         <p className="text-sm font-medium text-gray-700 mb-2">Demo Controls:</p>
         <button
           onClick={() => setIsAuthenticated(!isAuthenticated)}

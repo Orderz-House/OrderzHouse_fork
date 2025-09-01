@@ -22,12 +22,12 @@ app.use(
   })
 );
 // rate limiter
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: "try again later",
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100,
+//   message: "try again later",
+// });
+// app.use(limiter);
 
 // db connection
 import "./models/db.js";
@@ -41,7 +41,10 @@ import coursesRouter from "./router/courses.js";
 import ordersRouter from "./router/orders.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
-
+import verificationRouter from "./router/verification.js";
+import newsRouter from "./router/news.js";
+app.use("/news", newsRouter);
+app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
@@ -51,6 +54,7 @@ app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
+
 import chatsRouter from "./router/chats.js";
 app.use("/chats", chatsRouter);
 

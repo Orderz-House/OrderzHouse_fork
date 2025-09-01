@@ -12,6 +12,10 @@ const Components = {
     "Dashboard",
     path.join(__dirname, "../../frontend/admin-components/dashboard.jsx")
   ),
+  Analytics: componentLoader.add(
+    "Analytics",
+    path.join(__dirname, "../../frontend/admin-components/analytics.jsx")
+  ),
 };
 
 export { componentLoader, Components };

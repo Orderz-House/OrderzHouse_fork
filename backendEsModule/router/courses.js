@@ -1,45 +1,30 @@
+// routes/courses.js
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
-import { getCourseById, getCourses, createCourse, deleteCourse, updateCourse, enrollInCourse } from "../controller/courses.js";
+import {
+  getCourses,
+  getCourseById,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  enrollInCourse,
+  getCourseMaterials,
+  checkEnrollment,
+} from "../controller/courses.js";
 
-const coursesRouter = express.Router();
-coursesRouter.get(
-  "/view",
-  authentication,
-  authorization("view_courses"),
-  getCourses
-);
-coursesRouter.post(
-  "/create",
-  authentication,
-  authorization("create_course"),
-  createCourse
-);
-coursesRouter.delete(
-  "/delete/:id",
-  authentication,
-  authorization("delete_course"),
-  deleteCourse
-);
-coursesRouter.put(
-  "/update/:id",
-  authentication,
-  authorization("edit_course"),
-  updateCourse
-);
-coursesRouter.get(
-  "/view/:id",
-  authentication,
-  authorization("view_courses"),
-  getCourseById
-);
+const router = express.Router();
 
-coursesRouter.post(
-  "/enroll",
-  authentication,
-  authorization("enroll_course"),
-  enrollInCourse
-);
+router.get("/view", authentication, getCourses);
+router.get("/view/:id", authentication, getCourseById);
+router.get("/:id/materials", authentication, getCourseMaterials);
+router.get("/:id/enrollment", authentication, checkEnrollment);
 
-export default coursesRouter;
+// Admin-only routes
+router.post("/create", authentication, authorization("create_course"), createCourse);
+router.put("/update/:id", authentication, authorization("edit_course"), updateCourse);
+router.delete("/delete/:id", authentication, authorization("delete_course"), deleteCourse);
+
+router.post("/enroll", authentication, enrollInCourse);
+
+export default router;
