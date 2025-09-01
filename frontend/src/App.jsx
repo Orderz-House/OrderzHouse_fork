@@ -24,9 +24,13 @@ import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
-import FreelancerProjects from "./components/projects/FreelancerProjects";
 import CourseDetail from "./components/courseDetilas/CourseDetails";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
+import NewsPage from "./components/news/NewsPage";
+import NewsDetails from "./components/news/NewDetail";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import FreelancerProjects from "./components/projects/FreelancerProjects";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -43,6 +47,8 @@ function App() {
     <>
       <Navbar />
       <Routes>
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/:id" element={<NewsDetails />} />
         <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -101,14 +107,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/manage-project/:projectId"
-          element={
-            <ProtectedRoute>
-              <ManageProject />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/projects"
           element={
@@ -142,6 +141,12 @@ function App() {
         />
       </Routes>
       <EnhancedFooter />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        draggable
+        pauseOnHover
+      />
     </>
   );
 }

@@ -42,6 +42,8 @@ import ordersRouter from "./router/orders.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
+import newsRouter from "./router/news.js";
+app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);

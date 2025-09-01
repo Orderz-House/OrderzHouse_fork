@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const ImgBBUpload = () => {
   const [image, setImage] = useState(null);
@@ -10,7 +11,7 @@ const ImgBBUpload = () => {
   };
 
   const handleUpload = async () => {
-    if (!image) return alert("Please select an image!");
+    if (!image) return toast.error("Please select an image!");
 
     const formData = new FormData();
     formData.append("image", image);
@@ -20,11 +21,11 @@ const ImgBBUpload = () => {
         `https://api.imgbb.com/1/upload?key=3e98a98f3b7416d16ec2bf19527c5c65`,
         formData
       );
-      setUrl(res.data.data.url); 
-      alert("Image uploaded successfully!");
+      setUrl(res.data.data.url);
+      toast.success("Image uploaded successfully!");
     } catch (err) {
       console.error(err);
-      alert("Upload failed!");
+      toast.error("Upload failed!");
     }
   };
 

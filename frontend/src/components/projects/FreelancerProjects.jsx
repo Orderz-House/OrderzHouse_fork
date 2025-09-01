@@ -20,7 +20,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-const FreelancerProjects = () => {
+export const FreelancerProjects = () => {
   const { token } = useSelector((state) => state.auth);
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
