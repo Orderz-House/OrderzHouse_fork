@@ -10,7 +10,10 @@ export const createProject = async (req, res) => {
       [userId]
     );
 
-    if (!userRows.length || (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)) {
+    if (
+      !userRows.length ||
+      (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)
+    ) {
       return res.status(403).json({
         success: false,
         message: "Only users with role 1 or role 2 can create projects",
@@ -28,8 +31,16 @@ export const createProject = async (req, res) => {
       location,
     } = req.body;
 
-    if (!category_id || !title || !description || budget_min === undefined || budget_max === undefined) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (
+      !category_id ||
+      !title ||
+      !description ||
+      budget_min === undefined ||
+      budget_max === undefined
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
     }
 
     const insertQuery = `
@@ -71,11 +82,15 @@ export const getMyProjects = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { rows } = await pool.query(
-      `SELECT p.*, pa.freelancer_id AS assigned_freelancer_id
-       FROM projects p
-       LEFT JOIN project_assignments pa ON pa.project_id = p.id
-       WHERE p.user_id = $1 AND p.is_deleted = false
-       ORDER BY p.created_at DESC`,
+      `SELECT 
+  p.*, 
+  array_agg(pa.freelancer_id) AS assigned_freelancers
+FROM projects p
+LEFT JOIN project_assignments pa ON pa.project_id = p.id
+WHERE p.user_id = $1 AND p.is_deleted = false
+GROUP BY p.id
+ORDER BY p.created_at DESC;
+`,
       [userId]
     );
     return res.json({ success: true, projects: rows });
@@ -201,7 +216,6 @@ export const updateAssignmentStatus = async (req, res) => {
   }
 };
 
-
 // List users by role id (helper for frontend selection)
 export const listUsersByRole = async (req, res) => {
   try {
@@ -256,7 +270,9 @@ export const getRelatedFreelancers = async (req, res) => {
   );
 
   if (!projectRows.length) {
-    return res.status(404).json({ success: false, message: "Project not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Project not found" });
   }
 
   const { category_id } = projectRows[0];
@@ -269,54 +285,145 @@ export const getRelatedFreelancers = async (req, res) => {
   res.status(200).json({ success: true, freelancers });
 };
 
-export const getProjectById = async (req,res)=>{
-  const {projectId} = req.params;
+export const getProjectById = async (req, res) => {
+  const { projectId } = req.params;
 
-  
   const project = await pool.query(
-    `
-    SELECT 
-      p.*,
-      COALESCE(
-        json_agg(
-          json_build_object(
-            'freelancer_id', pa.freelancer_id,
-            'assigned_at', pa.assigned_at,
-            'status', pa.status,
-            'user', json_build_object(
-              'id', u.id,
-              'first_name', u.first_name,
-              'last_name', u.last_name,
-              'email', u.email,
-              'username', u.username
-            )
-          )
-        ) FILTER (WHERE pa.freelancer_id IS NOT NULL), '[]'
-      ) AS assignments
-    FROM projects p
-    LEFT JOIN project_assignments pa 
-      ON p.id = pa.project_id
-    LEFT JOIN users u 
-      ON pa.freelancer_id = u.id
-    WHERE p.id = $1 
-      AND p.is_deleted = FALSE
-    GROUP BY p.id
-    `,
+    `SELECT 
+  p.*,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'assigned_at', pa.assigned_at,
+        'status', pa.status,
+        'freelancer', json_build_object(
+          'id', u.id,
+          'first_name', u.first_name,
+          'last_name', u.last_name,
+          'email', u.email,
+          'username', u.username
+        )
+      )
+    ) FILTER (WHERE pa.freelancer_id IS NOT NULL), '[]'
+  ) AS assignments,
+  
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'bid_amount', o.bid_amount,
+        'delivery_time', o.delivery_time,
+        'proposal', o.proposal,
+        'status_offer', o.offer_status,
+        'freelancer', json_build_object(
+          'id', uf.id,
+          'first_name', uf.first_name,
+          'last_name', uf.last_name,
+          'email', uf.email,
+          'username', uf.username,
+          'image', uf.profile_pic_url
+        )
+      )
+    ) FILTER (WHERE o.freelancer_id IS NOT NULL), '[]'
+  ) AS offers
+
+FROM projects p
+LEFT JOIN project_assignments pa ON p.id = pa.project_id
+LEFT JOIN users u ON pa.freelancer_id = u.id
+LEFT JOIN offers o ON p.id = o.project_id
+LEFT JOIN users uf ON o.freelancer_id = uf.id
+
+WHERE p.id = $1
+  AND p.is_deleted = FALSE
+GROUP BY p.id;
+`,
     [projectId]
   );
 
-  if(!project.rows.length){
+  if (!project.rows.length) {
     return res.status(404).json({
-      success : false,
-      message : "No Project Found", 
-    })
+      success: false,
+      message: "No Project Found",
+    });
   }
 
   res.status(200).json({
-    success : true,
-    project
-  })
+    success: true,
+    project,
+  });
+};
+export const getAllProjectForOffer = (req, res) => {
+  pool
+    .query(
+      `SELECT 
+       p.*, 
+       u.id AS user_id, 
+       u.first_name, 
+       u.last_name, 
+       u.email, 
+       u.username FROM projects p JOIN users u ON u.id = p.user_id WHERE p.status = 'available'`
+    )
+    .then((result) => {
+      res.status(200).json({
+        success: true,
+        message: `All Project available`,
+        projects: result.rows,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: `Server Error`,
+        error: err,
+      });
+    });
+};
 
+export const sendOffer = async (req, res) => {
+  const freelancerId = req.token.userId;
+  const { projectId } = req.params;
+  const { bid_amount, delivery_time, proposal } = req.body;
+  const values = [freelancerId, projectId, bid_amount, delivery_time, proposal];
+  await pool
+    .query(
+      `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal) VALUES ($1,$2,$3,$4,$5)`,
+      values
+    )
+    .then((result) => {
+      res.status(200).json({
+        success: true,
+        message: `send offer successflly`,
+        result,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: `server error`,
+        err,
+      });
+    });
+};
+
+const approveOrRejectOffer = (req,res) =>{
+  const {action} = req.body;
+
+  if(action === "approve"){
+
+  }else if(action === "reject"){
+    
+  }
 }
 
-export default { createProject, getMyProjects, assignProject, listUsersByRole, getCategories, getSubCategories,getRelatedFreelancers ,getProjectById, updateAssignmentStatus};
+export default {
+  createProject,
+  getMyProjects,
+  assignProject,
+  listUsersByRole,
+  getCategories,
+  getSubCategories,
+  getRelatedFreelancers,
+  getProjectById,
+  updateAssignmentStatus,
+  getAllProjectForOffer,
+  sendOffer,
+};
