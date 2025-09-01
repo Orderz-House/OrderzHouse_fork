@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 const Billing = () => {
     const {userData} = useSelector((state) => state.auth);
@@ -58,7 +59,7 @@ const Billing = () => {
     const handleBillingSubmit = (e) => {
         e.preventDefault();
         console.log("Billing data:", billingData);
-        alert("Billing information updated successfully!");
+        toast.success("Billing information updated successfully!");
     };
 
     return (

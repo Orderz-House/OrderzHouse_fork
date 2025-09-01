@@ -58,7 +58,6 @@ export default function FreelancerPage() {
         } catch (portfolioErr) {
           // Handle 404 specifically - it just means no portfolio items exist yet
           if (portfolioErr.response && portfolioErr.response.status === 404) {
-            console.log("No portfolio items found");
             portfolioData = [];
           } else {
             console.error("Failed to load portfolio:", portfolioErr);
