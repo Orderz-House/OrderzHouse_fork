@@ -253,7 +253,73 @@ export const getMyVerificationDetails = async (req, res) => {
     });
   }
 };
+export const updateVerificationStatus = async (req, res) => {
+  const { userId, status } = req.body;
+  const adminRoleId = req.token.role;
 
+  if (adminRoleId !== 1) {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
+
+  try {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Update verification table (freelancer or customer)
+      let query = "";
+      if (status === "approved") {
+        // Example: assuming this is for freelancer verification
+        query = `
+          UPDATE freelancer_verifications 
+          SET status = $1, reviewed_at = NOW() 
+          WHERE user_id = $2 
+          RETURNING user_id`;
+      } else {
+        query = `
+          UPDATE freelancer_verifications 
+          SET status = $1, reviewed_at = NOW() 
+          WHERE user_id = $2`;
+      }
+
+      const result = await client.query(query, [status, userId]);
+
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ success: false, message: "Verification record not found" });
+      }
+
+      // ✅ Update is_verified in users table
+      if (status === "approved") {
+        await client.query(
+          `UPDATE users SET is_verified = TRUE WHERE id = $1`,
+          [userId]
+        );
+      } else if (status === "rejected") {
+        await client.query(
+          `UPDATE users SET is_verified = FALSE WHERE id = $1`,
+          [userId]
+        );
+      }
+
+      await client.query("COMMIT");
+
+      res.status(200).json({
+        success: true,
+        message: `Verification ${status} successfully.`,
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("Error updating verification status:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 export default { 
   submitCustomerVerification, 
   submitFreelancerVerification, 
