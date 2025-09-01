@@ -1,26 +1,48 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { 
-  submitCustomerVerification, 
-  submitFreelancerVerification, 
-  reviewVerification, 
+import authorization from "../middleware/authorization.js";
+import {
+  submitCustomerVerification,
+  submitFreelancerVerification,
+  reviewVerification,
   getMyVerificationStatus,
-  getMyVerificationDetails 
+  getMyVerificationDetails,
 } from "../controller/verification.js";
 
 const verificationRouter = express.Router();
 
-// Customer verification endpoints
-verificationRouter.post("/customer", authentication, submitCustomerVerification);
-verificationRouter.get("/customer/status", authentication, getMyVerificationStatus);
-verificationRouter.get("/customer/details", authentication, getMyVerificationDetails);
+// ----------------------------
+// Customer verification
+// ----------------------------
+verificationRouter.post(
+  "/customer",
+  authentication,
+  submitCustomerVerification
+);
 
-// Freelancer verification endpoints
-verificationRouter.post("/freelancer", authentication, submitFreelancerVerification);
-verificationRouter.get("/freelancer/status", authentication, getMyVerificationStatus);
-verificationRouter.get("/freelancer/details", authentication, getMyVerificationDetails);
+// ----------------------------
+// Freelancer verification
+// ----------------------------
+verificationRouter.post(
+  "/freelancer",
+  authentication,
+  submitFreelancerVerification
+);
 
-// Admin review endpoint
-verificationRouter.patch("/review", authentication, reviewVerification);
+// ----------------------------
+// Unified endpoints for current user
+// ----------------------------
+verificationRouter.get("/status", authentication, getMyVerificationStatus);
+verificationRouter.get("/details", authentication, getMyVerificationDetails);
+
+// ----------------------------
+// Admin review endpoint (protected by authorization middleware)
+// ----------------------------
+verificationRouter.patch(
+  "/review",
+  authentication,
+  authorization("review_verification"),
+  reviewVerification
+);
 
 export default verificationRouter;

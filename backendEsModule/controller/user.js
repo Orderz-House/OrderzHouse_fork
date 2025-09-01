@@ -122,6 +122,8 @@ const login = async (req, res) => {
 
     const user = result.rows[0];
 
+    console.log("Login user.is_verified:", user.is_verified);
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(403).json({
@@ -133,6 +135,7 @@ const login = async (req, res) => {
     const payload = {
       userId: user.id,
       role: user.role_id,
+      is_verified: user.is_verified,
     };
 
     const options = { expiresIn: "1d" };
@@ -171,6 +174,7 @@ const login = async (req, res) => {
       userId: user.id,
       role: user.role_id,
       userInfo: user,
+      is_verified: user.is_verified,
     });
   } catch (err) {
     console.error("Login error:", err.message);
@@ -330,7 +334,7 @@ const updateUser = async (req, res) => {
 };
 
 const getPortfolioByUserId = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.token;
 
   if (!userId) {
     return res.status(400).json({

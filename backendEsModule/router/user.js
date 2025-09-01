@@ -44,7 +44,6 @@ usersRouter.get("/freelancers/top-rated", getTopFreelancers); // Public top-rate
 usersRouter.get(
   "/freelancers/:id/portfolio",
   authentication,
-  requireVerified,
   getPortfolioByUserId
 );
 usersRouter.post(
