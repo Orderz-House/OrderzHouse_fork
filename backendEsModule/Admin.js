@@ -91,6 +91,9 @@ export const AdminInit = async (app) => {
     createTableIfMissing: true,
   });
 
+  // -------------------------------
+  // Auth & Logging Fixes
+  // -------------------------------
   const adminRouter = AdminJSExpress.buildAuthenticatedRouter(admin, {
     authenticate: async (email, password) => {
       const { rows } = await pool.query(
@@ -102,29 +105,30 @@ export const AdminInit = async (app) => {
       if (user) {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (isPasswordValid) {
-          // Log successful login (remove console.log)
+          // Log successful login with correct user_id & role_id
           await logAdminAction(
             user.id,
             user.email,
             `Admin login successful for ${user.first_name} ${user.last_name} (${user.email})`,
+            1, // role_id = 1 for admin
             pool
           );
           return user;
         } else {
-          // Log failed login attempt
           await logAdminAction(
             null,
             email,
             `Failed login attempt for ${email} - Invalid password`,
+            null,
             pool
           );
         }
       } else {
-        // Log failed login attempt - user not found or not admin
         await logAdminAction(
           null,
           email,
           `Failed login attempt for ${email} - User not found or not admin`,
+          null,
           pool
         );
       }
@@ -133,7 +137,9 @@ export const AdminInit = async (app) => {
     cookiePassword: process.env.COOKIE_SECRET || "some-secret",
   });
 
-  // Simple middleware for logging admin actions
+  // -------------------------------
+  // Middleware for logging admin actions
+  // -------------------------------
   const logAdminActionMiddleware = (req, res, next) => {
     const originalSend = res.send;
     const originalJson = res.json;
@@ -143,12 +149,7 @@ export const AdminInit = async (app) => {
         const action = `${req.method} ${req.originalUrl}`;
         const resourceInfo = extractResourceInfo(req.originalUrl);
         const logMessage = `Admin ${req.user.email} performed ${req.method}${resourceInfo} - Status: ${res.statusCode}`;
-
-        logAdminAction(req.user.id, req.user.email, logMessage, pool).catch(
-          () => {
-            // Silently handle logging errors
-          }
-        );
+        logAdminAction(req.user.id, req.user.email, logMessage, req.user.role_id, pool).catch(() => {});
       }
     };
 
@@ -191,7 +192,9 @@ export const AdminInit = async (app) => {
 
   app.use(admin.options.rootPath, logAdminActionMiddleware, adminRouter);
 
-  // API Endpoints
+  // -------------------------------
+  // Dashboard & Logs API
+  // -------------------------------
   app.get("/api/admin/dashboard", async (req, res) => {
     try {
       const dashboardData = await dashboardHandler(pool);
@@ -212,18 +215,19 @@ export const AdminInit = async (app) => {
     }
   });
 
+  // Logs endpoint with correct role_id and email
   app.get("/api/admin/dashboard/logs", async (req, res) => {
     try {
       const client = await pool.connect();
       const result = await client.query(`
         SELECT l.id, l.user_id, l.action, l.created_at,
-               COALESCE(u.first_name, 'System') as first_name, 
+               COALESCE(u.first_name, 'System') as first_name,
                COALESCE(u.last_name, 'Admin') as last_name,
                COALESCE(u.email, 'system@admin') as email,
                COALESCE(u.role_id, 1) as role_id
-        FROM logs l 
-        LEFT JOIN users u ON u.id = l.user_id 
-        ORDER BY l.created_at DESC 
+        FROM logs l
+        LEFT JOIN users u ON u.id = l.user_id
+        ORDER BY l.created_at DESC
         LIMIT 20
       `);
       client.release();

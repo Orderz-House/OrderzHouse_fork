@@ -277,32 +277,34 @@ export default function Dashboard() {
   };
 
   const getTimeAgo = (dateString) => {
-    if (!dateString) return "";
-    
-    try {
-      const now = new Date();
-      const logTime = new Date(dateString);
-      const diffMs = now - logTime;
-      const diffSecs = Math.floor(diffMs / 1000);
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
-      
-      if (diffSecs < 30) return "Just now";
-      if (diffSecs < 60) return `${diffSecs}s ago`;
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
-      
-      // For older entries, show actual date
-      return logTime.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric"
-      });
-    } catch {
-      return "";
-    }
-  };
+  if (!dateString) return "";
+
+  try {
+    const now = new Date();
+    const logTime = new Date(dateString);
+    const diffMs = now - logTime;
+    const diffSecs = Math.floor(diffMs / 1000);
+
+    if (diffSecs < 30) return "Just now";
+    if (diffSecs < 60) return `${diffSecs}s ago`;
+
+    const diffMins = Math.floor(diffSecs / 60);
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return logTime.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "";
+  }
+};
 
   const getLogTypeColor = (action) => {
     if (!action) return '#6b7280';
