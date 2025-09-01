@@ -2,14 +2,15 @@ import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 function ProtectedRoute({ children }) {
-  const isVerified = useSelector((state) => state.auth.isVerified); // خزن حالة التحقق بالريدكس
   const token = useSelector((state) => state.auth.token);
+  const { userData } = useSelector((state) => state.auth);
+
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isVerified) {
+  if (!userData.is_verified) {
     return <Navigate to="/verify-profile" replace />;
   }
 

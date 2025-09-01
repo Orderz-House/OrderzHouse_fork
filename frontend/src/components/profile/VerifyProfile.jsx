@@ -20,7 +20,7 @@ import {
   Upload,
   ExternalLink,
   Edit,
-  Shield
+  Shield,
 } from "lucide-react";
 
 const initialProfileState = {
@@ -33,7 +33,7 @@ const initialProfileState = {
   username: "",
   profile_pic_url: "",
   category_id: "",
-  bio: ""
+  bio: "",
 };
 
 const initialPortfolioItem = {
@@ -50,7 +50,8 @@ function VerifyProfile() {
 
   const [profile, setProfile] = useState(initialProfileState);
   const [portfolioItems, setPortfolioItems] = useState([]);
-  const [newPortfolioItem, setNewPortfolioItem] = useState(initialPortfolioItem);
+  const [newPortfolioItem, setNewPortfolioItem] =
+    useState(initialPortfolioItem);
   const [missingFields, setMissingFields] = useState([]);
   const [profileErrors, setProfileErrors] = useState({});
   const [portfolioErrors, setPortfolioErrors] = useState({});
@@ -75,11 +76,14 @@ function VerifyProfile() {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Get user profile
       const profileRes = await axios.get(
         "http://localhost:5000/users/getUserdata",
         config
       );
       const userData = profileRes.data.user;
+
       setProfile({
         first_name: userData.first_name || "",
         last_name: userData.last_name || "",
@@ -91,22 +95,39 @@ function VerifyProfile() {
         profile_pic_url: userData.profile_pic_url || "",
         category_id: userData.category_id || "",
         id: userData.id || "",
-        bio: userData.bio || ""
+        bio: userData.bio || "",
       });
+
+      // Get portfolio items with improved error handling
       try {
         const portfolioRes = await axios.get(
-          `http://localhost:5000/users/freelancer/${userId}/portfolio`,
+          `http://localhost:5000/users/freelances/${userId}/port`,
           config
         );
-        if (portfolioRes.data.success) {
-          setPortfolioItems(portfolioRes.data.portfolios || []);
+
+        if (portfolioRes.data.success && portfolioRes.data.portfolios) {
+          setPortfolioItems(portfolioRes.data.portfolios);
+        } else {
+          setPortfolioItems([]);
         }
-      } catch {
-        setPortfolioItems([]);
+      } catch (err) {
+        // Handle 404 specifically - it just means no portfolio items exist yet
+        if (err.response && err.response.status === 404) {
+          setPortfolioItems([]);
+          console.log(
+            "No portfolio items found - this is expected for new users"
+          );
+        } else {
+          console.error("Failed to load portfolio:", err);
+          showMessage("Error loading portfolio items", "error");
+          setPortfolioItems([]);
+        }
       }
+
       setIsVerified(userData.is_verified || false);
       setBannerVisible(!userData.is_verified);
-    } catch {
+    } catch (err) {
+      console.error("Error loading profile data:", err);
       showMessage("Error loading profile data", "error");
     } finally {
       setLoading(false);
@@ -119,7 +140,8 @@ function VerifyProfile() {
         "http://localhost:5000/projects/public/categories"
       );
       if (res.data.categories) setCategories(res.data.categories);
-    } catch {
+    } catch (err) {
+      console.error("Error loading categories:", err);
       showMessage("Error loading categories", "error");
     }
   };
@@ -137,7 +159,7 @@ function VerifyProfile() {
     if (portfolioItems.length === 0) missing.push("portfolio_item");
     setMissingFields(missing);
     setBannerVisible(missing.length > 0 && !isVerified);
-    
+
     // Calculate completion progress
     const totalFields = 9; // 8 profile fields + at least 1 portfolio item
     const completedFields = totalFields - missing.length;
@@ -174,14 +196,18 @@ function VerifyProfile() {
 
   const validateProfile = () => {
     const errors = {};
-    if (!profile.first_name.trim()) errors.first_name = "First name is required";
+    if (!profile.first_name.trim())
+      errors.first_name = "First name is required";
     if (!profile.last_name.trim()) errors.last_name = "Last name is required";
     if (!profile.email.trim()) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(profile.email)) errors.email = "Email is invalid";
-    if (!profile.phone_number.trim()) errors.phone_number = "Phone number is required";
+    else if (!/\S+@\S+\.\S+/.test(profile.email))
+      errors.email = "Email is invalid";
+    if (!profile.phone_number.trim())
+      errors.phone_number = "Phone number is required";
     if (!profile.country.trim()) errors.country = "Country is required";
     if (!profile.username.trim()) errors.username = "Username is required";
-    if (!profile.profile_pic_url.trim()) errors.profile_pic_url = "Profile picture is required";
+    if (!profile.profile_pic_url.trim())
+      errors.profile_pic_url = "Profile picture is required";
     if (!profile.category_id) errors.category_id = "Category is required";
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;
@@ -190,13 +216,21 @@ function VerifyProfile() {
   const validatePortfolio = () => {
     const errors = {};
     if (!newPortfolioItem.title.trim()) errors.title = "Title is required";
-    if (!newPortfolioItem.description.trim()) errors.description = "Description is required";
-    if (!newPortfolioItem.hourly_rate) errors.hourly_rate = "Hourly rate is required";
-    else if (isNaN(newPortfolioItem.hourly_rate) || newPortfolioItem.hourly_rate <= 0) 
+    if (!newPortfolioItem.description.trim())
+      errors.description = "Description is required";
+    if (!newPortfolioItem.hourly_rate)
+      errors.hourly_rate = "Hourly rate is required";
+    else if (
+      isNaN(newPortfolioItem.hourly_rate) ||
+      newPortfolioItem.hourly_rate <= 0
+    )
       errors.hourly_rate = "Hourly rate must be a positive number";
-    if (!newPortfolioItem.work_url.trim()) errors.work_url = "Work URL is required";
-    else if (!isValidUrl(newPortfolioItem.work_url)) errors.work_url = "Please enter a valid URL";
-    if (!newPortfolioItem.skills.length) errors.skills = "At least one skill is required";
+    if (!newPortfolioItem.work_url.trim())
+      errors.work_url = "Work URL is required";
+    else if (!isValidUrl(newPortfolioItem.work_url))
+      errors.work_url = "Please enter a valid URL";
+    if (!newPortfolioItem.skills.length)
+      errors.skills = "At least one skill is required";
     setPortfolioErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -214,15 +248,16 @@ function VerifyProfile() {
     setUploadingImage(true);
     const formData = new FormData();
     formData.append("image", file);
-    
+
     try {
       const res = await axios.post(
         `https://api.imgbb.com/1/upload?key=3e98a98f3b7416d16ec2bf19527c5c65`,
         formData
       );
-      setProfile(prev => ({ ...prev, profile_pic_url: res.data.data.url }));
+      setProfile((prev) => ({ ...prev, profile_pic_url: res.data.data.url }));
       showMessage("Profile picture uploaded successfully", "success");
     } catch (error) {
+      console.error("Image upload failed:", error);
       showMessage("Image upload failed", "error");
     } finally {
       setUploadingImage(false);
@@ -252,8 +287,9 @@ function VerifyProfile() {
         showMessage("Failed to update profile", "error");
       }
     } catch (error) {
+      console.error("Error updating profile:", error);
       showMessage(
-        error.response?.data?.message || "Error updating profile", 
+        error.response?.data?.message || "Error updating profile",
         "error"
       );
     } finally {
@@ -268,34 +304,36 @@ function VerifyProfile() {
     }
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const endpoint = editingPortfolioId 
+      const endpoint = editingPortfolioId
         ? `http://localhost:5000/users/freelancer/portfolio/update/${editingPortfolioId}`
-        : "http://localhost:5000/users/freelancer/portfolio/create";
-      
+        : "http://localhost:5000/users/freelancers/portfolio/create";
+
       const method = editingPortfolioId ? "put" : "post";
-      
+
       const res = await axios[method](
         endpoint,
         { ...newPortfolioItem, freelancer_id: userId },
         config
       );
-      
+
       if (res.data.success) {
         if (editingPortfolioId) {
-          setPortfolioItems(prev => 
-            prev.map(item => 
+          setPortfolioItems((prev) =>
+            prev.map((item) =>
               item.id === editingPortfolioId ? res.data.portfolio : item
             )
           );
         } else {
           setPortfolioItems((prev) => [...prev, res.data.portfolio]);
         }
-        
+
         setNewPortfolioItem(initialPortfolioItem);
         setShowPortfolioForm(false);
         setEditingPortfolioId(null);
         showMessage(
-          `Portfolio item ${editingPortfolioId ? 'updated' : 'added'} successfully`, 
+          `Portfolio item ${
+            editingPortfolioId ? "updated" : "added"
+          } successfully`,
           "success"
         );
         setIsVerified(false);
@@ -303,8 +341,9 @@ function VerifyProfile() {
         showMessage("Failed to save portfolio item", "error");
       }
     } catch (error) {
+      console.error("Error saving portfolio item:", error);
       showMessage(
-        error.response?.data?.message || "Error saving portfolio item", 
+        error.response?.data?.message || "Error saving portfolio item",
         "error"
       );
     }
@@ -320,7 +359,7 @@ function VerifyProfile() {
     });
     setEditingPortfolioId(item.id);
     setShowPortfolioForm(true);
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
   const cancelEdit = () => {
@@ -330,10 +369,12 @@ function VerifyProfile() {
   };
 
   const removePortfolioItem = async (portfolioId) => {
-    if (!window.confirm("Are you sure you want to remove this portfolio item?")) {
+    if (
+      !window.confirm("Are you sure you want to remove this portfolio item?")
+    ) {
       return;
     }
-    
+
     try {
       const config = {
         headers: { Authorization: `Bearer ${token}` },
@@ -351,8 +392,9 @@ function VerifyProfile() {
         setIsVerified(false);
       }
     } catch (error) {
+      console.error("Error removing portfolio item:", error);
       showMessage(
-        error.response?.data?.message || "Error removing portfolio item", 
+        error.response?.data?.message || "Error removing portfolio item",
         "error"
       );
     }
@@ -380,11 +422,11 @@ function VerifyProfile() {
           <p className="text-gray-600">
             Complete your profile to start working as a freelancer
           </p>
-          
+
           {/* Progress Bar */}
           <div className="mt-6 w-full bg-gray-200 rounded-full h-2.5 max-w-md mx-auto">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" 
+            <div
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -403,17 +445,20 @@ function VerifyProfile() {
                 </h3>
                 <p className="text-yellow-700">
                   Please complete all required fields to get verified and start
-                  accepting projects. You need to complete {missingFields.length} more 
-                  {missingFields.length === 1 ? ' field' : ' fields'}.
+                  accepting projects. You need to complete{" "}
+                  {missingFields.length} more
+                  {missingFields.length === 1 ? " field" : " fields"}.
                 </p>
                 {missingFields.length > 0 && (
                   <ul className="mt-2 text-sm text-yellow-600 grid grid-cols-2 gap-1">
                     {missingFields.map((field) => (
                       <li key={field} className="flex items-center">
                         •{" "}
-                        {field === 'portfolio_item' ? 'At least one portfolio item' : 
-                          field.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-                        }
+                        {field === "portfolio_item"
+                          ? "At least one portfolio item"
+                          : field
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </li>
                     ))}
                   </ul>
@@ -447,7 +492,7 @@ function VerifyProfile() {
             <User className="w-5 h-5 mr-2" />
             Personal Information
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {[
               {
@@ -496,7 +541,8 @@ function VerifyProfile() {
             ].map((field) => (
               <div key={field.name}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                  {field.label}{" "}
+                  {field.required && <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative">
                   <field.icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -556,7 +602,7 @@ function VerifyProfile() {
                       <Camera className="w-8 h-8 text-gray-400" />
                     </div>
                   )}
-                  
+
                   <label className="absolute bottom-0 right-0 bg-white rounded-full p-1 shadow-md cursor-pointer">
                     {uploadingImage ? (
                       <Loader className="w-5 h-5 text-blue-600 animate-spin" />
@@ -575,7 +621,7 @@ function VerifyProfile() {
                     />
                   </label>
                 </div>
-                
+
                 <div>
                   <p className="text-sm text-gray-600 mb-2">
                     Upload a professional profile picture
@@ -688,7 +734,9 @@ function VerifyProfile() {
           {showPortfolioForm && (
             <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingPortfolioId ? "Edit Portfolio Item" : "Add New Portfolio Item"}
+                {editingPortfolioId
+                  ? "Edit Portfolio Item"
+                  : "Add New Portfolio Item"}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -705,7 +753,7 @@ function VerifyProfile() {
                     type: "number",
                     required: true,
                     icon: DollarSign,
-                    min: 1
+                    min: 1,
                   },
                 ].map((field) => (
                   <div key={field.name}>
@@ -792,7 +840,8 @@ function VerifyProfile() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Skills <span className="text-red-500">*</span> (comma separated)
+                  Skills <span className="text-red-500">*</span> (comma
+                  separated)
                 </label>
                 <div className="relative">
                   <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -841,7 +890,8 @@ function VerifyProfile() {
             <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 mb-4">
-                No portfolio items yet. Add your first project to showcase your skills!
+                No portfolio items yet. Add your first project to showcase your
+                skills!
               </p>
               <button
                 onClick={() => setShowPortfolioForm(true)}
