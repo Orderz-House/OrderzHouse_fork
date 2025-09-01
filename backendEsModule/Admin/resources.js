@@ -1,4 +1,4 @@
-// Admin/resources.js - Complete resource configurations
+// Admin/resources.js 
 
 export const createResourceConfigs = async (
   db,
