@@ -2,7 +2,6 @@ import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
-  submitCustomerVerification,
   submitFreelancerVerification,
   reviewVerification,
   getMyVerificationStatus,
@@ -12,36 +11,32 @@ import {
 const verificationRouter = express.Router();
 
 // ----------------------------
-// Customer verification
-// ----------------------------
-verificationRouter.post(
-  "/customer",
-  authentication,
-  submitCustomerVerification
-);
-
-// ----------------------------
-// Freelancer verification
+// Freelancer submits verification request
 // ----------------------------
 verificationRouter.post(
   "/freelancer",
-  authentication,
+  authentication, 
   submitFreelancerVerification
 );
 
 // ----------------------------
-// Unified endpoints for current user
+// Current user verification info
 // ----------------------------
-verificationRouter.get("/status", authentication, getMyVerificationStatus);
+verificationRouter.get(
+  "/status",
+  authentication, 
+  getMyVerificationStatus
+);
+
 verificationRouter.get("/details", authentication, getMyVerificationDetails);
 
 // ----------------------------
-// Admin review endpoint (protected by authorization middleware)
+// Admin reviews verification requests
 // ----------------------------
 verificationRouter.patch(
   "/review",
   authentication,
-  authorization("review_verification"),
+  authorization("review_verification"), 
   reviewVerification
 );
 
