@@ -1,6 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer } from "../controller/projects.js";
+import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment } from "../controller/projects.js";
 import {requireVerified} from "../middleware/requireVerification.js";
 const projectsRouter = express.Router();
 
@@ -12,6 +12,11 @@ projectsRouter.post(`/:projectId/offers`, authentication, requireVerified, sendO
 projectsRouter.post("/:projectId/assign", authentication, requireVerified, assignProject);
 projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
 projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
+projectsRouter.post('/offer/action', authentication, requireVerified, approveOrRejectOffer);
+projectsRouter.get('/:projectId/completion', authentication , requireVerified, getProjectCompletion);
+
+projectsRouter.post('/:projectId/complete',authentication, submitWorkCompletion);
+projectsRouter.post('/:projectId/release-payment', authentication, requireVerified, releasePayment)
 // public listing
 projectsRouter.get("/public/categories", getCategories);
 projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);

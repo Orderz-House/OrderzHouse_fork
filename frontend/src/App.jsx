@@ -53,11 +53,11 @@ function App() {
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/projects/:projectId" element={<ProjectDetails/>} />
-        <Route path="/rate" element={<TopRatedFreelancers />} />
+        <Route path="/rate" element={<TopRatedFreelancers/>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
-        <Route path="/manage-project/:projectId" element={<ManageProject/>}/>
-        <Route path="/projects" element={<ProjectsDashboard/>}/>
-        <Route path="/projects/offer/available" element={<FreelancerProjects/>}/>
+        <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject/></ProtectedRoute>}/>
+        <Route path="/projects" element={<ProtectedRoute><ProjectsDashboard/></ProtectedRoute>}/>
+        <Route path="/projects/offer/available" element={<ProtectedRoute><FreelancerProjects/></ProtectedRoute>}/>
       </Routes>
      <EnhancedFooter />
     </>
