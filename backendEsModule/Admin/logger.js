@@ -1,12 +1,21 @@
-//(logging functions)
-export const logAdminAction = async (userId, email, action, roleId, pool) => {
+export const logAdminAction = async (
+  userId,
+  userEmail,
+  action,
+  roleId = null,
+  pool
+) => {
   try {
+    if (!pool) {
+      console.error("Pool is undefined in logAdminAction");
+      return;
+    }
+
     const client = await pool.connect();
     try {
       await client.query(
-        `INSERT INTO logs (user_id, email, role_id, action, created_at) 
-         VALUES ($1, $2, $3, $4, NOW())`,
-        [userId, email, roleId, action]
+        `INSERT INTO logs (user_id, action, created_at) VALUES ($1, $2, NOW())`,
+        [userId, action]
       );
     } finally {
       client.release();

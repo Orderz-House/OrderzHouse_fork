@@ -33,6 +33,9 @@ export const AdminInit = async (app) => {
     database: "OrderzHouse",
   }).init();
 
+  // Store pool reference in db for resources to access
+  db.pool = pool;
+
   // Check which tables exist
   const [subCategoriesTableExists, paymentsTableExists, receiptsTableExists] =
     await Promise.all([
@@ -56,16 +59,82 @@ export const AdminInit = async (app) => {
       handler: () => dashboardHandler(pool),
     },
     branding: {
-      companyName: "OrderzHouse Admin",
+      companyName: "OrderzHouse",
+      withMadeWithLove: false,
       logo: "https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png",
       softwareBrothers: false,
       theme: {
         colors: {
-          primary100: "#3b82f6",
-          primary80: "#60a5fa",
-          primary60: "#93c5fd",
-          primary40: "#bfdbfe",
-          primary20: "#dbeafe",
+          // Main colors - clean and professional
+          primary100: "#000000",
+          primary80: "#1a1a1a",
+          primary60: "#333333",
+          primary40: "#666666",
+          primary20: "#999999",
+
+          // Background colors - clean whites and light grays
+          bg: "#ffffff",
+          hoverBg: "#f8f9fa",
+
+          // Navigation - light gray as requested
+          sidebar: "#f8f9fa",
+          navigation: "#f1f3f4",
+
+          // Text colors - all black
+          text: "#000000",
+          label: "#000000",
+
+          // Borders and accents
+          border: "#e9ecef",
+          filterBg: "#ffffff",
+          accent: "#000000",
+
+          // Button colors
+          button: "#000000",
+          buttonHover: "#1a1a1a",
+        },
+        // Custom CSS to override default styles
+        overrides: {
+          // Navigation styling
+          ".adminjs_SidebarNav": {
+            backgroundColor: "#f8f9fa !important",
+            borderRight: "1px solid #e9ecef !important",
+          },
+          ".adminjs_Logo": {
+            backgroundColor: "#f8f9fa !important",
+          },
+          // Header styling
+          ".adminjs_TopBar": {
+            backgroundColor: "#ffffff !important",
+            borderBottom: "1px solid #e9ecef !important",
+            boxShadow: "none !important",
+          },
+          // Make all text black
+          ".adminjs_H1, .adminjs_H2, .adminjs_H3, .adminjs_H4, .adminjs_H5, .adminjs_H6":
+            {
+              color: "#000000 !important",
+            },
+          ".adminjs_Label": {
+            color: "#000000 !important",
+          },
+          ".adminjs_PropertyLabel": {
+            color: "#000000 !important",
+          },
+          // Navigation items
+          ".adminjs_SidebarNavItem": {
+            color: "#000000 !important",
+          },
+          ".adminjs_SidebarNavItem:hover": {
+            backgroundColor: "#e9ecef !important",
+          },
+          // Dashboard title in header
+          ".adminjs_TopBar .adminjs_CurrentUserNav::before": {
+            content: '"Dashboard"',
+            marginRight: "20px",
+            fontSize: "14px",
+            fontWeight: "500",
+            color: "#000000",
+          },
         },
       },
     },
@@ -105,12 +174,12 @@ export const AdminInit = async (app) => {
       if (user) {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (isPasswordValid) {
-          // Log successful login with correct user_id & role_id
+          // Log successful login
           await logAdminAction(
             user.id,
             user.email,
             `Admin login successful for ${user.first_name} ${user.last_name} (${user.email})`,
-            1, // role_id = 1 for admin
+            1,
             pool
           );
           return user;
@@ -146,10 +215,15 @@ export const AdminInit = async (app) => {
 
     const logAction = () => {
       if (shouldLogAction(req)) {
-        const action = `${req.method} ${req.originalUrl}`;
         const resourceInfo = extractResourceInfo(req.originalUrl);
         const logMessage = `Admin ${req.user.email} performed ${req.method}${resourceInfo} - Status: ${res.statusCode}`;
-        logAdminAction(req.user.id, req.user.email, logMessage, req.user.role_id, pool).catch(() => {});
+        logAdminAction(
+          req.user.id,
+          req.user.email,
+          logMessage,
+          req.user.role_id,
+          pool
+        ).catch(() => {});
       }
     };
 
@@ -200,7 +274,6 @@ export const AdminInit = async (app) => {
       const dashboardData = await dashboardHandler(pool);
       res.json(dashboardData);
     } catch (error) {
-      console.error("Dashboard API error:", error);
       res.status(500).json({ error: "Failed to fetch dashboard data" });
     }
   });
@@ -210,12 +283,11 @@ export const AdminInit = async (app) => {
       const analyticsData = await analyticsHandler(req, pool);
       res.json(analyticsData);
     } catch (error) {
-      console.error("Analytics API error:", error);
       res.status(500).json({ error: "Failed to fetch analytics data" });
     }
   });
 
-  // Logs endpoint with correct role_id and email
+  // Logs endpoint
   app.get("/api/admin/dashboard/logs", async (req, res) => {
     try {
       const client = await pool.connect();
@@ -237,7 +309,6 @@ export const AdminInit = async (app) => {
         recentLogs: result.rows || [],
       });
     } catch (error) {
-      console.error("Logs API error:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch logs",
@@ -246,5 +317,5 @@ export const AdminInit = async (app) => {
     }
   });
 
-  console.log(`✅ AdminJS mounted at ${admin.options.rootPath}`);
+  console.log(`AdminJS mounted at ${admin.options.rootPath}`);
 };
