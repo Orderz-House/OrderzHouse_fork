@@ -20,7 +20,7 @@ import {
   TrendingUp,
   CheckCircle,
 } from "lucide-react";
-
+// fix conflicts 
 export const FreelancerProjects = () => {
   const { token } = useSelector((state) => state.auth);
   const [projects, setProjects] = useState([]);
