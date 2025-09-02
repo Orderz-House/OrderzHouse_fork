@@ -13,6 +13,8 @@ import { Link, useNavigate } from "react-router";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setPlans } from "../../slice/planSlice";
+import LogoLogic from "../logoLoop/LogoLogic";
+import Ballpit from "../heroSection/HeroSection";
 
 export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
@@ -210,7 +212,7 @@ export default function OrderzHousePage() {
         </div>
       )}
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600/5 to-purple-600/5">
+      {/* <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600/5 to-purple-600/5">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
             Unlock the Potential of Your Team with
@@ -249,8 +251,95 @@ export default function OrderzHousePage() {
             )}
           </div>
         </div>
-      </section>
+      </section> */}
+      {/* Hero Section V2 */}
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          minHeight: "500px",
+          maxHeight: "500px",
+          width: "100%",
+        }}
+      >
+        {/* Overlayed Text and Buttons */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 2,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            pointerEvents: "none", // allows Ballpit interaction if needed
+          }}
+          className="text-center"
+        >
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 pointer-events-auto">
+            Unlock the Potential of Your Team with
+            <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mt-2">
+              Exceptional Talent
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10 pointer-events-auto">
+            Flourish in a thriving freelance ecosystem dedicated to excellence
+            and limitless opportunities.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pointer-events-auto">
+            <button
+              onClick={handleExploreTalent}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+            >
+              Explore the talent pool
+            </button>
+            {token ? (
+              <Link to="/create-project">
+                <button className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300">
+                  Post a New Project
+                </button>
+              </Link>
+            ) : (
+              <button
+                onClick={() =>
+                  navigate("/login", {
+                    state: { message: "Please login to post a project" },
+                  })
+                }
+                className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300"
+              >
+                Post a New Project
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Ballpit Animation */}
+        <Ballpit
+          count={90}
+          gravity={0.9}
+          friction={1}
+          wallBounce={0.95}
+          followCursor={false}
+        />
+      </div>
+      {/* Logo loop Section */}
+      <div
+        style={{
+          padding: "60px",
+          background: "linear-gradient(135deg, #ffffffff, #ffffffff)",
 
+          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          transition: "transform 0.3s, box-shadow 0.3s",
+        }}
+      >
+        <LogoLogic style={{}} />
+      </div>
       {/* Categories Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -271,7 +360,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Brands Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="max-w-7xl mx-auto text-center">
@@ -312,7 +400,6 @@ export default function OrderzHousePage() {
           )}
         </div>
       </section>
-
       {/* Freelancer, Employer, Community */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -372,7 +459,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Pricing Plans */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-50 to-white">
         <div className="max-w-7xl mx-auto">
@@ -421,7 +507,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Learning Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto text-center">
@@ -448,7 +533,6 @@ export default function OrderzHousePage() {
           </button>
         </div>
       </section>
-
       {/* Mobile App Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -515,7 +599,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* Top Freelancers */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -578,7 +661,6 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
