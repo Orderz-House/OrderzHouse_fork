@@ -21,6 +21,8 @@ import {
   checkVerificationStatus,
   updateVerificationStatus,
   getPortfolioByfreelance,
+  verifyFreelancerByAdmin,
+  rejectFreelancerByAdmin,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
@@ -117,5 +119,18 @@ usersRouter.get(
   getPortfolioByfreelance
 ); // routes/users.js
 usersRouter.get("/allfreelance", getFreelance);
+usersRouter.put(
+  "/freelancers/:id/verify",
+  authentication,
+  authorization("verify_freelancer"),
+  verifyFreelancerByAdmin
+);
+
+usersRouter.put(
+  "/freelancers/:id/reject",
+  authentication,
+  authorization("verify_freelancer"),
+  rejectFreelancerByAdmin
+);
 
 export default usersRouter;
