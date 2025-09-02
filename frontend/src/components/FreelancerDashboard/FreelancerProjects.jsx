@@ -16,10 +16,11 @@ import {
   Briefcase,
   Star,
   MessageSquare,
-  Bell
+  Bell,
+  User
 } from "lucide-react";
 
-const FreelancerDashboard = () => {
+const FreelancerProjects = () => {
   const { token, userData } = useSelector((state) => state.auth);
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
@@ -39,23 +40,36 @@ const FreelancerDashboard = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          `http://localhost:5000/freelancer/projects`,
+          `http://localhost:5000/projects/freelancer/projects/${userData.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
         
-        if (response.data && response.data.projects) {
-          setProjects(response.data.projects);
-          setFilteredProjects(response.data.projects);
+        if (response.data && response.data.success && response.data.projects) {
+          const projectsData = response.data.projects;
+          setProjects(projectsData);
+          setFilteredProjects(projectsData);
           
-          // Calculate stats
-          const active = response.data.projects.filter(p => p.status === 'active').length;
-          const completed = response.data.projects.filter(p => p.status === 'completed').length;
-          const pending = response.data.projects.filter(p => p.status === 'pending').length;
-          const totalEarnings = response.data.projects
-            .filter(p => p.status === 'completed')
-            .reduce((sum, project) => sum + (project.budget || 0), 0);
+          // Calculate stats based on completion_status
+          const active = projectsData.filter(p => 
+            p.completion_status === 'in_progress' || 
+            p.completion_status === 'active' || 
+            p.completion_status === 'pending_review'
+          ).length;
+          
+          const completed = projectsData.filter(p => 
+            p.completion_status === 'completed'
+          ).length;
+          
+          const pending = projectsData.filter(p => 
+            p.completion_status === 'pending' || 
+            p.completion_status === 'pending_start'
+          ).length;
+          
+          const totalEarnings = projectsData
+            .filter(p => p.completion_status === 'completed')
+            .reduce((sum, project) => sum + (parseInt(project.budget_max) || 0), 0);
             
           setStats({ active, completed, pending, totalEarnings });
         }
@@ -66,10 +80,10 @@ const FreelancerDashboard = () => {
       }
     };
 
-    if (token) {
+    if (token && userData.id) {
       fetchProjects();
     }
-  }, [token]);
+  }, [token, userData.id]);
 
   // Filter projects based on search and status
   useEffect(() => {
@@ -79,27 +93,43 @@ const FreelancerDashboard = () => {
     if (searchTerm) {
       result = result.filter(project => 
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
     // Apply status filter
     if (statusFilter !== "all") {
-      result = result.filter(project => project.status === statusFilter);
+      if (statusFilter === "active") {
+        result = result.filter(project => 
+          project.completion_status === 'in_progress' || 
+          project.completion_status === 'active' || 
+          project.completion_status === 'pending_review'
+        );
+      } else if (statusFilter === "completed") {
+        result = result.filter(project => project.completion_status === 'completed');
+      } else if (statusFilter === "pending") {
+        result = result.filter(project => 
+          project.completion_status === 'pending' || 
+          project.completion_status === 'pending_start'
+        );
+      }
     }
     
     setFilteredProjects(result);
   }, [searchTerm, statusFilter, projects]);
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (completionStatus) => {
     const statusConfig = {
       active: { color: "bg-blue-100 text-blue-800", text: "Active" },
+      in_progress: { color: "bg-blue-100 text-blue-800", text: "In Progress" },
+      pending_review: { color: "bg-purple-100 text-purple-800", text: "Pending Review" },
       completed: { color: "bg-green-100 text-green-800", text: "Completed" },
       pending: { color: "bg-yellow-100 text-yellow-800", text: "Pending" },
+      pending_start: { color: "bg-yellow-100 text-yellow-800", text: "Pending Start" },
       overdue: { color: "bg-red-100 text-red-800", text: "Overdue" }
     };
     
-    const config = statusConfig[status] || { color: "bg-gray-100 text-gray-800", text: status };
+    const config = statusConfig[completionStatus] || { color: "bg-gray-100 text-gray-800", text: completionStatus };
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
@@ -122,6 +152,17 @@ const FreelancerDashboard = () => {
     return `Due in ${diffDays} days`;
   };
 
+  const getBudgetRange = (project) => {
+    if (project.budget_min && project.budget_max) {
+      return `$${project.budget_min} - $${project.budget_max}`;
+    } else if (project.budget_min) {
+      return `From $${project.budget_min}`;
+    } else if (project.budget_max) {
+      return `Up to $${project.budget_max}`;
+    }
+    return "Not specified";
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -132,33 +173,23 @@ const FreelancerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage your ongoing and completed projects
-              </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Card
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white mb-8">
+          <div className="flex items-center">
+            <div className="p-3 bg-white/20 rounded-full">
+              <User className="w-8 h-8" />
             </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-              </button>
-              <button className="flex items-center text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Messages
-              </button>
+            <div className="ml-4">
+              <h2 className="text-xl font-bold">Welcome back, {userData.name || 'Freelancer'}!</h2>
+              <p className="text-blue-100 mt-1">You have {stats.active} active projects and earned ${stats.totalEarnings.toLocaleString()} so far.</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+         */}
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Briefcase className="w-6 h-6 text-blue-600" />
@@ -170,7 +201,7 @@ const FreelancerDashboard = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg">
                 <CheckCircle className="w-6 h-6 text-green-600" />
@@ -182,7 +213,7 @@ const FreelancerDashboard = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <Clock className="w-6 h-6 text-yellow-600" />
@@ -194,7 +225,7 @@ const FreelancerDashboard = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-lg">
                 <DollarSign className="w-6 h-6 text-purple-600" />
@@ -208,13 +239,13 @@ const FreelancerDashboard = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search projects by title or description..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -229,11 +260,10 @@ const FreelancerDashboard = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <option value="all">All Status</option>
+                  <option value="all">All Projects</option>
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
-                  <option value="overdue">Overdue</option>
                 </select>
               </div>
             </div>
@@ -243,7 +273,7 @@ const FreelancerDashboard = () => {
         {/* Projects List */}
         <div className="space-y-4">
           {filteredProjects.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
               <p className="text-gray-600 mb-6">
@@ -262,44 +292,44 @@ const FreelancerDashboard = () => {
             </div>
           ) : (
             filteredProjects.map((project) => (
-              <div key={project.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div key={project.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                            {project.description || "No description provided"}
+                          </p>
                         </div>
                         <div className="ml-4 flex-shrink-0">
-                          {getStatusBadge(project.status)}
+                          {getStatusBadge(project.completion_status || project.status)}
                         </div>
                       </div>
                       
                       <div className="mt-4 flex flex-wrap items-center gap-4">
                         <div className="flex items-center text-sm text-gray-600">
                           <DollarSign className="w-4 h-4 mr-1" />
-                          <span>${project.budget?.toLocaleString() || "Not specified"}</span>
+                          <span>{getBudgetRange(project)}</span>
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>{project.duration || "Duration not specified"}</span>
                         </div>
                         
                         <div className="flex items-center text-sm text-gray-600">
                           <Calendar className="w-4 h-4 mr-1" />
                           <span>{getDaysRemaining(project.deadline)}</span>
                         </div>
-                        
-                        {project.client_rating && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Star className="w-4 h-4 mr-1 text-yellow-400 fill-current" />
-                            <span>{project.client_rating}/5</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                     
                     <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
                       <Link
                         to={`/manage-project/${project.id}`}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                       >
                         Manage Project
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -308,15 +338,18 @@ const FreelancerDashboard = () => {
                   </div>
                 </div>
                 
-                {project.latest_update && (
-                  <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      <span className="font-medium">Latest: </span>
-                      <span className="ml-1">{project.latest_update}</span>
+                <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <span className="font-medium">Client ID: </span>
+                      <span className="ml-1">{project.user_id}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">Location: </span>
+                      <span className="ml-1">{project.location || "Remote"}</span>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             ))
           )}
@@ -326,4 +359,4 @@ const FreelancerDashboard = () => {
   );
 };
 
-export default FreelancerDashboard;
+export default FreelancerProjects;

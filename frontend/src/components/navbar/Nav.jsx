@@ -442,7 +442,7 @@ export default function EnhancedNavbar() {
                     <div className="py-2">
                       {userData.role_id === 3 ? (
                         <Link
-                          to="/dashboard"
+                          to="/freelancer/dashboard"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                         >
@@ -451,26 +451,14 @@ export default function EnhancedNavbar() {
                         </Link>
                       ) : (
                         <Link
-                          to="/projects"
+                          to="/dashoard/projects"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                         >
                           <Briefcase className="h-4 w-4" />
-                          <span>Projects</span>
+                          <span>My Projects</span>
                         </Link>
                       )}
-
-                      <Link
-                        to="/edit-profile"
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Profile Settings</span>
-                      </Link>
-
                       <Link
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200"
