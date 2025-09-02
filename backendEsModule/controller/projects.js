@@ -303,22 +303,47 @@ export const getProjectById = async (req, res) => {
     `SELECT
   p.*,
   (
-    SELECT COALESCE(json_agg(json_build_object(
-      'assigned_at', pa.assigned_at,
-      'status', pa.status,
-      'freelancer', json_build_object(
-        'id', u.id,
-        'first_name', u.first_name,
-        'last_name', u.last_name,
-        'email', u.email,
-        'username', u.username
+    SELECT COALESCE(SUM(e.amount), 0)
+    FROM escrow e
+    WHERE e.project_id = p.id
+      AND e.status = 'held'
+  ) AS in_escrow,
+(
+  SELECT COALESCE(SUM(e.amount), 0)
+  FROM escrow e
+  JOIN freelancer_completion fc
+    ON fc.project_id = e.project_id
+   AND fc.freelancer_id = e.freelancer_id
+  WHERE e.project_id = p.id
+    AND e.status = 'held'
+    AND fc.status = 'pending_review'
+) AS to_be_released,
+(
+  SELECT COALESCE(json_agg(json_build_object(
+    'assigned_at', pa.assigned_at,
+    'status', pa.status,
+    'completion_status', fc.status,
+    'freelancer', json_build_object(
+      'id', u.id,
+      'first_name', u.first_name,
+      'last_name', u.last_name,
+      'email', u.email,
+      'username', u.username,
+      'amount_in_escrow', (
+        SELECT COALESCE(SUM(e.amount), 0)
+        FROM escrow e
+        WHERE e.project_id = pa.project_id
+          AND e.freelancer_id = pa.freelancer_id
       )
-    )), '[]')
-    FROM project_assignments pa
-    JOIN users u ON pa.freelancer_id = u.id
-    WHERE pa.project_id = p.id
-  ) AS assignments,
-
+    )
+  )), '[]')
+  FROM project_assignments pa
+  JOIN users u ON pa.freelancer_id = u.id
+  LEFT JOIN freelancer_completion fc
+    ON fc.project_id = pa.project_id
+   AND fc.freelancer_id = pa.freelancer_id
+  WHERE pa.project_id = p.id
+) AS assignments,
   (
     SELECT COALESCE(json_agg(json_build_object(
       'id', o.id,
@@ -326,6 +351,7 @@ export const getProjectById = async (req, res) => {
       'delivery_time', o.delivery_time,
       'proposal', o.proposal,
       'status_offer', o.offer_status,
+      'submitted_at', o.submitted_at,
       'freelancer', json_build_object(
         'id', uf.id,
         'first_name', uf.first_name,
@@ -415,6 +441,8 @@ export const sendOffer = async (req, res) => {
 
 export const approveOrRejectOffer = async (req, res) => {
   const { action, offer_id } = req.body;
+  console.log("Offer Id =>", offer_id);
+  
   const client = await pool.connect();
 
   try {
@@ -426,7 +454,7 @@ export const approveOrRejectOffer = async (req, res) => {
         `SELECT o.id, o.bid_amount, o.project_id, o.freelancer_id, p.user_id AS client_id
          FROM offers o
          JOIN projects p ON o.project_id = p.id
-         WHERE o.id = $1 AND o.offer_status IS NULL`,
+         WHERE o.id = $1`,
         [offer_id]
       );
 
@@ -511,13 +539,13 @@ export const approveOrRejectOffer = async (req, res) => {
 };
 
 
-// Get project completion status and history
+// Get project completion status and history for each freelancer
 export const getProjectCompletion = async (req, res) => {
   try {
     const { projectId } = req.params;
     const userId = req.token?.userId;
 
-    // Check if user has access to this project
+    // 1. تأكد أن المستخدم له حق الوصول (مالك المشروع أو مستقل مشارك)
     const projectCheck = await pool.query(
       `SELECT p.user_id, pa.freelancer_id 
        FROM projects p 
@@ -534,15 +562,41 @@ export const getProjectCompletion = async (req, res) => {
       });
     }
 
-    // Get completion status
-    const completionResult = await pool.query(
-      `SELECT status, completion_requested_at, payment_released_at 
-       FROM project_completion 
-       WHERE project_id = $1`,
+    // 2. جلب بيانات كل فريلانسر مع حالة الاستلام والمبلغ في escrow
+    const freelancersResult = await pool.query(
+      `SELECT 
+          pa.freelancer_id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.profile_pic_url,
+          e.amount AS amount_in_escrow,
+          COALESCE(fc.status, 'not_started') AS completion_status,
+          fc.completion_requested_at,
+          fc.payment_released_at
+       FROM project_assignments pa
+       JOIN users u ON pa.freelancer_id = u.id
+       LEFT JOIN freelancer_completion fc 
+          ON fc.project_id = pa.project_id AND fc.freelancer_id = pa.freelancer_id
+       LEFT JOIN escrow e 
+          ON e.project_id = pa.project_id AND e.freelancer_id = pa.freelancer_id
+       WHERE pa.project_id = $1`,
       [projectId]
     );
 
-    // Get completion history
+    const freelancers = freelancersResult.rows.map(f => ({
+      id: f.freelancer_id,
+      first_name: f.first_name,
+      last_name: f.last_name,
+      email: f.email,
+      profile_pic_url: f.profile_pic_url,
+      amount_in_escrow: f.amount_in_escrow || 0,
+      completion_status: f.completion_status,
+      completion_requested_at: f.completion_requested_at,
+      payment_released_at: f.payment_released_at
+    }));
+
+    // 3. جلب تاريخ الأحداث
     const historyResult = await pool.query(
       `SELECT ch.event, ch.timestamp, ch.actor, 
               u.first_name, u.last_name 
@@ -553,19 +607,17 @@ export const getProjectCompletion = async (req, res) => {
       [projectId]
     );
 
-    const status = completionResult.rows.length > 0 
-      ? completionResult.rows[0].status 
-      : 'not_started';
+    const history = historyResult.rows.map(record => ({
+      event: record.event,
+      timestamp: record.timestamp,
+      actor: record.actor,
+      actor_name: `${record.first_name} ${record.last_name}`
+    }));
 
     res.json({
       success: true,
-      status,
-      history: historyResult.rows.map(record => ({
-        event: record.event,
-        timestamp: record.timestamp,
-        actor: record.actor,
-        actor_name: `${record.first_name} ${record.last_name}`
-      }))
+      freelancers,
+      history
     });
 
   } catch (error) {
@@ -573,6 +625,7 @@ export const getProjectCompletion = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Submit work completion request
 export const submitWorkCompletion = async (req, res) => {
@@ -596,10 +649,10 @@ export const submitWorkCompletion = async (req, res) => {
       });
     }
 
-    // Check if completion already exists
     const existingCompletion = await pool.query(
-      `SELECT status FROM project_completion WHERE project_id = $1`,
-      [projectId]
+      `SELECT status FROM freelancer_completion 
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, userId]
     );
 
     if (existingCompletion.rows.length > 0) {
@@ -617,23 +670,25 @@ export const submitWorkCompletion = async (req, res) => {
     // Insert or update completion record
     if (existingCompletion.rows.length === 0) {
       await pool.query(
-        `INSERT INTO project_completion (project_id, status, completion_requested_at) 
-         VALUES ($1, 'pending_review', NOW())`,
-        [projectId]
+        `INSERT INTO freelancer_completion 
+         (project_id, freelancer_id, status, completion_requested_at) 
+         VALUES ($1, $2, 'pending_review', NOW())`,
+        [projectId, userId]
       );
     } else {
       await pool.query(
-        `UPDATE project_completion 
-         SET status = 'pending_review', completion_requested_at = NOW() 
-         WHERE project_id = $1`,
-        [projectId]
+        `UPDATE freelancer_completion 
+         SET status = 'pending_review', completion_requested_at = NOW(), updated_at = NOW()
+         WHERE project_id = $1 AND freelancer_id = $2`,
+        [projectId, userId]
       );
     }
 
     // Add to history
     await pool.query(
-      `INSERT INTO completion_history (project_id, event, timestamp, actor) 
-       VALUES ($1, 'completion_requested', NOW(), $2)`,
+      `INSERT INTO completion_history 
+       (project_id, event, timestamp, actor, notes) 
+       VALUES ($1, 'completion_requested', NOW(), $2, 'Freelancer requested completion')`,
       [projectId, userId]
     );
 
@@ -655,10 +710,10 @@ export const submitWorkCompletion = async (req, res) => {
 export const releasePayment = async (req, res) => {
   const client = await pool.connect();
   try {
-    const { projectId } = req.params;
+    const { projectId, freelancerId } = req.params; // استقبلنا freelancerId من البارامز
     const userId = req.token?.userId;
 
-    // Check if user is the project owner
+    // 1. تأكد أن المستخدم هو صاحب المشروع
     const projectCheck = await client.query(
       `SELECT user_id FROM projects WHERE id = $1 AND is_deleted = false`,
       [projectId]
@@ -672,81 +727,76 @@ export const releasePayment = async (req, res) => {
       return res.status(403).json({ success: false, message: "Only project owner can release payment" });
     }
 
-    // Check if completion is in pending_review status
+    // 2. تأكد أن الفريلانسر عنده طلب استلام بحالة pending_review
     const completionCheck = await client.query(
-      `SELECT status FROM project_completion WHERE project_id = $1`,
-      [projectId]
+      `SELECT status FROM freelancer_completion 
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
     );
 
     if (!completionCheck.rows.length || completionCheck.rows[0].status !== "pending_review") {
       return res.status(400).json({
         success: false,
-        message: "Project completion is not in pending review status",
+        message: "Freelancer completion is not in pending review status",
       });
     }
 
-    // Get freelancer and offer amount
-    const offerCheck = await client.query(
-      `SELECT pa.freelancer_id, o.bid_amount
-       FROM project_assignments pa
-       JOIN offers o 
-         ON pa.project_id = o.project_id 
-        AND pa.freelancer_id = o.freelancer_id
-       WHERE pa.project_id = $1
-       LIMIT 1;`,
-      [projectId]
+    // 3. جلب معلومات escrow
+    const escrowCheck = await client.query(
+      `SELECT id, freelancer_id, amount, status 
+       FROM escrow 
+       WHERE project_id = $1 
+         AND freelancer_id = $2
+         AND status = 'held'`,
+      [projectId, freelancerId]
     );
 
-    if (!offerCheck.rows.length) {
-      return res.status(404).json({ success: false, message: "No freelancer offer found" });
+    if (!escrowCheck.rows.length) {
+      return res.status(404).json({ success: false, message: "No held escrow found for this freelancer" });
     }
 
-    // 👇 استخدام الاسم الصحيح
-    const { freelancer_id, bid_amount } = offerCheck.rows[0];
+    const { id: escrow_id, amount } = escrowCheck.rows[0];
 
     await client.query("BEGIN");
 
-    // Check client balance
-    const balanceCheck = await client.query(
-      `SELECT wallet FROM users WHERE id = $1 FOR UPDATE`,
-      [userId]
-    );
-
-    if (balanceCheck.rows[0].wallet < bid_amount) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ success: false, message: "Insufficient balance in client wallet" });
-    }
-
-    // Deduct from client wallet
-    await client.query(
-      `UPDATE users SET wallet = wallet - $1 WHERE id = $2`,
-      [bid_amount, userId]
-    );
-
-    // Add to freelancer wallet
+    // 4. إضافة المبلغ إلى حساب المستقل
     await client.query(
       `UPDATE users SET wallet = wallet + $1 WHERE id = $2`,
-      [bid_amount, freelancer_id]
+      [amount, freelancerId]
     );
 
-    // Update completion status
+    // 5. تحديث حالة الـ escrow إلى released
     await client.query(
-      `UPDATE project_completion 
-         SET status = 'completed', payment_released_at = NOW() 
-       WHERE project_id = $1`,
-      [projectId]
+      `UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`,
+      [escrow_id]
     );
 
-    // Add to history
+    // 6. تحديث حالة استلام المستقل في freelancer_completion
     await client.query(
-      `INSERT INTO completion_history (project_id, event, timestamp, actor) 
-       VALUES ($1, 'payment_released', NOW(), $2)`,
-      [projectId, userId]
+      `UPDATE freelancer_completion 
+       SET status = 'approved', payment_released_at = NOW(), updated_at = NOW()
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
+    );
+
+    await client.query(
+      `UPDATE project_assignments
+       SET status = 'quit'
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
+    );
+
+    // 7. إضافة سجل في التاريخ
+    await client.query(
+      `INSERT INTO completion_history (project_id, event, timestamp, actor, notes) 
+       VALUES ($1, 'payment_released', NOW(), $2, CONCAT('Payment released to freelancer ', $3::text))`,
+      [projectId, userId, freelancerId]
     );
 
     await client.query("COMMIT");
 
-    res.json({ success: true, message: "Payment released successfully" });
+    res.json({ success: true, message: "Payment released from escrow successfully" });
+
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("releasePayment error:", error);
@@ -755,6 +805,124 @@ export const releasePayment = async (req, res) => {
     client.release();
   }
 };
+
+
+export const getAllProjectForFreelancerById = async (req, res) => {
+  const { freelancerId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT ON (p.id) 
+  p.*
+FROM projects p
+JOIN project_assignments pa ON pa.project_id = p.id
+WHERE pa.freelancer_id = $1
+ORDER BY p.id, p.created_at DESC;`,
+      [freelancerId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No projects found for this freelancer",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      projects: result.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching projects for freelancer:", err);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
+};
+
+
+export const uploadProjectFile = async (req, res) => {
+  try {
+    const userId = req.token?.userId;
+    const { projectId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "File is required",
+      });
+    }
+
+    // تحقق أن المشروع موجود
+    const projectCheck = await pool.query(
+      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectCheck.rows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    // بيانات الملف من Cloudinary
+    const file_name = req.file.originalname;
+    const file_url = req.file.path;
+
+    // إدخال في قاعدة البيانات
+    const insertQuery = `
+      INSERT INTO project_files (project_id, sender_id, file_name, file_url)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(insertQuery, [
+      projectId,
+      userId,
+      file_name,
+      file_url,
+    ]);
+
+    return res.status(201).json({
+      success: true,
+      file: rows[0],
+    });
+  } catch (error) {
+    console.error("uploadProjectFile error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ✅ جلب جميع الملفات
+export const getProjectFiles = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const { rows } = await pool.query(
+      `SELECT 
+         pf.*,
+         json_build_object(
+           'id', u.id,
+           'first_name', u.first_name,
+           'last_name', u.last_name,
+           'username', u.username,
+           'email', u.email,
+           'profile_pic_url', u.profile_pic_url
+         ) AS sender
+       FROM project_files pf
+       JOIN users u ON u.id = pf.sender_id
+       WHERE pf.project_id = $1
+       ORDER BY pf.sent_at ASC`,
+      [projectId]
+    );
+
+    res.status(200).json({
+      success: true,
+      files: rows,
+    });
+  } catch (error) {
+    console.error("getProjectFiles error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 
 
@@ -773,5 +941,8 @@ export default {
   approveOrRejectOffer,
   getProjectCompletion,        
   submitWorkCompletion,        
-  releasePayment             
+  releasePayment,
+  getAllProjectForFreelancerById,
+  uploadProjectFile,
+  getProjectFiles
 };

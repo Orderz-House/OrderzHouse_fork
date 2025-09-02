@@ -636,34 +636,6 @@ const EditProfile = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => window.history.back()}
-                                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                disabled={isSubmitting}
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
-                                <p className="text-sm text-gray-600">Update your personal information</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${profileData?.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                <span className="text-sm text-gray-600">
-                                    {profileData?.is_online ? 'Online' : 'Offline'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Status Messages */}

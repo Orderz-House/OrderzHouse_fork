@@ -19,31 +19,30 @@ function CompletionProject({ project }) {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState(null);
   const [completionHistory, setCompletionHistory] = useState([]);
+  const [freelancers, setFreelancers] = useState([]);
+  const [history, setHistory] = useState([]);
   const [isReleasingPayment, setIsReleasingPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRequestChanges, setShowRequestChanges] = useState(false);
   const [changesRequest, setChangesRequest] = useState("");
+  const [selectedFreelancer, setSelectedFreelancer] = useState(null);
+
+  const fetchCompletion = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/projects/${projectId}/completion`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFreelancers(response.data.freelancers || []);
+      setHistory(response.data.history || []);
+    } catch (error) {
+      console.error("Error fetching completion data:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchCompletionData = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:5000/projects/${projectId}/completion`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setCompletionStatus(response.data.status);
-        setCompletionHistory(response.data.history || []);
-      } catch (error) {
-        console.error("Error fetching completion data:", error);
-      }
-    };
-
-    if (projectId && token) {
-      fetchCompletionData();
-    }
-  }, [projectId, token]);
+    fetchCompletion();
+  }, []);
 
   // Handle work completion submission
   const handleWorkCompletion = async () => {
@@ -78,54 +77,103 @@ function CompletionProject({ project }) {
   };
 
   // Handle payment release
-  const handleReleasePayment = async () => {
+  const handleReleasePayment = async (freelancerId) => {
     try {
       setIsReleasingPayment(true);
-      const response = await axios.post(
-        `http://localhost:5000/projects/${projectId}/release-payment`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
+      // Optimistically update UI
+      const updatedAssignments = project.assignments.map(assignment => {
+        if (assignment.freelancer.id === freelancerId) {
+          return {
+            ...assignment,
+            completion_status: "approved"
+          };
         }
+        return assignment;
+      });
+      
+      // Update project state immediately
+      project.assignments = updatedAssignments;
+      
+      await axios.post(
+        `http://localhost:5000/projects/${projectId}/release-payment/${freelancerId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (response.data.success) {
-        setCompletionStatus("completed");
-        setCompletionHistory((prev) => [
-          ...prev,
-          {
-            event: "payment_released",
-            timestamp: new Date().toISOString(),
-            actor: userData.id,
-            actor_name: `${userData.first_name} ${userData.last_name}`,
-          },
-        ]);
-      }
+      
+      // Show success feedback
+      setCompletionHistory((prev) => [
+        ...prev,
+        {
+          event: "payment_released",
+          timestamp: new Date().toISOString(),
+          actor: userData.id,
+          actor_name: `${userData.first_name} ${userData.last_name}`,
+          freelancer_id: freelancerId
+        },
+      ]);
     } catch (error) {
       console.error("Error releasing payment:", error);
+      // Revert optimistic update on error
+      fetchCompletion();
     } finally {
       setIsReleasingPayment(false);
     }
   };
 
   // Handle request changes
-  const handleRequestChanges = async () => {
+  const handleRequestChanges = async (freelancerId) => {
     try {
-      // API call to submit changes request
+      // Optimistically update UI
+      const updatedAssignments = project.assignments.map(assignment => {
+        if (assignment.freelancer.id === freelancerId) {
+          return {
+            ...assignment,
+            completion_status: "rejected"
+          };
+        }
+        return assignment;
+      });
+      
+      // Update project state immediately
+      project.assignments = updatedAssignments;
+      
+      await axios.post(
+        `http://localhost:5000/projects/${projectId}/request-changes/${freelancerId}`,
+        { changes_request: changesRequest },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Show success feedback
+      setCompletionHistory((prev) => [
+        ...prev,
+        {
+          event: "changes_requested",
+          timestamp: new Date().toISOString(),
+          actor: userData.id,
+          actor_name: `${userData.first_name} ${userData.last_name}`,
+          freelancer_id: freelancerId,
+          changes_request: changesRequest
+        },
+      ]);
+      
       setShowRequestChanges(false);
       setChangesRequest("");
     } catch (error) {
       console.error("Error requesting changes:", error);
+      // Revert optimistic update on error
+      fetchCompletion();
     }
+  };
+
+  const openRequestChangesModal = (freelancerId) => {
+    setSelectedFreelancer(freelancerId);
+    setShowRequestChanges(true);
   };
 
   const isProjectOwner = userData.id === project.user_id;
   const isAssignedFreelancer = project.assignments?.some(
     assignment => assignment.freelancer.id === userData.id && assignment.status === "active"
   );
-
-  console.log(project);
-  
 
   return (
     <div className="space-y-6">
@@ -235,7 +283,7 @@ function CompletionProject({ project }) {
             </div>
             Payment Status
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="text-sm font-medium text-blue-800 mb-1">Project Budget</div>
@@ -244,113 +292,92 @@ function CompletionProject({ project }) {
             
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="text-sm font-medium text-amber-800 mb-1">In Escrow</div>
-              <div className="text-2xl font-bold text-amber-900">${project.budget_min}</div>
+              <div className="text-2xl font-bold text-amber-900">${project.in_escrow}</div>
             </div>
             
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="text-sm font-medium text-gray-800 mb-1">To Be Released</div>
-              <div className="text-2xl font-bold text-gray-900">${project.budget_min}</div>
+              <div className="text-2xl font-bold text-gray-900">${project.to_be_released}</div>
             </div>
           </div>
-          
-          <p className="text-gray-600 mb-4">
-            Funds are securely held in escrow. Once the freelancer marks the work as complete and you're satisfied with the results, 
-            you can release payment to them.
-          </p>
-          
-          {completionStatus === "pending_review" ? (
-            <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-yellow-700">
-                    You have 7 days to review the work before payment is automatically released.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleReleasePayment}
-                  disabled={isReleasingPayment}
-                  className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center font-medium shadow-sm hover:shadow-md"
-                >
-                  {isReleasingPayment ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Releasing Payment...
-                    </>
+
+          {project.assignments && project.assignments.length > 0 ? (
+            <div className="space-y-6">
+              {project.assignments.map((a) => (
+                <div key={a.freelancer.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <User className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{a.freelancer.first_name} {a.freelancer.last_name}</p>
+                        <p className="text-sm text-gray-500">{a.freelancer.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-lg font-bold text-blue-700">${a.freelancer.amount_in_escrow}</div>
+                  </div>
+
+                  {a.completion_status === "pending_review" ? (
+                    <div className="space-y-3">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-700 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          Pending your review. Auto-release in 7 days.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleReleasePayment(a.freelancer.id)}
+                          disabled={isReleasingPayment}
+                          className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center font-medium shadow-sm hover:shadow-md"
+                        >
+                          {isReleasingPayment ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-5 h-5 mr-2" />
+                              Approve & Release
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => openRequestChangesModal(a.freelancer.id)}
+                          className="flex-1 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                        >
+                          Request Changes
+                        </button>
+                      </div>
+                    </div>
+                  ) : a.completion_status === "approved" ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                      <span className="text-green-800">Payment released successfully</span>
+                    </div>
+                  ) : a.completion_status === "rejected" ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center">
+                      <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                      <span className="text-red-800">Changes requested</span>
+                    </div>
                   ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      Approve & Release Payment
-                    </>
+                    <div className="bg-gray-100 rounded-lg p-3 text-center">
+                      <Clock className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                      <p className="text-gray-600 text-sm">Waiting for submission</p>
+                    </div>
                   )}
-                </button>
-                
-                <button 
-                  onClick={() => setShowRequestChanges(true)}
-                  className="flex-1 py-3 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                >
-                  Request Changes
-                </button>
-              </div>
-            </div>
-          ) : completionStatus === "completed" ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                <span className="text-green-800">Payment has been released to the freelancer</span>
-              </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="bg-gray-100 rounded-lg p-5 text-center">
-              <Clock className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">Waiting for freelancer to complete work</p>
-            </div>
+            <p className="text-gray-500">No freelancers assigned yet.</p>
           )}
         </div>
       )}
-
-      {/* Completion History */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <div className="bg-blue-100 p-2 rounded-lg mr-3">
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          Completion History
-        </h3>
-        
-        <div className="space-y-4">
-          {completionHistory.length > 0 ? (
-            completionHistory.map((event, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <User className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium capitalize text-gray-900">
-                      {event.event.replace(/_/g, ' ')}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {event.actor === userData.id ? "You" : event.actor_name || "Other party"}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {new Date(event.timestamp).toLocaleDateString()} at {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
-              <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p>No completion history yet</p>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Completion Confirmation Modal */}
       {showCompletionModal && (
@@ -424,7 +451,7 @@ function CompletionProject({ project }) {
                 Cancel
               </button>
               <button
-                onClick={handleRequestChanges}
+                onClick={() => handleRequestChanges(selectedFreelancer)}
                 disabled={!changesRequest.trim()}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium"
               >
