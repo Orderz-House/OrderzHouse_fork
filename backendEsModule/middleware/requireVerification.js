@@ -9,34 +9,34 @@ export const requireVerified = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "غير مصرح" });
     }
 
-    // Check if user is verified
+    // جلب بيانات المستخدم
     const userResult = await pool.query(
-      `SELECT is_verified, role_id, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE`,
+      `SELECT is_verified, role_id, profile_pic_url 
+       FROM users 
+       WHERE id = $1 AND is_deleted = FALSE`,
       [user_id]
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "المستخدم غير موجود أو محذوف" });
+      return res
+        .status(404)
+        .json({ success: false, message: "المستخدم غير موجود أو محذوف" });
     }
 
     const { is_verified, role_id: userRoleId, profile_pic_url } = userResult.rows[0];
 
-    // If already verified, allow access immediately
-    if (is_verified) {
-      return next();
-    }
+    // إذا موثق مسبقًا، نسمح بالدخول مباشرة
+    if (is_verified) return next();
 
-    // Not verified → check why
     let missingFields = [];
 
     if (!profile_pic_url) missingFields.push("profile_image");
 
-    // Role-specific checks
     if (userRoleId === 3) {
-      // Freelancer: check verification record
+      // Freelancer: التحقق مطلوب
       const verificationRes = await pool.query(
         `SELECT bio, skills, portfolio_url 
-         FROM freelancer_verification 
+         FROM freelancer_verifications
          WHERE user_id = $1 
          ORDER BY id DESC 
          LIMIT 1`,
@@ -57,32 +57,18 @@ export const requireVerified = async (req, res, next) => {
       if (!v.skills) missingFields.push("skills");
       if (!v.portfolio_url) missingFields.push("portfolio_url");
 
-      // Check at least one portfolio item
+      // التحقق من وجود عنصر واحد على الأقل في البورتفوليو
       const portfolioRes = await pool.query(
         "SELECT COUNT(*)::int AS count FROM portfolios WHERE freelancer_id = $1",
         [user_id]
       );
-      if (portfolioRes.rows[0].count === 0) {
-        missingFields.push("portfolio_item");
-      }
+      if (portfolioRes.rows[0].count === 0) missingFields.push("portfolio_item");
     } else if (userRoleId === 2) {
-      // Customer: check customer verification
-      const verificationRes = await pool.query(
-        `SELECT id FROM customer_verification WHERE user_id = $1 AND status = 'approved' LIMIT 1`,
-        [user_id]
-      );
-
-      if (verificationRes.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          message: "حساب العميل غير موثق. يرجى تقديم المستندات المطلوبة.",
-          missingFields: ["documents"],
-          redirectTo: "/verify-profile",
-        });
-      }
+      // العملاء لا يحتاجون للتحقق → السماح بالدخول
+      return next();
     }
 
-    // Return 403 with details
+    // إذا هناك حقول ناقصة
     return res.status(403).json({
       success: false,
       message: "حسابك غير موثق بعد. يرجى إكمال ملفك الشخصي.",

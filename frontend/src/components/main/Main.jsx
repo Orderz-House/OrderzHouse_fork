@@ -20,10 +20,11 @@ export default function OrderzHousePage() {
   const [isVerified, setIsVerified] = useState(true);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { plans, token } = useSelector((state) => {
+  const { plans, token, roleId } = useSelector((state) => {
     return {
       plans: state.plan.plans,
       token: state.auth.token,
+      roleId: state.auth.roleId,
     };
   });
   const API_BASE = "http://localhost:5000";
@@ -190,7 +191,7 @@ export default function OrderzHousePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {!isVerified && token && (
+      {!isVerified && token && roleId === 3 && (
         <div
           className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4"
           role="alert"

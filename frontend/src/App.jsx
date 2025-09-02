@@ -24,10 +24,13 @@ import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
-import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import CourseDetail from "./components/courseDetilas/CourseDetails";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
-import FreelancerProject from "./components/FreelancerDashboard/FreelancerProjects";
+import NewsPage from "./components/news/NewsPage";
+import NewsDetails from "./components/news/NewDetail";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import FreelancerProjects from "./components/projects/FreelancerProjects";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -44,6 +47,8 @@ function App() {
     <>
       <Navbar />
       <Routes>
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/:id" element={<NewsDetails />} />
         <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -102,14 +107,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/manage-project/:projectId"
-          element={
-            <ProtectedRoute>
-              <ManageProject />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/dashoard/projects"
           element={
@@ -122,7 +120,7 @@ function App() {
           path="/projects/"
           element={<ProjectsAvalible />}
         />
-        <Route path="/freelancer/dashboard/projects" element={<FreelancerProject/>}/>
+        <Route path="/freelancer/dashboard/projects" element={<FreelancerProjects/>}/>
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
         <Route
@@ -143,6 +141,12 @@ function App() {
         />
       </Routes>
       <EnhancedFooter />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        draggable
+        pauseOnHover
+      />
     </>
   );
 }
