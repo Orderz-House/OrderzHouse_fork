@@ -61,7 +61,7 @@ export default function EnhancedFooter() {
       name: "LinkedIn",
       color: "hover:text-blue-600",
       bgColor: "hover:bg-blue-600/10",
-      link: "https://www.linkedin.com/company/battechno/",
+      link: "https://www.linkedin.com/in/bat-techno-b19197229/",
     },
     {
       icon: Instagram,
@@ -73,12 +73,11 @@ export default function EnhancedFooter() {
   ];
 
   const quickLinks = [
-    "About Us",
-    "Services",
-    "Portfolio",
-    "Careers",
-    "Blog",
-    "Contact",
+    { label: "Home", path: "/" },
+    { label: "About Us", path: "/about" },
+    { label: "Projects", path: "/projects/Available" },
+    { label: "News", path: "/news" },
+    { label: "Contact", path: "/contact" },
   ];
 
   const services = [
@@ -174,25 +173,24 @@ export default function EnhancedFooter() {
                 </a>
               </div>
             </div>
-
             {/* Quick Links */}
             <div className="lg:col-span-2">
               <h3 className="text-xl font-bold text-white mb-6">Quick Links</h3>
               <ul className="space-y-4">
                 {quickLinks.map((link, index) => (
                   <li key={index}>
-                    <a
-                      href="#"
+                    <Link
+                      to={link.path}
                       className="text-gray-300 hover:text-teal-400 transition-colors duration-200 flex items-center group"
                     >
                       <span className="w-2 h-2 bg-teal-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 mr-3"></span>
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
-
+            
             {/* Services */}
             <div className="lg:col-span-2">
               <h3 className="text-xl font-bold text-white mb-6">Services</h3>

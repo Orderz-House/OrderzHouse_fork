@@ -17,6 +17,7 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router";
 import { useSelector } from "react-redux";
 
@@ -29,6 +30,11 @@ export default function ModernAboutPage() {
     };
   });
 
+  const navigate = useNavigate();
+
+  const handleFreelancers = () => {
+    navigate("/freelancers");
+  };
   // Intersection Observer for animations
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -79,7 +85,6 @@ export default function ModernAboutPage() {
       color: "from-orange-500 to-red-500",
     },
   ];
-
   const team = [
     {
       name: "Adam Khalid",
@@ -93,12 +98,12 @@ export default function ModernAboutPage() {
       name: "Sara El-Helou",
       role: "Marketing Director",
       image:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face",
+        "https://media.istockphoto.com/id/1444536152/photo/portrait-of-happy-business-woman-sitting-in-the-office.jpg?s=612x612&w=0&k=20&c=6u2lrNGkLBn8awKprEN5ccfMeOYKDMRXpAqSL6gwuC4=",
       bio: "Strategic marketing expert driving brand growth",
       social: { linkedin: "#", twitter: "#" },
     },
     {
-      name: "Omar Zain",
+      name: "Marlon Zain",
       role: "CTO",
       image:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
@@ -106,7 +111,6 @@ export default function ModernAboutPage() {
       social: { linkedin: "#", twitter: "#" },
     },
   ];
-
   const stats = [
     { number: "500+", label: "Happy Clients", icon: Users },
     { number: "98%", label: "Success Rate", icon: TrendingUp },
@@ -121,7 +125,7 @@ export default function ModernAboutPage() {
     },
     {
       title: "Secure payment gateways",
-      desc: "Your transactions are 100% secure",
+      desc: "Ensuring confidentiality and security in every transaction.",
     },
     {
       title: "Transparent project tracking",
@@ -145,12 +149,6 @@ export default function ModernAboutPage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 mb-8">
-              <span className="text-sm font-medium text-gray-600">
-                ABOUT US
-              </span>
-            </div>
-
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-8">
               About{" "}
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
@@ -352,18 +350,6 @@ export default function ModernAboutPage() {
                   {member.role}
                 </p>
                 <p className="text-gray-600 mb-6">{member.bio}</p>
-
-                <div className="flex justify-center space-x-4">
-                  {Object.entries(member.social).map(([platform, url]) => (
-                    <a
-                      key={platform}
-                      href={url}
-                      className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-blue-500 hover:to-purple-600 rounded-xl flex items-center justify-center text-gray-600 hover:text-white transition-all duration-300 hover:scale-110 shadow-lg"
-                    >
-                      <Users className="w-5 h-5" />
-                    </a>
-                  ))}
-                </div>
               </div>
             ))}
           </div>
@@ -473,7 +459,12 @@ export default function ModernAboutPage() {
                 and complete platform for making your intelligent decisions.
               </p>
 
-              <button className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105 shadow-xl flex items-center space-x-3">
+              <button
+                className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105 shadow-xl flex items-center space-x-3"
+                onClick={() => {
+                  handleFreelancers();
+                }}
+              >
                 <span>SHOW ALL</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
