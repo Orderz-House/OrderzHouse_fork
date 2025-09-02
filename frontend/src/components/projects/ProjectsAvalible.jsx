@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import { toastError, toastSuccess } from "../../services/toastService";
 import {
   Search,
   Filter,
@@ -60,7 +61,7 @@ const ProjectsAvalible = () => {
         setFilteredProjects(response.data.projects || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
-        alert("Failed to load projects");
+        toastError("Failed to load projects");
       } finally {
         setIsLoading(false);
       }
@@ -178,7 +179,7 @@ const ProjectsAvalible = () => {
         }
       );
 
-      alert("Offer submitted successfully!");
+      toastSuccess("Offer submitted successfully!");
       setSelectedProject(null);
       setOfferData({
         bid_amount: "",
@@ -187,7 +188,7 @@ const ProjectsAvalible = () => {
       });
     } catch (error) {
       console.error("Error submitting offer:", error);
-      alert("Failed to submit offer");
+      toastError("Failed to submit offer");
     } finally {
       setIsSubmitting(false);
     }

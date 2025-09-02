@@ -1,11 +1,12 @@
 const { getPlans, createPlan, editPlan, deletePlan, getPlanSubscriptions } = require("../../controller/plans.js");
 
-// mock db
-jest.mock("../../models/db.js", () => ({
-  query: jest.fn(),
-}));
+// mock db to align with module export shape { pool }
+jest.mock("../../models/db.js", () => {
+  const pool = { query: jest.fn() };
+  return { __esModule: true, default: pool, pool };
+});
 
-const pool = require("../../models/db.js");
+const { pool } = require("../../models/db.js");
 
 describe("Plans Controller - Unit Tests", () => {
   let mockRes;

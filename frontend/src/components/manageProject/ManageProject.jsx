@@ -12,6 +12,8 @@ import {
 import { useSelector } from "react-redux";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getSocket } from "../../services/socketService";
+import { toastError, toastSuccess } from "../../services/toastService";
 import OverviewProject from "./OverviewProject";
 import FileProject from "./FileProject";
 import ChatProject from "./ChatProject";
@@ -28,6 +30,13 @@ const ManageProject = () => {
   const [assignments, setAssignments] = useState([]);
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Backend integration state (for chat/files integration)
+  const [messages, setMessages] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const socket = getSocket();
 
   // Fetch project data
   useEffect(() => {
@@ -48,7 +57,7 @@ const ManageProject = () => {
           });
       } catch (error) {
         console.error("Error fetching project data:", error);
-        alert("Failed to load project data");
+        toastError("Failed to load project data");
       } finally {
         setIsLoading(false);
       }
@@ -58,6 +67,129 @@ const ManageProject = () => {
       fetchProjectData();
     }
   }, [projectId, token]);
+  console.log(offers);
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const joinRoom = () => {
+      socket.emit("join_room", { project_id: projectId });
+    };
+
+    const handleRoomJoined = (data) => {
+      console.log("Successfully joined room:", data);
+    };
+
+    const handleJoinError = (data) => {
+      console.error("Failed to join room:", data.error);
+    };
+
+    if (socket.connected) {
+      setTimeout(joinRoom, 50);
+    }
+
+    socket.on("connect", joinRoom);
+
+    const handleMessage = (data) => setMessages((prev) => [...prev, data]);
+    const handleBlocked = (data) => toastError(data.error);
+    const handleError = (data) => console.error(data.error);
+
+    socket.on("room_joined", handleRoomJoined);
+    socket.on("join_error", handleJoinError);
+    socket.on("message", handleMessage);
+    socket.on("message_blocked", handleBlocked);
+    socket.on("message_error", handleError);
+
+    return () => {
+      if (socket.connected) {
+        socket.emit("leave_room", { project_id: projectId });
+      }
+
+      socket.off("connect", joinRoom);
+      socket.off("room_joined", handleRoomJoined);
+      socket.off("join_error", handleJoinError);
+      socket.off("message", handleMessage);
+      socket.off("message_blocked", handleBlocked);
+      socket.off("message_error", handleError);
+    };
+  }, [socket, projectId]);
+
+  useEffect(() => {
+    if (!projectId || !token) return;
+
+    const fetchMessages = async () => {
+      try {
+        await axios.get(
+          `http://localhost:5000/chats/project/${projectId}/messages/`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).then((result) => {
+          setMessages(result.data.messages.rows);
+        }).catch((err) => {
+          console.log(err);
+        });
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+
+    fetchMessages();
+  }, [projectId, token]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("project_id", projectId);
+    formData.append("sender_id", userData.id);
+    formData.append("sender_type", userData.role_id === 1 || userData.role_id === 2 ? "client" : "freelancer");
+
+    try {
+      setIsSubmitting(true);
+      const res = await axios.post(
+        `http://localhost:5000/projects/${projectId}/files`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+      setFiles([...files, res.data.file]);
+      toastSuccess("File uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toastError("Failed to upload file");
+    } finally {
+      setIsSubmitting(false);
+      setSelectedFile(null);
+    }
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !socket) return;
+
+    setIsSubmitting(true);
+    socket.emit("message", { text: newMessage, image_url: null });
+    setNewMessage("");
+    setIsSubmitting(false);
+  };
+
+  const handleAcceptOffer = (offerId) => {
+    setOffers(offers.map(offer =>
+      offer.id === offerId ? { ...offer, status: "accepted" } : offer
+    ));
+    toastSuccess("Offer accepted! Freelancer has been added to your team.");
+  };
+
+  const handleRejectOffer = (offerId) => {
+    setOffers(offers.map(offer =>
+      offer.id === offerId ? { ...offer, status: "rejected" } : offer
+    ));
+    toastError("Offer rejected.");
+  };
 
   if (isLoading) {
     return (

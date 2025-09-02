@@ -21,6 +21,7 @@ import {
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toastError, toastSuccess } from "../../services/toastService";
 
 const ProjectsDashboard = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const ProjectsDashboard = () => {
         setFilteredProjects(response.data.projects || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
-        alert("Failed to load projects");
+        toastError("Failed to load projects");
       } finally {
         setIsLoading(false);
       }
@@ -117,10 +118,10 @@ const ProjectsDashboard = () => {
         }
       );
       setProjects(projects.filter(project => project.id !== projectId));
-      alert("Project deleted successfully");
+      toastSuccess("Project deleted successfully");
     } catch (error) {
       console.error("Error deleting project:", error);
-      alert("Failed to delete project");
+      toastError("Failed to delete project");
     }
   };
 

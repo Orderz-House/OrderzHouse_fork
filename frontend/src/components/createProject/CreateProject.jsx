@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
+import { toastError, toastSuccess } from "../../services/toastService";
 import {
   setCreating,
   setError,
@@ -43,7 +44,7 @@ export default function CreateProject() {
   useEffect(() => {
     // guard: only role 1 or 2 can create projects
     if (roleId && Number(roleId) !== 1 && Number(roleId) !== 2) {
-      alert("Only clients can create projects");
+      toastError("Only clients can create projects");
       navigate("/");
       return;
     }
@@ -86,7 +87,7 @@ export default function CreateProject() {
       const project = createRes.data.project;
       dispatch(setCurrentProject(project));
       dispatch(addProject(project));
-      alert("Project created successfully");
+      toastSuccess("Project created successfully");
       navigate(`/projects/${project.id}`);
       setForm({
         category_id: "",
@@ -108,7 +109,7 @@ export default function CreateProject() {
             "Failed to create project"
         )
       );
-      alert("Failed to create project");
+      toastError("Failed to create project");
     } finally {
       dispatch(setCreating(false));
     }
