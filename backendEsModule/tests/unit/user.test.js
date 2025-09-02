@@ -1,6 +1,10 @@
 const request = require("supertest");
 const express = require("express");
 const userController = require("../../controller/user.js");
+jest.mock("../../models/db.js", () => {
+  const pool = { query: jest.fn() };
+  return { __esModule: true, default: pool, pool };
+});
 const { pool } = require("../../models/db.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -52,16 +56,20 @@ describe("User Routes", () => {
   // register
   // ===========================
   it("should register a user", async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
-      rows: [
-        {
-          id: 1,
-          first_name: "John",
-          last_name: "Doe",
-          email: "john.doe@example.com",
-        },
-      ],
-    });
+    pool.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 1,
+            role_id: 1,
+            first_name: "John",
+            last_name: "Doe",
+            email: "john.doe@example.com",
+            country: "USA",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // insert log
 
     const res = await request(app).post("/users/register").send({
       role_id: 1,
@@ -85,16 +93,22 @@ describe("User Routes", () => {
   it("should log in a user", async () => {
     const hashedPassword = await bcrypt.hash("password123", 10);
 
-    pool.query.mockResolvedValueOnce({
-      rows: [
-        {
-          id: 1,
-          email: "john.doe@example.com",
-          password: hashedPassword,
-          role_id: 1,
-        },
-      ],
-    });
+    pool.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 1,
+            email: "john.doe@example.com",
+            password: hashedPassword,
+            role_id: 1,
+            is_verified: true,
+            first_name: "John",
+            last_name: "Doe",
+            country: "USA",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // insert ip address or log
 
     const res = await request(app).post("/users/login").send({
       email: "john.doe@example.com",

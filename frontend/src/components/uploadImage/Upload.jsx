@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toastError, toastSuccess } from "../../services/toastService";
 
-const ImgBBUpload = () => {
+const ImgBBUpload = ({ onUpload }) => {
   const [image, setImage] = useState(null);
   const [url, setUrl] = useState("");
 
@@ -11,21 +11,33 @@ const ImgBBUpload = () => {
   };
 
   const handleUpload = async () => {
-    if (!image) return toast.error("Please select an image!");
+    if (!image) return toastError("Please select an image!");
+
+    if (!/(png|jpe?g|webp)$/i.test(image.name)) {
+      return toastError("Only PNG, JPG, JPEG, WEBP are allowed");
+    }
+    if (image.size > 5 * 1024 * 1024) {
+      return toastError("Max file size is 5MB");
+    }
 
     const formData = new FormData();
     formData.append("image", image);
 
     try {
       const res = await axios.post(
-        `https://api.imgbb.com/1/upload?key=3e98a98f3b7416d16ec2bf19527c5c65`,
-        formData
+        `http://localhost:5000/upload`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
-      setUrl(res.data.data.url);
-      toast.success("Image uploaded successfully!");
+      const uploadedUrl = res.data?.url || "";
+      setUrl(uploadedUrl);
+      if (uploadedUrl && typeof onUpload === "function") {
+        onUpload(uploadedUrl);
+      }
+      toastSuccess("Image uploaded successfully!");
     } catch (err) {
       console.error(err);
-      toast.error("Upload failed!");
+      toastError(err.response?.data?.message || "Upload failed!");
     }
   };
 

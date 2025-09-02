@@ -29,16 +29,17 @@ import Identity from "./Identity";
 import Billing from "./Billing";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { toastError, toastSuccess } from "../../services/toastService";
 
 
 const EditProfile = () => {
-     const navigate = useNavigate();
-    const { token , userData} = useSelector((state) => state.auth);
-    
+    const navigate = useNavigate();
+    const { token, userData } = useSelector((state) => state.auth);
+
     useEffect(() => {
-      if (!token) {
-        navigate("/login"); // لو ما في توكن يرجعه ع صفحة تسجيل الدخول
-      }
+        if (!token) {
+            navigate("/login"); // لو ما في توكن يرجعه ع صفحة تسجيل الدخول
+        }
     }, [token, navigate]);
     const [activeSection, setActiveSection] = useState("profile");
     const [showPassword, setShowPassword] = useState(false);
@@ -47,13 +48,13 @@ const EditProfile = () => {
     const [saveError, setSaveError] = useState("");
 
     const [profileData, setProfileData] = useState(userData);
-  const [online, setOnline] = useState(profileData?.is_online ?? false);
+    const [online, setOnline] = useState(profileData?.is_online ?? false);
 
-  useEffect(() => {
-    if (profileData) {
-      setOnline(profileData.is_online);
-    }
-  }, [profileData]);
+    useEffect(() => {
+        if (profileData) {
+            setOnline(profileData.is_online);
+        }
+    }, [profileData]);
 
     const navigationItems = [
         {
@@ -88,7 +89,7 @@ const EditProfile = () => {
         }
     ];
 
-    
+
 
     const [errors, setErrors] = useState({});
 
@@ -97,24 +98,24 @@ const EditProfile = () => {
             ...prev,
             [field]: value
         }));
-        
+
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
                 [field]: ""
             }));
         }
-        
+
         if (saveSuccess) {
             setSaveSuccess(false);
         }
-        
+
         if (saveError) {
             setSaveError("");
         }
 
-        
-        
+
+
     };
 
     const validateForm = () => {
@@ -158,44 +159,45 @@ const EditProfile = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             const firstErrorField = Object.keys(errors)[0];
             if (firstErrorField) {
-                document.querySelector(`[name="${firstErrorField}"]`)?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
+                document.querySelector(`[name="${firstErrorField}"]`)?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
                 });
             }
             return;
         }
-        
+
         setIsSubmitting(true);
         setSaveError("");
-        
+
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
+
             console.log("Saving profile data:", profileData);
-            
-            axios.put(`http://localhost:5000/users/update/${profileData.id}`, {
+
+            axios.put(`http://localhost:5000/users/edit/${profileData.id}`, {
                 first_name: profileData.first_name,
                 last_name: profileData.last_name,
                 phone_number: profileData.phone_number,
                 country: profileData.country,
-                username: profileData.username
-            },{
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      }).then((result)=>{
+                username: profileData.username,
+                profile_pic_url: profileData.profile_pic_url
+            }, {
+                headers: {
+                    authorization: `Bearer ${token}`,
+                },
+            }).then((result) => {
                 console.log(result);
                 setSaveSuccess(true);
                 setProfileData(result.data.user);
-                Cookies.set("userData", JSON.stringify(result.data.user), {expires : 1, secure: true, sameSite: "Strict"})
-            }).catch((err)=>{
+                Cookies.set("userData", JSON.stringify(result.data.user), { expires: 1, secure: true, sameSite: "Strict" })
+            }).catch((err) => {
                 console.log(err);
-                
+
             })
             setTimeout(() => {
                 setSaveSuccess(false);
@@ -208,30 +210,36 @@ const EditProfile = () => {
         }
     };
 
-    const handleImageUpload = (event) => {
+    const handleImageUpload = async (event) => {
         const file = event.target.files[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                setSaveError("Please select an image file");
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) {
-                setSaveError("Image size must be less than 5MB");
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setProfileData(prev => ({
-                    ...prev,
-                    profile_pic_url: e.target.result
-                }));
-            };
-            reader.onerror = () => {
-                setSaveError("Failed to load image. Please try another file.");
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setSaveError("Please select an image file");
+            toastError("Please select an image file");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setSaveError("Image size must be less than 5MB");
+            toastError("Image size must be less than 5MB");
+            return;
+        }
+        try {
+            setIsSubmitting(true);
+            const form = new FormData();
+            form.append("image", file);
+            const res = await axios.post(`http://localhost:5000/upload`, form, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            const url = res.data?.url;
+            if (!url) throw new Error("Upload failed");
+            setProfileData(prev => ({ ...prev, profile_pic_url: url }));
+            toastSuccess("Profile image uploaded");
+        } catch (err) {
+            console.error("Upload error:", err);
+            setSaveError("Failed to upload image");
+            toastError(err?.response?.data?.message || "Failed to upload image");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -266,8 +274,8 @@ const EditProfile = () => {
                                         <User className="w-10 h-10 text-gray-400" />
                                     )}
                                 </div>
-                                <label 
-                                    htmlFor="profile-upload" 
+                                <label
+                                    htmlFor="profile-upload"
                                     className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-lg p-1.5 cursor-pointer hover:bg-blue-700 transition-colors shadow-sm"
                                 >
                                     <Camera className="w-3 h-3" />
@@ -281,15 +289,16 @@ const EditProfile = () => {
                                     onChange={handleImageUpload}
                                 />
                             </div>
-                            
+
                             <button
+                                type="button"
                                 onClick={() => document.getElementById('profile-upload').click()}
                                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                                 disabled={isSubmitting}
                             >
                                 Change Photo
                             </button>
-                            
+
                             <p className="text-xs text-gray-500 mt-2">
                                 JPG, PNG or GIF. Max 5MB.
                             </p>
@@ -299,7 +308,7 @@ const EditProfile = () => {
                     {/* Account Status Card */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
                         <h3 className="font-semibold text-gray-900 mb-4">Account Status</h3>
-                        
+
                         <div className="space-y-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Status</span>
@@ -310,7 +319,7 @@ const EditProfile = () => {
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Joined</span>
                                 <span className="text-gray-900 font-medium">
@@ -320,14 +329,14 @@ const EditProfile = () => {
                                     })}
                                 </span>
                             </div>
-                            
+
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Account</span>
                                 <span className={`font-medium ${profileData?.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
                                     {profileData?.is_deleted ? 'Suspended' : 'Active'}
                                 </span>
                             </div>
-                            
+
                             {profileData?.violation_count > 0 && (
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-600">Violations</span>
@@ -347,7 +356,7 @@ const EditProfile = () => {
                         {/* Personal Information */}
                         <div className="bg-white rounded-xl border border-gray-200 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6">Personal Information</h2>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -359,9 +368,8 @@ const EditProfile = () => {
                                         type="text"
                                         value={profileData?.first_name}
                                         onChange={(e) => handleInputChange('first_name', e.target.value)}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                            errors.first_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.first_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                                            }`}
                                         placeholder="Enter first name"
                                         disabled={isSubmitting}
                                     />
@@ -380,9 +388,8 @@ const EditProfile = () => {
                                         type="text"
                                         value={profileData?.last_name}
                                         onChange={(e) => handleInputChange('last_name', e.target.value)}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                            errors.last_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.last_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                                            }`}
                                         placeholder="Enter last name"
                                         disabled={isSubmitting}
                                     />
@@ -402,9 +409,8 @@ const EditProfile = () => {
                                     type="text"
                                     value={profileData?.username}
                                     onChange={(e) => handleInputChange('username', e.target.value)}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                        errors.username ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                                    }`}
+                                    className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.username ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                                        }`}
                                     placeholder="Enter username"
                                     disabled={isSubmitting}
                                 />
@@ -417,7 +423,7 @@ const EditProfile = () => {
                         {/* Contact Information */}
                         <div className="bg-white rounded-xl border border-gray-200 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6">Contact Information</h2>
-                            
+
                             <div className="space-y-6">
                                 <div>
                                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -432,12 +438,11 @@ const EditProfile = () => {
                                             value={profileData?.email}
                                             onChange={(e) => handleInputChange('email', e.target.value)}
                                             disabled={true}
-                                            className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-400 ${
-                                                errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                                            }`}
+                                            className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-400 ${errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                                                }`}
                                             placeholder="Enter email address"
-                                            //disabled={isSubmitting}
-                                            //readOnly={true}
+                                        //disabled={isSubmitting}
+                                        //readOnly={true}
                                         />
                                         <Lock className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
                                     </div>
@@ -459,9 +464,8 @@ const EditProfile = () => {
                                                 type="tel"
                                                 value={profileData?.phone_number}
                                                 onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                                                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                                    errors.phone_number ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                                                }`}
+                                                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.phone_number ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                                                    }`}
                                                 placeholder="Enter phone number"
                                                 disabled={isSubmitting}
                                             />
@@ -542,7 +546,7 @@ const EditProfile = () => {
                                     <AlertTriangle className="w-5 h-5 mr-2" />
                                     Account Issues
                                 </h2>
-                                
+
                                 <div>
                                     <label htmlFor="reason_for_disruption" className="block text-sm font-medium text-red-700 mb-2">
                                         Reason for Disruption
@@ -572,11 +576,10 @@ const EditProfile = () => {
                                 </div>
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-gray-600">Account Status</span>
-                                    <span className={`font-medium px-2 py-1 rounded-full text-xs ${
-                                        profileData?.is_deleted 
-                                            ? 'bg-red-100 text-red-700' 
+                                    <span className={`font-medium px-2 py-1 rounded-full text-xs ${profileData?.is_deleted
+                                            ? 'bg-red-100 text-red-700'
                                             : 'bg-green-100 text-green-700'
-                                    }`}>
+                                        }`}>
                                         {profileData?.is_deleted ? 'Suspended' : 'Active'}
                                     </span>
                                 </div>
@@ -670,7 +673,7 @@ const EditProfile = () => {
                         <span className="font-medium">Profile updated successfully!</span>
                     </div>
                 )}
-                
+
                 {saveError && (
                     <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-center">
                         <XCircle className="w-5 h-5 mr-3 text-red-600" />
@@ -686,16 +689,15 @@ const EditProfile = () => {
                                 {navigationItems.map((item) => {
                                     const Icon = item.icon;
                                     const isActive = activeSection === item.id;
-                                    
+
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => setActiveSection(item.id)}
-                                            className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                                                isActive
+                                            className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive
                                                     ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border-r-2 border-blue-600'
                                                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                            }`}
+                                                }`}
                                             disabled={isSubmitting}
                                         >
                                             <Icon className={`w-4 h-4 mr-3 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
@@ -710,9 +712,9 @@ const EditProfile = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-4">
                         {activeSection === "profile" && renderProfileSection()}
-                        {activeSection === "portfolio" && <EditPortfolio/>}
-                        {activeSection === "identity" && <Identity/>}
-                        {activeSection === "billing" && <Billing/>}
+                        {activeSection === "portfolio" && <EditPortfolio />}
+                        {activeSection === "identity" && <Identity />}
+                        {activeSection === "billing" && <Billing />}
                         {activeSection === "account" && renderAccountSection()}
                     </div>
                 </div>

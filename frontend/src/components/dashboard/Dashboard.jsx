@@ -17,6 +17,7 @@ import {
   ArrowDownLeft
 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toastInfo } from "../../services/toastService";
 
 const Dashboard = () => {
   const { userData } = useSelector((state) => state.auth);
@@ -96,7 +97,7 @@ const Dashboard = () => {
   
   // Handle withdraw action
   const handleWithdraw = () => {
-    alert("Withdraw functionality would be implemented here");
+    toastInfo("Withdraw functionality would be implemented here");
   };
   
   // Stats cards component
@@ -188,7 +189,7 @@ const Dashboard = () => {
             icon={<CreditCard className="w-6 h-6 text-blue-600" />}
             action="Show all invoices"
             actionIcon={<ArrowUpRight className="w-4 h-4 ml-1" />}
-            onAction={() => alert("Show invoices")}
+            onAction={() => toastInfo("Show invoices")}
           />
           
           <StatCard
@@ -217,7 +218,7 @@ const Dashboard = () => {
             count={dashboardData.completedProjects}
             icon={<CheckCircle className="w-6 h-6 text-blue-600" />}
             action="View"
-            onAction={() => alert("View completed projects")}
+            onAction={() => toastInfo("View completed projects")}
           />
           
           <CountCard
@@ -225,7 +226,7 @@ const Dashboard = () => {
             count={dashboardData.ongoingProjects}
             icon={<Clock className="w-6 h-6 text-blue-600" />}
             action="View"
-            onAction={() => alert("View ongoing projects")}
+            onAction={() => toastInfo("View ongoing projects")}
           />
           
           <CountCard
@@ -233,7 +234,7 @@ const Dashboard = () => {
             count={dashboardData.cancelledProjects}
             icon={<XCircle className="w-6 h-6 text-blue-600" />}
             action="View"
-            onAction={() => alert("View cancelled projects")}
+            onAction={() => toastInfo("View cancelled projects")}
           />
           
           <CountCard
@@ -241,7 +242,7 @@ const Dashboard = () => {
             count={dashboardData.tasksSold}
             icon={<FileText className="w-6 h-6 text-blue-600" />}
             action="View"
-            onAction={() => alert("View tasks sold")}
+            onAction={() => toastInfo("View tasks sold")}
           />
         </div>
         

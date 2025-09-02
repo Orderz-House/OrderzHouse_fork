@@ -6,6 +6,7 @@ import {
   viewUsers,
   deleteUser,
   editUser,
+  updateUser,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
@@ -21,6 +22,8 @@ import {
   checkVerificationStatus,
   updateVerificationStatus,
   getPortfolioByfreelance,
+  verifyFreelancerByAdmin,
+  rejectFreelancerByAdmin,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
@@ -78,6 +81,8 @@ usersRouter.delete(
   deleteUser
 );
 usersRouter.put("/edit/:userId", authentication, editUser);
+// Self-service user update (used by Edit Profile)
+usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(
   "/freelancers/all",
   authentication,
@@ -117,5 +122,18 @@ usersRouter.get(
   getPortfolioByfreelance
 ); // routes/users.js
 usersRouter.get("/allfreelance", getFreelance);
+usersRouter.put(
+  "/freelancers/:id/verify",
+  authentication,
+  authorization("verify_freelancer"),
+  verifyFreelancerByAdmin
+);
+
+usersRouter.put(
+  "/freelancers/:id/reject",
+  authentication,
+  authorization("verify_freelancer"),
+  rejectFreelancerByAdmin
+);
 
 export default usersRouter;

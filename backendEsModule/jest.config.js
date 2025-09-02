@@ -6,4 +6,7 @@ export default {
   verbose: false,
   collectCoverage: false,
   testTimeout: 10000,
+  transform: {
+    "^.+\\.js$": "babel-jest"
+  },
 };

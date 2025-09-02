@@ -240,7 +240,21 @@ const editUser = async (req, res) => {
     country,
     username,
     role_id,
+    profile_pic_url,
+    profilePicUrl,
   } = req.body;
+
+  // Support both snake_case and camelCase from clients
+  const newProfilePicUrl = profile_pic_url ?? profilePicUrl ?? null;
+
+  // Debug log to verify incoming image URL
+  try {
+    if (typeof newProfilePicUrl !== "undefined") {
+      console.log("editUser incoming profile URL:", newProfilePicUrl);
+    } else {
+      console.log("editUser: no profile URL provided in request body");
+    }
+  } catch (_) {}
 
   try {
     const result = await pool.query(
@@ -252,8 +266,9 @@ const editUser = async (req, res) => {
          phone_number = COALESCE($4, phone_number),
          country = COALESCE($5, country),
          username = COALESCE($6, username),
-         role_id = COALESCE($7, role_id)
-       WHERE id=$8 AND is_deleted = FALSE
+         role_id = COALESCE($7, role_id),
+         profile_pic_url = COALESCE(NULLIF($8, ''), profile_pic_url)
+       WHERE id=$9 AND is_deleted = FALSE
        RETURNING *`,
       [
         first_name,
@@ -263,9 +278,25 @@ const editUser = async (req, res) => {
         country,
         username,
         role_id,
+        newProfilePicUrl,
         userId,
       ]
     );
+
+    // If a non-empty profile URL was provided but DB still returns null, force update the column
+    if (newProfilePicUrl && (!result.rows[0] || !result.rows[0].profile_pic_url)) {
+      const forced = await pool.query(
+        `UPDATE users SET profile_pic_url = $1 WHERE id = $2 AND is_deleted = FALSE RETURNING *`,
+        [newProfilePicUrl, userId]
+      );
+      if (forced.rows.length > 0) {
+        return res.status(200).json({
+          success: true,
+          message: "User updated successfully",
+          user: forced.rows[0],
+        });
+      }
+    }
 
     if (result.rows.length === 0) {
       return res
@@ -292,7 +323,7 @@ const updateUser = async (req, res) => {
   const { userId } = req.params;
 
   // Extract the fields to update from request body
-  const { first_name, last_name, phone_number, country, username } = req.body;
+  const { first_name, last_name, phone_number, country, username, profile_pic_url } = req.body;
 
   try {
     // Update the user in the database
@@ -304,10 +335,11 @@ const updateUser = async (req, res) => {
           last_name = COALESCE($2, last_name),
           phone_number = COALESCE($3, phone_number),
           country = COALESCE($4, country),
-          username = COALESCE($5, username)
-        WHERE id = $6 AND is_deleted = FALSE
+          username = COALESCE($5, username),
+          profile_pic_url = COALESCE($6, profile_pic_url)
+        WHERE id = $7 AND is_deleted = FALSE
         RETURNING *;`,
-      [first_name, last_name, phone_number, country, username, userId]
+      [first_name, last_name, phone_number, country, username, profile_pic_url, userId]
     );
 
     // If no user found or the user is deleted, return 404
@@ -1023,8 +1055,101 @@ const updateVerificationStatus = async (req, res) => {
     });
   }
 };
+const verifyFreelancerByAdmin = (req, res) => {
+  const { id } = req.params; // Freelancer ID from URL
 
-const getAllFreelancerforMain = (req, res) => {};
+  pool.query(
+    `UPDATE users 
+       SET is_verified = TRUE, 
+           reason_for_disruption = NULL 
+       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
+       RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
+    [id]
+  )
+  .then(result => {
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found, not a freelancer, or account deleted.",
+      });
+    }
+
+    const freelancer = result.rows[0];
+
+    // Log admin action
+    return pool.query(
+      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
+      [
+        req.token.userId,
+        `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
+      ]
+    )
+    .then(() => {
+      res.status(200).json({
+        success: true,
+        message: "Freelancer verified successfully.",
+        freelancer,
+      });
+    });
+  })
+  .catch(err => {
+    console.error("Error verifying freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while verifying freelancer",
+      error: err.message,
+    });
+  });
+};
+
+// Reject freelancer by admin
+const rejectFreelancerByAdmin = (req, res) => {
+  const { id } = req.params;
+
+  pool.query(
+    `UPDATE users 
+       SET is_verified = FALSE, 
+           reason_for_disruption = 'Rejected by admin' 
+       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
+       RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
+    [id]
+  )
+  .then(result => {
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found, not a freelancer, or account deleted.",
+      });
+    }
+
+    const freelancer = result.rows[0];
+
+    // Log admin action
+    return pool.query(
+      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
+      [
+        req.token.userId,
+        `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
+      ]
+    )
+    .then(() => {
+      res.status(200).json({
+        success: true,
+        message: "Freelancer rejected successfully.",
+        freelancer,
+      });
+    });
+  })
+  .catch(err => {
+    console.error("Error rejecting freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while rejecting freelancer",
+      error: err.message,
+    });
+  });
+};
+
 export {
   register,
   login,
@@ -1047,4 +1172,6 @@ export {
   updateVerificationStatus,
   getPortfolioByfreelance,
   getFreelance,
+  rejectFreelancerByAdmin,
+  verifyFreelancerByAdmin,
 };
