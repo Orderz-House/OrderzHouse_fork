@@ -26,6 +26,8 @@ function initSocket(server) {
       console.error("Error updating user online status:", err);
     }
     console.log("finish connected");
+
+    messageHandler(socket, io);
     socket.on("join_room", async ({ project_id }) => {
       console.log("Server received join_room:", project_id, "user:", socket.user.userId);
       try {
@@ -61,9 +63,8 @@ function initSocket(server) {
           `User ${socket.user.userId} joined room ${roomId}`,
           dataroom
         );
+
         
-        // Initialize message handler after joining room
-        messageHandler(socket, io);
         
         // Confirm room joining to client
         socket.emit("room_joined", { project_id, roomId });

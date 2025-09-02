@@ -111,7 +111,7 @@ function App() {
         />
 
         <Route
-          path="/projects"
+          path="/dashoard/projects"
           element={
             <ProtectedRoute>
               <ProjectsDashboard />
@@ -119,10 +119,10 @@ function App() {
           }
         />
         <Route
-          path="/projects/offer/available"
-          element={<FreelancerProjects />}
+          path="/projects/"
+          element={<ProjectsAvalible />}
         />
-
+        <Route path="/freelancer/dashboard/projects" element={<FreelancerProjects/>}/>
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
         <Route

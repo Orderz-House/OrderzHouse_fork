@@ -11,11 +11,10 @@ export const connectSocket = (token, userId) => {
           auth: {
             token,
             userId
-          },
+          }
         });
     }
 
-    localStorage.setItem("socket", socket);
     return socket;
 };
 
