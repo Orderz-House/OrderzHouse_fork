@@ -48,7 +48,6 @@ function FileProject() {
       setFiles(response.data.files || []);
     } catch (error) {
       console.error("Error fetching files:", error);
-      alert("Failed to load files");
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +59,6 @@ function FileProject() {
 
     // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
       return;
     }
 
@@ -298,7 +296,7 @@ function FileProject() {
                       <span>{file.sender_type === "client" ? "Client" : "Freelancer"}</span>
                       <span>•</span>
                       <span>
-                        {new Date(file.uploaded_at).toLocaleDateString('en-US', {
+                        {new Date(file.sent_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric'

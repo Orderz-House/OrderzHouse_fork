@@ -842,6 +842,88 @@ ORDER BY p.id, p.created_at DESC;`,
 };
 
 
+export const uploadProjectFile = async (req, res) => {
+  try {
+    const userId = req.token?.userId;
+    const { projectId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "File is required",
+      });
+    }
+
+    // تحقق أن المشروع موجود
+    const projectCheck = await pool.query(
+      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectCheck.rows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    // بيانات الملف من Cloudinary
+    const file_name = req.file.originalname;
+    const file_url = req.file.path;
+
+    // إدخال في قاعدة البيانات
+    const insertQuery = `
+      INSERT INTO project_files (project_id, sender_id, file_name, file_url)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(insertQuery, [
+      projectId,
+      userId,
+      file_name,
+      file_url,
+    ]);
+
+    return res.status(201).json({
+      success: true,
+      file: rows[0],
+    });
+  } catch (error) {
+    console.error("uploadProjectFile error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ✅ جلب جميع الملفات
+export const getProjectFiles = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const { rows } = await pool.query(
+      `SELECT 
+         pf.*,
+         json_build_object(
+           'id', u.id,
+           'first_name', u.first_name,
+           'last_name', u.last_name,
+           'username', u.username,
+           'email', u.email,
+           'profile_pic_url', u.profile_pic_url
+         ) AS sender
+       FROM project_files pf
+       JOIN users u ON u.id = pf.sender_id
+       WHERE pf.project_id = $1
+       ORDER BY pf.sent_at ASC`,
+      [projectId]
+    );
+
+    res.status(200).json({
+      success: true,
+      files: rows,
+    });
+  } catch (error) {
+    console.error("getProjectFiles error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 
 
 export default {
@@ -860,5 +942,7 @@ export default {
   getProjectCompletion,        
   submitWorkCompletion,        
   releasePayment,
-  getAllProjectForFreelancerById   
+  getAllProjectForFreelancerById,
+  uploadProjectFile,
+  getProjectFiles
 };

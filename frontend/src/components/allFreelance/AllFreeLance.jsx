@@ -89,7 +89,7 @@ export const AllFreeLance = () => {
   };
 
   const handleViewProfile = (freelancerId) => {
-    navigate(`/freelancer/${freelancerId}`);
+    navigate(`/freelancer/profile/${freelancerId}`);
   };
 
   if (loading) {

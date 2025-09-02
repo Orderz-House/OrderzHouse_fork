@@ -19,7 +19,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
-import Dashboard from "./components/dashboard/Dashboard";
+import FreelancerDashboard from "./components/freelancerDashboard/FreelancerDashboard";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
@@ -30,8 +30,8 @@ import NewsPage from "./components/news/NewsPage";
 import NewsDetails from "./components/news/NewDetail";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import FreelancerProjects from "./components/projects/FreelancerProjects";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
+import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -81,10 +81,10 @@ function App() {
           }
         />
         <Route
-          path="/dashboard"
+          path="/freelancer/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <FreelancerDashboard />
             </ProtectedRoute>
           }
         />
@@ -101,14 +101,7 @@ function App() {
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        
 
         <Route
           path="/dashoard/projects"
@@ -122,9 +115,8 @@ function App() {
           path="/projects/"
           element={<ProjectsAvalible />}
         />
-        <Route path="/freelancer/dashboard/projects" element={<FreelancerProjects/>}/>
         <Route path="/freelancers" element={<AllFreeLance />} />
-        <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
+        <Route path="/freelancer/profile/:id" element={<FreeLanceDetail />} />
         <Route
           path="/courses"
           element={
