@@ -1023,8 +1023,101 @@ const updateVerificationStatus = async (req, res) => {
     });
   }
 };
+const verifyFreelancerByAdmin = (req, res) => {
+  const { id } = req.params; // Freelancer ID from URL
 
-const getAllFreelancerforMain = (req, res) => {};
+  pool.query(
+    `UPDATE users 
+       SET is_verified = TRUE, 
+           reason_for_disruption = NULL 
+       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
+       RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
+    [id]
+  )
+  .then(result => {
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found, not a freelancer, or account deleted.",
+      });
+    }
+
+    const freelancer = result.rows[0];
+
+    // Log admin action
+    return pool.query(
+      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
+      [
+        req.token.userId,
+        `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
+      ]
+    )
+    .then(() => {
+      res.status(200).json({
+        success: true,
+        message: "Freelancer verified successfully.",
+        freelancer,
+      });
+    });
+  })
+  .catch(err => {
+    console.error("Error verifying freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while verifying freelancer",
+      error: err.message,
+    });
+  });
+};
+
+// Reject freelancer by admin
+const rejectFreelancerByAdmin = (req, res) => {
+  const { id } = req.params;
+
+  pool.query(
+    `UPDATE users 
+       SET is_verified = FALSE, 
+           reason_for_disruption = 'Rejected by admin' 
+       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
+       RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
+    [id]
+  )
+  .then(result => {
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found, not a freelancer, or account deleted.",
+      });
+    }
+
+    const freelancer = result.rows[0];
+
+    // Log admin action
+    return pool.query(
+      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
+      [
+        req.token.userId,
+        `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
+      ]
+    )
+    .then(() => {
+      res.status(200).json({
+        success: true,
+        message: "Freelancer rejected successfully.",
+        freelancer,
+      });
+    });
+  })
+  .catch(err => {
+    console.error("Error rejecting freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while rejecting freelancer",
+      error: err.message,
+    });
+  });
+};
+
 export {
   register,
   login,
@@ -1047,4 +1140,6 @@ export {
   updateVerificationStatus,
   getPortfolioByfreelance,
   getFreelance,
+  rejectFreelancerByAdmin,
+  verifyFreelancerByAdmin,
 };
