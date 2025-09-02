@@ -24,9 +24,10 @@ import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
-import FreelancerProjects from "./components/projects/FreelancerProjects";
+import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import CourseDetail from "./components/courseDetilas/CourseDetails";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
+import FreelancerProject from "./components/FreelancerDashboard/FreelancerProjects";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -110,7 +111,7 @@ function App() {
           }
         />
         <Route
-          path="/projects"
+          path="/dashoard/projects"
           element={
             <ProtectedRoute>
               <ProjectsDashboard />
@@ -118,10 +119,10 @@ function App() {
           }
         />
         <Route
-          path="/projects/offer/available"
-          element={<FreelancerProjects />}
+          path="/projects/"
+          element={<ProjectsAvalible />}
         />
-
+        <Route path="/freelancer/dashboard/projects" element={<FreelancerProject/>}/>
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/:id" element={<FreeLanceDetail />} />
         <Route

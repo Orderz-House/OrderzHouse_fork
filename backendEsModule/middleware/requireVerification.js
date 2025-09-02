@@ -11,7 +11,7 @@ export const requireVerified = async (req, res, next) => {
 
     // Check if user is verified
     const userResult = await pool.query(
-      `SELECT is_verified, role_id, profile_pic_url FROM users WHERE id = $1 AND deleted = FALSE`,
+      `SELECT is_verified, role_id, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE`,
       [user_id]
     );
 

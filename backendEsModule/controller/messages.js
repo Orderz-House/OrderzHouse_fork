@@ -47,8 +47,9 @@ const messageHandler = (socket, io) => {
         ]
       );
 
+      console.log("messages", data);
       
-      io.to(socket.roomId).emit("message", result.rows[0]);
+      io.to(socket.roomId).emit("message", {...result.rows[0], tempId : data.tempId});
     } catch (err) {
       console.error("Error handling message:", err);
       socket.emit("message_error", {
