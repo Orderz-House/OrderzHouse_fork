@@ -10,7 +10,7 @@ export const createResourceConfigs = async (
     tableExists;
 
   const resources = [
-    // All Users Resource - User Management
+    // All Users Resource - Complete User Management
     {
       resource: db.table("users"),
       options: {
@@ -21,7 +21,15 @@ export const createResourceConfigs = async (
           "first_name",
           "last_name",
           "email",
+          "username",
           "role_id",
+          "phone_number",
+          "country",
+          "is_verified",
+          "is_online",
+          "rating",
+          "wallet",
+          "violation_count",
           "created_at",
         ],
         showProperties: [
@@ -29,17 +37,51 @@ export const createResourceConfigs = async (
           "first_name",
           "last_name",
           "email",
+          "username",
           "role_id",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_deleted",
+          "is_verified",
+          "is_online",
+          "rating",
+          "rating_sum",
+          "rating_count",
+          "wallet",
+          "violation_count",
+          "category_id",
+          "reason_for_disruption",
+          "socket_id",
           "created_at",
         ],
         editProperties: [
           "first_name",
           "last_name",
           "email",
+          "username",
           "password",
           "role_id",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_verified",
+          "wallet",
+          "category_id",
+          "reason_for_disruption",
         ],
-        filterProperties: ["first_name", "last_name", "email", "role_id"],
+        filterProperties: [
+          "first_name",
+          "last_name",
+          "email",
+          "username",
+          "role_id",
+          "country",
+          "is_verified",
+          "is_deleted",
+          "is_online",
+        ],
+        sort: { sortBy: "created_at", direction: "desc" },
         properties: {
           role_id: {
             availableValues: [
@@ -49,19 +91,101 @@ export const createResourceConfigs = async (
             ],
             isRequired: true,
           },
-          password: { type: "password" },
+          password: {
+            type: "password",
+            isVisible: { list: false, show: false, edit: true, filter: false },
+          },
           first_name: { isRequired: true },
           last_name: { isRequired: true },
           email: { isRequired: true },
+          username: { isRequired: true },
+          phone_number: { isRequired: true },
+          country: { isRequired: true },
+          profile_pic_url: {
+            type: "url",
+            description: "Profile picture URL",
+          },
+          is_verified: {
+            type: "boolean",
+            description: "User verification status",
+          },
+          is_deleted: {
+            type: "boolean",
+            isVisible: { list: false, show: true, edit: false, filter: true },
+          },
+          is_online: {
+            type: "boolean",
+            isVisible: { list: true, show: true, edit: false, filter: true },
+          },
+          rating: {
+            type: "number",
+            props: { min: 0, max: 5, step: 0.1 },
+            isVisible: { list: true, show: true, edit: false, filter: false },
+          },
+          rating_sum: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          rating_count: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          wallet: {
+            type: "currency",
+            props: { currency: "USD" },
+          },
+          violation_count: {
+            type: "number",
+            isVisible: { list: true, show: true, edit: false, filter: false },
+          },
+          category_id: {
+            reference: "categories",
+            type: "reference",
+            description: "Primary category for freelancers",
+          },
+          socket_id: {
+            type: "string",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          reason_for_disruption: {
+            type: "textarea",
+            props: { rows: 3 },
+            description: "Reason for account disruption or suspension",
+          },
+          created_at: {
+            type: "datetime",
+            isVisible: { list: true, show: true, edit: false, filter: false },
+          },
         },
         actions: {
           new: {
+            before: async (request) => {
+              if (request.payload && !request.payload.is_deleted) {
+                request.payload.is_deleted = false;
+              }
+              if (request.payload && !request.payload.violation_count) {
+                request.payload.violation_count = 0;
+              }
+              if (request.payload && !request.payload.rating) {
+                request.payload.rating = 0.0;
+              }
+              if (request.payload && !request.payload.wallet) {
+                request.payload.wallet = 0.0;
+              }
+              return request;
+            },
             after: async (response, request, context) => {
               if (context.currentAdmin && request.payload) {
+                const roleLabel =
+                  request.payload.role_id === 1
+                    ? "Admin"
+                    : request.payload.role_id === 2
+                    ? "Client"
+                    : "Freelancer";
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new user: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name}) with role ${request.payload.role_id}`
+                  `Created new ${roleLabel}: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name})`
                 );
               }
               return response;
@@ -73,7 +197,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated user ID: ${request.params.recordId} - Email: ${
+                  `Updated user ID: ${request.params.recordId} - Email: ${
                     request.payload.email || "N/A"
                   }`
                 );
@@ -87,7 +211,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED user with ID: ${request.params.recordId} - PERMANENT DELETION`
+                  `DELETED user with ID: ${request.params.recordId} - PERMANENT DELETION`
                 );
               }
               return response;
@@ -97,7 +221,7 @@ export const createResourceConfigs = async (
       },
     },
 
-    // Clients - User Management
+    // Clients Only - Filtered User View
     {
       resource: db.table("users"),
       options: {
@@ -108,17 +232,64 @@ export const createResourceConfigs = async (
           "first_name",
           "last_name",
           "email",
+          "username",
+          "phone_number",
+          "country",
+          "is_verified",
+          "wallet",
           "created_at",
         ],
-        editProperties: ["first_name", "last_name", "email", "password"],
+        showProperties: [
+          "id",
+          "first_name",
+          "last_name",
+          "email",
+          "username",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_verified",
+          "wallet",
+          "violation_count",
+          "created_at",
+        ],
+        editProperties: [
+          "first_name",
+          "last_name",
+          "email",
+          "username",
+          "password",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_verified",
+          "wallet",
+        ],
+        filterProperties: [
+          "first_name",
+          "last_name",
+          "email",
+          "country",
+          "is_verified",
+        ],
         properties: {
           role_id: {
-            isVisible: { list: false, filter: false, show: true, edit: false },
+            isVisible: { list: false, filter: false, show: false, edit: false },
           },
           password: { type: "password" },
           first_name: { isRequired: true },
           last_name: { isRequired: true },
           email: { isRequired: true },
+          username: { isRequired: true },
+          phone_number: { isRequired: true },
+          country: { isRequired: true },
+          profile_pic_url: { type: "url" },
+          is_verified: { type: "boolean" },
+          wallet: { type: "currency", props: { currency: "USD" } },
+          violation_count: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
         },
         actions: {
           list: {
@@ -132,7 +303,13 @@ export const createResourceConfigs = async (
           },
           new: {
             before: async (request) => {
-              if (request.payload) request.payload.role_id = 2;
+              if (request.payload) {
+                request.payload.role_id = 2;
+                request.payload.is_deleted = false;
+                request.payload.violation_count = 0;
+                request.payload.rating = 0.0;
+                request.payload.wallet = request.payload.wallet || 0.0;
+              }
               return request;
             },
             after: async (response, request, context) => {
@@ -140,7 +317,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new client: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name})`
+                  `Created new client: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name})`
                 );
               }
               return response;
@@ -152,7 +329,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated client ID: ${request.params.recordId}`
+                  `Updated client ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -164,7 +341,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED client with ID: ${request.params.recordId}`
+                  `DELETED client with ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -174,7 +351,7 @@ export const createResourceConfigs = async (
       },
     },
 
-    // Freelancers - User Management
+    // Freelancers Only - Filtered User View
     {
       resource: db.table("users"),
       options: {
@@ -185,17 +362,90 @@ export const createResourceConfigs = async (
           "first_name",
           "last_name",
           "email",
+          "username",
+          "phone_number",
+          "country",
+          "is_verified",
+          "rating",
+          "wallet",
+          "category_id",
           "created_at",
         ],
-        editProperties: ["first_name", "last_name", "email", "password"],
+        showProperties: [
+          "id",
+          "first_name",
+          "last_name",
+          "email",
+          "username",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_verified",
+          "rating",
+          "rating_sum",
+          "rating_count",
+          "wallet",
+          "violation_count",
+          "category_id",
+          "created_at",
+        ],
+        editProperties: [
+          "first_name",
+          "last_name",
+          "email",
+          "username",
+          "password",
+          "phone_number",
+          "country",
+          "profile_pic_url",
+          "is_verified",
+          "wallet",
+          "category_id",
+        ],
+        filterProperties: [
+          "first_name",
+          "last_name",
+          "email",
+          "country",
+          "is_verified",
+          "category_id",
+        ],
         properties: {
           role_id: {
-            isVisible: { list: false, filter: false, show: true, edit: false },
+            isVisible: { list: false, filter: false, show: false, edit: false },
           },
           password: { type: "password" },
           first_name: { isRequired: true },
           last_name: { isRequired: true },
           email: { isRequired: true },
+          username: { isRequired: true },
+          phone_number: { isRequired: true },
+          country: { isRequired: true },
+          profile_pic_url: { type: "url" },
+          is_verified: { type: "boolean" },
+          rating: {
+            type: "number",
+            props: { min: 0, max: 5, step: 0.1 },
+            isVisible: { list: true, show: true, edit: false, filter: false },
+          },
+          rating_sum: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          rating_count: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          wallet: { type: "currency", props: { currency: "USD" } },
+          violation_count: {
+            type: "number",
+            isVisible: { list: false, show: true, edit: false, filter: false },
+          },
+          category_id: {
+            reference: "categories",
+            type: "reference",
+            description: "Primary freelancer category",
+          },
         },
         actions: {
           list: {
@@ -209,7 +459,13 @@ export const createResourceConfigs = async (
           },
           new: {
             before: async (request) => {
-              if (request.payload) request.payload.role_id = 3;
+              if (request.payload) {
+                request.payload.role_id = 3;
+                request.payload.is_deleted = false;
+                request.payload.violation_count = 0;
+                request.payload.rating = 0.0;
+                request.payload.wallet = request.payload.wallet || 0.0;
+              }
               return request;
             },
             after: async (response, request, context) => {
@@ -217,7 +473,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new freelancer: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name})`
+                  `Created new freelancer: ${request.payload.email} (${request.payload.first_name} ${request.payload.last_name})`
                 );
               }
               return response;
@@ -229,7 +485,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated freelancer ID: ${request.params.recordId}`
+                  `Updated freelancer ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -241,7 +497,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED freelancer with ID: ${request.params.recordId}`
+                  `DELETED freelancer with ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -266,6 +522,7 @@ export const createResourceConfigs = async (
           "budget_min",
           "budget_max",
           "assigned_freelancer_id",
+          "is_deleted",
           "created_at",
         ],
         showProperties: [
@@ -296,6 +553,7 @@ export const createResourceConfigs = async (
           "location",
           "status",
           "assigned_freelancer_id",
+          "is_deleted",
         ],
         filterProperties: [
           "title",
@@ -303,6 +561,7 @@ export const createResourceConfigs = async (
           "category_id",
           "user_id",
           "assigned_freelancer_id",
+          "is_deleted",
         ],
         properties: {
           title: { isRequired: true },
@@ -326,12 +585,12 @@ export const createResourceConfigs = async (
             : { type: "number", description: "Sub Category ID" },
           budget_min: {
             type: "currency",
-            props: { currency: "JD" },
+            props: { currency: "USD" },
             isRequired: true,
           },
           budget_max: {
             type: "currency",
-            props: { currency: "JD" },
+            props: { currency: "USD" },
             isRequired: true,
           },
           duration: { type: "string" },
@@ -358,6 +617,9 @@ export const createResourceConfigs = async (
               if (request.payload && !request.payload.status) {
                 request.payload.status = "draft";
               }
+              if (request.payload && request.payload.is_deleted === undefined) {
+                request.payload.is_deleted = false;
+              }
               return request;
             },
             after: async (response, request, context) => {
@@ -365,7 +627,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new project: "${request.payload.title}" - Budget: ${request.payload.budget_min}-${request.payload.budget_max} JD`
+                  `Created new project: "${request.payload.title}" - Budget: $${request.payload.budget_min}-${request.payload.budget_max}`
                 );
               }
               return response;
@@ -377,9 +639,9 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated project ID: ${
-                    request.params.recordId
-                  } - Title: "${request.payload.title || "N/A"}"`
+                  `Updated project ID: ${request.params.recordId} - Title: "${
+                    request.payload.title || "N/A"
+                  }"`
                 );
               }
               return response;
@@ -391,263 +653,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED project ID: ${request.params.recordId}`
-                );
-              }
-              return response;
-            },
-          },
-        },
-      },
-    },
-
-    // Appointments - Business Management
-    {
-      resource: db.table("appointments"),
-      options: {
-        id: "appointments",
-        navigation: { name: "Business Management", icon: "Calendar" },
-        listProperties: [
-          "id",
-          "freelancer_id",
-          "status",
-          "appointment_type",
-          "appointment_date",
-          "created_at",
-        ],
-        showProperties: [
-          "id",
-          "freelancer_id",
-          "message",
-          "status",
-          "appointment_type",
-          "appointment_date",
-          "created_at",
-        ],
-        editProperties: [
-          "freelancer_id",
-          "message",
-          "status",
-          "appointment_type",
-          "appointment_date",
-        ],
-        filterProperties: ["status", "appointment_type", "freelancer_id"],
-        sort: { sortBy: "created_at", direction: "desc" },
-        properties: {
-          freelancer_id: {
-            reference: "freelancers",
-            type: "reference",
-            isRequired: true,
-          },
-          status: {
-            availableValues: [
-              { value: "pending", label: "Pending" },
-              { value: "accepted", label: "Accepted" },
-              { value: "rejected", label: "Rejected" },
-              { value: "cancelled", label: "Cancelled" },
-            ],
-            isRequired: true,
-          },
-          appointment_type: {
-            availableValues: [
-              { value: "online", label: "Online" },
-              { value: "in-person", label: "In Person" },
-              { value: "phone", label: "Phone Call" },
-            ],
-            isRequired: true,
-          },
-          appointment_date: { type: "datetime", isRequired: true },
-          message: {
-            type: "textarea",
-            props: { rows: 3 },
-            description: "Appointment details",
-          },
-        },
-        actions: {
-          new: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin created new appointment for freelancer ${request.payload.freelancer_id} - Type: ${request.payload.appointment_type}`
-                );
-              }
-              return response;
-            },
-          },
-          edit: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin updated appointment ID: ${request.params.recordId} - Status: ${request.payload.status}`
-                );
-              }
-              return response;
-            },
-          },
-          delete: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin DELETED appointment ID: ${request.params.recordId}`
-                );
-              }
-              return response;
-            },
-          },
-        },
-      },
-    },
-
-    // Plans - Business Management
-    {
-      resource: db.table("plans"),
-      options: {
-        id: "plans",
-        navigation: { name: "Business Management", icon: "CreditCard" },
-        listProperties: ["id", "name", "price", "duration"],
-        showProperties: [
-          "id",
-          "name",
-          "price",
-          "duration",
-          "description",
-          "features",
-        ],
-        editProperties: [
-          "name",
-          "price",
-          "duration",
-          "description",
-          "features",
-        ],
-        filterProperties: ["name", "price"],
-        properties: {
-          name: { isRequired: true },
-          price: {
-            type: "currency",
-            props: { currency: "USD" },
-            isRequired: true,
-          },
-          duration: {
-            type: "number",
-            props: { min: 1 },
-            isRequired: true,
-            description: "Duration in days",
-          },
-          description: { type: "textarea", props: { rows: 4 } },
-          features: { type: "mixed", isArray: true },
-        },
-        actions: {
-          new: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin created new plan: "${request.payload.name}" - Price: $${request.payload.price}`
-                );
-              }
-              return response;
-            },
-          },
-          edit: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin updated plan ID: ${request.params.recordId}`
-                );
-              }
-              return response;
-            },
-          },
-          delete: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin DELETED plan ID: ${request.params.recordId}`
-                );
-              }
-              return response;
-            },
-          },
-        },
-      },
-    },
-
-    // Courses - Content Management
-    {
-      resource: db.table("courses"),
-      options: {
-        id: "courses",
-        navigation: { name: "Content Management", icon: "Book" },
-        listProperties: ["id", "title", "price", "is_deleted", "created_at"],
-        showProperties: [
-          "id",
-          "title",
-          "description",
-          "title_ar",
-          "description_ar",
-          "price",
-          "is_deleted",
-          "created_at",
-        ],
-        editProperties: [
-          "title",
-          "description",
-          "title_ar",
-          "description_ar",
-          "price",
-          "is_deleted",
-        ],
-        properties: {
-          title: { isRequired: true },
-          price: { type: "currency", props: { currency: "USD" } },
-          is_deleted: { type: "boolean" },
-          description: { type: "textarea", props: { rows: 4 } },
-          description_ar: { type: "textarea", props: { rows: 4 } },
-        },
-        actions: {
-          new: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin created new course: "${request.payload.title}" - Price: $${request.payload.price}`
-                );
-              }
-              return response;
-            },
-          },
-          edit: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin && request.payload) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin updated course ID: ${request.params.recordId}`
-                );
-              }
-              return response;
-            },
-          },
-          delete: {
-            after: async (response, request, context) => {
-              if (context.currentAdmin) {
-                await logAdminAction(
-                  context.currentAdmin.id,
-                  context.currentAdmin.email,
-                  `Admin DELETED course ID: ${request.params.recordId}`
+                  `DELETED project ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -678,7 +684,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new category: "${request.payload.name}"`
+                  `Created new category: "${request.payload.name}"`
                 );
               }
               return response;
@@ -690,7 +696,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated category ID: ${request.params.recordId}`
+                  `Updated category ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -702,7 +708,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED category ID: ${request.params.recordId}`
+                  `DELETED category ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -729,14 +735,22 @@ export const createResourceConfigs = async (
             type: "reference",
             description: "Admin user who performed the action",
           },
-          action: { type: "textarea", description: "Admin action performed" },
+          action: {
+            type: "textarea",
+            description: "Admin action performed",
+          },
           created_at: { type: "datetime" },
+        },
+        actions: {
+          new: { isVisible: false },
+          edit: { isVisible: false },
+          delete: { isVisible: false },
         },
       },
     },
   ];
 
-  // Add optional resources based on table existence
+  // Add optional sub-categories resource
   if (subCategoriesTableExists) {
     resources.push({
       resource: db.table("sub_categories"),
@@ -769,7 +783,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new sub-category: "${request.payload.name}"`
+                  `Created new sub-category: "${request.payload.name}"`
                 );
               }
               return response;
@@ -781,7 +795,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated sub-category ID: ${request.params.recordId}`
+                  `Updated sub-category ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -793,7 +807,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED sub-category ID: ${request.params.recordId}`
+                  `DELETED sub-category ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -804,6 +818,7 @@ export const createResourceConfigs = async (
     });
   }
 
+  // Add optional payments resource
   if (paymentsTableExists) {
     resources.push({
       resource: db.table("payments"),
@@ -883,7 +898,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new payment: $${request.payload.amount} from user ${request.payload.payer_id} to user ${request.payload.receiver_id}`
+                  `Created new payment: $${request.payload.amount} from user ${request.payload.payer_id} to user ${request.payload.receiver_id}`
                 );
               }
               return response;
@@ -895,9 +910,9 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated payment ID: ${
-                    request.params.recordId
-                  } - Amount: $${request.payload.amount || "N/A"}`
+                  `Updated payment ID: ${request.params.recordId} - Amount: $${
+                    request.payload.amount || "N/A"
+                  }`
                 );
               }
               return response;
@@ -909,7 +924,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED payment ID: ${request.params.recordId}`
+                  `DELETED payment ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -920,6 +935,7 @@ export const createResourceConfigs = async (
     });
   }
 
+  // Add optional receipts resource
   if (receiptsTableExists) {
     resources.push({
       resource: db.table("receipts"),
@@ -951,7 +967,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin created new receipt for payment ID: ${request.payload.payment_id}`
+                  `Created new receipt for payment ID: ${request.payload.payment_id}`
                 );
               }
               return response;
@@ -963,7 +979,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin updated receipt ID: ${request.params.recordId}`
+                  `Updated receipt ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -975,7 +991,7 @@ export const createResourceConfigs = async (
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Admin DELETED receipt ID: ${request.params.recordId}`
+                  `DELETED receipt ID: ${request.params.recordId}`
                 );
               }
               return response;
@@ -985,345 +1001,6 @@ export const createResourceConfigs = async (
       },
     });
   }
-
-  // Check for verification tables
-  try {
-    const pool = db.pool;
-    if (pool) {
-      const [
-        freelancerVerificationsExists,
-        customerVerificationsExists,
-        freelancerVerificationCategoriesExists,
-      ] = await Promise.all([
-        checkTableExists("freelancer_verifications", pool),
-        checkTableExists("customer_verifications", pool),
-        checkTableExists("freelancer_verification_categories", pool),
-      ]);
-
-      if (freelancerVerificationsExists) {
-        resources.push({
-          resource: db.table("freelancer_verifications"),
-          options: {
-            id: "freelancer_verifications",
-            navigation: { name: "Verification Management", icon: "Shield" },
-            listProperties: [
-              "id",
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "status",
-              "reviewed_at",
-            ],
-            showProperties: [
-              "id",
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "bio",
-              "skills",
-              "portfolio_url",
-              "status",
-              "reviewed_at",
-              "created_at",
-            ],
-            editProperties: [
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "bio",
-              "skills",
-              "portfolio_url",
-              "status",
-              "reviewed_at",
-            ],
-            filterProperties: ["status", "country", "user_id"],
-            sort: { sortBy: "created_at", direction: "desc" },
-            properties: {
-              user_id: {
-                reference: "users",
-                type: "reference",
-                isRequired: true,
-                description: "Freelancer user account",
-              },
-              full_name: {
-                type: "string",
-                isRequired: true,
-                description: "Full legal name",
-              },
-              country: {
-                type: "string",
-                isRequired: true,
-                description: "Country of residence",
-              },
-              phone_number: {
-                type: "string",
-                isRequired: true,
-                description: "Contact phone number",
-              },
-              bio: {
-                type: "textarea",
-                props: { rows: 4 },
-                description: "Professional biography",
-              },
-              skills: {
-                type: "textarea",
-                props: { rows: 3 },
-                description: "Skills and expertise",
-              },
-              portfolio_url: {
-                type: "url",
-                description: "Portfolio website URL",
-              },
-              status: {
-                availableValues: [
-                  { value: "pending", label: "Pending Review" },
-                  { value: "approved", label: "Approved" },
-                  { value: "rejected", label: "Rejected" },
-                  { value: "under_review", label: "Under Review" },
-                ],
-                isRequired: true,
-              },
-              reviewed_at: {
-                type: "datetime",
-                description: "When the verification was reviewed",
-              },
-              created_at: {
-                type: "datetime",
-                description: "When the verification was submitted",
-              },
-            },
-            actions: {
-              edit: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin && request.payload) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin updated freelancer verification ID: ${
-                        request.params.recordId
-                      } - Status: ${request.payload.status || "N/A"}`
-                    );
-                  }
-                  return response;
-                },
-              },
-              new: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin && request.payload) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin created freelancer verification for user: ${request.payload.user_id}`
-                    );
-                  }
-                  return response;
-                },
-              },
-            },
-          },
-        });
-      }
-
-      if (customerVerificationsExists) {
-        resources.push({
-          resource: db.table("customer_verifications"),
-          options: {
-            id: "customer_verifications",
-            navigation: { name: "Verification Management", icon: "Shield" },
-            listProperties: [
-              "id",
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "document_type",
-              "status",
-              "reviewed_at",
-            ],
-            showProperties: [
-              "id",
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "document_type",
-              "document_number",
-              "status",
-              "reviewed_at",
-              "created_at",
-            ],
-            editProperties: [
-              "user_id",
-              "full_name",
-              "country",
-              "phone_number",
-              "document_type",
-              "document_number",
-              "status",
-              "reviewed_at",
-            ],
-            filterProperties: ["status", "country", "document_type", "user_id"],
-            sort: { sortBy: "created_at", direction: "desc" },
-            properties: {
-              user_id: {
-                reference: "users",
-                type: "reference",
-                isRequired: true,
-                description: "Customer user account",
-              },
-              full_name: {
-                type: "string",
-                isRequired: true,
-                description: "Full legal name",
-              },
-              country: {
-                type: "string",
-                isRequired: true,
-                description: "Country of residence",
-              },
-              phone_number: {
-                type: "string",
-                isRequired: true,
-                description: "Contact phone number",
-              },
-              document_type: {
-                type: "string",
-                availableValues: [
-                  { value: "passport", label: "Passport" },
-                  { value: "national_id", label: "National ID" },
-                  { value: "driver_license", label: "Driver's License" },
-                  { value: "other", label: "Other Government ID" },
-                ],
-                description: "Type of identification document",
-              },
-              document_number: {
-                type: "string",
-                description: "Document identification number",
-              },
-              status: {
-                availableValues: [
-                  { value: "pending", label: "Pending Review" },
-                  { value: "approved", label: "Approved" },
-                  { value: "rejected", label: "Rejected" },
-                  { value: "under_review", label: "Under Review" },
-                ],
-                isRequired: true,
-              },
-              reviewed_at: {
-                type: "datetime",
-                description: "When the verification was reviewed",
-              },
-              created_at: {
-                type: "datetime",
-                description: "When the verification was submitted",
-              },
-            },
-            actions: {
-              edit: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin && request.payload) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin updated customer verification ID: ${
-                        request.params.recordId
-                      } - Status: ${request.payload.status || "N/A"}`
-                    );
-                  }
-                  return response;
-                },
-              },
-              new: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin && request.payload) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin created customer verification for user: ${request.payload.user_id}`
-                    );
-                  }
-                  return response;
-                },
-              },
-            },
-          },
-        });
-      }
-
-      if (freelancerVerificationCategoriesExists) {
-        resources.push({
-          resource: db.table("freelancer_verification_categories"),
-          options: {
-            id: "freelancer_verification_categories",
-            navigation: { name: "Verification Management", icon: "Shield" },
-            listProperties: ["id", "user_id", "category_id"],
-            showProperties: ["id", "user_id", "category_id"],
-            editProperties: ["user_id", "category_id"],
-            filterProperties: ["user_id", "category_id"],
-            properties: {
-              user_id: {
-                reference: "users",
-                type: "reference",
-                isRequired: true,
-                description: "Freelancer user",
-              },
-              category_id: {
-                reference: "categories",
-                type: "reference",
-                isRequired: true,
-                description: "Verified category",
-              },
-            },
-            actions: {
-              new: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin && request.payload) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin linked freelancer ${request.payload.user_id} to category ${request.payload.category_id}`
-                    );
-                  }
-                  return response;
-                },
-              },
-              delete: {
-                after: async (response, request, context) => {
-                  if (context.currentAdmin) {
-                    await logAdminAction(
-                      context.currentAdmin.id,
-                      context.currentAdmin.email,
-                      `Admin removed freelancer-category link ID: ${request.params.recordId}`
-                    );
-                  }
-                  return response;
-                },
-              },
-            },
-          },
-        });
-      }
-
-      console.log(`Verification tables check completed:`);
-      console.log(
-        `   - Freelancer Verifications: ${freelancerVerificationsExists}`
-      );
-      console.log(
-        `   - Customer Verifications: ${customerVerificationsExists}`
-      );
-      console.log(
-        `   - Freelancer Verification Categories: ${freelancerVerificationCategoriesExists}`
-      );
-    }
-  } catch (error) {
-    console.error("Error checking verification tables:", error.message);
-  }
-
-  console.log(`Created ${resources.length} AdminJS resources successfully`);
-  console.log(`Resource IDs: ${resources.map((r) => r.options.id).join(", ")}`);
 
   return resources;
 };
