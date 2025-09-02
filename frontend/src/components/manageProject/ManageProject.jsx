@@ -33,6 +33,7 @@ import { useSelector } from "react-redux";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getSocket } from "../../services/socketService";
+import { toastError, toastSuccess } from "../../services/toastService";
 
 const ManageProject = () => {
   const { projectId } = useParams();
@@ -86,7 +87,7 @@ const ManageProject = () => {
 
       } catch (error) {
         console.error("Error fetching project data:", error);
-        alert("Failed to load project data");
+        toastError("Failed to load project data");
       } finally {
         setIsLoading(false);
       }
@@ -119,7 +120,7 @@ const ManageProject = () => {
     socket.on("connect", joinRoom);
 
     const handleMessage = (data) => setMessages((prev) => [...prev, data]);
-    const handleBlocked = (data) => alert(data.error);
+    const handleBlocked = (data) => toastError(data.error);
     const handleError = (data) => console.error(data.error);
 
     socket.on("room_joined", handleRoomJoined);
@@ -186,10 +187,10 @@ const ManageProject = () => {
         }
       );
       setFiles([...files, res.data.file]);
-      alert("File uploaded successfully");
+      toastSuccess("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
-      alert("Failed to upload file");
+      toastError("Failed to upload file");
     } finally {
       setIsSubmitting(false);
       setSelectedFile(null);
@@ -210,14 +211,14 @@ const ManageProject = () => {
     setOffers(offers.map(offer =>
       offer.id === offerId ? { ...offer, status: "accepted" } : offer
     ));
-    alert("Offer accepted! Freelancer has been added to your team.");
+    toastSuccess("Offer accepted! Freelancer has been added to your team.");
   };
 
   const handleRejectOffer = (offerId) => {
     setOffers(offers.map(offer =>
       offer.id === offerId ? { ...offer, status: "rejected" } : offer
     ));
-    alert("Offer rejected.");
+    toastError("Offer rejected.");
   };
 
   if (isLoading) {

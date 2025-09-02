@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { toastInfo } from "../../services/toastService";
 import { Link } from "react-router-dom";
 import ImgBBUpload from "../uploadImage/Upload";
 import { useSelector } from "react-redux";
@@ -328,7 +329,7 @@ const NewsPage = () => {
                     {roleId === 1 && (
                       <div className="flex space-x-3 mt-4 sm:mt-0">
                         <button
-                          onClick={() => alert("Edit feature coming soon!")}
+                          onClick={() => toastInfo("Edit feature coming soon!")}
                           className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
                         >
                           <Edit className="w-4 h-4" />

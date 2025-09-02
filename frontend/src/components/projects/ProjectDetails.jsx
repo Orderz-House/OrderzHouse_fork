@@ -18,6 +18,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setLoadingRelated, setRelatedFreelancers, setError } from "../../slice/projectSlice";
 import axios from "axios";
+import { toastError, toastSuccess, toastInfo } from "../../services/toastService";
 
 export default function ProjectDetails() {
 
@@ -84,7 +85,7 @@ export default function ProjectDetails() {
   const handleAssignSelected = async () => {
     const ids = Object.keys(selected).filter((k) => selected[k]);
     if (!ids.length) {
-      alert("Select at least one freelancer");
+      toastInfo("Select at least one freelancer");
       return;
     }
     try {
@@ -95,10 +96,10 @@ export default function ProjectDetails() {
           { headers: { Authorization: `Bearer ${token}` } }
         ))
       );
-      alert("Assigned selected freelancers");
+      toastSuccess("Assigned selected freelancers");
       navigate(`/manage-project/${projectId}`);
     } catch (e) {
-      alert("Failed to assign some freelancers");
+      toastError("Failed to assign some freelancers");
     }
   };
 
@@ -111,7 +112,7 @@ export default function ProjectDetails() {
       );
       navigate(`/manage-project/${projectId}`);
     } catch (e) {
-      alert("Failed to assign freelancer");
+      toastError("Failed to assign freelancer");
       console.log(e);
     }
   };
