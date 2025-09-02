@@ -31,6 +31,7 @@ import NewsDetails from "./components/news/NewDetail";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FreelancerProjects from "./components/projects/FreelancerProjects";
+import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -57,6 +58,7 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/admin-verification" element={<AdminVerificationPage />} />
 
         {/* ✅ VerifyProfile يظل مفتوح */}
         <Route path="/verify-profile" element={<VerifyProfile />} />
