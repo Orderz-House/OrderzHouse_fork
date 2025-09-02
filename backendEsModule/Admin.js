@@ -10,7 +10,7 @@ import bcrypt from "bcryptjs";
 // Import separated modules
 import { dashboardHandler, analyticsHandler } from "./Admin/handlers.js";
 import { logAdminAction } from "./Admin/logger.js";
-import { createResourceConfigs } from "./Admin/resources.js";
+import { createResourceConfigs } from "../backendEsModule/Admin/resources/resources.js";
 import { checkTableExists } from "./Admin/utils.js";
 
 dotenv.config();
