@@ -20,8 +20,12 @@ export default function OrderzHousePage() {
   const [activePlan, setActivePlan] = useState("basic");
   const [categories, setCategories] = useState([]);
   const [isVerified, setIsVerified] = useState(true);
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [showAll, setShowAll] = useState(false);
+   const initialCategoriesCount = 3;
+  const displayedCategories = showAll ? categories : categories.slice(0, initialCategoriesCount);
   const { plans, token, roleId } = useSelector((state) => {
     return {
       plans: state.plan.plans,
@@ -36,6 +40,8 @@ export default function OrderzHousePage() {
       .get(`${API_BASE}/projects/public/categories`)
       .then((res) => {
         setCategories(res.data.categories || []);
+        console.log(res.data.categories);
+        
       })
       .catch((e) => console.error(e.message));
   }, []);
@@ -340,66 +346,94 @@ export default function OrderzHousePage() {
       >
         <LogoLogic style={{}} />
       </div>
-      {/* Categories Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            OUR CATEGORIES
-          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {categories.map((category, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300"
-              >
-                <h3 className="text-xl font-bold mb-3">{category.name}</h3>
-                <p className="text-gray-600">{category.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* Brands Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-50 to-blue-50">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Work With The Best
+
+
+    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Browse Our Categories
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
-            Meet the top brands and professionals who trust our platform for
-            their projects.
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Explore our diverse range of professional categories to find the perfect services for your needs
           </p>
+        </div>
 
-          <div className="flex flex-wrap justify-center gap-8 mb-16">
-            {[1, 2, 3, 4, 5].map((item) => (
-              <div
-                key={item}
-                className="w-32 h-32 bg-white rounded-2xl shadow-md flex items-center justify-center"
-              >
-                <div className="text-2xl font-bold text-gray-400">
-                  Brand {item}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedCategories.map((category) => (
+            <div
+              key={category.id}
+              className="group bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 relative overflow-hidden"
+            >
+              {/* Gradient accent bar */}
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+              
+              {/* Category header with initial letter */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
+                  <span className="text-xl font-bold text-blue-700 group-hover:text-white transition-colors duration-300">
+                    {category.name.charAt(0)}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {!token ? (
-            <button
-              onClick={() => navigate("/login")}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center mx-auto"
-            >
-              <span>Sign in to get started</span>
-            </button>
-          ) : (
-            <Link to="/dashboard">
-              <button className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center justify-center mx-auto">
-                <span>Go to Dashboard</span>
-              </button>
-            </Link>
-          )}
+              
+              <h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-300">
+                {category.name}
+              </h3>
+              
+              <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+                {category.description}
+              </p>
+            </div>
+          ))}
         </div>
-      </section>
+
+        {/* View All Categories toggle button */}
+        {categories.length > initialCategoriesCount && (
+          <div className="text-center mt-12">
+            <button 
+              onClick={() => setShowAll(!showAll)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center mx-auto"
+            >
+              {showAll ? 'Show Less Categories' : 'View All Categories'}
+              <svg 
+                className={`ml-2 h-5 w-5 transition-transform duration-300 ${showAll ? 'rotate-180' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Stats section */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 mb-12">
+          <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-blue-600 mb-2">{categories.length}+</div>
+            <div className="text-gray-600">Categories</div>
+          </div>
+          <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-blue-600 mb-2">1000+</div>
+            <div className="text-gray-600">Services</div>
+          </div>
+          <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-blue-600 mb-2">98%</div>
+            <div className="text-gray-600">Satisfaction Rate</div>
+          </div>
+          <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-blue-600 mb-2">24/7</div>
+            <div className="text-gray-600">Support</div>
+          </div>
+        </div>
+
+        {/* Call to action */}
+        
+      </div>
+    </section>
+
       {/* Freelancer, Employer, Community */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -459,54 +493,153 @@ export default function OrderzHousePage() {
           </div>
         </div>
       </section>
+      
       {/* Pricing Plans */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Best Plans to Go With
-          </h2>
-          <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-12">
-            Enter a realm of limitless possibilities, where extraordinary talent
-            thrives and beckons you to unfold your boundless potential.
-          </p>
+<section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50/30">
+  <div className="max-w-7xl mx-auto">
+    <div className="text-center mb-12">
+      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        Choose Your Perfect Plan
+      </h2>
+      <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        Unlock your potential with our flexible plans designed to help you succeed 
+        in your freelancing journey.
+      </p>
+    </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                className={`bg-white rounded-2xl p-8 shadow-lg border-2 ${
-                  activePlan === plan.id ? "border-blue-500" : "border-gray-200"
-                } transition-all duration-300`}
-              >
-                <h3 className="text-2xl font-bold mb-4">{plan.name}</h3>
-                <div className="text-3xl font-bold text-blue-600 mb-6">
-                  ${parseFloat(plan.price).toFixed(2)}
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Duration: {plan.duration} Days
-                </p>
-                <p className="mb-6">{plan.description}</p>
+    {/* Toggle for annual/monthly billing */}
+    <div className="flex justify-center items-center mb-10">
+      <div className="bg-white rounded-xl p-1 shadow-sm border border-gray-200 inline-flex">
+        <button
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            billingCycle === 'monthly' 
+              ? 'bg-blue-600 text-white shadow' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setBillingCycle('monthly')}
+        >
+          Monthly
+        </button>
+        <button
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            billingCycle === 'annual' 
+              ? 'bg-blue-600 text-white shadow' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setBillingCycle('annual')}
+        >
+          Annual <span className="text-green-500 ml-1">(-20%)</span>
+        </button>
+      </div>
+    </div>
 
-                <ul className="space-y-3 mb-8">
-                  {plan.features?.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleGetStarted(plan.id)}
-                  className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors duration-300"
-                >
-                  {token ? "Get Started" : "Sign Up Now"}
-                </button>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+      {plans.map((plan) => {
+        const displayPrice = billingCycle === 'annual' 
+          ? parseFloat(plan.price) * 12 * 0.8 
+          : parseFloat(plan.price);
+        
+        const isPopular = plan.isPopular;
+        
+        return (
+          <div
+            key={plan.id}
+            className={`relative rounded-2xl p-8 transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+              isPopular
+                ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 shadow-2xl transform -translate-y-2'
+                : 'bg-white border border-gray-200 shadow-lg'
+            }`}
+          >
+            {/* Popular badge */}
+            {isPopular && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-yellow-400 text-blue-900 text-xs font-bold px-4 py-2 rounded-full shadow-md">
+                  MOST POPULAR
+                </span>
               </div>
-            ))}
+            )}
+
+            <div className="text-center mb-6">
+              <h3 className={`text-2xl font-bold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                {plan.name}
+              </h3>
+              <p className={`text-lg ${isPopular ? 'text-blue-100' : 'text-gray-600'}`}>
+                {plan.description}
+              </p>
+            </div>
+
+            <div className="text-center mb-6">
+              <div className="flex items-baseline justify-center">
+                <span className={`text-4xl font-bold ${isPopular ? 'text-white' : 'text-blue-600'}`}>
+                  ${displayPrice.toFixed(2)}
+                </span>
+                <span className={`ml-1 ${isPopular ? 'text-blue-100' : 'text-gray-600'}`}>
+                  /{billingCycle === 'annual' ? 'year' : 'month'}
+                </span>
+              </div>
+              {billingCycle === 'annual' && (
+                <p className="text-sm text-green-400 mt-1">
+                  Save ${(parseFloat(plan.price) * 12 * 0.2).toFixed(2)} annually
+                </p>
+              )}
+              <p className={`text-sm mt-2 ${isPopular ? 'text-blue-100' : 'text-gray-600'}`}>
+                Duration: {plan.duration} Days
+              </p>
+            </div>
+
+            <ul className="space-y-4 mb-8">
+              {plan.features?.map((feature, index) => (
+                <li key={index} className="flex items-start">
+                  <CheckCircle 
+                    className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
+                      isPopular ? 'text-blue-200' : 'text-green-500'
+                    }`} 
+                  />
+                  <span className={isPopular ? 'text-blue-50' : 'text-gray-700'}>
+                    {feature}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => handleGetStarted(plan.id)}
+              className={`w-full py-4 font-bold rounded-xl transition-all duration-300 ${
+                isPopular
+                  ? 'bg-white text-blue-600 hover:bg-gray-100 hover:shadow-lg'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+              }`}
+            >
+              {token ? "Get Started" : "Sign Up Now"}
+            </button>
+
+            {/* Additional info for popular plan */}
+            {isPopular && (
+              <p className="text-center text-blue-100 text-sm mt-4">
+                Join 2,500+ freelancers using this plan
+              </p>
+            )}
           </div>
+        );
+      })}
+    </div>
+
+    {/* FAQ section */}
+    <div className="mt-16 text-center">
+      <h3 className="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="text-left bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h4 className="font-semibold text-gray-900 mb-2">Can I switch plans later?</h4>
+          <p className="text-gray-600">Yes, you can upgrade or downgrade your plan at any time. Your billing will be prorated accordingly.</p>
         </div>
-      </section>
+        <div className="text-left bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h4 className="font-semibold text-gray-900 mb-2">Is there a free trial?</h4>
+          <p className="text-gray-600">We offer a 7-day free trial for all new users to explore our platform before committing to a paid plan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
       {/* Learning Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto text-center">

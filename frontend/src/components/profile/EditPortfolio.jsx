@@ -109,8 +109,7 @@ const fetchPortfolioItems = async () => {
             if (editingItem) {
                 // Update existing item
                 console.log("formData =>", formData);
-                
-                axios.put(`http://localhost:5000/users/freelancer/portfolio/edit/${editingItem.id}`, {...formData}, {
+                axios.put(`http://localhost:5000/users/freelancers/portfolio/edit/${editingItem.id}`, {...formData}, {
                   headers: {
                     authorization: `Bearer ${token}`,
                   },
@@ -123,7 +122,7 @@ const fetchPortfolioItems = async () => {
                     console.log("Update error", err);
                 });
             } else {
-                axios.post("http://localhost:5000/users/freelancer/portfolio/create", {...formData, freelancer_id: userId}, {
+                axios.post("http://localhost:5000/users/freelancers/portfolio/create", {...formData, freelancer_id: userId}, {
                     headers:{
                         authorization : `Bearer  ${token}`
                     }
