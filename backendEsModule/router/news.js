@@ -5,9 +5,10 @@ import {
   createNews,
   updateNews,
   deleteNews,
+  approveNews,
+  SelectNewsisNotApprove,
 } from "../controller/news.js";
 import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js";
 
 // Simple role check middleware: only role id 1 permitted
 const requireAdminRole = (req, res, next) => {
@@ -18,7 +19,6 @@ const requireAdminRole = (req, res, next) => {
     return res.status(403).json({ success: false, message: "unauthorized" });
   }
 };
-// Disk storage removed; images should be uploaded via /upload to imgbb
 
 const newsRouter = express.Router();
 
@@ -30,5 +30,9 @@ newsRouter.get("/:id", getNewsById);
 newsRouter.post("/", authentication, requireAdminRole, createNews);
 newsRouter.put("/:id", authentication, requireAdminRole, updateNews);
 newsRouter.delete("/:id", authentication, requireAdminRole, deleteNews);
+
+// Only admin can approve news
+newsRouter.put("/approve/:id", authentication, requireAdminRole, approveNews);
+newsRouter.get("/admin/notApporve", authentication, SelectNewsisNotApprove);
 
 export default newsRouter;

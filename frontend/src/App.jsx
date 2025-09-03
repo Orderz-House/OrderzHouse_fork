@@ -26,13 +26,14 @@ import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import CourseDetail from "./components/courseDetilas/CourseDetails";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
-import NewsPage from "./components/news/NewsPage";
-import NewsDetails from "./components/news/NewDetail";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
+import NewsListPage from "./components/news/NewsPage";
+import NewsDetailPage from "./components/news/NewDetail";
+import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -49,8 +50,9 @@ function App() {
     <>
       <Navbar />
       <Routes>
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/news/:id" element={<NewsDetails />} />
+        <Route path="/news" element={<NewsListPage />} />
+        <Route path="/news/admin" element={<AdminPendingNewsPage />} />
+        <Route path="/news/:id" element={<NewsDetailPage />} />
         <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -102,8 +104,6 @@ function App() {
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/rate" element={<TopRatedFreelancers />} />
 
-        
-
         <Route
           path="/dashoard/projects"
           element={
@@ -112,10 +112,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/projects/"
-          element={<ProjectsAvalible />}
-        />
+        <Route path="/projects/" element={<ProjectsAvalible />} />
         <Route path="/freelancers" element={<AllFreeLance />} />
         <Route path="/freelancer/profile/:id" element={<FreeLanceDetail />} />
         <Route
@@ -137,8 +134,12 @@ function App() {
 
         <Route
           path="/notifications"
-          element={<ProtectedRoute><NotificationsPage/></ProtectedRoute>}
-          />
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       <EnhancedFooter />
       <ToastContainer

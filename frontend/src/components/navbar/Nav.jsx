@@ -54,7 +54,7 @@ export default function EnhancedNavbar() {
   // Fetch notifications
   const fetchNotifications = async () => {
     if (!token) return;
-    
+
     try {
       const response = await axios.get("http://localhost:5000/notifications", {
         headers: {
@@ -62,10 +62,10 @@ export default function EnhancedNavbar() {
         },
         params: {
           limit: 10,
-          unreadOnly: false
-        }
+          unreadOnly: false,
+        },
       });
-      
+
       if (response.data.success) {
         setNotifications(response.data.notifications);
       }
@@ -77,17 +77,20 @@ export default function EnhancedNavbar() {
   // Fetch unread count
   const fetchUnreadCount = async () => {
     if (!token) return;
-    
+
     try {
-      const response = await axios.get("http://localhost:5000/notifications/count", {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-        params: {
-          unreadOnly: true
+      const response = await axios.get(
+        "http://localhost:5000/notifications/count",
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+          params: {
+            unreadOnly: true,
+          },
         }
-      });
-      
+      );
+
       if (response.data.success) {
         setUnreadCount(response.data.count);
       }
@@ -99,17 +102,23 @@ export default function EnhancedNavbar() {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      await axios.put(`http://localhost:5000/notifications/${notificationId}/read`, {}, {
-        headers: {
-          authorization: `Bearer ${token}`,
+      await axios.put(
+        `http://localhost:5000/notifications/${notificationId}/read`,
+        {},
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
         }
-      });
-      
+      );
+
       // Update local state
-      setNotifications(notifications.map(notif => 
-        notif.id === notificationId ? {...notif, is_read: true} : notif
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications(
+        notifications.map((notif) =>
+          notif.id === notificationId ? { ...notif, is_read: true } : notif
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -118,14 +127,20 @@ export default function EnhancedNavbar() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await axios.put("http://localhost:5000/notifications/read-all", {}, {
-        headers: {
-          authorization: `Bearer ${token}`,
+      await axios.put(
+        "http://localhost:5000/notifications/read-all",
+        {},
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
         }
-      });
-      
+      );
+
       // Update local state
-      setNotifications(notifications.map(notif => ({...notif, is_read: true})));
+      setNotifications(
+        notifications.map((notif) => ({ ...notif, is_read: true }))
+      );
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -167,7 +182,7 @@ export default function EnhancedNavbar() {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
         setIsAuthenticated(true);
-        
+
         // Fetch notifications after authentication
         fetchNotifications();
         fetchUnreadCount();
@@ -190,7 +205,10 @@ export default function EnhancedNavbar() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
         setIsNotificationsOpen(false);
       }
     };
@@ -253,18 +271,30 @@ export default function EnhancedNavbar() {
 
               {/* Admin Verification link for role_id 1 */}
               {userData?.role_id === 1 && (
-                <button
-                  onClick={() =>
-                    handleNavigation("/admin-verification", "VERIFICATION")
-                  }
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    activeLink === "VERIFICATION"
-                      ? "text-teal-600 bg-teal-50"
-                      : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
-                  }`}
-                >
-                  VERIFICATION
-                </button>
+                <>
+                  {" "}
+                  <button
+                    onClick={() =>
+                      handleNavigation("/admin-verification", "VERIFICATION")
+                    }
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      activeLink === "VERIFICATION"
+                        ? "text-teal-600 bg-teal-50"
+                        : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    VERIFICATION
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleNavigation("/news/admin", "news pendind");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    NEWS PENDING
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -316,15 +346,17 @@ export default function EnhancedNavbar() {
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </button>
-                
+
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      <h3 className="font-semibold text-gray-900">
+                        Notifications
+                      </h3>
                       {unreadCount > 0 && (
                         <button
                           onClick={markAllAsRead}
@@ -334,7 +366,7 @@ export default function EnhancedNavbar() {
                         </button>
                       )}
                     </div>
-                    
+
                     <div className="max-h-96 overflow-y-auto">
                       {notifications.length > 0 ? (
                         <div className="divide-y divide-gray-100">
@@ -342,20 +374,22 @@ export default function EnhancedNavbar() {
                             <div
                               key={notification.id}
                               className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                                !notification.is_read ? 'bg-blue-50' : ''
+                                !notification.is_read ? "bg-blue-50" : ""
                               }`}
                               onClick={() => markAsRead(notification.id)}
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900">
-                                    {notification.title || 'Notification'}
+                                    {notification.title || "Notification"}
                                   </p>
                                   <p className="text-sm text-gray-600 mt-1">
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2">
-                                    {new Date(notification.created_at).toLocaleDateString()}
+                                    {new Date(
+                                      notification.created_at
+                                    ).toLocaleDateString()}
                                   </p>
                                 </div>
                                 {!notification.is_read && (
@@ -368,11 +402,13 @@ export default function EnhancedNavbar() {
                       ) : (
                         <div className="p-8 text-center">
                           <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 text-sm">No notifications yet</p>
+                          <p className="text-gray-500 text-sm">
+                            No notifications yet
+                          </p>
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="p-4 border-t border-gray-100 text-center">
                       <Link
                         to="/notifications"
@@ -556,7 +592,7 @@ export default function EnhancedNavbar() {
                 </button>
               )}
             </div>
-            
+
             <div className="max-h-64 overflow-y-auto">
               {notifications.length > 0 ? (
                 <div className="divide-y divide-gray-100">
@@ -564,20 +600,22 @@ export default function EnhancedNavbar() {
                     <div
                       key={notification.id}
                       className={`p-4 hover:bg-gray-50 cursor-pointer ${
-                        !notification.is_read ? 'bg-blue-50' : ''
+                        !notification.is_read ? "bg-blue-50" : ""
                       }`}
                       onClick={() => markAsRead(notification.id)}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">
-                            {notification.title || 'Notification'}
+                            {notification.title || "Notification"}
                           </p>
                           <p className="text-sm text-gray-600 mt-1">
                             {notification.message}
                           </p>
                           <p className="text-xs text-gray-400 mt-2">
-                            {new Date(notification.created_at).toLocaleDateString()}
+                            {new Date(
+                              notification.created_at
+                            ).toLocaleDateString()}
                           </p>
                         </div>
                         {!notification.is_read && (
@@ -594,7 +632,7 @@ export default function EnhancedNavbar() {
                 </div>
               )}
             </div>
-            
+
             <div className="p-4 border-t border-gray-100 text-center">
               <Link
                 to="/notifications"
@@ -627,15 +665,27 @@ export default function EnhancedNavbar() {
 
               {/* VERIFICATION button for role_id === 1 */}
               {userData?.role_id === 1 && (
-                <button
-                  onClick={() => {
-                    handleNavigation("/admin-verification", "VERIFICATION");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
-                >
-                  VERIFICATION
-                </button>
+                <>
+                  {" "}
+                  <button
+                    onClick={() => {
+                      handleNavigation("/admin-verification", "VERIFICATION");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    VERIFICATION
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleNavigation("/news/admin", "news pendind");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    NEWS PENDING
+                  </button>
+                </>
               )}
             </div>
             {/* Mobile Auth Section */}
