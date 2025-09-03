@@ -26,16 +26,18 @@ import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import CourseDetail from "./components/courseDetilas/CourseDetails";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
-import NewsPage from "./components/news/NewsPage";
-import NewsDetails from "./components/news/NewDetail";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
+import NewsListPage from "./components/news/NewsPage";
+import NewsDetailPage from "./components/news/NewDetail";
+import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
+
 
 function App() {
   const location = useLocation();
@@ -56,10 +58,14 @@ function App() {
     <>
     {!shouldHideNavbar && <Navbar />}
       <Routes>
+
+        <Route path="/news" element={<NewsListPage />} />
+        <Route path="/news/admin" element={<AdminPendingNewsPage />} />
+        <Route path="/news/:id" element={<NewsDetailPage />} />
+
         
         <Route path="account/suspended" element={<AccountSuspended />} />
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/news/:id" element={<NewsDetails />} />
+
         <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -109,6 +115,7 @@ function App() {
         />
 
         {/* ✅ صفحات عامة */}
+
         <Route
           path="/projects/:projectId"
           element={
@@ -125,6 +132,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+>>>>>>> main
 
         <Route
           path="/dashoard/projects"
@@ -134,6 +142,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/projects/"
           element={
@@ -158,6 +167,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/courses"
           element={
@@ -184,6 +194,7 @@ function App() {
           }
         />
 
+
         <Route
           path="/freelancer/project/:projectId"
           element={
@@ -192,6 +203,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
       
