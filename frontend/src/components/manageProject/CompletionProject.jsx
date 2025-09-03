@@ -8,25 +8,30 @@ import {
   CreditCard,
   UserCheck,
   FileText,
+  LogOut,
+  XCircle,
+  HelpCircle,
 } from "lucide-react";
 import { useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 function CompletionProject({ project }) {
   const { projectId } = useParams();
   const { token, userData } = useSelector((state) => state.auth);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showQuitModal, setShowQuitModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState(null);
   const [completionHistory, setCompletionHistory] = useState([]);
   const [freelancers, setFreelancers] = useState([]);
   const [history, setHistory] = useState([]);
   const [isReleasingPayment, setIsReleasingPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQuitting, setIsQuitting] = useState(false);
   const [showRequestChanges, setShowRequestChanges] = useState(false);
   const [changesRequest, setChangesRequest] = useState("");
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
-
+  const navigate = useNavigate();
   const fetchCompletion = async () => {
     try {
       const response = await axios.get(
@@ -73,6 +78,39 @@ function CompletionProject({ project }) {
       console.error("Error submitting completion:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle quitting project
+  const handleQuitProject = async () => {
+    try {
+      setIsQuitting(true);
+      const response = await axios.post(
+        `http://localhost:5000/projects/${projectId}/quit`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setCompletionHistory((prev) => [
+          ...prev,
+          {
+            event: "freelancer_quit",
+            timestamp: new Date().toISOString(),
+            actor: userData.id,
+            actor_name: `${userData.first_name} ${userData.last_name}`,
+          },
+        ]);
+        setShowQuitModal(false);
+        // Redirect or update UI as needed
+        navigate(-1) // Or update state to reflect the change`
+      }
+    } catch (error) {
+      console.error("Error quitting project:", error);
+    } finally {
+      setIsQuitting(false);
     }
   };
 
@@ -174,6 +212,9 @@ function CompletionProject({ project }) {
   const isAssignedFreelancer = project.assignments?.some(
     assignment => assignment.freelancer.id === userData.id && assignment.status === "active"
   );
+  const hasQuit = project.assignments?.some(
+    assignment => assignment.freelancer.id === userData.id && assignment.status === "quit"
+  );
 
   return (
     <div className="space-y-6">
@@ -233,44 +274,75 @@ function CompletionProject({ project }) {
             <div className="bg-blue-100 p-2 rounded-lg mr-3">
               <UserCheck className="w-5 h-5 text-blue-600" />
             </div>
-            Complete Your Work
+            Project Actions
           </h3>
           
-          <p className="text-gray-600 mb-4">
-            Once you've finished all deliverables for this project, you can mark it as complete.
-            The client will then review your work and release payment.
-          </p>
-          
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-yellow-800 mb-1">Before submitting</h4>
-                <ul className="text-sm text-yellow-700 list-disc pl-5 space-y-1">
-                  <li>Ensure all project requirements are met</li>
-                  <li>Deliver all final files to the client</li>
-                  <li>Confirm the client has received everything</li>
-                </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Mark Completed Card */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <div className="flex items-center mb-3">
+                <div className="rounded-full bg-green-100 p-2 mr-3">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <h4 className="font-medium text-gray-900">Complete Your Work</h4>
               </div>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                Mark this project as complete when you've finished all deliverables. The client will review your work and release payment.
+              </p>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-green-700">
+                  <span className="font-medium">Note:</span> Ensure all project requirements are met before submitting.
+                </p>
+              </div>
+              
+              {completionStatus === "pending_review" ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center text-blue-700">
+                    <Clock className="w-4 h-4 mr-2" />
+                    <span className="text-sm">Awaiting client review</span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowCompletionModal(true)}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center font-medium"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Mark as Complete
+                </button>
+              )}
+            </div>
+
+            {/* Quit Project Card */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <div className="flex items-center mb-3">
+                <div className="rounded-full bg-red-100 p-2 mr-3">
+                  <LogOut className="w-5 h-5 text-red-600" />
+                </div>
+                <h4 className="font-medium text-gray-900">Withdraw from Project</h4>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                Withdraw from this project if you're unable to complete it. This may affect your reputation score.
+              </p>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-red-700">
+                  <span className="font-medium">Warning:</span> Withdrawing from projects may harm your account reputation.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setShowQuitModal(true)}
+                className="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors font-medium flex items-center justify-center"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Withdraw from Project
+              </button>
             </div>
           </div>
-          
-          {completionStatus === "pending_review" ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                <span className="text-green-800">Completion request submitted and awaiting client review</span>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowCompletionModal(true)}
-              className="px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center font-medium shadow-sm hover:shadow-md"
-            >
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Mark Work as Complete
-            </button>
-          )}
         </div>
       )}
 
@@ -331,7 +403,7 @@ function CompletionProject({ project }) {
                         <button
                           onClick={() => handleReleasePayment(a.freelancer.id)}
                           disabled={isReleasingPayment}
-                          className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center font-medium shadow-sm hover:shadow-md"
+                          className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center font-medium"
                         >
                           {isReleasingPayment ? (
                             <>
@@ -416,6 +488,63 @@ function CompletionProject({ project }) {
                   <>
                     <CheckCircle className="w-5 h-5 mr-2" />
                     Confirm Completion
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quit Project Confirmation Modal */}
+      {showQuitModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center mb-4">
+              <div className="rounded-full bg-red-100 p-2 mr-3">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Withdrawal</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to withdraw from this project?
+            </p>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex">
+                <AlertCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-red-800 mb-1">Important Notice</h4>
+                  <p className="text-sm text-red-700">
+                    Withdrawing from projects may harm your account reputation and affect future project opportunities.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={() => setShowQuitModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                disabled={isQuitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleQuitProject}
+                disabled={isQuitting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center font-medium"
+              >
+                {isQuitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-5 h-5 mr-2" />
+                    Yes, Withdraw
                   </>
                 )}
               </button>

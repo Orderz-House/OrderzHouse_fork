@@ -1184,6 +1184,38 @@ export const getCountProjectFreelancer = async (req, res) => {
   }
 }
 
+export const quitProject = async (req, res) => {
+  const freelancerId = req.token.userId;
+  const { projectId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE project_assignments
+       SET status = 'quit'
+       WHERE project_id = $1 AND freelancer_id = $2
+       RETURNING *`,
+      [projectId, freelancerId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "You are not assigned to this project or project not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "You have successfully left the project",
+      assignment: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error quitting project:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 
 
 export default {
@@ -1204,5 +1236,6 @@ export default {
   releasePayment,
   getAllProjectForFreelancerById,
   uploadProjectFile,
-  getProjectFiles
+  getProjectFiles,
+  quitProject
 };

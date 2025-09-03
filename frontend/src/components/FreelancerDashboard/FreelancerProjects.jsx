@@ -265,7 +265,7 @@ const FreelancerProjects = () => {
 
   const handleProjectClick = (project) => {
     if (canManageProject(project)) {
-      navigate(`/manage-project/${project.id}`);
+      navigate(`/freelancer/project/${project.id}`);
     }
   };
 

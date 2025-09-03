@@ -1,6 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment, getAllProjectForFreelancerById, uploadProjectFile, getProjectFiles, getCountProjectFreelancer } from "../controller/projects.js";
+import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment, getAllProjectForFreelancerById, uploadProjectFile, getProjectFiles, getCountProjectFreelancer, quitProject } from "../controller/projects.js";
 import {requireVerified} from "../middleware/requireVerification.js";
 const projectsRouter = express.Router();
 
@@ -15,7 +15,7 @@ projectsRouter.get("/:projectId/related-freelancers", authentication, getRelated
 projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
 projectsRouter.post('/offer/action', authentication, requireVerified, approveOrRejectOffer);
 projectsRouter.get('/:projectId/completion', authentication , requireVerified, getProjectCompletion);
-
+projectsRouter.post(`/:projectId/quit`, authentication, requireVerified, quitProject);
 //router.post("/:projectId/files", upload.single("file"), uploadProjectFile);
 // جلب جميع الملفات
 projectsRouter.get("/:projectId/files", getProjectFiles);
