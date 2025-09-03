@@ -6,6 +6,7 @@ import {
   viewUsers,
   deleteUser,
   editUser,
+  updateUser,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
@@ -62,7 +63,6 @@ usersRouter.put(
 usersRouter.delete(
   "/freelancers/portfolio/delete",
   authentication,
-  requireVerified,
   deletePortfolioFreelancer
 );
 
@@ -80,6 +80,8 @@ usersRouter.delete(
   deleteUser
 );
 usersRouter.put("/edit/:userId", authentication, editUser);
+// Self-service user update (used by Edit Profile)
+usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(
   "/freelancers/all",
   authentication,
