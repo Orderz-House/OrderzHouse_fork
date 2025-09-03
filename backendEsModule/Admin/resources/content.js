@@ -1,16 +1,18 @@
-// Admin/resources/content.js
-export const createContentResources = async (db, tableExists, logAdminAction) => {
+export const createContentResources = async (
+  db,
+  tableExists,
+  logAdminAction
+) => {
   const { subCategoriesTableExists } = tableExists;
   const resources = [];
 
-  // Categories Resource
   resources.push({
     resource: db.table("categories"),
     options: {
       id: "categories",
       navigation: { name: "Content Management", icon: "Tag" },
       listProperties: ["id", "name", "description"],
-      showProperties: ["id", "name", "description", "created_at"],
+      showProperties: ["id", "name", "description"],
       editProperties: ["name", "description"],
       filterProperties: ["name"],
       properties: {
@@ -58,7 +60,6 @@ export const createContentResources = async (db, tableExists, logAdminAction) =>
     },
   });
 
-  // Sub-categories Resource (if table exists)
   if (subCategoriesTableExists) {
     resources.push({
       resource: db.table("sub_categories"),
@@ -66,13 +67,7 @@ export const createContentResources = async (db, tableExists, logAdminAction) =>
         id: "sub_categories",
         navigation: { name: "Sub-Categories", icon: "Tags" },
         listProperties: ["id", "name", "category_id", "description"],
-        showProperties: [
-          "id",
-          "name",
-          "category_id",
-          "description",
-          "created_at",
-        ],
+        showProperties: ["id", "name", "category_id", "description"],
         editProperties: ["name", "category_id", "description"],
         filterProperties: ["name", "category_id"],
         properties: {
