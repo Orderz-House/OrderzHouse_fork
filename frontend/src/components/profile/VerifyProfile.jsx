@@ -305,7 +305,7 @@ function VerifyProfile() {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const endpoint = editingPortfolioId
-        ? `http://localhost:5000/users/freelancer/portfolio/update/${editingPortfolioId}`
+        ? `http://localhost:5000/users/freelancers/portfolio/edit/${editingPortfolioId}`
         : "http://localhost:5000/users/freelancers/portfolio/create";
 
       const method = editingPortfolioId ? "put" : "post";
