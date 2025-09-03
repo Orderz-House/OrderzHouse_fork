@@ -425,14 +425,24 @@ export default function EnhancedNavbar() {
                           <span>Dashboard</span>
                         </Link>
                       ) : (
-                        <Link
-                          to="/dashoard/projects"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                        >
-                          <Briefcase className="h-4 w-4" />
-                          <span>My Projects</span>
-                        </Link>
+                        <>
+                          <Link
+                            to="/dashoard/projects"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span>My Projects</span>
+                          </Link>
+                          <Link
+                            to="/edit-profile"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span>Edit Profile</span>
+                          </Link>
+                        </>
                       )}
                       <Link
                         to="/notifications"
