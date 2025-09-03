@@ -1,15 +1,21 @@
-// Admin/resources/financial.js
-export const createFinancialResources = async (db, tableExists, logAdminAction) => {
+export const createFinancialResources = async (
+  db,
+  tableExists,
+  logAdminAction
+) => {
   const { paymentsTableExists, receiptsTableExists } = tableExists;
   const resources = [];
 
-  // Payments Resource (if table exists)
+  // ---------------------------
+  // Payments Resource
+  // ---------------------------
   if (paymentsTableExists) {
     resources.push({
       resource: db.table("payments"),
       options: {
         id: "payments",
-        navigation: { name: "Payment Management", icon: "DollarSign" },
+        navigation: { name: "Financial Management", icon: "DollarSign" },
+
         listProperties: [
           "id",
           "payer_id",
@@ -45,19 +51,21 @@ export const createFinancialResources = async (db, tableExists, logAdminAction) 
           "order_id",
           "payment_date",
         ],
+
         sort: { sortBy: "payment_date", direction: "desc" },
+
         properties: {
           payer_id: {
-            reference: "users",
+            reference: "clients", 
             type: "reference",
             isRequired: true,
-            description: "User who made the payment",
+            description: "Client who made the payment",
           },
           receiver_id: {
-            reference: "users",
+            reference: "freelancers", 
             type: "reference",
             isRequired: true,
-            description: "User who received the payment",
+            description: "Freelancer who received the payment",
           },
           amount: {
             type: "currency",
@@ -76,6 +84,7 @@ export const createFinancialResources = async (db, tableExists, logAdminAction) 
             description: "Temporary project ID",
           },
         },
+
         actions: {
           new: {
             after: async (response, request, context) => {
@@ -83,7 +92,7 @@ export const createFinancialResources = async (db, tableExists, logAdminAction) 
                 await logAdminAction(
                   context.currentAdmin.id,
                   context.currentAdmin.email,
-                  `Created new payment: $${request.payload.amount} from user ${request.payload.payer_id} to user ${request.payload.receiver_id}`
+                  `Created new payment: $${request.payload.amount} from Client ${request.payload.payer_id} to Freelancer ${request.payload.receiver_id}`
                 );
               }
               return response;
@@ -120,21 +129,26 @@ export const createFinancialResources = async (db, tableExists, logAdminAction) 
     });
   }
 
-  // Receipts Resource (if table exists)
+  // ---------------------------
+  // Receipts Resource
+  // ---------------------------
   if (receiptsTableExists) {
     resources.push({
       resource: db.table("receipts"),
       options: {
         id: "receipts",
-        navigation: { name: "Receipt Management", icon: "FileText" },
+        navigation: { name: "Financial Management", icon: "FileText" },
+
         listProperties: ["id", "payment_id", "receipt_url"],
         showProperties: ["id", "payment_id", "receipt_url"],
         editProperties: ["payment_id", "receipt_url"],
         filterProperties: ["payment_id"],
+
         sort: { sortBy: "id", direction: "desc" },
+
         properties: {
           payment_id: {
-            reference: "payments",
+            reference: "payments", 
             type: "reference",
             isRequired: true,
             description: "Related payment",
@@ -145,6 +159,7 @@ export const createFinancialResources = async (db, tableExists, logAdminAction) 
             description: "URL to receipt document",
           },
         },
+
         actions: {
           new: {
             after: async (response, request, context) => {
