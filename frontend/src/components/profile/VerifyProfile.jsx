@@ -244,21 +244,33 @@ function VerifyProfile() {
     }
   };
 
-  const uploadImage = async (file) => {
-    setUploadingImage(true);
-    const formData = new FormData();
-    formData.append("image", file);
-
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showMessage("Please select an image file", "error");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage("Image size must be less than 5MB", "error");
+      return;
+    }
     try {
-      const res = await axios.post(
-        `https://api.imgbb.com/1/upload?key=3e98a98f3b7416d16ec2bf19527c5c65`,
-        formData
+      setUploadingImage(true);
+      const form = new FormData();
+      form.append("image", file);
+      const res = await axios.post(`http://localhost:5000/upload`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = res.data?.url;
+      if (!url) throw new Error("Upload failed");
+      setProfile((prev) => ({ ...prev, profile_pic_url: url }));
+      showMessage("Profile image uploaded", "success");
+    } catch (err) {
+      console.error("Upload error:", err);
+      showMessage(
+        err?.response?.data?.message || "Failed to upload image",
+        "error"
       );
-      setProfile((prev) => ({ ...prev, profile_pic_url: res.data.data.url }));
-      showMessage("Profile picture uploaded successfully", "success");
-    } catch (error) {
-      console.error("Image upload failed:", error);
-      showMessage("Image upload failed", "error");
     } finally {
       setUploadingImage(false);
     }
@@ -305,7 +317,7 @@ function VerifyProfile() {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const endpoint = editingPortfolioId
-        ? `http://localhost:5000/users/freelancer/portfolio/update/${editingPortfolioId}`
+        ? `http://localhost:5000/users/freelancers/portfolio/edit/${editingPortfolioId}`
         : "http://localhost:5000/users/freelancers/portfolio/create";
 
       const method = editingPortfolioId ? "put" : "post";
@@ -369,27 +381,24 @@ function VerifyProfile() {
   };
 
   const removePortfolioItem = async (portfolioId) => {
-    if (
-      !window.confirm("Are you sure you want to remove this portfolio item?")
-    ) {
+    if (!window.confirm("Are you sure you want to remove this portfolio item?"))
       return;
-    }
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { freelancerId: userId, portfolioId },
-      };
       const res = await axios.delete(
-        "http://localhost:5000/users/freelancer/portfolio/delete",
-        config
+        "http://localhost:5000/users/freelancers/portfolio/delete",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { freelancerId: userId, portfolioId }, // send in `data` for DELETE
+        }
       );
+
       if (res.data.success) {
         setPortfolioItems((prev) =>
           prev.filter((item) => item.id !== portfolioId)
         );
         showMessage("Portfolio item removed", "success");
-        setIsVerified(false);
+        setIsVerified(false); // if you want to trigger verification re-check
       }
     } catch (error) {
       console.error("Error removing portfolio item:", error);
@@ -399,17 +408,6 @@ function VerifyProfile() {
       );
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-          <p className="mt-2 text-gray-600">Loading your profile...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -614,7 +612,7 @@ function VerifyProfile() {
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files[0];
-                        if (file) uploadImage(file);
+                        if (file) handleImageUpload(file);
                       }}
                       className="hidden"
                       disabled={uploadingImage}
@@ -634,7 +632,7 @@ function VerifyProfile() {
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files[0];
-                        if (file) uploadImage(file);
+                        if (file) handleImageUpload(file);
                       }}
                       className="hidden"
                       disabled={uploadingImage}
@@ -983,5 +981,4 @@ function VerifyProfile() {
     </div>
   );
 }
-
 export default VerifyProfile;

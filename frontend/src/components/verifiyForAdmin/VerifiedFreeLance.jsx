@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
+import { toastSuccess, toastError } from "../../services/toastService";
 import {
   CheckCircle,
   XCircle,
@@ -22,6 +23,7 @@ import {
   ChevronUp,
   ExternalLink,
 } from "lucide-react";
+// fix conflicts
 
 export const AdminVerificationPage = () => {
   const [freelancers, setFreelancers] = useState([]);
@@ -104,18 +106,18 @@ export const AdminVerificationPage = () => {
 
     try {
       setActionLoading(id);
-      await axios.patch(
-        `http://localhost:5000/users/admin/freelancers/${id}/verify`,
+      await axios.put(
+        `http://localhost:5000/users/freelancers/${id}/verify`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      alert("Freelancer verified successfully!");
+      toastSuccess("Freelancer verified successfully!");
       fetchPendingFreelancers();
     } catch (err) {
       console.error("Verify error:", err);
-      alert(
+      toastError(
         err.response?.data?.message ||
           "Failed to verify freelancer. Please try again."
       );
@@ -130,18 +132,18 @@ export const AdminVerificationPage = () => {
 
     try {
       setActionLoading(id);
-      await axios.patch(
-        `http://localhost:5000/users/admin/freelancers/${id}/reject`,
+      await axios.put(
+        `http://localhost:5000/users/freelancers/${id}/reject`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      alert("Freelancer rejected successfully!");
+      toastSuccess("Freelancer rejected successfully!");
       fetchPendingFreelancers();
     } catch (err) {
       console.error("Reject error:", err);
-      alert(
+      toastError(
         err.response?.data?.message ||
           "Failed to reject freelancer. Please try again."
       );

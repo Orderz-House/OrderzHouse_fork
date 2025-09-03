@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toastError, toastSuccess } from "../../services/toastService";
 import {
     Save,
     Upload,
@@ -55,7 +56,7 @@ const Identity = () => {
         const file = event.target.files[0];
         if (file) {
             if (file.size > 50 * 1024 * 1024) {
-                alert("File size must be less than 50MB");
+                toastError("File size must be less than 50MB");
                 return;
             }
             setIdDocument(file);
@@ -66,7 +67,7 @@ const Identity = () => {
         e.preventDefault();
         // Add validation and submission logic here
         console.log("Identity data:", identityData, "Document:", idDocument);
-        alert("Identity information updated successfully!");
+        toastSuccess("Identity information updated successfully!");
     };
 
     return (

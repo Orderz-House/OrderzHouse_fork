@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toastError, toastSuccess } from "../../services/toastService";
 import { useParams } from 'react-router-dom';
 import { ArrowLeft, Play, Download, Clock, Users, DollarSign, BookOpen } from 'lucide-react';
 
@@ -39,9 +40,10 @@ const CourseDetail = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEnrolled(true);
-      alert("Enrolled successfully!");
+      toastSuccess("Enrolled successfully!");
     } catch (err) {
       setError(err.response?.data?.message || 'Enrollment failed');
+      toastError('Enrollment failed');
     }
   };
 

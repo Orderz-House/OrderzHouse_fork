@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 3003;
+const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
 }
@@ -43,7 +43,9 @@ import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
+import uploadRouter from "./router/upload.js";
 app.use("/news", newsRouter);
+app.use("/upload", uploadRouter);
 app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
