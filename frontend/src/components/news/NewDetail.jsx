@@ -19,25 +19,12 @@ const NewsDetails = () => {
   useEffect(() => {
     const fetchNewsData = async () => {
       try {
-        setLoading(true);
-
+        setLoading(false);
         // Simulate real API call (replace with actual when backend ready)
-        // const res = await axios.get(`http://localhost:5000/news/${id}`);
-        // setNews(res.data.post);
-
-        setTimeout(() => {
-          setNews({
-            id: 1,
-            title: "New Course Launch: Master Freelancing in 30 Days",
-            content: `We're excited to announce our newest course: "Master Freelancing in 30 Days" — designed to take beginners from zero to earning in under a month.\n\nThis hands-on course covers everything you need to know:\n\n• How to create a winning profile\n• Writing winning proposals\n• Pricing your services competitively\n• Managing clients and deadlines\n• Withdrawing earnings securely\n\nOnce you complete the course, you'll get direct access to OrderzHouse — our freelance marketplace — where you can start applying your skills immediately.\n\nNo experience? No problem. Our students have gone from complete beginners to earning $500+/month within weeks.\n\n✨ This is more than education — it's a career launchpad.\n\nJoin the first batch starting September 15th. Limited seats available.`,
-            image_url:
-              "https://studyzhouse.com/wp-content/uploads/2025/08/WhatsApp-Image-2025-07-27-at-14.17.18_6166fcdd.jpg",
-            created_at: "2025-09-01T08:52:44.620Z",
-            author: "orderZHouse Team",
-            readTime: "5 min read",
-          });
-          setLoading(false);
-        }, 800);
+         const res = await axios.get(`http://localhost:5000/news/${id}`);
+         setNews(res.data.news);
+         console.log(res);
+         
       } catch (err) {
         console.error("Failed to fetch news:", err);
         setLoading(false);
@@ -106,6 +93,7 @@ const NewsDetails = () => {
       </div>
     );
   }
+  console.log(news);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-8 px-4 sm:px-6 lg:px-8">

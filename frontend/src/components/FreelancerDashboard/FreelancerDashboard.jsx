@@ -30,6 +30,7 @@ import FreelancerProjects from "./FreelancerProjects";
 import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
 import FreelancerPage from "../freelanceDetails/FreeLanceDetail";
+import ProfileView from "../profile/ProfileView";
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
@@ -289,7 +290,7 @@ const Dashboard = () => {
       case "Settings": 
         return <EditProfile/>;
       case "profile":
-        return <FreelancerPage id={userData.id}/>;
+        return <ProfileView/>;
       case "dashboard":
       default:
         return (

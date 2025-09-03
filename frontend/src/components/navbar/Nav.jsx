@@ -435,12 +435,12 @@ export default function EnhancedNavbar() {
                             <span>My Projects</span>
                           </Link>
                           <Link
-                            to="/edit-profile"
+                            to="/profile"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
                           >
-                            <Briefcase className="h-4 w-4" />
-                            <span>Edit Profile</span>
+                            <User  className="h-4 w-4" />
+                            <span>Profile</span>
                           </Link>
                         </>
                       )}

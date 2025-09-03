@@ -14,6 +14,9 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/verify-profile" replace />;
     
   }
+  if(userData.is_deleted){
+    return <Navigate to="/account/suspended" replace />;
+  }
 
   return children;
 }

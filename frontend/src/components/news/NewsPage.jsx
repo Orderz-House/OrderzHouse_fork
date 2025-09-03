@@ -86,7 +86,8 @@ const NewsPage = () => {
       showMessage("Failed to delete news article", "error");
     }
   };
-
+  console.log("newwwwwwwwwwwwwws ===========>", newsList);
+  
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
