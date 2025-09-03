@@ -33,6 +33,7 @@ import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
+import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -138,6 +139,11 @@ function App() {
         <Route
           path="/notifications"
           element={<ProtectedRoute><NotificationsPage/></ProtectedRoute>}
+          />
+
+          <Route
+          path="/freelancer/project/:projectId"
+          element={<ProtectedRoute><FreelancerManageProject/></ProtectedRoute>}
           />
       </Routes>
       <EnhancedFooter />
