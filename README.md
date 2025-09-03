@@ -1,3 +1,4 @@
+![Alt text](https://i.ibb.co/rG0Hh95h/Orderz-House-Logo-01.png)
 # OrderzHouse
 
 OrderzHouse is a comprehensive freelance platform that connects clients with freelancers for various projects. The platform includes features for user management, project posting, bidding, messaging, course management, and an admin panel for oversight.
