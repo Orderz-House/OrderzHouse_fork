@@ -1,4 +1,3 @@
-// Admin/resources/appointments.js
 export const createAppointmentsResource = async (db, logAdminAction) => {
   return {
     resource: db.table("appointments"),
@@ -45,7 +44,7 @@ export const createAppointmentsResource = async (db, logAdminAction) => {
         id: { isVisible: { list: true, show: true, edit: false, filter: true } },
         freelancer_id: {
           type: "reference",
-          reference: "freelancers", // AdminJS resource id
+          reference: "freelancers", 
           isRequired: true,
         },
         appointment_date: {

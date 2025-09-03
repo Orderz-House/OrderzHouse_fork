@@ -1,6 +1,6 @@
 export const createPlansResource = async (db, logAdminAction) => {
   return {
-    resource: db.table("plans"), // your table name
+    resource: db.table("plans"),
     options: {
       id: "plans",
       navigation: { name: "Subscription Management", icon: "CreditCard" },

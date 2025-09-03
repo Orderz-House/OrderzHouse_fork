@@ -72,12 +72,10 @@ export const createFreelancersResource = async (db, logAdminAction) => {
       sort: { sortBy: "rating", direction: "desc" },
 
       properties: {
-        // Role management - Hidden for freelancers resource
         role_id: {
           isVisible: { list: false, filter: false, show: false, edit: false },
         },
 
-        // User identification
         first_name: {
           isRequired: true,
           description: "Freelancer's first name",
@@ -111,14 +109,12 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           description: "Freelancer's country",
         },
 
-        // Profile and media
         profile_pic_url: {
           type: "url",
           description: "Profile picture URL",
           isVisible: { list: false, show: true, edit: true, filter: false },
         },
 
-        // Freelancer-specific fields
         rating: {
           type: "number",
           description: "Freelancer rating (0-5 stars)",
@@ -135,7 +131,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           description: "Number of policy violations",
         },
 
-        // Status fields
         is_verified: {
           type: "boolean",
           description: "Account verification status",
@@ -151,7 +146,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           description: "Current online status",
         },
 
-        // System fields
         socket_id: {
           type: "string",
           isVisible: { list: false, show: true, edit: false, filter: false },
@@ -169,7 +163,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
         },
       },
 
-      // Enhanced styling for freelancer interface
       styles: {
         ".freelancer-header": {
           background: "linear-gradient(135deg, #2196f3 0%, #1976d2 100%)",
@@ -196,7 +189,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
       },
 
       actions: {
-        // Filter to show only freelancers (role_id = 3)
         list: {
           before: async (request) => {
             request.query = {
@@ -204,7 +196,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
               "filters.role_id": "3",
             };
 
-            // Add soft delete filter (don't show deleted users by default)
             if (!request.query["filters.is_deleted"]) {
               request.query = {
                 ...request.query,
@@ -215,13 +206,11 @@ export const createFreelancersResource = async (db, logAdminAction) => {
             return request;
           },
           after: async (response) => {
-            // Add freelancer-specific enhancements
             if (response.records) {
               response.records = response.records.map((record) => {
                 record.params.role_name = "Freelancer";
                 record.params.full_name = `${record.params.first_name} ${record.params.last_name}`;
 
-                // Add rating class for styling
                 const rating = parseFloat(record.params.rating) || 0;
                 if (rating >= 4.0) record.params.rating_class = "rating-high";
                 else if (rating >= 3.0)
@@ -235,11 +224,9 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           },
         },
 
-        // Create new freelancer
         new: {
           before: async (request) => {
             if (request.payload) {
-              // Validate required password for new freelancers
               if (
                 !request.payload.password ||
                 request.payload.password.trim() === ""
@@ -247,15 +234,13 @@ export const createFreelancersResource = async (db, logAdminAction) => {
                 throw new Error("Password is required for new freelancers");
               }
 
-              // Set freelancer-specific defaults
-              request.payload.role_id = 3; // Freelancer role only
+              request.payload.role_id = 3;
               request.payload.is_deleted = false;
               request.payload.violation_count = 0;
               request.payload.rating = request.payload.rating || 0.0;
               request.payload.wallet = request.payload.wallet || 0.0;
               request.payload.is_online = false;
 
-              // Set timestamps if not provided by database
               if (!request.payload.created_at) {
                 request.payload.created_at = new Date().toISOString();
               }
@@ -263,7 +248,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
                 request.payload.updated_at = new Date().toISOString();
               }
 
-              // Hash password
               if (request.payload.password?.trim()) {
                 request.payload.password = await bcrypt.hash(
                   request.payload.password,
@@ -285,30 +269,25 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           },
         },
 
-        // Edit freelancer
         edit: {
           before: async (request) => {
             if (request.payload) {
               request.payload.updated_at = new Date().toISOString();
 
-              // Ensure role remains freelancer
               request.payload.role_id = 3;
 
-              // Handle password updates - remove password field if empty or undefined
               if (
                 !request.payload.password ||
                 request.payload.password.trim() === ""
               ) {
-                delete request.payload.password; // Don't update password if empty
+                delete request.payload.password; 
               } else if (request.payload.password?.trim()) {
-                // Hash password if provided
                 request.payload.password = await bcrypt.hash(
                   request.payload.password,
                   10
                 );
               }
 
-              // Validate rating
               if (request.payload.rating !== undefined) {
                 const rating = parseFloat(request.payload.rating);
                 if (rating < 0 || rating > 5) {
@@ -316,7 +295,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
                 }
               }
 
-              // Validate wallet amount
               if (request.payload.wallet !== undefined) {
                 const wallet = parseFloat(request.payload.wallet);
                 if (wallet < 0) {
@@ -340,7 +318,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           },
         },
 
-        // Soft delete freelancer
         delete: {
           before: async (request) => {
             request.payload = {
@@ -362,14 +339,12 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           },
         },
 
-        // Restore freelancer - only show for deleted freelancers
         restore: {
           actionType: "record",
           icon: "Refresh",
           variant: "success",
           component: false,
           isVisible: (context) => {
-            // Only show restore action if freelancer is deleted
             return context.record && context.record.params.is_deleted === true;
           },
           handler: async (request, response, context) => {

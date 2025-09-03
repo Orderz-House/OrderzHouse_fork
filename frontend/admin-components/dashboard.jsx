@@ -57,6 +57,7 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Real-time data updates every 10 seconds
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       if (!fetchingRef.current && mountedRef.current) {
@@ -129,41 +130,22 @@ export default function Dashboard() {
   };
 
   const getTimeAgo = (dateString) => {
-  if (!dateString) return "";
-  try {
-    const logTime = new Date(dateString);
-    if (isNaN(logTime)) return "";
-
-    const now = new Date();
-    let diffSecs = Math.floor((now.getTime() - logTime.getTime()) / 1000);
-
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-
-    const diffMins = Math.floor(diffSecs / 60);
-    if (diffMins < 60) return `${diffMins}m ago`;
-
-    const diffHours = Math.floor(diffMins / 60);
-    const remainingMins = diffMins % 60;
-
-    if (diffHours < 24) {
-      return remainingMins === 0
-        ? `${diffHours}h ago`
-        : `${diffHours}h ${remainingMins}m ago`;
+    if (!dateString) return "";
+    try {
+      const now = new Date();
+      const logTime = new Date(dateString);
+      const diffMs = now - logTime;
+      const diffSecs = Math.floor(diffMs / 1000);
+      if (diffSecs < 60) return `${diffSecs}s ago`;
+      const diffMins = Math.floor(diffSecs / 60);
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return logTime.toLocaleDateString();
+    } catch {
+      return "";
     }
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return logTime.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return "";
-  }
-};
-
+  };
 
   const containerStyle = {
     backgroundColor: '#ffffff',

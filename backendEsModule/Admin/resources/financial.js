@@ -56,13 +56,13 @@ export const createFinancialResources = async (
 
         properties: {
           payer_id: {
-            reference: "clients", // 👈 clients = payers
+            reference: "clients", 
             type: "reference",
             isRequired: true,
             description: "Client who made the payment",
           },
           receiver_id: {
-            reference: "freelancers", // 👈 freelancers = receivers
+            reference: "freelancers", 
             type: "reference",
             isRequired: true,
             description: "Freelancer who received the payment",
@@ -148,7 +148,7 @@ export const createFinancialResources = async (
 
         properties: {
           payment_id: {
-            reference: "payments", // 👈 ties directly to payments
+            reference: "payments", 
             type: "reference",
             isRequired: true,
             description: "Related payment",
