@@ -450,14 +450,24 @@ export default function EnhancedNavbar() {
                           <span>Dashboard</span>
                         </Link>
                       ) : (
-                        <Link
-                          to="/dashoard/projects"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                        >
-                          <Briefcase className="h-4 w-4" />
-                          <span>My Projects</span>
-                        </Link>
+                        <>
+                          <Link
+                            to="/dashoard/projects"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span>My Projects</span>
+                          </Link>
+                          <Link
+                            to="/edit-profile"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span>Edit Profile</span>
+                          </Link>
+                        </>
                       )}
                       <Link
                         onClick={handleLogout}
@@ -530,96 +540,96 @@ export default function EnhancedNavbar() {
         )}
 
         {/* Enhanced Mobile Menu */}
-       {isMobileMenuOpen && (
-  <div className="lg:hidden">
-    <div className="px-2 pt-2 pb-3 space-y-1 border-t border-gray-200 bg-white/95 backdrop-blur-md">
-      {navLinks.map((item) => (
-        <button
-          key={item.label}
-          onClick={() => handleNavigation(item.path, item.label)}
-          className={`w-full text-left px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 ${
-            activeLink === item.label
-              ? "text-teal-600 bg-teal-50"
-              : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
-          }`}
-        >
-          {item.label}
-        </button>
-      ))}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-gray-200 bg-white/95 backdrop-blur-md">
+              {navLinks.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => handleNavigation(item.path, item.label)}
+                  className={`w-full text-left px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 ${
+                    activeLink === item.label
+                      ? "text-teal-600 bg-teal-50"
+                      : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
 
-      {/* VERIFICATION button for role_id === 1 */}
-      {userData?.role_id === 1 && (
-        <button
-          onClick={() => {
-            handleNavigation("/admin-verification", "VERIFICATION");
-            setIsMobileMenuOpen(false);
-          }}
-          className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
-        >
-          VERIFICATION
-        </button>
-      )}
-    </div>
-    {/* Mobile Auth Section */}
-    <div className="pt-4 border-t border-gray-200 space-y-3">
-      {IsAuthenticated ? (
-        <>
-          <div className="px-4 py-2">
-            <p className="font-medium text-gray-900">
-              {userData.first_name} {userData.last_name}
-            </p>
-            <p className="text-sm text-gray-500 break-words">
-              {userData.email}
-            </p>
+              {/* VERIFICATION button for role_id === 1 */}
+              {userData?.role_id === 1 && (
+                <button
+                  onClick={() => {
+                    handleNavigation("/admin-verification", "VERIFICATION");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-base font-medium rounded-xl text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-all duration-200"
+                >
+                  VERIFICATION
+                </button>
+              )}
+            </div>
+            {/* Mobile Auth Section */}
+            <div className="pt-4 border-t border-gray-200 space-y-3">
+              {IsAuthenticated ? (
+                <>
+                  <div className="px-4 py-2">
+                    <p className="font-medium text-gray-900">
+                      {userData.first_name} {userData.last_name}
+                    </p>
+                    <p className="text-sm text-gray-500 break-words">
+                      {userData.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      console.log("Navigate to profile");
+                    }}
+                    className="w-full text-left px-4 py-3 text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Profile Settings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      handleLogin();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleRegister();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-xl shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+                  >
+                    Register
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              console.log("Navigate to profile");
-            }}
-            className="w-full text-left px-4 py-3 text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
-          >
-            <Settings className="h-4 w-4" />
-            <span>Profile Settings</span>
-          </button>
-          <button
-            onClick={() => {
-              handleLogout();
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            onClick={() => {
-              handleLogin();
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200"
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => {
-              handleRegister();
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-xl shadow-lg transform hover:scale-[1.02] transition-all duration-200"
-          >
-            Register
-          </button>
-        </>
-      )}
-    </div>
-  </div>
-)}
-              {/* Mobile Services - COMMENTED OUT */}
-              {/* <div className="pt-2">
+        )}
+        {/* Mobile Services - COMMENTED OUT */}
+        {/* <div className="pt-2">
                 <button
                   onClick={() => setIsServicesOpen(!isServicesOpen)}
                   className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
@@ -649,8 +659,8 @@ export default function EnhancedNavbar() {
                 )}
               </div> */}
 
-              {/* Mobile Contact - COMMENTED OUT */}
-              {/* <div className="pt-2">
+        {/* Mobile Contact - COMMENTED OUT */}
+        {/* <div className="pt-2">
                 <button
                   onClick={() => setIsContactOpen(!isContactOpen)}
                   className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
@@ -685,8 +695,6 @@ export default function EnhancedNavbar() {
                   </div>
                 )}
               </div> */}
-
-
       </div>
       {/* Demo Controls */}
       {/* 

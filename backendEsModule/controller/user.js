@@ -1,7 +1,7 @@
-import pool from "../models/db.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import pool from "../models/db.js";
 
 const register = async (req, res) => {
   const {
@@ -33,14 +33,13 @@ const register = async (req, res) => {
     });
   }
 
-  const hashedPassword = await bcrypt.hash(
-    password,
-    Number(process.env.SECRET)
-  );
-  const Email = email.toLowerCase();
-
   try {
-    // إدخال المستخدم في جدول users
+    const hashedPassword = await bcrypt.hash(
+      password,
+      Number(process.env.SECRET)
+    );
+    const Email = email.toLowerCase();
+
     const { rows: userRows } = await pool.query(
       "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username, category_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
       [
@@ -52,16 +51,11 @@ const register = async (req, res) => {
         phone_number,
         country,
         username,
-        category_id, // هنا يتم إدخال category_id
+        category_id,
       ]
     );
 
     const user = userRows[0];
-
-    // إذا كان الفريلانسر، يجب ربطه بكاتيجوري
-    if (role_id === 3 && category_id) {
-      // هذه الخطوة تتم تلقائيًا في الدالة أعلاه عبر الـ INSERT
-    }
 
     const positionRole =
       user.role_id === 1
@@ -284,7 +278,10 @@ const editUser = async (req, res) => {
     );
 
     // If a non-empty profile URL was provided but DB still returns null, force update the column
-    if (newProfilePicUrl && (!result.rows[0] || !result.rows[0].profile_pic_url)) {
+    if (
+      newProfilePicUrl &&
+      (!result.rows[0] || !result.rows[0].profile_pic_url)
+    ) {
       const forced = await pool.query(
         `UPDATE users SET profile_pic_url = $1 WHERE id = $2 AND is_deleted = FALSE RETURNING *`,
         [newProfilePicUrl, userId]
@@ -323,7 +320,14 @@ const updateUser = async (req, res) => {
   const { userId } = req.params;
 
   // Extract the fields to update from request body
-  const { first_name, last_name, phone_number, country, username, profile_pic_url } = req.body;
+  const {
+    first_name,
+    last_name,
+    phone_number,
+    country,
+    username,
+    profile_pic_url,
+  } = req.body;
 
   try {
     // Update the user in the database
@@ -339,7 +343,15 @@ const updateUser = async (req, res) => {
           profile_pic_url = COALESCE($6, profile_pic_url)
         WHERE id = $7 AND is_deleted = FALSE
         RETURNING *;`,
-      [first_name, last_name, phone_number, country, username, profile_pic_url, userId]
+      [
+        first_name,
+        last_name,
+        phone_number,
+        country,
+        username,
+        profile_pic_url,
+        userId,
+      ]
     );
 
     // If no user found or the user is deleted, return 404
@@ -469,34 +481,57 @@ const editPortfolioFreelancer = async (req, res) => {
   }
 };
 
-const deletePortfolioFreelancer = async (req, res) => {
-  const { freelnacerId, portfolioId } = req.body;
-  console.log(typeof freelnacerId);
-  console.log(typeof portfolioId);
-  pool
-    .query(
-      "DELETE FROM portfolios WHERE freelancer_id = $1 AND id = $2 RETURNING *",
-      [freelnacerId, portfolioId]
-    )
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({
+ const deletePortfolioFreelancer = async (req, res) => {
+  try {
+    const userId = req.token?.userId; // authenticated user
+    const role = req.token?.role;
+
+    if (!userId || !role) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { freelancerId, portfolioId } = req.body;
+
+    // Ensure freelancer is deleting their own portfolio
+    if (parseInt(freelancerId) !== userId) {
+      return res
+        .status(403)
+        .json({
           success: false,
-          message: `Portfolio ID: ${portfolioId} not found or does not belong to freelancer ${freelnacerId}`,
+          message: "You can only delete your own portfolio items.",
         });
-      }
-      res.status(200).json({
-        success: true,
-        message: `Deleted Portfolio ID: ${portfolioId} Successfully`,
-      });
-    })
-    .catch((err) => {
-      res.status(500).json({
+    }
+
+    // Optional: allow only role 3 (freelancer) to delete portfolio items
+    if (role !== 3) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Only freelancers can delete portfolio items.",
+        });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM portfolios WHERE freelancer_id = $1 AND id = $2 RETURNING *",
+      [freelancerId, portfolioId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
         success: false,
-        message: "Server Error",
-        err,
+        message: `Portfolio ID: ${portfolioId} not found or does not belong to freelancer ${freelancerId}`,
       });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Deleted Portfolio ID: ${portfolioId} Successfully`,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server Error", err });
+  }
 };
 
 const deactivateInactiveUsers = async () => {
@@ -1058,96 +1093,96 @@ const updateVerificationStatus = async (req, res) => {
 const verifyFreelancerByAdmin = (req, res) => {
   const { id } = req.params; // Freelancer ID from URL
 
-  pool.query(
-    `UPDATE users 
+  pool
+    .query(
+      `UPDATE users 
        SET is_verified = TRUE, 
            reason_for_disruption = NULL 
        WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
        RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
-    [id]
-  )
-  .then(result => {
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer not found, not a freelancer, or account deleted.",
-      });
-    }
-
-    const freelancer = result.rows[0];
-
-    // Log admin action
-    return pool.query(
-      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
-      [
-        req.token.userId,
-        `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
-      ]
+      [id]
     )
-    .then(() => {
-      res.status(200).json({
-        success: true,
-        message: "Freelancer verified successfully.",
-        freelancer,
+    .then((result) => {
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Freelancer not found, not a freelancer, or account deleted.",
+        });
+      }
+
+      const freelancer = result.rows[0];
+
+      // Log admin action
+      return pool
+        .query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
+          req.token.userId,
+          `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
+        ])
+        .then(() => {
+          res.status(200).json({
+            success: true,
+            message: "Freelancer verified successfully.",
+            freelancer,
+          });
+        });
+    })
+    .catch((err) => {
+      console.error("Error verifying freelancer:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error while verifying freelancer",
+        error: err.message,
       });
     });
-  })
-  .catch(err => {
-    console.error("Error verifying freelancer:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error while verifying freelancer",
-      error: err.message,
-    });
-  });
 };
 
 // Reject freelancer by admin
 const rejectFreelancerByAdmin = (req, res) => {
   const { id } = req.params;
 
-  pool.query(
-    `UPDATE users 
+  pool
+    .query(
+      `UPDATE users 
        SET is_verified = FALSE, 
            reason_for_disruption = 'Rejected by admin' 
        WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
        RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
-    [id]
-  )
-  .then(result => {
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer not found, not a freelancer, or account deleted.",
-      });
-    }
-
-    const freelancer = result.rows[0];
-
-    // Log admin action
-    return pool.query(
-      "INSERT INTO logs (user_id, action) VALUES ($1, $2)",
-      [
-        req.token.userId,
-        `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`
-      ]
+      [id]
     )
-    .then(() => {
-      res.status(200).json({
-        success: true,
-        message: "Freelancer rejected successfully.",
-        freelancer,
+    .then((result) => {
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Freelancer not found, not a freelancer, or account deleted.",
+        });
+      }
+
+      const freelancer = result.rows[0];
+
+      // Log admin action
+      return pool
+        .query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
+          req.token.userId,
+          `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
+        ])
+        .then(() => {
+          res.status(200).json({
+            success: true,
+            message: "Freelancer rejected successfully.",
+            freelancer,
+          });
+        });
+    })
+    .catch((err) => {
+      console.error("Error rejecting freelancer:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error while rejecting freelancer",
+        error: err.message,
       });
     });
-  })
-  .catch(err => {
-    console.error("Error rejecting freelancer:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error while rejecting freelancer",
-      error: err.message,
-    });
-  });
 };
 
 export {

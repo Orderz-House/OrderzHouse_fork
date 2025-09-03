@@ -63,7 +63,6 @@ usersRouter.put(
 usersRouter.delete(
   "/freelancers/portfolio/delete",
   authentication,
-  requireVerified,
   deletePortfolioFreelancer
 );
 

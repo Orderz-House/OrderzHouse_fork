@@ -12,6 +12,7 @@ function ProtectedRoute({ children }) {
 
   if (!userData.is_verified) {
     return <Navigate to="/verify-profile" replace />;
+    
   }
 
   return children;
