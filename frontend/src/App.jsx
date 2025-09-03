@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import Counter from "./counter/Counter";
 import Navbar from "./components/navbar/Nav";
@@ -34,10 +34,18 @@ import NotificationsPage from "./components/profile/NotificationsPage";
 import NewsListPage from "./components/news/NewsPage";
 import NewsDetailPage from "./components/news/NewDetail";
 import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
+import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
+import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
+import ProfileView from "./components/profile/ProfileView";
+
 
 function App() {
+  const location = useLocation();
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
+  const hideNavbarRoutes = ["/account/suspended"];
+
+  const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   useEffect(() => {
     const socket = initSocket(token, userId);
@@ -48,11 +56,16 @@ function App() {
 
   return (
     <>
-      <Navbar />
+    {!shouldHideNavbar && <Navbar />}
       <Routes>
+
         <Route path="/news" element={<NewsListPage />} />
         <Route path="/news/admin" element={<AdminPendingNewsPage />} />
         <Route path="/news/:id" element={<NewsDetailPage />} />
+
+        
+        <Route path="account/suspended" element={<AccountSuspended />} />
+
         <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -62,6 +75,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>
 
         {/* ✅ VerifyProfile يظل مفتوح */}
         <Route path="/verify-profile" element={<VerifyProfile />} />
@@ -101,8 +115,24 @@ function App() {
         />
 
         {/* ✅ صفحات عامة */}
-        <Route path="/projects/:projectId" element={<ProjectDetails />} />
-        <Route path="/rate" element={<TopRatedFreelancers />} />
+
+        <Route
+          path="/projects/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate"
+          element={
+            <ProtectedRoute>
+              <TopRatedFreelancers />
+            </ProtectedRoute>
+          }
+        />
+>>>>>>> main
 
         <Route
           path="/dashoard/projects"
@@ -112,9 +142,32 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/projects/" element={<ProjectsAvalible />} />
-        <Route path="/freelancers" element={<AllFreeLance />} />
-        <Route path="/freelancer/profile/:id" element={<FreeLanceDetail />} />
+
+        <Route
+          path="/projects/"
+          element={
+            <ProtectedRoute>
+              <ProjectsAvalible />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/freelancers"
+          element={
+            <ProtectedRoute>
+              <AllFreeLance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/freelancer/profile/:id"
+          element={
+            <ProtectedRoute>
+              <FreeLanceDetail />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/courses"
           element={
@@ -140,8 +193,20 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+
+        <Route
+          path="/freelancer/project/:projectId"
+          element={
+            <ProtectedRoute>
+              <FreelancerManageProject />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
-      <EnhancedFooter />
+      {!shouldHideNavbar && <EnhancedFooter />}
+      
       <ToastContainer
         position="top-right"
         autoClose={5000}
