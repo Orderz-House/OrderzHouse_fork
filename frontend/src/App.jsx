@@ -32,6 +32,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
+import NotificationsPage from "./components/profile/NotificationsPage";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -133,6 +134,11 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/notifications"
+          element={<ProtectedRoute><NotificationsPage/></ProtectedRoute>}
+          />
       </Routes>
       <EnhancedFooter />
       <ToastContainer

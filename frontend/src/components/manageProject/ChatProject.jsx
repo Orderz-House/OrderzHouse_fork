@@ -160,7 +160,8 @@ function ChatProject() {
 
     const handleMessage = (data) => setMessages((prev) => [...prev, data]);
     const handleBlocked = (data) => alert(data.error);
-    const handleError = (data) => console.error(data.error);
+    const handleError = (data) => console.log(data.error);
+    
 
     socket.on("room_joined", handleRoomJoined);
     socket.on("join_error", handleJoinError);

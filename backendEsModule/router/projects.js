@@ -1,6 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment, getAllProjectForFreelancerById, uploadProjectFile, getProjectFiles } from "../controller/projects.js";
+import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment, getAllProjectForFreelancerById, uploadProjectFile, getProjectFiles, getCountProjectFreelancer } from "../controller/projects.js";
 import {requireVerified} from "../middleware/requireVerification.js";
 const projectsRouter = express.Router();
 
@@ -29,5 +29,7 @@ projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
 
 // helper: list users by role id (e.g., 2 = employee, 3 = freelancer)
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
+
+projectsRouter.get('/freelancer/:freelancer_id/counts', authentication, getCountProjectFreelancer);
 
 export default projectsRouter;

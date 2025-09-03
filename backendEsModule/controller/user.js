@@ -2,6 +2,9 @@ import pool from "../models/db.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cron from "node-cron";
+import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "../services/loggingService.js";
+import { createNotification } from "../services/notificationService.js";
+
 
 const register = async (req, res) => {
   const {
@@ -74,6 +77,25 @@ const register = async (req, res) => {
       user.id,
       actionUser,
     ]);
+
+    await LogCreators.userAuth(
+      user.id,
+      ACTION_TYPES.USER_REGISTER,
+      true,
+      { role_id: user.role_id, country: user.country }
+    );
+
+    try {
+      await createNotification(
+        user.id,
+        'user_registered',
+        `Welcome to the platform, ${user.first_name}! Your account has been created successfully.`,
+        user.id,
+        'user'
+      );
+    } catch (notificationError) {
+      console.error('Error creating welcome notification:', notificationError);
+    }
 
     res.status(201).json({
       success: true,
@@ -167,6 +189,15 @@ const login = async (req, res) => {
       user.id,
       actionUser,
     ]);
+
+    await LogCreators.userAuth(
+      user.id,
+      ACTION_TYPES.USER_LOGIN,
+      true,
+      { role_id: user.role_id, country: user.country, ip: req.ip }
+    );
+
+
     return res.status(201).json({
       token,
       success: true,

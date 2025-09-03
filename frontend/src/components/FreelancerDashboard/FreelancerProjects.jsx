@@ -1,23 +1,24 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Clock,
   Calendar,
   DollarSign,
   FileText,
-  AlertCircle,
-  CheckCircle,
-  TrendingUp,
   Search,
   Filter,
   ArrowRight,
-  Briefcase,
-  Star,
-  MessageSquare,
-  Bell,
-  User
+  XCircle,
+  AlertTriangle,
+  CheckCircle2,
+  PlayCircle,
+  PauseCircle,
+  Info,
+  Ban,
+  LogOut,
+  Shield
 } from "lucide-react";
 
 const FreelancerProjects = () => {
@@ -33,6 +34,8 @@ const FreelancerProjects = () => {
     pending: 0,
     totalEarnings: 0
   });
+  
+  const navigate = useNavigate();
 
   // Fetch freelancer's projects
   useEffect(() => {
@@ -48,27 +51,29 @@ const FreelancerProjects = () => {
         
         if (response.data && response.data.success && response.data.projects) {
           const projectsData = response.data.projects;
+          console.log(response);
+          
           setProjects(projectsData);
           setFilteredProjects(projectsData);
           
-          // Calculate stats based on completion_status
+          // Calculate stats based on assignment_status
           const active = projectsData.filter(p => 
-            p.completion_status === 'in_progress' || 
-            p.completion_status === 'active' || 
-            p.completion_status === 'pending_review'
+            p.assignment_status === 'in_progress' || 
+            p.assignment_status === 'active' || 
+            p.assignment_status === 'pending_review'
           ).length;
           
           const completed = projectsData.filter(p => 
-            p.completion_status === 'completed'
+            p.assignment_status === 'completed'
           ).length;
           
           const pending = projectsData.filter(p => 
-            p.completion_status === 'pending' || 
-            p.completion_status === 'pending_start'
+            p.assignment_status === 'pending' || 
+            p.assignment_status === 'pending_start'
           ).length;
           
           const totalEarnings = projectsData
-            .filter(p => p.completion_status === 'completed')
+            .filter(p => p.assignment_status === 'completed')
             .reduce((sum, project) => sum + (parseInt(project.budget_max) || 0), 0);
             
           setStats({ active, completed, pending, totalEarnings });
@@ -101,16 +106,16 @@ const FreelancerProjects = () => {
     if (statusFilter !== "all") {
       if (statusFilter === "active") {
         result = result.filter(project => 
-          project.completion_status === 'in_progress' || 
-          project.completion_status === 'active' || 
-          project.completion_status === 'pending_review'
+          project.assignment_status === 'in_progress' || 
+          project.assignment_status === 'active' || 
+          project.assignment_status === 'pending_review'
         );
       } else if (statusFilter === "completed") {
-        result = result.filter(project => project.completion_status === 'completed');
+        result = result.filter(project => project.assignment_status === 'completed');
       } else if (statusFilter === "pending") {
         result = result.filter(project => 
-          project.completion_status === 'pending' || 
-          project.completion_status === 'pending_start'
+          project.assignment_status === 'pending' || 
+          project.assignment_status === 'pending_start'
         );
       }
     }
@@ -120,21 +125,109 @@ const FreelancerProjects = () => {
 
   const getStatusBadge = (completionStatus) => {
     const statusConfig = {
-      active: { color: "bg-blue-100 text-blue-800", text: "Active" },
-      in_progress: { color: "bg-blue-100 text-blue-800", text: "In Progress" },
-      pending_review: { color: "bg-purple-100 text-purple-800", text: "Pending Review" },
-      completed: { color: "bg-green-100 text-green-800", text: "Completed" },
-      pending: { color: "bg-yellow-100 text-yellow-800", text: "Pending" },
-      pending_start: { color: "bg-yellow-100 text-yellow-800", text: "Pending Start" },
-      overdue: { color: "bg-red-100 text-red-800", text: "Overdue" }
+      active: { 
+        color: "bg-blue-100 text-blue-800 border border-blue-200", 
+        text: "Active",
+        icon: <PlayCircle className="w-4 h-4 mr-1" />
+      },
+      in_progress: { 
+        color: "bg-blue-100 text-blue-800 border border-blue-200", 
+        text: "In Progress",
+        icon: <PlayCircle className="w-4 h-4 mr-1" />
+      },
+      pending_review: { 
+        color: "bg-purple-100 text-purple-800 border border-purple-200", 
+        text: "Pending Review",
+        icon: <AlertTriangle className="w-4 h-4 mr-1" />
+      },
+      completed: { 
+        color: "bg-green-100 text-green-800 border border-green-200", 
+        text: "Completed",
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />
+      },
+      pending: { 
+        color: "bg-yellow-100 text-yellow-800 border border-yellow-200", 
+        text: "Pending",
+        icon: <PauseCircle className="w-4 h-4 mr-1" />
+      },
+      pending_start: { 
+        color: "bg-yellow-100 text-yellow-800 border border-yellow-200", 
+        text: "Pending Start",
+        icon: <PauseCircle className="w-4 h-4 mr-1" />
+      },
+      overdue: { 
+        color: "bg-red-100 text-red-800 border border-red-200", 
+        text: "Overdue",
+        icon: <AlertTriangle className="w-4 h-4 mr-1" />
+      }
     };
     
-    const config = statusConfig[completionStatus] || { color: "bg-gray-100 text-gray-800", text: completionStatus };
+    const config = statusConfig[completionStatus] || { 
+      color: "bg-gray-100 text-gray-800 border border-gray-200", 
+      text: completionStatus,
+      icon: <AlertTriangle className="w-4 h-4 mr-1" />
+    };
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${config.color}`}>
+        {config.icon}
         {config.text}
       </span>
+    );
+  };
+
+  const getAssignmentStatusBadge = (assignmentStatus) => {
+    const statusConfig = {
+      active: { 
+        color: "bg-green-100 text-green-800 border border-green-200", 
+        text: "Active",
+        icon: <PlayCircle className="w-4 h-4 mr-1" />,
+        tooltip: "You are actively working on this project"
+      },
+      quit: { 
+        color: "bg-gray-100 text-gray-800 border border-gray-200", 
+        text: "Withdrawn",
+        icon: <LogOut className="w-4 h-4 mr-1" />,
+        tooltip: "You've withdrawn from this project"
+      },
+      kicked: { 
+        color: "bg-orange-100 text-orange-800 border border-orange-200", 
+        text: "Removed by Client",
+        icon: <XCircle className="w-4 h-4 mr-1" />,
+        tooltip: "The client removed you from this project"
+      },
+      banned: { 
+        color: "bg-red-100 text-red-800 border border-red-200", 
+        text: "Banned",
+        icon: <Ban className="w-4 h-4 mr-1" />,
+        tooltip: "You've been banned from this project by admin"
+      },
+      completed: { 
+        color: "bg-purple-100 text-purple-800 border border-purple-200", 
+        text: "Completed",
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />,
+        tooltip: "This project has been completed"
+      }
+    };
+    
+    const config = statusConfig[assignmentStatus] || { 
+      color: "bg-gray-100 text-gray-800 border border-gray-200", 
+      text: assignmentStatus || "Not assigned",
+      icon: <Info className="w-4 h-4 mr-1" />,
+      tooltip: "Assignment status unknown"
+    };
+    
+    return (
+      <div className="relative group">
+        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${config.color}`}>
+          {config.icon}
+          {config.text}
+        </span>
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-800 text-white text-xs rounded-md p-2 z-10">
+          {config.tooltip}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-gray-800 border-t-gray-800"></div>
+        </div>
+      </div>
     );
   };
 
@@ -146,9 +239,10 @@ const FreelancerProjects = () => {
     const diffTime = due - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return "Overdue";
-    if (diffDays === 0) return "Due today";
-    if (diffDays === 1) return "Due tomorrow";
+    if (diffDays < 0) return <span className="text-red-600 font-medium">Overdue by {-diffDays} days</span>;
+    if (diffDays === 0) return <span className="text-orange-600 font-medium">Due today</span>;
+    if (diffDays === 1) return <span className="text-orange-600 font-medium">Due tomorrow</span>;
+    if (diffDays <= 7) return <span className="text-orange-500">Due in {diffDays} days</span>;
     return `Due in ${diffDays} days`;
   };
 
@@ -163,10 +257,25 @@ const FreelancerProjects = () => {
     return "Not specified";
   };
 
+  const canManageProject = (project) => {
+    // Only allow access if project assignment status is active
+    return project && 
+           project.assignment_status === 'active';
+  };
+
+  const handleProjectClick = (project) => {
+    if (canManageProject(project)) {
+      navigate(`/manage-project/${project.id}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your projects...</p>
+        </div>
       </div>
     );
   }
@@ -174,69 +283,6 @@ const FreelancerProjects = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Card
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white mb-8">
-          <div className="flex items-center">
-            <div className="p-3 bg-white/20 rounded-full">
-              <User className="w-8 h-8" />
-            </div>
-            <div className="ml-4">
-              <h2 className="text-xl font-bold">Welcome back, {userData.name || 'Freelancer'}!</h2>
-              <p className="text-blue-100 mt-1">You have {stats.active} active projects and earned ${stats.totalEarnings.toLocaleString()} so far.</p>
-            </div>
-          </div>
-        </div>
-         */}
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Briefcase className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-600">Active Projects</h3>
-                <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-600">Completed</h3>
-                <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-600">Pending</h3>
-                <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-600">Total Earnings</h3>
-                <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Filters and Search */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
@@ -246,17 +292,17 @@ const FreelancerProjects = () => {
               <input
                 type="text"
                 placeholder="Search projects by title or description..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <Filter className="w-5 h-5 text-gray-400 mr-2" />
+              <div className="flex items-center bg-gray-100 rounded-lg p-2">
+                <Filter className="w-5 h-5 text-gray-600 mr-2" />
                 <select 
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="bg-transparent border-none focus:ring-0 text-gray-700"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -292,61 +338,94 @@ const FreelancerProjects = () => {
             </div>
           ) : (
             filteredProjects.map((project) => (
-              <div key={project.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
+              <div 
+                key={project.id} 
+                className={`bg-white rounded-xl border border-gray-200 overflow-hidden transition-shadow duration-200 ${
+                  canManageProject(project) 
+                    ? "cursor-pointer hover:shadow-md hover:border-blue-200" 
+                    : "opacity-80"
+                }`}
+                onClick={() => handleProjectClick(project)}
+              >
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                            {getStatusBadge(project.assignment_status || project.status)}
+                          </div>
                           <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                             {project.description || "No description provided"}
                           </p>
                         </div>
-                        <div className="ml-4 flex-shrink-0">
-                          {getStatusBadge(project.completion_status || project.status)}
-                        </div>
                       </div>
                       
-                      <div className="mt-4 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          <span>{getBudgetRange(project)}</span>
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                          <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+                          <span className="font-medium">Budget:</span>
+                          <span className="ml-1">{getBudgetRange(project)}</span>
                         </div>
                         
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{project.duration || "Duration not specified"}</span>
+                        <div className="flex items-center text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                          <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                          <span className="font-medium">Duration:</span>
+                          <span className="ml-1">{project.duration || "Not specified"}</span>
                         </div>
                         
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>{getDaysRemaining(project.deadline)}</span>
+                        <div className="flex items-center text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                          <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                          <span className="font-medium">Deadline:</span>
+                          <span className="ml-1">{getDaysRemaining(project.deadline)}</span>
                         </div>
                       </div>
                     </div>
                     
                     <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
-                      <Link
-                        to={`/manage-project/${project.id}`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                      >
-                        Manage Project
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Link>
+                      {canManageProject(project) ? (
+                        <button
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                        >
+                          Work on Project
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </button>
+                      ) : (
+                        <div className="flex flex-col items-center text-sm text-yellow-700 bg-yellow-50 rounded-md px-3 py-2">
+                          <div className="flex items-center">
+                            <XCircle className="w-4 h-4 mr-1" />
+                            <span>Access unavailable</span>
+                          </div>
+                          <span className="text-xs mt-1">
+                            {project?.assignment_status === 'quit' && 'You withdrew from this project'}
+                            {project?.assignment_status === 'kicked' && 'Client removed you from this project'}
+                            {project?.assignment_status === 'banned' && 'Admin banned you from this project'}
+                            {project?.assignment_status === 'completed' && 'Project has been completed'}
+                            {!project?.assignment_status && 'Not assigned to this project'}
+                            {console.log(project)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <div className="flex items-center">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-gray-600">
+                    <div className="flex items-center mb-2 md:mb-0">
                       <span className="font-medium">Client ID: </span>
                       <span className="ml-1">{project.user_id}</span>
                     </div>
                     <div className="flex items-center">
                       <span className="font-medium">Location: </span>
                       <span className="ml-1">{project.location || "Remote"}</span>
+                    </div>
+                    <div className="flex items-center mt-2 md:mt-0">
+                      <span className="font-medium">Assignment: </span>
+                      <span className="ml-2">
+                        {getAssignmentStatusBadge(project?.assignment_status)}
+                      </span>
                     </div>
                   </div>
                 </div>

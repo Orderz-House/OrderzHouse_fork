@@ -54,8 +54,10 @@ app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
+app.use("/notifications", notificationsRouter);
 
 import chatsRouter from "./router/chats.js";
+import notificationsRouter from "./router/notifications.js";
 app.use("/chats", chatsRouter);
 
 (async () => {
