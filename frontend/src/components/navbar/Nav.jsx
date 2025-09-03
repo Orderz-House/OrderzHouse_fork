@@ -34,10 +34,14 @@ export default function EnhancedNavbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [IsAuthenticated, setIsAuthenticated] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const searchRef = useRef(null);
   const servicesRef = useRef(null);
   const contactRef = useRef(null);
   const userMenuRef = useRef(null);
+  const notificationsRef = useRef(null);
   const dispatch = useDispatch();
   const { token, userData } = useSelector((state) => {
     return {
@@ -46,15 +50,97 @@ export default function EnhancedNavbar() {
     };
   });
   const navigate = useNavigate();
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.get("http://localhost:5000/notifications", {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+        params: {
+          limit: 10,
+          unreadOnly: false
+        }
+      });
+      
+      if (response.data.success) {
+        setNotifications(response.data.notifications);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  // Fetch unread count
+  const fetchUnreadCount = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.get("http://localhost:5000/notifications/count", {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+        params: {
+          unreadOnly: true
+        }
+      });
+      
+      if (response.data.success) {
+        setUnreadCount(response.data.count);
+      }
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+    }
+  };
+
+  // Mark notification as read
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(`http://localhost:5000/notifications/${notificationId}/read`, {}, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        }
+      });
+      
+      // Update local state
+      setNotifications(notifications.map(notif => 
+        notif.id === notificationId ? {...notif, is_read: true} : notif
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  // Mark all as read
+  const markAllAsRead = async () => {
+    try {
+      await axios.put("http://localhost:5000/notifications/read-all", {}, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        }
+      });
+      
+      // Update local state
+      setNotifications(notifications.map(notif => ({...notif, is_read: true})));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
+  };
+
   // Handle user logout
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
     dispatch(setLogout());
     window.location.reload();
-
     navigate("/");
   };
+
   const handleNavigation = (path, label) => {
     setActiveLink(label);
     navigate(path);
@@ -81,28 +167,16 @@ export default function EnhancedNavbar() {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
         setIsAuthenticated(true);
+        
+        // Fetch notifications after authentication
+        fetchNotifications();
+        fetchUnreadCount();
       })
       .catch((err) => {
         console.error("Failed to fetch user data:", err.message);
         setIsAuthenticated(false);
       });
   }, [dispatch, token]);
-
-  // NAVBAR LINKS
-  const navLinks = [
-    { label: "HOME", path: "/" },
-    { label: "ABOUT US", path: "/about" },
-    { label: "NEWS", path: "/news" },
-    { label: "CONTACT", path: "/contact" },
-  ];
-  // Handle scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -116,87 +190,24 @@ export default function EnhancedNavbar() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close mobile menu when window is resized
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const services = [
-    {
-      name: "Programming",
-      desc: "Software Developer, Data Analyst, Network Engineer",
-      icon: "💻",
-    },
-    {
-      name: "Photographer",
-      desc: "Photography is the art of capturing moments, emotions, and stories through the lens to create lasting visual impressions.",
-      icon: "📷",
-    },
-    {
-      name: "Admin + Project Management",
-      desc: "Administrative Assistant, Project Manager, and Process Analyst",
-      icon: "📊",
-    },
-    {
-      name: "Music & Audio",
-      desc: "Sound Engineer, Music Producer, Audio Editor",
-      icon: "🎵",
-    },
-    {
-      name: "Graphic Design",
-      desc: "Graphic design is the art of visual communication that combines images, typography, and creativity to deliver impactful messages.",
-      icon: "🎨",
-    },
-    {
-      name: "Remote Work",
-      desc: "Customer Service Representative, Financial Analyst",
-      icon: "🏠",
-    },
-    {
-      name: "Content Creator",
-      desc: "A content writer creates clear, engaging, and informative text tailored to attract and inform a specific audience.",
-      icon: "✏️",
-    },
+  // NAVBAR LINKS
+  const navLinks = [
+    { label: "HOME", path: "/" },
+    { label: "ABOUT US", path: "/about" },
+    { label: "NEWS", path: "/news" },
+    { label: "CONTACT", path: "/contact" },
   ];
 
-  const contactInfo = [
-    {
-      name: "Call Us",
-      desc: "00971543210343",
-      icon: Phone,
-      link: "tel:00971543210343",
-    },
-    {
-      name: "Email Us",
-      desc: "houseorderz@gmail.com",
-      icon: Mail,
-      link: "mailto:houseorderz@gmail.com",
-    },
-    {
-      name: "Visit Us",
-      desc: "Albasem complex, Amman, Jordan floor 4 room 405",
-      icon: MapPin,
-      link: "https://www.google.com/maps/place/Albasem+complex/@31.9978945,35.8692204,17z/data=!3m1!4b1!4m6!3m5!1s0x151ca1c4e5bc3da5:0xbaee8769e23ba42d!8m2!3d31.9978945!4d35.8717953!16s%2Fg%2F11gyysglb3?entry=ttu&g_ep=EgoyMDI1MDgxOS4wIKXMDSoASAFQAw%3D%3D",
-    },
-    {
-      name: "whatsapp",
-      desc: "Chat with us on WhatsApp",
-      icon: Globe,
-      link: "https://wa.me/971543210343",
-    },
-  ];
+  // Rest of your existing code...
 
   return (
     <nav
@@ -255,116 +266,6 @@ export default function EnhancedNavbar() {
                   VERIFICATION
                 </button>
               )}
-              {/* Services Mega Menu - COMMENTED OUT */}
-              {/* <div className="relative" ref={servicesRef}>
-                <button
-                  onClick={() => setIsServicesOpen(!isServicesOpen)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all duration-200 ${
-                    isServicesOpen
-                      ? "text-teal-600 bg-teal-50"
-                      : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
-                  }`}
-                >
-                  SERVICES
-                  <ChevronDown
-                    className={`ml-1 h-4 w-4 transition-transform duration-200 ${
-                      isServicesOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button> 
-                {isServicesOpen && (
-                  <div className="absolute left-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 border border-gray-100 overflow-hidden transform opacity-100 scale-100 transition-all duration-200">
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Our Services
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        {services.map((service, index) => (
-                          <button
-                            key={index}
-                            onClick={() =>
-                              console.log(`Navigate to ${service.name} service`)
-                            }
-                            className="p-3 rounded-xl hover:bg-gradient-to-br hover:from-teal-50 hover:to-blue-50 transition-all duration-200 group text-left"
-                          >
-                            <div className="flex items-start space-x-3">
-                              <span className="text-2xl flex-shrink-0">
-                                {service.icon}
-                              </span>
-                              <div>
-                                <h4 className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors">
-                                  {service.name}
-                                </h4>
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                  {service.desc}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div> */}
-
-              {/* Contact Dropdown - COMMENTED OUT */}
-              {/* <div className="relative" ref={contactRef}>
-                <button
-                  onClick={() => setIsContactOpen(!isContactOpen)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all duration-200 ${
-                    isContactOpen
-                      ? "text-teal-600 bg-teal-50"
-                      : "text-gray-700 hover:text-teal-600 hover:bg-gray-50"
-                  }`}
-                >
-                  CONTACT
-                  <ChevronDown
-                    className={`ml-1 h-4 w-4 transition-transform duration-200 ${
-                      isContactOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {isContactOpen && (
-                  <div className="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 border border-gray-100 overflow-hidden">
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Get in Touch
-                      </h3>
-                      <div className="space-y-3">
-                        {contactInfo.map((contact, index) => (
-                          <a
-                            key={index}
-                            href={contact.link}
-                            target={
-                              contact.link.startsWith("http")
-                                ? "_blank"
-                                : undefined
-                            }
-                            rel={
-                              contact.link.startsWith("http")
-                                ? "noopener noreferrer"
-                                : undefined
-                            }
-                            className="flex items-start space-x-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-blue-50 transition-all duration-200 group"
-                          >
-                            <contact.icon className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <h4 className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors">
-                                {contact.name}
-                              </h4>
-                              <p className="text-sm text-gray-500">
-                                {contact.desc}
-                              </p>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div> */}
             </div>
           </div>
 
@@ -403,13 +304,87 @@ export default function EnhancedNavbar() {
 
             {/* Notifications - Only show when authenticated */}
             {IsAuthenticated && (
-              <button
-                className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-              </button>
+              <div className="relative" ref={notificationsRef}>
+                <button
+                  onClick={() => {
+                    setIsNotificationsOpen(!isNotificationsOpen);
+                    fetchNotifications(); // Refresh notifications when opening
+                  }}
+                  className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        <div className="divide-y divide-gray-100">
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                !notification.is_read ? 'bg-blue-50' : ''
+                              }`}
+                              onClick={() => markAsRead(notification.id)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {notification.title || 'Notification'}
+                                  </p>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {new Date(notification.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {!notification.is_read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center">
+                          <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500 text-sm">No notifications yet</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-4 border-t border-gray-100 text-center">
+                      <Link
+                        to="/notifications"
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                      >
+                        View all notifications
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* User Menu or Auth Buttons */}
@@ -450,25 +425,28 @@ export default function EnhancedNavbar() {
                           <span>Dashboard</span>
                         </Link>
                       ) : (
-                        <>
-                          <Link
-                            to="/dashoard/projects"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                          >
-                            <Briefcase className="h-4 w-4" />
-                            <span>My Projects</span>
-                          </Link>
-                          <Link
-                            to="/edit-profile"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
-                          >
-                            <Briefcase className="h-4 w-4" />
-                            <span>Edit Profile</span>
-                          </Link>
-                        </>
+                        <Link
+                          to="/dashoard/projects"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                        >
+                          <Briefcase className="h-4 w-4" />
+                          <span>My Projects</span>
+                        </Link>
                       )}
+                      <Link
+                        to="/notifications"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-teal-600 transition-all duration-200"
+                      >
+                        <Bell className="h-4 w-4" />
+                        <span>Notifications</span>
+                        {unreadCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </Link>
                       <Link
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200"
@@ -501,6 +479,21 @@ export default function EnhancedNavbar() {
 
           {/* Mobile menu button */}
           <div className="lg:hidden flex items-center space-x-2">
+            {IsAuthenticated && (
+              <button
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                  fetchNotifications();
+                }}
+                className="p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200 relative"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+            )}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className="p-2 text-gray-600 hover:text-teal-600 hover:bg-gray-100 rounded-lg transition-all duration-200 md:hidden"
@@ -535,6 +528,71 @@ export default function EnhancedNavbar() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
                 autoFocus
               />
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Notifications */}
+        {isNotificationsOpen && IsAuthenticated && (
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-semibold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+            
+            <div className="max-h-64 overflow-y-auto">
+              {notifications.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                        !notification.is_read ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {notification.title || 'Notification'}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {new Date(notification.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {!notification.is_read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-sm">No notifications yet</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 text-center">
+              <Link
+                to="/notifications"
+                onClick={() => setIsNotificationsOpen(false)}
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                View all notifications
+              </Link>
             </div>
           </div>
         )}
@@ -582,6 +640,19 @@ export default function EnhancedNavbar() {
                       {userData.email}
                     </p>
                   </div>
+                  <Link
+                    to="/notifications"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left px-4 py-3 text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
+                  >
+                    <Bell className="h-4 w-4" />
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
@@ -628,89 +699,7 @@ export default function EnhancedNavbar() {
             </div>
           </div>
         )}
-        {/* Mobile Services - COMMENTED OUT */}
-        {/* <div className="pt-2">
-                <button
-                  onClick={() => setIsServicesOpen(!isServicesOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
-                >
-                  SERVICES
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      isServicesOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {isServicesOpen && (
-                  <div className="mt-2 ml-4 space-y-2">
-                    {services.map((service, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          console.log(`Navigate to ${service.name} service`);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:text-teal-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
-                      >
-                        {service.icon} {service.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div> */}
-
-        {/* Mobile Contact - COMMENTED OUT */}
-        {/* <div className="pt-2">
-                <button
-                  onClick={() => setIsContactOpen(!isContactOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
-                >
-                  CONTACT
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      isContactOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {isContactOpen && (
-                  <div className="mt-2 ml-4 space-y-2">
-                    {contactInfo.map((contact, index) => (
-                      <a
-                        key={index}
-                        href={contact.link}
-                        target={
-                          contact.link.startsWith("http") ? "_blank" : undefined
-                        }
-                        rel={
-                          contact.link.startsWith("http")
-                            ? "noopener noreferrer"
-                            : undefined
-                        }
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-teal-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
-                      >
-                        <contact.icon className="h-4 w-4" />
-                        <span>{contact.name}</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div> */}
       </div>
-      {/* Demo Controls */}
-      {/* 
-      <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 border border-gray-200 z-40">
-        <p className="text-sm font-medium text-gray-700 mb-2">Demo Controls:</p>
-        <button
-          onClick={() => setIsAuthenticated(!isAuthenticated)}
-          className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
-            IsAuthenticated
-              ? "bg-red-100 text-red-700 hover:bg-red-200"
-              : "bg-green-100 text-green-700 hover:bg-green-200"
-          }`}
-        >
-          {IsAuthenticated ? "Logout Demo User" : "Login Demo User"}
-        </button>
-      </div> */}
     </nav>
   );
 }
