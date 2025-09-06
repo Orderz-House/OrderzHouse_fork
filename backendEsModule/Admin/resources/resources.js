@@ -7,7 +7,7 @@ import { createFinancialResources } from "./financial.js";
 import { createSystemResource } from "./system.js";
 import { createPlansResource } from "./plans.js";
 import { createAppointmentsResource } from "./appointments.js";
-import { createChatsResource } from "./chats.js"; 
+// import { createChatsResource } from "./chats.js";
 export const createResourceConfigs = async (
   db,
   tableExists,
@@ -40,7 +40,7 @@ export const createResourceConfigs = async (
 
   resources.push(await createSystemResource(db, logAdminAction));
 
-  resources.push(await createChatsResource(db, logAdminAction));
+  // resources.push(await createChatsResource(db, logAdminAction));
 
   return resources;
 };

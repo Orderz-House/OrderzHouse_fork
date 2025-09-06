@@ -14,7 +14,7 @@ const authorization = (permission) => {
           AND permissions.permission = $2
         LIMIT 1
       `;
-      console.log("POOL IS:", pool);
+      // console.log("POOL IS:", pool);
 
       const result = await pool.query(query, [role_id, permission]);
 

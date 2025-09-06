@@ -4,6 +4,7 @@ export const dashboardHandler = async (pool) => {
   try {
     const queries = await Promise.allSettled([
       client.query(`SELECT COUNT(*)::int AS count FROM users`),
+      client.query(`SELECT COUNT(*)::int AS count FROM users WHERE role_id = 1`), // Admins count
       client.query(`SELECT COUNT(*)::int AS count FROM users WHERE role_id = 2`),
       client.query(`SELECT COUNT(*)::int AS count FROM users WHERE role_id = 3`),
       client.query(`SELECT COUNT(*)::int AS count FROM courses`),
@@ -53,12 +54,12 @@ export const dashboardHandler = async (pool) => {
     };
 
     const [
-      usersCount, clientsCount, freelancersCount, coursesCount, plansCount,
+      usersCount, adminsCount, clientsCount, freelancersCount, coursesCount, plansCount,
       projectsCount, pendingAppointments, totalRevenue, userTrendsRaw,
       appointmentStats, recentUsers, recentAppointments, recentLogsCount, recentLogs
     ] = queries.map((result, index) => {
       const defaultValues = [
-        [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], 
+        [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], [{ count: 0 }], 
         [{ count: 0 }], [{ count: 0 }], [{ total: 0 }], [], [], [], [], [{ count: 0 }], []
       ];
       return getQueryResult(result, defaultValues[index]);
@@ -77,6 +78,7 @@ export const dashboardHandler = async (pool) => {
       success: true,
       metrics: {
         usersCount: parseInt(usersCount[0]?.count) || 0,
+        adminsCount: parseInt(adminsCount[0]?.count) || 0, // Added admins count
         clientsCount: parseInt(clientsCount[0]?.count) || 0,
         freelancersCount: parseInt(freelancersCount[0]?.count) || 0,
         coursesCount: parseInt(coursesCount[0]?.count) || 0,
@@ -100,7 +102,7 @@ export const dashboardHandler = async (pool) => {
       success: false,
       error: error.message,
       metrics: {
-        usersCount: 0, clientsCount: 0, freelancersCount: 0, coursesCount: 0, 
+        usersCount: 0, adminsCount: 0, clientsCount: 0, freelancersCount: 0, coursesCount: 0, 
         plansCount: 0, projectsCount: 0, pendingAppointments: 0, totalRevenue: 0, 
         recentLogsCount: 0,
       },
@@ -137,6 +139,10 @@ export const analyticsHandler = async (request, pool) => {
       SELECT 'users' as name, COUNT(*) as count,
              COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') as growth7d
       FROM users
+      UNION ALL
+      SELECT 'admins' as name, COUNT(*) as count,
+             COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') as growth7d
+      FROM users WHERE role_id = 1
       UNION ALL
       SELECT 'projects' as name, COUNT(*) as count,
              COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') as growth7d

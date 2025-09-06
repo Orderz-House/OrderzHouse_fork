@@ -114,7 +114,7 @@ export default function Dashboard() {
   const metrics = data?.metrics || {};
 
   const statsCards = [
-    { title: "Total Users", value: metrics.usersCount || 0, link: "/admin/resources/users", color: "#3b82f6" },
+    { title: "Total Admins", value: metrics.adminsCount || 0, link: "/admin/resources/admins", color: "#3b82f6" },
     { title: "Clients", value: metrics.clientsCount || 0, link: "/admin/resources/clients", color: "#10b981" },
     { title: "Freelancers", value: metrics.freelancersCount || 0, link: "/admin/resources/freelancers", color: "#f59e0b" },
     { title: "Active Projects", value: metrics.projectsCount || 0, link: "/admin/resources/projects", color: "#ef4444" },
