@@ -34,18 +34,49 @@ export const AdminInit = async (app) => {
 
   db.pool = pool;
 
-  const [subCategoriesTableExists, paymentsTableExists, receiptsTableExists] =
-    await Promise.all([
-      checkTableExists("sub_categories", pool),
-      checkTableExists("payments", pool),
-      checkTableExists("receipts", pool),
-    ]);
+  // Check table existence for all tables including courses
+  const [
+    subCategoriesTableExists, 
+    paymentsTableExists, 
+    receiptsTableExists,
+    coursesTableExists,
+    courseMaterialsTableExists,
+    courseEnrollmentsTableExists
+  ] = await Promise.all([
+    checkTableExists("sub_categories", pool),
+    checkTableExists("payments", pool),
+    checkTableExists("receipts", pool),
+    checkTableExists("courses", pool),
+    checkTableExists("course_materials", pool),
+    checkTableExists("course_enrollments", pool),
+  ]);
+
+  // Create a proper tableExists function
+  const tableExists = (tableName) => {
+    const tableMap = {
+      sub_categories: subCategoriesTableExists,
+      payments: paymentsTableExists,
+      receipts: receiptsTableExists,
+      courses: coursesTableExists,
+      course_materials: courseMaterialsTableExists,
+      course_enrollments: courseEnrollmentsTableExists
+    };
+    return tableMap[tableName] || false;
+  };
+
+  console.log("Table existence check:");
+  console.log("- courses:", tableExists("courses"));
+  console.log("- course_materials:", tableExists("course_materials"));
+  console.log("- course_enrollments:", tableExists("course_enrollments"));
 
   const resources = await createResourceConfigs(
     db,
-    { subCategoriesTableExists, paymentsTableExists, receiptsTableExists },
+    tableExists, // Pass the function, not an object
     logAdminAction
   );
+
+  console.log("Total resources loaded:", resources.length);
+  console.log("Resource names:", resources.map(r => r.resource?.table || 'unknown'));
 
   const admin = new AdminJS({
     rootPath: "/admin",
