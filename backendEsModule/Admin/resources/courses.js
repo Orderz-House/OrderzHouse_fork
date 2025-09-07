@@ -185,18 +185,17 @@ export const createCoursesResource = async (db, logAdminAction) => {
         id: { isId: true },
         course_id: {
           type: "reference",
-          reference: "courses",
+          reference: "courses", // links to courses resource
           isRequired: true,
         },
         freelancer_id: {
           type: "reference",
-          reference: "users",
+          reference: "freelancers", // ✅ now points to your Freelancer resource
           isRequired: true,
         },
         enrolled_at: {
           type: "datetime",
           isVisible: { list: true, show: true, edit: false },
-          props: { step: 0.01 },
         },
         progress: {
           type: "number",
@@ -212,7 +211,7 @@ export const createCoursesResource = async (db, logAdminAction) => {
               await logAdminAction(
                 context.currentAdmin.id,
                 context.currentAdmin.email,
-                `New enrollment for Course ID: ${request.payload.course_id}, Freelancer ID: ${request.payload.freelancer_id}`
+                `Enrolled Freelancer ID: ${request.payload.freelancer_id} into Course ID: ${request.payload.course_id}`
               );
             }
             return response;
@@ -227,7 +226,19 @@ export const createCoursesResource = async (db, logAdminAction) => {
               await logAdminAction(
                 context.currentAdmin.id,
                 context.currentAdmin.email,
-                `Updated progress for Enrollment ID: ${request.params.recordId} to ${request.payload.progress}%`
+                `Updated progress for Enrollment ID: ${request.params.recordId} → ${request.payload.progress}%`
+              );
+            }
+            return response;
+          },
+        },
+        delete: {
+          after: async (response, request, context) => {
+            if (context.currentAdmin) {
+              await logAdminAction(
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `Deleted Course Enrollment ID: ${request.params.recordId}`
               );
             }
             return response;

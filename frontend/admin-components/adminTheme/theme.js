@@ -34,7 +34,8 @@ export const adminThemeConfig = {
       backgroundColor: "#f0fdf4 !important", // Light green background
       borderRight: "1px solid #d1fae5 !important",
       width: "240px !important",
-      boxShadow: "0 0 0 1px rgba(16, 185, 129, 0.1), 0 1px 3px 0 rgba(16, 185, 129, 0.2) !important",
+      boxShadow:
+        "0 0 0 1px rgba(16, 185, 129, 0.1), 0 1px 3px 0 rgba(16, 185, 129, 0.2) !important",
     },
 
     ".adminjs_Logo": {
@@ -82,13 +83,14 @@ export const adminThemeConfig = {
       boxShadow: "0 2px 4px 0 rgba(16, 185, 129, 0.1) !important",
     },
 
-    '.adminjs_SidebarNavItem.active, .adminjs_SidebarNavItem[aria-current="page"]': {
-      backgroundColor: "#a7f3d0 !important", // Green active background
-      color: "#065f46 !important",
-      borderLeft: "4px solid #10b981 !important",
-      fontWeight: "600 !important",
-      border: "1px solid #6ee7b7 !important",
-    },
+    '.adminjs_SidebarNavItem.active, .adminjs_SidebarNavItem[aria-current="page"]':
+      {
+        backgroundColor: "#a7f3d0 !important", // Green active background
+        color: "#065f46 !important",
+        borderLeft: "4px solid #10b981 !important",
+        fontWeight: "600 !important",
+        border: "1px solid #6ee7b7 !important",
+      },
 
     ".adminjs_SidebarNavItem svg": {
       marginRight: "12px !important",
@@ -126,15 +128,17 @@ export const adminThemeConfig = {
       padding: "24px !important",
       margin: "16px !important",
       borderRadius: "12px !important",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important",
+      boxShadow:
+        "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important",
       border: "1px solid #e2e8f0 !important",
     },
 
     // Headers
-    ".adminjs_H1, .adminjs_H2, .adminjs_H3, .adminjs_H4, .adminjs_H5, .adminjs_H6": {
-      color: "#0f172a !important",
-      fontWeight: "600 !important",
-    },
+    ".adminjs_H1, .adminjs_H2, .adminjs_H3, .adminjs_H4, .adminjs_H5, .adminjs_H6":
+      {
+        color: "#0f172a !important",
+        fontWeight: "600 !important",
+      },
 
     // Labels
     ".adminjs_Label, .adminjs_PropertyLabel": {
@@ -215,13 +219,15 @@ export const adminThemeConfig = {
 
     // Login page styling
     ".adminjs_Login": {
-      background: "linear-gradient(135deg, #1e40af 0%, #10b981 100%) !important",
+      background:
+        "linear-gradient(135deg, #1e40af 0%, #10b981 100%) !important",
       minHeight: "100vh !important",
     },
 
     ".adminjs_LoginCard": {
       borderRadius: "16px !important",
-      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important",
+      boxShadow:
+        "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important",
       border: "1px solid rgba(255, 255, 255, 0.2) !important",
     },
 
@@ -332,7 +338,8 @@ export const adminThemeConfig = {
     // Modal styling
     ".adminjs_Modal": {
       borderRadius: "12px !important",
-      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important",
+      boxShadow:
+        "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important",
     },
 
     ".adminjs_ModalHeader": {
@@ -442,7 +449,8 @@ export const adminThemeConfig = {
     // Card hover effects
     ".adminjs_Card:hover": {
       transform: "translateY(-1px) !important",
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important",
+      boxShadow:
+        "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important",
     },
 
     // Responsive adjustments
@@ -454,7 +462,7 @@ export const adminThemeConfig = {
         transform: "translateX(-100%) !important",
         transition: "transform 0.3s ease !important",
       },
-      
+
       ".adminjs_SidebarNav--open": {
         transform: "translateX(0) !important",
       },
