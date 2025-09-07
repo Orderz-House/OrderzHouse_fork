@@ -5,12 +5,16 @@ import dotenv from "dotenv";
 import { Adapter, Database, Resource } from "@adminjs/sql";
 import { componentLoader, Components } from "./Admin/adminUi.js";
 import pg from "pg";
-import bcrypt from "bcryptjs";
 
 import { dashboardHandler, analyticsHandler } from "./Admin/handlers.js";
-import { logAdminAction } from "./Admin/logger.js";
-import { createResourceConfigs } from "../backendEsModule/Admin/resources/resources.js";
+import { createResourceConfigs } from "./Admin/resources/resources.js";
 import { checkTableExists } from "./Admin/utils.js";
+import {
+  authenticateAdmin,
+  createAdminLogMiddleware,
+} from "./Admin/middleware/adminAuth.js";
+import adminRoutes from "./Admin/routes/admin.js";
+import { adminThemeConfig } from "../frontend/admin-components/adminTheme/theme.js";
 
 dotenv.config();
 
@@ -33,15 +37,16 @@ export const AdminInit = async (app) => {
   }).init();
 
   db.pool = pool;
+  app.locals.pool = pool;
 
-  // Check table existence for all tables including courses
+  // Check extra tables if needed
   const [
-    subCategoriesTableExists, 
-    paymentsTableExists, 
+    subCategoriesTableExists,
+    paymentsTableExists,
     receiptsTableExists,
     coursesTableExists,
     courseMaterialsTableExists,
-    courseEnrollmentsTableExists
+    courseEnrollmentsTableExists,
   ] = await Promise.all([
     checkTableExists("sub_categories", pool),
     checkTableExists("payments", pool),
@@ -51,7 +56,6 @@ export const AdminInit = async (app) => {
     checkTableExists("course_enrollments", pool),
   ]);
 
-  // Create a proper tableExists function
   const tableExists = (tableName) => {
     const tableMap = {
       sub_categories: subCategoriesTableExists,
@@ -59,24 +63,18 @@ export const AdminInit = async (app) => {
       receipts: receiptsTableExists,
       courses: coursesTableExists,
       course_materials: courseMaterialsTableExists,
-      course_enrollments: courseEnrollmentsTableExists
+      course_enrollments: courseEnrollmentsTableExists,
     };
     return tableMap[tableName] || false;
   };
 
-  console.log("Table existence check:");
-  console.log("- courses:", tableExists("courses"));
-  console.log("- course_materials:", tableExists("course_materials"));
-  console.log("- course_enrollments:", tableExists("course_enrollments"));
-
   const resources = await createResourceConfigs(
     db,
-    tableExists, // Pass the function, not an object
-    logAdminAction
+    tableExists,
+    (
+      await import("./Admin/logger.js")
+    ).logAdminAction
   );
-
-  console.log("Total resources loaded:", resources.length);
-  console.log("Resource names:", resources.map(r => r.resource?.table || 'unknown'));
 
   const admin = new AdminJS({
     rootPath: "/admin",
@@ -86,160 +84,13 @@ export const AdminInit = async (app) => {
       handler: () => dashboardHandler(pool),
     },
     branding: {
-      companyName: "OrderzHouse",
+      companyName: "OrderzHouse Admin Panel",
       withMadeWithLove: false,
       logo: "https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png",
       softwareBrothers: false,
-      theme: {
-        colors: {
-          primary100: "#000000",
-          primary80: "#1a1a1a",
-          primary60: "#333333",
-          primary40: "#666666",
-          primary20: "#999999",
-
-          bg: "#ffffff",
-          hoverBg: "#f8f9fa",
-
-          sidebar: "#f8f9fa",
-          navigation: "#f1f3f4",
-
-          text: "#000000",
-          label: "#000000",
-
-          border: "#e9ecef",
-          filterBg: "#ffffff",
-          accent: "#000000",
-
-          button: "#000000",
-          buttonHover: "#1a1a1a",
-        },
-        overrides: {
-          ".adminjs_SidebarNav": {
-            backgroundColor: "#fafbfc !important",
-            borderRight: "1px solid #e6eaef !important",
-            width: "240px !important",
-            boxShadow:
-              "0 0 0 1px rgba(63,63,68,0.05), 0 1px 3px 0 rgba(63,63,68,0.15) !important",
-          },
-
-          ".adminjs_Logo": {
-            backgroundColor: "#fafbfc !important",
-            padding: "20px 24px !important",
-            borderBottom: "1px solid #e6eaef !important",
-          },
-
-          ".adminjs_SidebarNavSection": {
-            padding: "16px 0 !important",
-          },
-
-          ".adminjs_SidebarNavSectionTitle": {
-            color: "#6b7280 !important",
-            fontSize: "11px !important",
-            fontWeight: "600 !important",
-            textTransform: "uppercase !important",
-            letterSpacing: "0.8px !important",
-            padding: "0 24px 8px 24px !important",
-            margin: "0 !important",
-          },
-
-          ".adminjs_SidebarNavItem": {
-            color: "#374151 !important",
-            padding: "8px 24px !important",
-            margin: "0 8px !important",
-            borderRadius: "6px !important",
-            fontSize: "14px !important",
-            fontWeight: "500 !important",
-            transition: "all 0.15s ease !important",
-          },
-
-          ".adminjs_SidebarNavItem:hover": {
-            backgroundColor: "#f3f4f6 !important",
-            color: "#111827 !important",
-            transform: "translateX(2px) !important",
-          },
-
-          '.adminjs_SidebarNavItem.active, .adminjs_SidebarNavItem[aria-current="page"]':
-            {
-              backgroundColor: "#f9fafb !important",
-              color: "#111827 !important",
-              borderLeft: "3px solid #3b82f6 !important",
-              fontWeight: "600 !important",
-            },
-
-          ".adminjs_SidebarNavItem svg": {
-            marginRight: "10px !important",
-            width: "16px !important",
-            height: "16px !important",
-            opacity: "0.7 !important",
-          },
-
-          ".adminjs_SidebarNavItem:hover svg": {
-            opacity: "1 !important",
-          },
-
-          ".adminjs_TopBar": {
-            backgroundColor: "#ffffff !important",
-            borderBottom: "1px solid #e6eaef !important",
-            boxShadow:
-              "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important",
-            height: "60px !important",
-            padding: "0 24px !important",
-          },
-
-          ".adminjs_Wrapper": {
-            backgroundColor: "#ffffff !important",
-          },
-
-          ".adminjs_WrapperBox": {
-            backgroundColor: "#ffffff !important",
-            padding: "0 !important",
-          },
-
-          ".adminjs_H1, .adminjs_H2, .adminjs_H3, .adminjs_H4, .adminjs_H5, .adminjs_H6":
-            {
-              color: "#111827 !important",
-            },
-
-          ".adminjs_Label": {
-            color: "#374151 !important",
-          },
-
-          ".adminjs_PropertyLabel": {
-            color: "#374151 !important",
-          },
-
-          ".adminjs_CurrentUserNav": {
-            color: "#374151 !important",
-          },
-
-          ".adminjs_Button": {
-            borderRadius: "6px !important",
-            fontWeight: "500 !important",
-            transition: "all 0.15s ease !important",
-          },
-
-          ".adminjs_Table": {
-            borderRadius: "8px !important",
-            overflow: "hidden !important",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1) !important",
-          },
-
-          ".adminjs_TableHead": {
-            backgroundColor: "#f9fafb !important",
-          },
-
-          ".adminjs_Box": {
-            borderRadius: "8px !important",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1) !important",
-            border: "1px solid #e6eaef !important",
-          },
-
-          ".adminjs_Breadcrumbs": {
-            color: "#6b7280 !important",
-          },
-        },
-      },
+      favicon:
+        "https://ti8ah.com/wp-content/uploads/2025/07/OrderzHouse-Logo-01-.png",
+      theme: adminThemeConfig,
     },
     pages: {
       analytics: {
@@ -263,161 +114,43 @@ export const AdminInit = async (app) => {
     createTableIfMissing: true,
   });
 
-  // -------------------------------
-  // Auth & Logging Fixes
-  // -------------------------------
-  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(admin, {
-    authenticate: async (email, password) => {
-      const { rows } = await pool.query(
-        "SELECT * FROM users WHERE email = $1 AND role_id = 1",
-        [email.toLowerCase()]
-      );
-      const user = rows[0];
-
-      if (user) {
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (isPasswordValid) {
-          await logAdminAction(
-            user.id,
-            user.email,
-            `Admin login successful for ${user.first_name} ${user.last_name} (${user.email})`,
-            1,
-            pool
-          );
-          return user;
-        } else {
-          await logAdminAction(
-            null,
-            email,
-            `Failed login attempt for ${email} - Invalid password`,
-            null,
-            pool
-          );
-        }
-      } else {
-        await logAdminAction(
-          null,
-          email,
-          `Failed login attempt for ${email} - User not found or not admin`,
-          null,
-          pool
-        );
-      }
-      return null;
+  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+    admin,
+    {
+      authenticate: authenticateAdmin(pool),
+      cookiePassword: process.env.COOKIE_SECRET || "some-secret",
     },
-    cookiePassword: process.env.COOKIE_SECRET || "some-secret",
-  });
+    null,
+    {
+      secret: process.env.COOKIE_SECRET || "some-secret",
+      saveUninitialized: false,
+      resave: false,
+      store: sessionStore,
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+    }
+  );
 
-  // -------------------------------
-  // Middleware for logging admin actions
-  // -------------------------------
-  const logAdminActionMiddleware = (req, res, next) => {
-    const originalSend = res.send;
-    const originalJson = res.json;
+  app.use(admin.options.rootPath, createAdminLogMiddleware(pool), adminRouter);
 
-    const logAction = () => {
-      if (shouldLogAction(req)) {
-        const resourceInfo = extractResourceInfo(req.originalUrl);
-        const logMessage = `Admin ${req.user.email} performed ${req.method}${resourceInfo} - Status: ${res.statusCode}`;
-        logAdminAction(
-          req.user.id,
-          req.user.email,
-          logMessage,
-          req.user.role_id,
-          pool
-        ).catch(() => {});
-      }
-    };
-
-    res.send = function (body) {
-      logAction();
-      return originalSend.call(this, body);
-    };
-
-    res.json = function (body) {
-      logAction();
-      return originalJson.call(this, body);
-    };
-
+  // Protect custom admin API routes
+  const requireAdmin = (req, res, next) => {
+    if (!req.session || !req.session.adminUser) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (req.session.adminUser.role_id !== 1) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    req.user = req.session.adminUser;
     next();
   };
 
-  function shouldLogAction(req) {
-    return (
-      req.user &&
-      req.originalUrl.startsWith("/admin/api") &&
-      !req.originalUrl.includes("/dashboard") &&
-      !req.originalUrl.includes("/analytics") &&
-      !req.originalUrl.includes("/logs") &&
-      req.method !== "GET"
-    );
-  }
+  app.use("/api/admin", requireAdmin, adminRoutes);
 
-  function extractResourceInfo(url) {
-    const urlParts = url.split("/");
-    if (urlParts.includes("resources")) {
-      const resourceIndex = urlParts.indexOf("resources");
-      if (resourceIndex + 1 < urlParts.length) {
-        const resource = urlParts[resourceIndex + 1];
-        const recordId = urlParts[resourceIndex + 2] || null;
-        return recordId ? ` on ${resource} ID: ${recordId}` : ` on ${resource}`;
-      }
-    }
-    return "";
-  }
-
-  app.use(admin.options.rootPath, logAdminActionMiddleware, adminRouter);
-
-  // -------------------------------
-  // Dashboard & Logs API
-  // -------------------------------
-  app.get("/api/admin/dashboard", async (req, res) => {
-    try {
-      const dashboardData = await dashboardHandler(pool);
-      res.json(dashboardData);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch dashboard data" });
-    }
-  });
-
-  app.get("/api/admin/analytics", async (req, res) => {
-    try {
-      const analyticsData = await analyticsHandler(req, pool);
-      res.json(analyticsData);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch analytics data" });
-    }
-  });
-
-  // Logs endpoint
-  app.get("/api/admin/dashboard/logs", async (req, res) => {
-    try {
-      const client = await pool.connect();
-      const result = await client.query(`
-        SELECT l.id, l.user_id, l.action, l.created_at,
-               COALESCE(u.first_name, 'System') as first_name,
-               COALESCE(u.last_name, 'Admin') as last_name,
-               COALESCE(u.email, 'system@admin') as email,
-               COALESCE(u.role_id, 1) as role_id
-        FROM logs l
-        LEFT JOIN users u ON u.id = l.user_id
-        ORDER BY l.created_at DESC
-        LIMIT 20
-      `);
-      client.release();
-
-      res.json({
-        success: true,
-        recentLogs: result.rows || [],
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch logs",
-        recentLogs: [],
-      });
-    }
-  });
-
-  console.log(`AdminJS mounted at ${admin.options.rootPath}`);
+  console.log(
+    `✅ OrderzHouse Admin Panel mounted at ${admin.options.rootPath}`
+  );
 };

@@ -1,276 +1,249 @@
+// Admin/resources/courses.js
+
 export const createCoursesResource = async (db, logAdminAction) => {
   const resources = [];
 
-  // Courses Resource
+  /**
+   * ===============================
+   * Courses Resource
+   * ===============================
+   */
   resources.push({
     resource: db.table("courses"),
     options: {
-      navigation: {
-        name: "Courses",
-        icon: "BookOpen",
-        section: {
-          name: "Course Management",
-          icon: "GraduationCap"
-        }
-      },
+      id: "courses",
+      navigation: { name: "Course Management", icon: "BookOpen" },
+      listProperties: ["id", "title", "price", "created_at"],
+      showProperties: [
+        "id",
+        "title",
+        "description",
+        "price",
+        "created_at",
+        "updated_at",
+      ],
+      editProperties: [
+        "title",
+        "description",
+        "price",
+        "title_ar",
+        "description_ar",
+      ],
+      filterProperties: ["title", "price", "created_at"],
+
       properties: {
-        title: {
-          validation: { required: true }
-        },
+        id: { isId: true },
+        title: { isRequired: true },
         title_ar: {
           isVisible: { list: false },
-          props: { style: { direction: "rtl" } }
+          props: { style: { direction: "rtl" } },
         },
-        description: {
-          type: "richtext",
-          isVisible: { list: false }
-        },
+        description: { type: "richtext" },
         description_ar: {
           type: "richtext",
           isVisible: { list: false },
-          props: { style: { direction: "rtl" } }
+          props: { style: { direction: "rtl" } },
         },
-        price: {
-          type: "number",
-          validation: { required: true, min: 0 },
-          props: { step: 0.01 }
+        price: { type: "number", isRequired: true, props: { step: 0.01 } },
+        is_deleted: { type: "boolean", isVisible: false },
+        created_at: {
+          type: "datetime",
+          isVisible: { list: true, show: true, edit: false },
         },
         updated_at: {
-          isVisible: { list: false }
+          type: "datetime",
+          isVisible: { list: false, show: true, edit: false },
         },
-        course_materials: {
-          type: "mixed",
-          isVisible: { show: true, edit: false, list: false },
-          components: {
-            show: "RelatedMaterials"
-          }
-        },
-        course_enrollments: {
-          type: "mixed", 
-          isVisible: { show: true, edit: false, list: false },
-          components: {
-            show: "RelatedEnrollments"
-          }
-        }
       },
+
       actions: {
-        show: {
-          after: async (originalResponse, request, context) => {
-            const courseId = request.params.recordId;
-            
-            try {
-              // Fetch related materials
-              const materials = await db.query(
-                "SELECT * FROM course_materials WHERE course_id = $1",
-                [courseId]
-              );
-              
-              // Fetch related enrollments with user info
-              const enrollments = await db.query(`
-                SELECT ce.*, 
-                       COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '') as freelancer_name,
-                       u.email as freelancer_email 
-                FROM course_enrollments ce 
-                LEFT JOIN users u ON ce.freelancer_id = u.id 
-                WHERE ce.course_id = $1
-                ORDER BY ce.enrolled_at DESC
-              `, [courseId]);
-              
-              originalResponse.record.params.course_materials = materials.rows || [];
-              originalResponse.record.params.course_enrollments = enrollments.rows || [];
-            } catch (error) {
-              console.error("Error fetching course relations:", error);
-              originalResponse.record.params.course_materials = [];
-              originalResponse.record.params.course_enrollments = [];
-            }
-            
-            return originalResponse;
-          }
-        },
         new: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
+          after: async (response, request, context) => {
+            if (context.currentAdmin && request.payload?.title) {
               await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "courses",
-                request.payload?.record || { id: "new" }
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `Created Course: ${request.payload.title}`
               );
             }
-            return originalResponse;
-          }
+            return response;
+          },
         },
         edit: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
+          after: async (response, request, context) => {
+            if (context.currentAdmin && request.payload?.title) {
               await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "courses",
-                request.payload?.record || { id: request.params?.recordId }
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `Edited Course ID: ${request.params.recordId} - ${request.payload.title}`
               );
             }
-            return originalResponse;
-          }
+            return response;
+          },
         },
         delete: {
-          after: async (originalResponse, request, context) => {
-            await logAdminAction(
-              context.currentAdmin,
-              "delete",
-              "courses", 
-              { id: request.params?.recordId }
-            );
-            return originalResponse;
-          }
-        }
-      }
-    }
+          after: async (response, request, context) => {
+            if (context.currentAdmin) {
+              await logAdminAction(
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `Deleted Course ID: ${request.params.recordId}`
+              );
+            }
+            return response;
+          },
+        },
+      },
+    },
   });
 
-  // Course Materials Resource
+  /**
+   * ===============================
+   * Course Materials Resource
+   * ===============================
+   */
   resources.push({
     resource: db.table("course_materials"),
     options: {
-      navigation: {
-        name: "Course Materials",
-        icon: "FileText",
-        section: {
-          name: "Course Management",
-          icon: "GraduationCap"
-        }
-      },
+      id: "course_materials",
+      navigation: { name: "Course Management", icon: "FileText" },
+      listProperties: ["id", "course_id", "title", "file_type", "created_at"],
+      showProperties: [
+        "id",
+        "course_id",
+        "title",
+        "file_type",
+        "file_url",
+        "description",
+        "created_at",
+      ],
+      editProperties: [
+        "course_id",
+        "title",
+        "file_type",
+        "file_url",
+        "description",
+      ],
+
       properties: {
+        id: { isId: true },
         course_id: {
           type: "reference",
           reference: "courses",
-          validation: { required: true }
+          isRequired: true,
         },
-        file_url: {
-          validation: { required: true }
-        }
+        title: { isRequired: true },
+        file_url: { isRequired: true },
+        file_type: {
+          type: "string",
+          availableValues: [
+            { value: "pdf", label: "PDF" },
+            { value: "video", label: "Video" },
+            { value: "image", label: "Image" },
+            { value: "document", label: "Document" },
+            { value: "presentation", label: "Presentation" },
+            { value: "spreadsheet", label: "Spreadsheet" },
+          ],
+          isRequired: true,
+        },
+        description: { type: "textarea", isVisible: { list: false } },
+        created_at: {
+          type: "datetime",
+          isVisible: { list: true, show: true, edit: false },
+        },
       },
-      actions: {
-        new: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
-              await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "course_materials",
-                request.payload?.record || { id: "new" }
-              );
-            }
-            return originalResponse;
-          }
-        },
-        edit: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
-              await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "course_materials",
-                request.payload?.record || { id: request.params?.recordId }
-              );
-            }
-            return originalResponse;
-          }
-        },
-        delete: {
-          after: async (originalResponse, request, context) => {
-            await logAdminAction(
-              context.currentAdmin,
-              "delete",
-              "course_materials",
-              { id: request.params?.recordId }
-            );
-            return originalResponse;
-          }
-        }
-      }
-    }
+    },
   });
 
-  // Course Enrollments Resource
+  /**
+   * ===============================
+   * Course Enrollments Resource
+   * ===============================
+   */
   resources.push({
     resource: db.table("course_enrollments"),
     options: {
-      navigation: {
-        name: "Course Enrollments", 
-        icon: "Users",
-        section: {
-          name: "Course Management",
-          icon: "GraduationCap"
-        }
-      },
+      id: "course_enrollments",
+      navigation: { name: "Course Management", icon: "Users" },
+      listProperties: [
+        "id",
+        "course_id",
+        "freelancer_id",
+        "enrolled_at",
+        "progress",
+      ],
+      showProperties: [
+        "id",
+        "course_id",
+        "freelancer_id",
+        "enrolled_at",
+        "progress",
+      ],
+      editProperties: ["course_id", "freelancer_id", "progress"],
+
       properties: {
+        id: { isId: true },
         course_id: {
           type: "reference",
           reference: "courses",
-          validation: { required: true }
+          isRequired: true,
         },
         freelancer_id: {
           type: "reference",
           reference: "users",
-          validation: { required: true }
+          isRequired: true,
         },
         enrolled_at: {
           type: "datetime",
-          validation: { required: true }
+          isVisible: { list: true, show: true, edit: false },
+          props: { step: 0.01 },
         },
         progress: {
           type: "number",
           validation: { min: 0, max: 100 },
-          props: { step: 0.01 }
-        }
+          props: { step: 0.01, suffix: "%" },
+        },
       },
+
       actions: {
         new: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
+          after: async (response, request, context) => {
+            if (context.currentAdmin && request.payload?.course_id) {
               await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "course_enrollments",
-                request.payload?.record || { id: "new" }
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `New enrollment for Course ID: ${request.payload.course_id}, Freelancer ID: ${request.payload.freelancer_id}`
               );
             }
-            return originalResponse;
-          }
+            return response;
+          },
         },
         edit: {
-          after: async (originalResponse, request, context) => {
-            if (request.method !== "get") {
+          after: async (response, request, context) => {
+            if (
+              context.currentAdmin &&
+              request.payload?.progress !== undefined
+            ) {
               await logAdminAction(
-                context.currentAdmin,
-                request.method,
-                "course_enrollments",
-                request.payload?.record || { id: request.params?.recordId }
+                context.currentAdmin.id,
+                context.currentAdmin.email,
+                `Updated progress for Enrollment ID: ${request.params.recordId} to ${request.payload.progress}%`
               );
             }
-            return originalResponse;
-          }
+            return response;
+          },
         },
-        delete: {
-          after: async (originalResponse, request, context) => {
-            await logAdminAction(
-              context.currentAdmin,
-              "delete",
-              "course_enrollments",
-              { id: request.params?.recordId }
-            );
-            return originalResponse;
-          }
-        }
-      }
-    }
+      },
+    },
   });
 
-  console.log("Course resources created:", resources.length);
   return resources;
 };
 
-export const createCourseResources = async (db, tableExists, logAdminAction) => {
+export const createCourseResources = async (
+  db,
+  tableExists,
+  logAdminAction
+) => {
   return await createCoursesResource(db, logAdminAction);
 };
