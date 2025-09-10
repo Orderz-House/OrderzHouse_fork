@@ -14,7 +14,45 @@ export const getCourses = async (req, res) => {
     return res.status(200).json({ success: true, courses: rows });
   } catch (error) {
     console.error("Error fetching courses:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
+
+// Get courses by category ID
+export const getCoursesByCategory = async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+
+    if (isNaN(categoryId)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid category ID" });
+    }
+
+    const query = `
+      SELECT 
+        c.id,
+        c.title,
+        c.description,
+        c.price,
+        c.created_at,
+        c.updated_at,
+        cat.name as category_name
+      FROM courses c
+      LEFT JOIN categories cat ON c.category_id = cat.id
+      WHERE c.category_id = $1 AND c.is_deleted = FALSE
+      ORDER BY c.created_at DESC
+    `;
+
+    const { rows } = await pool.query(query, [categoryId]);
+    return res.status(200).json({ success: true, courses: rows });
+  } catch (error) {
+    console.error("Error fetching courses by category:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -24,7 +62,9 @@ export const getCourseById = async (req, res) => {
     const courseId = parseInt(req.params.id);
 
     if (isNaN(courseId)) {
-      return res.status(400).json({ success: false, error: "Invalid course ID" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid course ID" });
     }
 
     const query = `
@@ -35,20 +75,31 @@ export const getCourseById = async (req, res) => {
     const { rows } = await pool.query(query, [courseId]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found" });
     }
 
     return res.status(200).json({ success: true, course: rows[0] });
   } catch (error) {
     console.error("Error fetching course:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
 // Create new course (admin only)
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, price, title_ar = null, description_ar = null } = req.body;
+    const {
+      title,
+      description,
+      price,
+      category_id,
+      title_ar = null,
+      description_ar = null,
+    } = req.body;
 
     if (!title || !description || price === undefined) {
       return res.status(400).json({
@@ -58,16 +109,25 @@ export const createCourse = async (req, res) => {
     }
 
     const insertQuery = `
-      INSERT INTO courses (title, description, price, title_ar, description_ar, is_deleted)
-      VALUES ($1, $2, $3, $4, $5, FALSE)
+      INSERT INTO courses (title, description, price, category_id, title_ar, description_ar, is_deleted)
+      VALUES ($1, $2, $3, $4, $5, $6, FALSE)
       RETURNING *;
     `;
 
-    const { rows } = await pool.query(insertQuery, [title, description, price, title_ar, description_ar]);
+    const { rows } = await pool.query(insertQuery, [
+      title,
+      description,
+      price,
+      category_id,
+      title_ar,
+      description_ar,
+    ]);
     return res.status(201).json({ success: true, course: rows[0] });
   } catch (error) {
     console.error("Error creating course:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -75,10 +135,13 @@ export const createCourse = async (req, res) => {
 export const updateCourse = async (req, res) => {
   try {
     const courseId = parseInt(req.params.id);
-    const { title, description, price, title_ar, description_ar } = req.body;
+    const { title, description, price, category_id, title_ar, description_ar } =
+      req.body;
 
     if (isNaN(courseId)) {
-      return res.status(400).json({ success: false, error: "Invalid course ID" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid course ID" });
     }
 
     const updates = [];
@@ -97,6 +160,10 @@ export const updateCourse = async (req, res) => {
       updates.push(`price = $${paramCount++}`);
       values.push(price);
     }
+    if (category_id !== undefined) {
+      updates.push(`category_id = $${paramCount++}`);
+      values.push(category_id);
+    }
     if (title_ar !== undefined) {
       updates.push(`title_ar = $${paramCount++}`);
       values.push(title_ar);
@@ -107,10 +174,9 @@ export const updateCourse = async (req, res) => {
     }
 
     if (updates.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "No fields to update",
-      });
+      return res
+        .status(400)
+        .json({ success: false, error: "No fields to update" });
     }
 
     values.push(courseId);
@@ -125,13 +191,17 @@ export const updateCourse = async (req, res) => {
     const { rows } = await pool.query(updateQuery, values);
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found" });
     }
 
     return res.status(200).json({ success: true, course: rows[0] });
   } catch (error) {
     console.error("Error updating course:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -141,7 +211,9 @@ export const deleteCourse = async (req, res) => {
     const courseId = parseInt(req.params.id);
 
     if (isNaN(courseId)) {
-      return res.status(400).json({ success: false, error: "Invalid course ID" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid course ID" });
     }
 
     const deleteQuery = `
@@ -154,13 +226,19 @@ export const deleteCourse = async (req, res) => {
     const { rows } = await pool.query(deleteQuery, [courseId]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found or already deleted" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Course not found or already deleted" });
     }
 
-    return res.status(200).json({ success: true, message: "Course deleted successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Course deleted successfully" });
   } catch (error) {
     console.error("Error deleting course:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -170,19 +248,21 @@ export const enrollInCourse = async (req, res) => {
     const freelancer_id = req.token.userId;
     const { course_id } = req.body;
 
-    if (!freelancer_id) {
+    if (!freelancer_id)
       return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    if (!course_id) {
-      return res.status(400).json({ success: false, message: "course_id is required" });
-    }
+    if (!course_id)
+      return res
+        .status(400)
+        .json({ success: false, message: "course_id is required" });
 
     const courseCheck = await pool.query(
       "SELECT * FROM courses WHERE id = $1 AND is_deleted = FALSE",
       [course_id]
     );
     if (courseCheck.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
     }
 
     const enrollmentCheck = await pool.query(
@@ -190,19 +270,24 @@ export const enrollInCourse = async (req, res) => {
       [freelancer_id, course_id]
     );
     if (enrollmentCheck.rows.length > 0) {
-      return res.status(409).json({ success: false, message: "Already enrolled" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Already enrolled" });
     }
 
+    // Add progress field with default 0
     const result = await pool.query(
-      "INSERT INTO course_enrollments (freelancer_id, course_id) VALUES ($1, $2) RETURNING *",
+      "INSERT INTO course_enrollments (freelancer_id, course_id, progress) VALUES ($1, $2, 0) RETURNING *",
       [freelancer_id, course_id]
     );
 
-    return res.status(201).json({
-      success: true,
-      message: "Enrolled successfully",
-      enrollment: result.rows[0],
-    });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        message: "Enrolled successfully",
+        enrollment: result.rows[0],
+      });
   } catch (error) {
     console.error("Enrollment error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -225,7 +310,9 @@ export const getCourseMaterials = async (req, res) => {
     return res.status(200).json({ success: true, materials: rows });
   } catch (error) {
     console.error("Error fetching materials:", error);
-    return res.status(500).json({ success: false, message: "Error fetching materials" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error fetching materials" });
   }
 };
 
@@ -235,9 +322,8 @@ export const checkEnrollment = async (req, res) => {
     const { id: course_id } = req.params;
     const freelancer_id = req.token.userId;
 
-    if (!freelancer_id) {
+    if (!freelancer_id)
       return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
 
     const { rows } = await pool.query(
       "SELECT * FROM course_enrollments WHERE freelancer_id = $1 AND course_id = $2",
@@ -248,5 +334,33 @@ export const checkEnrollment = async (req, res) => {
   } catch (error) {
     console.error("Check enrollment error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Get course enrollments (admin only) with progress
+export const getCourseEnrollments = async (req, res) => {
+  try {
+    const { id: course_id } = req.params;
+
+    const query = `
+      SELECT 
+        ce.freelancer_id,
+        ce.enrolled_at,
+        ce.progress,  -- added progress
+        u.name as freelancer_name,
+        u.email as freelancer_email
+      FROM course_enrollments ce
+      LEFT JOIN users u ON ce.freelancer_id = u.id
+      WHERE ce.course_id = $1
+      ORDER BY ce.enrolled_at DESC
+    `;
+    const { rows } = await pool.query(query, [course_id]);
+
+    return res.status(200).json({ success: true, enrollments: rows });
+  } catch (error) {
+    console.error("Error fetching course enrollments:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };

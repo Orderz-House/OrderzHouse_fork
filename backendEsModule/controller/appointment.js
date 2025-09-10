@@ -143,21 +143,19 @@ const getAllAppointments = (req, res) => {
       a.message,
       a.status,
       a.appointment_type,  
-      a.created_at
+      a.created_at,
+      u.email as freelancer_email,
+      u.phone_number as freelancer_phone,
+      u.first_name,
+      u.last_name
     FROM appointments a
+    LEFT JOIN users u ON a.freelancer_id = u.id
     ORDER BY a.created_at DESC;
   `;
 
   pool
     .query(query)
     .then((result) => {
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No appointments found",
-        });
-      }
-
       res.status(200).json({
         success: true,
         appointments: result.rows,
@@ -223,13 +221,13 @@ const getAppointmentsByFreelancer = (req, res) => {
 };
 
 const rejectAppointment = (req, res) => {
-  const { appointment_id } = req.params
+  const { appointment_id } = req.params;
 
   if (!appointment_id) {
     return res.status(400).json({
       success: false,
       message: "Appointment ID is required",
-    })
+    });
   }
 
   const query = `
@@ -237,7 +235,7 @@ const rejectAppointment = (req, res) => {
     SET status = 'rejected'
     WHERE id = $1
     RETURNING *
-  `
+  `;
 
   pool
     .query(query, [appointment_id])
@@ -246,25 +244,24 @@ const rejectAppointment = (req, res) => {
         return res.status(404).json({
           success: false,
           message: "Appointment not found",
-        })
+        });
       }
 
       res.status(200).json({
         success: true,
         message: "Appointment rejected successfully",
         appointment: result.rows[0],
-      })
+      });
     })
     .catch((err) => {
-      console.error("Error rejecting appointment:", err)
+      console.error("Error rejecting appointment:", err);
       res.status(500).json({
         success: false,
         message: "Server error while rejecting appointment",
         error: err.message,
-      })
-    })
-}
-
+      });
+    });
+};
 
 export {
   makeAppointment,
@@ -272,5 +269,5 @@ export {
   acceptAppointment,
   getAllAppointments,
   getAppointmentsByFreelancer,
-  rejectAppointment
+  rejectAppointment,
 };

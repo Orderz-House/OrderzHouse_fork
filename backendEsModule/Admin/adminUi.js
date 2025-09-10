@@ -16,14 +16,9 @@ const Components = {
     "Analytics",
     path.join(__dirname, "../../frontend/admin-components/analytics.jsx")
   ),
-  // Course Components
-  RelatedMaterials: componentLoader.add(
-    "RelatedMaterials",
-    path.join(__dirname, "../../frontend/admin-components/course-components.jsx")
-  ),
-  RelatedEnrollments: componentLoader.add(
-    "RelatedEnrollments",
-    path.join(__dirname, "../../frontend/admin-components/course-components.jsx")
+  UsersAnalytics: componentLoader.add(
+    "UsersAnalytics",
+    path.join(__dirname, "../../frontend/admin-components/Analytics/userAnalytics.jsx")
   ),
 };
 

@@ -4,6 +4,7 @@ import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
   getCourses,
+  getCoursesByCategory,
   getCourseById,
   createCourse,
   updateCourse,
@@ -11,20 +12,35 @@ import {
   enrollInCourse,
   getCourseMaterials,
   checkEnrollment,
+  getCourseEnrollments, // make sure this exists in your controller
 } from "../controller/courses.js";
 
-const router = express.Router();
+const coursesRouter = express.Router();
 
-router.get("/view", authentication, getCourses);
-router.get("/view/:id", authentication, getCourseById);
-router.get("/:id/materials", authentication, getCourseMaterials);
-router.get("/:id/enrollment", authentication, checkEnrollment);
+// Get all active courses (public)
+coursesRouter.get("/view", authentication, getCourses);
 
-// Admin-only routes
-router.post("/create", authentication, authorization("create_course"), createCourse);
-router.put("/update/:id", authentication, authorization("edit_course"), updateCourse);
-router.delete("/delete/:id", authentication, authorization("delete_course"), deleteCourse);
+// Get courses by category
+coursesRouter.get("/category/:categoryId", getCoursesByCategory);
 
-router.post("/enroll", authentication, enrollInCourse);
+// Get course by ID with materials and stats (public)
+coursesRouter.get("/view/:id", authentication, getCourseById);
 
-export default router;
+// Get course materials (for enrolled users)
+coursesRouter.get("/:id/materials", authentication, getCourseMaterials);
+
+// Check if user is enrolled in course
+coursesRouter.get("/:id/enrollment", authentication, checkEnrollment);
+
+// Enroll in course (for freelancers)
+coursesRouter.post("/enroll", authentication, enrollInCourse);
+
+// Course CRUD operations (admin only)
+coursesRouter.post("/create", createCourse);
+coursesRouter.put("/update/:id", updateCourse);
+coursesRouter.delete("/delete/:id", deleteCourse);
+
+// Get course enrollments (admin only)
+coursesRouter.get("/:id/enrollments", getCourseEnrollments);
+
+export default coursesRouter;
