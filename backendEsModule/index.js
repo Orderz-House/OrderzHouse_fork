@@ -44,6 +44,9 @@ import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
 import uploadRouter from "./router/upload.js";
+import categoriesRouter from "./router/categories.js";
+import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
+app.use("/api/analytics", analyticsRoutes);
 app.use("/news", newsRouter);
 app.use("/upload", uploadRouter);
 app.use("/verification", verificationRouter);
@@ -57,6 +60,7 @@ app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 app.use("/notifications", notificationsRouter);
+app.use("/categories", categoriesRouter);
 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
