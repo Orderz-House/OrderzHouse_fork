@@ -1,3 +1,4 @@
+// Admin/resources/content.js
 export const createContentResources = async (
   db,
   tableExists,
@@ -6,6 +7,11 @@ export const createContentResources = async (
   const { subCategoriesTableExists } = tableExists;
   const resources = [];
 
+  /**
+   * ===============================
+   * Categories Resource
+   * ===============================
+   */
   resources.push({
     resource: db.table("categories"),
     options: {
@@ -60,12 +66,17 @@ export const createContentResources = async (
     },
   });
 
+  /**
+   * ===============================
+   * Sub-Categories Resource
+   * ===============================
+   */
   if (subCategoriesTableExists) {
     resources.push({
       resource: db.table("sub_categories"),
       options: {
         id: "sub_categories",
-        navigation: { name: "Sub-Categories", icon: "Tags" },
+        navigation: { name: "Content Management", icon: "Tags" },
         listProperties: ["id", "name", "category_id", "description"],
         showProperties: ["id", "name", "category_id", "description"],
         editProperties: ["name", "category_id", "description"],
@@ -76,6 +87,7 @@ export const createContentResources = async (
             reference: "categories",
             type: "reference",
             isRequired: true,
+            description: "Parent category this sub-category belongs to",
           },
           description: { type: "textarea", props: { rows: 3 } },
         },

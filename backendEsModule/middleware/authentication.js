@@ -1,32 +1,34 @@
 import jwt from "jsonwebtoken";
 import pool from "../models/db.js";
+
 const authentication = (req, res, next) => {
   try {
-    if (!req.headers.authorization)
-      res.status(403).json({ message: "forbidden" });
+    if (!req.headers.authorization) {
+      return res.status(403).json({ message: "forbidden" });
+    }
 
     const token = req.headers.authorization.split(" ").pop();
 
     jwt.verify(token, process.env.JWT_SECRET, (err, result) => {
       if (err) {
-        res.status(403).json({
+        return res.status(403).json({
           success: false,
-          message: `The token is invalid or expired`,
+          message: "The token is invalid or expired",
         });
-      } else {
-        req.token = result;
-        next();
       }
+
+      req.token = result;
+      next();
     });
   } catch (error) {
-    res.status(403).json({ message: "forbidden" });
+    return res.status(403).json({ message: "forbidden" });
   }
 };
 
 const authSocket = async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    
+
     if (!token) {
       return next(new Error("Authentication error: Token required"));
     }
@@ -36,7 +38,7 @@ const authSocket = async (socket, next) => {
         return next(new Error("Authentication error: Invalid token"));
       }
 
-      // إضافة بيانات المستخدم على الـ socket
+      // attach user to socket
       socket.user = decoded;
       console.log("🔐 Socket authenticated:", decoded);
       next();
@@ -46,7 +48,6 @@ const authSocket = async (socket, next) => {
     next(new Error("Authentication error"));
   }
 };
-
 
 export { authentication, authSocket };
 export default authentication;

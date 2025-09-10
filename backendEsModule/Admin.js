@@ -94,8 +94,8 @@ export const AdminInit = async (app) => {
     },
     pages: {
       analytics: {
-        component: Components.Analytics,
-        handler: (request) => analyticsHandler(request, pool),
+        component: Components.Analytics, // your UsersAnalytics page
+        handler: (request) => analyticsHandler(request, pool), // optional extra data
         icon: "BarChart3",
       },
     },
@@ -104,6 +104,7 @@ export const AdminInit = async (app) => {
 
   if (process.env.NODE_ENV !== "production") admin.watch();
 
+  // Session setup
   const ConnectSession = Connect(session);
   const sessionStore = new ConnectSession({
     conObject: {
@@ -149,6 +150,18 @@ export const AdminInit = async (app) => {
   };
 
   app.use("/api/admin", requireAdmin, adminRoutes);
+
+  // --- NEW: Single User Analytics API endpoint ---
+  app.get("/api/analytics/users", requireAdmin, async (req, res) => {
+    try {
+      const { timeRange } = req.query;
+      const analytics = await getUsersAnalytics(pool, timeRange);
+      res.json(analytics);
+    } catch (err) {
+      console.error("Analytics API error:", err);
+      res.status(500).json({ error: "Failed to fetch user analytics" });
+    }
+  });
 
   console.log(
     `✅ OrderzHouse Admin Panel mounted at ${admin.options.rootPath}`

@@ -19,6 +19,8 @@ export const createFreelancersResource = async (db, logAdminAction) => {
         "wallet",
         "is_verified",
         "is_online",
+        "active_enrollments",
+        "completed_courses",
         "created_at",
       ],
 
@@ -38,6 +40,11 @@ export const createFreelancersResource = async (db, logAdminAction) => {
         "is_deleted",
         "is_online",
         "socket_id",
+        "active_enrollments",
+        "completed_courses",
+        "total_enrollments",
+        "average_progress",
+        "last_course_activity",
         "created_at",
         "updated_at",
       ],
@@ -67,6 +74,7 @@ export const createFreelancersResource = async (db, logAdminAction) => {
         "is_verified",
         "is_deleted",
         "is_online",
+        "active_enrollments",
       ],
 
       sort: { sortBy: "rating", direction: "desc" },
@@ -146,6 +154,33 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           description: "Current online status",
         },
 
+        // Course enrollment related fields
+        active_enrollments: {
+          type: "number",
+          isVisible: { list: true, show: true, edit: false, filter: true },
+          description: "Number of active course enrollments",
+        },
+        completed_courses: {
+          type: "number",
+          isVisible: { list: true, show: true, edit: false, filter: false },
+          description: "Number of completed courses",
+        },
+        total_enrollments: {
+          type: "number",
+          isVisible: { list: false, show: true, edit: false, filter: false },
+          description: "Total number of course enrollments",
+        },
+        average_progress: {
+          type: "number",
+          isVisible: { list: false, show: true, edit: false, filter: false },
+          description: "Average progress across all enrolled courses",
+        },
+        last_course_activity: {
+          type: "datetime",
+          isVisible: { list: false, show: true, edit: false, filter: false },
+          description: "Last time freelancer accessed any course",
+        },
+
         socket_id: {
           type: "string",
           isVisible: { list: false, show: true, edit: false, filter: false },
@@ -186,6 +221,18 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           color: "#f44336",
           "font-weight": "bold",
         },
+        ".enrollments-high": {
+          color: "#10b981",
+          "font-weight": "bold",
+        },
+        ".enrollments-medium": {
+          color: "#eab308",
+          "font-weight": "bold",
+        },
+        ".enrollments-none": {
+          color: "#64748b",
+          "font-style": "italic",
+        },
       },
 
       actions: {
@@ -207,18 +254,125 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           },
           after: async (response) => {
             if (response.records) {
+              // Get freelancer IDs for enrollment queries
+              const freelancerIds = response.records.map(record => record.params.id);
+              
+              let enrollmentData = {};
+              if (freelancerIds.length > 0) {
+                try {
+                  // Get active enrollments count
+                  const activeEnrollments = await db.table("course_enrollments")
+                    .select("freelancer_id")
+                    .count("* as count")
+                    .whereIn("freelancer_id", freelancerIds)
+                    .whereIn("enrollment_status", ["active", "paused"])
+                    .groupBy("freelancer_id");
+
+                  // Get completed courses count
+                  const completedCourses = await db.table("course_enrollments")
+                    .select("freelancer_id")
+                    .count("* as count")
+                    .whereIn("freelancer_id", freelancerIds)
+                    .where("enrollment_status", "completed")
+                    .groupBy("freelancer_id");
+
+                  // Organize data by freelancer_id
+                  activeEnrollments.forEach(item => {
+                    if (!enrollmentData[item.freelancer_id]) {
+                      enrollmentData[item.freelancer_id] = {};
+                    }
+                    enrollmentData[item.freelancer_id].active = parseInt(item.count);
+                  });
+
+                  completedCourses.forEach(item => {
+                    if (!enrollmentData[item.freelancer_id]) {
+                      enrollmentData[item.freelancer_id] = {};
+                    }
+                    enrollmentData[item.freelancer_id].completed = parseInt(item.count);
+                  });
+                } catch (error) {
+                  console.error("Error fetching enrollment data:", error);
+                }
+              }
+
               response.records = response.records.map((record) => {
                 record.params.role_name = "Freelancer";
                 record.params.full_name = `${record.params.first_name} ${record.params.last_name}`;
 
+                // Rating styling
                 const rating = parseFloat(record.params.rating) || 0;
                 if (rating >= 4.0) record.params.rating_class = "rating-high";
-                else if (rating >= 3.0)
-                  record.params.rating_class = "rating-medium";
+                else if (rating >= 3.0) record.params.rating_class = "rating-medium";
                 else record.params.rating_class = "rating-low";
+
+                // Enrollment data
+                const freelancerId = record.params.id;
+                const activeCount = enrollmentData[freelancerId]?.active || 0;
+                const completedCount = enrollmentData[freelancerId]?.completed || 0;
+
+                record.params.active_enrollments = activeCount;
+                record.params.completed_courses = completedCount;
+
+                // Enrollment styling
+                if (activeCount >= 3) record.params.enrollments_class = "enrollments-high";
+                else if (activeCount >= 1) record.params.enrollments_class = "enrollments-medium";
+                else record.params.enrollments_class = "enrollments-none";
 
                 return record;
               });
+            }
+            return response;
+          },
+        },
+
+        show: {
+          after: async (response) => {
+            if (response.record) {
+              const freelancerId = response.record.params.id;
+              
+              try {
+                // Get detailed enrollment information
+                const enrollments = await db.table("course_enrollments")
+                  .leftJoin("courses", "course_enrollments.course_id", "courses.id")
+                  .select(
+                    "course_enrollments.*",
+                    "courses.title as course_title",
+                    "courses.description as course_description"
+                  )
+                  .where("course_enrollments.freelancer_id", freelancerId)
+                  .orderBy("course_enrollments.enrolled_at", "desc");
+
+                // Calculate statistics
+                const activeCount = enrollments.filter(e => ["active", "paused"].includes(e.enrollment_status)).length;
+                const completedCount = enrollments.filter(e => e.enrollment_status === "completed").length;
+                const totalCount = enrollments.length;
+
+                // Calculate average progress
+                let averageProgress = 0;
+                if (enrollments.length > 0) {
+                  const totalProgress = enrollments.reduce((sum, e) => sum + (parseFloat(e.progress) || 0), 0);
+                  averageProgress = Math.round(totalProgress / enrollments.length);
+                }
+
+                // Get last activity
+                const lastActivity = enrollments.reduce((latest, enrollment) => {
+                  const activityDate = enrollment.last_accessed_at || enrollment.enrolled_at;
+                  return (!latest || new Date(activityDate) > new Date(latest)) ? activityDate : latest;
+                }, null);
+
+                response.record.params.active_enrollments = activeCount;
+                response.record.params.completed_courses = completedCount;
+                response.record.params.total_enrollments = totalCount;
+                response.record.params.average_progress = averageProgress;
+                response.record.params.last_course_activity = lastActivity;
+
+              } catch (error) {
+                console.error("Error fetching detailed enrollment data:", error);
+                response.record.params.active_enrollments = 0;
+                response.record.params.completed_courses = 0;
+                response.record.params.total_enrollments = 0;
+                response.record.params.average_progress = 0;
+              }
             }
             return response;
           },
@@ -273,7 +427,6 @@ export const createFreelancersResource = async (db, logAdminAction) => {
           before: async (request) => {
             if (request.payload) {
               request.payload.updated_at = new Date().toISOString();
-
               request.payload.role_id = 3;
 
               if (
@@ -371,6 +524,70 @@ export const createFreelancersResource = async (db, logAdminAction) => {
             };
           },
         },
+
+        // New action to view freelancer's enrollments
+        viewEnrollments: {
+          actionType: "record",
+          icon: "BookOpen",
+          variant: "info",
+          component: false,
+          handler: async (request, response, context) => {
+            const { record } = context;
+            const freelancerName = `${record.params.first_name} ${record.params.last_name}`;
+            
+            return {
+              redirectUrl: `/admin/resources/course_enrollments?filters.freelancer_id=${record.params.id}`,
+              notice: {
+                message: `Viewing enrollments for ${freelancerName}`,
+                type: "info"
+              }
+            };
+          }
+        },
+
+        // New action to enroll freelancer in a course
+        enrollInCourse: {
+          actionType: "record",
+          icon: "Plus",
+          variant: "success",
+          component: false,
+          handler: async (request, response, context) => {
+            const { record } = context;
+            const freelancerName = `${record.params.first_name} ${record.params.last_name}`;
+            
+            return {
+              redirectUrl: `/admin/resources/course_enrollments/actions/new?freelancer_id=${record.params.id}&freelancer_name=${encodeURIComponent(freelancerName)}`,
+              notice: {
+                message: `Creating new enrollment for ${freelancerName}`,
+                type: "info"
+              }
+            };
+          }
+        },
+
+        // New action to view course progress summary
+        viewCourseProgress: {
+          actionType: "record",
+          icon: "TrendingUp",
+          variant: "info",
+          component: false,
+          isVisible: (context) => {
+            return context.record && (context.record.params.active_enrollments > 0 || context.record.params.completed_courses > 0);
+          },
+          handler: async (request, response, context) => {
+            const { record } = context;
+            const freelancerName = `${record.params.first_name} ${record.params.last_name}`;
+            
+            // This could redirect to a custom dashboard or detailed progress view
+            return {
+              redirectUrl: `/admin/resources/course_enrollments?filters.freelancer_id=${record.params.id}&sort=progress&direction=desc`,
+              notice: {
+                message: `Viewing course progress for ${freelancerName}`,
+                type: "info"
+              }
+            };
+          }
+        }
       },
     },
   };

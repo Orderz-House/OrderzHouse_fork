@@ -1,102 +1,169 @@
-// Admin/components/AppointmentDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { ApiClient, useCurrentAdmin } from 'adminjs';
+import React, { useState, useEffect, useCallback } from 'react';
 
-const AppointmentDashboard = () => {
-  const [currentAdmin] = useCurrentAdmin();
+const AppointmentsDashboard = ({ onBack }) => {
   const [appointments, setAppointments] = useState([]);
-  const [stats, setStats] = useState({
-    pending: 0,
-    accepted: 0,
-    rejected: 0,
-    cancelled: 0
-  });
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [notification, setNotification] = useState(null);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [newDate, setNewDate] = useState('');
+  const [userDetails, setUserDetails] = useState(null);
+  const [userLoading, setUserLoading] = useState(false);
 
-  const api = new ApiClient();
-
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await api.resourceAction({
-        resourceId: 'appointments',
-        actionName: 'list'
-      });
+      const response = await fetch('/appointments/get');
+      const data = await response.json();
       
-      const appointmentData = response.data.records;
-      setAppointments(appointmentData);
-      
-      const newStats = appointmentData.reduce((acc, appointment) => {
-        const status = appointment.params.status;
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      }, { pending: 0, accepted: 0, rejected: 0, cancelled: 0 });
-      
-      setStats(newStats);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      showNotification('Error loading appointments', 'error');
+      if (data.success) {
+        setAppointments(data.appointments);
+        setError(null);
+        // Debug: Log the first appointment to see what fields are available
+        if (data.appointments.length > 0) {
+          console.log('First appointment data:', data.appointments[0]);
+        }
+      } else {
+        setError(data.message || 'Failed to fetch appointments');
+      }
+    } catch (err) {
+      setError('Failed to fetch appointments');
+      console.error('Error fetching appointments:', err);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchUserDetails = async (userId) => {
+    setUserLoading(true);
+    try {
+      const response = await fetch(`/users/${userId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setUserDetails(data.user);
+      } else {
+        console.error('Failed to fetch user details:', data.message);
+        setUserDetails(null);
+      }
+    } catch (err) {
+      console.error('Error fetching user details:', err);
+      setUserDetails(null);
+    } finally {
+      setUserLoading(false);
+    }
   };
 
-  const updateAppointmentStatus = async (appointmentId, newStatus) => {
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  const handleAction = async (appointmentId, action) => {
+    setActionLoading(true);
     try {
-      await api.recordAction({
-        resourceId: 'appointments',
-        recordId: appointmentId,
-        actionName: 'edit',
-        data: { status: newStatus }
+      const response = await fetch(`/appointments/${action}/${appointmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
-      await fetchAppointments();
-      showNotification(`Appointment ${newStatus} successfully!`, 'success');
-    } catch (error) {
-      console.error('Error updating appointment:', error);
-      showNotification('Error updating appointment', 'error');
-    }
-  };
-
-  const bulkUpdateStatus = async (status) => {
-    try {
-      const updatePromises = selectedItems.map(id => 
-        api.recordAction({
-          resourceId: 'appointments',
-          recordId: id,
-          actionName: 'edit',
-          data: { status }
-        })
-      );
+      const data = await response.json();
       
-      await Promise.all(updatePromises);
-      await fetchAppointments();
-      setSelectedItems([]);
-      showNotification(`${selectedItems.length} appointments ${status} successfully!`, 'success');
-    } catch (error) {
-      console.error('Error bulk updating appointments:', error);
-      showNotification('Error updating appointments', 'error');
+      if (data.success) {
+        setAppointments(prev => 
+          prev.map(apt => 
+            apt.id === appointmentId 
+              ? { ...apt, status: action === 'accept' ? 'accepted' : 'rejected' }
+              : apt
+          )
+        );
+        setShowModal(false);
+        setSelectedAppointment(null);
+        setUserDetails(null);
+      } else {
+        setError(data.message || `Failed to ${action} appointment`);
+      }
+    } catch (err) {
+      setError(`Failed to ${action} appointment`);
+      console.error(`Error ${action} appointment:`, err);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const showNotification = (message, type) => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+  const handleReschedule = async (appointmentId, newDateTime) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/appointments/reschedule/${appointmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ appointment_date: newDateTime })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAppointments(prev => 
+          prev.map(apt => 
+            apt.id === appointmentId 
+              ? { ...apt, appointment_date: newDateTime }
+              : apt
+          )
+        );
+        setShowRescheduleModal(false);
+        setShowModal(false);
+        setSelectedAppointment(null);
+        setUserDetails(null);
+        setNewDate('');
+      } else {
+        setError(data.message || 'Failed to reschedule appointment');
+      }
+    } catch (err) {
+      setError('Failed to reschedule appointment');
+      console.error('Error rescheduling appointment:', err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const filteredAppointments = appointments.filter(appointment => 
-    activeFilter === 'all' || appointment.params.status === activeFilter
-  );
+  const handleViewAppointment = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowModal(true);
+    
+    // Fetch full user details when opening modal
+    if (appointment.user_id || appointment.freelancer_id) {
+      fetchUserDetails(appointment.user_id || appointment.freelancer_id);
+    }
+  };
+
+  const filteredAppointments = appointments.filter(appointment => {
+    const matchesFilter = filter === 'all' || appointment.status === filter;
+    const matchesSearch = !searchTerm || 
+      appointment.freelancer_id.toString().includes(searchTerm) ||
+      (appointment.freelancer_email && appointment.freelancer_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (appointment.freelancer_phone && appointment.freelancer_phone.includes(searchTerm)) ||
+      (appointment.message && appointment.message.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesFilter && matchesSearch;
+  });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return '#3b82f6'; // Blue
+      case 'accepted': return '#10b981'; // Green
+      case 'rejected': return '#6b7280'; // Gray
+      default: return '#6b7280';
+    }
+  };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -105,530 +172,909 @@ const AppointmentDashboard = () => {
     });
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      pending: '🟡',
-      accepted: '✅',
-      rejected: '❌',
-      cancelled: '🚫'
-    };
-    return icons[status] || '❓';
+  const formatDateForInput = (dateString) => {
+    const date = new Date(dateString);
+    return date.toISOString().slice(0, 16);
   };
 
-  const getTypeIcon = (type) => {
-    const icons = {
-      online: '💻',
-      'in-person': '🤝',
-      phone: '📞'
+  const getAppointmentStats = () => {
+    return {
+      total: appointments.length,
+      pending: appointments.filter(a => a.status === 'pending').length,
+      accepted: appointments.filter(a => a.status === 'accepted').length,
+      rejected: appointments.filter(a => a.status === 'rejected').length
     };
-    return icons[type] || '📅';
   };
+
+  const stats = getAppointmentStats();
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '400px',
-        background: 'linear-gradient(135deg, #fef7ff 0%, #f0f9ff 100%)',
-        borderRadius: '20px'
+        fontSize: '16px',
+        color: '#6b7280'
       }}>
-        <div style={{ textAlign: 'center', color: '#7c3aed' }}>
-          <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
-          <div>Loading appointments...</div>
-        </div>
+        <div style={{ 
+          width: '40px', 
+          height: '40px', 
+          border: '4px solid #e5e7eb',
+          borderTop: '4px solid #3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '16px'
+        }}></div>
+        Loading Appointments...
       </div>
     );
   }
 
   return (
-    <div style={{ 
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      background: 'linear-gradient(135deg, #fef7ff 0%, #f0f9ff 100%)',
+    <div style={{
+      backgroundColor: '#ffffff',
       minHeight: '100vh',
-      padding: '20px'
+      padding: '20px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          padding: '16px 20px',
-          borderRadius: '12px',
-          color: 'white',
-          fontWeight: '600',
-          zIndex: 1000,
-          background: notification.type === 'success' 
-            ? 'linear-gradient(135deg, #10b981, #059669)'
-            : 'linear-gradient(135deg, #f87171, #ef4444)'
-        }}>
-          {notification.message}
-        </div>
-      )}
+      {/* Include Flaticon CSS */}
+      <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css" />
+      
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .appointment-row:hover {
+            background-color: #f9fafb;
+          }
+          .action-button {
+            transition: all 0.2s ease;
+          }
+          .action-button:hover {
+            transform: translateY(-1px);
+          }
+        `}
+      </style>
 
+      {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #e8f4fd 0%, #f3e8ff 100%)',
-        padding: '30px',
-        borderRadius: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: '30px',
-        boxShadow: '0 4px 20px rgba(139, 92, 246, 0.1)',
-        border: '1px solid #e0e7ff'
+        paddingBottom: '20px',
+        borderBottom: '1px solid #e5e7eb'
       }}>
-        <h1 style={{ 
-          fontSize: '32px', 
-          fontWeight: '700', 
-          color: '#5b21b6', 
-          margin: '0 0 8px 0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          📅 Appointment Management
-        </h1>
-        <p style={{ color: '#7c3aed', fontSize: '16px', opacity: '0.8', margin: 0 }}>
-          Manage and track all appointment requests with ease
-        </p>
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
-        {Object.entries(stats).map(([status, count]) => (
-          <div key={status} style={{
-            background: 'white',
-            padding: '24px',
-            borderRadius: '16px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            borderLeft: `5px solid ${
-              status === 'pending' ? '#f59e0b' :
-              status === 'accepted' ? '#10b981' :
-              status === 'rejected' ? '#f87171' : '#9ca3af'
-            }`,
-            transition: 'all 0.3s ease',
-            cursor: 'pointer'
-          }}
-          onClick={() => setActiveFilter(status)}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.06)';
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ 
-                  fontSize: '36px', 
-                  fontWeight: '800', 
-                  marginBottom: '4px',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  {count}
-                </div>
-                <div style={{ color: '#64748b', fontSize: '15px', fontWeight: '500' }}>
-                  {getStatusIcon(status)} {status.charAt(0).toUpperCase() + status.slice(1)} Appointments
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{
-        background: 'white',
-        padding: '20px',
-        borderRadius: '16px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
-        border: '1px solid #f1f5f9'
-      }}>
-        <div style={{ 
-          fontWeight: '600', 
-          color: '#334155', 
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          🔍 Quick Filters
-        </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {['all', 'pending', 'accepted', 'rejected', 'cancelled'].map(filter => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              style={{
-                padding: '10px 18px',
-                background: activeFilter === filter 
-                  ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)'
-                  : 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-                border: `2px solid ${activeFilter === filter ? '#7c3aed' : '#e2e8f0'}`,
-                borderRadius: '25px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                color: activeFilter === filter ? 'white' : '#475569',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                if (activeFilter !== filter) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              {filter === 'all' ? '📋' : getStatusIcon(filter)} 
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-        overflow: 'hidden',
-        border: '1px solid #f1f5f9'
-      }}>
-        <div style={{
-          background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
-          padding: '20px 24px',
-          borderBottom: '2px solid #e9d5ff',
-          fontWeight: '700',
-          color: '#581c87',
-          fontSize: '18px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          📊 Appointments Dashboard ({filteredAppointments.length} items)
-        </div>
-
-        {selectedItems.length > 0 && (
-          <div style={{
-            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-            padding: '16px 24px',
-            borderBottom: '1px solid #f59e0b'
-          }}>
-            <div style={{
-              fontSize: '14px',
-              color: '#92400e',
-              fontWeight: '600',
-              marginBottom: '12px',
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              marginRight: '12px',
+              color: '#6b7280',
+              padding: '4px',
+              borderRadius: '4px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            ← Back
+          </button>
+          <div>
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#1e293b',
+              margin: 0,
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              ☑️ {selectedItems.length} appointments selected
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => bulkUpdateStatus('accepted')}
-                style={{
-                  padding: '8px 16px',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ✅ Accept Selected
-              </button>
-              <button
-                onClick={() => bulkUpdateStatus('rejected')}
-                style={{
-                  padding: '8px 16px',
-                  background: 'linear-gradient(135deg, #f87171, #ef4444)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ❌ Reject Selected
-              </button>
-            </div>
+              <i className="fi fi-rr-calendar" style={{ fontSize: '20px' }}></i>
+              Appointments Management
+            </h1>
           </div>
-        )}
+        </div>
+        <button
+          onClick={fetchAppointments}
+          disabled={loading}
+          style={{
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '8px 16px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            opacity: loading ? 0.6 : 1
+          }}
+        >
+          <i className="fi fi-rr-refresh"></i>
+          Refresh
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px'
+      }}>
+        {[
+          { title: 'Total Appointments', value: stats.total, color: '#6b7280', icon: 'fi-rr-list' },
+          { title: 'Pending Review', value: stats.pending, color: '#3b82f6', icon: 'fi-rr-clock' },
+          { title: 'Accepted', value: stats.accepted, color: '#10b981', icon: 'fi-rr-check' },
+          { title: 'Rejected', value: stats.rejected, color: '#6b7280', icon: 'fi-rr-cross' }
+        ].map((stat, index) => (
+          <div
+            key={index}
+            style={{
+              backgroundColor: '#ffffff',
+              padding: '20px',
+              border: '1px solid #e9ecef',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              fontSize: '12px',
+              fontWeight: '500',
+              color: '#6b7280',
+              marginBottom: '8px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.8px'
+            }}>
+              {stat.title}
+            </div>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#000000',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className={`fi ${stat.icon}`} style={{ fontSize: '20px', color: stat.color }}></i>
+              {stat.value}
+            </div>
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              backgroundColor: stat.color,
+              opacity: 0.6
+            }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Filters and Search */}
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {['all', 'pending', 'accepted', 'rejected'].map(status => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: filter === status ? '#3b82f6' : '#ffffff',
+                color: filter === status ? '#ffffff' : '#374151',
+                cursor: 'pointer',
+                fontSize: '14px',
+                textTransform: 'capitalize',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {status === 'all' ? 'All Status' : status}
+            </button>
+          ))}
+        </div>
+        <div style={{ position: 'relative' }}>
+          <i className="fi fi-rr-search" style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#6b7280',
+            fontSize: '14px'
+          }}></i>
+          <input
+            type="text"
+            placeholder="Search by ID, email, phone, or message..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 12px 8px 36px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              fontSize: '14px',
+              minWidth: '300px',
+              outline: 'none',
+              transition: 'border-color 0.2s ease'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+          />
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div style={{
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '6px',
+          padding: '12px',
+          marginBottom: '20px',
+          color: '#dc2626',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <i className="fi fi-rr-exclamation"></i>
+          {error}
+          <button
+            onClick={() => setError(null)}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: '#dc2626',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            <i className="fi fi-rr-cross"></i>
+          </button>
+        </div>
+      )}
+
+      {/* Appointments Table */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      }}>
+        {/* Fixed Table Header */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '80px 250px 180px 1fr 120px 120px 180px',
+          gap: '16px',
+          padding: '16px',
+          backgroundColor: '#f8f9fa',
+          borderBottom: '1px solid #e5e7eb',
+          fontSize: '12px',
+          fontWeight: '600',
+          color: '#374151',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          <div>ID</div>
+          <div>Freelancer</div>
+          <div>Date & Time</div>
+          <div>Message</div>
+          <div>Type</div>
+          <div>Status</div>
+          <div>Actions</div>
+        </div>
 
         {filteredAppointments.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '60px 20px', 
-            color: '#94a3b8' 
+          <div style={{
+            textAlign: 'center',
+            padding: '60px 40px',
+            color: '#6b7280',
+            fontSize: '16px'
           }}>
-            <div style={{ fontSize: '64px', marginBottom: '16px', opacity: '0.5' }}>📅</div>
-            <h3>No appointments found</h3>
-            <p>No appointments match the current filter criteria.</p>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              <i className="fi fi-rr-calendar" style={{ color: '#e5e7eb' }}></i>
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', color: '#374151' }}>
+              {searchTerm || filter !== 'all' ? 'No appointments match your filters' : 'No appointments found'}
+            </h3>
+            <p style={{ margin: 0, fontSize: '14px' }}>
+              {searchTerm || filter !== 'all' ? 'Try adjusting your search criteria' : 'Appointments will appear here once created'}
+            </p>
           </div>
         ) : (
-          filteredAppointments.map((appointment, index) => {
-            const appointmentId = appointment.id;
-            const params = appointment.params;
-            
-            return (
-              <div
-                key={appointmentId}
-                style={{
-                  padding: '20px 24px',
-                  borderBottom: index === filteredAppointments.length - 1 ? 'none' : '1px solid #f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'linear-gradient(135deg, #faf5ff, #ffffff)';
-                  e.target.style.transform = 'translateX(4px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'transparent';
-                  e.target.style.transform = 'translateX(0)';
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedItems.includes(appointmentId)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedItems([...selectedItems, appointmentId]);
-                    } else {
-                      setSelectedItems(selectedItems.filter(id => id !== appointmentId));
-                    }
-                  }}
-                  style={{
-                    marginRight: '20px',
-                    width: '18px',
-                    height: '18px',
-                    accentColor: '#8b5cf6'
-                  }}
-                />
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontWeight: '700',
-                    color: '#1e293b',
-                    marginBottom: '6px',
-                    fontSize: '16px'
-                  }}>
-                    #{appointmentId} - Appointment Request
-                  </div>
-                  
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    flexWrap: 'wrap'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 8px',
-                      background: '#f8fafc',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}>
-                      👤 Freelancer ID: {params.freelancer_id}
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 8px',
-                      background: '#f8fafc',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}>
-                      {getTypeIcon(params.appointment_type)} {params.appointment_type}
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 8px',
-                      background: '#f8fafc',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}>
-                      📅 {formatDate(params.appointment_date)}
-                    </div>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    gap: '20px',
-                    fontSize: '12px',
-                    color: '#94a3b8',
-                    marginTop: '4px'
-                  }}>
-                    <span>📅 Created: {formatDate(params.created_at)}</span>
-                    {params.message && (
-                      <span>💬 "{params.message.substring(0, 50)}..."</span>
-                    )}
-                  </div>
+          filteredAppointments.map((appointment) => (
+            <div
+              key={appointment.id}
+              className="appointment-row"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '80px 250px 180px 1fr 120px 120px 180px',
+                gap: '16px',
+                padding: '16px',
+                borderBottom: '1px solid #f1f3f4',
+                alignItems: 'center',
+                fontSize: '14px'
+              }}
+            >
+              <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                #{appointment.id}
+              </div>
+              
+              <div style={{ color: '#374151' }}>
+                <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px' }}>
+                  ID: {appointment.freelancer_id}
                 </div>
-
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  margin: '0 16px',
-                  minWidth: '110px',
-                  justifyContent: 'center',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  background: 
-                    params.status === 'pending' ? 'linear-gradient(135deg, #fef3c7, #fde68a)' :
-                    params.status === 'accepted' ? 'linear-gradient(135deg, #d1fae5, #a7f3d0)' :
-                    params.status === 'rejected' ? 'linear-gradient(135deg, #fee2e2, #fecaca)' :
-                    'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
-                  color:
-                    params.status === 'pending' ? '#92400e' :
-                    params.status === 'accepted' ? '#065f46' :
-                    params.status === 'rejected' ? '#991b1b' :
-                    '#374151',
-                  boxShadow: `0 2px 8px ${
-                    params.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' :
-                    params.status === 'accepted' ? 'rgba(16, 185, 129, 0.2)' :
-                    params.status === 'rejected' ? 'rgba(248, 113, 113, 0.2)' :
-                    'rgba(156, 163, 175, 0.2)'
-                  }`
-                }}>
-                  {getStatusIcon(params.status)} {params.status}
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  {params.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => updateAppointmentStatus(appointmentId, 'accepted')}
-                        style={{
-                          padding: '8px 16px',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          background: 'linear-gradient(135deg, #10b981, #059669)',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                        }}
-                      >
-                        ✅ Accept
-                      </button>
-                      <button
-                        onClick={() => updateAppointmentStatus(appointmentId, 'rejected')}
-                        style={{
-                          padding: '8px 16px',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          background: 'linear-gradient(135deg, #f87171, #ef4444)',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                        }}
-                      >
-                        ❌ Reject
-                      </button>
-                    </>
-                  )}
-                  {params.status === 'accepted' && (
-                    <button
-                      onClick={() => updateAppointmentStatus(appointmentId, 'cancelled')}
-                      style={{
-                        padding: '8px 16px',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        background: 'linear-gradient(135deg, #9ca3af, #6b7280)',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    >
-                      🚫 Cancel
-                    </button>
-                  )}
+                <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                  {appointment.freelancer_email || 'No email'} <br />
+                  📞 {appointment.freelancer_phone || 'No phone'}
                 </div>
               </div>
-            );
-          })
+              
+              <div style={{ color: '#374151', fontSize: '12px' }}>
+                {formatDate(appointment.appointment_date)}
+              </div>
+              
+              <div style={{
+                color: '#6b7280',
+                fontSize: '12px',
+                maxWidth: '250px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {appointment.message || 'No message provided'}
+              </div>
+              
+              <div>
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  backgroundColor: appointment.appointment_type === 'online' ? '#dbeafe' : '#f3f4f6',
+                  color: appointment.appointment_type === 'online' ? '#1d4ed8' : '#374151',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  width: 'fit-content'
+                }}>
+                  <i className={appointment.appointment_type === 'online' ? 'fi fi-rr-globe' : 'fi fi-rr-building'}></i>
+                  {appointment.appointment_type === 'online' ? 'Online' : 'In Company'}
+                </span>
+              </div>
+              
+              <div>
+                <span style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  backgroundColor: `${getStatusColor(appointment.status)}20`,
+                  color: getStatusColor(appointment.status),
+                  width: 'fit-content'
+                }}>
+                  <i className={
+                    appointment.status === 'pending' ? 'fi fi-rr-clock' :
+                    appointment.status === 'accepted' ? 'fi fi-rr-check' : 'fi fi-rr-cross'
+                  }></i>
+                  {appointment.status}
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {appointment.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleAction(appointment.id, 'accept')}
+                      className="action-button"
+                      disabled={actionLoading}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        border: '1px solid #10b981',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <i className="fi fi-rr-check"></i>
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleAction(appointment.id, 'reject')}
+                      className="action-button"
+                      disabled={actionLoading}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        border: '1px solid #6b7280',
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <i className="fi fi-rr-cross"></i>
+                      Reject
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => handleViewAppointment(appointment)}
+                  className="action-button"
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    border: '1px solid #3b82f6',
+                    backgroundColor: 'transparent',
+                    color: '#3b82f6',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <i className="fi fi-rr-eye"></i>
+                  View
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
+
+      {/* Main Modal */}
+      {showModal && selectedAppointment && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '24px',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fi fi-rr-calendar"></i>
+                Appointment Details #{selectedAppointment.id}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedAppointment(null);
+                  setUserDetails(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '4px',
+                  borderRadius: '4px'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                <i className="fi fi-rr-cross"></i>
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              {/* Appointment Basic Info */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                marginBottom: '16px'
+              }}>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+                    APPOINTMENT DATE
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                    {formatDate(selectedAppointment.appointment_date)}
+                  </div>
+                </div>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+                    CREATED
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#374151' }}>
+                    {formatDate(selectedAppointment.created_at)}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                marginBottom: '16px'
+              }}>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+                    APPOINTMENT TYPE
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className={selectedAppointment.appointment_type === 'online' ? 'fi fi-rr-globe' : 'fi fi-rr-building'}></i>
+                    {selectedAppointment.appointment_type === 'online' ? 'Online Meeting' : 'In-Person at Company'}
+                  </div>
+                </div>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+                    STATUS
+                  </div>
+                  <div style={{ fontSize: '14px', color: getStatusColor(selectedAppointment.status), fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className={
+                      selectedAppointment.status === 'pending' ? 'fi fi-rr-clock' :
+                      selectedAppointment.status === 'accepted' ? 'fi fi-rr-check' : 'fi fi-rr-cross'
+                    }></i>
+                    {selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}
+                  </div>
+                </div>
+              </div>
+
+              {/* User Information */}
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fi fi-rr-user"></i>
+                  USER INFORMATION
+                </div>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>NAME</div>
+                    <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                      {selectedAppointment.first_name && selectedAppointment.last_name 
+                        ? `${selectedAppointment.first_name} ${selectedAppointment.last_name}` 
+                        : 'Name not available'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>USER ID</div>
+                    <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                      #{selectedAppointment.freelancer_id}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>EMAIL</div>
+                    <div style={{ fontSize: '14px', color: '#374151' }}>
+                      {selectedAppointment.freelancer_email || 'Not provided'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>PHONE</div>
+                    <div style={{ fontSize: '14px', color: '#374151' }}>
+                      {selectedAppointment.freelancer_phone || 'Not provided'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Appointment Message */}
+              <div style={{
+                padding: '12px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px'
+              }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fi fi-rr-comment"></i>
+                  APPOINTMENT MESSAGE
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#374151',
+                  lineHeight: '1.5',
+                  padding: '12px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '4px',
+                  border: '1px solid #e5e7eb',
+                  minHeight: '60px',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {selectedAppointment.message || 'No message provided for this appointment.'}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+              paddingTop: '16px',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              {selectedAppointment.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => handleAction(selectedAppointment.id, 'accept')}
+                    disabled={actionLoading}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      opacity: actionLoading ? 0.6 : 1
+                    }}
+                  >
+                    <i className="fi fi-rr-check"></i>
+                    {actionLoading ? 'Processing...' : 'Accept Appointment'}
+                  </button>
+                  <button
+                    onClick={() => handleAction(selectedAppointment.id, 'reject')}
+                    disabled={actionLoading}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#6b7280',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      opacity: actionLoading ? 0.6 : 1
+                    }}
+                  >
+                    <i className="fi fi-rr-cross"></i>
+                    {actionLoading ? 'Processing...' : 'Reject Appointment'}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => {
+                  setNewDate(formatDateForInput(selectedAppointment.appointment_date));
+                  setShowRescheduleModal(true);
+                }}
+                disabled={actionLoading}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  opacity: actionLoading ? 0.6 : 1
+                }}
+              >
+                <i className="fi fi-rr-calendar"></i>
+                Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {showRescheduleModal && selectedAppointment && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1001
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fi fi-rr-calendar"></i>
+                Reschedule Appointment #{selectedAppointment.id}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowRescheduleModal(false);
+                  setNewDate('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                <i className="fi fi-rr-cross"></i>
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                New Date & Time
+              </label>
+              <input
+                type="datetime-local"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginTop: '4px'
+              }}>
+                Current: {formatDate(selectedAppointment.appointment_date)}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => {
+                  setShowRescheduleModal(false);
+                  setNewDate('');
+                }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <i className="fi fi-rr-cross"></i>
+                Cancel
+              </button>
+              <button
+                onClick={() => handleReschedule(selectedAppointment.id, newDate)}
+                disabled={actionLoading || !newDate}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: newDate ? '#3b82f6' : '#9ca3af',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: newDate ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  opacity: actionLoading ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <i className="fi fi-rr-calendar"></i>
+                {actionLoading ? 'Rescheduling...' : 'Reschedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AppointmentDashboard;
+export default AppointmentsDashboard;
