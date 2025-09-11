@@ -18,7 +18,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
         "title",
         "user_id",
         "category_id",
-        "sub_category_id",
         "budget_min",
         "budget_max",
         "status",
@@ -34,7 +33,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
         "description",
         "user_id",
         "category_id",
-        "sub_category_id",
         "budget_min",
         "budget_max",
         "duration",
@@ -54,7 +52,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
         "description",
         "user_id",
         "category_id",
-        "sub_category_id",
         "budget_min",
         "budget_max",
         "duration",
@@ -69,7 +66,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
         "title",
         "user_id",
         "category_id",
-        "sub_category_id",
         "status",
         "completion_status",
         "assigned_freelancer_id",
@@ -81,13 +77,13 @@ export const createProjectsResource = async (db, logAdminAction) => {
 
       properties: {
         user_id: {
-          reference: "clients", // points to your Clients resource
+          reference: "clients",
           type: "reference",
           description: "Client who created the project",
           isRequired: true,
         },
         assigned_freelancer_id: {
-          reference: "freelancers", // points to your Freelancers resource
+          reference: "freelancers",
           type: "reference",
           description: "Freelancer assigned to this project",
         },
@@ -96,11 +92,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
           type: "reference",
           description: "Main project category",
           isRequired: true,
-        },
-        sub_category_id: {
-          reference: "sub_categories",
-          type: "reference",
-          description: "Optional sub-category",
         },
         title: { type: "string", isRequired: true },
         description: { type: "textarea", props: { rows: 4 }, isRequired: true },
@@ -183,7 +174,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
           },
         },
 
-        // Format timestamps for list view
         list: {
           after: async (response) => {
             if (response.records) {
@@ -194,7 +184,10 @@ export const createProjectsResource = async (db, logAdminAction) => {
                   "completion_requested_at",
                   "payment_released_at",
                 ].forEach((field) => {
-                  if (record.params[field]) {
+                  if (
+                    record.params[field] &&
+                    !isNaN(new Date(record.params[field]))
+                  ) {
                     record.params[field] = dayjs(record.params[field])
                       .tz("Asia/Amman")
                       .format("YYYY-MM-DD HH:mm:ss");
@@ -207,7 +200,6 @@ export const createProjectsResource = async (db, logAdminAction) => {
           },
         },
 
-        // Format timestamps for show view
         show: {
           after: async (response) => {
             if (response.record) {
@@ -217,7 +209,10 @@ export const createProjectsResource = async (db, logAdminAction) => {
                 "completion_requested_at",
                 "payment_released_at",
               ].forEach((field) => {
-                if (response.record.params[field]) {
+                if (
+                  response.record.params[field] &&
+                  !isNaN(new Date(response.record.params[field]))
+                ) {
                   response.record.params[field] = dayjs(
                     response.record.params[field]
                   )

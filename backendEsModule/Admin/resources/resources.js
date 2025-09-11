@@ -2,6 +2,8 @@ import { createAdminsResource } from "./admins.js";
 import { createClientsResource } from "./clients.js";
 import { createFreelancersResource } from "./freelancers.js";
 import { createProjectsResource } from "./projects.js";
+import { createOffersResource } from "./offers.js";
+import { createPaymentsResource } from "./payments.js";
 import { createContentResources } from "./content.js";
 import { createFinancialResources } from "./financial.js";
 import { createSystemResource } from "./system.js";
@@ -25,6 +27,12 @@ export const createResourceConfigs = async (
   // Project Resources
   resources.push(await createProjectsResource(db, tableExists, logAdminAction));
 
+  // Offers Resource
+  resources.push(await createOffersResource(db, logAdminAction));
+
+  // Payments Resource (escrow + payments + receipts)
+  resources.push(await createPaymentsResource(db, logAdminAction));
+
   // Content Resources
   const contentResources = await createContentResources(
     db,
@@ -41,7 +49,7 @@ export const createResourceConfigs = async (
   );
   resources.push(...financialResources);
 
-  // Course Resources - Updated to pass the correct parameters
+  // Course Resources
   const courseResources = await createCourseResources(
     db,
     tableExists,
