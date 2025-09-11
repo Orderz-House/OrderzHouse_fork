@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { ApiClient, useTranslation } from "adminjs";
 import CoursesManagement from "../admin-components/course-components.jsx";
-import AppointmentsDashboard from "../admin-components/appointments.jsx"
+import AppointmentsDashboard from "../admin-components/appointments.jsx";
+import UserManagementDashboard from "../admin-components/userManagement.jsx";
+import AdminProjectsDashboard from "../admin-components/projectManagement.jsx"
 import Loader from "../admin-components/loader/loader.jsx"; 
 
 const api = new ApiClient();
@@ -14,6 +16,7 @@ export default function Dashboard() {
   const [adminLogs, setAdminLogs] = useState([]);
   const [userLogs, setUserLogs] = useState([]);
   const [currentView, setCurrentView] = useState('dashboard'); 
+  const [userManagementTab, setUserManagementTab] = useState('admins');
   const [visibleCards, setVisibleCards] = useState(new Set());
   const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -61,7 +64,6 @@ export default function Dashboard() {
     };
   }, [fetchDashboardData]);
 
-  // Animate cards in sequence
   useEffect(() => {
     if (data && !loading) {
       const timer = setTimeout(() => {
@@ -103,17 +105,36 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Show appointments management if currentView is 'appointments'
+  const navigateToUserManagement = (tab) => {
+    setUserManagementTab(tab);
+    setCurrentView('userManagement');
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard');
+  };
+
   if (currentView === 'appointments') {
     return <AppointmentsDashboard onBack={() => setCurrentView('dashboard')} />;
   }
 
-  // Show courses management if currentView is 'courses'
   if (currentView === 'courses') {
     return <CoursesManagement onBack={() => setCurrentView('dashboard')} />;
   }
 
-  // Show error state
+  if (currentView === 'projects') {
+    return <AdminProjectsDashboard onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  if (currentView === 'userManagement') {
+    return (
+      <UserManagementDashboard 
+        initialTab={userManagementTab}
+        onBack={handleBackToDashboard}
+      />
+    );
+  }
+
   if (error && !data) {
     return (
       <div className="error-container">
@@ -145,7 +166,7 @@ export default function Dashboard() {
     { 
       title: "User Management", 
       description: "Manage admins and user accounts",
-      link: "/admin/resources/admins", 
+      action: 'users',
       color: "#a78bfa", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -159,7 +180,7 @@ export default function Dashboard() {
     { 
       title: "Client Portal", 
       description: "View and manage client accounts",
-      link: "/admin/resources/clients", 
+      action: 'clients',
       color: "#86efac", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -171,7 +192,7 @@ export default function Dashboard() {
     { 
       title: "Freelancer Network", 
       description: "Manage freelancer profiles and status",
-      link: "/admin/resources/freelancers", 
+      action: 'freelancers',
       color: "#fca5a5", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -184,7 +205,7 @@ export default function Dashboard() {
     { 
       title: "Project Management", 
       description: "Track and manage active projects",
-      link: "/admin/resources/projects", 
+      action: 'projects', 
       color: "#c4b5fd", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -327,6 +348,14 @@ export default function Dashboard() {
       setCurrentView('courses');
     } else if (card.action === 'appointments') {
       setCurrentView('appointments');
+    } else if (card.action === 'projects') { // Add this condition
+      setCurrentView('projects');
+    } else if (card.action === 'users') {
+      navigateToUserManagement('admins');
+    } else if (card.action === 'clients') {
+      navigateToUserManagement('clients');
+    } else if (card.action === 'freelancers') {
+      navigateToUserManagement('freelancers');
     } else if (card.link) {
       window.location.href = card.link;
     }

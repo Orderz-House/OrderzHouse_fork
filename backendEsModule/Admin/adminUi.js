@@ -18,7 +18,21 @@ const Components = {
   ),
   UsersAnalytics: componentLoader.add(
     "UsersAnalytics",
-    path.join(__dirname, "../../frontend/admin-components/Analytics/userAnalytics.jsx")
+    path.join(
+      __dirname,
+      "../../frontend/admin-components/Analytics/userAnalytics.jsx"
+    )
+  ),
+  UserManagement: componentLoader.add(
+    "UserManagement",
+    path.join(__dirname, "../../frontend/admin-components/userManagement.jsx")
+  ),
+  AdminProjectsDashboard: componentLoader.add(
+    "AdminProjectsDashboard",
+    path.join(
+      __dirname,
+      "../../frontend/admin-components/projectManagement.jsx"
+    )
   ),
 };
 
