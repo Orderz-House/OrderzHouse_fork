@@ -1,9 +1,18 @@
-import express from 'express';
-import { subscriptionToPlan , getSubscriptionByUserId } from '../controller/subscriptions.js';
-const subscriptionsRouter = express.Router();
+import express from "express";
+import { subscriptionToPlan, getSubscriptionByPlanId, updateSubscription, deleteSubscription } from "../controllers/subscriptionController.js";
 
-subscriptionsRouter.post('/subscribe', subscriptionToPlan);
-subscriptionsRouter.get('/user/:userId', getSubscriptionByUserId);
+const router = express.Router();
 
+// Create subscription
+router.post("/", subscriptionToPlan);
 
-export default subscriptionsRouter; 
+// Get subscriptions by plan ID
+router.get("/plan/:planId", getSubscriptionByPlanId);
+
+// Update subscription by ID
+router.put("/:subscriptionId", updateSubscription);
+
+// Delete subscription by ID
+router.delete("/:subscriptionId", deleteSubscription);
+
+export default router;

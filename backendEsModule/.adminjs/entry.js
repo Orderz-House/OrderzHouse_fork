@@ -9,3 +9,7 @@ import UserManagement from '../../frontend/admin-components/userManagement'
 AdminJS.UserComponents.UserManagement = UserManagement
 import AdminProjectsDashboard from '../../frontend/admin-components/projectManagement'
 AdminJS.UserComponents.AdminProjectsDashboard = AdminProjectsDashboard
+import AdminManagement from '../../frontend/admin-components/adminsManagement'
+AdminJS.UserComponents.AdminManagement = AdminManagement
+import PlansManager from '../../frontend/admin-components/plansManagement'
+AdminJS.UserComponents.PlansManager = PlansManager

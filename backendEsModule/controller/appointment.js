@@ -263,6 +263,46 @@ const rejectAppointment = (req, res) => {
     });
 };
 
+const createAppointmentByAdmin = (req, res) => {
+  const { freelancer_id, appointment_date, message, appointment_type } = req.body;
+
+  if (!freelancer_id || !appointment_date || !appointment_type) {
+    return res.status(400).json({
+      success: false,
+      message: "freelancer_id, appointment_date and appointment_type are required",
+    });
+  }
+
+  if (!["online", "in_company"].includes(appointment_type)) {
+    return res.status(400).json({
+      success: false,
+      message: "appointment_type must be either 'online' or 'in_company'",
+    });
+  }
+
+  pool
+    .query(
+      `INSERT INTO appointments (freelancer_id, appointment_date, message, status, appointment_type)
+       VALUES ($1, $2, $3, 'pending', $4) RETURNING *`,
+      [freelancer_id, appointment_date, message || null, appointment_type]
+    )
+    .then((result) => {
+      res.status(201).json({
+        success: true,
+        message: "Appointment created successfully",
+        appointment: result.rows[0],
+      });
+    })
+    .catch((err) => {
+      console.error("Error creating appointment:", err);
+      res.status(500).json({
+        success: false,
+        message: "Server error creating appointment",
+        error: err.message,
+      });
+    });
+};
+
 export {
   makeAppointment,
   rescheduleAppointment,
@@ -270,4 +310,5 @@ export {
   getAllAppointments,
   getAppointmentsByFreelancer,
   rejectAppointment,
+  createAppointmentByAdmin
 };

@@ -6,10 +6,14 @@ import {
   getAllAppointments,
   rejectAppointment,
   getAppointmentsByFreelancer,
+  createAppointmentByAdmin
 } from "../controller/appointment.js";
 
 const appointmentsRouter = express.Router();
 
+
+
+appointmentsRouter.post("/admin/appointments", createAppointmentByAdmin);
 appointmentsRouter.post("/", makeAppointment);
 appointmentsRouter.patch("/reschedule/:appointment_id", rescheduleAppointment);
 appointmentsRouter.patch("/accept/:appointment_id", acceptAppointment);

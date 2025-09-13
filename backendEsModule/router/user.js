@@ -70,13 +70,11 @@ usersRouter.delete(
 usersRouter.post(
   "/view",
   authentication,
-  authorization("view_users"),
   viewUsers
 );
 usersRouter.delete(
   "/delete/:userId",
   authentication,
-  authorization("delete_user"),
   deleteUser
 );
 usersRouter.put("/edit/:userId", authentication, editUser);
@@ -85,19 +83,16 @@ usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(
   "/freelancers/all",
   authentication,
-  authorization("view_freelancers"),
   getAllFreelancers
 );
 usersRouter.delete(
   "/freelancers/delete/:freelancerid",
   authentication,
-  authorization("delete_freelancer"),
   deleteFreelancerById
 );
 usersRouter.get(
   "/list/online",
   authentication,
-  authorization("show_online"),
   listOnlineUsers
 );
 
@@ -124,14 +119,12 @@ usersRouter.get("/allfreelance", getFreelance);
 usersRouter.put(
   "/freelancers/:id/verify",
   authentication,
-  authorization("verify_freelancer"),
   verifyFreelancerByAdmin
 );
 
 usersRouter.put(
   "/freelancers/:id/reject",
   authentication,
-  authorization("verify_freelancer"),
   rejectFreelancerByAdmin
 );
 
