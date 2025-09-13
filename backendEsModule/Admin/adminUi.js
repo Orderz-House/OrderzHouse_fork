@@ -34,6 +34,22 @@ const Components = {
       "../../frontend/admin-components/projectManagement.jsx"
     )
   ),
+  AdminManagement: componentLoader.add(
+    "AdminManagement",
+    path.join(__dirname, "../../frontend/admin-components/adminsManagement.jsx")
+  ),
+  PlansManager: componentLoader.add(
+    "PlansManager",
+    path.join(__dirname, "../../frontend/admin-components/plansManagement.jsx")
+  ),
+  // ClientsManagement: componentLoader.add(
+  //   "ClientsManagement",
+  //   path.join(__dirname, "../../frontend/admin-components/clientsManagement.jsx")
+  // ),
+  // FreelancersManagement: componentLoader.add(
+  //   "FreelancersManagement",
+  //   path.join(__dirname, "../../frontend/admin-components/freelancersManagement.jsx")
+  // ),
 };
 
 export { componentLoader, Components };

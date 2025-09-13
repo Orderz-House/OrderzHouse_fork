@@ -3,7 +3,11 @@ import { ApiClient, useTranslation } from "adminjs";
 import CoursesManagement from "../admin-components/course-components.jsx";
 import AppointmentsDashboard from "../admin-components/appointments.jsx";
 import UserManagementDashboard from "../admin-components/userManagement.jsx";
-import AdminProjectsDashboard from "../admin-components/projectManagement.jsx"
+import AdminProjectsDashboard from "../admin-components/projectManagement.jsx";
+import AdminManagement from "../admin-components/adminsManagement.jsx";
+import PlansManager from "../admin-components/plansManagement.jsx";
+// import ClientsManagement from "../admin-components/clientsManagement.jsx";
+// import FreelancersManagement from "../admin-components/freelancersManagement.jsx";
 import Loader from "../admin-components/loader/loader.jsx"; 
 
 const api = new ApiClient();
@@ -16,7 +20,6 @@ export default function Dashboard() {
   const [adminLogs, setAdminLogs] = useState([]);
   const [userLogs, setUserLogs] = useState([]);
   const [currentView, setCurrentView] = useState('dashboard'); 
-  const [userManagementTab, setUserManagementTab] = useState('admins');
   const [visibleCards, setVisibleCards] = useState(new Set());
   const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -105,34 +108,37 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  const navigateToUserManagement = (tab) => {
-    setUserManagementTab(tab);
-    setCurrentView('userManagement');
-  };
-
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
   };
 
+  // Component rendering based on current view
   if (currentView === 'appointments') {
-    return <AppointmentsDashboard onBack={() => setCurrentView('dashboard')} />;
+    return <AppointmentsDashboard onBack={handleBackToDashboard} />;
   }
 
   if (currentView === 'courses') {
-    return <CoursesManagement onBack={() => setCurrentView('dashboard')} />;
+    return <CoursesManagement onBack={handleBackToDashboard} />;
   }
 
   if (currentView === 'projects') {
-    return <AdminProjectsDashboard onBack={() => setCurrentView('dashboard')} />;
+    return <AdminProjectsDashboard onBack={handleBackToDashboard} />;
   }
 
-  if (currentView === 'userManagement') {
-    return (
-      <UserManagementDashboard 
-        initialTab={userManagementTab}
-        onBack={handleBackToDashboard}
-      />
-    );
+  if (currentView === 'admins') {
+    return <AdminManagement onBack={handleBackToDashboard} />;
+  }
+
+  if (currentView === 'clients') {
+    return <ClientsManagement onBack={handleBackToDashboard} />;
+  }
+
+  if (currentView === 'freelancers') {
+    return <FreelancersManagement onBack={handleBackToDashboard} />;
+  }
+
+  if (currentView === 'plans') {
+    return <PlansManager onBack={handleBackToDashboard} />;
   }
 
   if (error && !data) {
@@ -164,9 +170,9 @@ export default function Dashboard() {
 
   const quickActions = [
     { 
-      title: "User Management", 
-      description: "Manage admins and user accounts",
-      action: 'users',
+      title: "Admin Management", 
+      description: "Manage admin accounts and permissions",
+      action: 'admins',
       color: "#a78bfa", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -242,7 +248,7 @@ export default function Dashboard() {
     { 
       title: "Subscription Plans", 
       description: "Manage pricing and plan features",
-      link: "/admin/resources/plans", 
+      action: 'plans',
       color: "#a7f3d0", 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -285,7 +291,6 @@ export default function Dashboard() {
       const now = new Date();
       const logTime = new Date(dateString);
       
-      // Check if the date is valid
       if (isNaN(logTime.getTime())) {
         return "Invalid date";
       }
@@ -295,17 +300,6 @@ export default function Dashboard() {
       const diffMins = Math.floor(diffSecs / 60);
       const diffHours = Math.floor(diffMins / 60);
       const diffDays = Math.floor(diffHours / 24);
-      
-      // Debug: Log the actual times for troubleshooting
-      console.log('Time calculation:', {
-        now: now.toISOString(),
-        logTime: logTime.toISOString(),
-        diffMs,
-        diffSecs,
-        diffMins,
-        diffHours,
-        diffDays
-      });
       
       if (diffSecs < 60) {
         return diffSecs <= 1 ? "just now" : `${diffSecs}s ago`;
@@ -329,7 +323,7 @@ export default function Dashboard() {
 
   const recentUpdates = [...userLogs, ...adminLogs]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 3) // Show top 3 most recent logs
+    .slice(0, 3)
     .map(log => ({
       title: `${log.first_name} ${log.last_name}`,
       description: log.action,
@@ -348,14 +342,16 @@ export default function Dashboard() {
       setCurrentView('courses');
     } else if (card.action === 'appointments') {
       setCurrentView('appointments');
-    } else if (card.action === 'projects') { // Add this condition
+    } else if (card.action === 'projects') {
       setCurrentView('projects');
-    } else if (card.action === 'users') {
-      navigateToUserManagement('admins');
+    } else if (card.action === 'admins') {
+      setCurrentView('admins');
     } else if (card.action === 'clients') {
-      navigateToUserManagement('clients');
+      setCurrentView('clients');
     } else if (card.action === 'freelancers') {
-      navigateToUserManagement('freelancers');
+      setCurrentView('freelancers');
+    } else if (card.action === 'plans') {
+      setCurrentView('plans');
     } else if (card.link) {
       window.location.href = card.link;
     }

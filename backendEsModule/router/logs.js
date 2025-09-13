@@ -19,30 +19,30 @@ const logsRouter = express.Router();
 logsRouter.use(authentication);
 
 // Get message logs (existing functionality)
-logsRouter.get("/messages", authorization("view_logs"), getMessageLogs);
+logsRouter.get("/messages", getMessageLogs);
 
 // Get system logs with filtering and pagination
-logsRouter.get("/", authorization("view_logs"), getSystemLogs);
+logsRouter.get("/", getSystemLogs);
 
 // Get logs for a specific entity
-logsRouter.get("/entity/:entityType/:entityId", authorization("view_logs"), getEntityLogsRoute);
+logsRouter.get("/entity/:entityType/:entityId",  getEntityLogsRoute);
 
 // Get logs for a specific user
-logsRouter.get("/user/:userId", authorization("view_logs"), getUserLogsRoute);
+logsRouter.get("/user/:userId", getUserLogsRoute);
 
 // Get error logs
-logsRouter.get("/errors", authorization("view_logs"), getErrorLogsRoute);
+logsRouter.get("/errors", getErrorLogsRoute);
 
 // Get critical logs
-logsRouter.get("/critical", authorization("view_logs"), getCriticalLogsRoute);
+logsRouter.get("/critical", getCriticalLogsRoute);
 
 // Get log statistics
-logsRouter.get("/statistics", authorization("view_logs"), getLogStatisticsRoute);
+logsRouter.get("/statistics", getLogStatisticsRoute);
 
 // Export logs to CSV (admin only)
-logsRouter.get("/export", authorization("view_logs"), exportLogs);
+logsRouter.get("/export", exportLogs);
 
 // Clean up old logs (admin only)
-logsRouter.delete("/cleanup", authorization("view_logs"), cleanupLogs);
+logsRouter.delete("/cleanup", cleanupLogs);
 
 export default logsRouter;

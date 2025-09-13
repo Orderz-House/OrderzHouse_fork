@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Loader from "../admin-components/loader/loader.jsx";
 
-const CoursesDashboard = () => {
+const CoursesDashboard = ({ onBack }) => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [courses, setCourses] = useState([]);
@@ -9,15 +9,17 @@ const CoursesDashboard = () => {
   const [courseEnrollments, setCourseEnrollments] = useState([]);
   const [courseMaterials, setCourseMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState('dashboard'); 
+  const [activeView, setActiveView] = useState('categories'); 
   const [activeTab, setActiveTab] = useState('enrollments'); 
   const [tabLoading, setTabLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   // Fetch categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/categories');
+      const response = await fetch('/categories');
       const data = await response.json();
       if (data.success) {
         setCategories(data.categories);
@@ -27,13 +29,13 @@ const CoursesDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch courses by category
   const fetchCoursesByCategory = async (categoryId) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/courses/category/${categoryId}`);
+      const response = await fetch(`/courses/category/${categoryId}`);
       const data = await response.json();
       if (data.success) {
         setCourses(data.courses);
@@ -50,13 +52,11 @@ const CoursesDashboard = () => {
   const fetchCourseEnrollments = async (courseId) => {
     try {
       setTabLoading(true);
-      const response = await fetch(`http://localhost:5000/courses/${courseId}/enrollments`);
+      const response = await fetch(`/courses/${courseId}/enrollments`);
       const data = await response.json();
-      console.log('Enrollments response:', data);
       if (data.success) {
         setCourseEnrollments(data.enrollments || []);
       } else {
-        console.error('Enrollments API error:', data.error);
         setCourseEnrollments([]);
       }
     } catch (error) {
@@ -71,7 +71,7 @@ const CoursesDashboard = () => {
   const fetchCourseMaterials = async (courseId) => {
     try {
       setTabLoading(true);
-      const response = await fetch(`http://localhost:5000/courses/${courseId}/materials`);
+      const response = await fetch(`/courses/${courseId}/materials`);
       const data = await response.json();
       if (data.success) {
         setCourseMaterials(data.materials || []);
@@ -86,7 +86,6 @@ const CoursesDashboard = () => {
     }
   };
 
-  // Handle tab change with data fetching
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     if (selectedCourse) {
@@ -98,901 +97,702 @@ const CoursesDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const getCategoryColor = (index) => {
-    const colors = ['#a78bfa', '#86efac', '#7dd3fc', '#fdba74', '#fca5a5', '#c4b5fd'];
-    return colors[index % colors.length];
+  const handleViewCourse = (course) => {
+    setSelectedCourse(course);
+    setActiveTab('enrollments');
+    fetchCourseEnrollments(course.id);
+    setShowModal(true);
   };
 
-  if (loading) {
-    return <Loader />;
+  const getFilteredCourses = () => {
+    if (!searchTerm) return courses;
+    
+    return courses.filter(course =>
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      course.id.toString().includes(searchTerm)
+    );
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  if (loading && (categories.length === 0 || courses.length === 0)) {
+    return (
+      <div style={{
+        backgroundColor: '#ffffff',
+        minHeight: '100vh',
+        padding: '32px',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <Loader />
+      </div>
+    );
   }
 
-  // Dashboard view - categories
-  const DashboardView = () => (
-    <div style={{
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-      padding: '32px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      color: '#334155'
-    }}>
-      <style>
-        {`
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
-      </style>
-
+  // Categories View
+  if (activeView === 'categories') {
+    return (
       <div style={{
-        marginBottom: '40px',
-        animation: 'fadeInUp 0.6s ease-out'
+        backgroundColor: '#ffffff',
+        minHeight: '100vh',
+        padding: '24px',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        color: '#374151'
       }}>
-        <h1 style={{
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          margin: '0 0 8px 0',
-          color: '#0f172a',
-          letterSpacing: '-0.025em'
-        }}>
-          Course Categories
-        </h1>
-        <p style={{
-          margin: '0',
-          color: '#64748b',
-          fontSize: '16px',
-          fontWeight: '400'
-        }}>
-          Manage courses across different categories
-        </p>
-      </div>
+        <style>
+          {`
+            .category-card:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              transition: all 0.2s ease;
+            }
+          `}
+        </style>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '24px',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
-        {categories.map((category, index) => (
-          <div
-            key={category.id}
-            onClick={() => {
-              setSelectedCategory(category);
-              fetchCoursesByCategory(category.id);
-            }}
-            style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              border: '1px solid #e2e8f0',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`,
-              '--card-color': getCategoryColor(index),
-              '--card-color-rgb': getCategoryColor(index).replace('#', '').match(/.{2}/g).map(x => parseInt(x, 16)).join(', ')
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.08)';
-              e.currentTarget.style.borderColor = '#cbd5e1';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-            }}
-          >
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '3px',
-              background: getCategoryColor(index),
-              transform: 'scaleX(0)',
-              transition: 'transform 0.2s ease'
-            }}></div>
-
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: getCategoryColor(index),
-              color: 'white',
-              flexShrink: 0,
-              marginBottom: '16px',
-              transition: 'transform 0.2s ease'
+        {/* Header */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                style={{
+                  background: '#374151',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  marginRight: '12px',
+                  color: 'white',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#111827'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#374151'}
+              >
+                ←
+              </button>
+            )}
+            <h1 style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              margin: '0',
+              color: '#111827'
             }}>
-              <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                {category.name.charAt(0)}
-              </div>
-            </div>
-
-            <h3 style={{
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: '#0f172a',
-              margin: '0 0 4px 0',
-              lineHeight: '1.3'
-            }}>
-              {category.name}
-            </h3>
-
-            <p style={{
-              fontSize: '14px',
-              color: '#64748b',
-              margin: '0 0 16px 0',
-              lineHeight: '1.4'
-            }}>
-              {category.description || 'Manage courses in this category'}
-            </p>
-
-            <div style={{
-              fontSize: '12px',
-              color: getCategoryColor(index),
-              fontWeight: '600',
-              background: `${getCategoryColor(index)}15`,
-              padding: '6px 12px',
-              borderRadius: '20px',
-              display: 'inline-block'
-            }}>
-              Manage Courses →
-            </div>
+              Course Categories
+            </h1>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Courses list view
-  const CoursesView = () => (
-    <div style={{
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-      padding: '32px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      color: '#334155'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '32px',
-        gap: '16px'
-      }}>
-        <button
-          onClick={() => setActiveView('dashboard')}
-          style={{
-            background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '12px 20px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.4)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 6px 12px -2px rgba(79, 70, 229, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(79, 70, 229, 0.4)';
-          }}
-        >
-          ← Back to Categories
-        </button>
-        <div>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: '700',
-            color: '#0f172a',
-            margin: '0 0 4px 0'
-          }}>
-            {selectedCategory?.name} Courses
-          </h1>
           <p style={{
-            color: '#64748b',
-            margin: 0,
-            fontSize: '14px'
+            color: '#6b7280',
+            margin: '0',
+            fontSize: '16px'
           }}>
-            {courses.length} courses in this category
+            Select a category to manage courses
           </p>
         </div>
-      </div>
 
-      {courses.length === 0 ? (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '48px',
-          textAlign: 'center',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '20px',
-            background: '#f1f5f9',
-            color: '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px',
-            fontSize: '32px'
-          }}>
-            📚
-          </div>
-          <h3 style={{
-            fontSize: '1.25rem',
-            fontWeight: '600',
-            color: '#0f172a',
-            margin: '0 0 8px 0'
-          }}>
-            No courses yet
-          </h3>
-          <p style={{
-            color: '#64748b',
-            fontSize: '14px',
-            margin: 0,
-            lineHeight: '1.5'
-          }}>
-            Create your first course in this category
-          </p>
-        </div>
-      ) : (
+        {/* Categories Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-          gap: '24px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '24px',
+          maxWidth: '1200px'
         }}>
-          {courses.map((course, index) => (
+          {categories.map((category) => (
             <div
-              key={course.id}
+              key={category.id}
+              className="category-card"
+              onClick={() => {
+                setSelectedCategory(category);
+                fetchCoursesByCategory(category.id);
+              }}
               style={{
                 background: 'white',
                 borderRadius: '12px',
                 padding: '24px',
-                border: '1px solid #e2e8f0',
-                transition: 'all 0.2s ease',
-                animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = '#cbd5e1';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = '#e2e8f0';
+                cursor: 'pointer',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
               }}
             >
-              <h3 style={{
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                color: '#0f172a',
-                margin: '0 0 8px 0',
-                lineHeight: '1.3'
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f3f4f6',
+                color: '#374151',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                marginBottom: '16px'
               }}>
-                {course.title}
+                {category.name.charAt(0)}
+              </div>
+
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#111827',
+                margin: '0 0 8px 0'
+              }}>
+                {category.name}
               </h3>
 
               <p style={{
-                color: '#64748b',
                 fontSize: '14px',
-                margin: '0 0 20px 0',
-                lineHeight: '1.4'
+                color: '#6b7280',
+                margin: '0 0 16px 0',
+                lineHeight: '1.5'
               }}>
-                {course.description ? 
-                  (course.description.length > 120 ? 
-                    course.description.substring(0, 120) + '...' : 
-                    course.description
-                  ) : 
-                  'No description available'
-                }
+                {category.description || 'Manage courses in this category'}
               </p>
 
               <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                fontSize: '12px',
+                color: '#374151',
+                fontWeight: '500',
+                background: '#f9fafb',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                display: 'inline-block'
               }}>
-                <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: '700',
-                  color: '#10b981'
-                }}>
-                  ${course.price}
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#64748b',
-                  background: '#f1f5f9',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  fontWeight: '500'
-                }}>
-                  ID: {course.id}
-                </div>
+                View Courses →
               </div>
-
-              <button 
-                onClick={() => {
-                  setSelectedCourse(course);
-                  setActiveView('course-detail');
-                  setActiveTab('enrollments');
-                  fetchCourseEnrollments(course.id);
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 16px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  width: '100%',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                Manage Course
-              </button>
             </div>
           ))}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
 
-  // Course detail view with enrollments and materials
-  const CourseDetailView = () => (
+  // Courses View
+  const filteredCourses = getFilteredCourses();
+
+  return (
     <div style={{
-      backgroundColor: '#f8fafc',
+      backgroundColor: '#ffffff',
       minHeight: '100vh',
-      padding: '32px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      color: '#334155'
+      padding: '24px',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      color: '#374151'
     }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <style>
+        {`
+          .course-row:hover {
+            background-color: #f9fafb;
+            transition: all 0.2s ease;
+          }
+        `}
+      </style>
+
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
           <button
-            onClick={() => setActiveView('courses')}
+            onClick={() => setActiveView('categories')}
             style={{
-              background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-              color: 'white',
+              background: '#374151',
               border: 'none',
-              borderRadius: '8px',
-              padding: '12px 20px',
+              fontSize: '20px',
               cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '14px',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.4)'
+              marginRight: '12px',
+              color: 'white',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease'
             }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#111827'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#374151'}
           >
-            ← Back to Courses
+            ←
           </button>
           <div>
             <h1 style={{
               fontSize: '2rem',
               fontWeight: '700',
-              color: '#0f172a',
-              margin: '0 0 4px 0'
+              margin: '0',
+              color: '#111827'
             }}>
-              {selectedCourse?.title}
+              {selectedCategory?.name} Courses
             </h1>
             <p style={{
-              color: '#64748b',
-              margin: 0,
+              color: '#6b7280',
+              margin: '4px 0 0 0',
               fontSize: '14px'
             }}>
-              Course Management
+              {courses.length} courses available
             </p>
           </div>
         </div>
-        
-        <button style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '12px 20px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          transition: 'all 0.2s ease'
-        }}>
-          Edit Course
-        </button>
       </div>
 
-      {/* Course Info Card */}
+      {/* Main Courses Table */}
       <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '32px',
-        marginBottom: '24px',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '24px'
-        }}>
-          <div style={{ flex: 1 }}>
-            <h2 style={{
-              margin: '0 0 8px 0',
-              color: '#0f172a',
-              fontSize: '1.25rem',
-              fontWeight: '600'
-            }}>
-              Course Overview
-            </h2>
-            <p style={{
-              color: '#64748b',
-              margin: 0,
-              fontSize: '14px',
-              lineHeight: '1.5'
-            }}>
-              {selectedCourse?.description || 'No description available'}
-            </p>
-          </div>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '24px',
-          padding: '24px',
-          background: '#f8fafc',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#64748b',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginBottom: '8px'
-            }}>
-              Course Price
-            </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: '700',
-              color: '#10b981'
-            }}>
-              ${selectedCourse?.price}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#64748b',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginBottom: '8px'
-            }}>
-              Course ID
-            </div>
-            <div style={{
-              fontSize: '1.125rem',
-              fontWeight: '600',
-              color: '#0f172a',
-              fontFamily: 'monospace',
-              background: 'white',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0'
-            }}>
-              #{selectedCourse?.id}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#64748b',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginBottom: '8px'
-            }}>
-              Created Date
-            </div>
-            <div style={{
-              fontSize: '1rem',
-              fontWeight: '500',
-              color: '#0f172a'
-            }}>
-              {selectedCourse?.created_at 
-                ? new Date(selectedCourse.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })
-                : 'N/A'
-              }
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#64748b',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginBottom: '8px'
-            }}>
-              Status
-            </div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#10b981',
-              background: '#10b98115',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              border: '1px solid #10b98130'
-            }}>
-              Active
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        marginBottom: '24px'
-      }}>
-        <button
-          onClick={() => handleTabChange('enrollments')}
-          style={{
-            background: activeTab === 'enrollments' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'white',
-            color: activeTab === 'enrollments' ? 'white' : '#64748b',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            padding: '12px 20px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Enrollments ({courseEnrollments.length})
-        </button>
-        <button
-          onClick={() => handleTabChange('materials')}
-          style={{
-            background: activeTab === 'materials' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'white',
-            color: activeTab === 'materials' ? 'white' : '#64748b',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            padding: '12px 20px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Materials ({courseMaterials.length})
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div style={{
-        background: 'white',
+        backgroundColor: 'white',
         borderRadius: '12px',
         padding: '24px',
-        border: '1px solid #e2e8f0',
-        minHeight: '400px'
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        border: '1px solid #e5e7eb'
       }}>
-        {tabLoading ? (
-          <Loader />
-        ) : (
-          <>
-            {activeTab === 'enrollments' ? (
-              <div>
-                <h3 style={{ 
-                  margin: '0 0 20px 0', 
-                  color: '#0f172a', 
-                  fontSize: '1.125rem',
-                  fontWeight: '600'
-                }}>
-                  Course Enrollments
-                </h3>
-                {courseEnrollments.length === 0 ? (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '40px', 
-                    color: '#64748b' 
-                  }}>
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '20px',
-                      background: '#f1f5f9',
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 20px',
-                      fontSize: '32px'
-                    }}>
-                      👥
-                    </div>
-                    <h4 style={{ 
-                      color: '#0f172a', 
-                      margin: '0 0 8px 0',
-                      fontSize: '1.125rem',
-                      fontWeight: '600'
-                    }}>
-                      No enrollments yet
-                    </h4>
-                    <p style={{ 
-                      margin: 0,
-                      color: '#64748b',
-                      fontSize: '14px'
-                    }}>
-                      Students will appear here once they enroll in this course
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    {courseEnrollments.map((enrollment, index) => (
-                      <div key={enrollment.id || index} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px',
-                        background: '#f8fafc',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0'
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ 
-                            fontWeight: '600', 
-                            color: '#0f172a',
-                            fontSize: '14px'
-                          }}>
-                            {enrollment.freelancer_name || `User #${enrollment.freelancer_id}`}
-                          </div>
-                          <div style={{ 
-                            fontSize: '12px', 
-                            color: '#64748b' 
-                          }}>
-                            {enrollment.freelancer_email}
-                          </div>
-                          <div style={{ 
-                            fontSize: '12px', 
-                            color: '#64748b', 
-                            marginTop: '4px' 
-                          }}>
-                            Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '12px' 
-                        }}>
-                          <div style={{
-                            background: '#3b82f6',
-                            color: 'white',
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
-                            {enrollment.progress || 0}% Complete
-                          </div>
-                          <div style={{
-                            background: enrollment.status === 'active' ? '#10b981' : 
-                                       enrollment.status === 'completed' ? '#8b5cf6' :
-                                       enrollment.status === 'suspended' ? '#ef4444' : '#64748b',
-                            color: 'white',
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            textTransform: 'capitalize'
-                          }}>
-                            {enrollment.status || 'Active'}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                <h3 style={{ 
-                  margin: '0 0 20px 0', 
-                  color: '#0f172a', 
-                  fontSize: '1.125rem',
-                  fontWeight: '600'
-                }}>
-                  Course Materials
-                </h3>
-                {courseMaterials.length === 0 ? (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '40px', 
-                    color: '#64748b' 
-                  }}>
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '20px',
-                      background: '#f1f5f9',
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 20px',
-                      fontSize: '32px'
-                    }}>
-                      📁
-                    </div>
-                    <h4 style={{ 
-                      color: '#0f172a', 
-                      margin: '0 0 8px 0',
-                      fontSize: '1.125rem',
-                      fontWeight: '600'
-                    }}>
-                      No materials uploaded yet
-                    </h4>
-                    <p style={{ 
-                      margin: 0,
-                      color: '#64748b',
-                      fontSize: '14px'
-                    }}>
-                      Upload course materials like videos, documents, and resources
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    {courseMaterials.map((material, index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px',
-                        background: '#f8fafc',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0'
-                      }}>
-                        <div>
-                          <div style={{ 
-                            fontWeight: '600', 
-                            color: '#0f172a',
-                            fontSize: '14px'
-                          }}>
-                            {material.title}
-                          </div>
-                          <div style={{ 
-                            fontSize: '12px', 
-                            color: '#64748b' 
-                          }}>
-                            {material.file_type} • {new Date(material.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <button style={{
-                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '8px 12px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                        >
-                          Download
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
+        {/* Search */}
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              padding: '10px 16px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              fontSize: '14px',
+              outline: 'none',
+              backgroundColor: '#ffffff'
+            }}
+          />
+        </div>
 
-  return (
-    <div>
-      <style>
-        {`
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .category-card:hover::before {
-            transform: scaleX(1) !important;
-          }
-          
-          .category-card:hover .category-icon {
-            transform: scale(1.05) !important;
-          }
-        `}
-      </style>
-      
-      {activeView === 'dashboard' && <DashboardView />}
-      {activeView === 'courses' && <CoursesView />}
-      {activeView === 'course-detail' && <CourseDetailView />}
+        {/* Courses Table */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '80px 2fr 1fr 120px 120px 100px',
+            gap: '16px',
+            padding: '16px',
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: '#6b7280',
+            textTransform: 'uppercase'
+          }}>
+            <div>ID</div>
+            <div>Course Title</div>
+            <div>Description</div>
+            <div>Price</div>
+            <div>Created</div>
+            <div>Actions</div>
+          </div>
+
+          {filteredCourses.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '48px',
+              color: '#6b7280'
+            }}>
+              <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>
+                {searchTerm ? 'No courses found matching your search' : 'No courses available in this category'}
+              </p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+                {searchTerm ? 'Try adjusting your search terms' : 'Create your first course to get started'}
+              </p>
+            </div>
+          ) : (
+            filteredCourses.map((course) => (
+              <div
+                key={course.id}
+                className="course-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px 2fr 1fr 120px 120px 100px',
+                  gap: '16px',
+                  padding: '16px',
+                  borderBottom: '1px solid #f3f4f6',
+                  alignItems: 'center',
+                  fontSize: '14px'
+                }}
+              >
+                <div style={{ 
+                  fontWeight: '600', 
+                  color: '#111827',
+                  background: '#f3f4f6',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  fontSize: '12px'
+                }}>
+                  #{course.id}
+                </div>
+                
+                <div>
+                  <div style={{ fontWeight: '600', marginBottom: '4px', color: '#111827' }}>
+                    {course.title}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    {course.category_name || selectedCategory?.name}
+                  </div>
+                </div>
+                
+                <div style={{ 
+                  fontSize: '13px', 
+                  color: '#374151',
+                  lineHeight: '1.4'
+                }}>
+                  {course.description ? 
+                    (course.description.length > 80 ? 
+                      course.description.substring(0, 80) + '...' : 
+                      course.description
+                    ) : 
+                    'No description'
+                  }
+                </div>
+
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#059669'
+                }}>
+                  ${course.price}
+                </div>
+
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#6b7280'
+                }}>
+                  {course.created_at ? new Date(course.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  }) : 'N/A'}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => handleViewCourse(course)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      border: '1px solid #374151',
+                      backgroundColor: 'transparent',
+                      color: '#374151',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Manage
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Course Detail Modal */}
+      {showModal && selectedCourse && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '32px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#111827'
+              }}>
+                {selectedCourse.title}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedCourse(null);
+                }}
+                style={{
+                  background: '#374151',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Course Info */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '20px',
+              marginBottom: '24px',
+              padding: '20px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px'
+            }}>
+              <div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
+                  PRICE
+                </div>
+                <div style={{ fontSize: '18px', color: '#059669', fontWeight: '700' }}>
+                  ${selectedCourse.price}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
+                  COURSE ID
+                </div>
+                <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
+                  #{selectedCourse.id}
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>
+                Description
+              </div>
+              <div style={{
+                fontSize: '14px',
+                color: '#374151',
+                lineHeight: '1.6',
+                padding: '12px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '6px',
+                minHeight: '60px'
+              }}>
+                {selectedCourse.description || 'No description available'}
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '20px'
+            }}>
+              <button
+                onClick={() => handleTabChange('enrollments')}
+                style={{
+                  background: activeTab === 'enrollments' ? '#374151' : 'white',
+                  color: activeTab === 'enrollments' ? 'white' : '#6b7280',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  padding: '10px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Enrollments ({courseEnrollments.length})
+              </button>
+              <button
+                onClick={() => handleTabChange('materials')}
+                style={{
+                  background: activeTab === 'materials' ? '#374151' : 'white',
+                  color: activeTab === 'materials' ? 'white' : '#6b7280',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  padding: '10px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Materials ({courseMaterials.length})
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div style={{
+              minHeight: '200px',
+              padding: '16px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px'
+            }}>
+              {tabLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+                  <Loader />
+                </div>
+              ) : (
+                <>
+                  {activeTab === 'enrollments' ? (
+                    <div>
+                      <h4 style={{ 
+                        margin: '0 0 16px 0', 
+                        color: '#111827', 
+                        fontSize: '16px',
+                        fontWeight: '600'
+                      }}>
+                        Course Enrollments
+                      </h4>
+                      {courseEnrollments.length === 0 ? (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '40px', 
+                          color: '#6b7280' 
+                        }}>
+                          <p style={{ margin: 0, fontSize: '14px' }}>
+                            No enrollments yet
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gap: '8px' }}>
+                          {courseEnrollments.map((enrollment, index) => (
+                            <div key={index} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '12px',
+                              background: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <div>
+                                <div style={{ 
+                                  fontWeight: '600', 
+                                  color: '#111827',
+                                  fontSize: '14px'
+                                }}>
+                                  {enrollment.freelancer_name || `User #${enrollment.freelancer_id}`}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '12px', 
+                                  color: '#6b7280' 
+                                }}>
+                                  {enrollment.freelancer_email}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '12px', 
+                                  color: '#6b7280' 
+                                }}>
+                                  Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div style={{
+                                background: '#374151',
+                                color: 'white',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500'
+                              }}>
+                                {enrollment.progress || 0}% Complete
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <h4 style={{ 
+                        margin: '0 0 16px 0', 
+                        color: '#111827', 
+                        fontSize: '16px',
+                        fontWeight: '600'
+                      }}>
+                        Course Materials
+                      </h4>
+                      {courseMaterials.length === 0 ? (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '40px', 
+                          color: '#6b7280' 
+                        }}>
+                          <p style={{ margin: 0, fontSize: '14px' }}>
+                            No materials uploaded yet
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gap: '8px' }}>
+                          {courseMaterials.map((material, index) => (
+                            <div key={index} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '12px',
+                              background: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <div>
+                                <div style={{ 
+                                  fontWeight: '600', 
+                                  color: '#111827',
+                                  fontSize: '14px'
+                                }}>
+                                  {material.title}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '12px', 
+                                  color: '#6b7280' 
+                                }}>
+                                  {material.file_type} • {new Date(material.created_at).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <button style={{
+                                background: '#374151',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}>
+                                Download
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

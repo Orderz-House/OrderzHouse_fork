@@ -46,6 +46,8 @@ import newsRouter from "./router/news.js";
 import uploadRouter from "./router/upload.js";
 import categoriesRouter from "./router/categories.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
+import subscriptionsRouter from "./router/subscriptions.js";
+
 app.use("/api/analytics", analyticsRoutes);
 app.use("/news", newsRouter);
 app.use("/upload", uploadRouter);
@@ -61,7 +63,7 @@ app.use("/courses", coursesRouter);
 app.use("/orders", ordersRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/categories", categoriesRouter);
-
+app.use("/subscriptions" , subscriptionsRouter)
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 app.use("/chats", chatsRouter);

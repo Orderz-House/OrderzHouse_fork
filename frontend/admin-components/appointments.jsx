@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Loader from "../admin-components/loader/loader.jsx"; 
 
 const AppointmentsDashboard = ({ onBack }) => {
   const [appointments, setAppointments] = useState([]);
@@ -11,31 +12,41 @@ const AppointmentsDashboard = ({ onBack }) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [newDate, setNewDate] = useState('');
+  const [dateFilter, setDateFilter] = useState('all'); // all, today, tomorrow, this_week
 
-  // Jordan timezone offset (UTC+3)
-  const JORDAN_TIMEZONE_OFFSET = 3 * 60; // 3 hours in minutes
-
+  // Jordan timezone utilities
   const getJordanTime = (date = new Date()) => {
     const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-    return new Date(utc + (JORDAN_TIMEZONE_OFFSET * 60000));
+    return new Date(utc + (3 * 60 * 60000)); // UTC+3
   };
 
   const getJordanDateString = (date = new Date()) => {
     return getJordanTime(date).toISOString().split('T')[0];
   };
 
-  const getWeekRange = () => {
+  const isToday = (dateString) => {
+    const today = getJordanDateString();
+    const appointmentDate = getJordanDateString(new Date(dateString));
+    return appointmentDate === today;
+  };
+
+  const isTomorrow = (dateString) => {
+    const tomorrow = new Date(getJordanTime());
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowString = tomorrow.toISOString().split('T')[0];
+    const appointmentDate = getJordanDateString(new Date(dateString));
+    return appointmentDate === tomorrowString;
+  };
+
+  const isThisWeek = (dateString) => {
     const today = getJordanTime();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek); // Start from Sunday
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6); // End on Saturday
     
-    return {
-      start: startOfWeek.toISOString().split('T')[0],
-      end: endOfWeek.toISOString().split('T')[0]
-    };
+    const appointmentDate = getJordanTime(new Date(dateString));
+    return appointmentDate >= startOfWeek && appointmentDate <= endOfWeek;
   };
 
   const fetchAppointments = useCallback(async () => {
@@ -60,6 +71,13 @@ const AppointmentsDashboard = ({ onBack }) => {
 
   useEffect(() => {
     fetchAppointments();
+    
+    // Set up real-time polling for appointments every 30 seconds
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [fetchAppointments]);
 
   const handleAction = async (appointmentId, action) => {
@@ -150,14 +168,30 @@ const AppointmentsDashboard = ({ onBack }) => {
 
   const formatDateForInput = (dateString) => {
     const date = new Date(dateString);
-    // Convert to Jordan time for the input
-    const jordanTime = new Date(date.getTime() + (JORDAN_TIMEZONE_OFFSET * 60 * 60 * 1000));
+    const jordanTime = new Date(date.getTime() + (3 * 60 * 60 * 1000));
     return jordanTime.toISOString().slice(0, 16);
   };
 
   const getFilteredAppointments = (status) => {
     let filtered = appointments.filter(appointment => appointment.status === status);
     
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      filtered = filtered.filter(appointment => {
+        switch (dateFilter) {
+          case 'today':
+            return isToday(appointment.appointment_date);
+          case 'tomorrow':
+            return isTomorrow(appointment.appointment_date);
+          case 'this_week':
+            return isThisWeek(appointment.appointment_date);
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(appointment =>
         appointment.freelancer_id.toString().includes(searchTerm) ||
@@ -171,25 +205,11 @@ const AppointmentsDashboard = ({ onBack }) => {
   };
 
   const getTodayAppointments = () => {
-    const todayString = getJordanDateString();
-    
-    return appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.appointment_date);
-      const appointmentJordanDate = getJordanTime(appointmentDate);
-      const appointmentDateString = appointmentJordanDate.toISOString().split('T')[0];
-      return appointmentDateString === todayString;
-    });
+    return appointments.filter(appointment => isToday(appointment.appointment_date));
   };
 
   const getWeekAppointments = () => {
-    const { start, end } = getWeekRange();
-    
-    return appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.appointment_date);
-      const appointmentJordanDate = getJordanTime(appointmentDate);
-      const appointmentDateString = appointmentJordanDate.toISOString().split('T')[0];
-      return appointmentDateString >= start && appointmentDateString <= end;
-    });
+    return appointments.filter(appointment => isThisWeek(appointment.appointment_date));
   };
 
   const pendingAppointments = getFilteredAppointments('pending');
@@ -198,10 +218,10 @@ const AppointmentsDashboard = ({ onBack }) => {
   const todayAppointments = getTodayAppointments();
   const weekAppointments = getWeekAppointments();
 
-  if (loading) {
+  if (loading && appointments.length === 0) {
     return (
       <div style={{
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: '32px',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -210,16 +230,7 @@ const AppointmentsDashboard = ({ onBack }) => {
         justifyContent: 'center',
         alignItems: 'center'
       }}>
-        <div style={{ 
-          width: '40px', 
-          height: '40px', 
-          border: '4px solid #e2e8f0',
-          borderTop: '4px solid #3b82f6',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          marginBottom: '16px'
-        }}></div>
-        <div style={{ fontSize: '16px', color: '#64748b' }}>Loading Appointments...</div>
+        <Loader />
       </div>
     );
   }
@@ -239,20 +250,17 @@ const AppointmentsDashboard = ({ onBack }) => {
 
   return (
     <div style={{
-      backgroundColor: '#f8fafc',
+      backgroundColor: '#ffffff',
       minHeight: '100vh',
       padding: '24px',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      color: '#334155'
+      color: '#374151'
     }}>
       <style>
         {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
           .appointment-row:hover {
-            background-color: #f8fafc;
+            background-color: #f9fafb;
+            transition: all 0.2s ease;
           }
           .tab-button {
             transition: all 0.2s ease;
@@ -267,25 +275,29 @@ const AppointmentsDashboard = ({ onBack }) => {
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
           <button
-            onClick={onBack}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              marginRight: '12px',
-              color: '#64748b',
-              padding: '8px',
-              borderRadius: '8px'
-            }}
-          >
-            ←
-          </button>
+  onClick={onBack}
+  style={{
+    background: 'transparent', 
+    border: 'none',
+    fontSize: '20px',
+    cursor: 'pointer',
+    marginRight: '12px',
+    color: 'black', 
+    padding: '10px 12px',
+    borderRadius: '8px',
+    transition: 'all 0.2s ease'
+  }}
+  onMouseOver={(e) => e.target.style.color = '#111827'} 
+  onMouseOut={(e) => e.target.style.color = 'black'}
+>
+  ←
+</button>
+
           <h1 style={{
             fontSize: '2rem',
             fontWeight: '700',
             margin: '0',
-            color: '#0f172a'
+            color: '#111827'
           }}>
             Appointments
           </h1>
@@ -298,7 +310,7 @@ const AppointmentsDashboard = ({ onBack }) => {
           backgroundColor: '#fef2f2',
           border: '1px solid #fecaca',
           borderRadius: '8px',
-          padding: '12px 16px',
+          padding: '16px 20px',
           marginBottom: '24px',
           color: '#dc2626',
           fontSize: '14px',
@@ -314,7 +326,9 @@ const AppointmentsDashboard = ({ onBack }) => {
               border: 'none',
               color: '#dc2626',
               cursor: 'pointer',
-              fontSize: '18px'
+              fontSize: '20px',
+              padding: '4px',
+              borderRadius: '6px'
             }}
           >
             ×
@@ -322,140 +336,434 @@ const AppointmentsDashboard = ({ onBack }) => {
         </div>
       )}
 
-      {/* Main Layout */}
+      {/* Main Appointments Table */}
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        border: '1px solid #e5e7eb',
+        marginBottom: '32px'
+      }}>
+        {/* Tabs */}
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          marginBottom: '20px',
+          backgroundColor: '#f9fafb',
+          padding: '4px',
+          borderRadius: '8px',
+          width: 'fit-content'
+        }}>
+          {[
+            { key: 'pending', label: 'Pending', color: '#f59e0b', bgColor: '#fef3c7' },
+            { key: 'accepted', label: 'Accepted', color: '#10b981', bgColor: '#d1fae5' },
+            { key: 'rejected', label: 'Rejected', color: '#ef4444', bgColor: '#fee2e2' }
+          ].map(({ key, label, color, bgColor }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className="tab-button"
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: activeTab === key ? color : 'transparent',
+                color: activeTab === key ? '#ffffff' : '#6b7280',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '20px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search appointments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: '1',
+              minWidth: '200px',
+              maxWidth: '400px',
+              padding: '10px 16px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              fontSize: '14px',
+              outline: 'none',
+              backgroundColor: '#ffffff'
+            }}
+          />
+
+          {/* Date Filter */}
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            style={{
+              padding: '10px 16px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              fontSize: '14px',
+              backgroundColor: '#ffffff',
+              color: '#374151',
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            <option value="all">All Dates</option>
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="this_week">This Week</option>
+          </select>
+        </div>
+
+        {/* Appointments Table */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '80px 1fr 160px 120px',
+            gap: '16px',
+            padding: '16px',
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: '#6b7280',
+            textTransform: 'uppercase'
+          }}>
+            <div>ID</div>
+            <div>User Details</div>
+            <div>Date & Time</div>
+            <div>Actions</div>
+          </div>
+
+          {(() => {
+            const currentAppointments = getCurrentAppointments();
+            
+            if (currentAppointments.length === 0) {
+              return (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '48px',
+                  color: '#6b7280'
+                }}>
+                  <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>
+                    No {activeTab} appointments found
+                  </p>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+                    {dateFilter !== 'all' ? `Try changing the date filter` : 'Appointments will appear here'}
+                  </p>
+                </div>
+              );
+            }
+
+            return currentAppointments.map((appointment) => (
+              <div
+                key={appointment.id}
+                className="appointment-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px 1fr 160px 120px',
+                  gap: '16px',
+                  padding: '16px',
+                  borderBottom: '1px solid #f3f4f6',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ 
+                  fontWeight: '600', 
+                  color: '#111827',
+                  background: '#f3f4f6',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  fontSize: '12px'
+                }}>
+                  #{appointment.id}
+                </div>
+                
+                <div>
+                  <div style={{ fontWeight: '600', marginBottom: '4px', color: '#111827' }}>
+                    User #{appointment.freelancer_id}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    {appointment.freelancer_email || 'No email provided'}
+                  </div>
+                </div>
+                
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#374151',
+                  background: isToday(appointment.appointment_date) ? '#dcfce7' : 
+                             isTomorrow(appointment.appointment_date) ? '#fef3c7' : '#f9fafb',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  textAlign: 'center'
+                }}>
+                  {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Amman'
+                  })}
+                  {isToday(appointment.appointment_date) && (
+                    <div style={{ fontSize: '10px', color: '#059669', fontWeight: '600', marginTop: '2px' }}>TODAY</div>
+                  )}
+                  {isTomorrow(appointment.appointment_date) && (
+                    <div style={{ fontSize: '10px', color: '#d97706', fontWeight: '600', marginTop: '2px' }}>TOMORROW</div>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                  {activeTab === 'pending' && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(appointment.id, 'accept');
+                        }}
+                        disabled={actionLoading}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          border: 'none',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(appointment.id, 'reject');
+                        }}
+                        disabled={actionLoading}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          border: 'none',
+                          backgroundColor: '#ef4444',
+                          color: 'white',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewAppointment(appointment);
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      border: '1px solid #374151',
+                      backgroundColor: 'transparent',
+                      color: '#374151',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    View
+                  </button>
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
+
+      {/* Today and This Week Containers */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '2fr 1fr',
+        gridTemplateColumns: '1fr 1fr',
         gap: '24px'
       }}>
         
-        {/* Left Column - Main Appointments */}
-        <div>
-          {/* Tabs */}
+        {/* Today's Appointments */}
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+           marginBottom: '48px' 
+        }}>
           <div style={{
-            display: 'flex',
-            gap: '4px',
-            marginBottom: '20px',
-            backgroundColor: '#f1f5f9',
-            padding: '4px',
-            borderRadius: '8px',
-            width: 'fit-content'
+            padding: '16px',
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb'
           }}>
-            {[
-              { key: 'pending', label: 'Pending', color: '#f59e0b' },
-              { key: 'accepted', label: 'Accepted', color: '#10b981' },
-              { key: 'rejected', label: 'Rejected', color: '#ef4444' }
-            ].map(({ key, label, color }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className="tab-button"
-                style={{
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  backgroundColor: activeTab === key ? color : 'transparent',
-                  color: activeTab === key ? '#ffffff' : '#64748b',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="text"
-              placeholder="Search appointments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                outline: 'none',
-                backgroundColor: '#ffffff'
-              }}
-            />
-          </div>
-
-          {/* Appointments List */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            overflow: 'hidden'
-          }}>
-            {/* Header */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '60px 1fr 140px 100px',
-              gap: '16px',
-              padding: '16px',
-              backgroundColor: '#f8fafc',
-              borderBottom: '1px solid #e2e8f0',
-              fontSize: '12px',
+            <h3 style={{
+              margin: 0,
+              fontSize: '16px',
               fontWeight: '600',
-              color: '#64748b',
-              textTransform: 'uppercase'
+              color: '#111827'
             }}>
-              <div>ID</div>
-              <div>Details</div>
-              <div>Date</div>
-              <div>Actions</div>
-            </div>
-
-            {(() => {
-              const currentAppointments = getCurrentAppointments();
-              
-              if (currentAppointments.length === 0) {
-                return (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '40px',
-                    color: '#64748b'
-                  }}>
-                    <p style={{ margin: 0, fontSize: '14px' }}>
-                      No {activeTab} appointments found
-                    </p>
-                  </div>
-                );
-              }
-
-              return currentAppointments.map((appointment) => (
+              Today ({todayAppointments.length})
+            </h3>
+          </div>
+          
+          <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+            {todayAppointments.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '24px',
+                color: '#6b7280',
+                fontSize: '14px'
+              }}>
+                No appointments today
+              </div>
+            ) : (
+              todayAppointments.map((appointment) => (
                 <div
                   key={appointment.id}
-                  className="appointment-row"
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '60px 1fr 140px 100px',
-                    gap: '16px',
-                    padding: '16px',
-                    borderBottom: '1px solid #f1f5f9',
-                    alignItems: 'center',
-                    fontSize: '14px'
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #f3f4f6',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
+                  onClick={() => handleViewAppointment(appointment)}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
                 >
-                  <div style={{ fontWeight: '600', color: '#0f172a' }}>
-                    #{appointment.id}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
+                      #{appointment.id}
+                    </span>
+                    <span style={{
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: '500',
+                      backgroundColor: appointment.status === 'pending' ? '#fef3c7' : 
+                                      appointment.status === 'accepted' ? '#d1fae5' : '#fee2e2',
+                      color: appointment.status === 'pending' ? '#92400e' : 
+                             appointment.status === 'accepted' ? '#065f46' : '#991b1b'
+                    }}>
+                      {appointment.status.toUpperCase()}
+                    </span>
                   </div>
-                  
-                  <div>
-                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                      User #{appointment.freelancer_id}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {appointment.freelancer_email || 'No email'}
-                    </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    {new Date(appointment.appointment_date).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Asia/Amman'
+                    })}
                   </div>
-                  
-                  <div style={{ fontSize: '12px', color: '#334155' }}>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* This Week's Appointments */}
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
+           marginBottom: '48px' 
+        }}>
+          <div style={{
+            padding: '16px',
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb'
+          }}>
+            <h3 style={{
+              margin: 0,
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#111827'
+            }}>
+              This Week ({weekAppointments.length})
+            </h3>
+          </div>
+          
+          <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+            {weekAppointments.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '24px',
+                color: '#6b7280',
+                fontSize: '14px'
+              }}>
+                No appointments this week
+              </div>
+            ) : (
+              weekAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #f3f4f6',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => handleViewAppointment(appointment)}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
+                      #{appointment.id}
+                    </span>
+                    <span style={{
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: '500',
+                      backgroundColor: appointment.status === 'pending' ? '#fef3c7' : 
+                                      appointment.status === 'accepted' ? '#d1fae5' : '#fee2e2',
+                      color: appointment.status === 'pending' ? '#92400e' : 
+                             appointment.status === 'accepted' ? '#065f46' : '#991b1b'
+                    }}>
+                      {appointment.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
                     {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -463,243 +771,24 @@ const AppointmentsDashboard = ({ onBack }) => {
                       minute: '2-digit',
                       timeZone: 'Asia/Amman'
                     })}
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {activeTab === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => handleAction(appointment.id, 'accept')}
-                          disabled={actionLoading}
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            border: 'none',
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          onClick={() => handleAction(appointment.id, 'reject')}
-                          disabled={actionLoading}
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            border: 'none',
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </>
+                    {isToday(appointment.appointment_date) && (
+                      <span style={{ 
+                        marginLeft: '8px', 
+                        padding: '1px 4px', 
+                        backgroundColor: '#dcfce7', 
+                        color: '#059669',
+                        borderRadius: '4px',
+                        fontSize: '9px',
+                        fontWeight: '600'
+                      }}>
+                        TODAY
+                      </span>
                     )}
-                    <button
-                      onClick={() => handleViewAppointment(appointment)}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '11px',
-                        border: '1px solid #3b82f6',
-                        backgroundColor: 'transparent',
-                        color: '#3b82f6',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      View
-                    </button>
                   </div>
                 </div>
-              ));
-            })()}
+              ))
+            )}
           </div>
-        </div>
-
-        {/* Right Column - Quick Views */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Today's Appointments */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f8fafc',
-              borderBottom: '1px solid #e2e8f0'
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#0f172a'
-              }}>
-                Today ({todayAppointments.length})
-              </h3>
-            </div>
-            
-            <div style={{ maxHeight: '200px', overflow: 'auto' }}>
-              {todayAppointments.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '20px',
-                  color: '#64748b',
-                  fontSize: '14px'
-                }}>
-                  No appointments today
-                </div>
-              ) : (
-                todayAppointments.map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => handleViewAppointment(appointment)}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '4px'
-                    }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600' }}>
-                        #{appointment.id}
-                      </span>
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: '500',
-                        backgroundColor: appointment.status === 'pending' ? '#fef3c7' : 
-                                        appointment.status === 'accepted' ? '#d1fae5' : '#fee2e2',
-                        color: appointment.status === 'pending' ? '#92400e' : 
-                               appointment.status === 'accepted' ? '#065f46' : '#991b1b'
-                      }}>
-                        {appointment.status}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {new Date(appointment.appointment_date).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'Asia/Amman'
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* This Week's Appointments */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f8fafc',
-              borderBottom: '1px solid #e2e8f0'
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#0f172a'
-              }}>
-                This Week ({weekAppointments.length})
-              </h3>
-            </div>
-            
-            <div style={{ maxHeight: '200px', overflow: 'auto' }}>
-              {weekAppointments.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '20px',
-                  color: '#64748b',
-                  fontSize: '14px'
-                }}>
-                  No appointments this week
-                </div>
-              ) : (
-                weekAppointments.map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => handleViewAppointment(appointment)}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '4px'
-                    }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600' }}>
-                        #{appointment.id}
-                      </span>
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: '500',
-                        backgroundColor: appointment.status === 'pending' ? '#fef3c7' : 
-                                        appointment.status === 'accepted' ? '#d1fae5' : '#fee2e2',
-                        color: appointment.status === 'pending' ? '#92400e' : 
-                               appointment.status === 'accepted' ? '#065f46' : '#991b1b'
-                      }}>
-                        {appointment.status}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'Asia/Amman'
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Refresh Button */}
-          <button
-            onClick={fetchAppointments}
-            disabled={loading}
-            style={{
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              opacity: loading ? 0.6 : 1
-            }}
-          >
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -720,26 +809,27 @@ const AppointmentsDashboard = ({ onBack }) => {
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
+            borderRadius: '12px',
+            padding: '32px',
             maxWidth: '600px',
             width: '100%',
             maxHeight: '90vh',
-            overflow: 'auto'
+            overflow: 'auto',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
           }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '20px',
+              marginBottom: '24px',
               paddingBottom: '16px',
-              borderBottom: '1px solid #e2e8f0'
+              borderBottom: '1px solid #e5e7eb'
             }}>
               <h3 style={{
                 margin: 0,
-                fontSize: '20px',
+                fontSize: '24px',
                 fontWeight: '600',
-                color: '#0f172a'
+                color: '#111827'
               }}>
                 Appointment #{selectedAppointment.id}
               </h3>
@@ -749,66 +839,125 @@ const AppointmentsDashboard = ({ onBack }) => {
                   setSelectedAppointment(null);
                 }}
                 style={{
-                  background: 'none',
+                  background: '#374151',
                   border: 'none',
-                  fontSize: '20px',
+                  fontSize: '18px',
                   cursor: 'pointer',
-                  color: '#64748b'
+                  color: 'white',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
                 ×
               </button>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '24px' }}>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-                marginBottom: '16px'
+                gap: '20px',
+                marginBottom: '20px'
               }}>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>
-                    DATE & TIME
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>
+                    Date & Time
                   </div>
-                  <div style={{ fontSize: '14px', color: '#0f172a' }}>
+                  <div style={{ fontSize: '16px', color: '#111827', fontWeight: '500' }}>
                     {formatDate(selectedAppointment.appointment_date)}
                   </div>
+                  {isToday(selectedAppointment.appointment_date) && (
+                    <div style={{ 
+                      fontSize: '10px', 
+                      color: '#059669', 
+                      fontWeight: '600',
+                      marginTop: '4px',
+                      padding: '2px 6px',
+                      backgroundColor: '#dcfce7',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      TODAY
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>
-                    STATUS
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>
+                    Status
                   </div>
-                  <div style={{ fontSize: '14px', color: '#0f172a', textTransform: 'capitalize' }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '600',
+                    textTransform: 'capitalize',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    width: 'fit-content',
+                    backgroundColor: selectedAppointment.status === 'pending' ? '#fef3c7' : 
+                                    selectedAppointment.status === 'accepted' ? '#d1fae5' : '#fee2e2',
+                    color: selectedAppointment.status === 'pending' ? '#92400e' : 
+                           selectedAppointment.status === 'accepted' ? '#065f46' : '#991b1b'
+                  }}>
                     {selectedAppointment.status}
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>
-                  USER DETAILS
+              <div style={{ 
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>
+                  User Details
                 </div>
-                <div style={{ fontSize: '14px', color: '#0f172a' }}>
-                  <div>ID: {selectedAppointment.freelancer_id}</div>
-                  <div>Email: {selectedAppointment.freelancer_email || 'Not provided'}</div>
-                  <div>Phone: {selectedAppointment.freelancer_phone || 'Not provided'}</div>
+                <div style={{ fontSize: '14px', color: '#111827', lineHeight: '1.6' }}>
+                  <div style={{ marginBottom: '6px' }}>
+                    <strong>ID:</strong> {selectedAppointment.freelancer_id}
+                  </div>
+                  <div style={{ marginBottom: '6px' }}>
+                    <strong>Email:</strong> {selectedAppointment.freelancer_email || 'Not provided'}
+                  </div>
+                  <div>
+                    <strong>Phone:</strong> {selectedAppointment.freelancer_phone || 'Not provided'}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px', fontWeight: '600' }}>
-                  MESSAGE
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>
+                  Message
                 </div>
                 <div style={{
                   fontSize: '14px',
-                  color: '#334155',
-                  lineHeight: '1.5',
+                  color: '#374151',
+                  lineHeight: '1.6',
                   padding: '12px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '6px',
-                  border: '1px solid #e2e8f0',
-                  minHeight: '60px'
+                  border: '1px solid #d1d5db',
+                  minHeight: '60px',
+                  fontStyle: selectedAppointment.message ? 'normal' : 'italic'
                 }}>
                   {selectedAppointment.message || 'No message provided'}
                 </div>
@@ -820,7 +969,7 @@ const AppointmentsDashboard = ({ onBack }) => {
               gap: '12px',
               justifyContent: 'flex-end',
               paddingTop: '16px',
-              borderTop: '1px solid #e2e8f0'
+              borderTop: '1px solid #e5e7eb'
             }}>
               {selectedAppointment.status === 'pending' && (
                 <>
@@ -828,15 +977,18 @@ const AppointmentsDashboard = ({ onBack }) => {
                     onClick={() => handleAction(selectedAppointment.id, 'accept')}
                     disabled={actionLoading}
                     style={{
-                      padding: '8px 16px',
+                      padding: '10px 20px',
                       backgroundColor: '#10b981',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: '500'
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
                     }}
+                    onMouseOver={(e) => !actionLoading && (e.target.style.backgroundColor = '#059669')}
+                    onMouseOut={(e) => !actionLoading && (e.target.style.backgroundColor = '#10b981')}
                   >
                     Accept
                   </button>
@@ -844,15 +996,18 @@ const AppointmentsDashboard = ({ onBack }) => {
                     onClick={() => handleAction(selectedAppointment.id, 'reject')}
                     disabled={actionLoading}
                     style={{
-                      padding: '8px 16px',
+                      padding: '10px 20px',
                       backgroundColor: '#ef4444',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: '500'
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
                     }}
+                    onMouseOver={(e) => !actionLoading && (e.target.style.backgroundColor = '#dc2626')}
+                    onMouseOut={(e) => !actionLoading && (e.target.style.backgroundColor = '#ef4444')}
                   >
                     Reject
                   </button>
@@ -865,15 +1020,18 @@ const AppointmentsDashboard = ({ onBack }) => {
                 }}
                 disabled={actionLoading}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#3b82f6',
+                  padding: '10px 20px',
+                  backgroundColor: '#374151',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease'
                 }}
+                onMouseOver={(e) => !actionLoading && (e.target.style.backgroundColor = '#111827')}
+                onMouseOut={(e) => !actionLoading && (e.target.style.backgroundColor = '#374151')}
               >
                 Reschedule
               </button>
@@ -890,7 +1048,7 @@ const AppointmentsDashboard = ({ onBack }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -899,25 +1057,25 @@ const AppointmentsDashboard = ({ onBack }) => {
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            maxWidth: '400px',
+            borderRadius: '12px',
+            padding: '32px',
+            maxWidth: '450px',
             width: '100%',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
           }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '20px',
+              marginBottom: '24px',
               paddingBottom: '16px',
-              borderBottom: '1px solid #e2e8f0'
+              borderBottom: '1px solid #e5e7eb'
             }}>
               <h3 style={{
                 margin: 0,
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#0f172a'
+                color: '#111827'
               }}>
                 Reschedule Appointment #{selectedAppointment.id}
               </h3>
@@ -927,25 +1085,29 @@ const AppointmentsDashboard = ({ onBack }) => {
                   setNewDate('');
                 }}
                 style={{
-                  background: 'none',
+                  background: '#374151',
                   border: 'none',
-                  fontSize: '20px',
+                  fontSize: '16px',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '4px',
-                  borderRadius: '4px'
+                  color: 'white',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
                 ×
               </button>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '24px' }}>
               <label style={{
                 display: 'block',
                 fontSize: '14px',
                 fontWeight: '600',
-                color: '#0f172a',
+                color: '#111827',
                 marginBottom: '8px'
               }}>
                 New Date & Time
@@ -957,24 +1119,26 @@ const AppointmentsDashboard = ({ onBack }) => {
                 min={new Date().toISOString().slice(0, 16)}
                 style={{
                   width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
                   borderRadius: '6px',
                   fontSize: '14px',
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  backgroundColor: '#ffffff',
+                  color: '#374151'
                 }}
               />
               <div style={{
                 fontSize: '12px',
-                color: '#64748b',
+                color: '#6b7280',
                 marginTop: '8px',
                 padding: '8px',
-                backgroundColor: '#f8fafc',
+                backgroundColor: '#f9fafb',
                 borderRadius: '4px',
-                border: '1px solid #e2e8f0'
+                border: '1px solid #e5e7eb'
               }}>
-                Current: {formatDate(selectedAppointment.appointment_date)}
+                <strong>Current:</strong> {formatDate(selectedAppointment.appointment_date)}
               </div>
             </div>
 
@@ -989,14 +1153,14 @@ const AppointmentsDashboard = ({ onBack }) => {
                   setNewDate('');
                 }}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#ef4444',
+                  padding: '10px 16px',
+                  backgroundColor: '#6b7280',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '600'
                 }}
               >
                 Cancel
@@ -1005,14 +1169,14 @@ const AppointmentsDashboard = ({ onBack }) => {
                 onClick={() => handleReschedule(selectedAppointment.id, newDate)}
                 disabled={actionLoading || !newDate}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: newDate ? '#3b82f6' : '#d1d5db',
+                  padding: '10px 16px',
+                  backgroundColor: newDate ? '#374151' : '#d1d5db',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: newDate ? 'pointer' : 'not-allowed',
                   fontSize: '14px',
-                  fontWeight: '500',
+                  fontWeight: '600',
                   opacity: actionLoading ? 0.6 : 1
                 }}
               >

@@ -1,4 +1,3 @@
-// Admin/resources/payments.js
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
@@ -120,7 +119,9 @@ export const createPaymentsResource = async (db) => {
                 "updated_at",
               ].forEach((field) => {
                 if (response.record.params[field]) {
-                  response.record.params[field] = dayjs(record.params[field])
+                  response.record.params[field] = dayjs(
+                    response.record.params[field]
+                  )
                     .tz("Asia/Amman")
                     .format("YYYY-MM-DD HH:mm:ss");
                 }
