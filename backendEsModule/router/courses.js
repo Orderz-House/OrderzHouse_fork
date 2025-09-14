@@ -3,6 +3,7 @@ import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
+  getCategories,
   getCourses,
   getCoursesByCategory,
   getCourseById,
@@ -12,35 +13,30 @@ import {
   enrollInCourse,
   getCourseMaterials,
   checkEnrollment,
-  getCourseEnrollments, // make sure this exists in your controller
+  getCourseEnrollments,
 } from "../controller/courses.js";
 
 const coursesRouter = express.Router();
 
-// Get all active courses (public)
+/* Categories */
+coursesRouter.get("/categories", getCategories);
+
+/* Courses */
 coursesRouter.get("/view", authentication, getCourses);
-
-// Get courses by category
 coursesRouter.get("/category/:categoryId", getCoursesByCategory);
-
-// Get course by ID with materials and stats (public)
 coursesRouter.get("/view/:id", authentication, getCourseById);
 
-// Get course materials (for enrolled users)
+/* Materials */
 coursesRouter.get("/:id/materials", authentication, getCourseMaterials);
 
-// Check if user is enrolled in course
+/* Enrollments */
 coursesRouter.get("/:id/enrollment", authentication, checkEnrollment);
-
-// Enroll in course (for freelancers)
 coursesRouter.post("/enroll", authentication, enrollInCourse);
+coursesRouter.get("/:id/enrollments", getCourseEnrollments);
 
-// Course CRUD operations (admin only)
+/* Course CRUD (admin only) */
 coursesRouter.post("/create", createCourse);
 coursesRouter.put("/update/:id", updateCourse);
 coursesRouter.delete("/delete/:id", deleteCourse);
-
-// Get course enrollments (admin only)
-coursesRouter.get("/:id/enrollments", getCourseEnrollments);
 
 export default coursesRouter;

@@ -272,17 +272,17 @@ export default function Dashboard() {
         </svg>
       )
     },
-    { 
-      title: "Analytics Dashboard", 
-      description: "Comprehensive business insights",
-      link: "/admin/pages/analytics", 
-      color: "#ddd6fe", 
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
-        </svg>
-      )
-    },
+    // { 
+    //   title: "Analytics Dashboard", 
+    //   description: "Comprehensive business insights",
+    //   link: "/admin/pages/analytics", 
+    //   color: "#ddd6fe", 
+    //   icon: (
+    //     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    //       <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+    //     </svg>
+    //   )
+    // },
   ];
 
   const getTimeAgo = (dateString) => {

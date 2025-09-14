@@ -1,5 +1,5 @@
 import express from "express";
-import { subscriptionToPlan, getSubscriptionByPlanId, updateSubscription, deleteSubscription } from "../controllers/subscriptionController.js";
+import { subscriptionToPlan, getSubscriptionByPlanId, updateSubscription, deleteSubscription } from "../controller/subscriptions.js";
 
 const router = express.Router();
 

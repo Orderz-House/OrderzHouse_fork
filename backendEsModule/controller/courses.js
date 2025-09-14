@@ -1,6 +1,21 @@
 // controller/courses.js
 import { pool } from "../models/db.js";
 
+/* -------------------- Categories -------------------- */
+export const getCategories = async (req, res) => {
+  try {
+    const query = `SELECT id, name, description FROM categories ORDER BY name ASC`;
+    const { rows } = await pool.query(query);
+    return res.status(200).json({ success: true, categories: rows });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
+
+/* -------------------- Courses -------------------- */
 // Get all active courses
 export const getCourses = async (req, res) => {
   try {
@@ -20,11 +35,10 @@ export const getCourses = async (req, res) => {
   }
 };
 
-// Get courses by category ID
+// Get courses by category
 export const getCoursesByCategory = async (req, res) => {
   try {
     const categoryId = parseInt(req.params.categoryId);
-
     if (isNaN(categoryId)) {
       return res
         .status(400)
@@ -33,19 +47,13 @@ export const getCoursesByCategory = async (req, res) => {
 
     const query = `
       SELECT 
-        c.id,
-        c.title,
-        c.description,
-        c.price,
-        c.created_at,
-        c.updated_at,
+        c.id, c.title, c.description, c.price, c.created_at, c.updated_at,
         cat.name as category_name
       FROM courses c
       LEFT JOIN categories cat ON c.category_id = cat.id
       WHERE c.category_id = $1 AND c.is_deleted = FALSE
       ORDER BY c.created_at DESC
     `;
-
     const { rows } = await pool.query(query, [categoryId]);
     return res.status(200).json({ success: true, courses: rows });
   } catch (error) {
@@ -60,7 +68,6 @@ export const getCoursesByCategory = async (req, res) => {
 export const getCourseById = async (req, res) => {
   try {
     const courseId = parseInt(req.params.id);
-
     if (isNaN(courseId)) {
       return res
         .status(400)
@@ -89,7 +96,7 @@ export const getCourseById = async (req, res) => {
   }
 };
 
-// Create new course (admin only)
+// Create course
 export const createCourse = async (req, res) => {
   try {
     const {
@@ -100,12 +107,13 @@ export const createCourse = async (req, res) => {
       title_ar = null,
       description_ar = null,
     } = req.body;
-
     if (!title || !description || price === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: "Title, description, and price are required",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: "Title, description, and price are required",
+        });
     }
 
     const insertQuery = `
@@ -113,7 +121,6 @@ export const createCourse = async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, FALSE)
       RETURNING *;
     `;
-
     const { rows } = await pool.query(insertQuery, [
       title,
       description,
@@ -131,13 +138,12 @@ export const createCourse = async (req, res) => {
   }
 };
 
-// Update course (admin only)
+// Update course
 export const updateCourse = async (req, res) => {
   try {
     const courseId = parseInt(req.params.id);
     const { title, description, price, category_id, title_ar, description_ar } =
       req.body;
-
     if (isNaN(courseId)) {
       return res
         .status(400)
@@ -187,7 +193,6 @@ export const updateCourse = async (req, res) => {
       WHERE id = $${paramCount} AND is_deleted = FALSE
       RETURNING *;
     `;
-
     const { rows } = await pool.query(updateQuery, values);
 
     if (rows.length === 0) {
@@ -205,11 +210,10 @@ export const updateCourse = async (req, res) => {
   }
 };
 
-// Delete course (soft delete, admin only)
+// Delete course (soft delete)
 export const deleteCourse = async (req, res) => {
   try {
     const courseId = parseInt(req.params.id);
-
     if (isNaN(courseId)) {
       return res
         .status(400)
@@ -222,7 +226,6 @@ export const deleteCourse = async (req, res) => {
       WHERE id = $1 AND is_deleted = FALSE
       RETURNING *;
     `;
-
     const { rows } = await pool.query(deleteQuery, [courseId]);
 
     if (rows.length === 0) {
@@ -242,7 +245,7 @@ export const deleteCourse = async (req, res) => {
   }
 };
 
-// Enroll in course (all logged-in users)
+/* -------------------- Enrollments -------------------- */
 export const enrollInCourse = async (req, res) => {
   try {
     const freelancer_id = req.token.userId;
@@ -275,7 +278,6 @@ export const enrollInCourse = async (req, res) => {
         .json({ success: false, message: "Already enrolled" });
     }
 
-    // Add progress field with default 0
     const result = await pool.query(
       "INSERT INTO course_enrollments (freelancer_id, course_id, progress) VALUES ($1, $2, 0) RETURNING *",
       [freelancer_id, course_id]
@@ -294,34 +296,10 @@ export const enrollInCourse = async (req, res) => {
   }
 };
 
-// Get course materials
-export const getCourseMaterials = async (req, res) => {
-  try {
-    const { id: course_id } = req.params;
-
-    const query = `
-      SELECT id, title, file_type, file_url, created_at
-      FROM course_materials
-      WHERE course_id = $1 AND is_deleted = FALSE
-      ORDER BY created_at
-    `;
-    const { rows } = await pool.query(query, [course_id]);
-
-    return res.status(200).json({ success: true, materials: rows });
-  } catch (error) {
-    console.error("Error fetching materials:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Error fetching materials" });
-  }
-};
-
-// Check if user is enrolled
 export const checkEnrollment = async (req, res) => {
   try {
     const { id: course_id } = req.params;
     const freelancer_id = req.token.userId;
-
     if (!freelancer_id)
       return res.status(401).json({ success: false, message: "Unauthorized" });
 
@@ -337,30 +315,47 @@ export const checkEnrollment = async (req, res) => {
   }
 };
 
-// Get course enrollments (admin only) with progress
 export const getCourseEnrollments = async (req, res) => {
   try {
     const { id: course_id } = req.params;
 
     const query = `
       SELECT 
-        ce.freelancer_id,
-        ce.enrolled_at,
-        ce.progress,  -- added progress
-        u.name as freelancer_name,
-        u.email as freelancer_email
+        ce.freelancer_id, ce.enrolled_at, ce.progress,
+        u.name as freelancer_name, u.email as freelancer_email
       FROM course_enrollments ce
       LEFT JOIN users u ON ce.freelancer_id = u.id
       WHERE ce.course_id = $1
       ORDER BY ce.enrolled_at DESC
     `;
     const { rows } = await pool.query(query, [course_id]);
-
     return res.status(200).json({ success: true, enrollments: rows });
   } catch (error) {
-    console.error("Error fetching course enrollments:", error);
+    console.error("Error fetching enrollments:", error);
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });
+  }
+};
+
+/* -------------------- Materials -------------------- */
+export const getCourseMaterials = async (req, res) => {
+  try {
+    const { id: course_id } = req.params;
+
+    const query = `
+      SELECT id, file_url, created_at
+      FROM course_materials
+      WHERE course_id = $1
+      ORDER BY created_at
+    `;
+    const { rows } = await pool.query(query, [course_id]);
+
+    return res.status(200).json({ success: true, materials: rows });
+  } catch (error) {
+    console.error("Error fetching materials:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error fetching materials" });
   }
 };
