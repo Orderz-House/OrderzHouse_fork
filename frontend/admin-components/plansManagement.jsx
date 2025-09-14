@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Users, X, Save, Eye, ArrowLeft, Search, Filter, Mail, User, Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, X, Save, Search, Mail, User, CheckCircle, XCircle, Clock } from 'lucide-react';
+import Loader from "../admin-components/loader/loader.jsx"; 
 
 const PlansManager = ({ onBack }) => {
-  const [currentView, setCurrentView] = useState('plans'); // 'plans' or 'subscribers'
+  const [currentView, setCurrentView] = useState('plans');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [plans, setPlans] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
@@ -12,7 +13,6 @@ const PlansManager = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   
-  // Plan form data
   const [planFormData, setPlanFormData] = useState({
     name: '',
     price: '',
@@ -20,20 +20,19 @@ const PlansManager = ({ onBack }) => {
     description: ''
   });
   
-  // Subscriber form data - using freelancer_id to match backend expectations
   const [subscriberFormData, setSubscriberFormData] = useState({
-    freelancer_id: '',
+    identifier: '',
+    identifierType: 'email',
     plan_id: '',
     status: 'active'
   });
   
   const [isEditing, setIsEditing] = useState(false);
-  const [editingType, setEditingType] = useState('plan'); // 'plan' or 'subscriber'
+  const [editingType, setEditingType] = useState('plan');
 
   const API_BASE = '/plans';
   const API_BASE_SUBSCRIPTION = '/subscriptions';
 
-  // Clear error after 5 seconds
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(null), 5000);
@@ -41,7 +40,6 @@ const PlansManager = ({ onBack }) => {
     }
   }, [error]);
 
-  // Fetch plans
   const fetchPlans = async () => {
     setLoading(true);
     setError(null);
@@ -54,14 +52,12 @@ const PlansManager = ({ onBack }) => {
         setError(data.message || 'Failed to fetch plans');
       }
     } catch (error) {
-      console.error('Error fetching plans:', error);
       setError('Network error while fetching plans');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch subscribers for selected plan
   const fetchSubscribers = async (planId) => {
     setLoading(true);
     setError(null);
@@ -69,19 +65,19 @@ const PlansManager = ({ onBack }) => {
       const response = await fetch(`${API_BASE_SUBSCRIPTION}/plan/${planId}`);
       const data = await response.json();
       if (data.success) {
-        setSubscribers(data.subscribers || []); // Backend returns 'subscribers' array
+        setSubscribers(data.subscribers || []);
       } else {
         setError(data.message || 'Failed to fetch subscribers');
+        setSubscribers([]);
       }
     } catch (error) {
-      console.error('Error fetching subscribers:', error);
       setError('Network error while fetching subscribers');
+      setSubscribers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Plan CRUD operations
   const handlePlanSubmit = async () => {
     if (!planFormData.name.trim() || !planFormData.price || !planFormData.duration || !planFormData.description.trim()) {
       setError('Please fill in all required fields');
@@ -126,18 +122,31 @@ const PlansManager = ({ onBack }) => {
         setError(data.message || `Failed to ${isEditing ? 'update' : 'create'} plan`);
       }
     } catch (error) {
-      console.error('Error submitting plan:', error);
       setError('Network error while saving plan');
     } finally {
       setLoading(false);
     }
   };
 
-  // Updated subscriber operations to work with freelancer_id-based system
   const handleSubscriberSubmit = async () => {
-    if (!subscriberFormData.freelancer_id || !subscriberFormData.plan_id) {
-      setError('Please enter freelancer ID and select a plan');
+    if (!subscriberFormData.identifier || !subscriberFormData.plan_id) {
+      setError(`Please enter ${subscriberFormData.identifierType} and select a plan`);
       return;
+    }
+
+    if (subscriberFormData.identifierType === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(subscriberFormData.identifier)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+    }
+
+    if (subscriberFormData.identifierType === 'id') {
+      if (isNaN(subscriberFormData.identifier) || parseInt(subscriberFormData.identifier) <= 0) {
+        setError('Please enter a valid user ID (positive number)');
+        return;
+      }
     }
 
     setLoading(true);
@@ -145,7 +154,6 @@ const PlansManager = ({ onBack }) => {
 
     try {
       if (isEditing) {
-        // For editing, we'll update the subscription
         const response = await fetch(`${API_BASE_SUBSCRIPTION}/${selectedPlan.id}`, {
           method: 'PUT',
           headers: {
@@ -165,17 +173,23 @@ const PlansManager = ({ onBack }) => {
           setError(data.message || 'Failed to update subscription');
         }
       } else {
-        // For creating new subscription
+        const requestBody = {
+          plan_id: parseInt(subscriberFormData.plan_id),
+          status: subscriberFormData.status
+        };
+
+        if (subscriberFormData.identifierType === 'email') {
+          requestBody.email = subscriberFormData.identifier;
+        } else {
+          requestBody.freelancer_id = parseInt(subscriberFormData.identifier);
+        }
+
         const response = await fetch(`${API_BASE_SUBSCRIPTION}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            freelancer_id: parseInt(subscriberFormData.freelancer_id),
-            plan_id: parseInt(subscriberFormData.plan_id),
-            status: subscriberFormData.status
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         const data = await response.json();
@@ -187,7 +201,6 @@ const PlansManager = ({ onBack }) => {
         }
       }
     } catch (error) {
-      console.error('Error submitting subscription:', error);
       setError('Network error while saving subscription');
     } finally {
       setLoading(false);
@@ -211,7 +224,6 @@ const PlansManager = ({ onBack }) => {
         setError(data.message || 'Failed to delete plan');
       }
     } catch (error) {
-      console.error('Error deleting plan:', error);
       setError('Network error while deleting plan');
     } finally {
       setLoading(false);
@@ -235,72 +247,22 @@ const PlansManager = ({ onBack }) => {
         setError(data.message || 'Failed to delete subscription');
       }
     } catch (error) {
-      console.error('Error deleting subscription:', error);
       setError('Network error while deleting subscription');
     } finally {
       setLoading(false);
     }
   };
 
-  // View subscribers for plan
   const handleViewSubscribers = async (plan) => {
     setSelectedPlan(plan);
     setCurrentView('subscribers');
     await fetchSubscribers(plan.id);
   };
 
-  // Modal handlers
-  const handleOpenCreatePlanModal = () => {
-    setPlanFormData({ name: '', price: '', duration: '', description: '' });
-    setIsEditing(false);
-    setEditingType('plan');
-    setError(null);
-    setShowModal(true);
-  };
-
-  const handleOpenEditPlanModal = (plan) => {
-    setPlanFormData({
-      name: plan.name,
-      price: plan.price.toString(),
-      duration: plan.duration.toString(),
-      description: plan.description
-    });
-    setIsEditing(true);
-    setEditingType('plan');
-    setSelectedPlan(plan);
-    setError(null);
-    setShowModal(true);
-  };
-
-  const handleOpenCreateSubscriberModal = () => {
-    setSubscriberFormData({
-      freelancer_id: '',
-      plan_id: selectedPlan.id,
-      status: 'active'
-    });
-    setIsEditing(false);
-    setEditingType('subscriber');
-    setError(null);
-    setShowModal(true);
-  };
-
-  const handleOpenEditSubscriberModal = (subscriber) => {
-    setSubscriberFormData({
-      freelancer_id: subscriber.freelancer_id?.toString() || '',
-      plan_id: subscriber.plan_id?.toString() || selectedPlan.id.toString(),
-      status: subscriber.status || 'active'
-    });
-    setIsEditing(true);
-    setEditingType('subscriber');
-    setSelectedPlan(subscriber);
-    setError(null);
-    setShowModal(true);
-  };
-
   const handleCloseModal = () => {
     setShowModal(false);
     setPlanFormData({ name: '', price: '', duration: '', description: '' });
-    setSubscriberFormData({ freelancer_id: '', plan_id: '', status: 'active' });
+    setSubscriberFormData({ identifier: '', identifierType: 'email', plan_id: '', status: 'active' });
     setIsEditing(false);
     setError(null);
   };
@@ -314,7 +276,6 @@ const PlansManager = ({ onBack }) => {
     }
   };
 
-  // Filter subscribers
   const filteredSubscribers = subscribers.filter(subscriber => {
     const matchesSearch = (subscriber.first_name + ' ' + subscriber.last_name).toLowerCase().includes(searchTerm.toLowerCase()) ||
                          subscriber.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -372,184 +333,77 @@ const PlansManager = ({ onBack }) => {
     }
   }, [currentView]);
 
-  const containerStyle = {
-    minHeight: '100vh',
-    backgroundColor: '#f8fafc',
-    padding: '32px',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-  };
-
-  const headerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '32px'
-  };
-
-  const backButtonStyle = {
-    background: 'transparent',
-    border: 'none',
-    fontSize: '20px',
-    cursor: 'pointer',
-    marginRight: '12px',
-    color: '#1f2937',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease'
-  };
-
-  const titleStyle = {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#1f2937',
-    margin: '0',
-    display: 'flex',
-    alignItems: 'center'
-  };
-
-  const createButtonStyle = {
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    padding: '12px 24px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-  };
-
-  const cardStyle = {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e5e7eb'
-  };
-
-  const tableHeaderStyle = {
-    backgroundColor: '#f9fafb',
-    padding: '16px 24px',
-    borderBottom: '1px solid #e5e7eb',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  };
-
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse'
-  };
-
-  const thStyle = {
-    backgroundColor: '#f9fafb',
-    padding: '12px 24px',
-    textAlign: 'left',
-    fontWeight: '600',
-    color: '#374151',
-    fontSize: '12px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    borderBottom: '1px solid #e5e7eb'
-  };
-
-  const tdStyle = {
-    padding: '16px 24px',
-    borderBottom: '1px solid #f3f4f6',
-    color: '#1f2937'
-  };
-
-  const actionButtonStyle = {
-    background: 'none',
-    border: 'none',
-    padding: '8px',
-    margin: '0 4px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    color: '#6b7280',
-    transition: 'all 0.15s ease'
-  };
-
-  const modalOverlayStyle = {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px',
-    zIndex: '1000'
-  };
-
-  const modalStyle = {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '32px',
-    maxWidth: '500px',
-    width: '100%',
-    maxHeight: '90vh',
-    overflow: 'auto'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '14px',
-    transition: 'all 0.15s ease',
-    marginTop: '8px',
-    boxSizing: 'border-box'
-  };
-
-  const labelStyle = {
-    display: 'block',
-    fontWeight: '600',
-    color: '#374151',
-    fontSize: '14px',
-    marginBottom: '8px'
-  };
-
-  const errorStyle = {
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    padding: '12px 16px',
-    marginBottom: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    color: '#dc2626'
+  const commonStyles = {
+    container: {
+      minHeight: '100vh',
+      backgroundColor: '#f8fafc',
+      padding: '32px',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    },
+    card: {
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      border: '1px solid #e5e7eb'
+    },
+    button: {
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      padding: '12px 24px',
+      borderRadius: '8px',
+      border: 'none',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '14px',
+      fontWeight: '600',
+      transition: 'all 0.2s ease'
+    },
+    input: {
+      width: '100%',
+      padding: '12px 16px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: '14px',
+      transition: 'all 0.15s ease',
+      marginTop: '8px',
+      boxSizing: 'border-box'
+    }
   };
 
   return (
-    <div style={containerStyle}>
+    <div style={commonStyles.container}>
       {currentView === 'plans' ? (
         <>
-          {/* Plans View */}
-          <div style={headerStyle}>
-            <div style={titleStyle}>
+          {/* Plans Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937', margin: '0', display: 'flex', alignItems: 'center' }}>
               <button
                 onClick={onBack}
-                style={backButtonStyle}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                style={{ 
+                  background: 'transparent', 
+                  border: 'none', 
+                  fontSize: '20px', 
+                  cursor: 'pointer', 
+                  marginRight: '12px', 
+                  padding: '10px 12px', 
+                  borderRadius: '8px' 
+                }}
               >
                 ←
               </button>
               Plans Management
             </div>
             <button
-              onClick={handleOpenCreatePlanModal}
-              style={createButtonStyle}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+              onClick={() => {
+                setPlanFormData({ name: '', price: '', duration: '', description: '' });
+                setIsEditing(false);
+                setEditingType('plan');
+                setError(null);
+                setShowModal(true);
+              }}
+              style={commonStyles.button}
             >
               <Plus size={16} />
               Create Plan
@@ -557,106 +411,82 @@ const PlansManager = ({ onBack }) => {
           </div>
 
           {error && (
-            <div style={errorStyle}>
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#dc2626'
+            }}>
               <XCircle size={16} />
               <span>{error}</span>
             </div>
           )}
 
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '48px' }}>
-              <div style={{ 
-                display: 'inline-block',
-                width: '32px',
-                height: '32px',
-                border: '2px solid #e5e7eb',
-                borderTop: '2px solid #3b82f6',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }}></div>
-              <p style={{ color: '#6b7280', marginTop: '16px', fontSize: '14px' }}>Loading plans...</p>
-            </div>
-          )}
+          {loading && <Loader message="Loading plans..." />}
+
 
           {!loading && plans.length > 0 && (
-            <div style={cardStyle}>
-              <table style={tableStyle}>
+            <div style={commonStyles.card}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Plan Name</th>
-                    <th style={thStyle}>Price</th>
-                    <th style={thStyle}>Duration</th>
-                    <th style={thStyle}>Description</th>
-                    <th style={{...thStyle, textAlign: 'center'}}>Actions</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Plan Name</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Price</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Duration</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Description</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'center', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {plans.map((plan, index) => (
-                    <tr 
-                      key={plan.id} 
-                      style={{ 
-                        backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
-                        transition: 'background-color 0.15s ease'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafafa'}
-                    >
-                      <td style={tdStyle}>
+                    <tr key={plan.id} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#fafafa' }}>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                         <div style={{ fontWeight: '600', fontSize: '14px' }}>{plan.name}</div>
                       </td>
-                      <td style={tdStyle}>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                         <div style={{ fontWeight: '600', fontSize: '14px', color: '#059669' }}>${plan.price}</div>
                       </td>
-                      <td style={tdStyle}>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                         <div style={{ color: '#6b7280', fontSize: '14px' }}>{plan.duration} days</div>
                       </td>
-                      <td style={tdStyle}>
-                        <div style={{ color: '#6b7280', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '14px' }}>
-                          {plan.description}
-                        </div>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
+                        <div style={{ color: '#6b7280', fontSize: '14px' }}>{plan.description}</div>
                       </td>
-                      <td style={{...tdStyle, textAlign: 'center'}}>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
                         <button
                           onClick={() => handleViewSubscribers(plan)}
-                          style={actionButtonStyle}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#dbeafe';
-                            e.target.style.color = '#1d4ed8';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#6b7280';
-                          }}
+                          style={{ background: 'none', border: 'none', padding: '8px', margin: '0 4px', borderRadius: '6px', cursor: 'pointer' }}
                           title="View Subscribers"
                         >
                           <Users size={16} />
                         </button>
                         <button
-                          onClick={() => handleOpenEditPlanModal(plan)}
-                          style={actionButtonStyle}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#f3f4f6';
-                            e.target.style.color = '#374151';
+                          onClick={() => {
+                            setPlanFormData({
+                              name: plan.name,
+                              price: plan.price.toString(),
+                              duration: plan.duration.toString(),
+                              description: plan.description
+                            });
+                            setIsEditing(true);
+                            setEditingType('plan');
+                            setSelectedPlan(plan);
+                            setError(null);
+                            setShowModal(true);
                           }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#6b7280';
-                          }}
+                          style={{ background: 'none', border: 'none', padding: '8px', margin: '0 4px', borderRadius: '6px', cursor: 'pointer' }}
                           title="Edit Plan"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDeletePlan(plan.id)}
-                          style={actionButtonStyle}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#fef2f2';
-                            e.target.style.color = '#dc2626';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#6b7280';
-                          }}
+                          style={{ background: 'none', border: 'none', padding: '8px', margin: '0 4px', borderRadius: '6px', cursor: 'pointer' }}
                           title="Delete Plan"
                         >
                           <Trash2 size={16} />
@@ -671,18 +501,18 @@ const PlansManager = ({ onBack }) => {
 
           {!loading && plans.length === 0 && (
             <div style={{ textAlign: 'center', padding: '64px 32px', backgroundColor: 'white', borderRadius: '12px', border: '2px dashed #d1d5db' }}>
-              <div style={{ color: '#d1d5db', marginBottom: '24px' }}>
-                <Plus size={48} style={{ margin: '0 auto', display: 'block' }} />
-              </div>
+              <Plus size={48} style={{ margin: '0 auto 24px', display: 'block', color: '#d1d5db' }} />
               <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>No Plans Found</h3>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-                Get started by creating your first subscription plan
-              </p>
+              <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>Get started by creating your first subscription plan</p>
               <button
-                onClick={handleOpenCreatePlanModal}
-                style={createButtonStyle}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+                onClick={() => {
+                  setPlanFormData({ name: '', price: '', duration: '', description: '' });
+                  setIsEditing(false);
+                  setEditingType('plan');
+                  setError(null);
+                  setShowModal(true);
+                }}
+                style={commonStyles.button}
               >
                 Create First Plan
               </button>
@@ -692,38 +522,55 @@ const PlansManager = ({ onBack }) => {
       ) : (
         <>
           {/* Subscribers View */}
-          <div style={headerStyle}>
-            <div style={titleStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937', margin: '0', display: 'flex', alignItems: 'center' }}>
               <button
                 onClick={() => setCurrentView('plans')}
-                style={backButtonStyle}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', marginRight: '12px', padding: '10px 12px', borderRadius: '8px' }}
               >
                 ←
               </button>
               {selectedPlan?.name} - Subscribers
             </div>
             <button
-              onClick={handleOpenCreateSubscriberModal}
-              style={createButtonStyle}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+              onClick={() => {
+                setSubscriberFormData({
+                  identifier: '',
+                  identifierType: 'email',
+                  plan_id: selectedPlan.id,
+                  status: 'active'
+                });
+                setIsEditing(false);
+                setEditingType('subscriber');
+                setError(null);
+                setShowModal(true);
+              }}
+              style={commonStyles.button}
             >
               <Plus size={16} />
               Add Subscriber
             </button>
           </div>
 
-          {error && (
-            <div style={errorStyle}>
+          {/* {error && (
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#dc2626'
+            }}>
               <XCircle size={16} />
               <span>{error}</span>
             </div>
-          )}
+          )} */}
 
-          <div style={cardStyle}>
-            <div style={tableHeaderStyle}>
+          <div style={commonStyles.card}>
+            <div style={{ backgroundColor: '#f9fafb', padding: '16px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
                   <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
@@ -732,22 +579,13 @@ const PlansManager = ({ onBack }) => {
                     placeholder="Search subscribers..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                      ...inputStyle,
-                      paddingLeft: '40px',
-                      width: '300px',
-                      margin: 0
-                    }}
+                    style={{ ...commonStyles.input, paddingLeft: '40px', width: '300px', margin: 0 }}
                   />
                 </div>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    width: '150px',
-                    margin: 0
-                  }}
+                  style={{ ...commonStyles.input, width: '150px', margin: 0 }}
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -760,47 +598,27 @@ const PlansManager = ({ onBack }) => {
               </div>
             </div>
 
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '48px' }}>
-                <div style={{ 
-                  display: 'inline-block',
-                  width: '32px',
-                  height: '32px',
-                  border: '2px solid #e5e7eb',
-                  borderTop: '2px solid #3b82f6',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }}></div>
-                <p style={{ color: '#6b7280', marginTop: '16px', fontSize: '14px' }}>Loading subscribers...</p>
-              </div>
-            )}
+            {loading && <Loader message="Loading subscribers..." />}
+
 
             {!loading && filteredSubscribers.length > 0 && (
-              <table style={tableStyle}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Subscriber</th>
-                    <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Status</th>
-                    <th style={thStyle}>Start Date</th>
-                    <th style={thStyle}>End Date</th>
-                    <th style={{...thStyle, textAlign: 'center'}}>Actions</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Subscriber</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Email</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Status</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Start Date</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'left', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>End Date</th>
+                    <th style={{ padding: '12px 24px', textAlign: 'center', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSubscribers.map((subscriber, index) => {
                     const statusBadge = getStatusBadge(subscriber.status);
                     return (
-                      <tr 
-                        key={subscriber.id} 
-                        style={{ 
-                          backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
-                          transition: 'background-color 0.15s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafafa'}
-                      >
-                        <td style={tdStyle}>
+                      <tr key={subscriber.id} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#fafafa' }}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{
                               width: '40px',
@@ -826,52 +644,48 @@ const PlansManager = ({ onBack }) => {
                             </div>
                           </div>
                         </td>
-                        <td style={tdStyle}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                           <div style={{ fontSize: '14px', color: '#6b7280' }}>{subscriber.email}</div>
                         </td>
-                        <td style={tdStyle}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                           <div style={statusBadge}>
                             {statusBadge.icon}
                             {subscriber.status}
                           </div>
                         </td>
-                        <td style={tdStyle}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                           <div style={{ fontSize: '14px', color: '#6b7280' }}>
                             {new Date(subscriber.start_date).toLocaleDateString()}
                           </div>
                         </td>
-                        <td style={tdStyle}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6' }}>
                           <div style={{ fontSize: '14px', color: '#6b7280' }}>
                             {new Date(subscriber.end_date).toLocaleDateString()}
                           </div>
                         </td>
-                        <td style={{...tdStyle, textAlign: 'center'}}>
+                        <td style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
                           <button
-                            onClick={() => handleOpenEditSubscriberModal(subscriber)}
-                            style={actionButtonStyle}
-                            onMouseOver={(e) => {
-                              e.target.style.backgroundColor = '#f3f4f6';
-                              e.target.style.color = '#374151';
+                            onClick={() => {
+                              setSubscriberFormData({
+                                identifier: subscriber.freelancer_id?.toString() || '',
+                                identifierType: 'id',
+                                plan_id: subscriber.plan_id?.toString() || selectedPlan.id.toString(),
+                                status: subscriber.status || 'active'
+                              });
+                              setIsEditing(true);
+                              setEditingType('subscriber');
+                              setSelectedPlan(subscriber);
+                              setError(null);
+                              setShowModal(true);
                             }}
-                            onMouseOut={(e) => {
-                              e.target.style.backgroundColor = 'transparent';
-                              e.target.style.color = '#6b7280';
-                            }}
+                            style={{ background: 'none', border: 'none', padding: '8px', margin: '0 4px', borderRadius: '6px', cursor: 'pointer' }}
                             title="Edit Subscription"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDeleteSubscriber(subscriber.id)}
-                            style={actionButtonStyle}
-                            onMouseOver={(e) => {
-                              e.target.style.backgroundColor = '#fef2f2';
-                              e.target.style.color = '#dc2626';
-                            }}
-                            onMouseOut={(e) => {
-                              e.target.style.backgroundColor = 'transparent';
-                              e.target.style.color = '#6b7280';
-                            }}
+                            style={{ background: 'none', border: 'none', padding: '8px', margin: '0 4px', borderRadius: '6px', cursor: 'pointer' }}
                             title="Delete Subscription"
                           >
                             <Trash2 size={16} />
@@ -886,280 +700,250 @@ const PlansManager = ({ onBack }) => {
 
             {!loading && filteredSubscribers.length === 0 && (
               <div style={{ textAlign: 'center', padding: '64px 32px' }}>
-                <div style={{ color: '#d1d5db', marginBottom: '24px' }}>
-                  <Users size={48} style={{ margin: '0 auto', display: 'block' }} />
-                </div>
+                <Users size={48} style={{ margin: '0 auto 24px', display: 'block', color: '#d1d5db' }} />
                 <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
                   No Subscribers Found
                 </h3>
                 <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
                   {searchTerm ? 'No subscribers match your search' : 'No subscribers for this plan yet'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleOpenCreateSubscriberModal}
-                    style={createButtonStyle}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
-                  >
-                    Add First Subscriber
-                  </button>
-                )}
               </div>
             )}
           </div>
         </>
       )}
 
-      {/* Plan/Subscriber Modal */}
+      {/* Modal */}
       {showModal && (
-        <div style={modalOverlayStyle}>
-          <div style={modalStyle}>
+        <div style={{
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: '1000'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', margin: '0' }}>
                 {editingType === 'plan' 
                   ? (isEditing ? 'Edit Plan' : 'Create New Plan')
-                  : (isEditing ? 'Edit Subscription' : 'Add New Subscriber')}
+                  : (isEditing ? 'Edit Subscription' : 'Add Subscriber')
+                }
               </h2>
               <button
                 onClick={handleCloseModal}
-                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
               >
                 <X size={20} />
               </button>
             </div>
 
             {error && (
-              <div style={errorStyle}>
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                color: '#dc2626'
+              }}>
                 <XCircle size={16} />
                 <span>{error}</span>
               </div>
             )}
 
             {editingType === 'plan' ? (
-              // Plan Form
-              <>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={labelStyle}>Plan Name</label>
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    Plan Name *
+                  </label>
                   <input
                     type="text"
                     name="name"
                     value={planFormData.name}
                     onChange={(e) => handleInputChange(e, 'plan')}
-                    style={inputStyle}
                     placeholder="Enter plan name"
-                    required
+                    style={commonStyles.input}
+                    disabled={loading}
                   />
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={labelStyle}>Price ($)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={planFormData.price}
-                    onChange={(e) => handleInputChange(e, 'plan')}
-                    step="0.01"
-                    min="0.01"
-                    style={inputStyle}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={labelStyle}>Duration (days)</label>
-                  <input
-                    type="number"
-                    name="duration"
-                    value={planFormData.duration}
-                    onChange={(e) => handleInputChange(e, 'plan')}
-                    min="1"
-                    style={inputStyle}
-                    placeholder="30"
-                    required
-                  />
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                      Price ($) *
+                    </label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={planFormData.price}
+                      onChange={(e) => handleInputChange(e, 'plan')}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      style={commonStyles.input}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                      Duration (days) *
+                    </label>
+                    <input
+                      type="number"
+                      name="duration"
+                      value={planFormData.duration}
+                      onChange={(e) => handleInputChange(e, 'plan')}
+                      placeholder="30"
+                      min="1"
+                      style={commonStyles.input}
+                      disabled={loading}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={labelStyle}>Description</label>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    Description *
+                  </label>
                   <textarea
                     name="description"
                     value={planFormData.description}
                     onChange={(e) => handleInputChange(e, 'plan')}
-                    rows={3}
-                    style={{...inputStyle, resize: 'none'}}
-                    placeholder="Describe your plan features and benefits"
-                    required
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={handleCloseModal}
-                    style={{
-                      flex: '1',
-                      padding: '12px 20px',
-                      border: '1px solid #d1d5db',
-                      color: '#374151',
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handlePlanSubmit}
+                    placeholder="Enter plan description"
+                    rows="4"
+                    style={{ ...commonStyles.input, resize: 'vertical' }}
                     disabled={loading}
-                    style={{
-                      flex: '1',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      padding: '12px 20px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? '0.5' : '1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#2563eb')}
-                    onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#3b82f6')}
-                  >
-                    <Save size={16} />
-                    {loading ? 'Saving...' : (isEditing ? 'Update Plan' : 'Create Plan')}
-                  </button>
-                </div>
-              </>
-            ) : (
-              // Subscriber Form - Updated to use freelancer_id input
-              <>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={labelStyle}>Freelancer ID</label>
-                  <input
-                    type="number"
-                    name="freelancer_id"
-                    value={subscriberFormData.freelancer_id}
-                    onChange={(e) => handleInputChange(e, 'subscriber')}
-                    style={inputStyle}
-                    placeholder="Enter freelancer ID"
-                    required
-                    disabled={isEditing} // Disable freelancer_id editing for existing subscriptions
                   />
-                  {isEditing && (
-                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                      Freelancer ID cannot be changed for existing subscriptions
-                    </p>
-                  )}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    Identifier Type
+                  </label>
+                  <select
+                    name="identifierType"
+                    value={subscriberFormData.identifierType}
+                    onChange={(e) => handleInputChange(e, 'subscriber')}
+                    style={commonStyles.input}
+                    disabled={loading || isEditing}
+                  >
+                    <option value="email">Email Address</option>
+                    <option value="id">User ID</option>
+                  </select>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={labelStyle}>Plan</label>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    {subscriberFormData.identifierType === 'email' ? 'Email Address' : 'User ID'} *
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    {subscriberFormData.identifierType === 'email' ? 
+                      <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} /> :
+                      <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    }
+                    <input
+                      type={subscriberFormData.identifierType === 'email' ? 'email' : 'number'}
+                      name="identifier"
+                      value={subscriberFormData.identifier}
+                      onChange={(e) => handleInputChange(e, 'subscriber')}
+                      placeholder={subscriberFormData.identifierType === 'email' ? 'user@example.com' : '12345'}
+                      style={{ ...commonStyles.input, paddingLeft: '40px' }}
+                      disabled={loading || isEditing}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    Plan *
+                  </label>
                   <select
                     name="plan_id"
                     value={subscriberFormData.plan_id}
                     onChange={(e) => handleInputChange(e, 'subscriber')}
-                    style={inputStyle}
-                    required
-                    disabled={isEditing} // Disable plan selection for existing subscriptions
+                    style={commonStyles.input}
+                    disabled={loading}
                   >
                     <option value="">Select a plan</option>
-                    {plans.map((plan) => (
+                    {plans.map(plan => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} - ${plan.price} ({plan.duration} days)
                       </option>
                     ))}
                   </select>
-                  {isEditing && (
-                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                      Plan cannot be changed for existing subscriptions
-                    </p>
-                  )}
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={labelStyle}>Status</label>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151', display: 'block' }}>
+                    Status
+                  </label>
                   <select
                     name="status"
                     value={subscriberFormData.status}
                     onChange={(e) => handleInputChange(e, 'subscriber')}
-                    style={inputStyle}
-                    required
+                    style={commonStyles.input}
+                    disabled={loading}
                   >
                     <option value="active">Active</option>
                     <option value="expired">Expired</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={handleCloseModal}
-                    style={{
-                      flex: '1',
-                      padding: '12px 20px',
-                      border: '1px solid #d1d5db',
-                      color: '#374151',
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubscriberSubmit}
-                    disabled={loading}
-                    style={{
-                      flex: '1',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      padding: '12px 20px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? '0.5' : '1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#2563eb')}
-                    onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#3b82f6')}
-                  >
-                    <Save size={16} />
-                    {loading ? 'Saving...' : (isEditing ? 'Update Subscription' : 'Add Subscriber')}
-                  </button>
-                </div>
-              </>
+              </div>
             )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={handleCloseModal}
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  color: '#374151',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingType === 'plan' ? handlePlanSubmit : handleSubscriberSubmit}
+                style={{ ...commonStyles.button, opacity: loading ? 0.6 : 1 }}
+                disabled={loading}
+              >
+                <Save size={16} />
+                {loading ? 'Saving...' : (isEditing ? 'Update' : 'Create')}
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default PlansManager;
+export default PlansManager

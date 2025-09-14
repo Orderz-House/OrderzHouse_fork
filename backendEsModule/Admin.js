@@ -69,12 +69,11 @@ export const AdminInit = async (app) => {
   };
 
   const resources = await createResourceConfigs(
-    db,
-    tableExists,
-    (
-      await import("./Admin/logger.js")
-    ).logAdminAction
-  );
+  db,
+  tableExists,
+  (await import("./Admin/logger.js")).logAdminAction,
+  pool  
+);
 
   const admin = new AdminJS({
     rootPath: "/admin",
@@ -93,11 +92,11 @@ export const AdminInit = async (app) => {
       theme: adminThemeConfig,
     },
     pages: {
-      analytics: {
-        component: Components.Analytics, // your UsersAnalytics page
-        handler: (request) => analyticsHandler(request, pool), // optional extra data
-        icon: "BarChart3",
-      },
+      // analytics: {
+      //   component: Components.Analytics, // your UsersAnalytics page
+      //   handler: (request) => analyticsHandler(request, pool), // optional extra data
+      //   icon: "BarChart3",
+      // },
     },
     resources,
   });

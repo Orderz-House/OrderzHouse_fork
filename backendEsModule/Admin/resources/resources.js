@@ -11,29 +11,91 @@ import { createPlansResource } from "./plans.js";
 import { createAppointmentsResource } from "./appointments.js";
 import { createCourseResources } from "./courses.js";
 // import { createChatsResource } from "./chats.js";
+const addLoggingToResource = (resourceConfig, logAdminAction, pool) => {
+  const actions = resourceConfig.options?.actions || {};
 
+  const wrapAfter =
+    (actionName, originalAfter) => async (response, request, context) => {
+      if (originalAfter) {
+        response = await originalAfter(response, request, context);
+      }
+
+      const { record, records, currentAdmin } = context;
+      if (currentAdmin) {
+        let logMessage = `Admin ${currentAdmin.email} executed "${actionName}"`;
+
+        if (record) {
+          logMessage += ` on ${record.resourceId} #${record.id?.()}`;
+        }
+
+        if (records && records.length > 0) {
+          const ids = records.map((r) => r.id?.()).join(", ");
+          logMessage += ` on ${records[0].resourceId} IDs: [${ids}]`;
+        }
+
+        await logAdminAction(
+          currentAdmin.id,
+          currentAdmin.email,
+          logMessage,
+          currentAdmin.role_id,
+          pool
+        );
+      }
+
+      return response;
+    };
+
+  // Wrap ALL actions, including defaults if not overridden
+  const defaultActions = ["new", "edit", "delete", "list", "show"];
+  const allActions = { ...actions };
+
+  defaultActions.forEach((name) => {
+    if (!allActions[name]) allActions[name] = {};
+  });
+
+  const wrappedActions = {};
+  for (const [actionName, actionConfig] of Object.entries(allActions)) {
+    wrappedActions[actionName] = {
+      ...actionConfig,
+      after: wrapAfter(actionName, actionConfig?.after),
+    };
+  }
+
+  return {
+    ...resourceConfig,
+    options: {
+      ...resourceConfig.options,
+      actions: wrappedActions,
+    },
+  };
+};
+
+/**
+ * Creates all resource configs and attaches logging
+ */
 export const createResourceConfigs = async (
   db,
   tableExists,
-  logAdminAction
+  logAdminAction,
+  pool
 ) => {
   const resources = [];
 
-  // User Management Resources
+  // User Management
   resources.push(await createAdminsResource(db, logAdminAction));
   resources.push(await createClientsResource(db, logAdminAction));
   resources.push(await createFreelancersResource(db, logAdminAction));
 
-  // Project Resources
+  // Projects
   resources.push(await createProjectsResource(db, tableExists, logAdminAction));
 
-  // Offers Resource
+  // Offers
   resources.push(await createOffersResource(db, logAdminAction));
 
-  // Payments Resource (escrow + payments + receipts)
+  // Payments
   resources.push(await createPaymentsResource(db, logAdminAction));
 
-  // Content Resources
+  // Content
   const contentResources = await createContentResources(
     db,
     tableExists,
@@ -41,7 +103,7 @@ export const createResourceConfigs = async (
   );
   resources.push(...contentResources);
 
-  // Financial Resources
+  // Financial
   const financialResources = await createFinancialResources(
     db,
     tableExists,
@@ -49,7 +111,7 @@ export const createResourceConfigs = async (
   );
   resources.push(...financialResources);
 
-  // Course Resources
+  // Courses
   const courseResources = await createCourseResources(
     db,
     tableExists,
@@ -57,12 +119,13 @@ export const createResourceConfigs = async (
   );
   resources.push(...courseResources);
 
-  // Other Resources
+  // Other
   resources.push(await createPlansResource(db, logAdminAction));
   resources.push(await createAppointmentsResource(db, logAdminAction));
   resources.push(await createSystemResource(db, logAdminAction));
 
   // resources.push(await createChatsResource(db, logAdminAction));
 
-  return resources;
+  // ✅ Wrap every resource with logging for ALL actions
+  return resources.map((r) => addLoggingToResource(r, logAdminAction, pool));
 };

@@ -13,6 +13,13 @@ const AppointmentsDashboard = ({ onBack }) => {
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, tomorrow, this_week
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newAppointment, setNewAppointment] = useState({
+    freelancer_id: '',
+    appointment_date: '',
+    message: '',
+    appointment_type: 'online'
+  });
 
   // Jordan timezone utilities
   const getJordanTime = (date = new Date()) => {
@@ -79,6 +86,57 @@ const AppointmentsDashboard = ({ onBack }) => {
 
     return () => clearInterval(interval);
   }, [fetchAppointments]);
+
+  const handleCreateAppointment = async () => {
+    // Prevent multiple submissions
+    if (actionLoading) return;
+    
+    if (!newAppointment.freelancer_id || !newAppointment.appointment_date) {
+      setError('Freelancer ID and appointment date are required');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch('/appointments/admin/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          freelancer_id: parseInt(newAppointment.freelancer_id),
+          appointment_date: newAppointment.appointment_date,
+          message: newAppointment.message || null,
+          appointment_type: newAppointment.appointment_type
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAppointments(prev => [...prev, data.appointment]);
+        setShowAddModal(false);
+        setNewAppointment({
+          freelancer_id: '',
+          appointment_date: '',
+          message: '',
+          appointment_type: 'online'
+        });
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to create appointment');
+      }
+    } catch (err) {
+      setError('Failed to create appointment');
+      console.error('Error creating appointment:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleAction = async (appointmentId, action) => {
     setActionLoading(true);
@@ -273,34 +331,60 @@ const AppointmentsDashboard = ({ onBack }) => {
 
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={onBack}
+              style={{
+                background: 'transparent', 
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                marginRight: '12px',
+                color: 'black', 
+                padding: '10px 12px',
+                borderRadius: '8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => e.target.style.color = '#111827'} 
+              onMouseOut={(e) => e.target.style.color = 'black'}
+            >
+              ←
+            </button>
+            <h1 style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              margin: '0',
+              color: '#111827'
+            }}>
+              Appointments
+            </h1>
+          </div>
+          
+          {/* Add Appointment Button */}
           <button
-  onClick={onBack}
-  style={{
-    background: 'transparent', 
-    border: 'none',
-    fontSize: '20px',
-    cursor: 'pointer',
-    marginRight: '12px',
-    color: 'black', 
-    padding: '10px 12px',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease'
-  }}
-  onMouseOver={(e) => e.target.style.color = '#111827'} 
-  onMouseOut={(e) => e.target.style.color = 'black'}
->
-  ←
-</button>
-
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: '700',
-            margin: '0',
-            color: '#111827'
-          }}>
-            Appointments
-          </h1>
+            onClick={() => setShowAddModal(true)}
+            style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+          >
+            <span style={{ fontSize: '16px' }}>+</span>
+            Add Appointment
+          </button>
         </div>
       </div>
 
@@ -791,6 +875,272 @@ const AppointmentsDashboard = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Add Appointment Modal */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#111827'
+              }}>
+                Create New Appointment
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewAppointment({
+                    freelancer_id: '',
+                    appointment_date: '',
+                    message: '',
+                    appointment_type: 'online'
+                  });
+                }}
+                style={{
+                  background: '#374151',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Form */}
+            <div style={{ marginBottom: '24px' }}>
+              {/* Freelancer ID */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Freelancer ID *
+                </label>
+                <input
+                  type="number"
+                  value={newAppointment.freelancer_id}
+                  onChange={(e) => setNewAppointment(prev => ({
+                    ...prev,
+                    freelancer_id: e.target.value
+                  }))}
+                  placeholder="Enter freelancer ID"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Appointment Date & Time */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Date & Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newAppointment.appointment_date}
+                  onChange={(e) => setNewAppointment(prev => ({
+                    ...prev,
+                    appointment_date: e.target.value
+                  }))}
+                  min={new Date().toISOString().slice(0, 16)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Appointment Type */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Appointment Type *
+                </label>
+                <select
+                  value={newAppointment.appointment_type}
+                  onChange={(e) => setNewAppointment(prev => ({
+                    ...prev,
+                    appointment_type: e.target.value
+                  }))}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    backgroundColor: '#ffffff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="online">Online</option>
+                  <option value="in_company">In Company</option>
+                </select>
+              </div>
+
+              {/* Message */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Message (Optional)
+                </label>
+                <textarea
+                  value={newAppointment.message}
+                  onChange={(e) => setNewAppointment(prev => ({
+                    ...prev,
+                    message: e.target.value
+                  }))}
+                  placeholder="Add a message or notes for the appointment"
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff',
+                    resize: 'vertical',
+                    minHeight: '80px'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+              paddingTop: '16px',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewAppointment({
+                    freelancer_id: '',
+                    appointment_date: '',
+                    message: '',
+                    appointment_type: 'online'
+                  });
+                }}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateAppointment}
+                disabled={actionLoading || !newAppointment.freelancer_id || !newAppointment.appointment_date}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: (!newAppointment.freelancer_id || !newAppointment.appointment_date) ? '#d1d5db' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: (!newAppointment.freelancer_id || !newAppointment.appointment_date) ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  opacity: actionLoading ? 0.6 : 1
+                }}
+                onMouseOver={(e) => {
+                  if (!actionLoading && newAppointment.freelancer_id && newAppointment.appointment_date) {
+                    e.target.style.backgroundColor = '#2563eb';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!actionLoading && newAppointment.freelancer_id && newAppointment.appointment_date) {
+                    e.target.style.backgroundColor = '#3b82f6';
+                  }
+                }}
+              >
+                {actionLoading ? 'Creating...' : 'Create Appointment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Modal */}
       {showModal && selectedAppointment && (

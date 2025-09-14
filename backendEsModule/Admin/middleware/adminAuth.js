@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import { logAdminAction } from "../logger.js";
 
+/**
+ * ✅ Admin authentication (only role_id = 1 is allowed)
+ */
 export const authenticateAdmin = (pool) => {
   return async (email, password) => {
     try {
@@ -10,48 +13,44 @@ export const authenticateAdmin = (pool) => {
       );
       const user = rows[0];
 
-      // User not found
       if (!user) {
         await logAdminAction(
           null,
           email,
-          `Failed login attempt - User not found`,
+          "❌ Failed login - User not found",
           null,
           pool
         );
         throw new Error("Invalid email or password");
       }
 
-      // User is not admin
       if (user.role_id !== 1) {
         await logAdminAction(
           user.id,
           user.email,
-          `Unauthorized login attempt - Role ID: ${user.role_id}`,
+          `⚠ Unauthorized login attempt - Role ID: ${user.role_id}`,
           user.role_id,
           pool
         );
         throw new Error("You are not allowed to login as admin");
       }
 
-      // Password check
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         await logAdminAction(
           user.id,
           user.email,
-          `Failed login attempt - Invalid password`,
+          "❌ Failed login - Invalid password",
           user.role_id,
           pool
         );
         throw new Error("Invalid email or password");
       }
 
-      // Successful login
       await logAdminAction(
         user.id,
         user.email,
-        `Admin login successful`,
+        "✅ Admin login successful",
         user.role_id,
         pool
       );
@@ -68,7 +67,7 @@ export const authenticateAdmin = (pool) => {
       await logAdminAction(
         null,
         email,
-        `Authentication error: ${error.message}`,
+        `❌ Authentication error: ${error.message}`,
         null,
         pool
       );
@@ -78,36 +77,45 @@ export const authenticateAdmin = (pool) => {
 };
 
 /**
- * Middleware to log Admin actions in AdminJS routes
+ * ✅ Unified AdminJS + HTTP logger
+ * Logs:
+ * - AdminJS actions (new/edit/delete/list/etc.)
+ * - API requests under `/api/admin`
  */
 export const createAdminLogMiddleware = (pool) => {
   return (req, res, next) => {
     const originalSend = res.send;
     const originalJson = res.json;
 
-    const logAction = () => {
-      if (req.user) {
+    const logAction = (statusCode) => {
+      if (!req.user) return;
+
+      let message = null;
+
+      // 🔹 AdminJS resource actions
+      if (req.originalUrl.includes("/admin/resources")) {
         const urlParts = req.originalUrl.split("/");
-        let resource = null;
-        let recordId = null;
+        const resourceIndex = urlParts.indexOf("resources");
+        const resource = urlParts[resourceIndex + 1] || "unknown";
+        const recordId = urlParts[resourceIndex + 2] || null;
 
-        if (urlParts.includes("resources")) {
-          const resourceIndex = urlParts.indexOf("resources");
-          resource = urlParts[resourceIndex + 1] || null;
-          recordId = urlParts[resourceIndex + 2] || null;
-        }
+        message = `⚡ Admin ${req.user.email} executed ${
+          req.method
+        } on ${resource}${
+          recordId ? ` (ID: ${recordId})` : ""
+        } - Status: ${statusCode}`;
+      }
 
-        const resourceInfo = resource
-          ? recordId
-            ? ` on ${resource} ID: ${recordId}`
-            : ` on ${resource}`
-          : "";
+      // 🔹 Custom API routes (`/api/admin/...`)
+      else if (req.originalUrl.startsWith("/api/admin")) {
+        message = `🌐 [API] Admin ${req.user.email} -> ${req.method} ${req.originalUrl} - Status: ${statusCode}`;
+      }
 
-        const logMessage = `Admin ${req.user.email} performed ${req.method}${resourceInfo} - Status: ${res.statusCode}`;
+      if (message) {
         logAdminAction(
           req.user.id,
           req.user.email,
-          logMessage,
+          message,
           req.user.role_id,
           pool
         ).catch(() => {});
@@ -115,12 +123,12 @@ export const createAdminLogMiddleware = (pool) => {
     };
 
     res.send = function (body) {
-      logAction();
+      logAction(res.statusCode);
       return originalSend.call(this, body);
     };
 
     res.json = function (body) {
-      logAction();
+      logAction(res.statusCode);
       return originalJson.call(this, body);
     };
 
