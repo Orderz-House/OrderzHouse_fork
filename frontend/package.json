@@ -17,6 +17,7 @@
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.12",
     "adminjs": "^7.8.17",
+    "animate.css": "^4.1.1",
     "axios": "^1.11.0",
     "bootstrap": "^5.3.8",
     "framer-motion": "^12.23.12",

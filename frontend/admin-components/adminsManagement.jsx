@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Save, Search, Download, ChevronDown } from "lucide-react";
 import Loader from "../admin-components/loader/loader.jsx";
 
 const API_BASE = "http://localhost:5000/admins";
@@ -12,12 +12,15 @@ const AdminsManagement = ({ onBack }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [deletingAdmin, setDeletingAdmin] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
     username: "",
     password: "",
+    phone_number: "",
   });
 
   // Fetch all admins
@@ -57,6 +60,39 @@ const AdminsManagement = ({ onBack }) => {
     fetchAdmins();
   }, []);
 
+  // Filter admins based on search term
+  const filteredAdmins = admins.filter(admin =>
+    `${admin.first_name} ${admin.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    admin.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (admin.phone_number && admin.phone_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Export to CSV
+  const exportToCSV = () => {
+    const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Role', 'Created At'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredAdmins.map(admin => [
+        admin.id || admin.user_id,
+        admin.first_name,
+        admin.last_name,
+        admin.email,
+        'Admin',
+        new Date(admin.created_at).toLocaleDateString()
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'admin_users.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    setShowActionsDropdown(false);
+  };
+
   // Open modal for create or edit
   const openModal = (admin = null) => {
     setEditingAdmin(admin);
@@ -67,17 +103,33 @@ const AdminsManagement = ({ onBack }) => {
         email: admin.email || "",
         username: admin.username || "",
         password: "",
+        phone_number: admin.phone_number || "",
       });
     } else {
-      setFormData({ first_name: "", last_name: "", email: "", username: "", password: "" });
+      setFormData({ 
+        first_name: "", 
+        last_name: "", 
+        email: "", 
+        username: "", 
+        password: "",
+        phone_number: ""
+      });
     }
     setModalOpen(true);
+    setShowActionsDropdown(false);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditingAdmin(null);
-    setFormData({ first_name: "", last_name: "", email: "", username: "", password: "" });
+    setFormData({ 
+      first_name: "", 
+      last_name: "", 
+      email: "", 
+      username: "", 
+      password: "",
+      phone_number: ""
+    });
     setError("");
   };
 
@@ -169,91 +221,210 @@ const AdminsManagement = ({ onBack }) => {
 
   return (
     <div style={{
-      backgroundColor: '#ffffff',
+      backgroundColor: '#f8f9fa',
       minHeight: '100vh',
-      padding: '24px',
+      padding: '32px',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       color: '#374151'
     }}>
       <style>
         {`
           .admin-row:hover {
-            background-color: #f9fafb;
-            transition: all 0.2s ease;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
           }
           .action-button {
             transition: all 0.2s ease;
+            opacity: 0.8;
           }
           .action-button:hover {
+            opacity: 1;
             transform: translateY(-1px);
+          }
+          .dropdown {
+            position: relative;
+            display: inline-block;
+          }
+          .dropdown-content {
+            display: ${showActionsDropdown ? 'block' : 'none'};
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 12px 24px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            z-index: 1000;
+            border: 1px solid #e5e7eb;
+            animation: fadeIn 0.2s ease;
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .dropdown-content button {
+            color: #374151;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+          }
+          .dropdown-content button:hover {
+            background-color: #f3f4f6;
+          }
+          .dropdown-content button:first-child {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+          }
+          .dropdown-content button:last-child {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+          }
+          .table-container {
+            transition: all 0.3s ease;
+          }
+          .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
           }
         `}
       </style>
 
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={onBack}
-              style={{
-                background: 'transparent', 
-                border: 'none',
-                fontSize: '20px',
-                cursor: 'pointer',
-                marginRight: '12px',
-                color: 'black', 
-                padding: '10px 12px',
-                borderRadius: '8px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => e.target.style.color = '#111827'} 
-              onMouseOut={(e) => e.target.style.color = 'black'}
-            >
-              ←
-            </button>
-            <div>
-              <h1 style={{
-                fontSize: '2rem',
-                fontWeight: '700',
-                margin: '0',
-                color: '#111827'
-              }}>
-                Admin Users
-              </h1>
-              <p style={{
-                margin: '4px 0 0 0',
-                fontSize: '14px',
-                color: '#6b7280'
-              }}>
-                Total Admins: {admins.length}
-              </p>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none', 
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              marginRight: '16px',
+              color: '#6b7280', 
+              padding: '8px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => e.target.style.color = '#111827'} 
+            onMouseOut={(e) => e.target.style.color = '#6b7280'}
+          >
+            ←
+          </button>
+          <div>
+            <h1 style={{
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              margin: '0 0 8px 0',
+              color: '#111827'
+            }}>
+              Admins management
+            </h1>
+          </div>
+        </div>
+
+        {/* Search and Actions Row */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '24px',
+          gap: '16px'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '16px',
+            flex: 1
+          }}>
+            <div style={{ position: 'relative', width: '400px' }}>
+              <Search 
+                style={{ 
+                  position: 'absolute', 
+                  left: '14px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  width: '18px', 
+                  height: '18px', 
+                  color: '#9ca3af' 
+                }} 
+              />
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 46px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  outline: 'none',
+                  backgroundColor: '#ffffff',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            </div>
+
+            <div className="dropdown">
+              <button
+                onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  padding: '12px 20px',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseOver={(e) => e.target.style.borderColor = '#9ca3af'}
+                onMouseOut={(e) => e.target.style.borderColor = '#d1d5db'}
+              >
+                Actions
+                <ChevronDown style={{ width: '16px', height: '16px' }} />
+              </button>
+              <div className="dropdown-content">
+                <button onClick={() => openModal()}>
+                  <Plus style={{ width: '16px', height: '16px', display: 'inline', marginRight: '8px' }} />
+                  Add User
+                </button>
+                <button onClick={exportToCSV}>
+                  <Download style={{ width: '16px', height: '16px', display: 'inline', marginRight: '8px' }} />
+                  Export Data
+                </button>
+              </div>
             </div>
           </div>
-          
-          <button
-            onClick={() => openModal()}
-            style={{
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <p style={{
+              margin: '0',
               fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
-          >
-            <Plus style={{ width: '16px', height: '16px' }} />
-            Add Admin
-          </button>
+              color: '#6b7280',
+              whiteSpace: 'nowrap'
+            }}>
+              Rows per page: 10 • 1-{Math.min(10, filteredAdmins.length)} of {filteredAdmins.length} rows
+            </p>
+          </div>
         </div>
       </div>
 
@@ -262,14 +433,15 @@ const AdminsManagement = ({ onBack }) => {
         <div style={{
           backgroundColor: '#fef2f2',
           border: '1px solid #fecaca',
-          borderRadius: '8px',
+          borderRadius: '12px',
           padding: '16px 20px',
           marginBottom: '24px',
           color: '#dc2626',
           fontSize: '14px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          animation: 'fadeIn 0.3s ease'
         }}>
           {error}
           <button
@@ -290,105 +462,117 @@ const AdminsManagement = ({ onBack }) => {
       )}
 
       {/* Main Table */}
-      <div style={{
+      <div className="table-container" style={{
         backgroundColor: 'white',
         border: '1px solid #e5e7eb',
-        borderRadius: '12px',
+        borderRadius: '16px',
         overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
       }}>
-        {/* Header */}
+        {/* Table Header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 80px 1fr 1fr 200px 120px 120px',
-          gap: '16px',
-          padding: '16px',
+          gridTemplateColumns: '60px 80px 140px 140px 240px 140px 140px 120px',
+          gap: '0',
+          padding: '20px 24px',
           backgroundColor: '#f9fafb',
           borderBottom: '1px solid #e5e7eb',
           fontSize: '12px',
           fontWeight: '600',
           color: '#6b7280',
-          textTransform: 'uppercase'
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
         }}>
-          <div>#</div>
-          <div>ID</div>
-          <div>Name</div>
-          <div>Email</div>
-          <div>Username</div>
-          <div>Role</div>
-          <div>Actions</div>
+          <div></div>
+          <div>USER ID</div>
+          <div>FIRST NAME</div>
+          <div>LAST NAME</div>
+          <div>EMAIL</div>
+          <div>ROLE</div>
+          <div>CREATED AT</div>
+          <div>ACTIONS</div>
         </div>
 
-        {admins.length === 0 ? (
+        {/* Table Body */}
+        {filteredAdmins.length === 0 ? (
           <div style={{
             textAlign: 'center',
-            padding: '48px',
+            padding: '60px',
             color: '#6b7280'
           }}>
-            <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>
-              No admin users found
+            <p style={{ margin: 0, fontSize: '18px', fontWeight: '500' }}>
+              {searchTerm ? 'No matching admin users found' : 'No admin users found'}
             </p>
-            <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
-              Add your first admin user to get started
+            <p style={{ margin: '12px 0 0 0', fontSize: '14px' }}>
+              {searchTerm ? 'Try adjusting your search terms' : 'Add your first admin user to get started'}
             </p>
           </div>
         ) : (
-          admins.map((admin, index) => (
+          filteredAdmins.slice(0, 10).map((admin, index) => (
             <div
               key={admin.id || admin.user_id}
               className="admin-row"
               style={{
                 display: 'grid',
-                gridTemplateColumns: '60px 80px 1fr 1fr 200px 120px 120px',
-                gap: '16px',
-                padding: '16px',
+                gridTemplateColumns: '60px 80px 140px 140px 240px 140px 140px 120px',
+                gap: '0',
+                padding: '20px 24px',
                 borderBottom: '1px solid #f3f4f6',
                 alignItems: 'center',
                 fontSize: '14px'
               }}
             >
+              {/* Row Number */}
               <div style={{ 
                 fontWeight: '600', 
-                color: '#111827',
-                fontSize: '12px'
+                color: '#9ca3af',
+                fontSize: '13px'
               }}>
                 {index + 1}
               </div>
-              
+
+              {/* User ID */}
               <div style={{ 
                 fontWeight: '600', 
-                color: '#111827',
-                background: '#f3f4f6',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                textAlign: 'center',
-                fontSize: '12px'
+                color: '#4f46e5',
+                fontSize: '13px'
               }}>
-                #{admin.id || admin.user_id}
+                {admin.id || admin.user_id}
+              </div>
+
+              {/* First Name */}
+              <div style={{ 
+                fontWeight: '500', 
+                color: '#111827',
+                fontSize: '14px'
+              }}>
+                {admin.first_name}
+              </div>
+
+              {/* Last Name */}
+              <div style={{ 
+                fontWeight: '500', 
+                color: '#111827',
+                fontSize: '14px'
+              }}>
+                {admin.last_name}
               </div>
               
-              <div style={{ fontWeight: '600', color: '#111827' }}>
-                {admin.first_name} {admin.last_name}
-              </div>
-              
-              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              {/* Email */}
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#6b7280'
+              }}>
                 {admin.email}
               </div>
               
-              <div style={{ 
-                fontSize: '14px', 
-                color: '#374151',
-                fontWeight: '500'
-              }}>
-                {admin.username}
-              </div>
-              
+              {/* Role */}
               <div>
                 <span style={{
                   display: 'inline-block',
-                  backgroundColor: '#d1fae5',
-                  color: '#065f46',
-                  padding: '4px 12px',
+                  backgroundColor: '#dbeafe',
+                  color: '#1e40af',
+                  padding: '6px 12px',
                   borderRadius: '20px',
                   fontSize: '12px',
                   fontWeight: '500'
@@ -396,8 +580,22 @@ const AdminsManagement = ({ onBack }) => {
                   Admin
                 </span>
               </div>
+
+              {/* Created At */}
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#6b7280',
+                fontWeight: '400'
+              }}>
+                {new Date(admin.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: '2-digit',
+                  year: 'numeric'
+                })}
+              </div>
               
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
                 <button
                   onClick={() => openModal(admin)}
                   className="action-button"
@@ -405,11 +603,11 @@ const AdminsManagement = ({ onBack }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#fbbf24',
-                    color: 'white',
+                    backgroundColor: '#f3f4f6',
+                    color: '#6b7280',
                     padding: '8px',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontSize: '12px',
                     fontWeight: '600',
@@ -427,11 +625,11 @@ const AdminsManagement = ({ onBack }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#ef4444',
-                    color: 'white',
+                    backgroundColor: '#fef2f2',
+                    color: '#ef4444',
                     padding: '8px',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontSize: '12px',
                     fontWeight: '600',
@@ -461,17 +659,18 @@ const AdminsManagement = ({ onBack }) => {
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 1000,
-          padding: '20px'
+          padding: '20px',
+          animation: 'fadeIn 0.3s ease'
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '12px',
+            borderRadius: '16px',
             padding: '32px',
             maxWidth: '500px',
             width: '100%',
             maxHeight: '90vh',
             overflow: 'auto',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 20px 25px rgba(0, 0, 0, 0.2)'
           }}>
             <div style={{
               display: 'flex',
@@ -492,14 +691,14 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={closeModal}
                 style={{
-                  background: '#374151',
+                  background: '#6b7280',
                   border: 'none',
                   fontSize: '18px',
                   cursor: 'pointer',
                   color: 'white',
                   width: '32px',
                   height: '32px',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -530,7 +729,7 @@ const AdminsManagement = ({ onBack }) => {
                     width: '100%',
                     padding: '12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -560,7 +759,7 @@ const AdminsManagement = ({ onBack }) => {
                     width: '100%',
                     padding: '12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -590,13 +789,42 @@ const AdminsManagement = ({ onBack }) => {
                     width: '100%',
                     padding: '12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
                     backgroundColor: '#ffffff'
                   }}
                   required
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone_number"
+                  placeholder="Enter phone number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
                 />
               </div>
               
@@ -620,7 +848,7 @@ const AdminsManagement = ({ onBack }) => {
                     width: '100%',
                     padding: '12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -650,7 +878,7 @@ const AdminsManagement = ({ onBack }) => {
                     width: '100%',
                     padding: '12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -671,11 +899,11 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={closeModal}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   backgroundColor: '#6b7280',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600'
@@ -686,11 +914,11 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={handleSubmit}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   backgroundColor: '#3b82f6',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600',
@@ -698,8 +926,6 @@ const AdminsManagement = ({ onBack }) => {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
               >
                 <Save style={{ width: '16px', height: '16px' }} />
                 {editingAdmin ? "Update Admin" : "Create Admin"}
@@ -722,15 +948,16 @@ const AdminsManagement = ({ onBack }) => {
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 1000,
-          padding: '20px'
+          padding: '20px',
+          animation: 'fadeIn 0.3s ease'
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '12px',
+            borderRadius: '16px',
             padding: '32px',
             maxWidth: '450px',
             width: '100%',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 20px 25px rgba(0, 0, 0, 0.2)'
           }}>
             <div style={{
               display: 'flex',
@@ -751,14 +978,14 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={closeDeleteModal}
                 style={{
-                  background: '#374151',
+                  background: '#6b7280',
                   border: 'none',
                   fontSize: '18px',
                   cursor: 'pointer',
                   color: 'white',
                   width: '32px',
                   height: '32px',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -781,7 +1008,7 @@ const AdminsManagement = ({ onBack }) => {
               <div style={{
                 backgroundColor: '#fef2f2',
                 border: '1px solid #fecaca',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 padding: '16px',
                 marginTop: '16px'
               }}>
@@ -809,11 +1036,11 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={closeDeleteModal}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   backgroundColor: '#6b7280',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600'
@@ -824,11 +1051,11 @@ const AdminsManagement = ({ onBack }) => {
               <button
                 onClick={handleDelete}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   backgroundColor: '#dc2626',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600',
@@ -836,8 +1063,6 @@ const AdminsManagement = ({ onBack }) => {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#b91c1c'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'}
               >
                 <Trash2 style={{ width: '16px', height: '16px' }} />
                 Delete Admin
