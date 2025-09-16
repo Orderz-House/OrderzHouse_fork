@@ -10,8 +10,9 @@ import {
   Shield,
 } from "lucide-react";
 import 'animate.css';
-
+import CategoriesFlipCards from "../../components/CategoriesCards/flipCards";
 import tools from "../../assets/tools.png";
+import LogoLogic from "../logoLoop/LogoLogic";
 
 export default function OrderzHousePageRedesign() {
   const [activePlan, setActivePlan] = useState("basic");
@@ -227,66 +228,68 @@ export default function OrderzHousePageRedesign() {
           </svg>
         </div>
 
-        {/* Professional tools Image */}
-        <div className="absolute right-10 top-1/2 transform -translate-y-1/2 z-10 hidden lg:block">
+          {/* Professional tools Image */}
+<div className="absolute right-20 top-1/2 transform -translate-y-1/2 -translate-x-8 z-10 hidden lg:block">
   <img 
     src={tools}
     alt="Freelance tools" 
-    className="w-[700px] h-auto"
+    className="w-[900px] h-auto animate__animated animate__lightSpeedInRight"
   />
 </div>
 
+{/* Hero Content */}
+<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left transform -translate-x-12 scale-105">
+  <div className="lg:w-2/3 animate__animated animate__lightSpeedInLeft">
+    <h1
+      className="text-6xl md:text-7xl font-bold"
+      style={{
+        fontFamily: "'Merriweather', serif",
+        background: "linear-gradient(90deg, #0072CE, #02C39A)", 
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+      }}
+    >
+      ORDERZ HOUSE
+    </h1>
 
-        {/* Hero Content */}
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left">
-          <div className="lg:w-2/3">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-gray-700">
-              Orderz House
-              <span className="block bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] bg-clip-text text-transparent mt-4">
-                
-              </span>
-            </h1>
-            
-            <div className="text-2xl md:text-3xl text-[#05668D] font-medium mb-8 italic">
-              Where work finds its perfect home.
-            </div>
-            
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mb-12 leading-relaxed">
-              Connect, create, and grow in a freelance ecosystem built for success.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-start">
-              <button
-                onClick={handleExploreTalent}
-                className="group px-10 py-5 bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] text-white font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-              >
-                <span className="flex items-center justify-center">
-                  Explore the talent pool
-                  <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-              
-              <button className="px-10 py-5 bg-white text-[#05668D] font-bold rounded-2xl border-2 border-[#02C39A] hover:bg-[#F0F3BD] hover:border-[#00A896] transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Post a New Project
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="text-base md:text-base text-[#ccdbdc] font-medium mb-6 italic">
+      Where work finds its perfect home.
+    </div>
+
+    <p
+      className="text-2xl md:text-3xl font-serif text-[#ccdbdc] max-w-3xl mb-12 leading-relaxed"
+      style={{ fontFamily: "'Merriweather', serif" }}
+    >
+      Connect, create, and grow in a freelance ecosystem built for success.
+    </p>
+
+    <div className="flex flex-col sm:flex-row gap-6 justify-start">
+      <button
+        onClick={handleExploreTalent}
+        className="group px-10 py-5 bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] text-white font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+      >
+        <span className="flex items-center justify-center">
+          Explore the talent pool
+          <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
+        </span>
+      </button>
+
+      <button className="px-10 py-5 bg-white text-[#05668D] font-bold rounded-2xl border-2 border-[#02C39A] hover:bg-[#F0F3BD] hover:border-[#00A896] transition-all duration-300 transform hover:scale-105 shadow-lg">
+        Post a New Project
+      </button>
+    </div>
+  </div>
+</div>
       </section>
-
       {/* Logo Loop Section */}
-      <section className="py-16 bg-gradient-to-r from-[#F0F3BD]/20 to-[#02C39A]/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-2xl font-semibold text-[#05668D] mb-8">Trusted by leading companies worldwide</h3>
-          <div className="flex justify-center items-center space-x-12 opacity-60">
-            {['Company A', 'Company B', 'Company C', 'Company D', 'Company E'].map((company, index) => (
-              <div key={index} className="text-lg font-medium text-[#028090]">{company}</div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="py-16 bg-white">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <LogoLogic />
+  </div>
+</section>
 
-      {/* Categories Section with Modern Design */}
+
+      {/* Categories Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
         {/* Background Pattern */}
         <div className="absolute inset-0 overflow-hidden">
@@ -300,7 +303,7 @@ export default function OrderzHousePageRedesign() {
               Browse Our Categories
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explore our diverse range of professional categories to find the perfect services for your needs
+              Discover our wide range of professional categories and find the perfect services to meet your needs!
             </p>
           </div>
 
@@ -339,7 +342,7 @@ export default function OrderzHousePageRedesign() {
             <div className="text-center mt-12">
               <button 
                 onClick={() => setShowAll(!showAll)}
-                className="bg-gradient-to-r from-[#05668D] to-[#028090] hover:from-[#028090] hover:to-[#00A896] text-white font-medium py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto"
+                className="bg-gradient-to-r from-[#41b5e2] to-[#028090] hover:from-[#028090] hover:to-[#00A896] text-white font-medium py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto"
               >
                 {showAll ? 'Show Less Categories' : 'View All Categories'}
                 <ChevronRight className={`ml-2 h-5 w-5 transition-transform duration-300 ${showAll ? 'rotate-90' : ''}`} />
