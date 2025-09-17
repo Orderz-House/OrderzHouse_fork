@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import {
+import { 
   ChevronRight,
   Play,
   Download,
@@ -8,54 +8,21 @@ import {
   Users,
   Award,
   Shield,
+  Briefcase,
+  Handshake
 } from "lucide-react";
 import 'animate.css';
-
+import CategoriesFlipCards from "../../components/CategoriesCards/flipCards";
 import tools from "../../assets/tools.png";
+import LogoLogic from "../logoLoop/LogoLogic";
+import communityImg from "../../assets/community.jpg";
+
 
 export default function OrderzHousePageRedesign() {
   const [activePlan, setActivePlan] = useState("basic");
-  const [categories, setCategories] = useState([
-    {
-      id: 1,
-      name: "Programming",
-      description: "Software Developer, Data Analyst, Network Engineer"
-    },
-    {
-      id: 2,
-      name: "Photography",
-      description: "Photography is the art of capturing moments, emotions, and stories through the lens to create lasting visual impressions."
-    },
-    {
-      id: 3,
-      name: "Admin + Project Management",
-      description: "Administrative Assistant, Project Manager, and Process Analyst"
-    },
-    {
-      id: 4,
-      name: "Music & Audio",
-      description: "Sound Engineer, Music Producer, Audio Editor"
-    },
-    {
-      id: 5,
-      name: "Graphic Design",
-      description: "Graphic design is the art of visual communication that combines images, typography, and creativity to deliver impactful messages."
-    },
-    {
-      id: 6,
-      name: "Remote Work",
-      description: "Customer Service Representative, Financial Analyst"
-    },
-    {
-      id: 7,
-      name: "Content Creator",
-      description: "A content writer creates clear, engaging, and informative text tailored to attract and inform a specific audience."
-    }
-  ]);
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [showAll, setShowAll] = useState(false);
-  const initialCategoriesCount = 3;
-  const displayedCategories = showAll ? categories : categories.slice(0, initialCategoriesCount);
+  
 
   const plans = [
     {
@@ -227,166 +194,65 @@ export default function OrderzHousePageRedesign() {
           </svg>
         </div>
 
-        {/* Professional tools Image */}
-        <div className="absolute right-10 top-1/2 transform -translate-y-1/2 z-10 hidden lg:block">
+          {/* Professional tools Image */}
+<div className="absolute right-20 top-1/2 transform -translate-y-1/2 -translate-x-8 z-10 hidden lg:block">
   <img 
     src={tools}
     alt="Freelance tools" 
-    className="w-[700px] h-auto"
+    className="w-[900px] h-auto animate__animated animate__lightSpeedInRight"
   />
 </div>
 
+{/* Hero Content */}
+<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left transform -translate-x-12 scale-105">
+  <div className="lg:w-2/3 animate__animated animate__lightSpeedInLeft">
+    <h1
+      className="text-6xl md:text-7xl font-bold"
+      style={{
+        fontFamily: "'Merriweather', serif",
+        background: "linear-gradient(90deg, #0072CE, #02C39A)", 
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+      }}
+    >
+      ORDERZ HOUSE
+    </h1>
 
-        {/* Hero Content */}
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left">
-          <div className="lg:w-2/3">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-gray-700">
-              Orderz House
-              <span className="block bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] bg-clip-text text-transparent mt-4">
-                
-              </span>
-            </h1>
-            
-            <div className="text-2xl md:text-3xl text-[#05668D] font-medium mb-8 italic">
-              Where work finds its perfect home.
-            </div>
-            
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mb-12 leading-relaxed">
-              Connect, create, and grow in a freelance ecosystem built for success.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-start">
-              <button
-                onClick={handleExploreTalent}
-                className="group px-10 py-5 bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] text-white font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-              >
-                <span className="flex items-center justify-center">
-                  Explore the talent pool
-                  <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-              
-              <button className="px-10 py-5 bg-white text-[#05668D] font-bold rounded-2xl border-2 border-[#02C39A] hover:bg-[#F0F3BD] hover:border-[#00A896] transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Post a New Project
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="text-base md:text-base text-[#ccdbdc] font-medium mb-6 italic">
+      Where work finds its perfect home.
+    </div>
+
+    <p
+      className="text-2xl md:text-3xl font-serif text-[#ccdbdc] max-w-3xl mb-12 leading-relaxed"
+      style={{ fontFamily: "'Merriweather', serif" }}
+    >
+      Connect, create, and grow in a freelance ecosystem built for success.
+    </p>
+
+    <div className="flex flex-col sm:flex-row gap-6 justify-start">
+      <button
+        onClick={handleExploreTalent}
+        className="group px-10 py-5 bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] text-white font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+      >
+        <span className="flex items-center justify-center">
+          Explore the talent pool
+          <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
+        </span>
+      </button>
+
+      <button className="px-10 py-5 bg-white text-[#05668D] font-bold rounded-2xl border-2 border-[#02C39A] hover:bg-[#F0F3BD] hover:border-[#00A896] transition-all duration-300 transform hover:scale-105 shadow-lg">
+        Post a New Project
+      </button>
+    </div>
+  </div>
+</div>
       </section>
 
-      {/* Logo Loop Section */}
-      <section className="py-16 bg-gradient-to-r from-[#F0F3BD]/20 to-[#02C39A]/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-2xl font-semibold text-[#05668D] mb-8">Trusted by leading companies worldwide</h3>
-          <div className="flex justify-center items-center space-x-12 opacity-60">
-            {['Company A', 'Company B', 'Company C', 'Company D', 'Company E'].map((company, index) => (
-              <div key={index} className="text-lg font-medium text-[#028090]">{company}</div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Categories Section with Modern Design */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 right-20 w-32 h-32 rounded-full bg-gradient-to-br from-[#02C39A]/10 to-[#F0F3BD]/20"></div>
-          <div className="absolute bottom-40 left-20 w-24 h-24 rounded-full bg-gradient-to-br from-[#05668D]/10 to-[#028090]/20"></div>
-        </div>
+      <section className="flipCardsSection mt-12">
+  <CategoriesFlipCards />
+</section>
 
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-[#05668D] mb-6">
-              Browse Our Categories
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explore our diverse range of professional categories to find the perfect services for your needs
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayedCategories.map((category, index) => (
-              <div
-                key={category.id}
-                className="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border-2 border-transparent hover:border-[#02C39A]/30 relative overflow-hidden transform hover:-translate-y-2"
-              >
-                {/* Gradient accent */}
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896]"></div>
-                
-                {/* Icon */}
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#02C39A]/20 to-[#F0F3BD]/40 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl font-bold text-[#05668D]">
-                    {category.name.charAt(0)}
-                  </span>
-                </div>
-                
-                <h3 className="text-xl font-bold text-[#05668D] mb-4 group-hover:text-[#028090] transition-colors">
-                  {category.name}
-                </h3>
-                
-                <p className="text-gray-600 leading-relaxed">
-                  {category.description}
-                </p>
-
-                {/* Hover effect overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#02C39A]/5 to-[#F0F3BD]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"></div>
-              </div>
-            ))}
-          </div>
-
-          {/* View All Button */}
-          {categories.length > initialCategoriesCount && (
-            <div className="text-center mt-12">
-              <button 
-                onClick={() => setShowAll(!showAll)}
-                className="bg-gradient-to-r from-[#05668D] to-[#028090] hover:from-[#028090] hover:to-[#00A896] text-white font-medium py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto"
-              >
-                {showAll ? 'Show Less Categories' : 'View All Categories'}
-                <ChevronRight className={`ml-2 h-5 w-5 transition-transform duration-300 ${showAll ? 'rotate-90' : ''}`} />
-              </button>
-            </div>
-          )}
-
-          {/* Stats Section */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20">
-            {[
-              { number: `${categories.length}+`, label: 'Categories' },
-              { number: '1000+', label: 'Services' },
-              { number: '98%', label: 'Satisfaction Rate' },
-              { number: '24/7', label: 'Support' }
-            ].map((stat, index) => (
-              <div key={index} className="text-center p-6 bg-white rounded-2xl shadow-lg border border-[#F0F3BD]/30">
-                <div className="text-3xl font-bold text-[#05668D] mb-2">{stat.number}</div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Role Selection Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#F0F3BD]/10 via-white to-[#02C39A]/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { icon: "👨‍💻", title: "Freelancer", description: "Apply for positions as a freelancer and take control of your career", color: "from-[#05668D] to-[#028090]" },
-              { icon: "👔", title: "Employer", description: "Hire key staff as an employer and build your dream team", color: "from-[#028090] to-[#00A896]" },
-              { icon: "👥", title: "Community", description: "Collaborate as a community and achieve more together", color: "from-[#00A896] to-[#02C39A]" }
-            ].map((role, index) => (
-              <div key={index} className="group text-center p-10 bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 border border-[#F0F3BD]/50">
-                <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">{role.icon}</div>
-                <h3 className="text-2xl font-bold mb-4 text-[#05668D]">{role.title}</h3>
-                <p className="text-gray-600 mb-8 leading-relaxed">
-                  {role.description}
-                </p>
-                <button className={`px-8 py-3 bg-gradient-to-r ${role.color} text-white rounded-full hover:shadow-lg transition-all duration-300 transform hover:scale-105 font-medium`}>
-                  Join as {role.title}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Pricing Plans with Modern Design */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-[#F0F3BD]/20">
@@ -538,157 +404,126 @@ export default function OrderzHousePageRedesign() {
         </div>
       </section>
 
-      {/* Mobile App Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#F0F3BD]/10 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1">
-              <h2 className="text-4xl md:text-5xl font-bold mb-8 text-[#05668D]">
-                Double Your Experience
-              </h2>
-              <p className="text-lg text-gray-600 mb-10 leading-relaxed">
-                OrderzHouse is a next-generation freelance platform designed to
-                bridge the gap between professional clients and talented
-                freelancers. It allows you to create projects, find a wide range
-                of expertise, manage tasks with flexibility, and communicate
-                securely and efficiently.
+      
+      
+      {/* Community Section*/}
+<section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  {/* Wave Background */}
+  <div className="absolute inset-0 overflow-hidden">
+    <svg
+      className="absolute inset-0 w-full h-full min-w-full min-h-full"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="communityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F0F3BD" stopOpacity="0.8" />
+          <stop offset="50%" stopColor="#F0F3BD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#F0F3BD" stopOpacity="0.4" />
+        </linearGradient>
+      </defs>
+
+      <path
+        fill="url(#communityGradient)"
+        d="M0,25 C20,15 35,18 50,16 C65,14 80,12 100,15 L100,70 C85,75 70,78 55,76 C40,74 25,78 10,75 C5,74 0,72 0,70 Z"
+      />
+      <path
+        fill="#F0F3BD"
+        fillOpacity="0.4"
+        d="M0,35 C15,30 30,33 45,31 C60,29 75,27 100,30 L100,60 C85,63 70,62 55,64 C40,66 25,63 10,65 C5,65.5 0,64 0,63 Z"
+      />
+      <path
+        fill="#F0F3BD"
+        fillOpacity="0.3"
+        d="M0,45 C20,40 40,43 60,41 C75,39 90,37 100,40 L100,85 C80,88 60,87 40,89 C25,90 10,88 0,85 Z"
+      />
+      <path
+        fill="#F0F3BD"
+        fillOpacity="0.2"
+        d="M0,55 C25,50 50,53 75,51 C85,50 95,49 100,50 L100,100 L0,100 Z"
+      />
+    </svg>
+  </div>
+
+ {/* Content Container */}
+<div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
+  <div className="flex items-center justify-center min-h-[600px]">
+    <div className="max-w-4xl text-center space-y-8 -mt-10">
+      {/* Heading & Description */}
+      <div className="-translate-y-4">
+        <h1
+          className="text-5xl md:text-6xl font-bold text-[#05668D] mb-6 leading-tight"
+          style={{ fontFamily: "Merriweather, serif" }}
+        >
+          Join Our <span className="block text-[#028090]">Community</span>
+        </h1>
+        <p
+          className="text-xl text-gray-700 leading-relaxed"
+          style={{ fontFamily: "Merriweather, serif" }}
+        >
+          Connect with talented professionals, collaborate on exciting projects, 
+          and build lasting relationships in our thriving freelance ecosystem.
+        </p>
+      </div>
+      {/* Services Section */}
+      <div className="mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto items-center">
+          {/* Freelancer & Client */}
+          <div className="text-left space-y-6 md:-translate-x-2">
+            {/* Freelancer */}
+            <div>
+              <div className="mb-4">
+                <Users className="w-12 h-12 text-[#02C39A]" />
+              </div>
+              <h3 className="text-2xl font-bold text-[#05668D] mb-4" style={{ fontFamily: "Merriweather, serif" }}>Freelancer</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed" style={{ fontFamily: "Merriweather, serif" }}>
+                Apply for positions as a freelancer and take control of your career
               </p>
-
-              <div className="space-y-6 mb-12">
-                <div className="flex items-start group">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#05668D]/20 to-[#028090]/30 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <Shield className="w-6 h-6 text-[#05668D]" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-[#05668D] mb-2">
-                      Full protection of your data and financial transactions
-                    </h4>
-                    <p className="text-gray-600">within the platform.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start group">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#028090]/20 to-[#00A896]/30 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <Users className="w-6 h-6 text-[#028090]" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-[#05668D] mb-2">
-                      Built-in messaging system for fast and seamless
-                    </h4>
-                    <p className="text-gray-600">communication.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start group">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00A896]/20 to-[#02C39A]/30 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <Award className="w-6 h-6 text-[#00A896]" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-[#05668D] mb-2">
-                      Smart dashboard for managing projects and proposals
-                    </h4>
-                    <p className="text-gray-600">effortlessly.</p>
-                  </div>
-                </div>
-              </div>
-
-              <button className="px-10 py-5 bg-gradient-to-r from-[#05668D] to-[#028090] text-white font-bold rounded-2xl hover:from-[#028090] hover:to-[#00A896] transition-all duration-300 flex items-center transform hover:scale-105 shadow-lg">
-                <Download className="w-6 h-6 mr-3" />
-                <span>Download Now</span>
-              </button>
             </div>
-
-            <div className="order-1 lg:order-2 flex justify-center">
-              <div className="relative">
-                <div className="w-80 h-96 bg-gradient-to-br from-[#05668D] to-[#028090] rounded-3xl p-4 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-6 bg-[#00A896] rounded-full"></div>
-                  <div className="h-full bg-white rounded-2xl flex items-center justify-center relative overflow-hidden">
-                    <div className="text-center p-8">
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#02C39A] to-[#F0F3BD] flex items-center justify-center mx-auto mb-6">
-                        <span className="text-2xl">📱</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-[#05668D] mb-2">OrderzHouse App</h3>
-                      <p className="text-gray-600 text-sm">Coming Soon</p>
-                    </div>
-                    
-                    {/* App interface mockup */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#F0F3BD]/10 to-transparent"></div>
-                  </div>
-                </div>
-                
-                {/* Floating elements */}
-                <div className="absolute -top-4 -right-4 w-8 h-8 rounded-full bg-[#02C39A] animate-bounce"></div>
-                <div className="absolute -bottom-4 -left-4 w-6 h-6 rounded-full bg-[#F0F3BD] animate-pulse"></div>
+            {/* Client */}
+            <div>
+              <div className="mb-4">
+                <Briefcase className="w-12 h-12 text-[#02C39A]" />
               </div>
+              <h3 className="text-2xl font-bold text-[#05668D] mb-4" style={{ fontFamily: "Merriweather, serif" }}>Client</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed" style={{ fontFamily: "Merriweather, serif" }}>
+                Order the project you need and build your dream team
+              </p>
+            </div>
+          </div>
+          {/* Center Image */}
+          <div className="lg:col-span-2 flex justify-center">
+            <img
+              src={communityImg}
+              alt="Community"
+              className="w-80 sm:w-[24rem] md:w-80 h-auto object-contain"
+            />
+          </div>
+          {/* Customer Success */}
+          <div className="text-left space-y-6 md:translate-x-2">
+            <div>
+              <div className="mb-4">
+                <Handshake className="w-12 h-12 text-[#02C39A]" />
+              </div>
+              <h3 className="text-2xl font-bold text-[#05668D] mb-4" style={{ fontFamily: "Merriweather, serif" }}>Customer Success</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed" style={{ fontFamily: "Merriweather, serif" }}>
+                Collaborate and achieve success together
+              </p>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</div>
 
-      {/* Top Freelancers */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-[#F0F3BD]/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-[#05668D] mb-6">
-              Top Freelancers
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Within the top 1%, discover elite talent meticulously vetted to
-              uphold the highest standards, ensuring excellence and unparalleled
-              expertise.
-            </p>
-          </div>
+  {/* Floating decorative elements */}
+  <div className="absolute top-20 right-20 w-4 h-4 rounded-full bg-[#02C39A] animate-bounce opacity-60"></div>
+  <div className="absolute top-40 right-32 w-3 h-3 rounded-full bg-[#00A896] animate-pulse opacity-40"></div>
+  <div className="absolute bottom-32 left-16 w-5 h-5 rounded-full bg-[#028090] animate-bounce opacity-50" style={{ animationDelay: '1s' }}></div>
+  <div className="absolute bottom-20 left-32 w-2 h-2 rounded-full bg-[#05668D] animate-pulse opacity-30" style={{ animationDelay: '2s' }}></div>
+</section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {topFreelancers.map((freelancer, index) => (
-              <div key={index} className="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#F0F3BD]/50 hover:border-[#02C39A]/50 transform hover:-translate-y-2">
-                <div className="flex items-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#02C39A]/20 to-[#F0F3BD]/40 rounded-2xl flex items-center justify-center text-2xl mr-4 group-hover:scale-110 transition-transform duration-300">
-                    {freelancer.image}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#05668D] group-hover:text-[#028090] transition-colors">{freelancer.name}</h3>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Star className="w-4 h-4 text-[#F0F3BD] mr-1" />
-                      <span>{freelancer.rating}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {freelancer.views}
-                    </div>
-                  </div>
-                </div>
-
-                {freelancer.rate && (
-                  <div className="mb-4">
-                    <span className="font-bold text-[#02C39A] text-lg">
-                      {freelancer.rate}
-                    </span>
-                  </div>
-                )}
-
-                {freelancer.location && (
-                  <div className="mb-6">
-                    <span className="text-sm text-gray-500">
-                      📍 {freelancer.location}
-                    </span>
-                  </div>
-                )}
-
-                <div className="bg-gradient-to-r from-[#02C39A]/20 to-[#F0F3BD]/30 text-[#05668D] text-sm font-medium px-4 py-2 rounded-full inline-block mb-6">
-                  {freelancer.category}
-                </div>
-
-                <button
-                  onClick={() => handleViewProfile(index + 1)}
-                  className="w-full py-3 bg-gradient-to-r from-[#05668D] to-[#028090] text-white font-medium rounded-2xl hover:from-[#028090] hover:to-[#00A896] transition-all duration-300 transform hover:scale-105"
-                >
-                  View Profile
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 relative">

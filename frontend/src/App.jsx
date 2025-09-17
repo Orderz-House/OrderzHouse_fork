@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
+import "animate.css";
 import Counter from "./counter/Counter";
 import Navbar from "./components/navbar/Nav";
 import EnhancedFooter from "./components/footer/Footer";
@@ -132,7 +133,6 @@ function App() {
             </ProtectedRoute>
           }
         />
->>>>>>> main
 
         <Route
           path="/dashoard/projects"
