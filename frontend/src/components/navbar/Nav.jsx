@@ -12,53 +12,39 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { setLogout } from "../../slice/auth/authSlice";
+import { setLogout, setUserData } from "../../slice/auth/authSlice";
 import axios from "axios";
-import { setUserData } from "../../slice/auth/authSlice";
 import Cookies from "js-cookie";
-import { io } from "socket.io-client";
 import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.webp";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isServicesOpen, setIsServicesOpen] = useState(false);
-  const [isContactOpen, setIsContactOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState("HOME");
   const [IsAuthenticated, setIsAuthenticated] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const servicesRef = useRef(null);
-  const contactRef = useRef(null);
+  
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+  
   const dispatch = useDispatch();
-  const { token, userData } = useSelector((state) => {
-    return {
-      token: state.auth.token,
-      userData: state.auth.userData,
-    };
-  });
+  const { token, userData } = useSelector((state) => ({
+    token: state.auth.token,
+    userData: state.auth.userData,
+  }));
   const navigate = useNavigate();
 
-  // Fetch notifications
+  // API functions
   const fetchNotifications = async () => {
     if (!token) return;
-
     try {
       const response = await axios.get("http://localhost:5000/notifications", {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-        params: {
-          limit: 10,
-          unreadOnly: false,
-        },
+        headers: { authorization: `Bearer ${token}` },
+        params: { limit: 10, unreadOnly: false },
       });
-
       if (response.data.success) {
         setNotifications(response.data.notifications);
       }
@@ -67,23 +53,13 @@ export default function EnhancedNavbar() {
     }
   };
 
-  // Fetch unread count
   const fetchUnreadCount = async () => {
     if (!token) return;
-
     try {
-      const response = await axios.get(
-        "http://localhost:5000/notifications/count",
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-          params: {
-            unreadOnly: true,
-          },
-        }
-      );
-
+      const response = await axios.get("http://localhost:5000/notifications/count", {
+        headers: { authorization: `Bearer ${token}` },
+        params: { unreadOnly: true },
+      });
       if (response.data.success) {
         setUnreadCount(response.data.count);
       }
@@ -92,20 +68,13 @@ export default function EnhancedNavbar() {
     }
   };
 
-  // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
       await axios.put(
         `http://localhost:5000/notifications/${notificationId}/read`,
         {},
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { authorization: `Bearer ${token}` } }
       );
-
-      // Update local state
       setNotifications(
         notifications.map((notif) =>
           notif.id === notificationId ? { ...notif, is_read: true } : notif
@@ -117,30 +86,21 @@ export default function EnhancedNavbar() {
     }
   };
 
-  // Mark all as read
   const markAllAsRead = async () => {
     try {
       await axios.put(
         "http://localhost:5000/notifications/read-all",
         {},
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { authorization: `Bearer ${token}` } }
       );
-
-      // Update local state
-      setNotifications(
-        notifications.map((notif) => ({ ...notif, is_read: true }))
-      );
+      setNotifications(notifications.map((notif) => ({ ...notif, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
   };
 
-  // Handle user logout
+  // Event handlers
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
@@ -154,29 +114,21 @@ export default function EnhancedNavbar() {
     navigate(path);
   };
 
-  const handleLogin = () => {
-    navigate("/login");
-  };
+  const handleLogin = () => navigate("/login");
+  const handleRegister = () => navigate("/register");
 
-  const handleRegister = () => {
-    navigate("/register");
-  };
-
+  // Effects
   useEffect(() => {
     if (!token) return;
 
     axios
       .get(`http://localhost:5000/users/getUserdata`, {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
+        headers: { authorization: `Bearer ${token}` },
       })
       .then((res) => {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
         setIsAuthenticated(true);
-
-        // Fetch notifications after authentication
         fetchNotifications();
         fetchUnreadCount();
       })
@@ -186,22 +138,12 @@ export default function EnhancedNavbar() {
       });
   }, [dispatch, token]);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (servicesRef.current && !servicesRef.current.contains(event.target)) {
-        setIsServicesOpen(false);
-      }
-      if (contactRef.current && !contactRef.current.contains(event.target)) {
-        setIsContactOpen(false);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target)
-      ) {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setIsNotificationsOpen(false);
       }
     };
@@ -210,7 +152,7 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // NAVBAR LINKS
+  // Navigation links
   const navLinks = [
     { label: "HOME", path: "/" },
     { label: "ABOUT US", path: "/about" },
@@ -219,16 +161,11 @@ export default function EnhancedNavbar() {
   ];
 
   return (
-    <nav
-      className={`top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-white/95 backdrop-blur-md shadow-lg"
-          : "bg-white shadow-sm"
-      }`}
-    >
+    <nav className="relative top-0 left-0 right-0 z-[9999] bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo - Positioned at the left */}
+          
+          {/* Logo */}
           <div className="flex items-center">
             <button
               onClick={() => handleNavigation("/", "HOME")}
@@ -242,7 +179,7 @@ export default function EnhancedNavbar() {
             </button>
           </div>
 
-          {/* Desktop Navigation - Centered */}
+          {/* Desktop Navigation */}
           <div className="hidden lg:block flex-1">
             <div className="flex items-center justify-center space-x-1">
               {navLinks.map((item) => (
@@ -250,50 +187,36 @@ export default function EnhancedNavbar() {
                   key={item.label}
                   onClick={() => handleNavigation(item.path, item.label)}
                   className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                    activeLink === item.label
-                      ? "text-[#028090]"
-                      : "text-gray-700"
+                    activeLink === item.label ? "text-[#028090]" : "text-gray-700"
                   }`}
                 >
                   {item.label}
-                  {/* Animated underline */}
                   <span 
                     className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                      activeLink === item.label 
-                        ? "w-full" 
-                        : "w-0 group-hover:w-full"
+                      activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"
                     }`}
                   ></span>
-                  {/* Hover text color change */}
                   <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     {item.label}
                   </span>
                 </button>
               ))}
 
-              {/* Admin Verification link for role_id 1 */}
+              {/* Admin links */}
               {userData?.role_id === 1 && (
                 <>
                   <button
-                    onClick={() =>
-                      handleNavigation("/admin-verification", "VERIFICATION")
-                    }
+                    onClick={() => handleNavigation("/admin-verification", "VERIFICATION")}
                     className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                      activeLink === "VERIFICATION"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                      activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
                     VERIFICATION
-                    {/* Animated underline */}
                     <span 
                       className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "VERIFICATION" 
-                          ? "w-full" 
-                          : "w-0 group-hover:w-full"
+                        activeLink === "VERIFICATION" ? "w-full" : "w-0 group-hover:w-full"
                       }`}
                     ></span>
-                    {/* Hover text color change */}
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       VERIFICATION
                     </span>
@@ -304,21 +227,15 @@ export default function EnhancedNavbar() {
                       setIsMobileMenuOpen(false);
                     }}
                     className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                      activeLink === "NEWS PENDING"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                      activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
                     NEWS PENDING
-                    {/* Animated underline */}
                     <span 
                       className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "NEWS PENDING" 
-                          ? "w-full" 
-                          : "w-0 group-hover:w-full"
+                        activeLink === "NEWS PENDING" ? "w-full" : "w-0 group-hover:w-full"
                       }`}
                     ></span>
-                    {/* Hover text color change */}
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       NEWS PENDING
                     </span>
@@ -328,15 +245,15 @@ export default function EnhancedNavbar() {
             </div>
           </div>
 
-          {/* Actions - Positioned at the right */}
+          {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Notifications - Only show when authenticated */}
+            {/* Notifications */}
             {IsAuthenticated && (
               <div className="relative" ref={notificationsRef}>
                 <button
                   onClick={() => {
                     setIsNotificationsOpen(!isNotificationsOpen);
-                    fetchNotifications(); // Refresh notifications when opening
+                    fetchNotifications();
                   }}
                   className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
                   aria-label="Notifications"
@@ -349,12 +266,11 @@ export default function EnhancedNavbar() {
                   )}
                 </button>
 
+                {/* Notifications Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                      <h3 className="font-semibold text-gray-900 font-inter">
-                        Notifications
-                      </h3>
+                      <h3 className="font-semibold text-gray-900 font-inter">Notifications</h3>
                       {unreadCount > 0 && (
                         <button
                           onClick={markAllAsRead}
@@ -385,9 +301,7 @@ export default function EnhancedNavbar() {
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2 font-inter">
-                                    {new Date(
-                                      notification.created_at
-                                    ).toLocaleDateString()}
+                                    {new Date(notification.created_at).toLocaleDateString()}
                                   </p>
                                 </div>
                                 {!notification.is_read && (
@@ -400,9 +314,7 @@ export default function EnhancedNavbar() {
                       ) : (
                         <div className="p-8 text-center">
                           <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 text-sm font-inter">
-                            No notifications yet
-                          </p>
+                          <p className="text-gray-500 text-sm font-inter">No notifications yet</p>
                         </div>
                       )}
                     </div>
@@ -438,6 +350,8 @@ export default function EnhancedNavbar() {
                     }`}
                   />
                 </button>
+                
+                {/* User Menu Dropdown */}
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100">
@@ -503,7 +417,6 @@ export default function EnhancedNavbar() {
                 )}
               </div>
             ) : (
-              /* CTA Buttons - Updated styling with smoother shapes */
               <div className="flex items-center space-x-3">
                 <button
                   onClick={handleLogin}
@@ -543,18 +456,14 @@ export default function EnhancedNavbar() {
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Notifications */}
         {isNotificationsOpen && IsAuthenticated && (
-          <div className="md:hidden bg-white">
+          <div className="md:hidden bg-white border-t border-gray-100">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-semibold text-gray-900 font-inter">Notifications</h3>
               {unreadCount > 0 && (
@@ -587,9 +496,7 @@ export default function EnhancedNavbar() {
                             {notification.message}
                           </p>
                           <p className="text-xs text-gray-400 mt-2 font-inter">
-                            {new Date(
-                              notification.created_at
-                            ).toLocaleDateString()}
+                            {new Date(notification.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         {!notification.is_read && (
@@ -619,14 +526,17 @@ export default function EnhancedNavbar() {
           </div>
         )}
 
-        {/* Enhanced Mobile Menu */}
+        {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 backdrop-blur-md">
+          <div className="lg:hidden border-t border-gray-100">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
               {navLinks.map((item) => (
                 <button
                   key={item.label}
-                  onClick={() => handleNavigation(item.path, item.label)}
+                  onClick={() => {
+                    handleNavigation(item.path, item.label);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
                     activeLink === item.label
                       ? "text-[#028090] bg-gray-50"
@@ -637,7 +547,7 @@ export default function EnhancedNavbar() {
                 </button>
               ))}
 
-              {/* VERIFICATION button for role_id === 1 */}
+              {/* Admin mobile links */}
               {userData?.role_id === 1 && (
                 <>
                   <button
@@ -661,8 +571,9 @@ export default function EnhancedNavbar() {
                 </>
               )}
             </div>
+
             {/* Mobile Auth Section */}
-            <div className="pt-4 space-y-3">
+            <div className="pt-4 space-y-3 px-2 pb-4 border-t border-gray-100">
               {IsAuthenticated ? (
                 <>
                   <div className="px-4 py-2">
@@ -686,16 +597,14 @@ export default function EnhancedNavbar() {
                       </span>
                     )}
                   </Link>
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      console.log("Navigate to profile");
-                    }}
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="w-full text-left px-4 py-3 text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Profile Settings</span>
-                  </button>
+                  </Link>
                   <button
                     onClick={() => {
                       handleLogout();
