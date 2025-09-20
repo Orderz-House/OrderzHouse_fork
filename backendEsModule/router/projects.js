@@ -1,35 +1,87 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createProject, getMyProjects, assignProject, listUsersByRole, getRelatedFreelancers, getCategories, getSubCategories, getProjectById, updateAssignmentStatus, getAllProjectForOffer, sendOffer, approveOrRejectOffer, getProjectCompletion, submitWorkCompletion, releasePayment, getAllProjectForFreelancerById, uploadProjectFile, getProjectFiles, getCountProjectFreelancer, quitProject } from "../controller/projects.js";
-import {requireVerified} from "../middleware/requireVerification.js";
+import { requireVerified } from "../middleware/requireVerification.js";
+import {
+  createProject,
+  getMyProjects,
+  assignProject,
+  listUsersByRole,
+  getRelatedFreelancers,
+  getCategories,
+  getSubCategories,
+  getProjectById,
+  updateAssignmentStatus,
+  getAllProjectForOffer,
+  sendOffer,
+  approveOrRejectOffer,
+  getProjectCompletion,
+  submitWorkCompletion,
+  releasePayment,
+  getAllProjectForFreelancerById,
+  uploadProjectFile,
+  getProjectFiles,
+  getCountProjectFreelancer,
+  quitProject
+} from "../controller/projects.js";
+
 const projectsRouter = express.Router();
 
+// Create a project
 projectsRouter.post("/", authentication, requireVerified, createProject);
+
+// Get all available projects for offers
 projectsRouter.get("/offers/available", authentication, requireVerified, getAllProjectForOffer);
+
+// Get projects created by the authenticated user
 projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
+
+// Get project by ID
 projectsRouter.get("/:projectId", authentication, requireVerified, getProjectById);
+
+// Get all projects for a specific freelancer
 projectsRouter.get("/freelancer/projects/:freelancerId", getAllProjectForFreelancerById);
-projectsRouter.post(`/:projectId/offers`, authentication, requireVerified, sendOffer)
+
+// Send an offer
+projectsRouter.post("/:projectId/offers", authentication, requireVerified, sendOffer);
+
+// Assign a freelancer to a project
 projectsRouter.post("/:projectId/assign", authentication, requireVerified, assignProject);
+
+// Get related freelancers for a project
 projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
+
+// Update assignment status
 projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
-projectsRouter.post('/offer/action', authentication, requireVerified, approveOrRejectOffer);
-projectsRouter.get('/:projectId/completion', authentication , requireVerified, getProjectCompletion);
-projectsRouter.post(`/:projectId/quit`, authentication, requireVerified, quitProject);
-//router.post("/:projectId/files", upload.single("file"), uploadProjectFile);
-// جلب جميع الملفات
+
+// Approve or reject an offer
+projectsRouter.post("/offer/action", authentication, requireVerified, approveOrRejectOffer);
+
+// Get project completion details
+projectsRouter.get("/:projectId/completion", authentication, requireVerified, getProjectCompletion);
+
+// Quit project (freelancer)
+projectsRouter.post("/:projectId/quit", authentication, requireVerified, quitProject);
+
+// Upload project file (uncomment if using multer for file uploads)
+// projectsRouter.post("/:projectId/files", upload.single("file"), uploadProjectFile);
+
+// Get all project files
 projectsRouter.get("/:projectId/files", getProjectFiles);
 
-projectsRouter.post('/:projectId/complete',authentication, submitWorkCompletion);
-projectsRouter.post('/:projectId/release-payment/:freelancerId', authentication, requireVerified, releasePayment)
+// Submit work completion request
+projectsRouter.post("/:projectId/complete", authentication, submitWorkCompletion);
 
-// public listing
+// Release payment for completed work
+projectsRouter.post("/:projectId/release-payment/:freelancerId", authentication, requireVerified, releasePayment);
+
+// Public endpoints
 projectsRouter.get("/public/categories", getCategories);
 projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
 
-// helper: list users by role id (e.g., 2 = employee, 3 = freelancer)
+// Helper: list users by role
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
 
-projectsRouter.get('/freelancer/:freelancer_id/counts', authentication, getCountProjectFreelancer);
+// Get project counts for a freelancer
+projectsRouter.get("/freelancer/:freelancer_id/counts", authentication, getCountProjectFreelancer);
 
 export default projectsRouter;

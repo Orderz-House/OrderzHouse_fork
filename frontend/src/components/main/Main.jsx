@@ -249,56 +249,87 @@ export default function OrderzHousePageRedesign() {
             </div>
           </div>
         </div>
-
-        {/* Right Side - Image Grid */}
+{/* Right Side - Image Grid */}
 <div className="hidden lg:block">
   <div className="grid grid-cols-2 gap-4 max-w-md ml-auto">
 
-    {/* Row 1 - top images fade from top */}
-    <div className="relative">
-      <img src={graphicDesignImg} alt="Creative work example" className="w-full h-48 object-cover rounded-2xl shadow-lg"/>
-      {/* Top fade only for first row */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-transparent rounded-2xl"></div>
-    </div>
-    <div className="relative">
-      <img src={contentWritingImg} alt="Design showcase" className="w-full h-48 object-cover rounded-2xl shadow-lg"/>
-      <div className="absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-transparent rounded-2xl"></div>
-    </div>
+   {/* Row 1 - TOP fade (stronger) */}
+<div className="relative">
+  <img
+    src={graphicDesignImg}
+    alt="Creative work example"
+    className="w-full h-48 object-cover rounded-2xl shadow-lg"
+  />
+  {/* Stronger white fade from top */}
+  <div className="absolute inset-0 rounded-2xl pointer-events-none
+                  bg-gradient-to-b from-white/90 via-white/30 to-transparent">
+  </div>
+</div>
 
-    {/* Row 2 - large image (no fade or optional top fade) */}
+<div className="relative">
+  <img
+    src={contentWritingImg}
+    alt="Design showcase"
+    className="w-full h-48 object-cover rounded-2xl shadow-lg"
+  />
+  <div className="absolute inset-0 rounded-2xl pointer-events-none
+                  bg-gradient-to-b from-white/90 via-white/30 to-transparent">
+  </div>
+</div>
+
+    {/* Row 2 - middle large image (optional top fade) */}
     <div className="col-span-2 relative">
-      <img src={programmingImg} alt="Professional portfolio" className="w-full h-56 object-cover rounded-2xl shadow-lg"/>
-      {/* Optional: subtle top fade */}
+      <img src={programmingImg} alt="Professional portfolio"
+           className="w-full h-56 object-cover rounded-2xl shadow-lg"/>
       <div className="absolute inset-0 bg-gradient-to-t from-white/20 via-transparent to-transparent rounded-2xl"></div>
     </div>
 
-    {/* Row 3 - middle row fade from bottom */}
+    {/* Row 3 - mid row fade from BOTTOM */}
     <div className="relative">
-      <img src={photographyImg} alt="Creative project" className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
+      <img src={photographyImg} alt="Creative project"
+           className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
       <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent rounded-2xl"></div>
     </div>
     <div className="relative">
-      <img src={voiceAudioImg} alt="Work example" className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
+      <img src={voiceAudioImg} alt="Work example"
+           className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
       <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent rounded-2xl"></div>
     </div>
 
-    {/* Row 4 - bottom large image fade from bottom */}
+    {/* Row 4 - large bottom image fade BOTTOM */}
     <div className="col-span-2 relative">
-      <img src={newImg1} alt="New example 1" className="w-full h-56 object-cover rounded-2xl shadow-lg"/>
+      <img src={newImg1} alt="New example 1"
+           className="w-full h-56 object-cover rounded-2xl shadow-lg"/>
       <div className="absolute inset-0 bg-gradient-to-b from-white/50 via-transparent to-transparent rounded-2xl"></div>
     </div>
 
-    {/* Row 5 - two small bottom images fade from bottom */}
-    <div className="relative">
-      <img src={newImg2} alt="New example 2" className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
-      <div className="absolute inset-0 bg-gradient-to-b from-white/50 via-transparent to-transparent rounded-2xl"></div>
-    </div>
-    <div className="relative">
-      <img src={newImg3} alt="New example 3" className="w-full h-40 object-cover rounded-2xl shadow-lg"/>
-      <div className="absolute inset-0 bg-gradient-to-b from-white/50 via-transparent to-transparent rounded-2xl"></div>
-    </div>
+    {/* Row 5 - small bottom images fade BOTTOM */}
+{/* Row 5 - small bottom images fade from BOTTOM (stronger) */}
+<div className="relative">
+  <img
+    src={newImg2}
+    alt="New example 2"
+    className="w-full h-40 object-cover rounded-2xl shadow-lg"
+  />
+  {/* Strong white fade rising from bottom */}
+  <div className="absolute inset-0 rounded-2xl pointer-events-none
+                  bg-gradient-to-t from-white/90 via-white/30 to-transparent">
+  </div>
+</div>
+
+<div className="relative">
+  <img
+    src={newImg3}
+    alt="New example 3"
+    className="w-full h-40 object-cover rounded-2xl shadow-lg"
+  />
+  <div className="absolute inset-0 rounded-2xl pointer-events-none
+                  bg-gradient-to-t from-white/90 via-white/30 to-transparent">
+  </div>
+</div>
 
   </div>
+
 
         </div>
 

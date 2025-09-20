@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Search, Filter, Eye, Users, DollarSign, Clock, FileText, 
-  AlertCircle, CheckCircle, XCircle, Upload 
+  AlertCircle, CheckCircle, XCircle
 } from 'lucide-react';
 
 const AdminProjectsDashboard = () => {
@@ -13,12 +13,12 @@ const AdminProjectsDashboard = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({
     total: 0,
     available: 0,
     inProgress: 0,
     completed: 0,
+    cancelled: 0,
     totalBudget: 0
   });
 
@@ -26,10 +26,11 @@ const AdminProjectsDashboard = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('http://localhost:5000/projects');
-      setProjects(data);
-      setFilteredProjects(data);
-      calculateStats(data);
+      const { data } = await axios.get('http://localhost:5000/projects/admin/all-projects');
+      const projectList = data.projects || [];
+      setProjects(projectList);
+      setFilteredProjects(projectList);
+      calculateStats(projectList);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -37,25 +38,29 @@ const AdminProjectsDashboard = () => {
     }
   };
 
-  // Fetch categories from API
-  const fetchCategories = async () => {
+  // Fetch stats from API
+  const fetchStats = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/categories'); // adjust endpoint if needed
-      setCategories(data);
+      const { data } = await axios.get('http://localhost:5000/projects/admin/stats');
+      const statsData = data.stats || {};
+      setStats(prev => ({
+        ...prev,
+        available: parseInt(statsData.available_projects || 0),
+        inProgress: parseInt(statsData.in_progress_projects || 0),
+        completed: parseInt(statsData.completed_projects || 0),
+        cancelled: parseInt(statsData.cancelled_projects || 0)
+      }));
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Error fetching stats:', error);
     }
   };
 
   const calculateStats = (projectList) => {
-    const stats = {
+    const calculated = {
       total: projectList.length,
-      available: projectList.filter(p => p.status === 'available').length,
-      inProgress: projectList.filter(p => p.status === 'in_progress').length,
-      completed: projectList.filter(p => p.status === 'completed').length,
       totalBudget: projectList.reduce((sum, p) => sum + (p.budget_max || 0), 0)
     };
-    setStats(stats);
+    setStats(prev => ({ ...prev, ...calculated }));
   };
 
   const filterProjects = () => {
@@ -77,7 +82,7 @@ const AdminProjectsDashboard = () => {
 
   useEffect(() => {
     fetchProjects();
-    fetchCategories();
+    fetchStats();
   }, []);
 
   useEffect(() => {
@@ -86,23 +91,14 @@ const AdminProjectsDashboard = () => {
 
   const handleUpdateProjectStatus = async (projectId, newStatus) => {
     try {
-      await axios.patch(`http://localhost:5000/projects/${projectId}`, { status: newStatus });
+      await axios.put(`http://localhost:5000/projects/admin/project/${projectId}/status`, { status: newStatus });
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
     } catch (error) {
       console.error('Error updating project status:', error);
     }
   };
 
-  const handleReleasePayment = async (projectId, freelancerId) => {
-    try {
-      await axios.post(`http://localhost:5000/projects/${projectId}/release`, { freelancerId });
-      console.log(`Released payment for project ${projectId}, freelancer ${freelancerId}`);
-    } catch (error) {
-      console.error('Error releasing payment:', error);
-    }
-  };
-
-  // Project card component
+  // Project card
   const ProjectCard = ({ project }) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
@@ -141,16 +137,6 @@ const AdminProjectsDashboard = () => {
           </button>
         </div>
       </div>
-      {project.in_escrow > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-yellow-800">Escrow: ${project.in_escrow}</span>
-            {project.to_be_released > 0 && (
-              <span className="text-sm text-green-800">Ready to release: ${project.to_be_released}</span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -181,7 +167,6 @@ const AdminProjectsDashboard = () => {
             ))}
           </div>
 
-          {/* Overview tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>
@@ -212,9 +197,6 @@ const AdminProjectsDashboard = () => {
               </div>
             </div>
           )}
-
-          {/* Other tabs: assignments, offers, payments, files */}
-          {/* Keep the previous logic as it is */}
         </div>
       </div>
     </div>
@@ -252,7 +234,7 @@ const AdminProjectsDashboard = () => {
         <StatsCard title="Total Projects" value={stats.total} icon={FileText} color="text-blue-600" />
         <StatsCard title="Available" value={stats.available} icon={CheckCircle} color="text-green-600" />
         <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} color="text-yellow-600" />
-        <StatsCard title="Total Budget" value={`$${stats.totalBudget.toLocaleString()}`} icon={DollarSign} color="text-purple-600" />
+        <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} color="text-green-600" />
       </div>
 
       {/* Filters */}

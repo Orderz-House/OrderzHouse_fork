@@ -48,8 +48,10 @@ import uploadRouter from "./router/upload.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
+import earningsRouter from "./router/earning.js"
 
 app.use("/admins", adminRouter);
+app.use("/earnings" , earningsRouter)
 app.use("/api/analytics", analyticsRoutes);
 app.use("/news", newsRouter);
 app.use("/upload", uploadRouter);

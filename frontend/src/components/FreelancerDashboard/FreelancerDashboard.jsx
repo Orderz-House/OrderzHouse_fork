@@ -43,18 +43,60 @@ const Dashboard = () => {
     availableInAccount: 0,
     completedProjects: 0,
     ongoingProjects: 0,
-    cancelledProjects: 0,
-    tasksSold: 0,
-    ongoingTasks: 0,
-    cancelledTasks: 0
+    cancelledProjects: 0
   });
   
   const [earningHistory, setEarningHistory] = useState([]);
-  const [payoutsHistory, setPayoutsHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [withdrawFilter, setWithdrawFilter] = useState("all");
   const [activeSection, setActiveSection] = useState("dashboard");
   const [error, setError] = useState(null);
+  
+  // Fetch earnings summary
+  const fetchEarningsSummary = async () => {
+    if (!token || !userData?.id) return;
+    
+    try {
+      const response = await axios.get(`http://localhost:5000/earnings/freelancer/${userData.id}/summary`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        }
+      });
+      
+      if (response.data.success) {
+        const summary = response.data.summary;
+        setDashboardData(prev => ({
+          ...prev,
+          totalIncome: summary.totalIncome || 0,
+          pendingIncome: summary.pendingIncome || 0,
+          availableInAccount: summary.availableInAccount || 0,
+          withdrawRequested: summary.withdrawRequested || 0
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching earnings summary:", error);
+      setError("Failed to load earnings data");
+    }
+  };
+
+  // Fetch earnings history
+  const fetchEarningsHistory = async () => {
+    if (!token || !userData?.id) return;
+    
+    try {
+      const response = await axios.get(`http://localhost:5000/earnings/freelancer/${userData.id}/history`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        }
+      });
+      
+      if (response.data.success) {
+        setEarningHistory(response.data.earningsHistory || []);
+      }
+    } catch (error) {
+      console.error("Error fetching earnings history:", error);
+      // Don't set error here as it's secondary data
+    }
+  };
   
   // Fetch project counts based on status
   const fetchProjectCounts = async () => {
@@ -72,8 +114,8 @@ const Dashboard = () => {
         setDashboardData(prev => ({
           ...prev,
           ongoingProjects: counts.active || 0,
-          completedProjects: counts.quit || 0,
-          cancelledProjects: (counts.kicked || 0) + (counts.banned || 0)
+          completedProjects: counts.completed || 0,
+          cancelledProjects: (counts.kicked || 0) + (counts.banned || 0) + (counts.quit || 0)
         }));
       }
     } catch (error) {
@@ -82,43 +124,18 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch dashboard data
+  // Fetch all dashboard data
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch project counts
-      await fetchProjectCounts();
-      
-      // In a real app, you would fetch other data from your API
-      const mockData = {
-        totalIncome: 12500.75,
-        withdrawRequested: 3200.00,
-        pendingIncome: 1850.50,
-        availableInAccount: 5600.25,
-        tasksSold: 8,
-        ongoingTasks: 2,
-        cancelledTasks: 0
-      };
-      
-      const mockEarningHistory = [
-        { id: 1, date: "2023-10-15", project: "Website Redesign", amount: 2500.00 },
-        { id: 2, date: "2023-10-10", project: "Mobile App Development", amount: 4500.00 },
-        { id: 3, date: "2023-10-05", project: "Logo Design", amount: 800.00 },
-        { id: 4, date: "2023-10-01", project: "SEO Optimization", amount: 1200.00 },
-        { id: 5, date: "2023-09-25", project: "Content Writing", amount: 500.00 }
-      ];
-      
-      const mockPayoutsHistory = [
-        { id: 1, ref: "REF12345", status: "Completed", method: "PayPal", date: "2023-10-10", amount: 2000.00 },
-        { id: 2, ref: "REF12346", status: "Processing", method: "Bank Transfer", date: "2023-10-05", amount: 1200.00 },
-        { id: 3, ref: "REF12347", status: "Completed", method: "PayPal", date: "2023-09-28", amount: 1800.00 }
-      ];
-      
-      setDashboardData(prev => ({ ...prev, ...mockData }));
-      setEarningHistory(mockEarningHistory);
-      setPayoutsHistory(mockPayoutsHistory);
+      // Fetch all data in parallel
+      await Promise.all([
+        fetchEarningsSummary(),
+        fetchEarningsHistory(),
+        fetchProjectCounts()
+      ]);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setError("Failed to load dashboard data");
@@ -133,9 +150,9 @@ const Dashboard = () => {
     fetchDashboardData();
   };
   
-  // Handle withdraw action
+  // Handle withdraw action (placeholder since no withdrawal system exists)
   const handleWithdraw = () => {
-    alert("Withdraw functionality would be implemented here");
+    alert("Withdrawal system will be implemented in a future update");
   };
   
   // Navigation functions
@@ -232,30 +249,6 @@ const Dashboard = () => {
     </div>
   );
 
-  // Status badge component
-  const StatusBadge = ({ status }) => {
-    const getStatusConfig = (status) => {
-      switch (status) {
-        case 'Completed':
-          return { bg: 'bg-green-100', text: 'text-green-800' };
-        case 'Processing':
-          return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
-        case 'Pending':
-          return { bg: 'bg-gray-100', text: 'text-gray-800' };
-        default:
-          return { bg: 'bg-gray-100', text: 'text-gray-800' };
-      }
-    };
-    
-    const config = getStatusConfig(status);
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-        {status}
-      </span>
-    );
-  };
-
   // Skeleton loader component
   const SkeletonLoader = () => (
     <div className="animate-pulse">
@@ -268,8 +261,8 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 h-32">
             <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -328,9 +321,7 @@ const Dashboard = () => {
                     title="Withdraw requested"
                     value={dashboardData.withdrawRequested}
                     icon={<CreditCard className="w-6 h-6 text-blue-600" />}
-                    action="Show all invoices"
-                    actionIcon={<ArrowUpRight className="w-4 h-4 ml-1" />}
-                    onAction={() => alert("Show invoices")}
+                    subtitle="No withdrawal system yet"
                     loading={isLoading}
                   />
                   
@@ -338,6 +329,7 @@ const Dashboard = () => {
                     title="Pending income"
                     value={dashboardData.pendingIncome}
                     icon={<Clock className="w-6 h-6 text-blue-600" />}
+                    subtitle="Funds held in escrow"
                     action="Refresh"
                     actionIcon={<RefreshCw className="w-4 h-4 ml-1" />}
                     onAction={handleRefresh}
@@ -348,7 +340,8 @@ const Dashboard = () => {
                     title="Available in account"
                     value={dashboardData.availableInAccount}
                     icon={<TrendingUp className="w-6 h-6 text-blue-600" />}
-                    action="Withdraw now"
+                    subtitle="Wallet balance"
+                    action="Withdraw (Coming Soon)"
                     actionIcon={<ArrowUpRight className="w-4 h-4 ml-1" />}
                     onAction={handleWithdraw}
                     loading={isLoading}
@@ -356,7 +349,7 @@ const Dashboard = () => {
                 </div>
                 
                 {/* Counts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   <CountCard
                     title="Completed projects"
                     count={dashboardData.completedProjects}
@@ -383,24 +376,18 @@ const Dashboard = () => {
                     onAction={navigateToProjects}
                     loading={isLoading}
                   />
-                  
-                  <CountCard
-                    title="Tasks sold"
-                    count={dashboardData.tasksSold}
-                    icon={<FileText className="w-6 h-6 text-blue-600" />}
-                    action="View"
-                    onAction={navigateToTasks}
-                    loading={isLoading}
-                  />
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Earning History */}
                   <div className="lg:col-span-2">
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="text-lg font-semibold text-gray-900">Earning History</h2>
-                        <button className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                        <button 
+                          onClick={() => alert("Export functionality coming soon")}
+                          className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                        >
                           <Download className="w-4 h-4 mr-1" /> Export
                         </button>
                       </div>
@@ -415,126 +402,44 @@ const Dashboard = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {earningHistory.map((item) => (
-                              <tr key={item.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-150">
-                                <td className="py-3 text-sm">{new Date(item.date).toLocaleDateString()}</td>
-                                <td className="py-3 text-sm font-medium">{item.project}</td>
-                                <td className="py-3 text-sm text-right">${item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                            {earningHistory.length > 0 ? (
+                              earningHistory.map((item) => (
+                                <tr key={item.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-150">
+                                  <td className="py-3 text-sm">{new Date(item.date).toLocaleDateString()}</td>
+                                  <td className="py-3 text-sm font-medium">{item.project}</td>
+                                  <td className="py-3 text-sm text-right">${item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan="3" className="py-8 text-center">
+                                  <div className="flex flex-col items-center text-gray-500">
+                                    <AlertCircle className="w-12 h-12 mb-2" />
+                                    <p>No earning history found</p>
+                                    <p className="text-sm mt-1">Complete some projects to see your earnings here</p>
+                                  </div>
+                                </td>
                               </tr>
-                            ))}
+                            )}
                           </tbody>
                         </table>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Payouts Method */}
-                  <div>
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Payouts Method</h2>
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors duration-200">
-                          <div className="flex items-center">
-                            <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                              <CreditCard className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <span className="text-sm font-medium">PayPal</span>
-                          </div>
-                          <button className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200">
-                            Setup
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors duration-200">
-                          <div className="flex items-center">
-                            <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                              <TrendingUp className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <span className="text-sm font-medium">Bank Account</span>
-                          </div>
-                          <button className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200">
-                            Setup
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 mt-4">
-                        Choose any payment method to receive your earned amount direct to your desired account. 
-                        Leaving this empty or unchecked will cause delay or no payments. 
-                      </p>
-                    </div>
-                  </div>
                 </div>
                 
-                {/* Payouts History */}
+                {/* Info Message about missing features */}
                 <div className="mt-8">
-                  <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 md:mb-0">Payouts History</h2>
-                      
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                          <input
-                            type="text"
-                            placeholder="Search withdrawn records here"
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Filter className="w-4 h-4 text-gray-400 mr-2" />
-                          <select 
-                            value={withdrawFilter}
-                            onChange={(e) => setWithdrawFilter(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                          >
-                            <option value="all">All Status</option>
-                            <option value="completed">Completed</option>
-                            <option value="processing">Processing</option>
-                            <option value="pending">Pending</option>
-                          </select>
-                        </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start">
+                      <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
+                      <div>
+                        <h3 className="text-sm font-medium text-blue-800 mb-1">Payment System Status</h3>
+                        <p className="text-sm text-blue-700">
+                          The withdrawal system and payout methods are not yet implemented. 
+                          Currently showing earnings from the escrow and payments system.
+                        </p>
                       </div>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-left text-sm text-gray-500 border-b border-gray-200">
-                            <th className="pb-3">Ref#</th>
-                            <th className="pb-3">Status</th>
-                            <th className="pb-3">Method</th>
-                            <th className="pb-3">Date</th>
-                            <th className="pb-3 text-right">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {payoutsHistory.length > 0 ? (
-                            payoutsHistory.map((item) => (
-                              <tr key={item.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-150">
-                                <td className="py-3 text-sm font-medium">{item.ref}</td>
-                                <td className="py-3">
-                                  <StatusBadge status={item.status} />
-                                </td>
-                                <td className="py-3 text-sm">{item.method}</td>
-                                <td className="py-3 text-sm">{new Date(item.date).toLocaleDateString()}</td>
-                                <td className="py-3 text-sm text-right">${item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan="5" className="py-8 text-center">
-                                <div className="flex flex-col items-center text-gray-500">
-                                  <AlertCircle className="w-12 h-12 mb-2" />
-                                  <p>No payout records found</p>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
                     </div>
                   </div>
                 </div>
