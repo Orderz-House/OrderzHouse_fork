@@ -904,11 +904,86 @@ export const submitWorkCompletion = async (req, res) => {
   }
 };
 
-// Release payment for completed work
+// Helper function: release payment (manual or auto)
+export const autoReleasePayment = async (client, projectId, freelancerId, userId) => {
+  // 1. تأكد أن الفريلانسر عنده طلب استلام بحالة pending_review
+  const completionCheck = await client.query(
+    `SELECT status FROM freelancer_completion 
+     WHERE project_id = $1 AND freelancer_id = $2`,
+    [projectId, freelancerId]
+  );
+
+  if (!completionCheck.rows.length || completionCheck.rows[0].status !== "pending_review") {
+    return { success: false, message: "Freelancer completion is not in pending review status" };
+  }
+
+  // 2. جلب معلومات escrow
+  const escrowCheck = await client.query(
+    `SELECT id, freelancer_id, amount, status 
+     FROM escrow 
+     WHERE project_id = $1 AND freelancer_id = $2 AND status = 'held'`,
+    [projectId, freelancerId]
+  );
+
+  if (!escrowCheck.rows.length) {
+    return { success: false, message: "No held escrow found for this freelancer" };
+  }
+
+  const { id: escrow_id, amount } = escrowCheck.rows[0];
+
+  // 3. Release payment
+  await client.query("BEGIN");
+
+  await client.query(`UPDATE users SET wallet = wallet + $1 WHERE id = $2`, [amount, freelancerId]);
+
+  await client.query(
+    `UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`,
+    [escrow_id]
+  );
+
+  await client.query(
+    `UPDATE freelancer_completion 
+     SET status = 'approved', payment_released_at = NOW(), updated_at = NOW()
+     WHERE project_id = $1 AND freelancer_id = $2`,
+    [projectId, freelancerId]
+  );
+
+  await client.query(
+    `UPDATE project_assignments
+     SET status = 'completed'
+     WHERE project_id = $1 AND freelancer_id = $2`,
+    [projectId, freelancerId]
+  );
+
+  await client.query(
+    `INSERT INTO completion_history (project_id, event, timestamp, actor, notes) 
+     VALUES ($1, 'payment_released', NOW(), $2, CONCAT('Payment released to freelancer ', $3::text))`,
+    [projectId, userId, freelancerId]
+  );
+
+  await client.query("COMMIT");
+
+  // Log and notification
+  await LogCreators.projectOperation(userId, ACTION_TYPES.PAYMENT_RELEASE, projectId, true, {
+    freelancerId,
+    amount,
+    escrow_id,
+  });
+
+  try {
+    await NotificationCreators.paymentReleased(projectId, freelancerId, userId, amount);
+  } catch (notificationError) {
+    console.error('Error creating payment release notification:', notificationError);
+  }
+
+  return { success: true, message: "Payment released successfully" };
+};
+
+// Existing releasePayment controller
 export const releasePayment = async (req, res) => {
   const client = await pool.connect();
   try {
-    const { projectId, freelancerId } = req.params; // استقبلنا freelancerId من البارامز
+    const { projectId, freelancerId } = req.params;
     const userId = req.token?.userId;
 
     // 1. تأكد أن المستخدم هو صاحب المشروع
@@ -925,102 +1000,14 @@ export const releasePayment = async (req, res) => {
       return res.status(403).json({ success: false, message: "Only project owner can release payment" });
     }
 
-    // 2. تأكد أن الفريلانسر عنده طلب استلام بحالة pending_review
-    const completionCheck = await client.query(
-      `SELECT status FROM freelancer_completion 
-       WHERE project_id = $1 AND freelancer_id = $2`,
-      [projectId, freelancerId]
-    );
+    // Call the helper
+    const result = await autoReleasePayment(client, projectId, freelancerId, userId);
 
-    if (!completionCheck.rows.length || completionCheck.rows[0].status !== "pending_review") {
-      return res.status(400).json({
-        success: false,
-        message: "Freelancer completion is not in pending review status",
-      });
+    if (!result.success) {
+      return res.status(400).json(result);
     }
 
-    // 3. جلب معلومات escrow
-    const escrowCheck = await client.query(
-      `SELECT id, freelancer_id, amount, status 
-       FROM escrow 
-       WHERE project_id = $1 
-         AND freelancer_id = $2
-         AND status = 'held'`,
-      [projectId, freelancerId]
-    );
-
-    if (!escrowCheck.rows.length) {
-      return res.status(404).json({ success: false, message: "No held escrow found for this freelancer" });
-    }
-
-    const { id: escrow_id, amount } = escrowCheck.rows[0];
-
-    await client.query("BEGIN");
-
-    // 4. إضافة المبلغ إلى حساب المستقل
-    await client.query(
-      `UPDATE users SET wallet = wallet + $1 WHERE id = $2`,
-      [amount, freelancerId]
-    );
-
-    // 5. تحديث حالة الـ escrow إلى released
-    await client.query(
-      `UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`,
-      [escrow_id]
-    );
-
-    // 6. تحديث حالة استلام المستقل في freelancer_completion
-    await client.query(
-      `UPDATE freelancer_completion 
-       SET status = 'approved', payment_released_at = NOW(), updated_at = NOW()
-       WHERE project_id = $1 AND freelancer_id = $2`,
-      [projectId, freelancerId]
-    );
-
-    await client.query(
-      `UPDATE project_assignments
-       SET status = 'completed'
-       WHERE project_id = $1 AND freelancer_id = $2`,
-      [projectId, freelancerId]
-    );
-
-    // 7. إضافة سجل في التاريخ
-    await client.query(
-      `INSERT INTO completion_history (project_id, event, timestamp, actor, notes) 
-       VALUES ($1, 'payment_released', NOW(), $2, CONCAT('Payment released to freelancer ', $3::text))`,
-      [projectId, userId, freelancerId]
-    );
-
-    await client.query("COMMIT");
-
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.PAYMENT_RELEASE,
-      projectId,
-      true,
-      { freelancer_id, amount, escrow_id }
-    );
-
-
-    await client.query(
-      `UPDATE project_assignments
-       SET status = 'completed'
-       WHERE project_id = $1 AND freelancer_id = ANY($2::int[])`,
-      [projectId, freelancerId]
-    );
-    // Create notification for freelancer
-    try {
-      await NotificationCreators.paymentReleased(
-        projectId,
-        freelancer_id,
-        userId,
-        amount
-      );
-    } catch (notificationError) {
-      console.error('Error creating payment release notification:', notificationError);
-    }
-
-    res.json({ success: true, message: "Payment released from escrow successfully" });
+    res.json({ success: true, message: result.message });
 
   } catch (error) {
     await client.query("ROLLBACK");
@@ -1031,6 +1018,32 @@ export const releasePayment = async (req, res) => {
   }
 };
 
+// Auto-release cron function (call this from a scheduler)
+export const autoReleasePaymentsCron = async () => {
+  const client = await pool.connect();
+  try {
+    // Select all pending_review completions older than 7 days
+    const { rows } = await client.query(
+      `SELECT fc.project_id, fc.freelancer_id, p.user_id AS client_id
+       FROM freelancer_completion fc
+       JOIN projects p ON fc.project_id = p.id
+       JOIN escrow e ON e.project_id = p.id AND e.freelancer_id = fc.freelancer_id
+       WHERE fc.status = 'pending_review'
+         AND e.status = 'held'
+         AND fc.completion_requested_at <= NOW() - INTERVAL '7 days'`
+    );
+
+    for (const row of rows) {
+      await autoReleasePayment(client, row.project_id, row.freelancer_id, row.client_id);
+    }
+
+    console.log(`Auto-released payments for ${rows.length} freelancer(s).`);
+  } catch (err) {
+    console.error("Error in autoReleasePaymentsCron:", err);
+  } finally {
+    client.release();
+  }
+};
 
 export const getAllProjectForFreelancerById = async (req, res) => {
   const { freelancerId } = req.params;
