@@ -21,7 +21,9 @@ import {
   uploadProjectFile,
   getProjectFiles,
   getCountProjectFreelancer,
-  quitProject
+  getMyProjectsAsFreelancer,
+  quitProject,
+  getProjectsByStatus
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
@@ -84,4 +86,8 @@ projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
 // Get project counts for a freelancer
 projectsRouter.get("/freelancer/:freelancer_id/counts", authentication, getCountProjectFreelancer);
 
+// Add this to your projectsRouter
+projectsRouter.get("/freelancer/:freelancerId/status", authentication, getProjectsByStatus);
+// Add this to your router
+projectsRouter.get("/freelancer/my-projects", authentication, requireVerified, getMyProjectsAsFreelancer);
 export default projectsRouter;

@@ -43,7 +43,11 @@ const Dashboard = () => {
     availableInAccount: 0,
     completedProjects: 0,
     ongoingProjects: 0,
-    cancelledProjects: 0
+    cancelledProjects: 0,
+    activeProjects: 0,
+    quitProjects: 0,
+    kickedProjects: 0,
+    bannedProjects: 0
   });
   
   const [earningHistory, setEarningHistory] = useState([]);
@@ -115,7 +119,11 @@ const Dashboard = () => {
           ...prev,
           ongoingProjects: counts.active || 0,
           completedProjects: counts.completed || 0,
-          cancelledProjects: (counts.kicked || 0) + (counts.banned || 0) + (counts.quit || 0)
+          cancelledProjects: (counts.kicked || 0) + (counts.banned || 0) + (counts.quit || 0),
+          activeProjects: counts.active || 0,
+          quitProjects: counts.quit || 0,
+          kickedProjects: counts.kicked || 0,
+          bannedProjects: counts.banned || 0
         }));
       }
     } catch (error) {
@@ -252,8 +260,8 @@ const Dashboard = () => {
   // Skeleton loader component
   const SkeletonLoader = () => (
     <div className="animate-pulse">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {[...Array(2)].map((_, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 h-32">
             <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -261,8 +269,8 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        {[...Array(5)].map((_, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 h-32">
             <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -305,26 +313,8 @@ const Dashboard = () => {
               <SkeletonLoader />
             ) : (
               <>
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <StatCard
-                    title="Total income"
-                    value={dashboardData.totalIncome}
-                    icon={<DollarSign className="w-6 h-6 text-blue-600" />}
-                    action="Refresh"
-                    actionIcon={<RefreshCw className="w-4 h-4 ml-1" />}
-                    onAction={handleRefresh}
-                    loading={isLoading}
-                  />
-                  
-                  <StatCard
-                    title="Withdraw requested"
-                    value={dashboardData.withdrawRequested}
-                    icon={<CreditCard className="w-6 h-6 text-blue-600" />}
-                    subtitle="No withdrawal system yet"
-                    loading={isLoading}
-                  />
-                  
+                {/* Stats Grid - Only showing 2 cards now */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <StatCard
                     title="Pending income"
                     value={dashboardData.pendingIncome}
@@ -348,8 +338,17 @@ const Dashboard = () => {
                   />
                 </div>
                 
-                {/* Counts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {/* Detailed Project Status Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                  <CountCard
+                    title="Active projects"
+                    count={dashboardData.activeProjects}
+                    icon={<Clock className="w-6 h-6 text-green-600" />}
+                    action="View"
+                    onAction={navigateToProjects}
+                    loading={isLoading}
+                  />
+                  
                   <CountCard
                     title="Completed projects"
                     count={dashboardData.completedProjects}
@@ -360,18 +359,27 @@ const Dashboard = () => {
                   />
                   
                   <CountCard
-                    title="Ongoing projects"
-                    count={dashboardData.ongoingProjects}
-                    icon={<Clock className="w-6 h-6 text-blue-600" />}
+                    title="Quit projects"
+                    count={dashboardData.quitProjects}
+                    icon={<XCircle className="w-6 h-6 text-yellow-600" />}
                     action="View"
                     onAction={navigateToProjects}
                     loading={isLoading}
                   />
                   
                   <CountCard
-                    title="Cancelled projects"
-                    count={dashboardData.cancelledProjects}
-                    icon={<XCircle className="w-6 h-6 text-blue-600" />}
+                    title="Kicked projects"
+                    count={dashboardData.kickedProjects}
+                    icon={<XCircle className="w-6 h-6 text-orange-600" />}
+                    action="View"
+                    onAction={navigateToProjects}
+                    loading={isLoading}
+                  />
+                  
+                  <CountCard
+                    title="Banned projects"
+                    count={dashboardData.bannedProjects}
+                    icon={<XCircle className="w-6 h-6 text-red-600" />}
                     action="View"
                     onAction={navigateToProjects}
                     loading={isLoading}
@@ -497,10 +505,7 @@ const Dashboard = () => {
               Tasks
             </button>
             
-            <button className="w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200">
-              <CreditCard className="w-5 h-5 mr-3" />
-              Payments
-            </button>
+
             
             <button 
               onClick={navigateToProfile}
