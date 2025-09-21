@@ -1,5 +1,9 @@
 import { pool } from "../models/db.js";
-import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "../services/loggingService.js";
+import {
+  LogCreators,
+  ACTION_TYPES,
+  ENTITY_TYPES,
+} from "../services/loggingService.js";
 import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 
@@ -84,10 +88,10 @@ export const createProject = async (req, res) => {
         project.category_id
       );
     } catch (notificationError) {
-      console.error('Error creating project notifications:', notificationError);
+      console.error("Error creating project notifications:", notificationError);
       // Don't fail the main operation if notifications fail
     }
-    
+
     return res.status(201).json({
       success: true,
       project,
@@ -195,7 +199,10 @@ export const assignProject = async (req, res) => {
           true
         );
       } catch (notificationError) {
-        console.error('Error creating assignment notification:', notificationError);
+        console.error(
+          "Error creating assignment notification:",
+          notificationError
+        );
       }
     }
 
@@ -268,7 +275,7 @@ export const updateAssignmentStatus = async (req, res) => {
       { freelancer_id, status, assignment_id: rows[0].id }
     );
 
-    if (status === 'kicked' || status === 'banned') {
+    if (status === "kicked" || status === "banned") {
       try {
         await NotificationCreators.freelancerAssignmentChanged(
           projectId,
@@ -277,7 +284,10 @@ export const updateAssignmentStatus = async (req, res) => {
           false
         );
       } catch (notificationError) {
-        console.error('Error creating assignment status notification:', notificationError);
+        console.error(
+          "Error creating assignment status notification:",
+          notificationError
+        );
       }
     }
 
@@ -450,7 +460,6 @@ WHERE p.id = $1 AND p.is_deleted = false;
   });
 };
 
-
 export const getAllProjectForOffer = (req, res) => {
   pool
     .query(
@@ -483,12 +492,12 @@ export const sendOffer = async (req, res) => {
     const freelancerId = req.token.userId;
     const { projectId } = req.params;
     const { bid_amount, delivery_time, proposal } = req.body;
-    
+
     // Validate required fields
     if (!bid_amount || !delivery_time || !proposal) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: bid_amount, delivery_time, proposal"
+        message: "Missing required fields: bid_amount, delivery_time, proposal",
       });
     }
 
@@ -496,12 +505,18 @@ export const sendOffer = async (req, res) => {
     if (isNaN(bid_amount) || bid_amount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid bid amount. Must be a positive number."
+        message: "Invalid bid amount. Must be a positive number.",
       });
     }
 
-    const values = [freelancerId, projectId, bid_amount, delivery_time, proposal];
-    
+    const values = [
+      freelancerId,
+      projectId,
+      bid_amount,
+      delivery_time,
+      proposal,
+    ];
+
     const { rows } = await pool.query(
       `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal) 
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
@@ -537,7 +552,7 @@ export const sendOffer = async (req, res) => {
           clientId
         );
       } catch (notificationError) {
-        console.error('Error creating offer notification:', notificationError);
+        console.error("Error creating offer notification:", notificationError);
       }
     }
 
@@ -546,10 +561,9 @@ export const sendOffer = async (req, res) => {
       message: `Offer sent successfully`,
       offer,
     });
-
   } catch (err) {
-    console.error('Error sending offer:', err);
-    
+    console.error("Error sending offer:", err);
+
     // Log the error
     await LogCreators.projectOperation(
       req.token?.userId,
@@ -570,7 +584,7 @@ export const sendOffer = async (req, res) => {
 export const approveOrRejectOffer = async (req, res) => {
   const { action, offer_id } = req.body;
   console.log("Offer Id =>", offer_id);
-  
+
   const client = await pool.connect();
 
   try {
@@ -588,17 +602,27 @@ export const approveOrRejectOffer = async (req, res) => {
 
       if (offerResult.rows.length === 0) {
         await client.query("ROLLBACK");
-        return res.status(404).json({ success: false, message: "Offer not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Offer not found" });
       }
 
-      const { bid_amount, project_id, freelancer_id, client_id } = offerResult.rows[0];
+      const { bid_amount, project_id, freelancer_id, client_id } =
+        offerResult.rows[0];
 
       // 2. Check client balance using wallet service
-      const walletValidation = await debitWallet(client_id, bid_amount, 'Escrow for project', { project_id: project_id });
-      
+      const walletValidation = await debitWallet(
+        client_id,
+        bid_amount,
+        "Escrow for project",
+        { project_id: project_id }
+      );
+
       if (!walletValidation.success) {
         await client.query("ROLLBACK");
-        return res.status(400).json({ success: false, message: walletValidation.error });
+        return res
+          .status(400)
+          .json({ success: false, message: walletValidation.error });
       }
 
       // 4. Update offer status
@@ -644,14 +668,16 @@ export const approveOrRejectOffer = async (req, res) => {
           true
         );
       } catch (notificationError) {
-        console.error('Error creating offer approval notification:', notificationError);
+        console.error(
+          "Error creating offer approval notification:",
+          notificationError
+        );
       }
 
       return res.json({
         success: true,
-        message: "Offer approved, freelancer assigned, funds held in escrow"
+        message: "Offer approved, freelancer assigned, funds held in escrow",
       });
-
     } else if (action === "reject") {
       await client.query(
         `UPDATE offers 
@@ -667,7 +693,8 @@ export const approveOrRejectOffer = async (req, res) => {
       );
 
       if (offerDetails.rows.length > 0) {
-        const { freelancer_id: freelancerId, project_id: projectId } = offerDetails.rows[0];
+        const { freelancer_id: freelancerId, project_id: projectId } =
+          offerDetails.rows[0];
 
         // Log the offer rejection
         await LogCreators.projectOperation(
@@ -688,7 +715,10 @@ export const approveOrRejectOffer = async (req, res) => {
             false
           );
         } catch (notificationError) {
-          console.error('Error creating offer rejection notification:', notificationError);
+          console.error(
+            "Error creating offer rejection notification:",
+            notificationError
+          );
         }
       }
 
@@ -696,7 +726,6 @@ export const approveOrRejectOffer = async (req, res) => {
     }
 
     res.status(400).json({ success: false, message: "Invalid action" });
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -705,7 +734,6 @@ export const approveOrRejectOffer = async (req, res) => {
     client.release();
   }
 };
-
 
 // Get project completion status and history for each freelancer
 export const getProjectCompletion = async (req, res) => {
@@ -726,7 +754,7 @@ export const getProjectCompletion = async (req, res) => {
     if (!projectCheck.rows.length) {
       return res.status(404).json({
         success: false,
-        message: "Project not found or access denied"
+        message: "Project not found or access denied",
       });
     }
 
@@ -752,7 +780,7 @@ export const getProjectCompletion = async (req, res) => {
       [projectId]
     );
 
-    const freelancers = freelancersResult.rows.map(f => ({
+    const freelancers = freelancersResult.rows.map((f) => ({
       id: f.freelancer_id,
       first_name: f.first_name,
       last_name: f.last_name,
@@ -761,7 +789,7 @@ export const getProjectCompletion = async (req, res) => {
       amount_in_escrow: f.amount_in_escrow || 0,
       completion_status: f.completion_status,
       completion_requested_at: f.completion_requested_at,
-      payment_released_at: f.payment_released_at
+      payment_released_at: f.payment_released_at,
     }));
 
     // 3. جلب تاريخ الأحداث
@@ -775,25 +803,23 @@ export const getProjectCompletion = async (req, res) => {
       [projectId]
     );
 
-    const history = historyResult.rows.map(record => ({
+    const history = historyResult.rows.map((record) => ({
       event: record.event,
       timestamp: record.timestamp,
       actor: record.actor,
-      actor_name: `${record.first_name} ${record.last_name}`
+      actor_name: `${record.first_name} ${record.last_name}`,
     }));
 
     res.json({
       success: true,
       freelancers,
-      history
+      history,
     });
-
   } catch (error) {
     console.error("getProjectCompletion error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // Submit work completion request
 export const submitWorkCompletion = async (req, res) => {
@@ -813,7 +839,7 @@ export const submitWorkCompletion = async (req, res) => {
     if (!assignmentCheck.rows.length) {
       return res.status(403).json({
         success: false,
-        message: "Only assigned freelancers can submit completion requests"
+        message: "Only assigned freelancers can submit completion requests",
       });
     }
 
@@ -825,15 +851,15 @@ export const submitWorkCompletion = async (req, res) => {
 
     if (existingCompletion.rows.length > 0) {
       const currentStatus = existingCompletion.rows[0].status;
-      if (currentStatus !== 'not_started') {
+      if (currentStatus !== "not_started") {
         return res.status(400).json({
           success: false,
-          message: `Completion request already exists with status: ${currentStatus}`
+          message: `Completion request already exists with status: ${currentStatus}`,
         });
       }
     }
 
-    await pool.query('BEGIN');
+    await pool.query("BEGIN");
 
     // Insert or update completion record
     if (existingCompletion.rows.length === 0) {
@@ -860,9 +886,9 @@ export const submitWorkCompletion = async (req, res) => {
       [projectId, userId]
     );
 
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
 
-       // Get project details for notification
+    // Get project details for notification
     const { rows: projectRows } = await pool.query(
       `SELECT user_id FROM projects WHERE id = $1`,
       [projectId]
@@ -877,7 +903,7 @@ export const submitWorkCompletion = async (req, res) => {
         ACTION_TYPES.PROJECT_STATUS_CHANGE,
         projectId,
         true,
-        { action: 'work_completion_requested' }
+        { action: "work_completion_requested" }
       );
 
       // Create notification for client
@@ -888,24 +914,31 @@ export const submitWorkCompletion = async (req, res) => {
           clientId
         );
       } catch (notificationError) {
-        console.error('Error creating work completion notification:', notificationError);
+        console.error(
+          "Error creating work completion notification:",
+          notificationError
+        );
       }
     }
 
     res.json({
       success: true,
-      message: "Work completion request submitted successfully"
+      message: "Work completion request submitted successfully",
     });
-
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     console.error("submitWorkCompletion error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 // Helper function: release payment (manual or auto)
-export const autoReleasePayment = async (client, projectId, freelancerId, userId) => {
+export const autoReleasePayment = async (
+  client,
+  projectId,
+  freelancerId,
+  userId
+) => {
   // 1. تأكد أن الفريلانسر عنده طلب استلام بحالة pending_review
   const completionCheck = await client.query(
     `SELECT status FROM freelancer_completion 
@@ -913,8 +946,14 @@ export const autoReleasePayment = async (client, projectId, freelancerId, userId
     [projectId, freelancerId]
   );
 
-  if (!completionCheck.rows.length || completionCheck.rows[0].status !== "pending_review") {
-    return { success: false, message: "Freelancer completion is not in pending review status" };
+  if (
+    !completionCheck.rows.length ||
+    completionCheck.rows[0].status !== "pending_review"
+  ) {
+    return {
+      success: false,
+      message: "Freelancer completion is not in pending review status",
+    };
   }
 
   // 2. جلب معلومات escrow
@@ -926,7 +965,10 @@ export const autoReleasePayment = async (client, projectId, freelancerId, userId
   );
 
   if (!escrowCheck.rows.length) {
-    return { success: false, message: "No held escrow found for this freelancer" };
+    return {
+      success: false,
+      message: "No held escrow found for this freelancer",
+    };
   }
 
   const { id: escrow_id, amount } = escrowCheck.rows[0];
@@ -934,7 +976,10 @@ export const autoReleasePayment = async (client, projectId, freelancerId, userId
   // 3. Release payment
   await client.query("BEGIN");
 
-  await client.query(`UPDATE users SET wallet = wallet + $1 WHERE id = $2`, [amount, freelancerId]);
+  await client.query(`UPDATE users SET wallet = wallet + $1 WHERE id = $2`, [
+    amount,
+    freelancerId,
+  ]);
 
   await client.query(
     `UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`,
@@ -964,16 +1009,30 @@ export const autoReleasePayment = async (client, projectId, freelancerId, userId
   await client.query("COMMIT");
 
   // Log and notification
-  await LogCreators.projectOperation(userId, ACTION_TYPES.PAYMENT_RELEASE, projectId, true, {
-    freelancerId,
-    amount,
-    escrow_id,
-  });
+  await LogCreators.projectOperation(
+    userId,
+    ACTION_TYPES.PAYMENT_RELEASE,
+    projectId,
+    true,
+    {
+      freelancerId,
+      amount,
+      escrow_id,
+    }
+  );
 
   try {
-    await NotificationCreators.paymentReleased(projectId, freelancerId, userId, amount);
+    await NotificationCreators.paymentReleased(
+      projectId,
+      freelancerId,
+      userId,
+      amount
+    );
   } catch (notificationError) {
-    console.error('Error creating payment release notification:', notificationError);
+    console.error(
+      "Error creating payment release notification:",
+      notificationError
+    );
   }
 
   return { success: true, message: "Payment released successfully" };
@@ -993,26 +1052,37 @@ export const releasePayment = async (req, res) => {
     );
 
     if (!projectCheck.rows.length) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
 
     if (projectCheck.rows[0].user_id !== userId) {
-      return res.status(403).json({ success: false, message: "Only project owner can release payment" });
+      return res.status(403).json({
+        success: false,
+        message: "Only project owner can release payment",
+      });
     }
 
     // Call the helper
-    const result = await autoReleasePayment(client, projectId, freelancerId, userId);
+    const result = await autoReleasePayment(
+      client,
+      projectId,
+      freelancerId,
+      userId
+    );
 
     if (!result.success) {
       return res.status(400).json(result);
     }
 
     res.json({ success: true, message: result.message });
-
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("releasePayment error:", error);
-    res.status(500).json({ success: false, message: "Server error", error: error });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error });
   } finally {
     client.release();
   }
@@ -1034,7 +1104,12 @@ export const autoReleasePaymentsCron = async () => {
     );
 
     for (const row of rows) {
-      await autoReleasePayment(client, row.project_id, row.freelancer_id, row.client_id);
+      await autoReleasePayment(
+        client,
+        row.project_id,
+        row.freelancer_id,
+        row.client_id
+      );
     }
 
     console.log(`Auto-released payments for ${rows.length} freelancer(s).`);
@@ -1044,19 +1119,23 @@ export const autoReleasePaymentsCron = async () => {
     client.release();
   }
 };
-
 export const getAllProjectForFreelancerById = async (req, res) => {
   const { freelancerId } = req.params;
 
   try {
     const result = await pool.query(
       `SELECT DISTINCT ON (p.id) 
-      p.*, 
-      pa.status AS assignment_status 
-      FROM projects p 
+          p.*, 
+          pa.status AS assignment_status,
+          u.first_name,
+          u.last_name,
+          (u.first_name || ' ' || u.last_name) AS client_name
+      FROM projects p
       JOIN project_assignments pa 
-      ON pa.project_id = p.id 
-      WHERE pa.freelancer_id = $1 
+          ON pa.project_id = p.id
+      JOIN users u
+          ON u.id = p.user_id
+      WHERE pa.freelancer_id = $1
       ORDER BY p.id, p.created_at DESC;`,
       [freelancerId]
     );
@@ -1081,7 +1160,6 @@ export const getAllProjectForFreelancerById = async (req, res) => {
   }
 };
 
-
 export const uploadProjectFile = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -1100,7 +1178,9 @@ export const uploadProjectFile = async (req, res) => {
       [projectId]
     );
     if (!projectCheck.rows.length) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
 
     // بيانات الملف من Cloudinary
@@ -1163,39 +1243,41 @@ export const getProjectFiles = async (req, res) => {
   }
 };
 
-
 export const getCountProjectFreelancer = async (req, res) => {
   try {
     const { freelancer_id } = req.params;
-    
+
     // Query the database to get counts by status
-    const counts = await pool.query(`
+    const counts = await pool.query(
+      `
       SELECT 
         status,
         COUNT(*) as count
       FROM project_assignments 
       WHERE freelancer_id = $1 
       GROUP BY status
-    `, [freelancer_id]);
-    
+    `,
+      [freelancer_id]
+    );
+
     // Format the response
     const result = {};
-    counts.rows.forEach(row => {
+    counts.rows.forEach((row) => {
       result[row.status] = parseInt(row.count);
     });
-    
+
     res.json({
       success: true,
-      counts: result
+      counts: result,
     });
   } catch (error) {
-    console.error('Error fetching project counts:', error);
+    console.error("Error fetching project counts:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch project counts'
+      message: "Failed to fetch project counts",
     });
   }
-}
+};
 
 export const quitProject = async (req, res) => {
   const freelancerId = req.token.userId;
@@ -1227,9 +1309,80 @@ export const quitProject = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+export const getProjectsByStatus = async (req, res) => {
+  const { freelancerId } = req.params;
+  const { status } = req.query; // Get status from query parameter
 
+  try {
+    let query = `
+      SELECT DISTINCT ON (p.id) 
+      p.*, 
+      pa.status AS assignment_status 
+      FROM projects p 
+      JOIN project_assignments pa 
+      ON pa.project_id = p.id 
+      WHERE pa.freelancer_id = $1
+    `;
 
+    const params = [freelancerId];
 
+    // Add status filter if provided
+    if (status && status !== "all") {
+      query += ` AND pa.status = $2`;
+      params.push(status);
+    }
+
+    query += ` ORDER BY p.id, p.created_at DESC`;
+
+    const result = await pool.query(query, params);
+
+    res.status(200).json({
+      success: true,
+      projects: result.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching projects by status:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
+export const getMyProjectsAsFreelancer = async (req, res) => {
+  const freelancerId = req.token?.userId; // Get from token instead of params
+
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT ON (p.id) 
+      p.*, 
+      pa.status AS assignment_status 
+      FROM projects p 
+      JOIN project_assignments pa 
+      ON pa.project_id = p.id 
+      WHERE pa.freelancer_id = $1 
+      ORDER BY p.id, p.created_at DESC;`,
+      [freelancerId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No projects found for this freelancer",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      projects: result.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching projects for freelancer:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
 
 export default {
   createProject,
@@ -1244,11 +1397,11 @@ export default {
   getAllProjectForOffer,
   sendOffer,
   approveOrRejectOffer,
-  getProjectCompletion,        
-  submitWorkCompletion,        
+  getProjectCompletion,
+  submitWorkCompletion,
   releasePayment,
   getAllProjectForFreelancerById,
   uploadProjectFile,
   getProjectFiles,
-  quitProject
+  quitProject,
 };
