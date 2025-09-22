@@ -8,9 +8,11 @@ import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 
 export const createProject = async (req, res) => {
+  console.log("Request body:", req.body);
   try {
     const userId = req.token?.userId;
 
+    // Check if user exists and has role 1 or 2
     const { rows: userRows } = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
@@ -26,52 +28,44 @@ export const createProject = async (req, res) => {
       });
     }
 
-    const {
-      category_id,
-      sub_category_id,
-      title,
-      description,
-      budget_min,
-      budget_max,
-      duration,
-      location,
-    } = req.body;
+    const { category_id, title, description, budget, duration_days } = req.body;
 
+    // Validate required fields
     if (
       !category_id ||
       !title ||
       !description ||
-      budget_min === undefined ||
-      budget_max === undefined
+      budget === undefined ||
+      duration_days === undefined
     ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
     }
 
+    // Insert project
     const insertQuery = `
       INSERT INTO projects (
-        user_id, category_id, sub_category_id, title, description,
-        budget_min, budget_max, duration, location, status, is_deleted
+        user_id, category_id, title, description,
+        budget, duration_days, status, is_deleted
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,'available', false
+        $1, $2, $3, $4, $5, $6, 'pending', false
       ) RETURNING *;
     `;
 
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
-      sub_category_id || null,
       title,
       description,
-      budget_min,
-      budget_max,
-      duration || null,
-      location || "",
+      budget,
+      duration_days,
     ]);
 
     const project = rows[0];
 
+    // Log creation
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -80,6 +74,7 @@ export const createProject = async (req, res) => {
       { title: project.title, category_id: project.category_id }
     );
 
+    // Notification (non-blocking)
     try {
       await NotificationCreators.projectCreated(
         project.id,
@@ -89,7 +84,6 @@ export const createProject = async (req, res) => {
       );
     } catch (notificationError) {
       console.error("Error creating project notifications:", notificationError);
-      // Don't fail the main operation if notifications fail
     }
 
     return res.status(201).json({
@@ -129,7 +123,8 @@ ORDER BY p.created_at DESC;
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { freelancer_id } = req.body;
+    // Use freelancer_id from body or token
+    const freelancer_id = req.body.freelancer_id || req.token.userId;
 
     if (!freelancer_id) {
       return res
@@ -137,7 +132,7 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "freelancer_id is required" });
     }
 
-    // Check if the project exists and is not deleted
+    // Check if project exists
     const projectResult = await pool.query(
       `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
       [projectId]
@@ -148,40 +143,47 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "Project not found" });
     }
 
-    // Check if the freelancer exists and has role 3
+    // Check if freelancer exists and is role 3
     const userResult = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
     if (!userResult.rows.length || userResult.rows[0].role_id !== 3) {
-      return res.status(403).json({
-        success: false,
-        message: "Only users with role 3 can be assigned to projects",
-      });
+      return res
+        .status(403)
+        .json({ success: false, message: "Only freelancers can be assigned" });
     }
 
+    // Check if already assigned
     const existsResult = await pool.query(
       `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
     );
     if (existsResult.rows.length) {
-      return res.status(400).json({
-        success: false,
-        message: "This freelancer is already assigned to the project",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Freelancer already assigned" });
     }
 
-    // Insert assignment into the database; ignore if already exists
+    // Insert assignment
     const insertAssign = `
       INSERT INTO project_assignments (project_id, freelancer_id, status)
       VALUES ($1, $2, 'active')
-      ON CONFLICT DO NOTHING
       RETURNING *;
     `;
     const { rows } = await pool.query(insertAssign, [projectId, freelancer_id]);
 
     if (rows.length > 0) {
-      // Log the assignment creation
+      await pool.query(
+        `UPDATE projects
+         SET assigned_freelancer_id = $1, 
+             completion_status = 'not_started',
+             status = 'active'
+         WHERE id = $2`,
+        [freelancer_id, projectId]
+      );
+
+      // Log assignment
       await LogCreators.projectOperation(
         req.token?.userId || 0,
         ACTION_TYPES.ASSIGNMENT_CREATE,
@@ -190,7 +192,7 @@ export const assignProject = async (req, res) => {
         { freelancer_id, assignment_id: rows[0].id }
       );
 
-      // Create notification for freelancer
+      // Notification
       try {
         await NotificationCreators.freelancerAssignmentChanged(
           projectId,
@@ -206,8 +208,7 @@ export const assignProject = async (req, res) => {
       }
     }
 
-    // Return the assignment details
-    return res.status(201).json({ success: true, assignment: rows[0] || null });
+    return res.status(201).json({ success: true, assignment: rows[0] });
   } catch (error) {
     console.error("assignProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -493,245 +494,34 @@ export const sendOffer = async (req, res) => {
     const { projectId } = req.params;
     const { bid_amount, delivery_time, proposal } = req.body;
 
-    // Validate required fields
-    if (!bid_amount || !delivery_time || !proposal) {
+    // Prevent multiple offers from same freelancer
+    const existing = await pool.query(
+      `SELECT id FROM offers WHERE project_id = $1 AND freelancer_id = $2 AND offer_status = 'pending'`,
+      [projectId, freelancerId]
+    );
+    if (existing.rows.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: bid_amount, delivery_time, proposal",
+        message: "You already have a pending offer for this project",
       });
     }
-
-    // Validate bid amount
-    if (isNaN(bid_amount) || bid_amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid bid amount. Must be a positive number.",
-      });
-    }
-
-    const values = [
-      freelancerId,
-      projectId,
-      bid_amount,
-      delivery_time,
-      proposal,
-    ];
 
     const { rows } = await pool.query(
-      `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal) 
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      values
+      `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal, offer_status) 
+       VALUES ($1,$2,$3,$4,$5,'pending') RETURNING *`,
+      [freelancerId, projectId, bid_amount, delivery_time, proposal]
     );
 
     const offer = rows[0];
 
-    // Get project details for notification
-    const { rows: projectRows } = await pool.query(
-      `SELECT user_id FROM projects WHERE id = $1`,
-      [projectId]
-    );
-
-    if (projectRows.length > 0) {
-      const clientId = projectRows[0].user_id;
-
-      // Log the offer submission
-      await LogCreators.projectOperation(
-        freelancerId,
-        ACTION_TYPES.OFFER_SUBMIT,
-        projectId,
-        true,
-        { offer_id: offer.id, bid_amount, delivery_time }
-      );
-
-      // Create notification for client
-      try {
-        await NotificationCreators.offerSubmitted(
-          offer.id,
-          projectId,
-          freelancerId,
-          clientId
-        );
-      } catch (notificationError) {
-        console.error("Error creating offer notification:", notificationError);
-      }
-    }
-
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: `Offer sent successfully`,
+      message: "Offer sent successfully",
       offer,
     });
   } catch (err) {
-    console.error("Error sending offer:", err);
-
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.OFFER_SUBMIT,
-      req.params.projectId,
-      false,
-      { error: err.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: `Server error`,
-      err: err.message,
-    });
-  }
-};
-
-export const approveOrRejectOffer = async (req, res) => {
-  const { action, offer_id } = req.body;
-  console.log("Offer Id =>", offer_id);
-
-  const client = await pool.connect();
-
-  try {
-    if (action === "approve") {
-      await client.query("BEGIN");
-
-      // 1. Get offer details (freelancer + project + amount)
-      const offerResult = await client.query(
-        `SELECT o.id, o.bid_amount, o.project_id, o.freelancer_id, p.user_id AS client_id
-         FROM offers o
-         JOIN projects p ON o.project_id = p.id
-         WHERE o.id = $1`,
-        [offer_id]
-      );
-
-      if (offerResult.rows.length === 0) {
-        await client.query("ROLLBACK");
-        return res
-          .status(404)
-          .json({ success: false, message: "Offer not found" });
-      }
-
-      const { bid_amount, project_id, freelancer_id, client_id } =
-        offerResult.rows[0];
-
-      // 2. Check client balance using wallet service
-      const walletValidation = await debitWallet(
-        client_id,
-        bid_amount,
-        "Escrow for project",
-        { project_id: project_id }
-      );
-
-      if (!walletValidation.success) {
-        await client.query("ROLLBACK");
-        return res
-          .status(400)
-          .json({ success: false, message: walletValidation.error });
-      }
-
-      // 4. Update offer status
-      await client.query(
-        `UPDATE offers 
-         SET offer_status = 'approved' 
-         WHERE id = $1`,
-        [offer_id]
-      );
-
-      // 5. Assign project
-      await client.query(
-        `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status)
-         VALUES ($1, $2, NOW(), 'active')`,
-        [project_id, freelancer_id]
-      );
-
-      // 6. Insert escrow record
-      await client.query(
-        `INSERT INTO escrow (project_id, freelancer_id, client_id, amount, status)
-         VALUES ($1, $2, $3, $4, 'held')`,
-        [project_id, freelancer_id, client_id, bid_amount]
-      );
-
-      await client.query("COMMIT");
-
-      // Log the offer approval
-      await LogCreators.projectOperation(
-        client_id,
-        ACTION_TYPES.OFFER_APPROVE,
-        project_id,
-        true,
-        { offer_id: offer_id, freelancer_id, amount: bid_amount }
-      );
-
-      // Create notification for freelancer
-      try {
-        await NotificationCreators.offerStatusChanged(
-          offer_id,
-          project_id,
-          freelancer_id,
-          client_id,
-          true
-        );
-      } catch (notificationError) {
-        console.error(
-          "Error creating offer approval notification:",
-          notificationError
-        );
-      }
-
-      return res.json({
-        success: true,
-        message: "Offer approved, freelancer assigned, funds held in escrow",
-      });
-    } else if (action === "reject") {
-      await client.query(
-        `UPDATE offers 
-         SET offer_status = 'rejected' 
-         WHERE id = $1`,
-        [offer_id]
-      );
-
-      // Get offer details for notification
-      const offerDetails = await client.query(
-        `SELECT freelancer_id, project_id FROM offers WHERE id = $1`,
-        [offer_id]
-      );
-
-      if (offerDetails.rows.length > 0) {
-        const { freelancer_id: freelancerId, project_id: projectId } =
-          offerDetails.rows[0];
-
-        // Log the offer rejection
-        await LogCreators.projectOperation(
-          client_id,
-          ACTION_TYPES.OFFER_REJECT,
-          projectId,
-          true,
-          { offer_id: offer_id, freelancer_id: freelancerId }
-        );
-
-        // Create notification for freelancer
-        try {
-          await NotificationCreators.offerStatusChanged(
-            offer_id,
-            projectId,
-            freelancerId,
-            client_id,
-            false
-          );
-        } catch (notificationError) {
-          console.error(
-            "Error creating offer rejection notification:",
-            notificationError
-          );
-        }
-      }
-
-      return res.json({ success: true, message: "Offer rejected" });
-    }
-
-    res.status(400).json({ success: false, message: "Invalid action" });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error(err);
+    console.error("sendOffer error:", err);
     res.status(500).json({ success: false, message: "Server error" });
-  } finally {
-    client.release();
   }
 };
 
@@ -932,230 +722,90 @@ export const submitWorkCompletion = async (req, res) => {
   }
 };
 
-// Helper function: release payment (manual or auto)
-export const autoReleasePayment = async (
-  client,
-  projectId,
-  freelancerId,
-  userId
-) => {
-  // 1. تأكد أن الفريلانسر عنده طلب استلام بحالة pending_review
-  const completionCheck = await client.query(
-    `SELECT status FROM freelancer_completion 
-     WHERE project_id = $1 AND freelancer_id = $2`,
-    [projectId, freelancerId]
-  );
-
-  if (
-    !completionCheck.rows.length ||
-    completionCheck.rows[0].status !== "pending_review"
-  ) {
-    return {
-      success: false,
-      message: "Freelancer completion is not in pending review status",
-    };
-  }
-
-  // 2. جلب معلومات escrow
-  const escrowCheck = await client.query(
-    `SELECT id, freelancer_id, amount, status 
-     FROM escrow 
-     WHERE project_id = $1 AND freelancer_id = $2 AND status = 'held'`,
-    [projectId, freelancerId]
-  );
-
-  if (!escrowCheck.rows.length) {
-    return {
-      success: false,
-      message: "No held escrow found for this freelancer",
-    };
-  }
-
-  const { id: escrow_id, amount } = escrowCheck.rows[0];
-
-  // 3. Release payment
-  await client.query("BEGIN");
-
-  await client.query(`UPDATE users SET wallet = wallet + $1 WHERE id = $2`, [
-    amount,
-    freelancerId,
-  ]);
-
-  await client.query(
-    `UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`,
-    [escrow_id]
-  );
-
-  await client.query(
-    `UPDATE freelancer_completion 
-     SET status = 'approved', payment_released_at = NOW(), updated_at = NOW()
-     WHERE project_id = $1 AND freelancer_id = $2`,
-    [projectId, freelancerId]
-  );
-
-  await client.query(
-    `UPDATE project_assignments
-     SET status = 'completed'
-     WHERE project_id = $1 AND freelancer_id = $2`,
-    [projectId, freelancerId]
-  );
-
-  await client.query(
-    `INSERT INTO completion_history (project_id, event, timestamp, actor, notes) 
-     VALUES ($1, 'payment_released', NOW(), $2, CONCAT('Payment released to freelancer ', $3::text))`,
-    [projectId, userId, freelancerId]
-  );
-
-  await client.query("COMMIT");
-
-  // Log and notification
-  await LogCreators.projectOperation(
-    userId,
-    ACTION_TYPES.PAYMENT_RELEASE,
-    projectId,
-    true,
-    {
-      freelancerId,
-      amount,
-      escrow_id,
-    }
-  );
+export const getAllProjectForFreelancerById = async (req, res) => { 
+  const freelancerId = req.params.freelancerId || req.token?.userId;
 
   try {
-    await NotificationCreators.paymentReleased(
-      projectId,
-      freelancerId,
-      userId,
-      amount
-    );
-  } catch (notificationError) {
-    console.error(
-      "Error creating payment release notification:",
-      notificationError
-    );
-  }
-
-  return { success: true, message: "Payment released successfully" };
-};
-
-// Existing releasePayment controller
-export const releasePayment = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { projectId, freelancerId } = req.params;
-    const userId = req.token?.userId;
-
-    // 1. تأكد أن المستخدم هو صاحب المشروع
-    const projectCheck = await client.query(
-      `SELECT user_id FROM projects WHERE id = $1 AND is_deleted = false`,
-      [projectId]
-    );
-
-    if (!projectCheck.rows.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
-
-    if (projectCheck.rows[0].user_id !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Only project owner can release payment",
-      });
-    }
-
-    // Call the helper
-    const result = await autoReleasePayment(
-      client,
-      projectId,
-      freelancerId,
-      userId
-    );
-
-    if (!result.success) {
-      return res.status(400).json(result);
-    }
-
-    res.json({ success: true, message: result.message });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("releasePayment error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error });
-  } finally {
-    client.release();
-  }
-};
-
-// Auto-release cron function (call this from a scheduler)
-export const autoReleasePaymentsCron = async () => {
-  const client = await pool.connect();
-  try {
-    // Select all pending_review completions older than 7 days
-    const { rows } = await client.query(
-      `SELECT fc.project_id, fc.freelancer_id, p.user_id AS client_id
-       FROM freelancer_completion fc
-       JOIN projects p ON fc.project_id = p.id
-       JOIN escrow e ON e.project_id = p.id AND e.freelancer_id = fc.freelancer_id
-       WHERE fc.status = 'pending_review'
-         AND e.status = 'held'
-         AND fc.completion_requested_at <= NOW() - INTERVAL '7 days'`
-    );
-
-    for (const row of rows) {
-      await autoReleasePayment(
-        client,
-        row.project_id,
-        row.freelancer_id,
-        row.client_id
-      );
-    }
-
-    console.log(`Auto-released payments for ${rows.length} freelancer(s).`);
-  } catch (err) {
-    console.error("Error in autoReleasePaymentsCron:", err);
-  } finally {
-    client.release();
-  }
-};
-export const getAllProjectForFreelancerById = async (req, res) => {
-  const { freelancerId } = req.params;
-
-  try {
-    const result = await pool.query(
-      `SELECT DISTINCT ON (p.id) 
-          p.*, 
-          pa.status AS assignment_status,
-          u.first_name,
-          u.last_name,
-          (u.first_name || ' ' || u.last_name) AS client_name
+    const { rows: projects } = await pool.query(
+      `SELECT 
+        p.*,
+        pa.assigned_at,
+        pa.status AS assignment_status,
+        u.id AS client_id,
+        u.first_name AS client_first_name,
+        u.last_name AS client_last_name,
+        u.email AS client_email,
+        u.username AS client_username,
+        (u.first_name || ' ' || u.last_name) AS client_name
       FROM projects p
-      JOIN project_assignments pa 
-          ON pa.project_id = p.id
-      JOIN users u
-          ON u.id = p.user_id
+      JOIN project_assignments pa ON pa.project_id = p.id
+      JOIN users u ON u.id = p.user_id
       WHERE pa.freelancer_id = $1
-      ORDER BY p.id, p.created_at DESC;`,
+      ORDER BY p.created_at DESC;`,
       [freelancerId]
     );
 
-    if (result.rows.length === 0) {
+    if (!projects.length) {
       return res.status(404).json({
         success: false,
         message: "No projects found for this freelancer",
       });
     }
 
+    const today = new Date();
+
+    const projectsWithRemainingDays = projects.map((p) => {
+      // Assigned date
+      const assignedDate = p.assigned_at ? new Date(p.assigned_at) : null;
+
+      // Deadline
+      let deadlineDate = null;
+      if (assignedDate && p.duration_days != null) {
+        deadlineDate = new Date(assignedDate);
+        deadlineDate.setDate(assignedDate.getDate() + p.duration_days);
+      }
+
+      // Calculate remaining days
+      let remainingDays = null;
+      let status_note = "Not yet started";
+      if (deadlineDate) {
+        const diffTime = deadlineDate - today;
+        remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (remainingDays > 0) {
+          status_note = `${remainingDays} day(s) remaining`;
+        } else if (remainingDays === 0) {
+          status_note = "Due today";
+        } else {
+          status_note = `Overdue by ${Math.abs(remainingDays)} day(s)`;
+        }
+      }
+
+      return {
+        ...p,
+        assigned_at: assignedDate,
+        deadline_date: deadlineDate,
+        remaining_days: remainingDays,
+        status_note,
+        // Important fields
+        completion_status: p.completion_status,
+        completion_requested_at: p.completion_requested_at,
+        payment_released_at: p.payment_released_at,
+        budget: p.budget,
+        duration_days: p.duration_days,
+        completed_by_freelancer: p.completed_by_freelancer,
+      };
+    });
+
     res.status(200).json({
       success: true,
-      projects: result.rows,
+      projects: projectsWithRemainingDays,
     });
   } catch (err) {
     console.error("Error fetching projects for freelancer:", err);
     res.status(500).json({
       success: false,
-      error: err,
+      error: err.message,
     });
   }
 };
@@ -1383,6 +1033,87 @@ export const getMyProjectsAsFreelancer = async (req, res) => {
     });
   }
 };
+export const approveOrRejectOffer = async (req, res) => {
+  try {
+    const clientId = req.token.userId;
+    const { offerId, action } = req.body;
+
+    const { rows: offerRows } = await pool.query(
+      `SELECT o.*, p.user_id AS client_id 
+       FROM offers o 
+       JOIN projects p ON o.project_id = p.id 
+       WHERE o.id = $1`,
+      [offerId]
+    );
+    if (!offerRows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Offer not found" });
+    }
+
+    const offer = offerRows[0];
+    if (offer.client_id !== clientId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    if (action === "reject") {
+      await pool.query(
+        `UPDATE offers SET offer_status = 'rejected' WHERE id = $1`,
+        [offerId]
+      );
+      return res.json({ success: true, message: "Offer rejected" });
+    }
+
+    if (action === "accept") {
+      await pool.query("BEGIN");
+
+      // Mark offer accepted
+      await pool.query(
+        `UPDATE offers SET offer_status = 'accepted' WHERE id = $1`,
+        [offerId]
+      );
+
+      // Assign freelancer
+      const { rows: assignmentRows } = await pool.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, status)
+         VALUES ($1, $2, 'active')
+         ON CONFLICT DO NOTHING RETURNING *`,
+        [offer.project_id, offer.freelancer_id]
+      );
+
+      // Update project table to reflect assigned freelancer
+      await pool.query(
+        `UPDATE projects
+         SET assigned_freelancer_id = $1, completion_status = 'not_started'
+         WHERE id = $2`,
+        [offer.freelancer_id, offer.project_id]
+      );
+
+      // Move budget into escrow
+      await pool.query(
+        `INSERT INTO escrow (project_id, freelancer_id, amount, status)
+         VALUES ($1, $2, $3, 'held')`,
+        [offer.project_id, offer.freelancer_id, offer.bid_amount]
+      );
+
+      await pool.query("COMMIT");
+
+      return res.json({
+        success: true,
+        message: "Offer accepted, freelancer assigned, escrow funded",
+        assignment: assignmentRows[0],
+      });
+    }
+
+    return res.status(400).json({ success: false, message: "Invalid action" });
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    console.error("approveOrRejectOffer error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 export default {
   createProject,
@@ -1396,10 +1127,8 @@ export default {
   updateAssignmentStatus,
   getAllProjectForOffer,
   sendOffer,
-  approveOrRejectOffer,
   getProjectCompletion,
   submitWorkCompletion,
-  releasePayment,
   getAllProjectForFreelancerById,
   uploadProjectFile,
   getProjectFiles,

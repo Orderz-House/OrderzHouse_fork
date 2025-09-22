@@ -74,8 +74,20 @@ export const createContentResources = async (
     options: {
       id: "sub_categories",
       navigation: { name: "Content Management", icon: "Tags" },
-      listProperties: ["id", "name", "category_id", "description", "created_at"],
-      showProperties: ["id", "name", "category_id", "description", "created_at"],
+      listProperties: [
+        "id",
+        "name",
+        "category_id",
+        "description",
+        "created_at",
+      ],
+      showProperties: [
+        "id",
+        "name",
+        "category_id",
+        "description",
+        "created_at",
+      ],
       editProperties: ["name", "category_id", "description"],
       filterProperties: ["name", "category_id"],
       properties: {
@@ -139,7 +151,13 @@ export const createContentResources = async (
     options: {
       id: "news",
       navigation: { name: "Content Management", icon: "Newspaper" },
-      listProperties: ["id", "title", "is_approved", "created_by", "created_at"],
+      listProperties: [
+        "id",
+        "title",
+        "is_approved",
+        "created_by",
+        "created_at",
+      ],
       showProperties: [
         "id",
         "title",
@@ -221,92 +239,92 @@ export const createContentResources = async (
    * Freelancer Completion Resource
    * ===============================
    */
-  resources.push({
-    resource: db.table("freelancer_completion"),
-    options: {
-      id: "freelancer_completion",
-      navigation: { name: "Content Management", icon: "CheckCircle" },
-      listProperties: [
-        "id",
-        "project_id",
-        "freelancer_id",
-        "status",
-        "completion_requested_at",
-        "payment_released_at",
-      ],
-      showProperties: [
-        "id",
-        "project_id",
-        "freelancer_id",
-        "status",
-        "completion_requested_at",
-        "payment_released_at",
-        "created_at",
-        "updated_at",
-      ],
-      editProperties: ["status", "payment_released_at"],
-      filterProperties: ["status", "project_id", "freelancer_id"],
-      properties: {
-        project_id: {
-          reference: "projects",
-          type: "reference",
-          isRequired: true,
-        },
-        freelancer_id: {
-          reference: "freelancers",
-          type: "reference",
-          isRequired: true,
-        },
-        status: {
-          type: "string",
-          availableValues: [
-            { value: "pending", label: "Pending" },
-            { value: "completed", label: "Completed" },
-            { value: "approved", label: "Approved" },
-            { value: "rejected", label: "Rejected" },
-          ],
-        },
-      },
-      actions: {
-        new: {
-          after: async (response, request, context) => {
-            if (context.currentAdmin && request.payload) {
-              await logAdminAction(
-                context.currentAdmin.id,
-                context.currentAdmin.email,
-                `Created freelancer completion for project ID: ${request.payload.project_id}`
-              );
-            }
-            return response;
-          },
-        },
-        edit: {
-          after: async (response, request, context) => {
-            if (context.currentAdmin && request.payload) {
-              await logAdminAction(
-                context.currentAdmin.id,
-                context.currentAdmin.email,
-                `Updated freelancer completion ID: ${request.params.recordId}`
-              );
-            }
-            return response;
-          },
-        },
-        delete: {
-          after: async (response, request, context) => {
-            if (context.currentAdmin) {
-              await logAdminAction(
-                context.currentAdmin.id,
-                context.currentAdmin.email,
-                `DELETED freelancer completion ID: ${request.params.recordId}`
-              );
-            }
-            return response;
-          },
-        },
-      },
-    },
-  });
+  // resources.push({
+  //   resource: db.table("freelancer_completion"),
+  //   options: {
+  //     id: "freelancer_completion",
+  //     navigation: { name: "Content Management", icon: "CheckCircle" },
+  //     listProperties: [
+  //       "id",
+  //       "project_id",
+  //       "freelancer_id",
+  //       "status",
+  //       "completion_requested_at",
+  //       "payment_released_at",
+  //     ],
+  //     showProperties: [
+  //       "id",
+  //       "project_id",
+  //       "freelancer_id",
+  //       "status",
+  //       "completion_requested_at",
+  //       "payment_released_at",
+  //       "created_at",
+  //       "updated_at",
+  //     ],
+  //     editProperties: ["status", "payment_released_at"],
+  //     filterProperties: ["status", "project_id", "freelancer_id"],
+  //     properties: {
+  //       project_id: {
+  //         reference: "projects",
+  //         type: "reference",
+  //         isRequired: true,
+  //       },
+  //       freelancer_id: {
+  //         reference: "freelancers",
+  //         type: "reference",
+  //         isRequired: true,
+  //       },
+  //       status: {
+  //         type: "string",
+  //         availableValues: [
+  //           { value: "pending", label: "Pending" },
+  //           { value: "completed", label: "Completed" },
+  //           { value: "approved", label: "Approved" },
+  //           { value: "rejected", label: "Rejected" },
+  //         ],
+  //       },
+  //     },
+  //     actions: {
+  //       new: {
+  //         after: async (response, request, context) => {
+  //           if (context.currentAdmin && request.payload) {
+  //             await logAdminAction(
+  //               context.currentAdmin.id,
+  //               context.currentAdmin.email,
+  //               `Created freelancer completion for project ID: ${request.payload.project_id}`
+  //             );
+  //           }
+  //           return response;
+  //         },
+  //       },
+  //       edit: {
+  //         after: async (response, request, context) => {
+  //           if (context.currentAdmin && request.payload) {
+  //             await logAdminAction(
+  //               context.currentAdmin.id,
+  //               context.currentAdmin.email,
+  //               `Updated freelancer completion ID: ${request.params.recordId}`
+  //             );
+  //           }
+  //           return response;
+  //         },
+  //       },
+  //       delete: {
+  //         after: async (response, request, context) => {
+  //           if (context.currentAdmin) {
+  //             await logAdminAction(
+  //               context.currentAdmin.id,
+  //               context.currentAdmin.email,
+  //               `DELETED freelancer completion ID: ${request.params.recordId}`
+  //             );
+  //           }
+  //           return response;
+  //         },
+  //       },
+  //     },
+  //   },
+  // });
 
   return resources;
 };
