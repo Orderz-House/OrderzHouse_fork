@@ -13,26 +13,24 @@ import {
   updateAssignmentStatus,
   getAllProjectForOffer,
   sendOffer,
-  approveOrRejectOffer,
   getProjectCompletion,
   submitWorkCompletion,
-  releasePayment,
   getAllProjectForFreelancerById,
   uploadProjectFile,
   getProjectFiles,
   getCountProjectFreelancer,
   getMyProjectsAsFreelancer,
   quitProject,
-  getProjectsByStatus
+  getProjectsByStatus,
+  approveOrRejectOffer
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
 
-// Create a project
-projectsRouter.post("/", authentication, requireVerified, createProject);
+// ---------------------- Authenticated & Verified ----------------------
 
-// Get all available projects for offers
-projectsRouter.get("/offers/available", authentication, requireVerified, getAllProjectForOffer);
+// Create a new project
+projectsRouter.post("/", authentication, requireVerified, createProject);
 
 // Get projects created by the authenticated user
 projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
@@ -40,54 +38,61 @@ projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
 // Get project by ID
 projectsRouter.get("/:projectId", authentication, requireVerified, getProjectById);
 
-// Get all projects for a specific freelancer
-projectsRouter.get("/freelancer/projects/:freelancerId", getAllProjectForFreelancerById);
-
-// Send an offer
-projectsRouter.post("/:projectId/offers", authentication, requireVerified, sendOffer);
-
 // Assign a freelancer to a project
 projectsRouter.post("/:projectId/assign", authentication, requireVerified, assignProject);
-
-// Get related freelancers for a project
-projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
 
 // Update assignment status
 projectsRouter.put("/assigned/:projectId", authentication, requireVerified, updateAssignmentStatus);
 
-// Approve or reject an offer
-projectsRouter.post("/offer/action", authentication, requireVerified, approveOrRejectOffer);
-
 // Get project completion details
 projectsRouter.get("/:projectId/completion", authentication, requireVerified, getProjectCompletion);
-
-// Quit project (freelancer)
-projectsRouter.post("/:projectId/quit", authentication, requireVerified, quitProject);
-
-// Upload project file (uncomment if using multer for file uploads)
-// projectsRouter.post("/:projectId/files", upload.single("file"), uploadProjectFile);
-
-// Get all project files
-projectsRouter.get("/:projectId/files", getProjectFiles);
 
 // Submit work completion request
 projectsRouter.post("/:projectId/complete", authentication, submitWorkCompletion);
 
-// Release payment for completed work
-projectsRouter.post("/:projectId/release-payment/:freelancerId", authentication, requireVerified, releasePayment);
+// Quit project (freelancer)
+projectsRouter.post("/:projectId/quit", authentication, requireVerified, quitProject);
 
-// Public endpoints
-projectsRouter.get("/public/categories", getCategories);
-projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
+// Send an offer for a project
+projectsRouter.post("/:projectId/offers", authentication, requireVerified, sendOffer);
 
-// Helper: list users by role
-projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
+// projectsRouter.post("/:projectId/files", upload.single("file"), uploadProjectFile);
+
+// Get all project files
+projectsRouter.get("/:projectId/files", authentication, getProjectFiles);
+
+// Get all available projects for freelancers to make offers
+projectsRouter.get("/offers/available", authentication, requireVerified, getAllProjectForOffer);
+
+// Get related freelancers for a project
+projectsRouter.get("/:projectId/related-freelancers", authentication, getRelatedFreelancers);
+
+// Get projects by freelancer with status filter
+projectsRouter.get("/freelancer/:freelancerId/status", authentication, getProjectsByStatus);
+
+// Get all projects for a specific freelancer
+projectsRouter.get("/freelancer/projects/:freelancerId", authentication, getAllProjectForFreelancerById);
+
+// Get projects assigned to authenticated freelancer
+projectsRouter.get("/freelancer/my-projects", authentication, requireVerified, getMyProjectsAsFreelancer);
 
 // Get project counts for a freelancer
 projectsRouter.get("/freelancer/:freelancer_id/counts", authentication, getCountProjectFreelancer);
 
-// Add this to your projectsRouter
-projectsRouter.get("/freelancer/:freelancerId/status", authentication, getProjectsByStatus);
-// Add this to your router
-projectsRouter.get("/freelancer/my-projects", authentication, requireVerified, getMyProjectsAsFreelancer);
+// ---------------------- Public Endpoints ----------------------
+
+// List categories
+projectsRouter.get("/public/categories", getCategories);
+
+// List subcategories by category ID
+projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
+
+// ---------------------- Helper Endpoints ----------------------
+
+// List users by role
+projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
+
+// ---------------------- Offers Approval (Client) ----------------------
+projectsRouter.post("/offers/approve-reject", authentication, requireVerified, approveOrRejectOffer);
+
 export default projectsRouter;
