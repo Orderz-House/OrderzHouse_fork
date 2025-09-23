@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   DollarSign,
   Calendar,
-  MapPin,
   FileText,
   CheckCircle,
   Users,
@@ -21,93 +20,98 @@ import { useNavigate, Link } from "react-router-dom";
 
 export default function CreateProject() {
   const API_BASE = "http://localhost:5000";
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const token = useSelector((s) => s.auth.token);
+  const creating = useSelector((s) => s.project.creating);
+  const roleId = useSelector((s) => s.auth.roleId);
+
+  
+
   const [form, setForm] = useState({
     category_id: "",
-    sub_category_id: "",
     title: "",
     description: "",
+    project_type: "fixed", // default
+    budget: "",
     budget_min: "",
     budget_max: "",
-    duration: "1 to 3 months",
-    location: "Remote",
-    freelancer_id: "",
+    hourly_rate: "",
+    duration_days: 30,
   });
 
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
-  const token = useSelector((s) => s.auth.token);
-  const creating = useSelector((s) => s.project.creating);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const roleId = useSelector((s) => s.auth.roleId);
-  
+
+  // Only admins and clients can create projects
   useEffect(() => {
-    // guard: only role 1 or 2 can create projects
     if (roleId && Number(roleId) !== 1 && Number(roleId) !== 2) {
       toastError("Only clients can create projects");
       navigate("/");
-      return;
     }
   }, [roleId, navigate]);
 
+  // Load categories
   useEffect(() => {
     axios
       .get(`${API_BASE}/projects/public/categories`)
       .then((res) => setCategories(res.data.categories || []))
-      .catch((e) => console.error(e.message));
+      .catch((err) => console.error(err));
   }, []);
-
-  useEffect(() => {
-    if (!form.category_id) {
-      setSubCategories([]);
-      return;
-    }
-    axios
-      .get(`${API_BASE}/projects/public/categories/${form.category_id}/sub`)
-      .then((res) => setSubCategories(res.data.subCategories || []))
-      .catch(() => setSubCategories([]));
-  }, [form.category_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     dispatch(setCreating(true));
     dispatch(setError(""));
+
     try {
-      const { freelancer_id, ...projectPayload } = form; // freelancer ignored in step 1
-      const createRes = await axios.post(
-        `${API_BASE}/projects`,
-        projectPayload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const project = createRes.data.project;
+      const payload = { ...form };
+
+      if (form.project_type === "fixed") {
+        payload.budget_min = null;
+        payload.budget_max = null;
+        payload.hourly_rate = null;
+      } else if (form.project_type === "bidding") {
+        payload.budget = null;
+        payload.hourly_rate = null;
+      } else if (form.project_type === "hourly") {
+        payload.budget = null;
+        payload.budget_min = null;
+        payload.budget_max = null;
+        payload.duration_days = null; // duration_days not needed for hourly
+      }
+
+      const res = await axios.post(`${API_BASE}/projects`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+console.log("Token being sent:", token);
+
+      const project = res.data.project;
       dispatch(setCurrentProject(project));
       dispatch(addProject(project));
       toastSuccess("Project created successfully");
       navigate(`/projects/${project.id}`);
+
       setForm({
         category_id: "",
-        sub_category_id: "",
         title: "",
         description: "",
+        project_type: "fixed",
+        budget: "",
         budget_min: "",
         budget_max: "",
-        duration: "1 to 3 months",
-        location: "Remote",
-        freelancer_id: "",
+        hourly_rate: "",
+        duration_days: 30,
       });
     } catch (err) {
-      console.error(err.message);
+      console.error(err);
       dispatch(
-        setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to create project"
-        )
+        setError(err.response?.data?.message || err.message || "Failed to create project")
       );
       toastError("Failed to create project");
     } finally {
@@ -116,187 +120,170 @@ export default function CreateProject() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-5xl mx-auto p-6">
         <Link
-          onClick={()=> navigate(-1)}
+          onClick={() => navigate(-1)}
           className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6 font-medium"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Link>
 
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-3">Create a New Project</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Post your project to connect with talented freelancers ready to
-              bring your ideas to life.
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold mb-6 text-center">Create a New Project</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Title */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Project Title
-                </label>
-                <input
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="e.g., Build a responsive e-commerce website"
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  name="category_id"
-                  value={form.category_id}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Sub-category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sub-category (Optional)
-                </label>
-                <select
-                  name="sub_category_id"
-                  value={form.sub_category_id}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select sub-category</option>
-                  {subCategories.map((sc) => (
-                    <option key={sc.id} value={sc.id}>
-                      {sc.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Budget */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  Minimum Budget ($)
-                </label>
-                <input
-                  name="budget_min"
-                  type="number"
-                  value={form.budget_min}
-                  onChange={handleChange}
-                  placeholder="e.g., 500"
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  Maximum Budget ($)
-                </label>
-                <input
-                  name="budget_max"
-                  type="number"
-                  value={form.budget_max}
-                  onChange={handleChange}
-                  placeholder="e.g., 1500"
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Project Duration
-                </label>
-                <select
-                  name="duration"
-                  value={form.duration}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="1 to 3 months">1 to 3 months</option>
-                  <option value="Less than 1 month">Less than 1 month</option>
-                  <option value="3 to 6 months">3 to 6 months</option>
-                  <option value="More than 6 months">More than 6 months</option>
-                </select>
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  Work Location
-                </label>
-                <select
-                  name="location"
-                  value={form.location}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="Remote">Remote</option>
-                  <option value="On-site">On-site</option>
-                  <option value="Hybrid">Hybrid</option>
-                </select>
-              </div>
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                name="category_id"
+                value={form.category_id}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="">Select category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Description */}
+            {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <FileText className="w-4 h-4 mr-1" />
-                Project Description
-              </label>
-              <textarea
-                name="description"
-                value={form.description}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
+              <input
+                name="title"
+                value={form.title}
                 onChange={handleChange}
-                placeholder="Describe your project in detail, including goals, requirements, and any specific skills needed..."
+                placeholder="e.g., Build a responsive e-commerce website"
                 className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={6}
                 required
               />
             </div>
 
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
-              <h3 className="font-bold text-blue-800 mb-2 flex items-center">
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Tips for a successful project post
-              </h3>
-              <ul className="text-blue-700 text-sm list-disc pl-5 space-y-1">
-                <li>Be specific about your requirements and expectations</li>
-                <li>Include your desired timeline and budget range</li>
-                <li>Mention any specific skills or experience needed</li>
-                <li>Provide examples or references if possible</li>
-              </ul>
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Describe your project in detail..."
+                className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={5}
+                required
+              />
             </div>
 
+            {/* Project Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+              <select
+                name="project_type"
+                value={form.project_type}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="fixed">Fixed</option>
+                <option value="bidding">Bidding</option>
+                <option value="hourly">Hourly</option>
+              </select>
+            </div>
+
+            {/* Conditional Budget / Rate */}
+            {form.project_type === "fixed" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <DollarSign className="w-4 h-4 mr-1" /> Budget
+                </label>
+                <input
+                  name="budget"
+                  type="number"
+                  value={form.budget}
+                  onChange={handleChange}
+                  placeholder="e.g., 1000"
+                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            )}
+
+            {form.project_type === "bidding" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <DollarSign className="w-4 h-4 mr-1" /> Min Budget
+                  </label>
+                  <input
+                    name="budget_min"
+                    type="number"
+                    value={form.budget_min}
+                    onChange={handleChange}
+                    placeholder="e.g., 500"
+                    className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <DollarSign className="w-4 h-4 mr-1" /> Max Budget
+                  </label>
+                  <input
+                    name="budget_max"
+                    type="number"
+                    value={form.budget_max}
+                    onChange={handleChange}
+                    placeholder="e.g., 1500"
+                    className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {form.project_type === "hourly" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <DollarSign className="w-4 h-4 mr-1" /> Hourly Rate
+                </label>
+                <input
+                  name="hourly_rate"
+                  type="number"
+                  value={form.hourly_rate}
+                  onChange={handleChange}
+                  placeholder="e.g., 30"
+                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            )}
+
+            {/* Duration (hide for hourly) */}
+            {form.project_type !== "hourly" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar className="w-4 h-4 mr-1" /> Duration (days)
+                </label>
+                <input
+                  name="duration_days"
+                  type="number"
+                  value={form.duration_days}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            )}
+
+            {/* Submit */}
             <button
               type="submit"
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center"
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 flex items-center justify-center"
               disabled={creating}
             >
               {creating ? (
@@ -305,47 +292,10 @@ export default function CreateProject() {
                   Creating Project...
                 </>
               ) : (
-                "Create Project & Continue"
+                "Create Project"
               )}
             </button>
           </form>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold mb-4">
-            Why post a project on OrderzHouse?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="font-bold mb-2">Access Top Talent</h3>
-              <p className="text-gray-600 text-sm">
-                Connect with skilled professionals from around the world.
-              </p>
-            </div>
-
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="font-bold mb-2">Secure Payments</h3>
-              <p className="text-gray-600 text-sm">
-                Our escrow system ensures your funds are protected.
-              </p>
-            </div>
-
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-bold mb-2">Quality Results</h3>
-              <p className="text-gray-600 text-sm">
-                Get your project done right with our satisfaction guarantee.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import { requireVerified } from "../middleware/requireVerification.js";
+import authorization from "../middleware/authorization.js"
 import {
   createProject,
   getMyProjects,
@@ -30,7 +31,7 @@ const projectsRouter = express.Router();
 // ---------------------- Authenticated & Verified ----------------------
 
 // Create a new project
-projectsRouter.post("/", authentication, requireVerified, createProject);
+projectsRouter.post("/", authentication, authorization("create_project"), createProject);
 
 // Get projects created by the authenticated user
 projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);

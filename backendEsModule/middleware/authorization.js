@@ -2,9 +2,8 @@ import { pool } from "../models/db.js";
 
 const authorization = (permission) => {
   return async (req, res, next) => {
-    try { 
-      const role_id = req.token.role;
-
+    try {
+      const role = req.token.role;
       const query = `
         SELECT 1
         FROM role_permission 
@@ -15,8 +14,10 @@ const authorization = (permission) => {
         LIMIT 1
       `;
       // console.log("POOL IS:", pool);
+      console.log("Decoded JWT:", req.token);
+      console.log("Checking permission for role:", req.token.role);
 
-      const result = await pool.query(query, [role_id, permission]);
+      const result = await pool.query(query, [role, permission]);
 
       if (result.rows.length) {
         return next();
