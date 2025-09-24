@@ -531,7 +531,6 @@ const Register = () => {
             {/* Header */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center mb-4">
-                <Shield className="w-12 h-12 text-teal-600 mr-3" />
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 font-serif leading-tight">
                   Join{" "}
                   <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">

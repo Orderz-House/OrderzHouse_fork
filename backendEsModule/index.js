@@ -43,18 +43,18 @@ import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
-import uploadRouter from "./router/upload.js";
 // import categoriesRouter from "./router/categories.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
 import earningsRouter from "./router/earning.js"
+import uploadRouter from "./router/projectFilesUser.js";
 
+app.use("/uploads" , uploadRouter)
 app.use("/admins", adminRouter);
 app.use("/earnings" , earningsRouter)
 app.use("/api/analytics", analyticsRoutes);
 app.use("/news", newsRouter);
-app.use("/upload", uploadRouter);
 app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
