@@ -89,7 +89,7 @@ export default function Plans() {
     padding: "2rem",
     borderRadius: "1rem",
     textAlign: "center",
-    fontSize: "1.5rem",
+    fontSize: "1.3rem",
     fontWeight: "600",
     color: "#000000ff",
     maxWidth: "900px",
@@ -100,9 +100,6 @@ export default function Plans() {
   const bodyStyle = {
     minHeight: "100vh",
     fontFamily: "Merriweather, serif",
-    backgroundImage: `
-      radial-gradient(circle, #028090 5%, transparent 6%),
-      `,
     backgroundSize: "50px 50px",
     paddingBottom: "4rem"
   };
