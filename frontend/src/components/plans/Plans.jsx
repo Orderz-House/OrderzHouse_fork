@@ -13,8 +13,9 @@ function PlanCard({ plan }) {
       style={{
         width: "18rem",
         minHeight: "24rem",
-        borderRadius: "1rem",
-        border: `2px solid ${plan.isPopular ? "#14b8a6" : "gray"}`,
+        borderWidth: "5px",
+        borderRadius: "1.8rem",
+        border: `2px solid ${plan.isPopular ? "#026d80ff" : "gray"}`,
         boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
         margin: "1rem",
         padding: "1.5rem",
@@ -29,7 +30,7 @@ function PlanCard({ plan }) {
         cursor: "pointer"
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.backgroundColor = "#56a8b3ff"; // yellow
+        e.currentTarget.style.backgroundColor = "#56a8b3ff";
         e.currentTarget.style.boxShadow = "0 15px 35px rgba(0,0,0,0.3)";
       }}
       onMouseLeave={e => {
@@ -53,19 +54,19 @@ function PlanCard({ plan }) {
       <div>
         <h2 style={{ fontSize: "1.5rem", fontWeight: "700" }}>{plan.name}</h2>
         <p style={{ marginTop: "1rem", fontSize: "2.5rem", fontWeight: "700" }}>{plan.subscriptionFee} JD</p>
-        <p style={{ color: "#4b5563", marginTop: "0.5rem", fontSize: "0.9rem" }}>Earn Limit: {plan.earnLimit}</p>
+        <p style={{ color: "#000000ff", marginTop: "0.5rem", fontSize: "0.9rem" }}>Earn Limit: {plan.earnLimit}</p>
         <p style={{ marginTop: "1rem", fontSize: "1.5rem", color: "#065f46" }}>{plan.description}</p>
       </div>
       <button style={{
         marginTop: "1.5rem",
         width: "100%",
-        backgroundColor: "#028090",
+        background: "#028090",
         color: "white",
         padding: "0.5rem",
         borderRadius: "0.5rem",
         fontWeight: "600"
       }}
-      onMouseEnter={e => e.currentTarget.style.backgroundColor="#0addcbff"}
+      onMouseEnter={e => e.currentTarget.style.backgroundColor="#55b1eeff"}
       onMouseLeave={e => e.currentTarget.style.backgroundColor="#028090"}>
         Choose {plan.name}
       </button>
@@ -84,7 +85,7 @@ export default function Plans() {
 
   const noteStyle = {
     marginTop: "3rem",
-    backgroundColor: "#d2f3cdff",
+    background: "linear-gradient(#028090, #02C39A)",
     padding: "2rem",
     borderRadius: "1rem",
     textAlign: "center",

@@ -48,8 +48,8 @@ function App() {
 
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
-  useEffect(() => {
-    const socket = initSocket(token, userId);
+    useEffect(() => {
+    initSocket(token, userId);
     return () => {
       disconnectSocket();
     };
