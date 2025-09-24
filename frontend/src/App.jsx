@@ -38,7 +38,7 @@ import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
-
+import Plans from "./components/plans/plans"; 
 
 function App() {
   const location = useLocation();
@@ -57,162 +57,51 @@ function App() {
 
   return (
     <>
-    {!shouldHideNavbar && <Navbar />}
+      {!shouldHideNavbar && <Navbar />}
       <Routes>
-
+        {/* News Pages */}
         <Route path="/news" element={<NewsListPage />} />
         <Route path="/news/admin" element={<AdminPendingNewsPage />} />
         <Route path="/news/:id" element={<NewsDetailPage />} />
 
-        
+        {/* Account Suspended */}
         <Route path="account/suspended" element={<AccountSuspended />} />
 
+        {/* Test */}
         <Route path="/test" element={<Counter />} />
+
+        {/* Public Pages */}
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/about" element={<ModernAboutPage />} />
+        <Route path="/plans" element={<Plans />} /> 
         <Route path="/ask-more" element={<Ask />} />
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
         <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>
-
-        {/* ✅ VerifyProfile يظل مفتوح */}
         <Route path="/verify-profile" element={<VerifyProfile />} />
 
-        {/* ✅ صفحات محمية */}
-        <Route
-          path="/edit-profile"
-          element={
-            <ProtectedRoute>
-              <EditProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-project"
-          element={
-            <ProtectedRoute>
-              <CreateProject />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/freelancer/dashboard"
-          element={
-            <ProtectedRoute>
-              <FreelancerDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/manage-project/:projectId"
-          element={
-            <ProtectedRoute>
-              <ManageProject />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ✅ صفحات عامة */}
-
-        <Route
-          path="/projects/:projectId"
-          element={
-            <ProtectedRoute>
-              <ProjectDetails />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/rate"
-          element={
-            <ProtectedRoute>
-              <TopRatedFreelancers />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/dashoard/projects"
-          element={
-            <ProtectedRoute>
-              <ProjectsDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/projects/"
-          element={
-            <ProtectedRoute>
-              <ProjectsAvalible />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/freelancers"
-          element={
-            <ProtectedRoute>
-              <AllFreeLance />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/freelancer/profile/:id"
-          element={
-            <ProtectedRoute>
-              <FreeLanceDetail />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/courses"
-          element={
-            <ProtectedRoute>
-              <CoursesManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/courses/:id"
-          element={
-            <ProtectedRoute>
-              <CourseDetail />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <NotificationsPage />
-            </ProtectedRoute>
-          }
-        />
-
-
-        <Route
-          path="/freelancer/project/:projectId"
-          element={
-            <ProtectedRoute>
-              <FreelancerManageProject />
-            </ProtectedRoute>
-          }
-        />
-
+        {/* Protected Pages */}
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/create-project" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+        <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} />
+        <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
+        <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
+        <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
+        <Route path="/dashoard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
+        <Route path="/projects/" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
+        <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
+        <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        <Route path="/courses" element={<ProtectedRoute><CoursesManagement /></ProtectedRoute>} />
+        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
       
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
     </>
   );
 }
