@@ -158,7 +158,7 @@ export default function EnhancedNavbar() {
     { label: "ABOUT US", path: "/about" },
     { label: "NEWS", path: "/news" },
     { label: "CONTACT", path: "/contact" },
-    { label: "PLANS", path: "/plans" },
+    { label: "PLANS", path: "/plans" , condition: userData?.role_id !== 3 || userData?.role_id === 1 }, // Hide for Clients
 
   ];
 

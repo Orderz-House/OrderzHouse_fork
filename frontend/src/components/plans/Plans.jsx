@@ -1,11 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ===================================================================
-// IMPORTANT: This useAuth hook now assumes your real login process
-// will store a 'user' object (with a 'role_id' property) and a 'token'
-// in localStorage upon successful login.
-// ===================================================================
+// =================== CUSTOM HOOK TO GET AUTH INFO ===================
 const useAuth = () => {
   const storedUser = localStorage.getItem('user');
   const storedToken = localStorage.getItem('token'); // Assuming you also store a token
