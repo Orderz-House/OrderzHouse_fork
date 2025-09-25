@@ -17,34 +17,50 @@ export const createProject = async (req, res) => {
       title,
       description,
       budget,
+      duration_type, // NEW: "days" or "hours"
       duration_days,
+      duration_hours,
       project_type, // 'fixed' | 'bidding' | 'hourly'
       budget_min,
       budget_max,
       hourly_rate,
-      preferred_skills, // NEW: array of skills
+      preferred_skills, // array of skills
     } = req.body;
 
     // Validate required fields for all projects
-    if (!category_id || !title || !description) {
+    if (!category_id || !title || !description || !duration_type) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message:
+          "Missing required fields (category_id, title, description, duration_type)",
+      });
+    }
+
+    if (duration_type !== "days" && duration_type !== "hours") {
+      return res.status(400).json({
+        success: false,
+        message: "duration_type must be either 'days' or 'hours'",
       });
     }
 
     // Validate type-specific fields
     if (!project_type) {
-      return res
-        .status(400)
-        .json({ success: false, message: "project_type is required" });
+      return res.status(400).json({
+        success: false,
+        message: "project_type is required",
+      });
     }
 
     if (project_type === "fixed") {
-      if (budget === undefined || duration_days === undefined) {
+      if (
+        budget === undefined ||
+        (duration_type === "days"
+          ? duration_days === undefined
+          : duration_hours === undefined)
+      ) {
         return res.status(400).json({
           success: false,
-          message: "budget and duration_days are required for fixed projects",
+          message: "budget and duration are required for fixed projects",
         });
       }
     }
@@ -53,12 +69,14 @@ export const createProject = async (req, res) => {
       if (
         budget_min === undefined ||
         budget_max === undefined ||
-        duration_days === undefined
+        (duration_type === "days"
+          ? duration_days === undefined
+          : duration_hours === undefined)
       ) {
         return res.status(400).json({
           success: false,
           message:
-            "budget_min, budget_max and duration_days are required for bidding projects",
+            "budget_min, budget_max and duration are required for bidding projects",
         });
       }
     }
@@ -76,19 +94,19 @@ export const createProject = async (req, res) => {
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, title, description,
-        budget, duration_days, project_type,
+        budget, duration_days, duration_hours, project_type,
         budget_min, budget_max, hourly_rate,
         preferred_skills,
         status, is_deleted, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11,
-        'pending', false, null
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+        $12, 'pending', false, null
       ) RETURNING *;
     `;
 
-    // Only include duration_days for fixed or bidding
-    const durationValue = project_type === "hourly" ? null : duration_days;
+    const durationDaysValue = duration_type === "days" ? duration_days : null;
+    const durationHoursValue =
+      duration_type === "hours" ? duration_hours : null;
 
     const { rows } = await pool.query(insertQuery, [
       userId,
@@ -96,12 +114,13 @@ export const createProject = async (req, res) => {
       title,
       description,
       budget || null,
-      durationValue,
+      durationDaysValue,
+      durationHoursValue,
       project_type,
       budget_min || null,
       budget_max || null,
       hourly_rate || null,
-      preferred_skills || null, // NEW
+      preferred_skills || null,
     ]);
 
     const project = rows[0];
@@ -164,9 +183,9 @@ ORDER BY p.created_at DESC;
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
-    // Use freelancer_id from body or token
-    const freelancer_id = req.body.freelancer_id || req.token.userId;
+    const { freelancer_id, assignment_type = "solo" } = req.body;
 
+    // Validate freelancer_id
     if (!freelancer_id) {
       return res
         .status(400)
@@ -195,7 +214,21 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "Only freelancers can be assigned" });
     }
 
-    // Check if already assigned
+    // If solo assignment, ensure no one is already assigned
+    if (assignment_type === "solo") {
+      const soloCheck = await pool.query(
+        `SELECT id FROM project_assignments WHERE project_id = $1 AND assignment_type = 'solo'`,
+        [projectId]
+      );
+      if (soloCheck.rows.length) {
+        return res.status(400).json({
+          success: false,
+          message: "This project already has a solo assignment",
+        });
+      }
+    }
+
+    // Check if freelancer already assigned
     const existsResult = await pool.query(
       `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
@@ -208,21 +241,27 @@ export const assignProject = async (req, res) => {
 
     // Insert assignment
     const insertAssign = `
-      INSERT INTO project_assignments (project_id, freelancer_id, status)
-      VALUES ($1, $2, 'active')
+      INSERT INTO project_assignments (project_id, freelancer_id, status, assignment_type)
+      VALUES ($1, $2, 'active', $3)
       RETURNING *;
     `;
-    const { rows } = await pool.query(insertAssign, [projectId, freelancer_id]);
+    const { rows } = await pool.query(insertAssign, [
+      projectId,
+      freelancer_id,
+      assignment_type,
+    ]);
 
     if (rows.length > 0) {
-      await pool.query(
-        `UPDATE projects
-         SET assigned_freelancer_id = $1, 
-             completion_status = 'not_started',
-             status = 'active'
-         WHERE id = $2`,
-        [freelancer_id, projectId]
-      );
+      // Update project (optional — depends on your logic)
+      if (assignment_type === "solo") {
+        await pool.query(
+          `UPDATE projects
+           SET completion_status = 'not_started',
+               status = 'active'
+           WHERE id = $1`,
+          [projectId]
+        );
+      }
 
       // Log assignment
       await LogCreators.projectOperation(
@@ -230,7 +269,7 @@ export const assignProject = async (req, res) => {
         ACTION_TYPES.ASSIGNMENT_CREATE,
         projectId,
         true,
-        { freelancer_id, assignment_id: rows[0].id }
+        { freelancer_id, assignment_id: rows[0].id, assignment_type }
       );
 
       // Notification
@@ -413,90 +452,103 @@ export const getRelatedFreelancers = async (req, res) => {
 export const getProjectById = async (req, res) => {
   const { projectId } = req.params;
 
-  const project = await pool.query(
-    `SELECT
-  p.*,
-  (
-    SELECT COALESCE(SUM(e.amount), 0)
-    FROM escrow e
-    WHERE e.project_id = p.id
-      AND e.status = 'held'
-  ) AS in_escrow,
-(
-  SELECT COALESCE(SUM(e.amount), 0)
-  FROM escrow e
-  JOIN freelancer_completion fc
-    ON fc.project_id = e.project_id
-   AND fc.freelancer_id = e.freelancer_id
-  WHERE e.project_id = p.id
-    AND e.status = 'held'
-    AND fc.status = 'pending_review'
-) AS to_be_released,
-(
-  SELECT COALESCE(json_agg(json_build_object(
-    'assigned_at', pa.assigned_at,
-    'status', pa.status,
-    'completion_status', fc.status,
-    'freelancer', json_build_object(
-      'id', u.id,
-      'first_name', u.first_name,
-      'last_name', u.last_name,
-      'email', u.email,
-      'username', u.username,
-      'amount_in_escrow', (
-        SELECT COALESCE(SUM(e.amount), 0)
-        FROM escrow e
-        WHERE e.project_id = pa.project_id
-          AND e.freelancer_id = pa.freelancer_id
-      )
-    )
-  )), '[]')
-  FROM project_assignments pa
-  JOIN users u ON pa.freelancer_id = u.id
-  LEFT JOIN freelancer_completion fc
-    ON fc.project_id = pa.project_id
-   AND fc.freelancer_id = pa.freelancer_id
-  WHERE pa.project_id = p.id
-) AS assignments,
-  (
-    SELECT COALESCE(json_agg(json_build_object(
-      'id', o.id,
-      'bid_amount', o.bid_amount,
-      'delivery_time', o.delivery_time,
-      'proposal', o.proposal,
-      'status_offer', o.offer_status,
-      'submitted_at', o.submitted_at,
-      'freelancer', json_build_object(
-        'id', uf.id,
-        'first_name', uf.first_name,
-        'last_name', uf.last_name,
-        'email', uf.email,
-        'username', uf.username,
-        'image', uf.profile_pic_url
-      )
-    )), '[]')
-    FROM offers o
-    JOIN users uf ON o.freelancer_id = uf.id
-    WHERE o.project_id = p.id
-  ) AS offers
+  try {
+    const project = await pool.query(
+      `
+      SELECT
+        p.*,
+        (
+          SELECT COALESCE(SUM(e.amount), 0)
+          FROM escrow e
+          WHERE e.project_id = p.id
+            AND e.status = 'held'
+        ) AS in_escrow,
+        (
+          SELECT COALESCE(SUM(e.amount), 0)
+          FROM escrow e
+          JOIN completion_history ch
+            ON ch.project_id = e.project_id
+          WHERE e.project_id = p.id
+            AND e.status = 'held'
+            AND ch.event = 'completion_requested'
+        ) AS to_be_released,
+        (
+          SELECT COALESCE(json_agg(json_build_object(
+            'assigned_at', pa.assigned_at,
+            'status', pa.status,
+            'completion_history', (
+              SELECT COALESCE(json_agg(json_build_object(
+                'event', ch.event,
+                'timestamp', ch.timestamp,
+                'notes', ch.notes,
+                'actor', ch.actor
+              )), '[]')
+              FROM completion_history ch
+              WHERE ch.project_id = pa.project_id
+            ),
+            'freelancer', json_build_object(
+              'id', u.id,
+              'first_name', u.first_name,
+              'last_name', u.last_name,
+              'email', u.email,
+              'username', u.username,
+              'amount_in_escrow', (
+                SELECT COALESCE(SUM(e.amount), 0)
+                FROM escrow e
+                WHERE e.project_id = pa.project_id
+                  AND e.freelancer_id = pa.freelancer_id
+              )
+            )
+          )), '[]')
+          FROM project_assignments pa
+          JOIN users u ON pa.freelancer_id = u.id
+          WHERE pa.project_id = p.id
+        ) AS assignments,
+        (
+          SELECT COALESCE(json_agg(json_build_object(
+            'id', o.id,
+            'bid_amount', o.bid_amount,
+            'delivery_time', o.delivery_time,
+            'proposal', o.proposal,
+            'status_offer', o.offer_status,
+            'submitted_at', o.submitted_at,
+            'freelancer', json_build_object(
+              'id', uf.id,
+              'first_name', uf.first_name,
+              'last_name', uf.last_name,
+              'email', uf.email,
+              'username', uf.username,
+              'image', uf.profile_pic_url
+            )
+          )), '[]')
+          FROM offers o
+          JOIN users uf ON o.freelancer_id = uf.id
+          WHERE o.project_id = p.id
+        ) AS offers
+      FROM projects p
+      WHERE p.id = $1 AND p.is_deleted = false;
+      `,
+      [projectId]
+    );
 
-FROM projects p
-WHERE p.id = $1 AND p.is_deleted = false;
-`,
-    [projectId]
-  );
+    if (!project.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No Project Found",
+      });
+    }
 
-  if (!project.rows.length) {
-    return res.status(404).json({
+    res.status(200).json({
+      success: true,
+      project: project.rows[0],
+    });
+  } catch (error) {
+    console.error("getProjectById error:", error);
+    res.status(500).json({
       success: false,
-      message: "No Project Found",
+      message: "Server error",
     });
   }
-
-  res.status(200).json({
-    success: true,
-    project,
-  });
 };
 
 export const getAllProjectForOffer = (req, res) => {

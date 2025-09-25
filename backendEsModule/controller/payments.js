@@ -2,49 +2,84 @@ import { pool } from "../models/db.js";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
+import cloudinary from "cloudinary";
+import multer from "multer";
+import fs from "fs";
+
+// Cloudinary config
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer config for file uploads
+const upload = multer({ dest: "uploads/" });
 
 /**
  * Client records offline payment (creates payments row).
  * Admin will later approve it.
  */
-export const recordOfflinePayment = async (req, res) => {
-  const clientId = req.token?.userId;
-  const { projectId, amount } = req.body;
+export const recordOfflinePayment = [
+  upload.single("proof"), // proof is the file field name
+  async (req, res) => {
+    const clientId = req.token?.userId;
+    const { projectId, amount } = req.body;
+    const proofFile = req.file;
 
-  if (!projectId || !amount) {
-    return res
-      .status(400)
-      .json({ success: false, message: "projectId and amount required" });
-  }
+    if (!projectId || !amount || !proofFile) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "projectId, amount, and proof file are required",
+        });
+    }
 
-  try {
-    const insert = await pool.query(
-      `INSERT INTO payments (payer_id, receiver_id, project_id, amount, payment_date)
-       VALUES ($1, $2, $3, $4, NOW())
-       RETURNING *`,
-      [clientId, process.env.ADMIN_ID || 1, projectId, amount]
-    );
+    try {
+      // Upload proof to Cloudinary
+      const result = await cloudinary.v2.uploader.upload(proofFile.path, {
+        folder: "payment_proofs",
+      });
 
-    const payment = insert.rows[0];
+      // Insert payment with proof URL
+      const insert = await pool.query(
+        `INSERT INTO payments (payer_id, receiver_id, project_id, amount, proof_url, payment_date)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING *`,
+        [
+          clientId,
+          process.env.ADMIN_ID || 1,
+          projectId,
+          amount,
+          result.secure_url,
+        ]
+      );
 
-    await LogCreators.projectOperation(
-      clientId,
-      ACTION_TYPES.PAYMENT_PENDING,
-      projectId,
-      true,
-      { payment_id: payment.id, amount }
-    );
+      const payment = insert.rows[0];
 
-    return res.status(201).json({
-      success: true,
-      message: "Payment recorded as pending. Admin will review.",
-      payment,
-    });
-  } catch (err) {
-    console.error("recordOfflinePayment error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
+      await LogCreators.projectOperation(
+        clientId,
+        ACTION_TYPES.PAYMENT_PENDING,
+        projectId,
+        true,
+        { payment_id: payment.id, amount }
+      );
+
+      // Clean up local file
+      fs.unlinkSync(proofFile.path);
+
+      return res.status(201).json({
+        success: true,
+        message: "Payment recorded as pending. Admin will review.",
+        payment,
+      });
+    } catch (err) {
+      console.error("recordOfflinePayment error:", err);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+];
 
 /**
  * Admin approves/rejects a recorded offline payment.
@@ -83,13 +118,11 @@ export const approveOfflinePayment = async (req, res) => {
     const payment = rows[0];
 
     if (action === "approve") {
-      // mark payment as approved by setting order_id = paymentId (simple marker)
       await client.query(`UPDATE payments SET order_id = $1 WHERE id = $2`, [
         paymentId,
         paymentId,
       ]);
 
-      // mark project as available so freelancers can take it
       await client.query(
         `UPDATE projects SET status = 'available' WHERE id = $1`,
         [payment.project_id]
@@ -105,7 +138,6 @@ export const approveOfflinePayment = async (req, res) => {
         { paymentId, amount: payment.amount }
       );
 
-      // notify client (payer) that payment was approved
       try {
         await NotificationCreators.paymentApproved(
           payment.id,
@@ -124,7 +156,6 @@ export const approveOfflinePayment = async (req, res) => {
     }
 
     if (action === "reject") {
-      // we set order_id = -1 to indicate rejection (or you may delete the row instead)
       await client.query(`UPDATE payments SET order_id = -1 WHERE id = $1`, [
         paymentId,
       ]);
@@ -163,6 +194,7 @@ export const approveOfflinePayment = async (req, res) => {
   }
 };
 
+// Rest of your existing controller stays unchanged...
 
 /**
  * Freelancer submits completion request
@@ -182,12 +214,10 @@ export const submitWorkCompletion = async (req, res) => {
       !check.rows.length ||
       check.rows[0].assigned_freelancer_id !== freelancerId
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only assigned freelancer can submit completion",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Only assigned freelancer can submit completion",
+      });
     }
 
     // update project completion status
@@ -267,12 +297,10 @@ export const releasePayment = async (req, res) => {
     const projectOwnerId = projRes.rows[0].user_id;
     if (projectOwnerId !== callerId) {
       await client.query("ROLLBACK");
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only project owner can release payment",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Only project owner can release payment",
+      });
     }
 
     // find held escrow
@@ -282,12 +310,10 @@ export const releasePayment = async (req, res) => {
     );
     if (!escrowRes.rows.length) {
       await client.query("ROLLBACK");
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "No held escrow found for this freelancer/project",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "No held escrow found for this freelancer/project",
+      });
     }
     const escrow = escrowRes.rows[0];
 
