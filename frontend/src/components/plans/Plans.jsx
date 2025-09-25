@@ -1,30 +1,19 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux'; // Import useSelector
 
-// =================== CUSTOM HOOK TO GET AUTH INFO ===================
+// =================== CUSTOM HOOK TO GET AUTH INFO (Using Redux) ===================
 const useAuth = () => {
-  const storedUser = localStorage.getItem('user');
-  const storedToken = localStorage.getItem('token'); // Assuming you also store a token
+  // Get user data and token directly from the Redux store
+  const { user, token } = useSelector((state) => ({
+    user: state.auth.userData,
+    token: state.auth.token,
+  }));
 
-  if (storedUser && storedToken) {
-    try {
-      const user = JSON.parse(storedUser);
-      // Ensure the user object has the expected role_id property
-      if (user && typeof user.role_id === 'number') {
-        return { user, token: storedToken };
-      }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      // Clear invalid data
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-    }
-  }
-  // If no valid user or token, return null for user
-  return { user: null, token: null };
+  // The hook now returns the user and token from the global state
+  return { user, token };
 };
-// ===================================================================
-
+// =================================================================================
 
 const plans = [
   { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
@@ -36,15 +25,28 @@ const plans = [
 function PlanCard({ plan, user, navigate }) {
 
   const handleChoosePlan = () => {
-    // --- CORRECTED LOGIC HERE ---
-    // 1. Check if the user is NOT logged in.
+    // *** MODIFICATION: Logic updated to match requirements ***
+
+    // 1. If the user is NOT logged in, redirect to the login page.
     if (!user) {
-      navigate('/login'); // Redirect to login page
+      navigate('/login');
       return;
     }
 
-    // 2. If the user IS logged in, proceed to WhatsApp.
-    // (The Plans page itself is already hidden for Clients by the parent component)
+    // 2. If the user has role_id 3 (Freelancer), redirect to WhatsApp.
+    if (user.role_id === 3) {
+      const baseUrl = "https://api.whatsapp.com/send/";
+      const phoneNumber = "962791433341"; // Your WhatsApp Number
+      const message = `I am a freelancer and I want to subscribe to this plan: ${plan.name}`;
+      const encodedMessage = encodeURIComponent(message );
+      const finalUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
+      
+      window.open(finalUrl, '_blank');
+      return;
+    }
+    
+    // 3. For any other authenticated user (like Admins), redirect to WhatsApp as a fallback.
+    //    (Clients with role_id 2 will never see this page anyway).
     const baseUrl = "https://api.whatsapp.com/send/";
     const phoneNumber = "962791433341";
     const message = `I want to subscribe to this plan: ${plan.name}`;
@@ -74,7 +76,7 @@ function PlanCard({ plan, user, navigate }) {
         position: "relative",
         cursor: "pointer"
       }}
-      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#56a8b3ff"; }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f0f9ff"; }}
       onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
     >
       {plan.isPopular && (
@@ -104,9 +106,11 @@ function PlanCard({ plan, user, navigate }) {
           color: "white",
           padding: "0.5rem",
           borderRadius: "0.5rem",
-          fontWeight: "600"
+          fontWeight: "600",
+          border: "none",
+          cursor: "pointer"
         }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor="#55b1eeff"}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor="#026e7a"}
         onMouseLeave={e => e.currentTarget.style.backgroundColor="#028090"}
         onClick={handleChoosePlan}
       >
@@ -117,52 +121,49 @@ function PlanCard({ plan, user, navigate }) {
 }
 
 export default function Plans() {
-  const { user } = useAuth(); // Get the user object from the hook
+  const { user } = useAuth(); // Get user from Redux via the hook
   const navigate = useNavigate();
 
-  // Effect to handle redirection based on user role
+  // Effect to hide the entire page for Clients (role_id 2)
   useEffect(() => {
-    // If user is logged in AND their role_id is 2 (Client), redirect them.
-    // This hides the entire Plans page for Clients.
     if (user && user.role_id === 2) {
-      navigate("/Main"); // Redirect to a main dashboard or home page
+      navigate("/"); // Redirect to home page or another appropriate page
     }
-  }, [user, navigate]); // Re-run if user or navigate changes
+  }, [user, navigate]);
 
-  // If user is logged in AND their role_id is 2, render nothing (while redirecting)
-  // This prevents the plans from briefly flashing on the screen for Clients.
+  // Prevent rendering the component for role_id 2 to avoid a screen flash
   if (user && user.role_id === 2) {
     return null; 
   }
 
-  // Styles (remain unchanged)
+  // Styles
   const containerStyle = { display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "2rem", padding: "2rem" };
   const noteStyle = {
     marginTop: "3rem",
-    background: "linear-gradient(#028090, #02C39A)",
+    background: "linear-gradient(to right, #e0f7fa, #b2ebf2)",
     padding: "2rem",
     borderRadius: "1rem",
     textAlign: "center",
     fontSize: "1.3rem",
     fontWeight: "600",
-    color: "#000000ff",
+    color: "#004d40",
     maxWidth: "900px",
     marginLeft: "auto",
-    marginRight: "auto"
+    marginRight: "auto",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
   };
   const bodyStyle = {
     minHeight: "100vh",
     fontFamily: "Merriweather, serif",
-    backgroundSize: "50px 50px",
+    background: "#f7fafc",
     paddingBottom: "4rem"
   };
 
   return (
     <div style={bodyStyle}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", position: "static", top: "0", background: "linear-gradient(#028090, #02C39A)", padding: "1rem 0" }}>Our Pricing Plans</h1>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", color: "#004d40" }}>Our Pricing Plans</h1>
       <div style={containerStyle}>
         {plans.map(plan => (
-          // Pass the user object and navigate function to PlanCard
           <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
         ))}
       </div>
