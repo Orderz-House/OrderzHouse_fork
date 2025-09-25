@@ -16,6 +16,9 @@ import {
   CheckCircle,
   Briefcase,
   ArrowLeft,
+  X,
+  Shield,
+  Check,
 } from "lucide-react";
 
 const countries = [
@@ -290,8 +293,26 @@ const Register = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [categories, setCategories] = useState([]); // For storing the categories
-  const [selectedCategory, setSelectedCategory] = useState(""); // Selected category
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+
+  // Password strength validation
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+  });
+
+  // Validate password strength
+  useEffect(() => {
+    setPasswordStrength({
+      hasMinLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /\d/.test(password),
+    });
+  }, [password]);
 
   // Fetch categories from API when the component mounts
   useEffect(() => {
@@ -305,13 +326,29 @@ const Register = () => {
       });
   }, []);
 
+  // Handle category selection
+  const handleCategoryToggle = (categoryId) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        return prev.filter(id => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // Remove category from selection
+  const removeCategory = (categoryId) => {
+    setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+  };
+
   const register = (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     // Prepare the data to send
     const userData = {
-      role_id,
+      role_id: parseInt(role_id),
       first_name,
       last_name,
       email,
@@ -321,9 +358,9 @@ const Register = () => {
       username,
     };
 
-    // Add category_id only if the user is a freelancer
+    // Add categories array if the user is a freelancer
     if (role_id === "3") {
-      userData.category_id = selectedCategory;
+      userData.categories = selectedCategories;
     }
 
     axios
@@ -358,6 +395,18 @@ const Register = () => {
       });
   };
 
+  const getPasswordStrengthText = () => {
+    const validCount = Object.values(passwordStrength).filter(Boolean).length;
+    if (validCount === 0) return { text: "", color: "" };
+    if (validCount === 1) return { text: "Very Weak", color: "text-red-600" };
+    if (validCount === 2) return { text: "Weak", color: "text-red-500" };
+    if (validCount === 3) return { text: "Good", color: "text-yellow-500" };
+    if (validCount === 4) return { text: "Strong", color: "text-green-600" };
+    return { text: "", color: "" };
+  };
+
+  const passwordStrengthInfo = getPasswordStrengthText();
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Decorative Waves Behind Container */}
@@ -366,7 +415,6 @@ const Register = () => {
         viewBox="0 0 1440 800"
         preserveAspectRatio="none"
       >
-        {/* Top waves */}
         <path
           d="M0,150 Q360,100 720,150 T1440,130"
           stroke="url(#blueGradient)"
@@ -388,8 +436,6 @@ const Register = () => {
           fill="none"
           opacity="0.18"
         />
-        
-        {/* Bottom waves */}
         <path
           d="M0,450 Q360,500 720,450 T1440,470"
           stroke="url(#blueGradient)"
@@ -411,8 +457,6 @@ const Register = () => {
           fill="none"
           opacity="0.18"
         />
-        
-        {/* Additional flowing waves */}
         <path
           d="M0,120 Q200,80 400,120 Q600,160 800,120 Q1000,80 1200,120 Q1320,140 1440,120"
           stroke="url(#blueToTeal)"
@@ -478,45 +522,38 @@ const Register = () => {
         </defs>
       </svg>
 
-      {/* Main Container */}
+      {/* Main Container - Fixed Width */}
       <div className="flex min-h-screen items-center justify-center px-4 lg:px-8 xl:px-16 py-8">
-        <div className="flex items-center justify-center max-w-7xl w-full">
+        <div className="flex items-center justify-center w-full max-w-7xl mx-auto">
           
-          {/* Registration Container */}
-          <div className="w-full max-w-4xl relative z-10">
+          {/* Registration Container - Fixed Width */}
+          <div className="w-full max-w-6xl relative z-10">
             {/* Header */}
-            <div className="text-center mb-4">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 font-serif leading-tight">
-                Join{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">
-                  ORDERZHOUSE
-                </span>
-              </h1>
-              <p className="text-gray-600 font-serif text-base lg:text-lg">
-                Create your account and start your journey with us
-              </p>
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center mb-4">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 font-serif leading-tight">
+                  Join{" "}
+                  <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">
+                    ORDERZHOUSE
+                  </span>
+                </h1>
+              </div>
+              
             </div>
 
-            {/* Registration Form Container */}
-            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden">
+            {/* Registration Form Container - Fixed Dimensions */}
+            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
               {/* Background gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl opacity-80"></div>
               
               <div className="relative z-10">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl lg:text-3xl font-medium text-gray-900 font-serif">
-                    Create your account
-                  </h2>
-                  <p className="text-gray-600 mt-2 font-serif text-base">
-                    Fill in your details to get started
-                  </p>
-                </div>
+              
 
                 <form onSubmit={register} className="space-y-5">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
-                    {/* Left Column */}
-                    <div className="space-y-5">
+                    {/* Left Column - Fixed Width */}
+                    <div className="space-y-5 min-h-0">
                       
                       {/* Role Selection */}
                       <div>
@@ -547,33 +584,65 @@ const Register = () => {
                         </div>
                       </div>
 
-                      {/* Category Selection (Freelancer Only) */}
+                      {/* Multiple Categories Selection (Freelancer Only) - Fixed Container */}
                       {role_id === "3" && (
-                        <div>
-                          <label
-                            htmlFor="category_id"
-                            className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                          >
-                            Select Category
+                        <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                          <label className="block text-base font-semibold text-gray-700 mb-3 font-serif">
+                            What category would you like to work in?
+                            <span className="block text-sm font-normal text-gray-500 mt-1">
+                              Choose your areas of expertise (select multiple)
+                            </span>
                           </label>
-                          <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                              <Briefcase className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                          
+                          {/* Selected Categories Display - Fixed Height with Scroll */}
+                          {selectedCategories.length > 0 && (
+                            <div className="mb-4 max-h-20 overflow-y-auto">
+                              <div className="flex flex-wrap gap-2">
+                                {selectedCategories.map((categoryId) => {
+                                  const category = categories.find(cat => cat.id === categoryId);
+                                  return category ? (
+                                    <div
+                                      key={categoryId}
+                                      className="inline-flex items-center bg-gradient-to-r from-teal-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm flex-shrink-0"
+                                    >
+                                      <span className="truncate max-w-24">{category.name}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeCategory(categoryId)}
+                                        className="ml-2 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors flex-shrink-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ) : null;
+                                })}
+                              </div>
                             </div>
-                            <select
-                              id="category_id"
-                              value={selectedCategory}
-                              onChange={(e) => setSelectedCategory(e.target.value)}
-                              required
-                              className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                            >
-                              <option value="">Select Category</option>
+                          )}
+
+                          {/* Category Selection Grid - Fixed Height with Scroll */}
+                          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                            <div className="grid grid-cols-1 gap-2 p-3">
                               {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                  {category.name}
-                                </option>
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  onClick={() => handleCategoryToggle(category.id)}
+                                  className={`p-3 rounded-lg border-2 transition-all duration-200 font-medium text-left ${
+                                    selectedCategories.includes(category.id)
+                                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex items-center">
+                                    {selectedCategories.includes(category.id) && (
+                                      <Check className="w-4 h-4 text-teal-600 mr-2" />
+                                    )}
+                                    <span className="truncate">{category.name}</span>
+                                  </div>
+                                </button>
                               ))}
-                            </select>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -626,35 +695,33 @@ const Register = () => {
                         </div>
                       </div>
 
-                      {/* Phone Number */}
                       <div>
-                        <label
-                          htmlFor="phone_number"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Phone Number
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Phone className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="tel"
-                            id="phone_number"
-                            placeholder="Enter your phone number"
-                            value={phone_number}
-                            onChange={(e) => setPhone_number(e.target.value)}
-                            pattern="^[0-9+\-\s()]*$"
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
-                      </div>
+    <label htmlFor="username" className="block text-base font-semibold text-gray-700 mb-2 font-serif">
+      Username
+    </label>
+    <div className="relative group">
+      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
+        <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+      </div>
+      <input
+        type="text"
+        id="username"
+        placeholder="Choose a username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        required
+        className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
+      />
+    </div>
+  </div>
+
+
+                      
 
                     </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-5">
+                    {/* Right Column - Fixed Width */}
+                    <div className="space-y-5 min-h-0">
                       
                       {/* Email */}
                       <div>
@@ -680,7 +747,7 @@ const Register = () => {
                         </div>
                       </div>
 
-                      {/* Password */}
+                      {/* Password with Strength Indicator */}
                       <div>
                         <label
                           htmlFor="password"
@@ -713,7 +780,39 @@ const Register = () => {
                             )}
                           </button>
                         </div>
-                      </div>
+                        
+                       {/* Password Strength Indicator */}
+{password && (
+  <div className="mt-2">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-sm font-medium text-gray-700">Password Strength:</span>
+      <span className={`text-sm font-semibold ${passwordStrengthInfo.color}`}>
+        {passwordStrengthInfo.text}
+      </span>
+    </div>
+
+    {/* 2-column grid for the 4 checks */}
+    <div className="grid grid-cols-2 gap-2">
+      <div className={`flex items-center text-xs ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-400'}`}>
+        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-300'}`} />
+        At least 8 characters
+      </div>
+      <div className={`flex items-center text-xs ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-400'}`}>
+        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-300'}`} />
+        One uppercase letter
+      </div>
+      <div className={`flex items-center text-xs ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-400'}`}>
+        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-300'}`} />
+        One lowercase letter
+      </div>
+      <div className={`flex items-center text-xs ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
+        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-300'}`} />
+        One number
+      </div>
+    </div>
+  </div>
+)}
+</div>
 
                       {/* Country */}
                       <div>
@@ -744,40 +843,42 @@ const Register = () => {
                         </div>
                       </div>
 
-                      {/* Username */}
+                      {/* Phone Number */}
                       <div>
                         <label
-                          htmlFor="username"
+                          htmlFor="phone_number"
                           className="block text-base font-semibold text-gray-700 mb-2 font-serif"
                         >
-                          Username
+                          Phone Number
                         </label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                            <Phone className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
                           </div>
                           <input
-                            type="text"
-                            id="username"
-                            placeholder="Choose a username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="tel"
+                            id="phone_number"
+                            placeholder="Enter your phone number"
+                            value={phone_number}
+                            onChange={(e) => setPhone_number(e.target.value)}
+                            pattern="^[0-9+\-\s()]*$"
                             required
                             className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
                           />
                         </div>
                       </div>
 
+                     
                     </div>
                   </div>
 
                   {/* Terms Checkbox */}
-                  <div className="flex items-center">
+                  <div className="flex items-start">
                     <input
                       id="terms"
                       name="terms"
                       type="checkbox"
-                      className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                      className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
                       required
                     />
                     <label
@@ -787,6 +888,10 @@ const Register = () => {
                       I agree to the{" "}
                       <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold transition-colors">
                         Terms and Conditions
+                      </a>{" "}
+                      and{" "}
+                      <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold transition-colors">
+                        Privacy Policy
                       </a>
                     </label>
                   </div>
@@ -824,12 +929,12 @@ const Register = () => {
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                               ></path>
                             </svg>
-                            Creating account...
+                            Creating secure account...
                           </>
                         ) : (
                           <>
-                            <UserPlus className="w-6 h-6 mr-2" />
-                            Create Account
+                            <Shield className="w-6 h-6 mr-2" />
+                            Create Secure Account
                           </>
                         )}
                       </div>

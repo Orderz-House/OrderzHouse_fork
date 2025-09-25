@@ -12,55 +12,96 @@ export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
 
-    // Check if user exists and has role 1 or 2
-    const { rows: userRows } = await pool.query(
-      `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
-      [userId]
-    );
+    const {
+      category_id,
+      title,
+      description,
+      budget,
+      duration_days,
+      project_type, // 'fixed' | 'bidding' | 'hourly'
+      budget_min,
+      budget_max,
+      hourly_rate,
+      preferred_skills, // NEW: array of skills
+    } = req.body;
 
-    if (
-      !userRows.length ||
-      (userRows[0].role_id !== 1 && userRows[0].role_id !== 2)
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Only users with role 1 or role 2 can create projects",
-      });
-    }
-
-    const { category_id, title, description, budget, duration_days } = req.body;
-
-    // Validate required fields
-    if (
-      !category_id ||
-      !title ||
-      !description ||
-      budget === undefined ||
-      duration_days === undefined
-    ) {
+    // Validate required fields for all projects
+    if (!category_id || !title || !description) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
       });
     }
 
+    // Validate type-specific fields
+    if (!project_type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "project_type is required" });
+    }
+
+    if (project_type === "fixed") {
+      if (budget === undefined || duration_days === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "budget and duration_days are required for fixed projects",
+        });
+      }
+    }
+
+    if (project_type === "bidding") {
+      if (
+        budget_min === undefined ||
+        budget_max === undefined ||
+        duration_days === undefined
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "budget_min, budget_max and duration_days are required for bidding projects",
+        });
+      }
+    }
+
+    if (project_type === "hourly") {
+      if (hourly_rate === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "hourly_rate is required for hourly projects",
+        });
+      }
+    }
+
     // Insert project
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, title, description,
-        budget, duration_days, status, is_deleted
+        budget, duration_days, project_type,
+        budget_min, budget_max, hourly_rate,
+        preferred_skills,
+        status, is_deleted, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, 'pending', false
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11,
+        'pending', false, null
       ) RETURNING *;
     `;
+
+    // Only include duration_days for fixed or bidding
+    const durationValue = project_type === "hourly" ? null : duration_days;
 
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
       title,
       description,
-      budget,
-      duration_days,
+      budget || null,
+      durationValue,
+      project_type,
+      budget_min || null,
+      budget_max || null,
+      hourly_rate || null,
+      preferred_skills || null, // NEW
     ]);
 
     const project = rows[0];
@@ -347,29 +388,26 @@ export const getSubCategories = async (req, res) => {
   }
 };
 
-// Get related freelancers for a project by category and optional subcategory
 export const getRelatedFreelancers = async (req, res) => {
-  const { projectId } = req.params;
+  const { categoryId } = req.params;
 
-  const { rows: projectRows } = await pool.query(
-    `SELECT id, category_id FROM projects WHERE id = $1 AND is_deleted = false`,
-    [projectId]
-  );
+  try {
+    const { rows: freelancers } = await pool.query(
+      `SELECT u.*
+       FROM users u
+       JOIN freelancer_categories fc 
+         ON u.id = fc.freelancer_id
+       WHERE fc.category_id = $1
+         AND u.role_id = 3
+         AND u.is_deleted = false`,
+      [categoryId]
+    );
 
-  if (!projectRows.length) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Project not found" });
+    res.status(200).json({ success: true, freelancers });
+  } catch (error) {
+    console.error("Error fetching related freelancers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-
-  const { category_id } = projectRows[0];
-
-  const { rows: freelancers } = await pool.query(
-    `SELECT * FROM users WHERE role_id = 3 AND category_id = $1 AND is_deleted = false`,
-    [category_id]
-  );
-
-  res.status(200).json({ success: true, freelancers });
 };
 
 export const getProjectById = async (req, res) => {
@@ -722,7 +760,7 @@ export const submitWorkCompletion = async (req, res) => {
   }
 };
 
-export const getAllProjectForFreelancerById = async (req, res) => { 
+export const getAllProjectForFreelancerById = async (req, res) => {
   const freelancerId = req.params.freelancerId || req.token?.userId;
 
   try {

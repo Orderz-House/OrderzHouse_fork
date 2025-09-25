@@ -2,10 +2,13 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
 
-import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "../services/loggingService.js";
+import {
+  LogCreators,
+  ACTION_TYPES,
+  ENTITY_TYPES,
+} from "../services/loggingService.js";
 import { createNotification } from "../services/notificationService.js";
 import pool from "../models/db.js";
-
 const register = async (req, res) => {
   const {
     role_id,
@@ -16,8 +19,12 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
-    category_id,
+    categories, // array of category IDs for freelancers
   } = req.body;
+
+  // Back-end validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/; // min 8 chars, 1 uppercase, 1 number
 
   if (
     !role_id ||
@@ -27,13 +34,37 @@ const register = async (req, res) => {
     !password ||
     !phone_number ||
     !country ||
-    !username ||
-    (role_id === 3 && !category_id)
+    !username
   ) {
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
+  }
+
+  if (!emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid email format" });
+  }
+
+  if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message: "All fields are required",
+      message:
+        "Password must be at least 8 characters long, include 1 uppercase letter, 1 lowercase letter, and 1 number",
     });
+  }
+
+  if (
+    role_id === 3 &&
+    (!categories || !Array.isArray(categories) || categories.length === 0)
+  ) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Freelancer must have at least one category",
+      });
   }
 
   try {
@@ -43,8 +74,22 @@ const register = async (req, res) => {
     );
     const Email = email.toLowerCase();
 
+    // Check for unique email and username
+    const existingUser = await pool.query(
+      "SELECT id FROM Users WHERE email=$1 OR username=$2",
+      [Email, username]
+    );
+    if (existingUser.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ success: false, message: "Email or username already exists" });
+    }
+
+    // Insert user
     const { rows: userRows } = await pool.query(
-      "INSERT INTO Users (role_id, first_name, last_name, email, password, phone_number, country, username, category_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      `INSERT INTO Users 
+      (role_id, first_name, last_name, email, password, phone_number, country, username) 
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [
         role_id,
         first_name,
@@ -54,61 +99,60 @@ const register = async (req, res) => {
         phone_number,
         country,
         username,
-        category_id,
       ]
     );
-
     const user = userRows[0];
 
+    // Insert freelancer categories
+    if (role_id === 3) {
+      const insertValues = categories
+        .map((_, idx) => `($1, $${idx + 2})`)
+        .join(", ");
+      const queryParams = [user.id, ...categories];
+      await pool.query(
+        `INSERT INTO freelancer_categories (freelancer_id, category_id) VALUES ${insertValues}`,
+        queryParams
+      );
+    }
+
+    // Logging
     const positionRole =
-      user.role_id === 1
-        ? "Admin"
-        : user.role_id === 2
-        ? "Client"
-        : "Freelancer";
-    const actionUser = `${user.first_name} ${user.last_name}, a ${positionRole} from ${user.country}, has registered successfully.`;
+      role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
+    const actionUser = `${first_name} ${last_name}, a ${positionRole} from ${country}, has registered successfully.`;
     await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
       user.id,
       actionUser,
     ]);
+    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, {
+      role_id,
+      country,
+    });
 
-    await LogCreators.userAuth(
-      user.id,
-      ACTION_TYPES.USER_REGISTER,
-      true,
-      { role_id: user.role_id, country: user.country }
-    );
-
+    // Notification
     try {
       await createNotification(
         user.id,
-        'user_registered',
-        `Welcome to the platform, ${user.first_name}! Your account has been created successfully.`,
+        "user_registered",
+        `Welcome to the platform, ${first_name}! Your account has been created successfully.`,
         user.id,
-        'user'
+        "user"
       );
     } catch (notificationError) {
-      console.error('Error creating welcome notification:', notificationError);
+      console.error("Error creating welcome notification:", notificationError);
     }
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: userRows[0],
-    });
+    res
+      .status(201)
+      .json({ success: true, message: "User registered successfully", user });
   } catch (err) {
-    if (err.constraint === "users_email_key") {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
-    } else {
-      return res.status(500).json({
+    console.error(err);
+    return res
+      .status(500)
+      .json({
         success: false,
         message: "Internal server error",
         error: err.message,
       });
-    }
   }
 };
 
@@ -184,13 +228,11 @@ const login = async (req, res) => {
       actionUser,
     ]);
 
-    await LogCreators.userAuth(
-      user.id,
-      ACTION_TYPES.USER_LOGIN,
-      true,
-      { role_id: user.role_id, country: user.country, ip: req.ip }
-    );
-
+    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_LOGIN, true, {
+      role_id: user.role_id,
+      country: user.country,
+      ip: req.ip,
+    });
 
     return res.status(201).json({
       token,
@@ -512,7 +554,7 @@ const editPortfolioFreelancer = async (req, res) => {
   }
 };
 
- const deletePortfolioFreelancer = async (req, res) => {
+const deletePortfolioFreelancer = async (req, res) => {
   try {
     const userId = req.token?.userId; // authenticated user
     const role = req.token?.role;
@@ -525,22 +567,18 @@ const editPortfolioFreelancer = async (req, res) => {
 
     // Ensure freelancer is deleting their own portfolio
     if (parseInt(freelancerId) !== userId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "You can only delete your own portfolio items.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own portfolio items.",
+      });
     }
 
     // Optional: allow only role 3 (freelancer) to delete portfolio items
     if (role !== 3) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only freelancers can delete portfolio items.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Only freelancers can delete portfolio items.",
+      });
     }
 
     const result = await pool.query(
