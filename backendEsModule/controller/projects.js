@@ -12,7 +12,6 @@ export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
 
-
     const {
       category_id,
       title,
@@ -83,7 +82,6 @@ export const createProject = async (req, res) => {
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', false, null
   ) RETURNING *;
 `;
-
 
     // Only include duration_days for fixed or bidding
     const durationValue = project_type === "hourly" ? null : duration_days;
@@ -161,7 +159,6 @@ ORDER BY p.created_at DESC;
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
-    // Use freelancer_id from body or token
     const freelancer_id = req.body.freelancer_id || req.token.userId;
 
     if (!freelancer_id) {
@@ -181,7 +178,7 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "Project not found" });
     }
 
-    // Check if freelancer exists and is role 3
+    // Check if freelancer exists and is role_id = 3
     const userResult = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
@@ -203,7 +200,7 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "Freelancer already assigned" });
     }
 
-    // Insert assignment
+    // Insert into project_assignments
     const insertAssign = `
       INSERT INTO project_assignments (project_id, freelancer_id, status)
       VALUES ($1, $2, 'active')
@@ -212,13 +209,13 @@ export const assignProject = async (req, res) => {
     const { rows } = await pool.query(insertAssign, [projectId, freelancer_id]);
 
     if (rows.length > 0) {
+      // Update only project status and completion_status
       await pool.query(
         `UPDATE projects
-         SET assigned_freelancer_id = $1, 
-             completion_status = 'not_started',
+         SET completion_status = 'not_started',
              status = 'active'
-         WHERE id = $2`,
-        [freelancer_id, projectId]
+         WHERE id = $1`,
+        [projectId]
       );
 
       // Log assignment
@@ -389,25 +386,39 @@ export const getSubCategories = async (req, res) => {
 export const getRelatedFreelancers = async (req, res) => {
   const { projectId } = req.params;
 
-  const { rows: projectRows } = await pool.query(
-    `SELECT id, category_id FROM projects WHERE id = $1 AND is_deleted = false`,
-    [projectId]
-  );
+  try {
+    // Get the project's category
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, category_id 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
 
-  if (!projectRows.length) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Project not found" });
+    if (!projectRows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
+    }
+
+    const { category_id } = projectRows[0];
+
+    // Get freelancers linked to that category
+    const { rows: freelancers } = await pool.query(
+      `SELECT u.*
+       FROM users u
+       JOIN freelancer_categories fc ON u.id = fc.freelancer_id
+       WHERE u.role_id = 3
+         AND fc.category_id = $1
+         AND u.is_deleted = false`,
+      [category_id]
+    );
+
+    res.status(200).json({ success: true, freelancers });
+  } catch (error) {
+    console.error("Error fetching related freelancers:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
-  const { category_id } = projectRows[0];
-
-  const { rows: freelancers } = await pool.query(
-    `SELECT * FROM users WHERE role_id = 3 AND category_id = $1 AND is_deleted = false`,
-    [category_id]
-  );
-
-  res.status(200).json({ success: true, freelancers });
 };
 
 export const getProjectById = async (req, res) => {
