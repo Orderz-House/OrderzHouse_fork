@@ -23,7 +23,7 @@ export default function EnhancedNavbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("HOME");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  // Removed unused notifications state
   const [unreadCount, setUnreadCount] = useState(0);
 
   const userMenuRef = useRef(null);
@@ -34,6 +34,9 @@ export default function EnhancedNavbar() {
     token: state.auth.token,
     userData: state.auth.userData,
     IsAuthenticated: !!state.auth.token,
+=======
+    IsAuthenticated: !!state.auth.token, // Derive authentication status from token presence
+
   }));
   const navigate = useNavigate();
 
@@ -41,13 +44,18 @@ export default function EnhancedNavbar() {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const response = await axios.get("http://localhost:5000/notifications", {
+      await axios.get("http://localhost:5000/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
+
       } );
       if (response.data.success) {
         setNotifications(response.data.notifications);
       }
+=======
+      });
+      // You may handle notifications here if needed in the future
+
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
@@ -99,6 +107,8 @@ export default function EnhancedNavbar() {
       console.error("Error marking all notifications as read:", error);
     }
   };
+=======
+
 
   // Event Handlers
   const handleLogout = () => {
@@ -107,6 +117,8 @@ export default function EnhancedNavbar() {
     dispatch(setLogout());
     navigate("/");
     window.location.reload();
+=======
+    window.location.reload(); // Force a reload to ensure all state is cleared
   };
 
   const handleNavigation = (path, label) => {
@@ -114,6 +126,8 @@ export default function EnhancedNavbar() {
     navigate(path);
   };
 
+=======
+  // *** MODIFIED: This click handler now just navigates. The Plans component handles the logic. ***
   const handlePlansClick = () => {
     setActiveLink("PLANS");
     navigate("/plans");
@@ -124,6 +138,8 @@ export default function EnhancedNavbar() {
 
   // Effects
   useEffect(() => {
+=======
+    // If a token exists but user data is not in Redux, fetch it
     if (token && !userData) {
       axios.get(`http://localhost:5000/users/getUserdata`, { headers: { authorization: `Bearer ${token}` } } )
         .then((res) => {
@@ -137,6 +153,14 @@ export default function EnhancedNavbar() {
     if (IsAuthenticated) {
       fetchNotifications();
       fetchUnreadCount();
+=======
+          handleLogout(); // If token is bad, force logout
+        });
+    }
+    // If the user is authenticated, fetch their notification info
+    if (IsAuthenticated) {
+        fetchNotifications();
+        fetchUnreadCount();
     }
   }, [dispatch, token, userData, IsAuthenticated]);
 
@@ -154,6 +178,8 @@ export default function EnhancedNavbar() {
   }, []);
 
   // Corrected navLinks array
+=======
+  // *** MODIFIED: "PLANS" link is hidden if user has role_id 2 ***
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     { label: "ABOUT US", path: "/about", condition: true },
@@ -178,6 +204,8 @@ export default function EnhancedNavbar() {
           <div className="hidden lg:block flex-1">
             <div className="flex items-center justify-center space-x-1">
               {navLinks.map((item) => (
+=======
+                // The condition checks if the item should be rendered
                 item.condition && (
                   <button
                     key={item.label}
@@ -186,17 +214,41 @@ export default function EnhancedNavbar() {
                     {item.label}
                     <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"}`}></span>
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">{item.label}</span>
+=======
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
+                      activeLink === item.label ? "text-[#028090]" : "text-gray-700"
+                    }`}
+                  >
+                    {item.label}
+                    <span 
+                      className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                        activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"
+                      }`}
+                    ></span>
+                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      {item.label}
+                    </span>
                   </button>
                 )
               ))}
               {userData?.role_id === 1 && (
                 <>
                   <button onClick={() => handleNavigation("/admin-verification", "VERIFICATION")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"}`}>
+=======
+                  <button
+                    onClick={() => handleNavigation("/admin-verification", "VERIFICATION")}
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"}`}
+                  >
                     VERIFICATION
                     <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === "VERIFICATION" ? "w-full" : "w-0 group-hover:w-full"}`}></span>
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">VERIFICATION</span>
                   </button>
                   <button onClick={() => handleNavigation("/news/admin", "NEWS PENDING")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"}`}>
+=======
+                  <button
+                    onClick={() => handleNavigation("/news/admin", "NEWS PENDING")}
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"}`}
+                  >
                     NEWS PENDING
                     <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === "NEWS PENDING" ? "w-full" : "w-0 group-hover:w-full"}`}></span>
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">NEWS PENDING</span>
@@ -215,6 +267,8 @@ export default function EnhancedNavbar() {
                     setIsNotificationsOpen(!isNotificationsOpen);
                     if (!isNotificationsOpen) fetchNotifications();
                   }}
+=======
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                   className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
                   aria-label="Notifications"
                 >
@@ -267,10 +321,18 @@ export default function EnhancedNavbar() {
                         View all notifications
                       </Link>
                     </div>
+=======
+
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    {/* Notifications Dropdown Content */}
                   </div>
                 )}
               </div>
             )}
+=======
+
+            {/* User Menu or Auth Buttons */}
             {IsAuthenticated && userData ? (
               <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200" aria-label="User menu">
@@ -279,6 +341,7 @@ export default function EnhancedNavbar() {
                   </div>
                   <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
                 </button>
+
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100">
@@ -362,6 +425,8 @@ export default function EnhancedNavbar() {
                   <button onClick={() => { handleNavigation("/news/admin", "NEWS PENDING"); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-base font-medium rounded-2xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-all duration-200 font-inter">NEWS PENDING</button>
                 </>
               )}
+
+              {/* Admin mobile links */}
             </div>
             <div className="pt-4 space-y-3 px-2 pb-4 border-t border-gray-100">
               {IsAuthenticated && userData ? (
@@ -383,6 +448,8 @@ export default function EnhancedNavbar() {
                     <LogOut className="h-4 w-4" />
                     <span>Sign Out</span>
                   </button>
+=======
+                  {/* Mobile Authenticated User Links */}
                 </>
               ) : (
                 <>

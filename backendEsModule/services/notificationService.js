@@ -7,25 +7,25 @@ import { pool } from "../models/db.js";
 
 // Notification types enum
 export const NOTIFICATION_TYPES = {
-  PROJECT_CREATED: 'project_created',
-  OFFER_SUBMITTED: 'offer_submitted',
-  OFFER_APPROVED: 'offer_approved',
-  OFFER_REJECTED: 'offer_rejected',
-  WORK_COMPLETION_REQUESTED: 'work_completion_requested',
-  PAYMENT_RELEASED: 'payment_released',
-  FREELANCER_ASSIGNED: 'freelancer_assigned',
-  FREELANCER_REMOVED: 'freelancer_removed',
-  PROJECT_STATUS_CHANGED: 'project_status_changed',
-  ASSIGNMENT_STATUS_CHANGED: 'assignment_status_changed',
-  ESCROW_CREATED: 'escrow_created',
-  ESCROW_RELEASED: 'escrow_released',
-  USER_REGISTERED: 'user_registered',
-  USER_VERIFIED: 'user_verified',
-  COURSE_ENROLLED: 'course_enrolled',
-  APPOINTMENT_SCHEDULED: 'appointment_scheduled',
-  APPOINTMENT_CANCELLED: 'appointment_cancelled',
-  REVIEW_SUBMITTED: 'review_submitted',
-  MESSAGE_RECEIVED: 'message_received'
+  PROJECT_CREATED: "project_created",
+  OFFER_SUBMITTED: "offer_submitted",
+  OFFER_APPROVED: "offer_approved",
+  OFFER_REJECTED: "offer_rejected",
+  WORK_COMPLETION_REQUESTED: "work_completion_requested",
+  PAYMENT_RELEASED: "payment_released",
+  FREELANCER_ASSIGNED: "freelancer_assigned",
+  FREELANCER_REMOVED: "freelancer_removed",
+  PROJECT_STATUS_CHANGED: "project_status_changed",
+  ASSIGNMENT_STATUS_CHANGED: "assignment_status_changed",
+  ESCROW_CREATED: "escrow_created",
+  ESCROW_RELEASED: "escrow_released",
+  USER_REGISTERED: "user_registered",
+  USER_VERIFIED: "user_verified",
+  COURSE_ENROLLED: "course_enrolled",
+  APPOINTMENT_SCHEDULED: "appointment_scheduled",
+  APPOINTMENT_CANCELLED: "appointment_cancelled",
+  REVIEW_SUBMITTED: "review_submitted",
+  MESSAGE_RECEIVED: "message_received",
 };
 
 /**
@@ -37,25 +37,31 @@ export const NOTIFICATION_TYPES = {
  * @param {string} entityType - Type of related entity
  * @returns {Promise<Object>} Created notification
  */
-export const createNotification = async (userId, type, message, relatedEntityId = null, entityType = null) => {
+export const createNotification = async (
+  userId,
+  type,
+  message,
+  relatedEntityId = null,
+  entityType = null
+) => {
   try {
     const query = `
       INSERT INTO notifications (user_id, type, message, related_entity_id, entity_type, read_status, created_at)
       VALUES ($1, $2, $3, $4, $5, false, CURRENT_TIMESTAMP)
       RETURNING *
     `;
-    
+
     const { rows } = await pool.query(query, [
-      userId, 
-      type, 
-      message, 
-      relatedEntityId, 
-      entityType
+      userId,
+      type,
+      message,
+      relatedEntityId,
+      entityType,
     ]);
-    
+
     return rows[0];
   } catch (error) {
-    console.error('Error creating notification:', error);
+    console.error("Error creating notification:", error);
     throw error;
   }
 };
@@ -69,24 +75,39 @@ export const createNotification = async (userId, type, message, relatedEntityId 
  * @param {string} entityType - Type of related entity
  * @returns {Promise<Array>} Array of created notifications
  */
-export const createBulkNotifications = async (userIds, type, message, relatedEntityId = null, entityType = null) => {
+export const createBulkNotifications = async (
+  userIds,
+  type,
+  message,
+  relatedEntityId = null,
+  entityType = null
+) => {
   try {
     if (!userIds || userIds.length === 0) return [];
-    
+
     const notifications = [];
     for (const userId of userIds) {
       try {
-        const notification = await createNotification(userId, type, message, relatedEntityId, entityType);
+        const notification = await createNotification(
+          userId,
+          type,
+          message,
+          relatedEntityId,
+          entityType
+        );
         notifications.push(notification);
       } catch (error) {
-        console.error(`Failed to create notification for user ${userId}:`, error);
+        console.error(
+          `Failed to create notification for user ${userId}:`,
+          error
+        );
         // Continue with other users even if one fails
       }
     }
-    
+
     return notifications;
   } catch (error) {
-    console.error('Error creating bulk notifications:', error);
+    console.error("Error creating bulk notifications:", error);
     throw error;
   }
 };
@@ -99,27 +120,34 @@ export const createBulkNotifications = async (userIds, type, message, relatedEnt
  * @param {boolean} unreadOnly - Return only unread notifications
  * @returns {Promise<Array>} Array of notifications
  */
-export const getUserNotifications = async (userId, limit = 50, offset = 0, unreadOnly = false) => {
+export const getUserNotifications = async (
+  userId,
+  limit = 50,
+  offset = 0,
+  unreadOnly = false
+) => {
   try {
     let query = `
       SELECT * FROM notifications 
       WHERE user_id = $1
     `;
-    
+
     const params = [userId];
     let paramIndex = 2;
-    
+
     if (unreadOnly) {
       query += ` AND read_status = false`;
     }
-    
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${
+      paramIndex + 1
+    }`;
     params.push(limit, offset);
-    
+
     const { rows } = await pool.query(query, params);
     return rows;
   } catch (error) {
-    console.error('Error getting user notifications:', error);
+    console.error("Error getting user notifications:", error);
     throw error;
   }
 };
@@ -138,11 +166,11 @@ export const markNotificationAsRead = async (notificationId, userId) => {
       WHERE id = $1 AND user_id = $2
       RETURNING id
     `;
-    
+
     const { rows } = await pool.query(query, [notificationId, userId]);
     return rows.length > 0;
   } catch (error) {
-    console.error('Error marking notification as read:', error);
+    console.error("Error marking notification as read:", error);
     throw error;
   }
 };
@@ -160,11 +188,11 @@ export const markAllNotificationsAsRead = async (userId) => {
       WHERE user_id = $1 AND read_status = false
       RETURNING id
     `;
-    
+
     const { rows } = await pool.query(query, [userId]);
     return rows.length;
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+    console.error("Error marking all notifications as read:", error);
     throw error;
   }
 };
@@ -181,11 +209,11 @@ export const cleanupOldNotifications = async (daysOld = 90) => {
       WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '${daysOld} days'
       AND read_status = true
     `;
-    
+
     const { rowCount } = await pool.query(query);
     return rowCount;
   } catch (error) {
-    console.error('Error cleaning up old notifications:', error);
+    console.error("Error cleaning up old notifications:", error);
     throw error;
   }
 };
@@ -202,17 +230,17 @@ export const getNotificationCount = async (userId, unreadOnly = false) => {
       SELECT COUNT(*) as count FROM notifications 
       WHERE user_id = $1
     `;
-    
+
     const params = [userId];
-    
+
     if (unreadOnly) {
       query += ` AND read_status = false`;
     }
-    
+
     const { rows } = await pool.query(query, params);
     return parseInt(rows[0].count);
   } catch (error) {
-    console.error('Error getting notification count:', error);
+    console.error("Error getting notification count:", error);
     throw error;
   }
 };
@@ -224,24 +252,32 @@ export const NotificationCreators = {
    */
   projectCreated: async (projectId, projectTitle, clientId, categoryId) => {
     try {
-      // Notify relevant freelancers in the same category
+      // Get freelancers who have this category
       const { rows: freelancers } = await pool.query(
-        `SELECT id FROM users WHERE role_id = 3 AND category_id = $1 AND is_deleted = false`,
+        `
+      SELECT u.id 
+      FROM users u
+      JOIN freelancer_categories fc 
+        ON u.id = fc.freelancer_id
+      WHERE u.role_id = 3
+        AND fc.category_id = $1
+        AND u.is_deleted = false
+      `,
         [categoryId]
       );
-      
-      const freelancerIds = freelancers.map(f => f.id);
+
+      const freelancerIds = freelancers.map((f) => f.id);
       const message = `New project "${projectTitle}" has been posted in your category`;
-      
+
       return await createBulkNotifications(
         freelancerIds,
         NOTIFICATION_TYPES.PROJECT_CREATED,
         message,
         projectId,
-        'project'
+        "project"
       );
     } catch (error) {
-      console.error('Error creating project created notifications:', error);
+      console.error("Error creating project created notifications:", error);
       throw error;
     }
   },
@@ -256,22 +292,22 @@ export const NotificationCreators = {
         `SELECT title FROM projects WHERE id = $1`,
         [projectId]
       );
-      
+
       if (projectRows.length === 0) return;
-      
+
       const projectTitle = projectRows[0].title;
       const message = `New offer submitted for project "${projectTitle}"`;
-      
+
       // Notify client
       return await createNotification(
         clientId,
         NOTIFICATION_TYPES.OFFER_SUBMITTED,
         message,
         offerId,
-        'offer'
+        "offer"
       );
     } catch (error) {
-      console.error('Error creating offer submitted notification:', error);
+      console.error("Error creating offer submitted notification:", error);
       throw error;
     }
   },
@@ -279,31 +315,39 @@ export const NotificationCreators = {
   /**
    * Notify when an offer is approved/rejected
    */
-  offerStatusChanged: async (offerId, projectId, freelancerId, clientId, isApproved) => {
+  offerStatusChanged: async (
+    offerId,
+    projectId,
+    freelancerId,
+    clientId,
+    isApproved
+  ) => {
     try {
       const { rows: projectRows } = await pool.query(
         `SELECT title FROM projects WHERE id = $1`,
         [projectId]
       );
-      
+
       if (projectRows.length === 0) return;
-      
+
       const projectTitle = projectRows[0].title;
-      const type = isApproved ? NOTIFICATION_TYPES.OFFER_APPROVED : NOTIFICATION_TYPES.OFFER_REJECTED;
-      const message = isApproved 
+      const type = isApproved
+        ? NOTIFICATION_TYPES.OFFER_APPROVED
+        : NOTIFICATION_TYPES.OFFER_REJECTED;
+      const message = isApproved
         ? `Your offer for project "${projectTitle}" has been approved!`
         : `Your offer for project "${projectTitle}" has been rejected.`;
-      
+
       // Notify freelancer
       return await createNotification(
         freelancerId,
         type,
         message,
         offerId,
-        'offer'
+        "offer"
       );
     } catch (error) {
-      console.error('Error creating offer status change notification:', error);
+      console.error("Error creating offer status change notification:", error);
       throw error;
     }
   },
@@ -317,22 +361,22 @@ export const NotificationCreators = {
         `SELECT title FROM projects WHERE id = $1`,
         [projectId]
       );
-      
+
       if (projectRows.length === 0) return;
-      
+
       const projectTitle = projectRows[0].title;
       const message = `Work completion requested for project "${projectTitle}"`;
-      
+
       // Notify client
       return await createNotification(
         clientId,
         NOTIFICATION_TYPES.WORK_COMPLETION_REQUESTED,
         message,
         projectId,
-        'project'
+        "project"
       );
     } catch (error) {
-      console.error('Error creating work completion notification:', error);
+      console.error("Error creating work completion notification:", error);
       throw error;
     }
   },
@@ -346,22 +390,22 @@ export const NotificationCreators = {
         `SELECT title FROM projects WHERE id = $1`,
         [projectId]
       );
-      
+
       if (projectRows.length === 0) return;
-      
+
       const projectTitle = projectRows[0].title;
       const message = `Payment of $${amount} has been released for project "${projectTitle}"`;
-      
+
       // Notify freelancer
       return await createNotification(
         freelancerId,
         NOTIFICATION_TYPES.PAYMENT_RELEASED,
         message,
         projectId,
-        'project'
+        "project"
       );
     } catch (error) {
-      console.error('Error creating payment released notification:', error);
+      console.error("Error creating payment released notification:", error);
       throw error;
     }
   },
@@ -369,34 +413,44 @@ export const NotificationCreators = {
   /**
    * Notify when freelancer is assigned/removed
    */
-  freelancerAssignmentChanged: async (projectId, freelancerId, clientId, isAssigned) => {
+  freelancerAssignmentChanged: async (
+    projectId,
+    freelancerId,
+    clientId,
+    isAssigned
+  ) => {
     try {
       const { rows: projectRows } = await pool.query(
         `SELECT title FROM projects WHERE id = $1`,
         [projectId]
       );
-      
+
       if (projectRows.length === 0) return;
-      
+
       const projectTitle = projectRows[0].title;
-      const type = isAssigned ? NOTIFICATION_TYPES.FREELANCER_ASSIGNED : NOTIFICATION_TYPES.FREELANCER_REMOVED;
+      const type = isAssigned
+        ? NOTIFICATION_TYPES.FREELANCER_ASSIGNED
+        : NOTIFICATION_TYPES.FREELANCER_REMOVED;
       const message = isAssigned
         ? `You have been assigned to project "${projectTitle}"`
         : `You have been removed from project "${projectTitle}"`;
-      
+
       // Notify freelancer
       return await createNotification(
         freelancerId,
         type,
         message,
         projectId,
-        'project'
+        "project"
       );
     } catch (error) {
-      console.error('Error creating freelancer assignment notification:', error);
+      console.error(
+        "Error creating freelancer assignment notification:",
+        error
+      );
       throw error;
     }
-  }
+  },
 };
 
 export default {
@@ -408,5 +462,5 @@ export default {
   cleanupOldNotifications,
   getNotificationCount,
   NOTIFICATION_TYPES,
-  NotificationCreators
+  NotificationCreators,
 };

@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import { authentication } from "../middleware/authentication.js";
 import { requireVerified } from "../middleware/requireVerification.js";
 
@@ -13,14 +14,19 @@ import {
 
 const paymentsRouter = express.Router();
 
+// Multer setup for file uploads
+const upload = multer({ dest: "uploads/" });
+
 /**
  * CLIENT: Record offline payment (pending review by admin)
  * body: { projectId, amount }
+ * file: proof
  */
 paymentsRouter.post(
   "/offline/record",
   authentication,
   requireVerified,
+  upload.single("proof"), // Accept proof file
   recordOfflinePayment
 );
 
