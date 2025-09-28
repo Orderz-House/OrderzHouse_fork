@@ -6,8 +6,8 @@ import {
 } from "../services/loggingService.js";
 import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
+
 export const createProject = async (req, res) => {
-  console.log("Request body:", req.body);
   try {
     const userId = req.token?.userId;
 
@@ -191,7 +191,7 @@ ORDER BY p.created_at DESC;
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { freelancer_id, assignment_type = "solo" } = req.body;
+    const { freelancer_id, offer_id, assignment_type = "solo" } = req.body;
 
     // Validate freelancer_id
     if (!freelancer_id) {
@@ -202,7 +202,7 @@ export const assignProject = async (req, res) => {
 
     // Check if project exists
     const projectResult = await pool.query(
-      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
+      `SELECT id, status FROM projects WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
     if (!projectResult.rows.length) {
@@ -247,10 +247,25 @@ export const assignProject = async (req, res) => {
         .json({ success: false, message: "Freelancer already assigned" });
     }
 
-    // Insert assignment
+    // --- NEW: If offer_id provided, mark it accepted and others rejected ---
+    if (offer_id) {
+      await pool.query(
+        `UPDATE offers SET offer_status = 'accepted'
+         WHERE id = $1 AND project_id = $2`,
+        [offer_id, projectId]
+      );
+
+      await pool.query(
+        `UPDATE offers SET offer_status = 'rejected'
+         WHERE project_id = $1 AND id <> $2`,
+        [projectId, offer_id]
+      );
+    }
+
+    // Insert assignment (status now pending_payment, not directly active)
     const insertAssign = `
       INSERT INTO project_assignments (project_id, freelancer_id, status, assignment_type)
-      VALUES ($1, $2, 'active', $3)
+      VALUES ($1, $2, 'pending_payment', $3)
       RETURNING *;
     `;
     const { rows } = await pool.query(insertAssign, [
@@ -260,16 +275,14 @@ export const assignProject = async (req, res) => {
     ]);
 
     if (rows.length > 0) {
-      // Update project (optional — depends on your logic)
-      if (assignment_type === "solo") {
-        await pool.query(
-          `UPDATE projects
-           SET completion_status = 'not_started',
-               status = 'active'
-           WHERE id = $1`,
-          [projectId]
-        );
-      }
+      // Update project to pending_payment (instead of active right away)
+      await pool.query(
+        `UPDATE projects
+         SET completion_status = 'not_started',
+             status = 'pending_payment'
+         WHERE id = $1`,
+        [projectId]
+      );
 
       // Log assignment
       await LogCreators.projectOperation(
@@ -302,6 +315,7 @@ export const assignProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Update freelancer assignment status
 export const updateAssignmentStatus = async (req, res) => {
@@ -558,22 +572,24 @@ export const getProjectById = async (req, res) => {
     });
   }
 };
-
 export const getAllProjectForOffer = (req, res) => {
   pool
     .query(
       `SELECT 
-       p.*, 
-       u.id AS user_id, 
-       u.first_name, 
-       u.last_name, 
-       u.email, 
-       u.username FROM projects p JOIN users u ON u.id = p.user_id WHERE p.status = 'available'`
+         p.*, 
+         u.id AS user_id, 
+         u.first_name, 
+         u.last_name, 
+         u.email, 
+         u.username 
+       FROM projects p 
+       JOIN users u ON u.id = p.user_id 
+       WHERE p.status = 'bidding' AND p.is_deleted = false`
     )
     .then((result) => {
       res.status(200).json({
         success: true,
-        message: `All Project available`,
+        message: `All Projects open for bidding`,
         projects: result.rows,
       });
     })
@@ -585,16 +601,36 @@ export const getAllProjectForOffer = (req, res) => {
       });
     });
 };
-
 export const sendOffer = async (req, res) => {
   try {
     const freelancerId = req.token.userId;
     const { projectId } = req.params;
     const { bid_amount, delivery_time, proposal } = req.body;
 
+    // Ensure project is open for bidding
+    const projectCheck = await pool.query(
+      `SELECT status FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectCheck.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+    if (projectCheck.rows[0].status !== "bidding") {
+      return res.status(400).json({
+        success: false,
+        message: "This project is not open for offers",
+      });
+    }
+
     // Prevent multiple offers from same freelancer
     const existing = await pool.query(
-      `SELECT id FROM offers WHERE project_id = $1 AND freelancer_id = $2 AND offer_status = 'pending'`,
+      `SELECT id FROM offers 
+       WHERE project_id = $1 
+       AND freelancer_id = $2 
+       AND offer_status = 'pending'`,
       [projectId, freelancerId]
     );
     if (existing.rows.length > 0) {
