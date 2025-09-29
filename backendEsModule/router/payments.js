@@ -6,7 +6,7 @@ import { requireVerified } from "../middleware/requireVerification.js";
 import {
   recordOfflinePayment,
   approveOfflinePayment,
-  takeProject,
+  // takeProject,
   submitWorkCompletion,
   releasePayment,
   autoReleasePaymentsCron,
@@ -23,10 +23,9 @@ const upload = multer({ dest: "uploads/" });
  * file: proof
  */
 paymentsRouter.post(
-  "/offline/record",
+  "/offline/record/:projectId",
   authentication,
-  requireVerified,
-  upload.single("proof"), // Accept proof file
+  upload.single("proof"),
   recordOfflinePayment
 );
 
@@ -41,16 +40,16 @@ paymentsRouter.post(
   approveOfflinePayment
 );
 
-/**
- * FREELANCER: Take a project (first come, first served)
- * body: { projectId }
- */
-paymentsRouter.post(
-  "/projects/take",
-  authentication,
-  requireVerified,
-  takeProject
-);
+// /**
+//  * FREELANCER: Take a project (first come, first served)
+//  * body: { projectId }
+//  */
+// paymentsRouter.post(
+//   "/projects/take",
+//   authentication,
+//   requireVerified,
+//   takeProject
+// );
 
 /**
  * FREELANCER: Submit work completion
