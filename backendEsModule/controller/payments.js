@@ -24,16 +24,15 @@ export const recordOfflinePayment = [
   upload.single("proof"), // proof is the file field name
   async (req, res) => {
     const clientId = req.token?.userId;
-    const { projectId, amount } = req.body;
+    const { projectId } = req.params;   // <-- now from URL params
+    const { amount } = req.body;        // <-- still from body
     const proofFile = req.file;
 
     if (!projectId || !amount || !proofFile) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "projectId, amount, and proof file are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "projectId, amount, and proof file are required",
+      });
     }
 
     try {
@@ -80,6 +79,7 @@ export const recordOfflinePayment = [
     }
   },
 ];
+
 
 /**
  * Admin approves/rejects a recorded offline payment.
@@ -454,7 +454,7 @@ export const autoReleasePaymentsCron = async () => {
 export default {
   recordOfflinePayment,
   approveOfflinePayment,
-  takeProject,
+  // takeProject,
   submitWorkCompletion,
   releasePayment,
   autoReleasePaymentsCron,

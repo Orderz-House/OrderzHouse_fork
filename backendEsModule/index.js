@@ -33,6 +33,7 @@ app.use(
 import "./models/db.js";
 
 // routes
+import paymentsRouter from "./router/payments.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
@@ -51,6 +52,7 @@ import earningsRouter from "./router/earning.js"
 import uploadRouter from "./router/projectFilesUser.js";
 
 app.use("/uploads" , uploadRouter)
+app.use("/payments", paymentsRouter);
 app.use("/admins", adminRouter);
 app.use("/earnings" , earningsRouter)
 app.use("/api/analytics", analyticsRoutes);
