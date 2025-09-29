@@ -26,7 +26,7 @@ export default function OrderzHousePageRedesign() {
     { id: 2, name: "Content Writing", description: "Turning ideas into well-written content for your needs.", image: contentWritingImg },
     { id: 3, name: "Programming", description: "Writing code to build websites, apps, and software that solve problems.", image: programmingImg },
     { id: 4, name: "Photography", description: "Capturing moments and telling stories through stunning images.", image: photographyImg },
-    { id: 5, name: "Voice & Audio", description: "Creating voiceovers, podcasts, and audio content for your projects.", image: voiceAudioImg },
+    { id: 5, name: "Voice & Audio", description: "Creatingdfdv voiceovers, podcasts, and audio content for your projects.", image: voiceAudioImg },
   ];
 
   const faqs = [
