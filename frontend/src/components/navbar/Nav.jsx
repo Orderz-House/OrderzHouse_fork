@@ -34,6 +34,9 @@ export default function EnhancedNavbar() {
   const { token, userData } = useSelector((state) => ({
     token: state.auth.token,
     userData: state.auth.userData,
+    IsAuthenticated: !!state.auth.token,
+
+
   }));
   const navigate = useNavigate();
 
@@ -44,6 +47,7 @@ export default function EnhancedNavbar() {
       const response = await axios.get("http://localhost:5000/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
+      } );
       });
       if (response.data.success) {
         setNotifications(response.data.notifications);
@@ -106,6 +110,7 @@ export default function EnhancedNavbar() {
     Cookies.remove("userData");
     dispatch(setLogout());
     window.location.reload();
+
     navigate("/");
   };
 
@@ -114,11 +119,32 @@ export default function EnhancedNavbar() {
     navigate(path);
   };
 
+  const handlePlansClick = () => {
+    setActiveLink("PLANS");
+    navigate("/plans");
+  };
+
+
   const handleLogin = () => navigate("/login");
   const handleRegister = () => navigate("/register");
 
   // Effects
   useEffect(() => {
+    if (token && !userData) {
+      axios.get(`http://localhost:5000/users/getUserdata`, { headers: { authorization: `Bearer ${token}` } } )
+        .then((res) => {
+          dispatch(setUserData({ ...res.data.user, is_online: true }));
+        })
+        .catch((err) => {
+          console.error("Token is invalid, logging out:", err.message);
+          handleLogout();
+        });
+    }
+    if (IsAuthenticated) {
+      fetchNotifications();
+      fetchUnreadCount();
+    }
+  }, [dispatch, token, userData, IsAuthenticated]);
     if (!token) return;
 
     axios
@@ -152,6 +178,7 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Corrected navLinks array
   // Navigation links
   const navLinks = [
     { label: "HOME", path: "/" },
@@ -185,6 +212,26 @@ export default function EnhancedNavbar() {
           <div className="hidden lg:block flex-1">
             <div className="flex items-center justify-center space-x-1">
               {navLinks.map((item) => (
+                item.condition && (
+                  <button
+                    key={item.label}
+                    onClick={() => item.label === 'PLANS' ? handlePlansClick() : handleNavigation(item.path, item.label)}
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === item.label ? "text-[#028090]" : "text-gray-700"}`}>
+                    {item.label}
+                    <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"}`}></span>
+                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">{item.label}</span>
+                  </button>
+                )
+              ))}
+              {userData?.role_id === 1 && (
+                <>
+                  <button onClick={() => handleNavigation("/admin-verification", "VERIFICATION")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"}`}>
+                    VERIFICATION
+                    <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === "VERIFICATION" ? "w-full" : "w-0 group-hover:w-full"}`}></span>
+                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">VERIFICATION</span>
+                  </button>
+                  <button onClick={() => handleNavigation("/news/admin", "NEWS PENDING")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"}`}>
+
                 <button
                   key={item.label}
                   onClick={() => handleNavigation(item.path, item.label)}
@@ -334,6 +381,7 @@ export default function EnhancedNavbar() {
                 )}
               </div>
             )}
+            {IsAuthenticated && userData ? (
 
             {/* User Menu or Auth Buttons */}
             {IsAuthenticated ? (
