@@ -18,3 +18,4 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </GoogleOAuthProvider>
 );
+// Removed backend/server code as it should not be in a React frontend file.

@@ -38,7 +38,7 @@ import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
-import Plans from "./components/plans/plans"; 
+import Plans from "./components/plans/Plans"; 
 
 function App() {
   const location = useLocation();
