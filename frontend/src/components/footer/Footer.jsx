@@ -10,16 +10,16 @@ export default function CleanFooter() {
     <footer className="bg-white border-t border-gray-200">
       {/* Main Footer Content */}
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="flex flex-col lg:flex-row lg:justify-center lg:items-start gap-8 lg:gap-16">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-8 lg:gap-16">
           {/* Left Side - Contact Info (moved right) */}
-          <div className="space-y-4 text-left flex-1 lg:pl-12">
+          <div className="space-y-4 text-left flex-col lg:pl-12">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Get In Touch
             </h3>
 
             <a
               href="tel:+962791433341"
-              className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex w-fit items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors"
             >
               <Phone className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm">+962 791433341</span>
@@ -27,7 +27,7 @@ export default function CleanFooter() {
 
             <a
               href="mailto:info@orderzhouse.com"
-              className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex w-fit items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors"
             >
               <Mail className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm break-all sm:break-normal">info@orderzhouse.com</span>
@@ -35,7 +35,7 @@ export default function CleanFooter() {
 
             <a
               href="https://wa.me/962791433341"
-              className="flex items-center space-x-3 text-gray-600 hover:text-green-600 transition-colors"
+              className="flex w-fit items-center space-x-3 text-gray-600 hover:text-green-600 transition-colors"
             >
               <MessageCircle className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm">WhatsApp</span>
