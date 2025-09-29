@@ -190,7 +190,7 @@ export default function EnhancedNavbar() {
   ];
 
   return (
-    <nav className="relative top-0 left-0 right-0 z-[9999] bg-white">
+    <nav className="relative top-0 left-0 right-0 z-[9999] bg-white shadow-[0_8px_16px_-12px_rgba(0,0,0,0.03)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-23">
           
@@ -198,12 +198,12 @@ export default function EnhancedNavbar() {
           <div className="flex items-center">
             <button
               onClick={() => handleNavigation("/", "HOME")}
-              className="flex-shrink-0 flex items-center group cursor-pointer"
+              className="flex-shrink-0 flex items-center mt-7 mr-3 group cursor-pointer"
             >
               <img 
                 src={logo} 
                 alt="Logo"
-                className="mt-7 h-24 w-auto mr-3 transform group-hover:scale-105 transition-transform duration-200"
+                className="h-24 w-auto transform transition-transform duration-200"
               />
             </button>
           </div>
