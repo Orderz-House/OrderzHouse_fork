@@ -44,16 +44,6 @@ function PlanCard({ plan, user, navigate }) {
       window.open(finalUrl, '_blank');
       return;
     }
-    
-    // 3. For any other authenticated user (like Admins), redirect to WhatsApp as a fallback.
-    //    (Clients with role_id 2 will never see this page anyway).
-    const baseUrl = "https://api.whatsapp.com/send/";
-    const phoneNumber = "962791433341";
-    const message = `I want to subscribe to this plan: ${plan.name}`;
-    const encodedMessage = encodeURIComponent(message );
-    const finalUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
-    
-    window.open(finalUrl, '_blank');
   };
 
   return (
@@ -129,7 +119,8 @@ export default function Plans() {
     if (user && user.role_id === 2) {
       navigate("/"); // Redirect to home page or another appropriate page
     }
-  }, [user, navigate]);
+  }, 
+  [user, navigate]);
 
   // Prevent rendering the component for role_id 2 to avoid a screen flash
   if (user && user.role_id === 2) {
