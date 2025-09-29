@@ -344,10 +344,17 @@ export default function CreateProject() {
       }
       setCurrentStep(4);
     } else if (currentStep === 4) {
-      const uploadSuccess = await uploadPaymentProof();
-      if (uploadSuccess) {
-        toastSuccess("Project created successfully! Payment is being reviewed.");
+      if (form.project_type === "bidding") {
+        // For bidding projects, no payment needed - just complete the project
+        toastSuccess("Bidding project created successfully! It's now live for freelancers to bid.");
         navigate(`/projects/${createdProjectId}`);
+      } else {
+        // For fixed and hourly projects, require payment
+        const uploadSuccess = await uploadPaymentProof();
+        if (uploadSuccess) {
+          toastSuccess("Project created successfully! Payment is being reviewed.");
+          navigate(`/projects/${createdProjectId}`);
+        }
       }
     }
   };
@@ -761,8 +768,15 @@ export default function CreateProject() {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">Project Summary & Payment</h3>
-              <p className="text-gray-600 text-lg">Review your project details and complete the payment to activate</p>
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                {form.project_type === "bidding" ? "Project Summary & Completion" : "Project Summary & Payment"}
+              </h3>
+              <p className="text-gray-600 text-lg">
+                {form.project_type === "bidding" 
+                  ? "Review your project details - your project will go live for bidding immediately"
+                  : "Review your project details and complete the payment to activate"
+                }
+              </p>
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8">
@@ -826,7 +840,7 @@ export default function CreateProject() {
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-8">
               <h4 className="text-2xl font-semibold text-green-900 mb-6 flex items-center">
                 <CreditCard className="w-6 h-6 mr-3" />
-                Payment Calculation
+                {form.project_type === "bidding" ? "Bidding Information" : "Payment Calculation"}
               </h4>
               
               <div className="space-y-6">
@@ -880,15 +894,16 @@ export default function CreateProject() {
                       </div>
                       <div className="border-t border-green-200 pt-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-green-700">Maximum Budget</span>
-                          <span className="text-2xl font-bold text-green-700">${form.budget_max}</span>
+                          <span className="text-lg font-bold text-green-700">Payment Method</span>
+                          <span className="text-xl font-bold text-blue-700">Pay After Selection</span>
                         </div>
                       </div>
                     </div>
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> Freelancers will bid within your specified range. 
-                        Final payment will be based on the accepted proposal.
+                        <strong>Note:</strong> No upfront payment required. Your project price will be calculated 
+                        when you choose and accept a freelancer's bid. Payment will be processed after you select 
+                        the winning proposal.
                       </p>
                     </div>
                   </div>
@@ -896,98 +911,139 @@ export default function CreateProject() {
               </div>
             </div>
 
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
-              <h4 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
-                <Upload className="w-6 h-6 mr-3" />
-                Upload Payment Confirmation
-              </h4>
-              
-              <div className="mb-6">
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h5 className="font-semibold text-gray-800 mb-3">Payment Instructions:</h5>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                    <li>Transfer <strong className="text-green-600">${paymentAmount}</strong> to our designated account</li>
-                    <li>Take a screenshot or photo of the payment confirmation</li>
-                    <li>Upload the proof using the form below</li>
-                    <li>Our team will verify your payment within 24 hours</li>
-                  </ol>
+            {form.project_type !== "bidding" && (
+              <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
+                <h4 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
+                  <Upload className="w-6 h-6 mr-3" />
+                  Upload Payment Confirmation
+                </h4>
+                
+                <div className="mb-6">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h5 className="font-semibold text-gray-800 mb-3">Payment Instructions:</h5>
+                    <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                      <li>Transfer <strong className="text-green-600">${paymentAmount}</strong> to our designated account</li>
+                      <li>Take a screenshot or photo of the payment confirmation</li>
+                      <li>Upload the proof using the form below</li>
+                      <li>Our team will verify your payment within 24 hours</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 transition-colors bg-gray-50">
+                  <input
+                    type="file"
+                    onChange={handlePaymentFileSelect}
+                    className="hidden"
+                    id="payment-upload"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                  />
+                  <label htmlFor="payment-upload" className="cursor-pointer">
+                    <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-lg text-gray-600 mb-2">
+                      {paymentFile ? paymentFile.name : "Upload payment screenshot or receipt"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      JPG, PNG, PDF up to 5MB
+                    </p>
+                  </label>
+                  {paymentFile && (
+                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                        <p className="text-sm text-green-700">
+                          {paymentFile.name} selected ({formatFileSize(paymentFile.size)})
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentFile(null)}
+                        className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        Remove file
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 transition-colors bg-gray-50">
-                <input
-                  type="file"
-                  onChange={handlePaymentFileSelect}
-                  className="hidden"
-                  id="payment-upload"
-                  accept=".jpg,.jpeg,.png,.pdf"
-                />
-                <label htmlFor="payment-upload" className="cursor-pointer">
-                  <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-lg text-gray-600 mb-2">
-                    {paymentFile ? paymentFile.name : "Upload payment screenshot or receipt"}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    JPG, PNG, PDF up to 5MB
-                  </p>
-                </label>
-                {paymentFile && (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                      <p className="text-sm text-green-700">
-                        {paymentFile.name} selected ({formatFileSize(paymentFile.size)})
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentFile(null)}
-                      className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-                    >
-                      Remove file
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
 
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-8">
               <div className="flex items-start">
                 <Clock className="w-8 h-8 text-yellow-600 mr-4 mt-1 flex-shrink-0" />
                 <div>
                   <h4 className="text-xl font-semibold text-yellow-800 mb-3">What Happens Next?</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h5 className="font-semibold text-yellow-800">Immediate:</h5>
-                      <ul className="text-sm text-yellow-700 space-y-2">
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Project created but not visible to freelancers
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Payment verification begins
-                        </li>
-                      </ul>
+                  {form.project_type === "bidding" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h5 className="font-semibold text-yellow-800">Immediate:</h5>
+                        <ul className="text-sm text-yellow-700 space-y-2">
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Project goes live for bidding immediately
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Freelancers can start submitting proposals
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Selected freelancers receive notifications
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h5 className="font-semibold text-yellow-800">When You Select a Bid:</h5>
+                        <ul className="text-sm text-yellow-700 space-y-2">
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Final project price is determined
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Payment will be requested at that time
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Work begins after payment confirmation
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                      <h5 className="font-semibold text-yellow-800">After Payment Approval:</h5>
-                      <ul className="text-sm text-yellow-700 space-y-2">
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Project becomes visible to all freelancers
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Selected freelancers receive notifications
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Start receiving proposals and bids
-                        </li>
-                      </ul>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h5 className="font-semibold text-yellow-800">Immediate:</h5>
+                        <ul className="text-sm text-yellow-700 space-y-2">
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Project created but not visible to freelancers
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Payment verification begins
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h5 className="font-semibold text-yellow-800">After Payment Approval:</h5>
+                        <ul className="text-sm text-yellow-700 space-y-2">
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Project becomes visible to all freelancers
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Selected freelancers receive notifications
+                          </li>
+                          <li className="flex items-start">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            Start receiving proposals and bids
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1078,24 +1134,126 @@ export default function CreateProject() {
             
             <button
               onClick={handleNextStep}
-              disabled={creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && !paymentFile)}
-              className={`w-full sm:w-auto px-12 py-4 rounded-xl flex items-center justify-center font-semibold text-lg transition-all duration-200 ${
-                creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && !paymentFile)
-                  ? "bg-gray-400 text-white cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              disabled={creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && form.project_type !== "bidding" && !paymentFile)}
+              className={`cssbuttons-io-button ${
+                creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && form.project_type !== "bidding" && !paymentFile)
+                  ? "disabled"
+                  : ""
               }`}
+              style={{
+                background: creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && form.project_type !== "bidding" && !paymentFile) 
+                  ? '#9CA3AF' : '#a370f0',
+                cursor: creating || uploading || uploadingPayment || (currentStep === 1 && !validateStep1()) || (currentStep === 4 && form.project_type !== "bidding" && !paymentFile)
+                  ? 'not-allowed' : 'pointer'
+              }}
             >
               {creating || uploading || uploadingPayment ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  {creating ? "Creating Project..." : uploading ? "Uploading Files..." : "Uploading Payment..."}
+                  {creating ? "Creating..." : uploading ? "Uploading..." : "Uploading..."}
                 </>
               ) : (
                 <>
-                  {currentStep === 4 ? "Submit Payment & Complete" : "Continue"}
-                  {currentStep < 4 && <ArrowRight className="w-5 h-5 ml-3" />}
+                  {currentStep === 4 
+                    ? form.project_type === "bidding" 
+                      ? "Complete & Go Live" 
+                      : "Submit Payment & Complete" 
+                    : "Continue"
+                  }
                 </>
               )}
+              <div className="icon">
+                {creating || uploading || uploadingPayment ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                ) : currentStep < 4 ? (
+                  <svg
+                    height="24"
+                    width="24"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none"></path>
+                    <path
+                      d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z"
+                      fill="currentColor"
+                    ></path>
+                  </svg>
+                ) : (
+                  <svg
+                    height="24"
+                    width="24"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none"></path>
+                    <path
+                      d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
+                      fill="currentColor"
+                    ></path>
+                  </svg>
+                )}
+              </div>
+              
+              <style jsx>{`
+                .cssbuttons-io-button {
+                  color: white;
+                  font-family: inherit;
+                  padding: 0.35em;
+                  padding-left: 1.2em;
+                  font-size: 17px;
+                  font-weight: 500;
+                  border-radius: 0.9em;
+                  border: none;
+                  letter-spacing: 0.05em;
+                  display: flex;
+                  align-items: center;
+                  box-shadow: inset 0 0 1.6em -0.6em #714da6;
+                  overflow: hidden;
+                  position: relative;
+                  height: 2.8em;
+                  padding-right: 3.3em;
+                  width: auto;
+                  min-width: 200px;
+                }
+                
+                .cssbuttons-io-button.disabled {
+                  box-shadow: inset 0 0 1.6em -0.6em #6B7280;
+                  pointer-events: none;
+                }
+                
+                .cssbuttons-io-button .icon {
+                  background: white;
+                  margin-left: 1em;
+                  position: absolute;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  height: 2.2em;
+                  width: 2.2em;
+                  border-radius: 0.7em;
+                  box-shadow: 0.1em 0.1em 0.6em 0.2em #7b52b9;
+                  right: 0.3em;
+                  transition: all 0.3s;
+                }
+                
+                .cssbuttons-io-button:not(.disabled):hover .icon {
+                  width: calc(100% - 0.6em);
+                }
+                
+                .cssbuttons-io-button .icon svg {
+                  width: 1.1em;
+                  transition: transform 0.3s;
+                  color: #7b52b9;
+                }
+                
+                .cssbuttons-io-button:not(.disabled):hover .icon svg {
+                  transform: translateX(0.1em);
+                }
+                
+                .cssbuttons-io-button:not(.disabled):active .icon {
+                  transform: scale(0.95);
+                }
+              `}</style>
             </button>
           </div>
         </div>

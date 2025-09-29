@@ -6,7 +6,6 @@ import {
 } from "../services/loggingService.js";
 import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
-
 export const createProject = async (req, res) => {
   console.log("Request body:", req.body);
   try {
@@ -17,7 +16,7 @@ export const createProject = async (req, res) => {
       title,
       description,
       budget,
-      duration_type, // NEW: "days" or "hours"
+      duration_type, // "days" or "hours"
       duration_days,
       duration_hours,
       project_type, // 'fixed' | 'bidding' | 'hourly'
@@ -90,6 +89,14 @@ export const createProject = async (req, res) => {
       }
     }
 
+    // Determine project status based on project type
+    let projectStatus = "pending"; // default
+    if (project_type === "bidding") {
+      projectStatus = "bidding"; // immediately available for offers
+    } else if (project_type === "fixed" || project_type === "hourly") {
+      projectStatus = "pending_payment"; // waiting for payment before becoming active
+    }
+
     // Insert project
     const insertQuery = `
       INSERT INTO projects (
@@ -100,7 +107,7 @@ export const createProject = async (req, res) => {
         status, is_deleted, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        $12, 'pending', false, null
+        $12, $13, false, null
       ) RETURNING *;
     `;
 
@@ -121,6 +128,7 @@ export const createProject = async (req, res) => {
       budget_max || null,
       hourly_rate || null,
       preferred_skills || null,
+      projectStatus, // updated status
     ]);
 
     const project = rows[0];
