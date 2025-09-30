@@ -13,8 +13,6 @@ const useAuth = () => {
   // The hook now returns the user and token from the global state
   return { user, token };
 };
-// =================================================================================
-
 const plans = [
   { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
   { id: 2, name: "1 month", description: "Best value for professionals", subscriptionFee: "20", earnLimit: "Unlimited" },
@@ -146,6 +144,8 @@ export default function Plans() {
     textAlign: "center",
     fontSize: "1.3rem",
     fontWeight: "600",
+    color: "#004d40",
+    maxWidth: "900px",
     marginLeft: "auto",
     marginRight: "auto",
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
