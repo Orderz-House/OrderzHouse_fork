@@ -42,7 +42,6 @@ const EditProfile = () => {
         }
     }, [token, navigate]);
     const [activeSection, setActiveSection] = useState("profile");
-    const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState("");
@@ -149,7 +148,7 @@ const EditProfile = () => {
 
         if (!profileData.phone_number.trim()) {
             newErrors.phone_number = "Phone number is required";
-        } else if (!/^\+?[0-9\s\-\(\)]{10,}$/.test(profileData.phone_number)) {
+        } else if (!/^\+?[0-9\s\-()]{10,}$/.test(profileData.phone_number)) {
             newErrors.phone_number = "Please enter a valid phone number";
         }
 

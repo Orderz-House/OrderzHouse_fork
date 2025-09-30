@@ -1,28 +1,16 @@
+// components/Register.js
+
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { setLogin } from "../../slice/auth/authSlice";
+import { setLogin } from "../../slice/auth/authSlice"; // Adjust path to your auth slice
 import axios from "axios";
-import { useNavigate } from "react-router";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  Phone,
-  MapPin,
-  UserPlus,
-  AlertCircle,
-  CheckCircle,
-  Briefcase,
-  ArrowLeft,
-  X,
-  Shield,
-  Check,
-} from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, User, Phone, MapPin, AlertCircle, CheckCircle, Briefcase, ArrowLeft, X, Shield, Check } from "lucide-react";
 
+// --- Data Arrays ---
 const countries = [
   "Afghanistan",
+  "Åland Islands",
   "Albania",
   "Algeria",
   "American Samoa",
@@ -37,7 +25,7 @@ const countries = [
   "Australia",
   "Austria",
   "Azerbaijan",
-  "Bahamas (the)",
+  "Bahamas",
   "Bahrain",
   "Bangladesh",
   "Barbados",
@@ -53,7 +41,7 @@ const countries = [
   "Botswana",
   "Bouvet Island",
   "Brazil",
-  "British Indian Ocean Territory (the)",
+  "British Indian Ocean Territory",
   "Brunei Darussalam",
   "Bulgaria",
   "Burkina Faso",
@@ -62,29 +50,29 @@ const countries = [
   "Cambodia",
   "Cameroon",
   "Canada",
-  "Cayman Islands (the)",
-  "Central African Republic (the)",
+  "Cayman Islands",
+  "Central African Republic",
   "Chad",
   "Chile",
   "China",
   "Christmas Island",
-  "Cocos (Keeling) Islands (the)",
+  "Cocos (Keeling) Islands",
   "Colombia",
-  "Comoros (the)",
+  "Comoros",
   "Congo (the Democratic Republic of the)",
-  "Congo (the)",
-  "Cook Islands (the)",
+  "Congo",
+  "Cook Islands",
   "Costa Rica",
+  "Côte d'Ivoire",
   "Croatia",
   "Cuba",
   "Curaçao",
   "Cyprus",
   "Czechia",
-  "Côte d'Ivoire",
   "Denmark",
   "Djibouti",
   "Dominica",
-  "Dominican Republic (the)",
+  "Dominican Republic",
   "Ecuador",
   "Egypt",
   "El Salvador",
@@ -93,16 +81,16 @@ const countries = [
   "Estonia",
   "Eswatini",
   "Ethiopia",
-  "Falkland Islands (the) [Malvinas]",
-  "Faroe Islands (the)",
+  "Falkland Islands (Malvinas)",
+  "Faroe Islands",
   "Fiji",
   "Finland",
   "France",
   "French Guiana",
   "French Polynesia",
-  "French Southern Territories (the)",
+  "French Southern Territories",
   "Gabon",
-  "Gambia (the)",
+  "Gambia",
   "Georgia",
   "Germany",
   "Ghana",
@@ -119,7 +107,7 @@ const countries = [
   "Guyana",
   "Haiti",
   "Heard Island and McDonald Islands",
-  "Holy See (the)",
+  "Holy See",
   "Honduras",
   "Hong Kong",
   "Hungary",
@@ -142,7 +130,7 @@ const countries = [
   "Korea (the Republic of)",
   "Kuwait",
   "Kyrgyzstan",
-  "Lao People's Democratic Republic (the)",
+  "Lao People's Democratic Republic",
   "Latvia",
   "Lebanon",
   "Lesotho",
@@ -158,7 +146,7 @@ const countries = [
   "Maldives",
   "Mali",
   "Malta",
-  "Marshall Islands (the)",
+  "Marshall Islands",
   "Martinique",
   "Mauritania",
   "Mauritius",
@@ -176,15 +164,16 @@ const countries = [
   "Namibia",
   "Nauru",
   "Nepal",
-  "Netherlands (the)",
+  "Netherlands",
   "New Caledonia",
   "New Zealand",
   "Nicaragua",
-  "Niger (the)",
+  "Niger",
   "Nigeria",
   "Niue",
   "Norfolk Island",
-  "Northern Mariana Islands (the)",
+  "North Macedonia",
+  "Northern Mariana Islands",
   "Norway",
   "Oman",
   "Pakistan",
@@ -194,17 +183,16 @@ const countries = [
   "Papua New Guinea",
   "Paraguay",
   "Peru",
-  "Philippines (the)",
+  "Philippines",
   "Pitcairn",
   "Poland",
   "Portugal",
   "Puerto Rico",
   "Qatar",
-  "Republic of North Macedonia",
-  "Romania",
-  "Russian Federation (the)",
-  "Rwanda",
   "Réunion",
+  "Romania",
+  "Russian Federation",
+  "Rwanda",
   "Saint Barthélemy",
   "Saint Helena, Ascension and Tristan da Cunha",
   "Saint Kitts and Nevis",
@@ -231,13 +219,13 @@ const countries = [
   "South Sudan",
   "Spain",
   "Sri Lanka",
-  "Sudan (the)",
+  "Sudan",
   "Suriname",
   "Svalbard and Jan Mayen",
   "Sweden",
   "Switzerland",
   "Syrian Arab Republic",
-  "Taiwan",
+  "Taiwan (Province of China)",
   "Tajikistan",
   "Tanzania, United Republic of",
   "Thailand",
@@ -249,14 +237,14 @@ const countries = [
   "Tunisia",
   "Turkey",
   "Turkmenistan",
-  "Turks and Caicos Islands (the)",
+  "Turks and Caicos Islands",
   "Tuvalu",
   "Uganda",
   "Ukraine",
-  "United Arab Emirates (the)",
-  "United Kingdom of Great Britain and Northern Ireland (the)",
-  "United States Minor Outlying Islands (the)",
-  "United States of America (the)",
+  "United Arab Emirates",
+  "United Kingdom of Great Britain and Northern Ireland",
+  "United States Minor Outlying Islands",
+  "United States of America",
   "Uruguay",
   "Uzbekistan",
   "Vanuatu",
@@ -269,142 +257,105 @@ const countries = [
   "Yemen",
   "Zambia",
   "Zimbabwe",
-  "Åland Islands",
 ];
 
-const roles = [
-  { id: 2, label: "Customer" },
-  { id: 3, label: "Freelancer" },
-];
+const roles = [ { id: 2, label: "Customer" }, { id: 3, label: "Freelancer" } ];
 
+// --- Main Component ---
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [role_id, setRole_id] = useState("");
-  const [first_name, setFirst_name] = useState("");
-  const [last_name, setLast_name] = useState("");
-  const [phone_number, setPhone_number] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [country, setCountry] = useState("");
-  const [username, setUsername] = useState("");
+  const [step, setStep] = useState(1); // 1 for form, 2 for verification
+  const [formData, setFormData] = useState({
+    role_id: "", first_name: "", last_name: "", phone_number: "", email: "", password: "", country: "", username: "",
+  });
+  const [verificationCode, setVerificationCode] = useState("");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [passwordStrength, setPasswordStrength] = useState({ hasMinLength: false, hasUpperCase: false, hasLowerCase: false, hasNumber: false });
 
-  // Password strength validation
-  const [passwordStrength, setPasswordStrength] = useState({
-    hasMinLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-  });
-
-  // Validate password strength
   useEffect(() => {
     setPasswordStrength({
-      hasMinLength: password.length >= 8,
-      hasUpperCase: /[A-Z]/.test(password),
-      hasLowerCase: /[a-z]/.test(password),
-      hasNumber: /\d/.test(password),
+      hasMinLength: formData.password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(formData.password),
+      hasLowerCase: /[a-z]/.test(formData.password),
+      hasNumber: /\d/.test(formData.password),
     });
-  }, [password]);
+  }, [formData.password]);
 
-  // Fetch categories from API when the component mounts
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/courses/categories")
-      .then((response) => {
-        setCategories(response.data.categories || []);
-      })
-      .catch((error) => {
-        console.error("Error fetching categories:", error);
-      });
+    axios.get("http://localhost:58999/courses/categories" )
+      .then(res => setAllCategories(res.data.categories || []))
+      .catch(err => console.error("Error fetching categories:", err));
   }, []);
 
-  // Handle category selection
-  const handleCategoryToggle = (categoryId) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(categoryId)) {
-        return prev.filter(id => id !== categoryId);
-      } else {
-        return [...prev, categoryId];
-      }
-    });
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  // Remove category from selection
+  const handleCategoryToggle = (category) => {
+    setSelectedCategories(prev => prev.some(c => c.id === category.id) ? prev.filter(c => c.id !== category.id) : [...prev, category]);
+  };
+
   const removeCategory = (categoryId) => {
-    setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+    setSelectedCategories(prev => prev.filter(c => c.id !== categoryId));
   };
 
-  const register = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Prepare the data to send
-    const userData = {
-      role_id: parseInt(role_id),
-      first_name,
-      last_name,
-      email,
-      password,
-      phone_number,
-      country,
-      username,
-    };
-
-    // Add categories array if the user is a freelancer
-    if (role_id === "3") {
-      userData.categories = selectedCategories;
+    setMessage("");
+    try {
+      await axios.post("http://localhost:58999/user/send-verification", { phone_number: formData.phone_number } );
+      setIsSuccess(true);
+      setMessage(`A verification code has been sent to ${formData.phone_number}.`);
+      setStep(2);
+    } catch (error) {
+      setIsSuccess(false);
+      setMessage(error.response?.data?.message || "Failed to send verification code.");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    axios
-      .post("http://localhost:5000/users/register", userData)
-      .then((result) => {
-        setStatus(true);
-        setMessage(result.data.message || "Registration successful");
-
-        // Auto login after successful registration
-        axios
-          .post("http://localhost:5000/users/login", { email, password })
-          .then((res) => {
-            dispatch(
-              setLogin({
-                token: res.data.token,
-                userId: res.data.userId,
-                roleId: res.data.role,
-              })
-            );
-            setIsLoading(false);
-            navigate("/");
-          })
-          .catch((err) => {
-            console.error("Auto login failed:", err);
-            setIsLoading(false);
-          });
-      })
-      .catch((error) => {
-        setStatus(false);
-        setMessage(error.response?.data?.message || "Registration failed");
-        setIsLoading(false);
-      });
+  const handleVerificationSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+    const registrationData = {
+      ...formData,
+      code: verificationCode,
+      categories: formData.role_id === "3" ? selectedCategories.map(c => c.id) : undefined,
+    };
+    try {
+      const result = await axios.post("http://localhost:58999/user/check-verification-and-register", registrationData );
+      setIsSuccess(true);
+      setMessage("Verification successful! You are now registered.");
+      dispatch(setLogin({ token: result.data.token, userId: result.data.userId, roleId: result.data.role }));
+      setTimeout(() => navigate("/"), 2000);
+    } catch (error) {
+      setIsSuccess(false);
+      setMessage(error.response?.data?.message || "Registration failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getPasswordStrengthText = () => {
     const validCount = Object.values(passwordStrength).filter(Boolean).length;
-    if (validCount === 0) return { text: "", color: "" };
-    if (validCount === 1) return { text: "Very Weak", color: "text-red-600" };
-    if (validCount === 2) return { text: "Weak", color: "text-red-500" };
+    if (!formData.password) return { text: "", color: "" };
+    if (validCount <= 1) return { text: "Very Weak", color: "text-red-600" };
+    if (validCount === 2) return { text: "Weak", color: "text-orange-500" };
     if (validCount === 3) return { text: "Good", color: "text-yellow-500" };
     if (validCount === 4) return { text: "Strong", color: "text-green-600" };
     return { text: "", color: "" };
   };
-
   const passwordStrengthInfo = getPasswordStrengthText();
 
   return (
@@ -604,33 +555,48 @@ const Register = () => {
 
                       
 
-                    </div>
+      <svg className="absolute inset-0 w-full h-full z-0" viewBox="0 0 1440 800" preserveAspectRatio="none">
+        {/* ... your decorative SVG paths and defs ... */}
+      </svg>
 
-                    {/* Right Column - Fixed Width */}
-                    <div className="space-y-5 min-h-0">
-                      
-                      {/* Email */}
-                      <div>
-                        <label
-                          htmlFor="email"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Email Address
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Mail className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="email"
-                            id="email"
-                            placeholder="Enter your email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
+      <div className="flex min-h-screen items-center justify-center px-4 py-8">
+        <div className="w-full max-w-6xl relative z-10">
+          {step === 2 ? (
+            // --- VERIFICATION UI ---
+            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border shadow-2xl text-center">
+              <h2 className="text-3xl font-bold text-gray-900 font-serif">Check Your Phone</h2>
+              <p className="mt-4 text-lg text-gray-600">We've sent a 6-digit verification code to <strong>{formData.phone_number}</strong>.</p>
+              <form onSubmit={handleVerificationSubmit} className="mt-8 max-w-sm mx-auto">
+                <div>
+                  <label htmlFor="verificationCode" className="sr-only">Verification Code</label>
+                  <input type="text" id="verificationCode" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder="_ _ _ _ _ _" maxLength="6" required className="w-full text-center text-3xl tracking-[1em] font-mono bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div className="mt-6">
+                  <button type="submit" disabled={isLoading} className="w-full py-4 px-6 bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold rounded-xl hover:shadow-lg transition disabled:opacity-50 text-lg">
+                    {isLoading ? "Verifying..." : "Verify & Complete Registration"}
+                  </button>
+                </div>
+              </form>
+              {message && <div className={`mt-6 p-4 rounded-xl text-sm ${isSuccess ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{message}</div>}
+              <button onClick={() => setStep(1)} className="mt-8 text-sm text-gray-500 hover:text-teal-600 inline-flex items-center"><ArrowLeft className="w-4 h-4 mr-1" /> Back to edit information</button>
+            </div>
+          ) : (
+            // --- REGISTRATION FORM UI ---
+            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="text-center mb-6"><h1 className="text-4xl lg:text-5xl font-bold text-gray-900 font-serif">Join <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">ORDERZHOUSE</span></h1></div>
+              <form onSubmit={handleFormSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-5">
+                    <div>
+                      <label htmlFor="role_id" className="block text-base font-semibold text-gray-700 mb-2 font-serif">I want to register as</label>
+                      <div className="relative group"><Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><select id="role_id" value={formData.role_id} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif"><option value="">Select Role</option>{roles.map((role) => (<option key={role.id} value={role.id}>{role.label}</option>))}</select></div>
+                    </div>
+                    {formData.role_id === "3" && (
+                      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                        <label className="block text-base font-semibold text-gray-700 mb-3 font-serif">Areas of Expertise</label>
+                        {selectedCategories.length > 0 && (<div className="mb-4 max-h-24 overflow-y-auto p-2 bg-white rounded-lg"><div className="flex flex-wrap gap-2">{selectedCategories.map((cat) => (<div key={cat.id} className="inline-flex items-center bg-gradient-to-r from-teal-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-medium"><span>{cat.name}</span><button type="button" onClick={() => removeCategory(cat.id)} className="ml-2 hover:bg-white/20 rounded-full p-0.5"><X className="h-3 w-3" /></button></div>))}</div></div>)}
+                        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-white"><div className="grid grid-cols-1 gap-2 p-3">{allCategories.map((cat) => (<button key={cat.id} type="button" onClick={() => handleCategoryToggle(cat)} className={`p-3 rounded-lg border-2 text-left ${selectedCategories.some(c => c.id === cat.id) ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}><div className="flex items-center">{selectedCategories.some(c => c.id === cat.id) && <Check className="w-4 h-4 text-teal-600 mr-2" />}<span>{cat.name}</span></div></button>))}</div></div>
                       </div>
 
                       {/* Password with Strength Indicator */}
@@ -840,27 +806,27 @@ const Register = () => {
                       <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" />
                     ) : (
                       <AlertCircle className="w-6 h-6 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
-                    )}
-                    <p className="text-base font-serif">{message}</p>
-                  </div>
-                )}
 
-                {/* Login Link */}
-                <div className="mt-6 text-center pt-4 border-t border-gray-200">
-                  <p className="text-base lg:text-lg text-gray-600 font-serif">
-                    Already have an account?{" "}
-                    <a
-                      href="/login"
-                      className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif"
-                    >
-                      Sign in now 
-                      <ArrowLeft className="ml-1 h-5 w-5 group-hover:-translate-x-1 transition-transform rotate-180" />
-                    </a>
-                  </p>
+                    )}
+                    <div><label htmlFor="first_name" className="block text-base font-semibold text-gray-700 mb-2 font-serif">First Name</label><div className="relative group"><User className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type="text" id="first_name" placeholder="Enter your first name" value={formData.first_name} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /></div></div>
+                    <div><label htmlFor="last_name" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Last Name</label><div className="relative group"><User className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type="text" id="last_name" placeholder="Enter your last name" value={formData.last_name} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /></div></div>
+                    <div><label htmlFor="username" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Username</label><div className="relative group"><User className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type="text" id="username" placeholder="Choose a username" value={formData.username} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /></div></div>
+                  </div>
+                  {/* Right Column */}
+                  <div className="space-y-5">
+                    <div><label htmlFor="email" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Email Address</label><div className="relative group"><Mail className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type="email" id="email" placeholder="Enter your email address" value={formData.email} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /></div></div>
+                    <div><label htmlFor="password" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Password</label><div className="relative group"><Lock className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type={showPassword ? "text" : "password"} id="password" placeholder="Enter your password" value={formData.password} onChange={handleInputChange} required className="pl-12 pr-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /><button type="button" className="absolute inset-y-0 right-0 pr-4 flex items-center" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" /> : <Eye className="h-6 w-6 text-gray-400 hover:text-teal-600" />}</button></div>{formData.password && (<div className="mt-2"><div className="flex items-center justify-between mb-2"><span className="text-sm font-medium text-gray-700">Strength:</span><span className={`text-sm font-semibold ${passwordStrengthInfo.color}`}>{passwordStrengthInfo.text}</span></div><div className="grid grid-cols-2 gap-2"><div className={`flex items-center text-xs ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-400'}`}><Check className={`w-3 h-3 mr-2 ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-300'}`} />8+ characters</div><div className={`flex items-center text-xs ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-400'}`}><Check className={`w-3 h-3 mr-2 ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-300'}`} />1 uppercase</div><div className={`flex items-center text-xs ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-400'}`}><Check className={`w-3 h-3 mr-2 ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-300'}`} />1 lowercase</div><div className={`flex items-center text-xs ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-400'}`}><Check className={`w-3 h-3 mr-2 ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-300'}`} />1 number</div></div></div>)}</div>
+                    <div><label htmlFor="country" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Country</label><div className="relative group"><MapPin className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><select id="country" value={formData.country} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif"><option value="">Select Country</option>{countries.map((c) => (<option key={c} value={c}>{c}</option>))}</select></div></div>
+                    <div><label htmlFor="phone_number" className="block text-base font-semibold text-gray-700 mb-2 font-serif">Phone Number</label><div className="relative group"><Phone className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none h-6 w-6 text-gray-400 group-focus-within:text-teal-600" /><input type="tel" id="phone_number" placeholder="e.g., +14155552671" value={formData.phone_number} onChange={handleInputChange} required className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 bg-white font-serif" /></div></div>
+                  </div>
                 </div>
-              </div>
+                <div className="flex items-start"><input id="terms" name="terms" type="checkbox" className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded mt-0.5" required /><label htmlFor="terms" className="ml-3 block text-base text-gray-700 font-serif">I agree to the <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold">Terms</a> and <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold">Privacy Policy</a></label></div>
+                <div><button type="submit" disabled={isLoading} className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center text-lg"><div className="relative z-10 flex items-center">{isLoading ? (<><svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Sending Code...</span></> ) : (<><Shield className="w-6 h-6 mr-2" /><span>Continue to Verification</span></>)}</div></button></div>
+              </form>
+              {message && <div className={`mt-6 p-4 rounded-xl flex items-start border ${isSuccess ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}><p className="text-base font-serif">{message}</p></div>}
+              <div className="mt-6 text-center pt-4 border-t border-gray-200"><p className="text-base lg:text-lg text-gray-600 font-serif">Already have an account? <Link to="/login" className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center group">Sign in now<ArrowLeft className="ml-1 h-5 w-5 group-hover:-translate-x-1 transition-transform rotate-180" /></Link></p></div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
