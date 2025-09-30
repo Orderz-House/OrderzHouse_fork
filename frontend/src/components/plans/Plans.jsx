@@ -13,8 +13,6 @@ const useAuth = () => {
   // The hook now returns the user and token from the global state
   return { user, token };
 };
-// =================================================================================
-
 const plans = [
   { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
   { id: 2, name: "1 month", description: "Best value for professionals", subscriptionFee: "20", earnLimit: "Unlimited" },
@@ -146,9 +144,7 @@ export default function Plans() {
     textAlign: "center",
     fontSize: "1.3rem",
     fontWeight: "600",
-
     color: "#004d40",
-
     maxWidth: "900px",
     marginLeft: "auto",
     marginRight: "auto",
@@ -163,7 +159,7 @@ export default function Plans() {
 
   return (
     <div style={bodyStyle}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", color: "#004d40" }}>Our Pricing Plans</h1>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
       <div style={containerStyle}>
         {plans.map(plan => (
           <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
