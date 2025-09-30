@@ -144,6 +144,7 @@ export default function Plans() {
     textAlign: "center",
     fontSize: "1.3rem",
     fontWeight: "600",
+
     color: "#004d40",
     maxWidth: "900px",
     marginLeft: "auto",
@@ -159,6 +160,10 @@ export default function Plans() {
 
   return (
     <div style={bodyStyle}>
+
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
+
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" ,color:"#000000ff"}}>Our Pricing Plans</h1>
       <div style={containerStyle}>
         {plans.map(plan => (
