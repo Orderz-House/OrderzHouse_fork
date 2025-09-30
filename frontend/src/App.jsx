@@ -38,15 +38,8 @@ import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
-<<<<<<< Updated upstream
-import Plans from "./components/plans/Plans"; 
-=======
-import Plans from "./components/plans/plans"; 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { ThemeProvider } from './context/ThemeProvider';
+import Plans from "./components/plans/Plans"; import React from 'react';
 import './index.css';
->>>>>>> Stashed changes
 
 function App() {
   const location = useLocation();
