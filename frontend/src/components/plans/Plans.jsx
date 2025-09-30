@@ -146,6 +146,11 @@ export default function Plans() {
     textAlign: "center",
     fontSize: "1.3rem",
     fontWeight: "600",
+<<<<<<< Updated upstream
+=======
+    color: "#026e7a",
+    maxWidth: "900px",
+>>>>>>> Stashed changes
     marginLeft: "auto",
     marginRight: "auto",
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
@@ -159,8 +164,14 @@ export default function Plans() {
 
   return (
     <div style={bodyStyle}>
+<<<<<<< Updated upstream
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
       
+=======
+
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" ,color:"#000000ff"}}>Our Pricing Plans</h1>
+>>>>>>> Stashed changes
       <div style={containerStyle}>
         {plans.map(plan => (
           <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
