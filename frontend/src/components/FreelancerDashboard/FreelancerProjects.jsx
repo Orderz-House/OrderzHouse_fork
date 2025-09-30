@@ -96,7 +96,7 @@ const FreelancerProjects = () => {
           
           response.data.projects.forEach(project => {
             const status = project.assignment_status;
-            if (stats.hasOwnProperty(status)) {
+            if (Object.prototype.hasOwnProperty.call(stats, status)) {
               stats[status]++;
             }
           });
@@ -275,16 +275,6 @@ const FreelancerProjects = () => {
     });
   };
 
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const formatBudget = (budget) => {
     const amount = parseInt(budget) || 0;

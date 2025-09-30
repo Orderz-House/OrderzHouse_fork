@@ -287,13 +287,13 @@ export default function EnhancedNavbar() {
                     </div>
                     <div className="py-2">
                       {userData.role_id === 3 ? (
-                        <Link to="/freelancer/dashboard" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
+                        <Link to="/FreelancerDashboard" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
                           <LayoutDashboard className="h-4 w-4" />
                           <span>Dashboard</span>
                         </Link>
                       ) : (
                         <>
-                          <Link to="/dashboard/projects" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
+                          <Link to="/FreelancerDashboard/FreelancerManageProject.jsx" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
                             <Briefcase className="h-4 w-4" />
                             <span>My Projects</span>
                           </Link>
