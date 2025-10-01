@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import pool from "../models/db.js";
 
 const filterMessage = async (message, userId) => {
     let text = message.toLowerCase();

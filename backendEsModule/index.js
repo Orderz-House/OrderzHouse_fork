@@ -3,36 +3,12 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
+import dotenv from "dotenv";
 
 import { AdminInit } from "./Admin.js";
 
-import dotenv from "dotenv";
-dotenv.config();
-
-const app = express();
-const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
-if (process.env.NODE_ENV !== "test") {
-  app.set("trust proxy", 1);
-}
-app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
-// rate limiter
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100,
-//   message: "try again later",
-// });
-// app.use(limiter);
-
-// db connection
-import "./models/db.js";
-
-// routes
+// Routers
+import tasksRouter from "./router/tasks.js";            // ✅ FIXED require → import
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
@@ -47,12 +23,44 @@ import newsRouter from "./router/news.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
-import earningsRouter from "./router/earning.js"
+import earningsRouter from "./router/earning.js";
 import uploadRouter from "./router/projectFilesUser.js";
+import chatsRouter from "./router/chats.js";
+import notificationsRouter from "./router/notifications.js";
+// DB connection
+import "./models/db.js";
+dotenv.config();
 
-app.use("/uploads" , uploadRouter)
+const app = express();
+const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
+
+if (process.env.NODE_ENV !== "test") {
+  app.set("trust proxy", 1);
+}
+
+app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
+// ✅ Rate limiter (optional)
+/*
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: "try again later",
+});
+app.use(limiter);
+*/
+
+// ✅ Routers
+app.use("/tasks", tasksRouter);
+app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
-app.use("/earnings" , earningsRouter)
+app.use("/earnings", earningsRouter);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);
@@ -64,14 +72,12 @@ app.use("/feedbacks", feedbackRouter);
 app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
-app.use("/orders", ordersRouter);
-app.use("/notifications", notificationsRouter);
 // app.use("/categories", categoriesRouter);
 app.use("/subscriptions", subscriptionsRouter);
-import chatsRouter from "./router/chats.js";
-import notificationsRouter from "./router/notifications.js";
 app.use("/chats", chatsRouter);
+app.use("/notifications", notificationsRouter);
 
+// ✅ Admin init
 (async () => {
   await AdminInit(app);
 })();
@@ -84,15 +90,11 @@ if (process.env.NODE_ENV !== "test") {
   io = initSocket(server);
 
   const startServer = (portToUse) => {
-    // Attach error handler before calling listen
     server.once("error", (err) => {
       if (err && err.code === "EADDRINUSE") {
         console.error(
           `⚠️ Port ${portToUse} in use. Retrying with a random free port...`
         );
-      }
-
-      {
         server.close(() => startServer(0));
         return;
       }

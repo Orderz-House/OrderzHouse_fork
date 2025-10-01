@@ -30,7 +30,7 @@ import authorization from "../middleware/authorization.js";
 import requireVerified from "../middleware/requireVerification.js";
 
 const usersRouter = express.Router();
-
+const router = express.Router();
 // Public routes
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
@@ -127,5 +127,29 @@ usersRouter.put(
   authentication,
   rejectFreelancerByAdmin
 );
+// Get freelancer profile by ID
+router.get("/freelancers/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, first_name, last_name, username, email, phone_number, 
+              country, bio, profile_pic_url, category, rating, rating_count, 
+              violation_count, created_at, is_online
+       FROM users 
+       WHERE id = $1 AND role = 'freelancer'`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Freelancer not found" });
+    }
+
+    res.json({ success: true, freelancer: result.rows[0] });
+  } catch (err) {
+    console.error("Error fetching freelancer:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 export default usersRouter;

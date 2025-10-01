@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import pool from "../models/db.js";
 
 const authorization = (permission) => {
   return async (req, res, next) => {
