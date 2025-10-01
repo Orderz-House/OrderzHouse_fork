@@ -226,12 +226,11 @@ export default function CreateProject() {
     setUploadingPayment(true);
     const formData = new FormData();
     formData.append('proof', paymentFile);
-    formData.append('projectId', createdProjectId);
     formData.append('amount', calculatePaymentAmount());
 
     try {
       await axios.post(
-        `${API_BASE}/payments/offline/record`,
+        `${API_BASE}/payments/offline/record/${createdProjectId}`,
         formData,
         {
           headers: {

@@ -39,7 +39,7 @@ projectsRouter.post(
 );
 
 // Get projects created by the authenticated user
-projectsRouter.get("/mine", authentication, requireVerified, getMyProjects);
+projectsRouter.get("/mine", authentication, getMyProjects);
 
 // Get project by ID
 projectsRouter.get(

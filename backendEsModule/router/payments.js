@@ -19,13 +19,12 @@ const upload = multer({ dest: "uploads/" });
 
 /**
  * CLIENT: Record offline payment (pending review by admin)
- * body: { projectId, amount }
+ * body: {  amount }
  * file: proof
  */
 paymentsRouter.post(
   "/offline/record/:projectId",
   authentication,
-  upload.single("proof"),
   recordOfflinePayment
 );
 
