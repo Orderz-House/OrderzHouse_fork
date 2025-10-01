@@ -182,9 +182,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-// Get projects created by the authenticated user
-import { pool } from "../models/db.js";
-
 export const getMyProjects = async (req, res) => {
   try {
     const userId = req.token?.userId;

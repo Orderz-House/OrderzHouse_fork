@@ -409,140 +409,26 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Decorative Waves Behind Container */}
-      <svg
-        className="absolute inset-0 w-full h-full z-0"
-        viewBox="0 0 1440 800"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,150 Q360,100 720,150 T1440,130"
-          stroke="url(#blueGradient)"
-          strokeWidth="3"
-          fill="none"
-          opacity="0.25"
-        />
-        <path
-          d="M0,200 Q360,250 720,200 T1440,220"
-          stroke="url(#tealGradient)"
-          strokeWidth="2.5"
-          fill="none"
-          opacity="0.2"
-        />
-        <path
-          d="M0,350 Q360,300 720,350 T1440,330"
-          stroke="url(#greenGradient)"
-          strokeWidth="2"
-          fill="none"
-          opacity="0.18"
-        />
-        <path
-          d="M0,450 Q360,500 720,450 T1440,470"
-          stroke="url(#blueGradient)"
-          strokeWidth="2.5"
-          fill="none"
-          opacity="0.2"
-        />
-        <path
-          d="M0,550 Q360,500 720,550 T1440,530"
-          stroke="url(#tealGradient)"
-          strokeWidth="3"
-          fill="none"
-          opacity="0.25"
-        />
-        <path
-          d="M0,650 Q360,700 720,650 T1440,670"
-          stroke="url(#greenGradient)"
-          strokeWidth="2"
-          fill="none"
-          opacity="0.18"
-        />
-        <path
-          d="M0,120 Q200,80 400,120 Q600,160 800,120 Q1000,80 1200,120 Q1320,140 1440,120"
-          stroke="url(#blueToTeal)"
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.15"
-        />
-        <path
-          d="M0,280 Q200,320 400,280 Q600,240 800,280 Q1000,320 1200,280 Q1320,260 1440,280"
-          stroke="url(#tealToGreen)"
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.15"
-        />
-        <path
-          d="M0,420 Q200,380 400,420 Q600,460 800,420 Q1000,380 1200,420 Q1320,440 1440,420"
-          stroke="url(#blueToGreen)"
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.15"
-        />
-        <path
-          d="M0,600 Q200,640 400,600 Q600,560 800,600 Q1000,640 1200,600 Q1320,580 1440,600"
-          stroke="url(#greenToBlue)"
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.15"
-        />
-        
-        <defs>
-          <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-          <linearGradient id="tealGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#0d9488" />
-            <stop offset="100%" stopColor="#14b8a6" />
-          </linearGradient>
-          <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#059669" />
-            <stop offset="100%" stopColor="#10b981" />
-          </linearGradient>
-          <linearGradient id="blueToTeal" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="50%" stopColor="#0d9488" />
-            <stop offset="100%" stopColor="#2563eb" />
-          </linearGradient>
-          <linearGradient id="tealToGreen" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#0d9488" />
-            <stop offset="50%" stopColor="#059669" />
-            <stop offset="100%" stopColor="#0d9488" />
-          </linearGradient>
-          <linearGradient id="blueToGreen" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="50%" stopColor="#059669" />
-            <stop offset="100%" stopColor="#2563eb" />
-          </linearGradient>
-          <linearGradient id="greenToBlue" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#059669" />
-            <stop offset="50%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-        </defs>
-      </svg>
+      
 
       {/* Main Container - Fixed Width */}
-      <div className="flex min-h-screen items-center justify-center px-4 lg:px-8 xl:px-16 py-8">
+      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 xl:px-16 py-8">
         <div className="flex items-center justify-center w-full max-w-7xl mx-auto">
           
           {/* Registration Container - Fixed Width */}
           <div className="w-full max-w-6xl relative z-10">
             {/* Header */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center mb-4">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 font-serif leading-tight">
-                  Join{" "}
-                  <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">
-                    ORDERZHOUSE
-                  </span>
-                </h1>
-              </div>
-              
+            <div className="text-center mb-4">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-2 font-serif leading-tight">
+                Join{" "}
+                <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">
+                  ORDERZHOUSE
+                </span>
+              </h1>
             </div>
 
             {/* Registration Form Container - Fixed Dimensions */}
-            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden shadow-sm max-h-[85vh] overflow-y-auto">
               {/* Background gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl opacity-80"></div>
               
@@ -782,7 +668,6 @@ const Register = () => {
                         </div>
                         
                        {/* Password Strength Indicator */}
-{password && (
   <div className="mt-2">
     <div className="flex items-center justify-between mb-2">
       <span className="text-sm font-medium text-gray-700">Password Strength:</span>
@@ -811,7 +696,7 @@ const Register = () => {
       </div>
     </div>
   </div>
-)}
+
 </div>
 
                       {/* Country */}

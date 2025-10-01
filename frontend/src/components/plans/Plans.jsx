@@ -138,9 +138,9 @@ export default function Plans() {
     fontWeight: "600",
 
     color: "#004d40",
+
     color: "#026e7a",
 
-    color: "#004d40",
 
     maxWidth: "900px",
     marginLeft: "auto",

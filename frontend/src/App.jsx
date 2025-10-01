@@ -39,6 +39,7 @@ import FreelancerManageProject from "./components/freelancerDashboard/Freelancer
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans"; 
+import Dashboard from "./components/User Dashboard/dashboard";
 
 function App() {
   const location = useLocation();
@@ -89,8 +90,9 @@ function App() {
         <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} />
         <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
         <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
-        <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
-        <Route path="/dashoard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
+        <
+          Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
+        <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
         <Route path="/projects/" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
@@ -98,6 +100,8 @@ function App() {
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
+        <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
       
