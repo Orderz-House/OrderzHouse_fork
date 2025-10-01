@@ -206,7 +206,7 @@ export default function EnhancedNavbar() {
             </div>
           </div>
 
-          {/* Desktop Actions */}
+          {/* Desktop Actions res*/}
           <div className="hidden md:flex items-center space-x-4">
             {IsAuthenticated && (
               <div className="relative" ref={notificationsRef}>
