@@ -24,8 +24,8 @@ export const recordOfflinePayment = [
   upload.single("proof"), // proof is the file field name
   async (req, res) => {
     const clientId = req.token?.userId;
-    const { projectId } = req.params;   // <-- now from URL params
-    const { amount } = req.body;        // <-- still from body
+    const { projectId } = req.params; 
+    const { amount } = req.body;      
     const proofFile = req.file;
 
     if (!projectId || !amount || !proofFile) {
@@ -36,19 +36,16 @@ export const recordOfflinePayment = [
     }
 
     try {
-      // Upload proof to Cloudinary
       const result = await cloudinary.v2.uploader.upload(proofFile.path, {
         folder: "payment_proofs",
       });
 
-      // Insert payment with proof URL
       const insert = await pool.query(
-        `INSERT INTO payments (payer_id, receiver_id, project_id, amount, proof_url, payment_date)
-         VALUES ($1, $2, $3, $4, $5, NOW())
+        `INSERT INTO payments (payer_id, project_id, amount, proof_url, payment_date)
+         VALUES ($1, $2, $3, $4, NOW())
          RETURNING *`,
         [
           clientId,
-          process.env.ADMIN_ID || 1,
           projectId,
           amount,
           result.secure_url,
@@ -79,7 +76,6 @@ export const recordOfflinePayment = [
     }
   },
 ];
-
 
 /**
  * Admin approves/rejects a recorded offline payment.
@@ -194,7 +190,6 @@ export const approveOfflinePayment = async (req, res) => {
   }
 };
 
-// Rest of your existing controller stays unchanged...
 
 /**
  * Freelancer submits completion request
