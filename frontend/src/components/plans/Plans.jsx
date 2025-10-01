@@ -139,8 +139,6 @@ export default function Plans() {
     fontWeight: "600",
 
     color: "#004d40",
-    color: "#026e7a",
-
     maxWidth: "900px",
     marginLeft: "auto",
     marginRight: "auto",
@@ -158,7 +156,6 @@ export default function Plans() {
 
 
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", color: "#004d40" }}>Our Pricing Plans</h1>
       <div style={containerStyle}>
         {plans.map(plan => (
           <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
