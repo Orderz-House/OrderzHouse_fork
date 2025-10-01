@@ -187,8 +187,6 @@ export default function EnhancedNavbar() {
     { label: "ABOUT US", path: "/about" },
     { label: "NEWS", path: "/news" },
     { label: "CONTACT", path: "/contact" },
-    { label: "PLANS", path: "/plans" },
-
   ];
 
   return (

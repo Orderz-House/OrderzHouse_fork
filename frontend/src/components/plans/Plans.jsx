@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux'; // Import useSelector
 
-// =================== CUSTOM HOOK TO GET AUTH INFO (Using Redux) ===================
 const useAuth = () => {
   // Get user data and token directly from the Redux store
   const { user, token } = useSelector((state) => ({
@@ -13,7 +12,7 @@ const useAuth = () => {
   // The hook now returns the user and token from the global state
   return { user, token };
 };
-// =================================================================================
+
 
 const plans = [
   { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
@@ -44,16 +43,6 @@ function PlanCard({ plan, user, navigate }) {
       window.open(finalUrl, '_blank');
       return;
     }
-    
-    // 3. For any other authenticated user (like Admins), redirect to WhatsApp as a fallback.
-    //    (Clients with role_id 2 will never see this page anyway).
-    const baseUrl = "https://api.whatsapp.com/send/";
-    const phoneNumber = "962791433341";
-    const message = `I want to subscribe to this plan: ${plan.name}`;
-    const encodedMessage = encodeURIComponent(message );
-    const finalUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
-    
-    window.open(finalUrl, '_blank');
   };
 
   return (
@@ -129,7 +118,8 @@ export default function Plans() {
     if (user && user.role_id === 2) {
       navigate("/"); // Redirect to home page or another appropriate page
     }
-  }, [user, navigate]);
+  }, 
+  [user, navigate]);
 
   // Prevent rendering the component for role_id 2 to avoid a screen flash
   if (user && user.role_id === 2) {
@@ -147,6 +137,7 @@ export default function Plans() {
     fontSize: "1.3rem",
     fontWeight: "600",
 
+    color: "#004d40",
     color: "#026e7a",
 
     color: "#004d40",
@@ -165,6 +156,7 @@ export default function Plans() {
 
   return (
     <div style={bodyStyle}>
+
 
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
 
