@@ -10,7 +10,7 @@ export default function Freelancers() {
         { label: "Name", key: "name" },
         { label: "Role", key: "role" },
         { label: "Rate", key: "rate" },
-        { label: "City", key: "city" },
+        { label: "Country", key: "country" },
       ]}
       formFields={[
         { key: "name", label: "Name", required: true },
@@ -22,7 +22,6 @@ export default function Freelancers() {
         },
         { key: "rate", label: "Rate", type: "text", placeholder: "$25/h" },
         { key: "city", label: "City" },
-        // حقول خاصة بالفريلانس:
         {
           key: "skills",
           label: "Skills",
