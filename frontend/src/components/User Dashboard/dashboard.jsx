@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import ProjectsTable from './projects';
 
 export default function Dashboard() {
   const [activePage, setActivePage] = useState('projects');
@@ -29,12 +30,16 @@ export default function Dashboard() {
   ];
 
   const renderContent = () => {
+    if (activePage === 'projects') {
+      return <ProjectsTable />;
+    }
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 min-h-[600px]">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           {navigation.find((item) => item.id === activePage)?.name ||
             bottomNavigation.find((item) => item.id === activePage)?.name}
         </h2>
+        <p className="text-gray-600">Component coming soon...</p>
       </div>
     );
   };
@@ -43,7 +48,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <aside
-        className={`bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out
+        className={`bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out fixed lg:static
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           ${isSidebarCollapsed ? 'lg:w-20' : 'lg:w-64'} 
           w-64 min-h-screen z-50 lg:translate-x-0`}
@@ -56,10 +61,13 @@ export default function Dashboard() {
                 isSidebarCollapsed ? 'lg:px-0' : ''
               }`}
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3"></div>
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 flex items-center justify-center text-white font-bold text-xl">
+                U
+              </div>
               {!isSidebarCollapsed && (
                 <>
-                  
+                  <h3 className="text-sm font-semibold text-gray-900">User Dashboard</h3>
+                  <p className="text-xs text-gray-500">Freelancer</p>
                 </>
               )}
             </div>
@@ -144,17 +152,17 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center px-6">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          <div className="flex-1"></div>
+          <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+          <div className="w-10"></div>
         </header>
 
         {/* Page Content */}

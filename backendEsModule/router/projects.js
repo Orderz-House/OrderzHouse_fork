@@ -24,6 +24,7 @@ import {
   quitProject,
   getProjectsByStatus,
   approveOrRejectOffer,
+  completeHourlyProject,
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
@@ -37,6 +38,10 @@ projectsRouter.post(
   authorization("create_project"),
   createProject
 );
+projectsRouter.put(
+  "/hourly/:projectId",
+  authentication,
+  completeHourlyProject)
 
 // Get projects created by the authenticated user
 projectsRouter.get("/mine", authentication, getMyProjects);

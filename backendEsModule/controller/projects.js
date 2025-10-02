@@ -24,9 +24,9 @@ export const createProject = async (req, res) => {
       budget_max,
       hourly_rate,
       preferred_skills, // array of skills
+      refund_amount, 
     } = req.body;
 
-    // Validate required fields for all projects
     if (!category_id || !title || !description || !duration_type) {
       return res.status(400).json({
         success: false,
@@ -42,7 +42,6 @@ export const createProject = async (req, res) => {
       });
     }
 
-    // Validate type-specific fields
     if (!project_type) {
       return res.status(400).json({
         success: false,
@@ -90,11 +89,11 @@ export const createProject = async (req, res) => {
     }
 
     // Determine project status based on project type
-    let projectStatus = "pending"; // default
+    let projectStatus = "pending"; 
     if (project_type === "bidding") {
-      projectStatus = "bidding"; // immediately available for offers
+      projectStatus = "bidding"; 
     } else if (project_type === "fixed" || project_type === "hourly") {
-      projectStatus = "pending_payment"; // waiting for payment before becoming active
+      projectStatus = "pending_payment"; 
     }
 
     // Insert project
@@ -104,10 +103,11 @@ export const createProject = async (req, res) => {
         budget, duration_days, duration_hours, project_type,
         budget_min, budget_max, hourly_rate,
         preferred_skills,
-        status, is_deleted, updated_at
+        status, is_deleted, updated_at,
+        refund_amount -- ✅ NEW COLUMN
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        $12, $13, false, null
+        $12, $13, false, null, $14
       ) RETURNING *;
     `;
 
@@ -129,6 +129,7 @@ export const createProject = async (req, res) => {
       hourly_rate || null,
       preferred_skills || null,
       projectStatus,
+      refund_amount || 0, 
     ]);
 
     const project = rows[0];
@@ -136,11 +137,11 @@ export const createProject = async (req, res) => {
     // Calculate amount_to_pay
     let amountToPay = null;
     if (project.project_type === "fixed") {
-      amountToPay = project.budget; // exactly as budget
+      amountToPay = project.budget;
     } else if (project.project_type === "hourly") {
-      amountToPay = (project.budget || 0) * 3; // budget * 3
+      amountToPay = (project.budget || 0) * 3;
     } else if (project.project_type === "bidding") {
-      amountToPay = null; // will be based on offers later
+      amountToPay = null;
     }
 
     if (amountToPay !== null) {
@@ -148,7 +149,7 @@ export const createProject = async (req, res) => {
         `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
         [amountToPay, project.id]
       );
-      Object.assign(project, update.rows[0]); // merge updated field into project object
+      Object.assign(project, update.rows[0]);
     }
 
     // Log creation
@@ -182,7 +183,78 @@ export const createProject = async (req, res) => {
   }
 };
 
-// Get projects created by the authenticated user
+export const completeHourlyProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { total_hours } = req.body;
+
+    const { rows: projectRows } = await pool.query(
+      `SELECT * FROM projects WHERE id = $1`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+    if (project.project_type !== "hourly") {
+      return res.status(400).json({ success: false, message: "Not an hourly project" });
+    }
+
+    const prepaidHours = project.prepaid_hours || 3;
+    const hourlyRate = project.hourly_rate;
+
+    let refundAmount = 0;
+    let extraPayment = 0;
+
+    if (total_hours < prepaidHours) {
+      // Refund unused prepaid hours
+      refundAmount = (prepaidHours - total_hours) * hourlyRate;
+    } else if (total_hours > prepaidHours) {
+      // Charge extra for overtime
+      extraPayment = (total_hours - prepaidHours) * hourlyRate;
+    }
+
+    const finalAmount = total_hours * hourlyRate;
+
+    // Update project
+    const { rows: updated } = await pool.query(
+      `UPDATE projects 
+       SET total_hours = $1, amount_to_pay = $2, status = 'completed'
+       WHERE id = $3 RETURNING *`,
+      [total_hours, finalAmount, projectId]
+    );
+
+    // Refund logic
+    if (refundAmount > 0) {
+      await pool.query(
+        `UPDATE wallets SET balance = balance + $1 WHERE user_id = $2`,
+        [refundAmount, project.user_id]
+      );
+    }
+
+    // Extra payment logic
+    if (extraPayment > 0) {
+      await pool.query(
+        `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
+        [extraPayment, project.user_id]
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      project: updated[0],
+      refund: refundAmount > 0 ? refundAmount : null,
+      extra_payment: extraPayment > 0 ? extraPayment : null,
+    });
+  } catch (error) {
+    console.error("completeHourlyProject error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 
 export const getMyProjects = async (req, res) => {
   try {
@@ -195,8 +267,23 @@ export const getMyProjects = async (req, res) => {
     const { rows } = await pool.query(
       `
       SELECT 
-        p.*
+        p.*, 
+        c.name AS category_name,
+        pa.freelancer_id,
+        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name, -- ✅ full name
+        pa.assignment_type,
+        CASE 
+          WHEN p.duration_days IS NOT NULL AND pa.assigned_at IS NOT NULL
+          THEN GREATEST(p.duration_days - EXTRACT(DAY FROM (now() - pa.assigned_at)), 0)
+        END AS remaining_days,
+        CASE 
+          WHEN p.duration_hours IS NOT NULL AND pa.assigned_at IS NOT NULL
+          THEN GREATEST(p.duration_hours - EXTRACT(HOUR FROM (now() - pa.assigned_at)), 0)
+        END AS remaining_hours
       FROM projects p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN project_assignments pa ON pa.project_id = p.id
+      LEFT JOIN users u ON pa.freelancer_id = u.id 
       WHERE p.user_id = $1
         AND p.is_deleted = false
       ORDER BY p.created_at DESC;
@@ -210,7 +297,6 @@ export const getMyProjects = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // Assign a freelancer to a project
 export const assignProject = async (req, res) => {
@@ -1122,7 +1208,7 @@ export const getProjectsByStatus = async (req, res) => {
   }
 };
 export const getMyProjectsAsFreelancer = async (req, res) => {
-  const freelancerId = req.token?.userId; // Get from token instead of params
+  const freelancerId = req.token?.userId;
 
   try {
     const result = await pool.query(
