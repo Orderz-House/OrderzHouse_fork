@@ -1,5 +1,4 @@
-import { pool } from "../models/db.js";
-
+import  pool  from "../models/db.js";
 const addFeedback = (req, res) => {
   const user_id = req.token?.userId;
   const { freelancer_id, content, type } = req.body;

@@ -1,5 +1,4 @@
-import { pool } from "../models/db.js";
-
+import  pool  from "../models/db.js";
 // Create a subscription
 const subscriptionToPlan = async (req, res) => {
   const { freelancer_id, plan_id, status } = req.body;

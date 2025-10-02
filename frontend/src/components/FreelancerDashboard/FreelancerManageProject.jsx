@@ -41,7 +41,7 @@ const FreelancerManageProject = () => {
         );
         
         if (response.data && response.data.project) {
-          setProject(response.data.project.rows[0]);
+          setProject(response.data.project);
         }
       } catch (error) {
         console.error("Error fetching project data:", error);

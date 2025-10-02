@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import pool from "../models/db.js";
 
 const makeAppointment = (req, res) => {
   const freelancer_id = req.token?.userId;

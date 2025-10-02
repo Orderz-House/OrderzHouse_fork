@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import pool  from "../models/db.js";
 
 /**
  * Notification Service - Handles all system notifications

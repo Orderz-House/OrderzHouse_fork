@@ -1,5 +1,5 @@
 // controller/courses.js
-import { pool } from "../models/db.js";
+import pool from "../models/db.js";
 
 /* -------------------- Categories -------------------- */
 export const getCategories = async (req, res) => {
