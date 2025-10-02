@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
+import { useNavigate } from "react-router-dom";
 import {
   User,
   Mail,
@@ -45,7 +45,7 @@ const initialPortfolioItem = {
 };
 
 function VerifyProfile() {
-  const navigate = useNavigate(); // 2. Initialize the navigate function
+  const navigate = useNavigate();
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
 
@@ -58,7 +58,7 @@ function VerifyProfile() {
   const [isVerified, setIsVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(true);
+  const [bannerVisible, setBannerVisible] = useState(false); // Start as false
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
@@ -68,9 +68,16 @@ function VerifyProfile() {
   const [previewUrl, setPreviewUrl] = useState("");
   const fileInputRef = useRef(null);
 
+  // --- FIX 1: Guard the data fetch ---
+  // Only run fetchData if the user is authenticated (has a token and userId).
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (token && userId) {
+      fetchData();
+    } else {
+      // If not logged in, stop the loading spinner and do nothing.
+      setLoading(false);
+    }
+  }, [token, userId]); // Dependency on token and userId
 
   const fetchData = async () => {
     try {
@@ -120,8 +127,9 @@ function VerifyProfile() {
     }
   };
 
+  // --- FIX 2: Improved missing fields calculation ---
   useEffect(() => {
-    const requiredFields = {
+    const requiredProfileFields = {
       first_name: "First Name",
       last_name: "Last Name",
       email: "Email",
@@ -130,26 +138,34 @@ function VerifyProfile() {
       username: "Username",
       profile_pic_url: "Profile Picture",
     };
-    const missing = Object.keys(requiredFields)
-      .filter(field => !profile[field])
-      .map(field => requiredFields[field]);
 
-    if (portfolioItems.length === 0) {
+    const missingProfile = Object.keys(requiredProfileFields)
+      .filter(field => !profile[field])
+      .map(field => requiredProfileFields[field]);
+
+    const hasPortfolio = portfolioItems.length > 0;
+    const missing = [...missingProfile];
+    if (!hasPortfolio) {
       missing.push("Portfolio Item");
     }
 
     setMissingFields(missing);
-    setBannerVisible(missing.length > 0 && !isVerified);
+    
+    // Only show the incomplete banner if the user is logged in and not yet verified.
+    if (token && !isVerified) {
+        setBannerVisible(missing.length > 0);
+    } else {
+        setBannerVisible(false);
+    }
 
-    const totalFields = Object.keys(requiredFields).length + 1;
+    const totalFields = Object.keys(requiredProfileFields).length + 1; // +1 for portfolio
     const completedFields = totalFields - missing.length;
     setProgress(Math.round((completedFields / totalFields) * 100));
-  }, [profile, portfolioItems, isVerified]);
+  }, [profile, portfolioItems, isVerified, token]);
 
   const showMessage = (msg, type) => {
     setMessage(msg);
     setMessageType(type);
-    // Set a longer timeout for the redirect message
     const duration = type === "success" ? 1500 : 5000;
     setTimeout(() => setMessage(""), duration);
   };
@@ -252,7 +268,6 @@ function VerifyProfile() {
     }
   };
 
-  // 3. Updated saveProfile function with redirect logic
   const saveProfile = async () => {
     if (!validateProfile()) {
       showMessage("Please fix the errors in your profile", "error");
@@ -270,14 +285,14 @@ function VerifyProfile() {
       showMessage("Profile updated successfully! Redirecting...", "success");
 
       setTimeout(() => {
-        navigate('/dashboard'); // Redirect after 1.5 seconds
+        navigate('/dashboard');
       }, 1500);
 
     } catch (error) {
       console.error("Error updating profile:", error);
       const errorMessage = error.response?.data?.message || "Error updating profile";
       showMessage(errorMessage, "error");
-      setSaving(false); // Stop saving indicator on failure
+      setSaving(false);
     }
   };
 
@@ -351,6 +366,28 @@ function VerifyProfile() {
     }
   };
 
+  // Render a loading state
+  if (loading) {
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <Loader className="w-12 h-12 text-blue-600 animate-spin" />
+        </div>
+    );
+  }
+
+  // Render a message for non-logged-in users
+  if (!token) {
+    return (
+        <div className="min-h-screen bg-gray-50 py-8 px-4 text-center">
+            <h2 className="text-2xl font-bold text-gray-800">Access Denied</h2>
+            <p className="text-gray-600 mt-2">Please log in to verify your profile.</p>
+            <button onClick={() => navigate('/login')} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Go to Login
+            </button>
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -372,7 +409,10 @@ function VerifyProfile() {
               <AlertCircle className="w-6 h-6 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
               <div>
                 <h3 className="text-lg font-semibold text-yellow-800 mb-2">Profile Incomplete</h3>
-                <p className="text-yellow-700">Please complete all required fields to get verified and start accepting projects. You need to complete {missingFields.length} more {missingFields.length === 1 ? " field" : " fields"}.</p>
+                {/* --- FIX 3: More user-friendly message --- */}
+                <p className="text-yellow-700">
+                  Please complete all required fields to get verified. You still need to complete {missingFields.length} item{missingFields.length === 1 ? '' : 's'}.
+                </p>
                 {missingFields.length > 0 && (
                   <ul className="mt-2 text-sm text-yellow-600 grid grid-cols-2 gap-1">
                     {missingFields.map((field) => (<li key={field} className="flex items-center">• {field}</li>))}
@@ -557,7 +597,7 @@ function VerifyProfile() {
           <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-green-800 mb-2">Profile Verified!</h3>
-            <p className="text-green-700">Your profile is complete and ready to accept projects.</p>
+            <p className="text-green-700">Your profile is complete and you can now accept projects.</p>
           </div>
         )}
       </div>
