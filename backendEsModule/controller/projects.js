@@ -6,8 +6,8 @@ import {
 } from "../services/loggingService.js";
 import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
+
 export const createProject = async (req, res) => {
-  console.log("Request body:", req.body);
   try {
     const userId = req.token?.userId;
 
@@ -128,10 +128,28 @@ export const createProject = async (req, res) => {
       budget_max || null,
       hourly_rate || null,
       preferred_skills || null,
-      projectStatus, // updated status
+      projectStatus,
     ]);
 
     const project = rows[0];
+
+    // Calculate amount_to_pay
+    let amountToPay = null;
+    if (project.project_type === "fixed") {
+      amountToPay = project.budget; // exactly as budget
+    } else if (project.project_type === "hourly") {
+      amountToPay = (project.budget || 0) * 3; // budget * 3
+    } else if (project.project_type === "bidding") {
+      amountToPay = null; // will be based on offers later
+    }
+
+    if (amountToPay !== null) {
+      const update = await pool.query(
+        `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
+        [amountToPay, project.id]
+      );
+      Object.assign(project, update.rows[0]); // merge updated field into project object
+    }
 
     // Log creation
     await LogCreators.projectOperation(
@@ -165,27 +183,34 @@ export const createProject = async (req, res) => {
 };
 
 // Get projects created by the authenticated user
+
 export const getMyProjects = async (req, res) => {
   try {
     const userId = req.token?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const { rows } = await pool.query(
-      `SELECT 
-  p.*, 
-  array_agg(pa.freelancer_id) AS assigned_freelancers
-FROM projects p
-LEFT JOIN project_assignments pa ON pa.project_id = p.id
-WHERE p.user_id = $1 AND p.is_deleted = false
-GROUP BY p.id
-ORDER BY p.created_at DESC;
-`,
+      `
+      SELECT 
+        p.*
+      FROM projects p
+      WHERE p.user_id = $1
+        AND p.is_deleted = false
+      ORDER BY p.created_at DESC;
+      `,
       [userId]
     );
+
     return res.json({ success: true, projects: rows });
   } catch (error) {
     console.error("getMyProjects error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Assign a freelancer to a project
 export const assignProject = async (req, res) => {

@@ -159,7 +159,8 @@ export default function EnhancedNavbar() {
     { label: "ABOUT US", path: "/about", condition: true },
     { label: "NEWS", path: "/news", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
-    { label: "PLANS", path: "/plans", condition: !userData || userData.role_id !== 2 },
+    { label: "PROJECTS", path: "/dashboard/projects", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
+    { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id !== 3) },
   ];
 
   return (
@@ -286,27 +287,9 @@ export default function EnhancedNavbar() {
                       <p className="text-sm text-gray-500 break-words mt-1 font-inter">{userData.email}</p>
                     </div>
                     <div className="py-2">
-                      {userData.role_id === 3 ? (
-                        <Link to="/freelancer/dashboard" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
-                          <LayoutDashboard className="h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
-                      ) : (
-                        <>
-                          <Link to="/dashboard/projects" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
-                            <Briefcase className="h-4 w-4" />
-                            <span>My Projects</span>
-                          </Link>
-                          <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
-                            <User className="h-4 w-4" />
-                            <span>Profile</span>
-                          </Link>
-                        </>
-                      )}
-                      <Link to="/notifications" onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
-                        <Bell className="h-4 w-4" />
-                        <span>Notifications</span>
-                        {unreadCount > 0 && <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
+                      <Link to={userData.role_id === 3 ? "/freelancer/dashboard" : "/client/dashboard"} onClick={() => setIsUserMenuOpen(false)} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span>Dashboard</span>
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200 font-inter">
                         <LogOut className="h-4 w-4" />
