@@ -1,8 +1,7 @@
 import { Server } from "socket.io";
 import messageHandler from "../controller/messages.js";
 import { authSocket } from "../middleware/authentication.js";
-import { pool } from "../models/db.js";
-
+import  pool  from "../models/db.js";
 function initSocket(server) {
   const io = new Server(server, {
     cors: {

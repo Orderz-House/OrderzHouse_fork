@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import  pool  from "../models/db.js";
 import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "./loggingService.js";
 
 /**

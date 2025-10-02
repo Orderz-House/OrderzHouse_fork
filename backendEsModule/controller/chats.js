@@ -1,4 +1,4 @@
-import { pool } from '../models/db.js';
+import pool from "../models/db.js";
 
 const getMessagesByProjectId = async (req,res)=>{
     const {projectId} = req.params;

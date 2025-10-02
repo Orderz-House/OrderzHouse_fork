@@ -1,4 +1,4 @@
-import { pool } from "../models/db.js";
+import pool from "../models/db.js";
 import filterMessage from "../middleware/filterMessages.js";
 import { createBulkNotifications, NOTIFICATION_TYPES } from "../services/notificationService.js";
 

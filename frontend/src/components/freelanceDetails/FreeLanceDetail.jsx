@@ -4,14 +4,12 @@ import { useParams } from "react-router-dom";
 import {
   Star,
   Mail,
-  Briefcase,
   MapPin,
   Calendar,
   User,
   Award,
   FileText,
   ExternalLink,
-  Globe,
   Phone,
 } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -20,7 +18,6 @@ export default function FreelancerPage() {
   const { token } = useSelector((s) => s.auth);
   const { id } = useParams();
 
-  // Unified state to hold freelancer and portfolio together
   const [data, setData] = useState({
     freelancer: null,
     portfolio: [],
@@ -37,31 +34,24 @@ export default function FreelancerPage() {
       try {
         setData((prev) => ({ ...prev, loading: true }));
 
-        // Fetch freelancer data
         const userRes = await axios.get(
           `http://localhost:5000/users/freelancers/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Fetch portfolio with improved error handling
         let portfolioData = [];
         try {
+          // ✅ fixed endpoint typo
           const portfolioRes = await axios.get(
-            `http://localhost:5000/users/freelances/${id}/port`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+            `http://localhost:5000/users/freelancers/${id}/portfolio`,
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           portfolioData = portfolioRes.data.portfolios || [];
         } catch (portfolioErr) {
-          // Handle 404 specifically - it just means no portfolio items exist yet
           if (portfolioErr.response && portfolioErr.response.status === 404) {
             portfolioData = [];
           } else {
             console.error("Failed to load portfolio:", portfolioErr);
-            // Continue without portfolio data but don't treat as fatal error
           }
         }
 
@@ -87,7 +77,6 @@ export default function FreelancerPage() {
 
   const { freelancer, portfolio, loading, error } = data;
 
-  // Submit a rating for the freelancer
   const submitRating = async () => {
     try {
       if (rating < 1 || rating > 5) {
@@ -96,22 +85,14 @@ export default function FreelancerPage() {
       }
       await axios.post(
         "http://localhost:5000/users/rate",
-        {
-          userId: id,
-          rating,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { userId: id, rating },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setSubmitMessage("Rating submitted successfully!");
 
-      // Refresh freelancer data to show updated rating
       const userRes = await axios.get(
         `http://localhost:5000/users/freelancers/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setData((prev) => ({ ...prev, freelancer: userRes.data.freelancer }));
     } catch (err) {
@@ -123,7 +104,6 @@ export default function FreelancerPage() {
     }
   };
 
-  // Loading state
   if (loading)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -134,7 +114,6 @@ export default function FreelancerPage() {
       </div>
     );
 
-  // Error state
   if (error)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -152,7 +131,6 @@ export default function FreelancerPage() {
       </div>
     );
 
-  // Freelancer not found
   if (!freelancer)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -206,21 +184,21 @@ export default function FreelancerPage() {
 
               {/* Rating */}
               <div className="flex items-center mb-4">
-                <div className="flex items-center">
-                  <Star className="w-5 h-5 text-yellow-400 mr-1" />
-                  <span className="font-semibold text-gray-800">
-                    {freelancer.rating || "0.0"}
-                  </span>
-                  <span className="text-gray-500 ml-1">
-                    ({freelancer.rating_count || 0} reviews)
-                  </span>
-                </div>
+                <Star className="w-5 h-5 text-yellow-400 mr-1" />
+                <span className="font-semibold text-gray-800">
+                  {freelancer.rating || "0.0"}
+                </span>
+                <span className="text-gray-500 ml-1">
+                  ({freelancer.rating_count || 0} reviews)
+                </span>
               </div>
 
               {/* Bio */}
               {freelancer.bio && (
                 <div className="mb-6">
-                  <p className="text-gray-700 leading-relaxed">{freelancer.bio}</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    {freelancer.bio}
+                  </p>
                 </div>
               )}
 
@@ -277,7 +255,7 @@ export default function FreelancerPage() {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
+        {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-lg mb-8">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px">
@@ -306,7 +284,6 @@ export default function FreelancerPage() {
             </nav>
           </div>
 
-          {/* Tab Content */}
           <div className="p-6">
             {activeTab === "portfolio" && (
               <div>
@@ -320,7 +297,8 @@ export default function FreelancerPage() {
                       No portfolio items yet
                     </h3>
                     <p className="text-gray-400">
-                      This freelancer hasn't added any projects to their portfolio.
+                      This freelancer hasn't added any projects to their
+                      portfolio.
                     </p>
                   </div>
                 ) : (
@@ -336,8 +314,8 @@ export default function FreelancerPage() {
                         <p className="text-gray-600 mb-4 line-clamp-3">
                           {item.description}
                         </p>
-                        
-                        {item.skills && item.skills.length > 0 && (
+
+                        {item.skills?.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
                             {item.skills.map((skill, index) => (
                               <span
@@ -349,14 +327,14 @@ export default function FreelancerPage() {
                             ))}
                           </div>
                         )}
-                        
+
                         {item.hourly_rate && (
                           <div className="text-sm text-gray-700 mb-3">
                             <span className="font-medium">Rate: </span>
                             ${item.hourly_rate}/hr
                           </div>
                         )}
-                        
+
                         {item.work_url && (
                           <a
                             href={item.work_url}
@@ -425,7 +403,8 @@ export default function FreelancerPage() {
                   {submitMessage && (
                     <div
                       className={`mt-4 p-3 rounded-md ${
-                        submitMessage.includes("Failed") || submitMessage.includes("can only rate")
+                        submitMessage.includes("Failed") ||
+                        submitMessage.includes("can only rate")
                           ? "bg-red-100 text-red-700"
                           : "bg-green-100 text-green-700"
                       }`}
