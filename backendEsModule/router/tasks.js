@@ -7,6 +7,9 @@ import {
   updateTask,
   deleteTask
 } from "../controller/tasks.js";
+const router = express.Router();
+
+
 router.get("/freelancer/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -26,7 +29,6 @@ router.get("/freelancer/:id", async (req, res) => {
   }
 });
 
-const router = express.Router();
 
 // My tasks
 router.get("/freelancer/:freelancerId", authentication, getFreelancerTasks);

@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import ProjectsTable from './projects';
+import FinancialTable from './payments'
 
 export default function Dashboard() {
   const [activePage, setActivePage] = useState('projects');
@@ -32,6 +33,9 @@ export default function Dashboard() {
   const renderContent = () => {
     if (activePage === 'projects') {
       return <ProjectsTable />;
+    }
+    if (activePage === 'payments') {
+      return <FinancialTable />;
     }
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 min-h-[600px]">
