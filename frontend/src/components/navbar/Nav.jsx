@@ -160,7 +160,7 @@ export default function EnhancedNavbar() {
     { label: "NEWS", path: "/news", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
     { label: "PROJECTS", path: "/dashboard/projects", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
-    { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id !== 3) },
+    { label: "PLANS", path: "/plans", condition: userData || (userData.role_id !== 2 && userData.role_id == 3) },
   ];
 
   return (
