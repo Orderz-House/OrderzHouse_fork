@@ -1,4 +1,3 @@
-// router/earning.js
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import { requireVerified } from "../middleware/requireVerification.js";
@@ -9,10 +8,7 @@ import {
 
 const earningsRouter = express.Router();
 
-/**
- * GET /earnings/freelancer/:freelancerId/summary
- * Returns earnings summary (wallet, total income, pending, etc.)
- */
+// Get earnings summary for freelancer
 earningsRouter.get(
   "/freelancer/:freelancerId/summary",
   authentication,
@@ -20,10 +16,7 @@ earningsRouter.get(
   getFreelancerEarningsSummary
 );
 
-/**
- * GET /earnings/freelancer/:freelancerId/history
- * Returns earnings history (list of payments with project info)
- */
+// 📜 Get earnings history for freelancer
 earningsRouter.get(
   "/freelancer/:freelancerId/history",
   authentication,

@@ -27,6 +27,8 @@ import earningsRouter from "./router/earning.js";
 import uploadRouter from "./router/projectFilesUser.js";
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
+import paymentsRouter from "./router/payments.js";
+
 // DB connection
 import "./models/db.js";
 dotenv.config();
@@ -76,6 +78,7 @@ app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
+app.use("/payments", paymentsRouter);
 
 // ✅ Admin init
 (async () => {

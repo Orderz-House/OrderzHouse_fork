@@ -11,6 +11,7 @@ import {
   releasePayment,
   autoReleasePaymentsCron,
 } from "../controller/payments.js";
+import { getMyFinancialOverview } from "../controller/financial/financialOverview.js";
 
 const paymentsRouter = express.Router();
 
@@ -70,6 +71,12 @@ paymentsRouter.post(
   authentication,
   requireVerified,
   releasePayment
+);
+
+paymentsRouter.get(
+  "/overview",
+  authentication,
+  getMyFinancialOverview
 );
 
 export default paymentsRouter;

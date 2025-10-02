@@ -1,12 +1,11 @@
-// controller/earnings.js
 import pool from "../models/db.js";
 
-// Get earnings summary for freelancer
+// Get freelancer earnings summary
 export const getFreelancerEarningsSummary = async (req, res) => {
   try {
-    const { freelancerId } = req.params; // ✅ make sure we extract it
+    const { freelancerId } = req.params;
 
-    // Verify user exists and is freelancer
+    // Check user exists and is freelancer
     const userCheck = await pool.query(
       `SELECT id, role_id, wallet 
        FROM users 
@@ -17,30 +16,28 @@ export const getFreelancerEarningsSummary = async (req, res) => {
     if (!userCheck.rows.length) {
       return res.status(404).json({
         success: false,
-        message: "Freelancer not found",
+        message: "Freelancer not found"
       });
     }
 
     if (userCheck.rows[0].role_id !== 3) {
       return res.status(403).json({
         success: false,
-        message: "User is not a freelancer",
+        message: "User is not a freelancer"
       });
     }
 
     const availableInAccount = userCheck.rows[0].wallet || 0;
 
-    // Total income = all payments this freelancer RECEIVED
+    // Total income (all payments received)
     const totalIncomeResult = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) AS total_income
        FROM payments 
-       WHERE project_id IN (
-         SELECT id FROM projects WHERE freelancer_id = $1
-       )`,
+       WHERE freelancer_id = $1`,
       [freelancerId]
     );
 
-    // Pending income from escrow
+    // Pending income (escrow still held)
     const pendingIncomeResult = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) AS pending_income
        FROM escrow 
@@ -48,30 +45,28 @@ export const getFreelancerEarningsSummary = async (req, res) => {
       [freelancerId]
     );
 
+    // Withdraw requested (optional — if no table, keep 0)
+    const withdrawRequested = 0;
+
     const summary = {
       totalIncome: parseFloat(totalIncomeResult.rows[0].total_income) || 0,
       pendingIncome: parseFloat(pendingIncomeResult.rows[0].pending_income) || 0,
       availableInAccount: parseFloat(availableInAccount) || 0,
-      withdrawRequested: 0, // placeholder
+      withdrawRequested
     };
 
-    return res.json({
-      success: true,
-      summary,
-    });
+    res.json({ success: true, summary });
+
   } catch (error) {
     console.error("getFreelancerEarningsSummary error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Get earnings history for freelancer
+// 📜 Get freelancer earnings history
 export const getFreelancerEarningsHistory = async (req, res) => {
   try {
-    const { freelancerId } = req.params; // ✅ extract properly
+    const { freelancerId } = req.params;
     const { limit = 10, offset = 0 } = req.query;
 
     const historyResult = await pool.query(
@@ -83,28 +78,26 @@ export const getFreelancerEarningsHistory = async (req, res) => {
          proj.id AS project_id
        FROM payments p
        LEFT JOIN projects proj ON p.project_id = proj.id
-       WHERE proj.freelancer_id = $1
+       WHERE p.freelancer_id = $1
        ORDER BY p.payment_date DESC
        LIMIT $2 OFFSET $3`,
       [freelancerId, limit, offset]
     );
 
-    const earningsHistory = historyResult.rows.map((row) => ({
+    const earningsHistory = historyResult.rows.map(row => ({
       id: row.id,
       date: row.date,
-      project: row.project_title || `Project #${row.project_id}`,
       amount: parseFloat(row.amount),
+      project: {
+        id: row.project_id,
+        title: row.project_title
+      }
     }));
 
-    return res.json({
-      success: true,
-      earningsHistory,
-    });
+    res.json({ success: true, earningsHistory });
+
   } catch (error) {
     console.error("getFreelancerEarningsHistory error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

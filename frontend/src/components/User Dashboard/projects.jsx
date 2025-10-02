@@ -122,11 +122,11 @@ const ProjectsTable = () => {
     const sharedColumns = ['project', 'category', 'status', 'freelancer', 'completion', 'requested', 'skills', 'created'];
     
     if (type === 'hourly') {
-      return [...sharedColumns.slice(0, 2), 'hourly_rate', 'prepaid_hours', 'total_hours', 'remaining_time', ...sharedColumns.slice(2)];
+      return [...sharedColumns.slice(0, 2), 'hourly_rate', 'prepaid_hours', 'total_hours', ...sharedColumns.slice(2)];
     } else if (type === 'bidding') {
-      return [...sharedColumns.slice(0, 2), 'budget_range', 'amount_to_pay', 'duration_days', 'remaining_time', ...sharedColumns.slice(2)];
+      return [...sharedColumns.slice(0, 2), 'budget_range', 'amount_to_pay', 'duration_days', ...sharedColumns.slice(2)];
     } else if (type === 'fixed') {
-      return [...sharedColumns.slice(0, 2), 'budget', 'duration_days', 'remaining_time', ...sharedColumns.slice(2)];
+      return [...sharedColumns.slice(0, 2), 'budget', 'duration_days', ...sharedColumns.slice(2)];
     }
     return sharedColumns;
   };
@@ -142,9 +142,8 @@ const ProjectsTable = () => {
       prepaid_hours: 'Prepaid Hours',
       total_hours: 'Total Hours',
       duration_days: 'Duration',
-      remaining_time: 'Time Remaining',
       status: 'Status',
-      freelancer: 'Completed',
+      freelancer: 'Completed By',
       completion: 'Completion',
       requested: 'Requested At',
       skills: 'Preferred Skills',
@@ -231,75 +230,6 @@ const ProjectsTable = () => {
           <div className="text-sm text-gray-700">
             <Calendar className="w-4 h-4 inline mr-1 text-[#78c6a3]" />
             {project.duration_days || 0} days
-          </div>
-        );
-      
-      case 'remaining_time':
-        const remainingDays = project.remaining_days;
-        const remainingHours = project.remaining_hours;
-        
-        let timeColor = 'text-gray-700';
-        let bgColor = 'bg-gray-50';
-        let iconColor = 'text-gray-500';
-        
-        if (remainingDays !== undefined && remainingDays !== null) {
-          if (remainingDays <= 0) {
-            timeColor = 'text-red-700';
-            bgColor = 'bg-red-50';
-            iconColor = 'text-red-500';
-          } else if (remainingDays <= 3) {
-            timeColor = 'text-orange-700';
-            bgColor = 'bg-orange-50';
-            iconColor = 'text-orange-500';
-          } else if (remainingDays <= 7) {
-            timeColor = 'text-yellow-700';
-            bgColor = 'bg-yellow-50';
-            iconColor = 'text-yellow-500';
-          } else {
-            timeColor = 'text-green-700';
-            bgColor = 'bg-green-50';
-            iconColor = 'text-green-500';
-          }
-        }
-        
-        if (remainingHours !== undefined && remainingHours !== null) {
-          if (remainingHours <= 0) {
-            timeColor = 'text-red-700';
-            bgColor = 'bg-red-50';
-            iconColor = 'text-red-500';
-          } else if (remainingHours <= 24) {
-            timeColor = 'text-orange-700';
-            bgColor = 'bg-orange-50';
-            iconColor = 'text-orange-500';
-          } else if (remainingHours <= 72) {
-            timeColor = 'text-yellow-700';
-            bgColor = 'bg-yellow-50';
-            iconColor = 'text-yellow-500';
-          } else {
-            timeColor = 'text-green-700';
-            bgColor = 'bg-green-50';
-            iconColor = 'text-green-500';
-          }
-        }
-        
-        return (
-          <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium ${bgColor} ${timeColor}`}>
-            <Clock className={`w-4 h-4 mr-1.5 ${iconColor}`} />
-            {remainingDays !== undefined && remainingDays !== null ? (
-              remainingDays <= 0 ? (
-                <span>Overdue</span>
-              ) : (
-                <span>{Math.floor(remainingDays)} {Math.floor(remainingDays) === 1 ? 'day' : 'days'}</span>
-              )
-            ) : remainingHours !== undefined && remainingHours !== null ? (
-              remainingHours <= 0 ? (
-                <span>Overdue</span>
-              ) : (
-                <span>{Math.floor(remainingHours)} {Math.floor(remainingHours) === 1 ? 'hour' : 'hours'}</span>
-              )
-            ) : (
-              <span className="text-gray-400">N/A</span>
-            )}
           </div>
         );
       
