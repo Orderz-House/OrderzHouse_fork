@@ -7,34 +7,7 @@ import dotenv from "dotenv";
 
 import { AdminInit } from "./Admin.js";
 
-import dotenv from "dotenv";
-dotenv.config();
-
-const app = express();
-const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
-if (process.env.NODE_ENV !== "test") {
-  app.set("trust proxy", 1);
-}
-app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
-// rate limiter
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100,
-//   message: "try again later",
-// });
-// app.use(limiter);
-
-// db connection
-import "./models/db.js";
-
-// routes
-import paymentsRouter from "./router/payments.js";
+// Routers
 import tasksRouter from "./router/tasks.js";            // ✅ FIXED require → import
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
@@ -58,8 +31,6 @@ import notificationsRouter from "./router/notifications.js";
 import "./models/db.js";
 dotenv.config();
 
-app.use("/uploads" , uploadRouter)
-app.use("/payments", paymentsRouter);
 const app = express();
 const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
 
