@@ -1,42 +1,119 @@
-import express from "express";
-import { authentication } from "../middleware/authentication.js";
-import {
-  getFreelancerTasks,
-  getTaskPool,
-  createTask,
-  updateTask,
-  deleteTask
-} from "../controller/tasks.js";
-router.get("/freelancer/:id", async (req, res) => {
+import pool from "../db.js"; // Assuming you have a db connection pool exported
+
+// --- GET Freelancer's Own Tasks ---
+export const getFreelancerTasks = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { freelancerId } = req.params;
 
-    const result = await pool.query(
-      `SELECT t.*, f.name AS freelancer_name, f.profile_pic_url AS freelancer_avatar
-       FROM tasks t
-       JOIN freelancers f ON t.freelancer_id = f.id
-       WHERE t.freelancer_id = $1`,
-      [id]
-    );
+    // This query JOINS tasks with users to get freelancer details
+    const query = `
+      SELECT 
+        t.id,
+        t.title,
+        t.description,
+        t.price,
+        t.freelancer_id,
+        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name,
+        u.avatar_url AS freelancer_avatar
+      FROM 
+        tasks AS t
+      JOIN 
+        users AS u ON t.freelancer_id = u.id
+      WHERE 
+        t.freelancer_id = $1
+      ORDER BY
+        t.created_at DESC;
+    `;
 
-    res.json({ tasks: result.rows });
+    const result = await pool.query(query, [freelancerId]);
+
+    res.status(200).json({ success: true, tasks: result.rows });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch tasks" });
+    console.error("Error in getFreelancerTasks:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch tasks" });
   }
-});
+};
 
-const router = express.Router();
+// --- GET Other Freelancers' Tasks (Task Pool) ---
+export const getTaskPool = async (req, res) => {
+  try {
+    const { freelancerId } = req.params;
 
-// My tasks
-router.get("/freelancer/:freelancerId", authentication, getFreelancerTasks);
+    // This query is similar but excludes the current freelancer's tasks
+    const query = `
+      SELECT 
+        t.id,
+        t.title,
+        t.description,
+        t.price,
+        t.freelancer_id,
+        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name,
+        u.avatar_url AS freelancer_avatar
+      FROM 
+        tasks AS t
+      JOIN 
+        users AS u ON t.freelancer_id = u.id
+      WHERE 
+        t.freelancer_id != $1
+      ORDER BY
+        t.created_at DESC;
+    `;
 
-// Task pool
-router.get("/pool/:freelancerId", authentication, getTaskPool);
+    const result = await pool.query(query, [freelancerId]);
 
-// CRUD
-router.post("/", authentication, createTask);
-router.put("/:id", authentication, updateTask);
-router.delete("/:id", authentication, deleteTask);
+    res.status(200).json({ success: true, tasks: result.rows });
+  } catch (err) {
+    console.error("Error in getTaskPool:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch task pool" });
+  }
+};
 
-export default router;
+// --- CRUD Functions (assuming they are already working) ---
+
+export const createTask = async (req, res) => {
+  try {
+    const { title, description, price, freelancerId } = req.body;
+
+    // Basic validation
+    if (!title || !description || !price || !freelancerId) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    const query = `
+      INSERT INTO tasks (title, description, price, freelancer_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    
+    const result = await pool.query(query, [title, description, price, freelancerId]);
+    const newTask = result.rows[0];
+
+    // Fetch the newly created task with freelancer data to return to the frontend
+    const getNewTaskQuery = `
+      SELECT 
+        t.*,
+        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name,
+        u.avatar_url AS freelancer_avatar
+      FROM tasks t
+      JOIN users u ON t.freelancer_id = u.id
+      WHERE t.id = $1;
+    `;
+    const finalResult = await pool.query(getNewTaskQuery, [newTask.id]);
+
+    res.status(201).json({ success: true, task: finalResult.rows[0] });
+  } catch (err) {
+    console.error("Error in createTask:", err);
+    res.status(500).json({ success: false, message: "Failed to create task" });
+  }
+};
+
+export const updateTask = async (req, res) => {
+  // Add your update logic here
+  // Remember to return the updated task with freelancer data
+  res.status(501).send("Not Implemented");
+};
+
+export const deleteTask = async (req, res) => {
+  // Add your delete logic here
+  res.status(501).send("Not Implemented");
+};
