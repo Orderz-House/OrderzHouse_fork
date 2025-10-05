@@ -33,7 +33,7 @@ export default function FreelancerTasks() {
         setMyTasks(myRes.data.tasks || []);
         setTaskPool(poolRes.data.tasks || []);
       } catch (err) {
-        console.error("❌ Failed to fetch tasks:", err);
+        console.error("Failed to fetch tasks:", err);
       } finally {
         setLoading(false);
       }
@@ -55,7 +55,7 @@ export default function FreelancerTasks() {
         );
         setMyTasks(myTasks.map((t) => (t.id === editingTask.id ? res.data.task : t)));
         setEditingTask(null);
-        setMessage("✅ Task updated successfully!");
+        setMessage("Task updated successfully!");
       } else {
         const res = await axios.post(
           `http://localhost:5000/tasks`,
@@ -63,14 +63,14 @@ export default function FreelancerTasks() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setMyTasks([...myTasks, res.data.task]);
-        setMessage("✅ Task created successfully!");
+        setMessage("Task created successfully!");
       }
 
       setTaskForm({ title: "", description: "", price: "" });
       setShowForm(false);
     } catch (err) {
-      console.error("❌ Failed to save task:", err);
-      setMessage("❌ Could not save task");
+      console.error("Failed to save task:", err);
+      setMessage("Could not save task");
     }
   };
 
@@ -83,10 +83,10 @@ export default function FreelancerTasks() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMyTasks(myTasks.filter((t) => t.id !== taskId));
-      setMessage("🗑️ Task deleted successfully!");
+      setMessage("Task deleted successfully!");
     } catch (err) {
-      console.error("❌ Failed to delete task:", err);
-      setMessage("❌ Could not delete task");
+      console.error("Failed to delete task:", err);
+      setMessage("Could not delete task");
     }
   };
   {myTasks.map((task) => (
@@ -109,7 +109,7 @@ export default function FreelancerTasks() {
 
     <h3 className="text-xl font-bold">{task.title}</h3>
     <p className="text-gray-700">{task.description}</p>
-    <p className="mt-2 text-sm text-gray-600">💰 {task.price} USD</p>
+    <p className="mt-2 text-sm text-gray-600"> $ {task.price} USD</p>
   </div>
 ))}
 
@@ -143,7 +143,7 @@ export default function FreelancerTasks() {
 
             <h3 className="text-lg font-bold text-white">{task.title}</h3>
             <p className="text-white/90 mb-2">{task.description}</p>
-            <p className="font-semibold text-white">💲 {task.price}</p>
+            <p className="font-semibold text-white">$ {task.price}</p>
 
             <div className="flex justify-end mt-3 space-x-3">
               <button
@@ -188,7 +188,7 @@ export default function FreelancerTasks() {
 
             <h3 className="text-lg font-bold text-white">{task.title}</h3>
             <p className="text-white/90 mb-2">{task.description}</p>
-            <p className="font-semibold text-white">💲 {task.price}</p>
+            <p className="font-semibold text-white">$ {task.price}</p>
           </div>
         ))}
       </div>
