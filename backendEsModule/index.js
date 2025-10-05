@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import { AdminInit } from "./Admin.js";
 
 // Routers
-import tasksRouter from "./router/tasks.js";            // ✅ FIXED require → import
+import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
@@ -24,7 +24,7 @@ import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
 import earningsRouter from "./router/earning.js";
-import uploadRouter from "./router/projectFilesUser.js";
+import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 // DB connection

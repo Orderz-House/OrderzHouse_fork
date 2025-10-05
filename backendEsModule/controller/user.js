@@ -21,7 +21,7 @@ const register = async (req, res) => {
     username,
     categories, // array of category IDs for freelancers
   } = req.body;
-
+  
   // Back-end validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/; // min 8 chars, 1 uppercase, 1 number
@@ -307,6 +307,7 @@ const editUser = async (req, res) => {
     country,
     username,
     role_id,
+    bio,
     profile_pic_url,
     profilePicUrl,
   } = req.body;
@@ -1118,7 +1119,7 @@ const updateVerificationStatus = async (req, res) => {
       "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
       [userId]
     );
-
+    
     const hasPortfolio = parseInt(portfolioResult.rows[0].count) > 0;
 
     if (isProfileComplete && hasPortfolio) {

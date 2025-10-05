@@ -65,7 +65,7 @@ export const validateWalletOperation = async (userId, amount, operation) => {
     if (operation === 'debit' && currentBalance < amount) {
       return {
         valid: false,
-        error: `Insufficient balance. Current balance: $${currentBalance}, Required: $${amount}`
+        error: `Insufficient balance. Current balance: JOD ${currentBalance}, Required: JOD ${amount}`
       };
     }
 
@@ -296,7 +296,7 @@ export const transferWallet = async (fromUserId, toUserId, amount, reason = 'Tra
       await client.query('ROLLBACK');
       return {
         success: false,
-        error: `Insufficient balance. Current balance: $${fromUserBalance}, Required: $${amount}`
+        error: `Insufficient balance. Current balance: JOD ${fromUserBalance}, Required: JOD ${amount}`
       };
     }
 
@@ -434,7 +434,7 @@ export const validateEscrowCreation = async (clientId, amount) => {
     if (balance < amount) {
       return {
         valid: false,
-        error: `Insufficient balance for escrow. Current balance: $${balance}, Required: $${amount}`
+        error: `Insufficient balance for escrow. Current balance: JOD ${balance}, Required: JOD ${amount}`
       };
     }
 

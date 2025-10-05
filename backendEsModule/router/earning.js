@@ -1,27 +1,24 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { requireVerified } from "../middleware/requireVerification.js";
-import { 
-  getFreelancerEarningsSummary, 
-  getFreelancerEarningsHistory 
+import {
+  getFreelancerEarningsSummary,
+  getFreelancerEarningsHistory, // Now this import will work
 } from "../controller/earnings.js";
 
-const earningsRouter = express.Router();
+const router = express.Router();
 
-// Get earnings summary for freelancer
-earningsRouter.get(
+// Route for the earnings summary (e.g., for the dashboard cards)
+router.get(
   "/freelancer/:freelancerId/summary",
   authentication,
-  requireVerified,
   getFreelancerEarningsSummary
 );
 
-// 📜 Get earnings history for freelancer
-earningsRouter.get(
+// Route for the detailed earnings history (e.g., for the table)
+router.get(
   "/freelancer/:freelancerId/history",
   authentication,
-  requireVerified,
   getFreelancerEarningsHistory
 );
 
-export default earningsRouter;
+export default router;
