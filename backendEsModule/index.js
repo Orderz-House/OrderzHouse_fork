@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import { AdminInit } from "./Admin.js";
 
 // Routers
-import tasksRouter from "./router/tasks.js";        
+import taskRouter from "./router/tasks.js";        
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
@@ -59,7 +59,7 @@ app.use(limiter);
 */
 
 // ✅ Routers
-app.use("/tasks", tasksRouter);
+app.use("/tasks", taskRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
 app.use("/earnings", earningsRouter);

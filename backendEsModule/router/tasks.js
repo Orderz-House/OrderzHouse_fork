@@ -7,38 +7,22 @@ import {
   updateTask,
   deleteTask
 } from "../controller/tasks.js";
-const router = express.Router();
 
+const taskRouter = express.Router();
 
-router.get("/freelancer/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+// Get my tasks
+taskRouter.get("/my-tasks", authentication, getFreelancerTasks);
 
-    const result = await pool.query(
-      `SELECT t.*, f.name AS freelancer_name, f.profile_pic_url AS freelancer_avatar
-       FROM tasks t
-       JOIN freelancers f ON t.freelancer_id = f.id
-       WHERE t.freelancer_id = $1`,
-      [id]
-    );
+// Get task pool (other freelancers' tasks)
+taskRouter.get("/pool", authentication, getTaskPool);
 
-    res.json({ tasks: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
+// Create new task
+taskRouter.post("/", authentication, createTask);
 
+// Update task
+taskRouter.put("/:id", authentication, updateTask);
 
-// My tasks
-router.get("/freelancer/:freelancerId", authentication, getFreelancerTasks);
+// Delete task
+taskRouter.delete("/:id", authentication, deleteTask);
 
-// Task pool
-router.get("/pool/:freelancerId", authentication, getTaskPool);
-
-// CRUD
-router.post("/", authentication, createTask);
-router.put("/:id", authentication, updateTask);
-router.delete("/:id", authentication, deleteTask);
-
-export default router;
+export default taskRouter;
