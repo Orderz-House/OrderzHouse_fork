@@ -1,33 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Users, Briefcase, Handshake } from "lucide-react";
-import Slider from "react-slick";
 
-// Import slick-carousel styles for the slideshow
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import HeroSection from './sections/Hero';
+import Categories from './sections/Categories';
+import Faq from './sections/Faq';
 
 // Image imports
-import graphicDesignImg from "../../assets/graphic.jpg";
-import contentWritingImg from "../../assets/writing.jpg";
-import programmingImg from "../../assets/programming.jpg";
-import photographyImg from "../../assets/camera.jpg";
-import voiceAudioImg from "../../assets/voiceover.jpg";
 import communityImg from "../../assets/community.jpg";
-import newImg1 from '../../assets/img1.jpg';
-import newImg2 from '../../assets/img2.jpg';
-import newImg3 from '../../assets/img3.jpg';
 
 export default function OrderzHousePageRedesign() {
   const [openFaq, setOpenFaq] = useState(0);
-
-  // Static data
-  const categories = [
-    { id: 1, name: "Graphic Design", description: "Crafting visual content that communicates ideas and captivates audiences.", image: graphicDesignImg },
-    { id: 2, name: "Content Writing", description: "Turning ideas into well-written content for your needs.", image: contentWritingImg },
-    { id: 3, name: "Programming", description: "Writing code to build websites, apps, and software that solve problems.", image: programmingImg },
-    { id: 4, name: "Photography", description: "Capturing moments and telling stories through stunning images.", image: photographyImg },
-    { id: 5, name: "Voice & Audio", description: "Creating voiceovers, podcasts, and audio content for your projects.", image: voiceAudioImg },
-  ];
 
   const faqs = [
     { question: "Do you offer a free trial?", answer: "No, a free trial is not necessary because we already provide a free plan." },
@@ -43,179 +25,17 @@ export default function OrderzHousePageRedesign() {
     { question: "Are there any hidden fees?", answer: "No, all fees including the one-time verification fee are clearly stated during the subscription process." },
     { question: "What if I want to cancel my subscription?", answer: "You may cancel at any time, but no refunds are provided and your current plan will remain active until the end of the subscription period." },
     { question: "Can I have multiple projects under the same plan?", answer: "Yes, your plan supports multiple projects, but the plan time counter starts when your first project is assigned." },
-  ];
+  ]; 
 
-  // Images for the hero section slideshow
-  const slideshowImages = [
-    graphicDesignImg,
-    contentWritingImg,
-    programmingImg,
-    photographyImg,
-    voiceAudioImg,
-    newImg1,
-    newImg2,
-    newImg3,
-  ];
-
-  // Preload images for better performance
-  useEffect(() => {
-    const imagesToPreload = [...slideshowImages, communityImg];
-    imagesToPreload.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, [slideshowImages]);
-
-  // Settings for the react-slick slideshow
-  const sliderSettings = {
-    dots: false,
-    infinite: true,
-    speed: 3000,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 0,
-    cssEase: "linear",
-    variableWidth: true,
-    arrows: false,
-    pauseOnHover: true, // The slideshow will still pause on hover, but no visual effect will occur
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: { slidesToShow: 2 }
-      },
-      {
-        breakpoint: 600,
-        settings: { slidesToShow: 1, variableWidth: false }
-      }
-    ]
-  };
+  const handleSearch = (q) => console.log(q);
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Merriweather', serif" }}>
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
-        {/* Background Elements */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundImage: "linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px)",
-              backgroundSize: "50px 50px",
-            }}
-          ></div>
-        </div>
-        <div className="absolute inset-0">
-          <div className="absolute top-16 left-16">
-            <div className="w-24 h-1 bg-gradient-to-r from-[#05668D] to-transparent"></div>
-            <div className="w-1 h-24 bg-gradient-to-b from-[#05668D] to-transparent mt-2"></div>
-          </div>
-          <div className="absolute bottom-16 right-16">
-            <div className="w-24 h-1 bg-gradient-to-l from-[#02C39A] to-transparent"></div>
-            <div className="w-1 h-24 bg-gradient-to-t from-[#02C39A] to-transparent -mt-24 ml-auto"></div>
-          </div>
-        </div>
-
-        {/* Hero Content Container */}
-        <div className="relative z-20 max-w-7xl mx-auto px-6 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Text Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50/50 text-gray-600 mb-8">
-                <div className="flex -space-x-1">
-                  <div className="w-4 h-4 rounded-full bg-[#05668D]"></div>
-                  <div className="w-4 h-4 rounded-full bg-[#028090]"></div>
-                  <div className="w-4 h-4 rounded-full bg-[#00A896]"></div>
-                  <div className="w-4 h-4 rounded-full bg-[#02C39A]"></div>
-                </div>
-                <span className="text-sm font-medium">10,000+ Creative Professionals</span>
-              </div>
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-2 tracking-tight text-[#05668D]">
-                ORDERZ
-                <span className="block text-3xl md:text-4xl lg:text-5xl font-light text-[#02C39A] mt-2">
-                  HOUSE
-                </span>
-              </h1>
-              <p className="text-lg md:text-xl lg:text-2xl text-gray-600 font-medium mb-12 leading-relaxed">
-                Where work finds its perfect home.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto lg:mx-0">
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-[#05668D]">10K+</div>
-                  <div className="text-sm text-gray-500">Creative Professionals</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-[#028090]">50K+</div>
-                  <div className="text-sm text-gray-500">Projects Delivered</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-[#00A896]">4.9★</div>
-                  <div className="text-sm text-gray-500">Client Satisfaction</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side - Simple Slideshow (No Hover Effects) */}
-            <div className="hidden lg:block w-full overflow-hidden">
-              <Slider {...sliderSettings}>
-                {slideshowImages.map((img, index) => (
-                  <div key={index} className="px-2">
-                    {/* Removed all hover-related classes */}
-                    <div className="w-64 h-80 relative">
-                      <img
-                        src={img}
-                        alt={`Slide ${index + 1}`}
-                        className="w-full h-full object-cover rounded-2xl shadow-lg"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </Slider>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Gradient Line */}
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-[#05668D] via-[#028090] via-[#00A896] via-[#02C39A] to-[#F0F3BD] opacity-30"></div>
-      </section>
+      <HeroSection onSearch={handleSearch}/>
 
       {/* Categories Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="text-center mb-8 sm:mb-10 md:mb-12">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#028090]">Our Categories</h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto mt-3 sm:mt-4 px-4">
-            Discover our wide range of professional categories and find the perfect services to meet your needs.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 max-w-7xl mx-auto">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flip-card w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 mx-auto cursor-pointer rounded-full shadow-2xl border-2 border-[#00A896] transition-transform duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(0,168,150,0.6)]" style={{ backgroundColor: "#F0F3BD" }}>
-              <div className="flip-card-inner relative w-full h-full rounded-full">
-                <div className="flip-card-front absolute w-full h-full rounded-full overflow-hidden shadow-lg">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover rounded-full" loading="lazy" decoding="async" />
-                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-full">
-                    <h3 className="text-black text-lg sm:text-xl font-bold text-center px-2 sm:px-4">{cat.name}</h3>
-                  </div>
-                </div>
-                <div className="flip-card-back absolute w-full h-full rounded-full bg-white p-4 sm:p-6 shadow-lg flex items-center justify-center text-center border-2 border-[#00A896]">
-                  <div className="w-full h-full flex flex-col items-center justify-center">
-                    <h3 className="text-[#028090] text-base sm:text-lg font-bold mb-2 sm:mb-3">{cat.name}</h3>
-                    <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{cat.description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <style jsx>{`
-          .flip-card { perspective: 1000px; }
-          .flip-card-inner { transition: transform 0.6s ease; transform-style: preserve-3d; }
-          .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
-          .flip-card-front, .flip-card-back { backface-visibility: hidden; }
-          .flip-card-back { transform: rotateY(180deg); }
-          @media (max-width: 475px) { .flip-card { width: 180px !important; height: 180px !important; } }
-        `}</style>
-      </section>
+      <Categories />
 
       {/* Community Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -271,36 +91,7 @@ export default function OrderzHousePageRedesign() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <svg className="absolute top-10 left-10 w-32 h-32 opacity-20" viewBox="0 0 100 100"><defs><pattern id="dots1" patternUnits="userSpaceOnUse" width="10" height="10"><circle cx="5" cy="5" r="1" fill="#028090" /></pattern></defs><rect width="100" height="100" fill="url(#dots1)" /></svg>
-          <svg className="absolute bottom-20 right-16 w-40 h-40 opacity-15" viewBox="0 0 100 100"><defs><pattern id="dots2" patternUnits="userSpaceOnUse" width="8" height="8"><circle cx="4" cy="4" r="1.5" fill="#028090" /></pattern></defs><rect width="100" height="100" fill="url(#dots2)" /></svg>
-          <div className="absolute top-16 right-20 w-6 h-6 border-2 border-[#028090] rotate-45 opacity-30"></div>
-          <div className="absolute bottom-32 left-20 w-8 h-8 rounded-full border-2 border-[#028090] opacity-25"></div>
-          <div className="absolute top-32 right-1/3 w-4 h-8 bg-[#028090] opacity-20 rotate-12"></div>
-        </div>
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10">
-          <div className="flex flex-col justify-center">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-black mb-4 leading-tight">Frequently Asked Questions</h2>
-            <p className="text-gray-700 text-sm sm:text-base max-w-md">Everything you need to know about using our platform and services.</p>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-6 sm:p-8 shadow-lg relative" style={{ height: "500px", overflowY: "auto" }}>
-            {faqs.map((faq, index) => (
-              <div key={index} className="mb-4 relative">
-                <button onClick={() => setOpenFaq(openFaq === index ? -1 : index)} className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-100 transition-colors duration-200 rounded-lg group">
-                  <span className="text-black font-medium text-sm sm:text-base pr-4 group-hover:text-[#028090] transition-colors">{faq.question}</span>
-                  <div className={`transform transition-all duration-200 ${openFaq === index ? 'rotate-180 text-[#028090]' : 'text-gray-500'}`}>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
-                </button>
-                <div className={`overflow-hidden transition-all duration-300 ${openFaq === index ? 'max-h-48' : 'max-h-0'}`}>
-                  <div className="pt-2 pb-2 text-gray-600 text-sm leading-relaxed border-l-2 border-[#028090] pl-4 ml-2">{faq.answer}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Faq />
     </div>
   );
 }
