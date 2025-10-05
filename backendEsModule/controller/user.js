@@ -297,96 +297,70 @@ const deleteUser = async (req, res) => {
     });
   }
 };
-const editUser = async (req, res) => {
-  const { userId } = req.params;
-  const {
-    first_name,
-    last_name,
-    email,
-    phone_number,
-    country,
-    username,
-    role_id,
-    profile_pic_url,
-    profilePicUrl,
-  } = req.body;
 
-  // Support both snake_case and camelCase from clients
-  const newProfilePicUrl = profile_pic_url ?? profilePicUrl ?? null;
 
-  // Debug log to verify incoming image URL
+export const updateMyProfile = async (req, res) => {
   try {
-    if (typeof newProfilePicUrl !== "undefined") {
-      console.log("editUser incoming profile URL:", newProfilePicUrl);
-    } else {
-      console.log("editUser: no profile URL provided in request body");
+    const userId = req.token?.userId; 
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
-  } catch (_) {}
 
-  try {
+    const {
+      first_name,
+      last_name,
+      username,
+      phone_number,
+      country,
+      profile_pic_url,
+    } = req.body;
+
     const result = await pool.query(
-      `UPDATE Users 
-       SET 
+      `UPDATE users
+       SET
          first_name = COALESCE($1, first_name),
          last_name = COALESCE($2, last_name),
-         email = COALESCE($3, email),
+         username = COALESCE($3, username),
          phone_number = COALESCE($4, phone_number),
          country = COALESCE($5, country),
-         username = COALESCE($6, username),
-         role_id = COALESCE($7, role_id),
-         profile_pic_url = COALESCE(NULLIF($8, ''), profile_pic_url)
-       WHERE id=$9 AND is_deleted = FALSE
-       RETURNING *`,
+         profile_pic_url = COALESCE(NULLIF($6, ''), profile_pic_url),
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7 AND is_deleted = FALSE
+       RETURNING id, first_name, last_name, username, phone_number, country, profile_pic_url, updated_at`,
       [
         first_name,
         last_name,
-        email?.toLowerCase(),
+        username,
         phone_number,
         country,
-        username,
-        role_id,
-        newProfilePicUrl,
+        profile_pic_url,
         userId,
       ]
     );
 
-    // If a non-empty profile URL was provided but DB still returns null, force update the column
-    if (
-      newProfilePicUrl &&
-      (!result.rows[0] || !result.rows[0].profile_pic_url)
-    ) {
-      const forced = await pool.query(
-        `UPDATE users SET profile_pic_url = $1 WHERE id = $2 AND is_deleted = FALSE RETURNING *`,
-        [newProfilePicUrl, userId]
-      );
-      if (forced.rows.length > 0) {
-        return res.status(200).json({
-          success: true,
-          message: "User updated successfully",
-          user: forced.rows[0],
-        });
-      }
-    }
-
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found or deleted" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found or deleted",
+      });
     }
 
     res.status(200).json({
       success: true,
-      message: "User updated successfully",
+      message: "Profile updated successfully",
       user: result.rows[0],
     });
   } catch (err) {
+    console.error("❌ updateMyProfile error:", err);
     res.status(500).json({
       success: false,
-      message: "Error updating user",
+      message: "Error updating profile",
       error: err.message,
     });
   }
 };
+
+
 
 const updateUser = async (req, res) => {
   // Get the user ID from route parameters
@@ -1259,7 +1233,6 @@ export {
   login,
   viewUsers,
   deleteUser,
-  editUser,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,

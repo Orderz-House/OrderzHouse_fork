@@ -8,7 +8,7 @@ const ProjectsTable = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [activeFilter, setActiveFilter] = useState('fixed');
   const [currentPage, setCurrentPage] = useState(1);
-  const projectsPerPage = 10;
+  const projectsPerPage = 8;
 
   useEffect(() => {
     fetchProjects();
@@ -157,7 +157,7 @@ const ProjectsTable = () => {
       case 'project':
         return (
           <div className="flex items-start max-w-md">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#78c6a3] flex items-center justify-center text-white font-bold">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#028090] flex items-center justify-center text-white font-bold">
               {project.title.charAt(0).toUpperCase()}
             </div>
             <div className="ml-3 flex-1">
@@ -212,7 +212,7 @@ const ProjectsTable = () => {
       case 'prepaid_hours':
         return (
           <div className="text-sm text-gray-700">
-            <Clock className="w-4 h-4 inline mr-1 text-[#78c6a3]" />
+            <Clock className="w-4 h-4 inline mr-1 text-[#028090]" />
             {project.prepaid_hours || 0} hrs
           </div>
         );
@@ -220,7 +220,7 @@ const ProjectsTable = () => {
       case 'total_hours':
         return (
           <div className="text-sm text-gray-700">
-            <Clock className="w-4 h-4 inline mr-1 text-[#78c6a3]" />
+            <Clock className="w-4 h-4 inline mr-1 text-[#028090]" />
             {project.total_hours || 0} hrs
           </div>
         );
@@ -228,7 +228,7 @@ const ProjectsTable = () => {
       case 'duration_days':
         return (
           <div className="text-sm text-gray-700">
-            <Calendar className="w-4 h-4 inline mr-1 text-[#78c6a3]" />
+            <Calendar className="w-4 h-4 inline mr-1 text-[#028090]" />
             {project.duration_days || 0} days
           </div>
         );
@@ -275,7 +275,7 @@ const ProjectsTable = () => {
             {project.preferred_skills && project.preferred_skills.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {project.preferred_skills.slice(0, 2).map((skill, idx) => (
-                  <span key={idx} className="px-2 py-0.5 bg-[#78c6a3] text-white rounded">
+                  <span key={idx} className="px-2 py-0.5 bg-[#028090] text-white rounded">
                     {skill}
                   </span>
                 ))}
@@ -307,7 +307,7 @@ const ProjectsTable = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#78c6a3] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#028090] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading projects...</p>
         </div>
       </div>
@@ -338,7 +338,7 @@ const ProjectsTable = () => {
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Yet</h3>
         <p className="text-gray-600 mb-4">You haven't created any projects. Start by creating your first project!</p>
-        <button className="px-6 py-2 bg-[#78c6a3] text-white rounded-lg hover:bg-[#66b392] transition-colors">
+        <button className="px-6 py-2 bg-[#028090] text-white rounded-lg hover:bg-[#016d7a] transition-colors">
           Create Project
         </button>
       </div>
@@ -349,7 +349,7 @@ const ProjectsTable = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 bg-[#78c6a3]">
+      <div className="px-6 py-4 border-b border-gray-200 bg-[#028090]">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold text-white">My Projects</h2>
@@ -363,8 +363,8 @@ const ProjectsTable = () => {
               onClick={() => setActiveFilter('fixed')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeFilter === 'fixed'
-                  ? 'bg-white text-[#78c6a3]'
-                  : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                  ? 'bg-white text-[#028090]'
+                  : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
               }`}
             >
               Fixed
@@ -373,8 +373,8 @@ const ProjectsTable = () => {
               onClick={() => setActiveFilter('hourly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeFilter === 'hourly'
-                  ? 'bg-white text-[#78c6a3]'
-                  : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                  ? 'bg-white text-[#028090]'
+                  : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
               }`}
             >
               Hourly
@@ -383,8 +383,8 @@ const ProjectsTable = () => {
               onClick={() => setActiveFilter('bidding')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeFilter === 'bidding'
-                  ? 'bg-white text-[#78c6a3]'
-                  : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                  ? 'bg-white text-[#028090]'
+                  : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
               }`}
             >
               Bidding
@@ -468,7 +468,7 @@ const ProjectsTable = () => {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentPage === 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#78c6a3] text-white hover:bg-[#66b392]'
+                  : 'bg-[#028090] text-white hover:bg-[#016d7a]'
               }`}
             >
               Previous
@@ -480,7 +480,7 @@ const ProjectsTable = () => {
                   onClick={() => setCurrentPage(page)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     currentPage === page
-                      ? 'bg-[#78c6a3] text-white'
+                      ? 'bg-[#028090] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -494,7 +494,7 @@ const ProjectsTable = () => {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentPage === totalPages
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#78c6a3] text-white hover:bg-[#66b392]'
+                  : 'bg-[#028090] text-white hover:bg-[#016d7a]'
               }`}
             >
               Next

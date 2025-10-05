@@ -5,40 +5,42 @@ import {
   getTaskPool,
   createTask,
   updateTask,
-  deleteTask
+  deleteTask,
+  requestTask,
+  getUserRequestedTasks,
+  getTaskRequests,
+  updateTaskRequestStatus,
 } from "../controller/tasks.js";
-const router = express.Router();
 
+const taskRouter = express.Router();
 
-router.get("/freelancer/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+// Get my tasks
+taskRouter.get("/my-tasks", authentication, getFreelancerTasks);
 
-    const result = await pool.query(
-      `SELECT t.*, f.name AS freelancer_name, f.profile_pic_url AS freelancer_avatar
-       FROM tasks t
-       JOIN freelancers f ON t.freelancer_id = f.id
-       WHERE t.freelancer_id = $1`,
-      [id]
-    );
+// Get task pool (other freelancers' tasks)
+taskRouter.get("/pool", authentication, getTaskPool);
 
-    res.json({ tasks: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
+// Create new task
+taskRouter.post("/", authentication, createTask);
 
+// Request a task (client)
+taskRouter.post("/request/:id", authentication, requestTask);
 
-// My tasks
-router.get("/freelancer/:freelancerId", authentication, getFreelancerTasks);
+// Update task
+taskRouter.put("/:id", authentication, updateTask);
 
-// Task pool
-router.get("/pool/:freelancerId", authentication, getTaskPool);
+// Delete task
+taskRouter.delete("/:id", authentication, deleteTask);
 
-// CRUD
-router.post("/", authentication, createTask);
-router.put("/:id", authentication, updateTask);
-router.delete("/:id", authentication, deleteTask);
+// Get tasks requested by the logged-in client
+taskRouter.get("/requests/my", authentication, getUserRequestedTasks); // client
 
-export default router;
+// Get requests for a specific task (freelancer)
+taskRouter.get("/requests/:id", authentication, getTaskRequests);      // freelancer
+
+taskRouter.patch(
+  "/requests/:requestId/status",
+  authentication,
+  updateTaskRequestStatus
+);
+export default taskRouter;
