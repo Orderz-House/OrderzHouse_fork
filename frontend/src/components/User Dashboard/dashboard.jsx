@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FolderKanban,
   CheckSquare,
@@ -10,13 +10,49 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setLogout } from '../../slice/auth/authSlice';
 import ProjectsTable from './projects';
-import FinancialTable from './payments'
+import FinancialTable from './payments';
+import TaskRequestsTable from './tasks';
+import NotificationsComponent from './notifications';
+import EditProfile from './editProfile';
 
 export default function Dashboard() {
   const [activePage, setActivePage] = useState('projects');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  const { userData } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const getUserDisplayName = () => {
+    if (userData?.full_name) return userData.full_name;
+    if (userData?.username) return userData.username;
+    return 'User Dashboard';
+  };
+
+  const getUserRole = () => {
+    const roleId = userData?.role_id;
+    if (roleId === 1) return 'Admin';
+    if (roleId === 2) return 'Client';
+    if (roleId === 3) return 'Freelancer';
+    return 'User';
+  };
+
+  const getUserAvatar = () => {
+    return userData?.profile_picture || null;
+  };
+
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
+  const handleLogout = () => {
+    dispatch(setLogout());
+    window.location.href = '/login';
+  };
 
   const navigation = [
     { name: 'My Projects', icon: FolderKanban, id: 'projects' },
@@ -27,7 +63,7 @@ export default function Dashboard() {
   const bottomNavigation = [
     { name: 'Notifications', icon: Bell, id: 'notifications' },
     { name: 'Profile', icon: User, id: 'profile' },
-    { name: 'Log Out', icon: LogOut, id: 'logout' },
+    { name: 'Log Out', icon: LogOut, id: 'logout', onClick: handleLogout },
   ];
 
   const renderContent = () => {
@@ -37,6 +73,15 @@ export default function Dashboard() {
     if (activePage === 'payments') {
       return <FinancialTable />;
     }
+    if (activePage === 'tasks') {
+      return <TaskRequestsTable />;
+    }
+    if (activePage === 'notifications') {
+      return <NotificationsComponent />;
+    }
+      if (activePage === 'profile') {
+    return <EditProfile />;
+  }
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 min-h-[600px]">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -47,6 +92,9 @@ export default function Dashboard() {
       </div>
     );
   };
+
+  const avatarUrl = getUserAvatar();
+  const hasValidAvatar = avatarUrl && avatarUrl.trim() !== '';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -65,13 +113,28 @@ export default function Dashboard() {
                 isSidebarCollapsed ? 'lg:px-0' : ''
               }`}
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 flex items-center justify-center text-white font-bold text-xl">
-                U
+              {hasValidAvatar ? (
+                <img
+                  src={avatarUrl}
+                  alt={getUserDisplayName()}
+                  className="w-16 h-16 rounded-full mb-3 object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const fallback = e.target.parentElement.querySelector('.avatar-fallback');
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className="avatar-fallback w-16 h-16 rounded-full bg-gradient-to-br from-[#028090] to-[#016d7a] mb-3 flex items-center justify-center text-white font-bold text-xl"
+                style={{ display: hasValidAvatar ? 'none' : 'flex' }}
+              >
+                {getUserInitial()}
               </div>
               {!isSidebarCollapsed && (
                 <>
-                  <h3 className="text-sm font-semibold text-gray-900">User Dashboard</h3>
-                  <p className="text-xs text-gray-500">Freelancer</p>
+                  <h3 className="text-sm font-semibold text-gray-900">{getUserDisplayName()}</h3>
+                  <p className="text-xs text-gray-500">{getUserRole()}</p>
                 </>
               )}
             </div>
@@ -98,6 +161,7 @@ export default function Dashboard() {
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = activePage === item.id;
               return (
                 <button
                   key={item.id}
@@ -106,14 +170,16 @@ export default function Dashboard() {
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    activePage === item.id
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    isActive ? '' : 'hover:bg-gray-100'
                   } ${isSidebarCollapsed ? 'lg:justify-center' : ''}`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${
+                    isActive ? 'text-[#028090]' : 'text-gray-700'
+                  }`} />
                   {!isSidebarCollapsed && (
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <span className={`text-sm font-medium ${
+                      isActive ? 'text-[#028090]' : 'text-gray-700'
+                    }`}>{item.name}</span>
                   )}
                 </button>
               );
@@ -124,22 +190,29 @@ export default function Dashboard() {
           <div className="px-4 py-4 border-t border-gray-200 space-y-1">
             {bottomNavigation.map((item) => {
               const Icon = item.icon;
+              const isActive = activePage === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActivePage(item.id);
-                    setIsMobileMenuOpen(false);
+                    if (item.onClick) {
+                      item.onClick();
+                    } else {
+                      setActivePage(item.id);
+                      setIsMobileMenuOpen(false);
+                    }
                   }}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    activePage === item.id
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    isActive ? 'bg-[#028090] bg-opacity-10' : 'hover:bg-gray-100'
                   } ${isSidebarCollapsed ? 'lg:justify-center' : ''}`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${
+                    isActive ? 'text-[#028090]' : 'text-gray-700'
+                  }`} />
                   {!isSidebarCollapsed && (
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <span className={`text-sm font-medium ${
+                      isActive ? 'text-[#028090]' : 'text-gray-700'
+                    }`}>{item.name}</span>
                   )}
                 </button>
               );

@@ -5,7 +5,7 @@ import {
   login,
   viewUsers,
   deleteUser,
-  editUser,
+  updateMyProfile,
   updateUser,
   createPortfolio,
   editPortfolioFreelancer,
@@ -77,7 +77,7 @@ usersRouter.delete(
   authentication,
   deleteUser
 );
-usersRouter.put("/edit/:userId", authentication, editUser);
+usersRouter.put("/edit", authentication, updateMyProfile);
 // Self-service user update (used by Edit Profile)
 usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(

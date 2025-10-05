@@ -66,13 +66,13 @@ const FinancialTable = () => {
   const getCategoryIcon = (category) => {
     switch (category) {
       case 'payment':
-        return <DollarSign className="w-4 h-4 text-[#78c6a3]" />;
+        return <DollarSign className="w-4 h-4 text-[#028090]" />;
       case 'wallet_transaction':
-        return <Wallet className="w-4 h-4 text-[#78c6a3]" />;
+        return <Wallet className="w-4 h-4 text-[#028090]" />;
       case 'escrow':
-        return <Lock className="w-4 h-4 text-[#78c6a3]" />;
+        return <Lock className="w-4 h-4 text-[#028090]" />;
       default:
-        return <FileText className="w-4 h-4 text-[#78c6a3]" />;
+        return <FileText className="w-4 h-4 text-[#028090]" />;
     }
   };
 
@@ -158,7 +158,7 @@ const FinancialTable = () => {
       case 'id':
         return (
           <div className="flex items-center">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#78c6a3] flex items-center justify-center text-white font-bold">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#028090] flex items-center justify-center text-white font-bold">
               {getCategoryIcon(transaction.category)}
             </div>
             <div className="ml-3">
@@ -219,7 +219,7 @@ const FinancialTable = () => {
         return (
           <button
             onClick={() => openProofModal(transaction.proof_url)}
-            className="text-sm text-[#78c6a3] hover:text-[#66b392] underline"
+            className="text-sm text-[#028090] hover:text-[#016d7a] underline"
           >
             View Proof
           </button>
@@ -257,7 +257,7 @@ const FinancialTable = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#78c6a3] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#028090] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading financial data...</p>
         </div>
       </div>
@@ -297,7 +297,7 @@ const FinancialTable = () => {
   return (
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-[#78c6a3]">
+        <div className="px-6 py-4 border-b border-gray-200 bg-[#028090]">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-semibold text-white">Financial Overview</h2>
@@ -311,8 +311,8 @@ const FinancialTable = () => {
                 onClick={() => setActiveFilter('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeFilter === 'all'
-                    ? 'bg-white text-[#78c6a3]'
-                    : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                    ? 'bg-white text-[#028090]'
+                    : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
                 }`}
               >
                 <Filter className="w-4 h-4 inline mr-1" />
@@ -322,8 +322,8 @@ const FinancialTable = () => {
                 onClick={() => setActiveFilter('payment')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeFilter === 'payment'
-                    ? 'bg-white text-[#78c6a3]'
-                    : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                    ? 'bg-white text-[#028090]'
+                    : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
                 }`}
               >
                 Payments
@@ -332,8 +332,8 @@ const FinancialTable = () => {
                 onClick={() => setActiveFilter('wallet_transaction')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeFilter === 'wallet_transaction'
-                    ? 'bg-white text-[#78c6a3]'
-                    : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                    ? 'bg-white text-[#028090]'
+                    : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
                 }`}
               >
                 Wallet
@@ -342,8 +342,8 @@ const FinancialTable = () => {
                 onClick={() => setActiveFilter('escrow')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeFilter === 'escrow'
-                    ? 'bg-white text-[#78c6a3]'
-                    : 'bg-[#66b392] text-white hover:bg-[#52a080]'
+                    ? 'bg-white text-[#028090]'
+                    : 'bg-[#016d7a] text-white hover:bg-[#015a66]'
                 }`}
               >
                 Escrow
@@ -428,7 +428,7 @@ const FinancialTable = () => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === 1
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#78c6a3] text-white hover:bg-[#66b392]'
+                    : 'bg-[#028090] text-white hover:bg-[#016d7a]'
                 }`}
               >
                 Previous
@@ -440,7 +440,7 @@ const FinancialTable = () => {
                     onClick={() => setCurrentPage(page)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       currentPage === page
-                        ? 'bg-[#78c6a3] text-white'
+                        ? 'bg-[#028090] text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -454,7 +454,7 @@ const FinancialTable = () => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === totalPages
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#78c6a3] text-white hover:bg-[#66b392]'
+                    : 'bg-[#028090] text-white hover:bg-[#016d7a]'
                 }`}
               >
                 Next
@@ -493,7 +493,7 @@ const FinancialTable = () => {
                   href={proofModal.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-4 px-4 py-2 bg-[#78c6a3] text-white rounded-lg hover:bg-[#66b392] transition-colors"
+                  className="inline-block mt-4 px-4 py-2 bg-[#028090] text-white rounded-lg hover:bg-[#016d7a] transition-colors"
                 >
                   Open in New Tab
                 </a>
