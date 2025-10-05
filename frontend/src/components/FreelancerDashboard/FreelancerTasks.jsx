@@ -1,251 +1,240 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
-import { Plus, Edit, Trash, X } from "lucide-react";
+import { Plus, Edit, Trash } from "lucide-react";
 
 export default function FreelancerTasks() {
   const { token, userData } = useSelector((state) => state.auth);
   const freelancerId = userData?.id;
-
   const [myTasks, setMyTasks] = useState([]);
   const [taskPool, setTaskPool] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-
-  // Form State
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [taskForm, setTaskForm] = useState({ title: "", description: "", price: "" });
+  const [message, setMessage] = useState("");
 
-  // Ref for scrolling to the top
-  const pageTopRef = useRef(null);
-
-  // --- Data Fetching ---
+  // Fetch tasks
   useEffect(() => {
-    if (!token || !freelancerId) {
-      setLoading(false);
-      return;
-    }
+    if (!token || !freelancerId) return;
 
-    const fetchTasks = async () => {
+    async function fetchTasks() {
       try {
         setLoading(true);
-        setError("");
+        const myRes = await axios.get(
+          `http://localhost:5000/tasks/freelancer/${freelancerId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const poolRes = await axios.get(
+          `http://localhost:5000/tasks/pool/${freelancerId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-        // Fetch both sets of tasks concurrently for better performance
-        const [myTasksRes, taskPoolRes] = await Promise.all([
-          axios.get(`http://localhost:5000/tasks/freelancer/${freelancerId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          } ),
-          axios.get(`http://localhost:5000/tasks/pool/${freelancerId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          } ),
-        ]);
-
-        setMyTasks(myTasksRes.data.tasks || []);
-        setTaskPool(taskPoolRes.data.tasks || []);
-
+        setMyTasks(myRes.data.tasks || []);
+        setTaskPool(poolRes.data.tasks || []);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
-        setError("Could not load tasks. Please try again later.");
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchTasks();
   }, [token, freelancerId]);
 
-  // --- Form and Task Management ---
-
-  const handleShowForm = (task = null) => {
-    if (task) {
-      setEditingTask(task);
-      setTaskForm({ title: task.title, description: task.description, price: task.price });
-    } else {
-      setEditingTask(null);
-      setTaskForm({ title: "", description: "", price: "" });
-    }
-    setShowForm(true);
-    // Scroll to the top where the form is
-    pageTopRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingTask(null);
-    setTaskForm({ title: "", description: "", price: "" });
-  };
-
-  const handleSaveTask = async (e) => {
-    e.preventDefault();
-    if (!taskForm.title || !taskForm.description || !taskForm.price) {
-      return alert("Please fill out all fields.");
-    }
-
-    const url = editingTask
-      ? `http://localhost:5000/tasks/${editingTask.id}`
-      : `http://localhost:5000/tasks`;
-    
-    const method = editingTask ? 'put' : 'post';
+  // Save Task
+  const handleSaveTask = async () => {
+    if (!taskForm.title || !taskForm.description) return alert("Fill all fields");
 
     try {
-      const response = await axios[method](url, { ...taskForm, freelancerId }, {
-        headers: { Authorization: `Bearer ${token}` },
-      } );
-
       if (editingTask) {
-        setMyTasks(myTasks.map((t) => (t.id === editingTask.id ? response.data.task : t)));
+        const res = await axios.put(
+          `http://localhost:5000/tasks/${editingTask.id}`,
+          { ...taskForm, freelancerId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMyTasks(myTasks.map((t) => (t.id === editingTask.id ? res.data.task : t)));
+        setEditingTask(null);
         setMessage("Task updated successfully!");
       } else {
-        setMyTasks([response.data.task, ...myTasks]);
+        const res = await axios.post(
+          `http://localhost:5000/tasks`,
+          { ...taskForm, freelancerId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMyTasks([...myTasks, res.data.task]);
         setMessage("Task created successfully!");
       }
 
-      handleCancel(); // Hide form and reset state
+      setTaskForm({ title: "", description: "", price: "" });
+      setShowForm(false);
     } catch (err) {
       console.error("Failed to save task:", err);
-      setError("Could not save the task. Please try again.");
+      setMessage("Could not save task");
     }
   };
 
+  // Delete Task
   const handleDeleteTask = async (taskId) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    if (!window.confirm("Delete this task?")) return;
 
     try {
       await axios.delete(`http://localhost:5000/tasks/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      } );
+      });
       setMyTasks(myTasks.filter((t) => t.id !== taskId));
       setMessage("Task deleted successfully!");
     } catch (err) {
       console.error("Failed to delete task:", err);
-      setError("Could not delete the task.");
+      setMessage("Could not delete task");
     }
   };
+  {myTasks.map((task) => (
+  <div
+    key={task.id}
+    className="bg-gradient-to-r from-blue-200 to-green-200 shadow-lg p-6 rounded-2xl mb-4"
+  >
+    <div className="flex items-center gap-3 mb-3">
+      {task.freelancer_avatar ? (
+        <img
+          src={task.freelancer_avatar}
+          alt={task.freelancer_name}
+          className="w-10 h-10 rounded-full border-2 border-white"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-gray-300" />
+      )}
+      <span className="font-semibold text-lg">{task.freelancer_name}</span>
+    </div>
 
-  // --- Render ---
-
-  // Display a loading spinner while fetching data
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
+    <h3 className="text-xl font-bold">{task.title}</h3>
+    <p className="text-gray-700">{task.description}</p>
+    <p className="mt-2 text-sm text-gray-600"> $ {task.price} USD</p>
+  </div>
+))}
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen" ref={pageTopRef}>
-      {/* Notifications */}
-      {message && <div className="mb-4 p-3 rounded-lg text-white bg-green-500 shadow-lg">{message}</div>}
-      {error && <div className="mb-4 p-3 rounded-lg text-white bg-red-500 shadow-lg">{error}</div>}
-
-      {/* Add/Edit Task Form */}
-      {showForm && (
-        <div className="mb-8 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h3 className="text-xl font-bold mb-4 text-gray-800">
-            {editingTask ? "Edit Task" : "Create a New Task"}
-          </h3>
-          <form onSubmit={handleSaveTask}>
-            <div className="space-y-4">
-              <input
-                className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="Task Title"
-                value={taskForm.title}
-                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-              />
-              <textarea
-                className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="Describe the service you are offering..."
-                rows="4"
-                value={taskForm.description}
-                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-              />
-              <input
-                type="number"
-                className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="Price (USD)"
-                value={taskForm.price}
-                onChange={(e) => setTaskForm({ ...taskForm, price: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end mt-6 space-x-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-              >
-                {editingTask ? "Save Changes" : "Create Task"}
-              </button>
-            </div>
-          </form>
+    <div className="p-6">
+      {message && (
+        <div className="mb-4 p-3 rounded-lg text-white bg-green-500 shadow-lg">
+          {message}
         </div>
       )}
 
-      {/* My Tasks Section */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">My Tasks</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* My Tasks */}
+      <h2 className="text-2xl font-bold text-blue-700 mb-4">My Tasks</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {myTasks.map((task) => (
-          <div key={task.id} className="p-5 bg-white rounded-2xl shadow-md border border-gray-200 flex flex-col">
-            <div className="flex items-center mb-4">
+          <div
+            key={task.id}
+            className="p-5 bg-gradient-to-br from-blue-400 to-green-400 rounded-2xl shadow-lg relative"
+          >
+            {/* Freelancer info */}
+            <div className="flex items-center mb-3">
               <img
-                src={task.freelancer_avatar || 'https://via.placeholder.com/150'}
+                src={task.freelancer_avatar || "/default-avatar.png"}
                 alt={task.freelancer_name}
-                className="w-10 h-10 rounded-full mr-3 border-2 border-gray-200"
+                className="w-10 h-10 rounded-full mr-3 border-2 border-white"
               />
-              <span className="font-semibold text-gray-800">{task.freelancer_name}</span>
+              <span className="font-semibold text-white">
+                {task.freelancer_name}
+              </span>
             </div>
-            <div className="flex-grow">
-              <h3 className="text-lg font-bold text-gray-900">{task.title}</h3>
-              <p className="text-gray-600 my-2">{task.description}</p>
-              <p className="font-semibold text-lg text-green-600">${task.price}</p>
-            </div>
-            <div className="flex justify-end mt-4 space-x-3">
-              <button onClick={( ) => handleShowForm(task)} className="p-2 text-gray-500 hover:text-blue-600"><Edit size={20} /></button>
-              <button onClick={() => handleDeleteTask(task.id)} className="p-2 text-gray-500 hover:text-red-600"><Trash size={20} /></button>
+
+            <h3 className="text-lg font-bold text-white">{task.title}</h3>
+            <p className="text-white/90 mb-2">{task.description}</p>
+            <p className="font-semibold text-white">$ {task.price}</p>
+
+            <div className="flex justify-end mt-3 space-x-3">
+              <button
+                className="text-white hover:text-yellow-300"
+                onClick={() => {
+                  setEditingTask(task);
+                  setTaskForm(task);
+                  setShowForm(true);
+                }}
+              >
+                <Edit />
+              </button>
+              <button
+                className="text-white hover:text-red-300"
+                onClick={() => handleDeleteTask(task.id)}
+              >
+                <Trash />
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Other Freelancers’ Tasks Section */}
-      <h2 className="text-2xl font-bold text-gray-800 mt-12 mb-4">Task Pool</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Other Freelancers’ Tasks */}
+      <h2 className="text-2xl font-bold text-green-700 mt-10 mb-4">Other Tasks</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {taskPool.map((task) => (
-          <div key={task.id} className="p-5 bg-white rounded-2xl shadow-md border border-gray-200">
-            <div className="flex items-center mb-4">
+          <div
+            key={task.id}
+            className="p-5 bg-gradient-to-br from-green-400 to-blue-400 rounded-2xl shadow-lg"
+          >
+            <div className="flex items-center mb-3">
               <img
-                src={task.freelancer_avatar || 'https://via.placeholder.com/150'}
+                src={task.freelancer_avatar || "/default-avatar.png"}
                 alt={task.freelancer_name}
-                className="w-10 h-10 rounded-full mr-3 border-2 border-gray-200"
+                className="w-10 h-10 rounded-full mr-3 border-2 border-white"
               />
-              <span className="font-semibold text-gray-800">{task.freelancer_name}</span>
+              <span className="font-semibold text-white">
+                {task.freelancer_name}
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-gray-900">{task.title}</h3>
-            <p className="text-gray-600 my-2">{task.description}</p>
-            <p className="font-semibold text-lg text-green-600">${task.price}</p>
+
+            <h3 className="text-lg font-bold text-white">{task.title}</h3>
+            <p className="text-white/90 mb-2">{task.description}</p>
+            <p className="font-semibold text-white">$ {task.price}</p>
           </div>
-         ))}
+        ))}
       </div>
 
-      {/* Floating Action Button to Add Task */}
-      {!showForm && (
-        <div className="group fixed bottom-6 right-6">
+      {/* Add/Edit Form */}
+      {showForm && (
+        <div className="mt-6 bg-white p-4 rounded-xl shadow-md">
+          <h3 className="text-lg font-bold mb-3">
+            {editingTask ? "Edit Task" : "Add Task"}
+          </h3>
+          <input
+            className="w-full border p-2 mb-2 rounded"
+            placeholder="Title"
+            value={taskForm.title}
+            onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+          />
+          <textarea
+            className="w-full border p-2 mb-2 rounded"
+            placeholder="Description"
+            value={taskForm.description}
+            onChange={(e) =>
+              setTaskForm({ ...taskForm, description: e.target.value })
+            }
+          />
+          <input
+            className="w-full border p-2 mb-2 rounded"
+            placeholder="Price"
+            value={taskForm.price}
+            onChange={(e) => setTaskForm({ ...taskForm, price: e.target.value })}
+          />
           <button
-            onClick={() => handleShowForm()}
-            className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110"
-            aria-label="Create New Task"
+            onClick={handleSaveTask}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
           >
-            <Plus />
+            Save
           </button>
-          <div className="absolute bottom-1/2 right-full mr-4 mb--2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Create New Task
-          </div>
         </div>
+      )}
+
+      {!showForm && (
+        <button
+          onClick={() => setShowForm(true)}
+          className="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600"
+        >
+          <Plus />
+        </button>
       )}
     </div>
   );
