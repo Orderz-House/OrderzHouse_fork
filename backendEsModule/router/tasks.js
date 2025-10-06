@@ -5,33 +5,47 @@ import {
   getTaskPool,
   createTask,
   updateTask,
-  deleteTask
+  deleteTask,
+  getTaskRequests,
+  acceptTaskRequest,
+  declineTaskRequest,
+  requestTask,
 } from "../controller/tasks.js";
-import pool from "../models/db.js";
-const router = express.Router();
-router.get("/freelancer/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query(
-      `SELECT t.*, u.first_name || ' ' || u.last_name AS freelancer_name, u.profile_pic_url AS freelancer_avatar
-       FROM tasks t
-       JOIN users u ON t.freelancer_id = u.id
-       WHERE t.freelancer_id = $1`,
-      [id]
-    );
-    res.json({ tasks: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
 
-// Your other routes from the controller
-router.get("/freelancer/:freelancerId", authentication, getFreelancerTasks);
-router.get("/pool/:freelancerId", authentication, getTaskPool);
+const router = express.Router();
+
+// --- PUBLIC ROUTES ---
+// Get tasks for a specific freelancer
+router.get("/freelancer/:freelancerId", getFreelancerTasks);
+
+// Get tasks from all other freelancers
+router.get("/pool/:freelancerId", getTaskPool);
+
+
+// --- PROTECTED ROUTES (require authentication) ---
+
+// Create a new task for the authenticated user
 router.post("/", authentication, createTask);
+
+// Update a task owned by the authenticated user
 router.put("/:id", authentication, updateTask);
+
+// Delete a task owned by the authenticated user
 router.delete("/:id", authentication, deleteTask);
 
-// 3. Finally, export the router
+// Allow a client to request a specific task
+router.post("/:taskId/request", authentication, requestTask);
+
+
+// --- TASK REQUEST MANAGEMENT ROUTES (for the freelancer) ---
+
+// Get all pending requests for the authenticated freelancer
+router.get("/requests", authentication, getTaskRequests);
+
+// Accept a pending request
+router.put("/requests/:requestId/accept", authentication, acceptTaskRequest);
+
+// Decline a pending request
+router.put("/requests/:requestId/decline", authentication, declineTaskRequest);
+
 export default router;
