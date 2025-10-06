@@ -1,4 +1,3 @@
-// Imports
 import { useMemo, useState, useEffect, useCallback } from "react";
 
 // Colors
@@ -17,7 +16,7 @@ function calcCols() {
 }
 
 // Component
-export default function Categories({
+export default function CategoriesShowcase({
   title = "Popular services",
   categories = SAMPLE,
   onSelect,
@@ -166,7 +165,7 @@ export default function Categories({
         {/* Desktop */}
         <div className="hidden md:block">
           <div
-            className={grid}
+            className={`${grid} items-stretch`} // make-equal-heights
             style={{
               transition: `opacity ${D}ms ease, transform ${D}ms ease`,
               ...anim,
@@ -284,6 +283,7 @@ function Card({ cat, onClick }) {
         hover:-translate-y-1 hover:scale-[1.01]
         shadow-[0_4px_10px_rgba(2,128,144,0.15),0_2px_5px_rgba(0,0,0,0.08)]
         hover:shadow-[0_12px_24px_rgba(2,128,144,0.28),0_6px_12px_rgba(0,0,0,0.18)]
+        h-full
       "
       style={{
         background: `conic-gradient(from 150deg at 50% 50%, ${primaryLight}, ${primary}, ${primaryDark}, ${primaryLight})`,
@@ -295,7 +295,7 @@ function Card({ cat, onClick }) {
       }}
       onClick={onClick}
     >
-      <div className="relative rounded-[calc(1rem-2px)] bg-white/90 backdrop-blur-sm h-full card-spotlight">
+      <div className="relative rounded-[calc(1rem-2px)] bg-white/90 backdrop-blur-sm h-full card-spotlight flex flex-col">
         {/* Band */}
         <div
           className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden"
@@ -341,7 +341,7 @@ function Card({ cat, onClick }) {
         </div>
 
         {/* Details */}
-        <div className="p-3">
+        <div className="p-3 flex flex-col min-h-[140px]">
           <p
             className="text-sm text-slate-600"
             style={{
@@ -354,8 +354,8 @@ function Card({ cat, onClick }) {
             {cat.description}
           </p>
 
-          {!!(cat.tags && cat.tags.length) && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
+          {cat.tags && cat.tags.length ? (
+            <div className="mt-2 flex flex-wrap gap-1.5 min-h-[24px]">
               {cat.tags.slice(0, 3).map((t) => (
                 <span
                   key={t}
@@ -365,9 +365,13 @@ function Card({ cat, onClick }) {
                 </span>
               ))}
             </div>
+          ) : (
+            <div className="mt-2 min-h-[24px]" />
           )}
 
-          <div className="mt-3">
+          <div className="mt-3 flex-1" />
+
+          <div className="mt-2">
             <button
               className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-white opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 text-sm"
               style={{ backgroundColor: primary }}

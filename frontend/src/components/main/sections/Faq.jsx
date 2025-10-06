@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
+// Theme
 const THEME = "#028090";
 const THEME_DARK = "rgb(0, 90, 100)";
 const THEME_LIGHT = "rgb(0, 170, 180)";
 
+// Data
 const DEFAULT_FAQS = [
   {
     question: "Do you offer a free trial?",
@@ -68,6 +70,7 @@ const DEFAULT_FAQS = [
   },
 ];
 
+// Category
 function deriveCategory(q) {
   const s = q.toLowerCase();
   if (
@@ -82,6 +85,7 @@ function deriveCategory(q) {
   return "General";
 }
 
+// Icons
 function CategoryIcon({ cat }) {
   const cls = "w-6 h-6";
   switch (cat) {
@@ -138,12 +142,13 @@ function CategoryIcon({ cat }) {
   }
 }
 
+// Topic
 function TopicCard({ cat, count, onOpen }) {
   const handleMove = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
-    const rotateX = (py - 0.5) * -8; 
+    const rotateX = (py - 0.5) * -8;
     const rotateY = (px - 0.5) * 10;
     e.currentTarget.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(0)`;
   };
@@ -219,6 +224,7 @@ function TopicCard({ cat, count, onOpen }) {
   );
 }
 
+// Item
 function QAItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -259,7 +265,8 @@ function QAItem({ q, a }) {
   );
 }
 
-export default function FAQ({ faqs = DEFAULT_FAQS }) {
+// Component
+export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
   const [openCat, setOpenCat] = useState(null);
 
   useEffect(() => {
@@ -288,23 +295,58 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
   const current = topics.find((t) => t.cat === openCat) || null;
 
   return (
-    <section className="relative bg-white overflow-hidden">
+    <section className="relative bg-white overflow-hidden min-h-[80vh] flex items-center">
+      {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute -top-24 -right-24 w-[28rem] h-[28rem] rounded-full"
-          style={{
-            background: `radial-gradient(closest-side, rgba(2,128,144,.12), transparent 70%)`,
-          }}
-        />
-        <div
-          className="absolute -bottom-28 -left-20 w-[26rem] h-[26rem] rounded-full"
-          style={{
-            background: `radial-gradient(closest-side, rgba(2,128,144,.10), transparent 70%)`,
-          }}
-        />
+        {/* Dots */}
+        <svg
+          className="absolute top-10 left-10 w-32 h-32 opacity-20"
+          viewBox="0 0 100 100"
+        >
+          <defs>
+            <pattern
+              id="faqDots1"
+              patternUnits="userSpaceOnUse"
+              width="10"
+              height="10"
+            >
+              <circle cx="5" cy="5" r="1" fill={THEME} />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#faqDots1)" />
+        </svg>
+
+        {/* Dots */}
+        <svg
+          className="absolute bottom-20 right-16 w-40 h-40 opacity-15"
+          viewBox="0 0 100 100"
+        >
+          <defs>
+            <pattern
+              id="faqDots2"
+              patternUnits="userSpaceOnUse"
+              width="8"
+              height="8"
+            >
+              <circle cx="4" cy="4" r="1.5" fill={THEME} />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#faqDots2)" />
+        </svg>
+
+        {/* Diamond */}
+        <div className="absolute top-16 right-20 w-6 h-6 border-2 border-[#028090] rotate-45 opacity-30" />
+
+        {/* Circle */}
+        <div className="absolute bottom-32 left-20 w-8 h-8 rounded-full border-2 border-[#028090] opacity-25" />
+
+        {/* Bar */}
+        <div className="absolute top-32 right-1/3 w-4 h-8 bg-[#028090] opacity-20 rotate-12" />
       </div>
 
-      <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      {/* Wrapper */}
+      <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-col items-center">
+        {/* Badge */}
         <div className="text-center max-w-3xl mx-auto">
           <div
             className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full"
@@ -318,6 +360,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
           </div>
         </div>
 
+        {/* Heading */}
         <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 text-center">
           How can we help?
         </h2>
@@ -326,6 +369,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
           modal.
         </p>
 
+        {/* Grid */}
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {topics.map(({ cat, items }) => (
             <TopicCard
@@ -338,6 +382,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
         </div>
       </div>
 
+      {/* Modal */}
       {current && (
         <>
           <div
@@ -360,6 +405,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
                 animate-[modalIn_.5s_ease]
               "
             >
+              {/* Header */}
               <div className="p-5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
@@ -401,6 +447,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
                 </button>
               </div>
 
+              {/* Content */}
               <div className="max-h-[70vh] overflow-y-auto">
                 <div className="p-5 space-y-3">
                   {current.items.map((f, i) => (
@@ -409,6 +456,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
                 </div>
               </div>
 
+              {/* Footer */}
               <div className="p-5 border-t border-slate-200 flex items-center justify-between gap-3">
                 <div className="text-sm text-slate-600">
                   Didn’t find what you need?
@@ -434,6 +482,7 @@ export default function FAQ({ faqs = DEFAULT_FAQS }) {
             </div>
           </div>
 
+          {/* Styles */}
           <style>{`
             @keyframes modalIn {
               0%   { transform: translateY(12px) scale(.98); opacity: .0; }
