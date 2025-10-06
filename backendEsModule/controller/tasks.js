@@ -1,5 +1,4 @@
 import pool from "../models/db.js";
-import { createNotification } from "./notifications.js"; // Correctly import from the notifications controller
 
 /**
  * Get all tasks created by a specific freelancer.
