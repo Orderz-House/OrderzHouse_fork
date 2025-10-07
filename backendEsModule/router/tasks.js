@@ -14,33 +14,39 @@ import {
 
 const taskRouter = express.Router();
 
-// Get my tasks
-taskRouter.get("/my-tasks", authentication, getFreelancerTasks);
 
-// Get task pool (other freelancers' tasks)
-taskRouter.get("/pool", authentication, getTaskPool);
+// Get tasks from all active freelancers
+taskRouter.get("/pool", getTaskPool);
 
-// Create new task
+// Get tasks for a specific freelancer (no auth required)
+taskRouter.get("/freelancer/:freelancerId", getFreelancerTasks);
+
+// Get my own tasks (freelancer)
+taskRouter.get("/my", authentication, getFreelancerTasks);
+
+// Create a new task (freelancer)
 taskRouter.post("/", authentication, createTask);
 
-// Request a task (client)
-taskRouter.post("/request/:id", authentication, requestTask);
-
-// Update task
+// Update an existing task (freelancer)
 taskRouter.put("/:id", authentication, updateTask);
 
-// Delete task
+// Delete a task (freelancer)
 taskRouter.delete("/:id", authentication, deleteTask);
 
-// Get tasks requested by the logged-in client
-taskRouter.get("/requests/my", authentication, getUserRequestedTasks); // client
+// Request a freelancer’s task (client)
+taskRouter.post("/:taskId/request", authentication, requestTask);
 
-// Get requests for a specific task (freelancer)
-taskRouter.get("/requests/:id", authentication, getTaskRequests);      // freelancer
+// Get all tasks I requested (client)
+taskRouter.get("/requests/my", authentication, getUserRequestedTasks);
 
+// Get requests for my tasks (freelancer)
+taskRouter.get("/requests", authentication, getTaskRequests);
+
+// Update a request’s status (freelancer accepts/rejects)
 taskRouter.patch(
   "/requests/:requestId/status",
   authentication,
   updateTaskRequestStatus
 );
+
 export default taskRouter;

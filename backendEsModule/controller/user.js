@@ -21,7 +21,7 @@ const register = async (req, res) => {
     username,
     categories, // array of category IDs for freelancers
   } = req.body;
-
+  
   // Back-end validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/; // min 8 chars, 1 uppercase, 1 number
@@ -297,23 +297,19 @@ const deleteUser = async (req, res) => {
     });
   }
 };
-
-
-export const updateMyProfile = async (req, res) => {
-  try {
-    const userId = req.token?.userId; 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    const {
-      first_name,
-      last_name,
-      username,
-      phone_number,
-      country,
-      profile_pic_url,
-    } = req.body;
+const editUser = async (req, res) => {
+  const { userId } = req.params;
+  const {
+    first_name,
+    last_name,
+    email,
+    phone_number,
+    country,
+    username,
+    role_id,
+    profile_pic_url,
+    profilePicUrl,
+  } = req.body;
 
     const result = await pool.query(
       `UPDATE users
@@ -1092,7 +1088,7 @@ const updateVerificationStatus = async (req, res) => {
       "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
       [userId]
     );
-
+    
     const hasPortfolio = parseInt(portfolioResult.rows[0].count) > 0;
 
     if (isProfileComplete && hasPortfolio) {
