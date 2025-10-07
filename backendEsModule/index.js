@@ -27,6 +27,7 @@ import earningsRouter from "./router/earning.js";
 import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
+import authRouter from './router/auth.js'; 
 // DB connection
 import "./models/db.js";
 dotenv.config();
@@ -46,7 +47,7 @@ app.use(
   })
 );
 
-// ✅ Rate limiter (optional)
+// Rate limiter (optional)
 /*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -56,7 +57,7 @@ const limiter = rateLimit({
 app.use(limiter);
 */
 
-// ✅ Routers
+// Routers
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
@@ -76,8 +77,9 @@ app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
+app.use("/auth", authRouter);
 
-// ✅ Admin init
+//Admin init
 (async () => {
   await AdminInit(app);
 })();

@@ -2,15 +2,8 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import {
-  DollarSign,
-  RefreshCw,
-  CreditCard,
-  TrendingUp,
   CheckCircle,
   Clock,
-  XCircle,
-  FileText,
-  Download,
   AlertCircle,
   ArrowUpRight,
   Briefcase,
@@ -19,117 +12,91 @@ import {
   Settings,
   User,
   LogOut,
-  Loader
+  Loader,
+  CreditCard
 } from "lucide-react";
 
 import FreelancerProjects from "./FreelancerProjects";
 import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
+import Payments from "./Payments";
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
 
   const [dashboardData, setDashboardData] = useState({
-    totalIncome: 0,
-    withdrawRequested: 0,
-    pendingIncome: 0,
-    availableInAccount: 0,
     completedProjects: 0,
     ongoingProjects: 0,
-    cancelledProjects: 0,
-    activeProjects: 0,
-    quitProjects: 0,
-    kickedProjects: 0,
-    bannedProjects: 0
+    activeProjects: 0
   });
 
-  const [earningHistory, setEarningHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [error, setError] = useState(null);
 
-  // =========================
-  // Backend Fetch Functions
-  // =========================
-  const fetchEarningsSummary = async () => {
-    if (!token || !userData?.id) return;
-
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/earnings/freelancer/${userData.id}/summary`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (res.data.success) {
-        const summary = res.data.summary;
-        setDashboardData((prev) => ({
-          ...prev,
-          totalIncome: summary.totalIncome || 0,
-          pendingIncome: summary.pendingIncome || 0,
-          availableInAccount: summary.availableInAccount || 0,
-          withdrawRequested: summary.withdrawRequested || 0
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching earnings summary:", err);
-      setError("Failed to load earnings data");
-    }
-  };
-
-  const fetchEarningsHistory = async () => {
-    if (!token || !userData?.id) return;
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/earnings/freelancer/${userData.id}/history`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (res.data.success) {
-        setEarningHistory(res.data.earningsHistory || []);
-      }
-    } catch (err) {
-      console.error("Error fetching earnings history:", err);
-    }
-  };
-
   const fetchProjectCounts = async () => {
-    if (!token || !userData?.id) return;
+    // Check if we have required data
+    if (!token) {
+      setError("Authentication token missing");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!userData?.id) {
+      setError("User data not available");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const res = await axios.get(
         `http://localhost:5000/projects/freelancer/${userData.id}/counts`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        }
       );
 
-      if (res.data.success) {
-        const counts = res.data.counts;
-        setDashboardData((prev) => ({
-          ...prev,
+      console.log("API Response:", res.data);
+
+      if (res.data && res.data.success) {
+        const counts = res.data.counts || {};
+        setDashboardData({
           ongoingProjects: counts.active || 0,
           completedProjects: counts.completed || 0,
-          cancelledProjects:
-            (counts.kicked || 0) + (counts.banned || 0) + (counts.quit || 0),
-          activeProjects: counts.active || 0,
-          quitProjects: counts.quit || 0,
-          kickedProjects: counts.kicked || 0,
-          bannedProjects: counts.banned || 0
-        }));
+          activeProjects: counts.active || 0
+        });
+        setError(null);
+      } else {
+        setError("Invalid response format from server");
       }
     } catch (err) {
       console.error("Error fetching project counts:", err);
-      setError("Failed to load project statistics");
+      let errorMessage = "Failed to load project statistics";
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout - Server is not responding";
+      } else if (err.response) {
+        errorMessage = `Server error: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`;
+      } else if (err.request) {
+        errorMessage = "Network error - Cannot connect to server. Make sure backend is running on port 5000.";
+      } else {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     }
   };
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setError(null);
+    
     try {
-      await Promise.all([
-        fetchEarningsSummary(),
-        fetchEarningsHistory(),
-        fetchProjectCounts()
-      ]);
+      await fetchProjectCounts();
     } catch (err) {
+      console.error("Error in fetchDashboardData:", err);
       setError("Failed to load dashboard data");
     } finally {
       setIsLoading(false);
@@ -137,30 +104,29 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    // Debug logging
+    console.log("Dashboard mounted - UserData:", userData, "Token:", token ? "Present" : "Missing");
+    
+    if (token && userData?.id) {
+      fetchDashboardData();
+    } else {
+      setIsLoading(false);
+      setError("Please log in to access dashboard");
+    }
   }, [token, userData?.id]);
 
-  // =========================
-  // Actions
-  // =========================
   const handleRefresh = () => {
-    setIsLoading(true);
     fetchDashboardData();
   };
 
-  const handleWithdraw = () => {
-    alert("Withdrawal system will be implemented in a future update");
-  };
-
-  // =========================
-  // Section Navigation
-  // =========================
   const renderActiveSection = () => {
     switch (activeSection) {
       case "projects":
         return <FreelancerProjects />;
       case "tasks":
         return <FreelancerTasks />;
+      case "payments":
+        return <Payments />;
       case "Settings":
         return <EditProfile />;
       case "profile":
@@ -171,63 +137,55 @@ const Dashboard = () => {
     }
   };
 
-  // =========================
-  // Dashboard View
-  // =========================
   const renderDashboardView = () => (
     <>
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center">
           <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
-          <p className="text-red-700">{error}</p>
+          <div className="flex-1">
+            <p className="text-red-700">{error}</p>
+            {error.includes("Cannot connect to server") && (
+              <p className="text-sm text-red-600 mt-1">
+                Make sure your backend server is running on http://localhost:5000
+              </p>
+            )}
+          </div>
           <button
-            onClick={fetchDashboardData}
-            className="ml-auto text-sm text-red-600 hover:text-red-800 font-medium"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="ml-4 text-sm text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
           >
-            Retry
+            {isLoading ? "Retrying..." : "Retry"}
           </button>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center">
+            <Loader className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading dashboard data...</p>
+          </div>
         </div>
       ) : (
         <>
-          {/* Earnings Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <StatCard
-              title="Pending income"
-              value={dashboardData.pendingIncome}
-              icon={<Clock className="w-6 h-6 text-blue-600" />}
-              subtitle="Funds held in escrow"
-              action="Refresh"
-              actionIcon={<RefreshCw className="w-4 h-4 ml-1" />}
-              onAction={handleRefresh}
-              loading={isLoading}
-            />
-            <StatCard
-              title="Available in account"
-              value={dashboardData.availableInAccount}
-              icon={<TrendingUp className="w-6 h-6 text-blue-600" />}
-              subtitle="Wallet balance"
-              action="Withdraw (Coming Soon)"
-              actionIcon={<ArrowUpRight className="w-4 h-4 ml-1" />}
-              onAction={handleWithdraw}
-              loading={isLoading}
-              
-            />
-            
+          {/* Welcome Message */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Welcome back, {userData?.first_name || userData?.name || "Freelancer"}!
+            </h2>
+            <p className="text-gray-600">
+              Here's an overview of your projects and activities.
+            </p>
           </div>
 
-          {/* Project Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {/* Project Stats - Simplified */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <CountCard
               title="Active projects"
               count={dashboardData.activeProjects}
               icon={<Clock className="w-6 h-6 text-green-600" />}
-              action="View"
+              action="View Projects"
               onAction={() => setActiveSection("projects")}
               loading={isLoading}
             />
@@ -235,93 +193,49 @@ const Dashboard = () => {
               title="Completed projects"
               count={dashboardData.completedProjects}
               icon={<CheckCircle className="w-6 h-6 text-blue-600" />}
-              action="View"
+              action="View Projects"
               onAction={() => setActiveSection("projects")}
               loading={isLoading}
             />
             <CountCard
-              title="Quit projects"
-              count={dashboardData.quitProjects}
-              icon={<XCircle className="w-6 h-6 text-yellow-600" />}
-              action="View"
-              onAction={() => setActiveSection("projects")}
+              title="Manage Payments"
+              count=""
+              icon={<CreditCard className="w-6 h-6 text-purple-600" />}
+              action="View Payments"
+              onAction={() => setActiveSection("payments")}
               loading={isLoading}
-            />
-            <CountCard
-              title="Kicked projects"
-              count={dashboardData.kickedProjects}
-              icon={<XCircle className="w-6 h-6 text-orange-600" />}
-              action="View"
-              onAction={() => setActiveSection("projects")}
-              loading={isLoading}
-            />
-            <CountCard
-              title="Banned projects"
-              count={dashboardData.bannedProjects}
-              icon={<XCircle className="w-6 h-6 text-red-600" />}
-              action="View"
-              onAction={() => setActiveSection("projects")}
-              loading={isLoading}
+              isActionCard={true}
             />
           </div>
 
-          {/* Earnings History Table */}
+          {/* Quick Actions */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Earning History
-              </h2>
-              <button
-                onClick={() => alert("Export functionality coming soon")}
-                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-              >
-                <Download className="w-4 h-4 mr-1" /> Export
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-gray-500 border-b border-gray-200">
-                    <th className="pb-3">Date</th>
-                    <th className="pb-3">Project</th>
-                    <th className="pb-3 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {earningHistory.length > 0 ? (
-                    earningHistory.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-                      >
-                        <td className="py-3 text-sm">
-                          {new Date(item.date).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 text-sm font-medium">
-                          {item.project}
-                        </td>
-                        <td className="py-3 text-sm text-right">
-                          ${item.amount.toLocaleString("en-US", {
-                            minimumFractionDigits: 2
-                          })}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="3" className="py-8 text-center">
-                        <div className="flex flex-col items-center text-gray-500">
-                          <AlertCircle className="w-12 h-12 mb-2" />
-                          <p>No earning history found</p>
-                          <p className="text-sm mt-1">
-                            Complete some projects to see your earnings here
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <ActionButton
+                title="View Projects"
+                description="Manage your projects"
+                icon={<Briefcase className="w-5 h-5" />}
+                onClick={() => setActiveSection("projects")}
+              />
+              <ActionButton
+                title="Payment History"
+                description="Check your earnings"
+                icon={<CreditCard className="w-5 h-5" />}
+                onClick={() => setActiveSection("payments")}
+              />
+              <ActionButton
+                title="Tasks"
+                description="View assigned tasks"
+                icon={<LayoutGrid className="w-5 h-5" />}
+                onClick={() => setActiveSection("tasks")}
+              />
+              <ActionButton
+                title="Profile"
+                description="Update your profile"
+                icon={<User className="w-5 h-5" />}
+                onClick={() => setActiveSection("profile")}
+              />
             </div>
           </div>
         </>
@@ -329,51 +243,18 @@ const Dashboard = () => {
     </>
   );
 
-  // =========================
-  // Reusable Cards
-  // =========================
-  const StatCard = ({ title, value, icon, subtitle, action, actionIcon, onAction, loading }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          {loading ? (
-            <Loader className="h-5 w-5 animate-spin text-gray-400" />
-          ) : (
-            <>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                JOD {value.toLocaleString("en-JO", { minimumFractionDigits: 2 })}
-              </h3>
-              {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-            </>
-          )}
-        </div>
-        <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
-      </div>
-      {action && (
-        <button
-          onClick={onAction}
-          disabled={loading}
-          className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          {action} {actionIcon}
-        </button>
-      )}
-    </div>
-  );
-
-  const CountCard = ({ title, count, icon, action, onAction, loading }) => (
+  const CountCard = ({ title, count, icon, action, onAction, loading, isActionCard = false }) => (
     <div
-      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md cursor-pointer"
+      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
       onClick={onAction}
     >
       <div className="flex justify-between items-start mb-4">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           {loading ? (
-            <Loader className="h-5 w-5 animate-spin text-gray-400" />
+            <Loader className="h-5 w-5 animate-spin text-gray-400 mt-1" />
           ) : (
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
+            !isActionCard && <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
           )}
         </div>
         <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
@@ -386,12 +267,22 @@ const Dashboard = () => {
     </div>
   );
 
-  // =========================
-  // Render
-  // =========================
+  const ActionButton = ({ title, description, icon, onClick }) => (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center"
+    >
+      <div className="p-2 bg-blue-100 rounded-lg text-blue-600 mb-2">
+        {icon}
+      </div>
+      <h4 className="font-medium text-gray-900">{title}</h4>
+      <p className="text-sm text-gray-600 mt-1">{description}</p>
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar - Updated with Payments */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">Freelancer Hub</h1>
@@ -418,6 +309,16 @@ const Dashboard = () => {
             }`}
           >
             <Briefcase className="w-5 h-5 mr-3" /> Projects
+          </button>
+          <button
+            onClick={() => setActiveSection("payments")}
+            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+              activeSection === "payments"
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <CreditCard className="w-5 h-5 mr-3" /> Payments
           </button>
           <button
             onClick={() => setActiveSection("tasks")}
@@ -458,7 +359,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Main */}
+      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 capitalize">
@@ -466,7 +367,7 @@ const Dashboard = () => {
           </h1>
           <p className="text-sm text-gray-600">
             {activeSection === "dashboard"
-              ? `Welcome back, ${userData?.first_name || "Freelancer"}!`
+              ? `Welcome back, ${userData?.first_name || userData?.name || "Freelancer"}!`
               : `Manage your ${activeSection}`}
           </p>
         </div>

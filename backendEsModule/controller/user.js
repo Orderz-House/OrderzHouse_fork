@@ -1,14 +1,17 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import speakeasy from "speakeasy";
 
 import {
   LogCreators,
   ACTION_TYPES,
-  ENTITY_TYPES,
 } from "../services/loggingService.js";
 import { createNotification } from "../services/notificationService.js";
 import pool from "../models/db.js";
+
+// ==================== AUTHENTICATION FUNCTIONS ====================
+
 const register = async (req, res) => {
   const {
     role_id,
@@ -19,12 +22,11 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
-    categories, // array of category IDs for freelancers
+    categories,
   } = req.body;
   
-  // Back-end validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/; // min 8 chars, 1 uppercase, 1 number
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
   if (
     !role_id ||
@@ -68,13 +70,10 @@ const register = async (req, res) => {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(
-      password,
-      Number(process.env.SECRET)
-    );
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
     const Email = email.toLowerCase();
 
-    // Check for unique email and username
     const existingUser = await pool.query(
       "SELECT id FROM Users WHERE email=$1 OR username=$2",
       [Email, username]
@@ -85,7 +84,6 @@ const register = async (req, res) => {
         .json({ success: false, message: "Email or username already exists" });
     }
 
-    // Insert user
     const { rows: userRows } = await pool.query(
       `INSERT INTO Users 
       (role_id, first_name, last_name, email, password, phone_number, country, username) 
@@ -103,7 +101,6 @@ const register = async (req, res) => {
     );
     const user = userRows[0];
 
-    // Insert freelancer categories
     if (role_id === 3) {
       const insertValues = categories
         .map((_, idx) => `($1, $${idx + 2})`)
@@ -115,7 +112,6 @@ const register = async (req, res) => {
       );
     }
 
-    // Logging
     const positionRole =
       role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
     const actionUser = `${first_name} ${last_name}, a ${positionRole} from ${country}, has registered successfully.`;
@@ -128,7 +124,6 @@ const register = async (req, res) => {
       country,
     });
 
-    // Notification
     try {
       await createNotification(
         user.id,
@@ -145,7 +140,7 @@ const register = async (req, res) => {
       .status(201)
       .json({ success: true, message: "User registered successfully", user });
   } catch (err) {
-    console.error(err);
+    console.error("Register Error:", err);
     return res
       .status(500)
       .json({
@@ -157,8 +152,8 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
-  const query = "SELECT * FROM users WHERE email = $1";
+  const { email, password, twoFactorToken } = req.body;
+  const query = "SELECT * FROM users WHERE email = $1 AND is_deleted = FALSE";
   const data = [email.toLowerCase()];
 
   function getClientIp(req) {
@@ -175,23 +170,45 @@ const login = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(403).json({
         success: false,
-        message:
-          "The email desn't exist or the password you've entered is incorrect",
+        message: "Invalid credentials",
       });
     }
 
     const user = result.rows[0];
-
-    console.log("Login user.is_verified:", user.is_verified);
-
     const match = await bcrypt.compare(password, user.password);
+
     if (!match) {
       return res.status(403).json({
         success: false,
-        message:
-          "The email desn't exist or the password you've entered is incorrect",
+        message: "Invalid credentials",
       });
     }
+
+    // ✅ ADDED: 2FA Verification
+    if (user.is_two_factor_enabled) {
+      if (!twoFactorToken) {
+        return res.status(200).json({ 
+          success: true, 
+          twoFactorRequired: true, 
+          message: "2FA token required" 
+        });
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.two_factor_secret,
+        encoding: 'base32',
+        token: twoFactorToken,
+        window: 1
+      });
+
+      if (!verified) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid 2FA token"
+        });
+      }
+    }
+
     const payload = {
       userId: user.id,
       role: user.role_id,
@@ -208,6 +225,7 @@ const login = async (req, res) => {
         message: "Token generation failed",
       });
     }
+
     const ipAddress = getClientIp(req);
     const ipAddressQuery =
       "INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)";
@@ -216,6 +234,7 @@ const login = async (req, res) => {
     if (user.role_id === 3) {
       await pool.query(ipAddressQuery, ipAddressData);
     }
+
     const positionRole =
       user.role_id === 1
         ? "Admin"
@@ -234,24 +253,27 @@ const login = async (req, res) => {
       ip: req.ip,
     });
 
-    return res.status(201).json({
+    return res.status(200).json({
       token,
       success: true,
-      message: "Valid login credentials",
+      message: "Login successful",
       userId: user.id,
       role: user.role_id,
       userInfo: user,
       is_verified: user.is_verified,
     });
   } catch (err) {
-    console.error("Login error:", err.message);
+    console.error("Login Error:", err);
     return res.status(500).json({
       success: false,
-      message: "An error occurred during login",
+      message: "Login error",
       error: err.message,
     });
   }
 };
+
+// ==================== USER MANAGEMENT FUNCTIONS ====================
+
 const viewUsers = async (req, res) => {
   try {
     const result = await pool.query(
@@ -269,6 +291,7 @@ const viewUsers = async (req, res) => {
     });
   }
 };
+
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -297,6 +320,7 @@ const deleteUser = async (req, res) => {
     });
   }
 };
+
 const editUser = async (req, res) => {
   const { userId } = req.params;
   const {
@@ -312,17 +336,7 @@ const editUser = async (req, res) => {
     profilePicUrl,
   } = req.body;
 
-  // Support both snake_case and camelCase from clients
   const newProfilePicUrl = profile_pic_url ?? profilePicUrl ?? null;
-
-  // Debug log to verify incoming image URL
-  try {
-    if (typeof newProfilePicUrl !== "undefined") {
-      console.log("editUser incoming profile URL:", newProfilePicUrl);
-    } else {
-      console.log("editUser: no profile URL provided in request body");
-    }
-  } catch (_) {}
 
   try {
     const result = await pool.query(
@@ -351,11 +365,7 @@ const editUser = async (req, res) => {
       ]
     );
 
-    // If a non-empty profile URL was provided but DB still returns null, force update the column
-    if (
-      newProfilePicUrl &&
-      (!result.rows[0] || !result.rows[0].profile_pic_url)
-    ) {
+    if (newProfilePicUrl && (!result.rows[0] || !result.rows[0].profile_pic_url)) {
       const forced = await pool.query(
         `UPDATE users SET profile_pic_url = $1 WHERE id = $2 AND is_deleted = FALSE RETURNING *`,
         [newProfilePicUrl, userId]
@@ -389,67 +399,34 @@ const editUser = async (req, res) => {
   }
 };
 
-const updateUser = async (req, res) => {
-  // Get the user ID from route parameters
-  const { userId } = req.params;
-
-  // Extract the fields to update from request body
-  const {
-    first_name,
-    last_name,
-    phone_number,
-    country,
-    username,
-    profile_pic_url,
-  } = req.body;
-
+const getUserById = async (req, res) => {
+  const { userId } = req.token;
   try {
-    // Update the user in the database
-    // COALESCE ensures that if a field is not provided, the existing value is kept
-    const result = await pool.query(
-      `UPDATE Users
-        SET
-          first_name = COALESCE($1, first_name),
-          last_name = COALESCE($2, last_name),
-          phone_number = COALESCE($3, phone_number),
-          country = COALESCE($4, country),
-          username = COALESCE($5, username),
-          profile_pic_url = COALESCE($6, profile_pic_url)
-        WHERE id = $7 AND is_deleted = FALSE
-        RETURNING *;`,
-      [
-        first_name,
-        last_name,
-        phone_number,
-        country,
-        username,
-        profile_pic_url,
-        userId,
-      ]
-    );
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
+      userId,
+    ]);
 
-    // If no user found or the user is deleted, return 404
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found or deleted" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    // Return the updated user
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "User updated successfully",
       user: result.rows[0],
     });
   } catch (err) {
-    // Handle database or server errors
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Error updating user",
+      message: "Server Error",
       error: err.message,
     });
   }
 };
+
+// ==================== PORTFOLIO FUNCTIONS ====================
 
 const getPortfolioByUserId = async (req, res) => {
   const { userId } = req.token;
@@ -514,10 +491,7 @@ const createPortfolio = async (req, res) => {
 
 const editPortfolioFreelancer = async (req, res) => {
   const { portfolioId } = req.params;
-  console.log(portfolioId);
-
   const { title, description, skills, hourly_rate, work_url } = req.body;
-  console.log("skills =>", req.body);
 
   try {
     const result = await pool.query(
@@ -557,28 +531,13 @@ const editPortfolioFreelancer = async (req, res) => {
 
 const deletePortfolioFreelancer = async (req, res) => {
   try {
-    const userId = req.token?.userId; // authenticated user
-    const role = req.token?.role;
-
-    if (!userId || !role) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
+    const userId = req.token?.userId;
     const { freelancerId, portfolioId } = req.body;
 
-    // Ensure freelancer is deleting their own portfolio
     if (parseInt(freelancerId) !== userId) {
       return res.status(403).json({
         success: false,
         message: "You can only delete your own portfolio items.",
-      });
-    }
-
-    // Optional: allow only role 3 (freelancer) to delete portfolio items
-    if (role !== 3) {
-      return res.status(403).json({
-        success: false,
-        message: "Only freelancers can delete portfolio items.",
       });
     }
 
@@ -590,45 +549,21 @@ const deletePortfolioFreelancer = async (req, res) => {
     if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,
-        message: `Portfolio ID: ${portfolioId} not found or does not belong to freelancer ${freelancerId}`,
+        message: `Portfolio not found.`,
       });
     }
 
     res.status(200).json({
       success: true,
-      message: `Deleted Portfolio ID: ${portfolioId} Successfully`,
+      message: `Deleted Portfolio Successfully`,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Server Error", err });
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-const deactivateInactiveUsers = async () => {
-  const query = `
-    UPDATE Users
-    SET is_deleted = TRUE,
-    reason_for_disruption = 'Deactivated due to inactivity or Order for 30 days'
-    WHERE role_id = 2
-    AND is_deleted = FALSE
-    AND created_at < NOW() - INTERVAL '30 days'
-    AND id NOT IN (
-    SELECT DISTINCT client_id FROM orders
-    );
-  `;
-
-  try {
-    const result = await pool.query(query);
-    console.log(`Deactivated ${result.rowCount} inactive users.`);
-  } catch (err) {
-    console.error("Error deactivating inactive users:", err);
-  }
-};
-
-cron.schedule("0 3 * * *", () => {
-  deactivateInactiveUsers();
-  console.log("Ran deactivate Inactive Users at 3AM daily");
-});
+// ==================== FREELANCER FUNCTIONS ====================
 
 const getAllFreelancers = async (req, res) => {
   const filterValue = (req.body.filter || "").toLowerCase();
@@ -740,35 +675,10 @@ const listOnlineUsers = async (req, res) => {
     });
   }
 };
-const getUserById = async (req, res) => {
-  const { userId } = req.token;
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
-      userId,
-    ]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      user: result.rows[0],
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: err.message,
-    });
-  }
-};
 const rateFreelancer = async (req, res) => {
-  const reviewerId = req.token.userId; // العميل الذي يقيم
-  const { userId, rating, projectId } = req.body; // Changed freelancerId to userId to match frontend
+  const reviewerId = req.token.userId;
+  const { userId, rating, projectId } = req.body;
 
   if (!userId || !rating) {
     return res.status(400).json({
@@ -778,7 +688,6 @@ const rateFreelancer = async (req, res) => {
   }
 
   try {
-    // 1. تحقق من reviewer
     const reviewerResult = await pool.query(
       "SELECT role_id FROM users WHERE id = $1 AND is_deleted = FALSE",
       [reviewerId]
@@ -795,7 +704,6 @@ const rateFreelancer = async (req, res) => {
         message: "Only Admins or Clients can rate freelancers",
       });
 
-    // 2. تحقق من الفريلانس
     const freelancerResult = await pool.query(
       "SELECT role_id, rating_sum, rating_count FROM users WHERE id = $1 AND is_deleted = FALSE",
       [userId]
@@ -811,7 +719,6 @@ const rateFreelancer = async (req, res) => {
         .status(403)
         .json({ success: false, message: "Target user is not a freelancer" });
 
-    // 3. If projectId provided, validate project; otherwise allow general rating
     if (projectId) {
       const projectCheck = await pool.query(
         `SELECT * FROM projects
@@ -825,7 +732,6 @@ const rateFreelancer = async (req, res) => {
             "You cannot rate this freelancer because you haven't completed a project with them",
         });
 
-      // 4. تحقق من عدم وجود تقييم سابق لنفس المشروع
       const existingRating = await pool.query(
         `SELECT * FROM freelancer_ratings
          WHERE project_id = $1 AND client_id = $2 AND freelancer_id = $3`,
@@ -837,15 +743,12 @@ const rateFreelancer = async (req, res) => {
           message: "You have already rated this freelancer for this project",
         });
 
-      // 5. إدخال التقييم الجديد في جدول freelancer_ratings
       await pool.query(
         `INSERT INTO freelancer_ratings (project_id, client_id, freelancer_id, rating, created_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
         [projectId, reviewerId, userId, rating]
       );
     } else {
-      // General rating without project
-      // Check if reviewer has already rated this freelancer
       const existingRating = await pool.query(
         `SELECT * FROM freelancer_ratings
          WHERE project_id IS NULL AND client_id = $1 AND freelancer_id = $2`,
@@ -857,7 +760,6 @@ const rateFreelancer = async (req, res) => {
           message: "You have already rated this freelancer",
         });
 
-      // Insert general rating
       await pool.query(
         `INSERT INTO freelancer_ratings (client_id, freelancer_id, rating, created_at)
          VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
@@ -865,7 +767,6 @@ const rateFreelancer = async (req, res) => {
       );
     }
 
-    // 6. تحديث متوسط التقييم في users
     const newSum = Number(freelancer.rating_sum) + Number(rating);
     const newCount = Number(freelancer.rating_count) + 1;
     const newAvg = (newSum / newCount).toFixed(2);
@@ -894,6 +795,7 @@ const rateFreelancer = async (req, res) => {
     });
   }
 };
+
 const getTopFreelancers = async (req, res) => {
   try {
     const result = await pool.query(
@@ -923,6 +825,7 @@ const getTopFreelancers = async (req, res) => {
     });
   }
 };
+
 const getFreelance = async (req, res) => {
   try {
     const query = `
@@ -944,6 +847,7 @@ const getFreelance = async (req, res) => {
     });
   }
 };
+
 const getFreelanceById = async (req, res) => {
   try {
     const freelancerId = req.params.id;
@@ -983,6 +887,7 @@ const getFreelanceById = async (req, res) => {
     });
   }
 };
+
 const getPortfolioByfreelance = async (req, res) => {
   const { userId } = req.params;
 
@@ -1020,13 +925,14 @@ const getPortfolioByfreelance = async (req, res) => {
   }
 };
 
+// ==================== VERIFICATION FUNCTIONS ====================
+
 const checkVerificationStatus = async (req, res) => {
   const userId = req.token.userId;
 
   try {
-    // Get user profile information
     const userResult = await pool.query(
-      "SELECT first_name, last_name, bio, skills, location, profile_pic_url, is_verified FROM users WHERE id = $1 AND is_deleted = FALSE",
+      "SELECT first_name, last_name, bio, profile_pic_url, is_verified FROM users WHERE id = $1 AND is_deleted = FALSE",
       [userId]
     );
 
@@ -1039,16 +945,6 @@ const checkVerificationStatus = async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Check profile completeness
-    const missingFields = [];
-    if (!user.first_name) missingFields.push("first_name");
-    if (!user.last_name) missingFields.push("last_name");
-    if (!user.bio) missingFields.push("bio");
-    if (!user.skills) missingFields.push("skills");
-    if (!user.location) missingFields.push("location");
-    if (!user.profile_pic_url) missingFields.push("profile_pic_url");
-
-    // Check portfolio items
     const portfolioResult = await pool.query(
       "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
       [userId]
@@ -1056,9 +952,12 @@ const checkVerificationStatus = async (req, res) => {
 
     const portfolioCount = parseInt(portfolioResult.rows[0].count);
 
-    if (portfolioCount === 0) {
-      missingFields.push("portfolio_item");
-    }
+    const missingFields = [];
+    if (!user.first_name) missingFields.push("First Name");
+    if (!user.last_name) missingFields.push("Last Name");
+    if (!user.bio) missingFields.push("Bio");
+    if (!user.profile_pic_url) missingFields.push("Profile Picture");
+    if (portfolioCount === 0) missingFields.push("Portfolio Item");
 
     const isProfileComplete = missingFields.length === 0;
 
@@ -1068,14 +967,6 @@ const checkVerificationStatus = async (req, res) => {
       isProfileComplete: isProfileComplete,
       missingFields: missingFields,
       portfolioCount: portfolioCount,
-      profile: {
-        first_name: user.first_name,
-        last_name: user.last_name,
-        bio: user.bio,
-        skills: user.skills,
-        location: user.location,
-        profile_pic_url: user.profile_pic_url,
-      },
     });
   } catch (err) {
     res.status(500).json({
@@ -1090,9 +981,8 @@ const updateVerificationStatus = async (req, res) => {
   const userId = req.token.userId;
 
   try {
-    // Check if profile is complete and has portfolio
     const userResult = await pool.query(
-      "SELECT first_name, last_name, bio, skills, location, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
+      "SELECT first_name, last_name, bio, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
       [userId]
     );
 
@@ -1105,16 +995,6 @@ const updateVerificationStatus = async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Check profile completeness
-    const isProfileComplete =
-      user.first_name &&
-      user.last_name &&
-      user.bio &&
-      user.skills &&
-      user.location &&
-      user.profile_pic_url;
-
-    // Check portfolio items
     const portfolioResult = await pool.query(
       "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
       [userId]
@@ -1122,8 +1002,9 @@ const updateVerificationStatus = async (req, res) => {
     
     const hasPortfolio = parseInt(portfolioResult.rows[0].count) > 0;
 
+    const isProfileComplete = user.first_name && user.last_name && user.bio && user.profile_pic_url;
+
     if (isProfileComplete && hasPortfolio) {
-      // Update verification status
       const updateResult = await pool.query(
         "UPDATE users SET is_verified = TRUE WHERE id = $1 RETURNING id, is_verified",
         [userId]
@@ -1140,8 +1021,6 @@ const updateVerificationStatus = async (req, res) => {
       if (!user.first_name) missingFields.push("first_name");
       if (!user.last_name) missingFields.push("last_name");
       if (!user.bio) missingFields.push("bio");
-      if (!user.skills) missingFields.push("skills");
-      if (!user.location) missingFields.push("location");
       if (!user.profile_pic_url) missingFields.push("profile_image");
       if (!hasPortfolio) missingFields.push("portfolio_item");
 
@@ -1160,100 +1039,270 @@ const updateVerificationStatus = async (req, res) => {
     });
   }
 };
-const verifyFreelancerByAdmin = (req, res) => {
-  const { id } = req.params; // Freelancer ID from URL
 
-  pool
-    .query(
+const verifyFreelancerByAdmin = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
       `UPDATE users 
        SET is_verified = TRUE, 
            reason_for_disruption = NULL 
        WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
        RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
       [id]
-    )
-    .then((result) => {
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Freelancer not found, not a freelancer, or account deleted.",
-        });
-      }
+    );
 
-      const freelancer = result.rows[0];
-
-      // Log admin action
-      return pool
-        .query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
-          req.token.userId,
-          `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
-        ])
-        .then(() => {
-          res.status(200).json({
-            success: true,
-            message: "Freelancer verified successfully.",
-            freelancer,
-          });
-        });
-    })
-    .catch((err) => {
-      console.error("Error verifying freelancer:", err.message);
-      res.status(500).json({
+    if (result.rows.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: "Server error while verifying freelancer",
-        error: err.message,
+        message:
+          "Freelancer not found, not a freelancer, or account deleted.",
       });
+    }
+
+    const freelancer = result.rows[0];
+
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
+      req.token.userId,
+      `Admin ${req.token.userId} verified freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Freelancer verified successfully.",
+      freelancer,
     });
+  } catch (err) {
+    console.error("Error verifying freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while verifying freelancer",
+      error: err.message,
+    });
+  }
 };
 
-// Reject freelancer by admin
-const rejectFreelancerByAdmin = (req, res) => {
+const rejectFreelancerByAdmin = async (req, res) => {
   const { id } = req.params;
 
-  pool
-    .query(
+  try {
+    const result = await pool.query(
       `UPDATE users 
        SET is_verified = FALSE, 
            reason_for_disruption = 'Rejected by admin' 
        WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE 
        RETURNING id, first_name, last_name, email, username, country, is_verified, created_at`,
       [id]
-    )
-    .then((result) => {
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Freelancer not found, not a freelancer, or account deleted.",
-        });
-      }
+    );
 
-      const freelancer = result.rows[0];
-
-      // Log admin action
-      return pool
-        .query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
-          req.token.userId,
-          `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
-        ])
-        .then(() => {
-          res.status(200).json({
-            success: true,
-            message: "Freelancer rejected successfully.",
-            freelancer,
-          });
-        });
-    })
-    .catch((err) => {
-      console.error("Error rejecting freelancer:", err.message);
-      res.status(500).json({
+    if (result.rows.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: "Server error while rejecting freelancer",
-        error: err.message,
+        message:
+          "Freelancer not found, not a freelancer, or account deleted.",
       });
+    }
+
+    const freelancer = result.rows[0];
+
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
+      req.token.userId,
+      `Admin ${req.token.userId} rejected freelancer ${freelancer.id} (${freelancer.first_name} ${freelancer.last_name})`,
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Freelancer rejected successfully.",
+      freelancer,
     });
+  } catch (err) {
+    console.error("Error rejecting freelancer:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while rejecting freelancer",
+      error: err.message,
+    });
+  }
 };
+
+// ==================== CRON JOBS ====================
+
+// ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
+
+/**
+ * @route   POST /api/users/verify-password
+ * @desc    Verify user's current password
+ * @access  Private
+ */
+const verifyPassword = async (req, res) => {
+  const { password } = req.body;
+  const userId = req.token.userId;
+
+  try {
+    const userResult = await pool.query(
+      'SELECT password FROM users WHERE id = $1 AND is_deleted = FALSE',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    const user = userResult.rows[0];
+    const match = await bcrypt.compare(password, user.password);
+    
+    res.json({ 
+      success: match,
+      message: match ? 'Password verified' : 'Incorrect password'
+    });
+  } catch (error) {
+    console.error('Verify Password Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during password verification' 
+    });
+  }
+};
+
+/**
+ * @route   PUT /api/users/update-password
+ * @desc    Update user password
+ * @access  Private
+ */
+const updatePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.token.userId;
+
+  // Password validation
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Current password and new password are required' 
+    });
+  }
+
+  if (!passwordRegex.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be at least 8 characters long, include 1 uppercase letter, 1 lowercase letter, and 1 number'
+    });
+  }
+
+  try {
+    // Verify current password
+    const userResult = await pool.query(
+      'SELECT password FROM users WHERE id = $1 AND is_deleted = FALSE',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    const user = userResult.rows[0];
+    const match = await bcrypt.compare(currentPassword, user.password);
+    
+    if (!match) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Current password is incorrect' 
+      });
+    }
+
+    // Update to new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    await pool.query(
+      'UPDATE users SET password = $1 WHERE id = $2',
+      [hashedPassword, userId]
+    );
+
+    // Log the password change
+    await LogCreators.userAuth(userId, ACTION_TYPES.PASSWORD_CHANGE, true, {
+      ip: req.ip
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Password updated successfully' 
+    });
+  } catch (error) {
+    console.error('Update Password Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during password update' 
+    });
+  }
+};
+
+/**
+ * @route   PUT /api/users/deactivate
+ * @desc    Deactivate user account
+ * @access  Private
+ */
+const deactivateAccount = async (req, res) => {
+  const userId = req.token.userId;
+
+  try {
+    // First check if user exists and is not already deactivated
+    const userCheck = await pool.query(
+      'SELECT id, is_deleted FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    if (userCheck.rows[0].is_deleted) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Account is already deactivated' 
+      });
+    }
+
+    // Deactivate the account
+    await pool.query(
+      `UPDATE users 
+       SET is_deleted = TRUE, 
+           deactivated_at = NOW(),
+           reason_for_disruption = 'Deactivated by user'
+       WHERE id = $1`,
+      [userId]
+    );
+
+    // Log the deactivation
+    await LogCreators.userAuth(userId, ACTION_TYPES.ACCOUNT_DEACTIVATED, true, {
+      ip: req.ip,
+      reason: 'user_initiated'
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Account deactivated successfully. You have 30 days to reactivate by logging in.' 
+    });
+  } catch (error) {
+    console.error('Deactivate Account Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during account deactivation' 
+    });
+  }
+};
+// ==================== EXPORTS ====================
 
 export {
   register,
@@ -1261,13 +1310,12 @@ export {
   viewUsers,
   deleteUser,
   editUser,
+  getUserById,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
   deleteFreelancerById,
   listOnlineUsers,
-  getUserById,
-  updateUser,
   getPortfolioByUserId,
   deletePortfolioFreelancer,
   rateFreelancer,
@@ -1279,4 +1327,7 @@ export {
   getFreelance,
   rejectFreelancerByAdmin,
   verifyFreelancerByAdmin,
+  verifyPassword,
+  updatePassword,
+  deactivateAccount,
 };
