@@ -1,5 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
+import "./models/db.js";
 import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
@@ -8,7 +9,7 @@ import dotenv from "dotenv";
 import { AdminInit } from "./Admin.js";
 
 // Routers
-import taskRouter from "./router/tasks.js";        
+import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
@@ -24,13 +25,13 @@ import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
 import earningsRouter from "./router/earning.js";
-import uploadRouter from "./router/projectFilesUser.js";
+import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import paymentsRouter from "./router/payments.js";
+import categoryRouter from "./router/category.js";
 
 // DB connection
-import "./models/db.js";
 dotenv.config();
 
 const app = express();
@@ -59,7 +60,8 @@ app.use(limiter);
 */
 
 // ✅ Routers
-app.use("/tasks", taskRouter);
+app.use("/category", categoryRouter)
+app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
 app.use("/earnings", earningsRouter);

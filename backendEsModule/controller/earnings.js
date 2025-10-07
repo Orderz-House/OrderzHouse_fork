@@ -1,103 +1,81 @@
-import pool from "../models/db.js";
+import pool from "../models/db.js"; // Ensure this path is correct
 
-// Get freelancer earnings summary
+/**
+ * Fetches a summary of a freelancer's earnings, including pending and available balances.
+ */
 export const getFreelancerEarningsSummary = async (req, res) => {
+  const { freelancerId } = req.params;
+
+  // Validate freelancerId
+  if (!freelancerId || isNaN(parseInt(freelancerId))) {
+    return res.status(400).json({ success: false, message: "A valid freelancer ID is required." });
+  }
+
   try {
-    const { freelancerId } = req.params;
-
-    // Check user exists and is freelancer
-    const userCheck = await pool.query(
-      `SELECT id, role_id, wallet 
-       FROM users 
-       WHERE id = $1 AND is_deleted = false`,
+    // Fetch pending income from the escrow table
+    const pendingResult = await pool.query(
+      "SELECT COALESCE(SUM(amount), 0) as total FROM escrow WHERE freelancer_id = $1 AND status = 'funded'",
       [freelancerId]
     );
 
-    if (!userCheck.rows.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer not found"
-      });
-    }
-
-    if (userCheck.rows[0].role_id !== 3) {
-      return res.status(403).json({
-        success: false,
-        message: "User is not a freelancer"
-      });
-    }
-
-    const availableInAccount = userCheck.rows[0].wallet || 0;
-
-    // Total income (all payments received)
-    const totalIncomeResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) AS total_income
-       FROM payments 
-       WHERE freelancer_id = $1`,
+    // Fetch available balance from the wallets table
+    const availableResult = await pool.query(
+      "SELECT balance FROM wallets WHERE user_id = $1",
       [freelancerId]
     );
-
-    // Pending income (escrow still held)
-    const pendingIncomeResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) AS pending_income
-       FROM escrow 
-       WHERE freelancer_id = $1 AND status = 'held'`,
-      [freelancerId]
-    );
-
-    // Withdraw requested (optional — if no table, keep 0)
-    const withdrawRequested = 0;
 
     const summary = {
-      totalIncome: parseFloat(totalIncomeResult.rows[0].total_income) || 0,
-      pendingIncome: parseFloat(pendingIncomeResult.rows[0].pending_income) || 0,
-      availableInAccount: parseFloat(availableInAccount) || 0,
-      withdrawRequested
+      pendingIncome: parseFloat(pendingResult.rows[0].total),
+      availableInAccount: availableResult.rows.length > 0 ? parseFloat(availableResult.rows[0].balance) : 0,
     };
 
-    res.json({ success: true, summary });
+    res.status(200).json({ success: true, summary });
 
-  } catch (error) {
-    console.error("getFreelancerEarningsSummary error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (err) {
+    console.error(`Error fetching earnings summary for freelancer ${freelancerId}:`, err);
+    res.status(500).json({ success: false, message: "Server Error while fetching earnings summary." });
   }
 };
 
-// 📜 Get freelancer earnings history
+/**
+ * Fetches the detailed transaction history for a freelancer's completed payments.
+ */
 export const getFreelancerEarningsHistory = async (req, res) => {
+  const { freelancerId } = req.params;
+
+  // Validate freelancerId
+  if (!freelancerId || isNaN(parseInt(freelancerId))) {
+    return res.status(400).json({ success: false, message: "A valid freelancer ID is required." });
+  }
+
   try {
-    const { freelancerId } = req.params;
-    const { limit = 10, offset = 0 } = req.query;
+    // --- THIS IS THE CORRECTED QUERY ---
+    // It joins 'payments' with 'projects' to get the project title.
+    const query = `
+      SELECT 
+        pay.id, 
+        pay.amount, 
+        p.title AS project,  -- Select the project's title and rename it to "project"
+        pay.created_at AS date 
+      FROM 
+        payments AS pay
+      JOIN 
+        projects AS p ON pay.project_id = p.id
+      WHERE 
+        pay.freelancer_id = $1 AND pay.status = 'completed'
+      ORDER BY 
+        pay.created_at DESC;
+    `;
 
-    const historyResult = await pool.query(
-      `SELECT 
-         p.id,
-         p.amount,
-         p.payment_date AS date,
-         proj.title AS project_title,
-         proj.id AS project_id
-       FROM payments p
-       LEFT JOIN projects proj ON p.project_id = proj.id
-       WHERE p.freelancer_id = $1
-       ORDER BY p.payment_date DESC
-       LIMIT $2 OFFSET $3`,
-      [freelancerId, limit, offset]
-    );
+    const result = await pool.query(query, [freelancerId]);
 
-    const earningsHistory = historyResult.rows.map(row => ({
-      id: row.id,
-      date: row.date,
-      amount: parseFloat(row.amount),
-      project: {
-        id: row.project_id,
-        title: row.project_title
-      }
-    }));
+    res.status(200).json({
+      success: true,
+      earningsHistory: result.rows,
+    });
 
-    res.json({ success: true, earningsHistory });
-
-  } catch (error) {
-    console.error("getFreelancerEarningsHistory error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (err) {
+    console.error(`Error fetching earnings history for freelancer ${freelancerId}:`, err);
+    res.status(500).json({ success: false, message: "Server Error while fetching earnings history.", error: err.message });
   }
 };

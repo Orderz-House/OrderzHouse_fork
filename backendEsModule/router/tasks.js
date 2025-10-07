@@ -10,6 +10,7 @@ import {
   getUserRequestedTasks,
   getTaskRequests,
   updateTaskRequestStatus,
+  getTaskRequest
 } from "../controller/tasks.js";
 
 const taskRouter = express.Router();
@@ -32,11 +33,15 @@ taskRouter.put("/:id", authentication, updateTask);
 // Delete task
 taskRouter.delete("/:id", authentication, deleteTask);
 
+
 // Get tasks requested by the logged-in client
 taskRouter.get("/requests/my", authentication, getUserRequestedTasks); // client
 
 // Get requests for a specific task (freelancer)
 taskRouter.get("/requests/:id", authentication, getTaskRequests);      // freelancer
+
+// Get all pending requests for tasks owned by the authenticated freelancer
+taskRouter.get("/requests", authentication, getTaskRequest);      // freelancer
 
 taskRouter.patch(
   "/requests/:requestId/status",

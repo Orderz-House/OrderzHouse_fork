@@ -137,8 +137,8 @@ export const deleteTask = async (req, res) => {
 export const requestTask = async (req, res) => {
   try {
     const userId = req.token?.userId;
-    const { id } = req.params; // Task ID
-    const { message, attachments } = req.body; // Optional message & attachments
+    const { id } = req.params; 
+    const { message, attachments } = req.body; 
 
     if (!id) {
       return res.status(400).json({ success: false, message: "Task ID is required" });
@@ -325,5 +325,42 @@ export const updateTaskRequestStatus = async (req, res) => {
   } catch (err) {
     console.error("❌ updateTaskRequestStatus error:", err.stack || err);
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * Get all pending requests for tasks owned by the authenticated freelancer.
+ */
+export const getTaskRequest = async (req, res) => {
+  try {
+    const freelancerId = req.token.userId;
+
+    if (!freelancerId) {
+      return res.status(401).json({ success: false, message: "Authentication error." });
+    }
+
+    const query = `
+      SELECT 
+        tr.id, 
+        tr.task_id,
+        tr.message,
+        tr.requested_at,
+        t.title AS task_title,
+        t.price AS task_price,
+        client.id AS client_id,
+        client.first_name || ' ' || client.last_name AS client_name,
+        client.profile_pic_url AS client_avatar
+      FROM tasks_req tr
+      JOIN tasks t ON tr.task_id = t.id
+      JOIN users client ON tr.client_id = client.id
+      WHERE t.freelancer_id = $1 AND tr.status = 'pending'
+      ORDER BY tr.requested_at DESC;
+    `;
+
+    const result = await pool.query(query, [freelancerId]);
+    res.status(200).json({ success: true, requests: result.rows });
+  } catch (err) {
+    console.error("❌ getTaskRequests error:", err);
+    res.status(500).json({ success: false, message: "Server error while fetching task requests." });
   }
 };

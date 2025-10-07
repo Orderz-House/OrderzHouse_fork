@@ -1,64 +1,52 @@
 import express from "express";
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
+import FormData from "form-data";
+import axios from "axios";
 
-const uploadRouter = express.Router();
+const router = express.Router();
 
-// Cloudinary configuration (CLOUDINARY_URL or explicit creds)
-// If CLOUDINARY_URL is set, the SDK picks it up automatically.
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME || undefined,
-  api_key: process.env.CLOUDINARY_API_KEY || process.env.API_KEY || undefined,
-  api_secret: process.env.CLOUDINARY_API_SECRET || process.env.API_SECRET || undefined,
-});
+// Configure multer to handle file uploads in memory
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-// Use memory storage for transient buffering before uploading to Cloudinary
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Invalid file type. Allowed: PNG, JPG, JPEG, WEBP"));
-    }
-    cb(null, true);
-  },
-});
+// The upload route. 'image' is the name of the field in the form data.
+router.post("/", upload.single('image'), async (req, res) => {
+  // 1. Check if a file was received
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "No image file provided." });
+  }
 
-uploadRouter.post("/", upload.single("image"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No image uploaded" });
+    // 2. Create a form and append the image data
+    const formData = new FormData();
+    formData.append("image", req.file.buffer.toString("base64")); // Send as base64
+
+    // 3. Make the POST request to the ImgBB API
+    const response = await axios.post(
+      `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders( ),
+        },
+      }
+    );
+
+    // 4. Check the response from ImgBB
+    if (response.data.success) {
+      // 5. Send the public URL back to the frontend
+      res.status(200).json({
+        success: true,
+        message: "Image uploaded successfully.",
+        url: response.data.data.url, // The public URL of the image
+      });
+    } else {
+      throw new Error(response.data.error.message || "ImgBB upload failed.");
     }
-
-    // Ensure Cloudinary is configured
-    const hasCloudinaryConfig =
-      !!process.env.CLOUDINARY_URL ||
-      (!!cloudinary.config().cloud_name && !!cloudinary.config().api_key);
-    if (!hasCloudinaryConfig) {
-      return res.status(500).json({ success: false, message: "Cloudinary is not configured" });
-    }
-
-    const folder = process.env.CLOUDINARY_FOLDER || "uploads";
-    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-    const result = await cloudinary.uploader.upload(dataUri, {
-      folder,
-      resource_type: "image",
-      overwrite: false,
-    });
-
-    const url = result?.secure_url || result?.url;
-    if (!url) {
-      return res.status(502).json({ success: false, message: "Failed to get image URL from Cloudinary" });
-    }
-
-    return res.status(200).json({ success: true, url });
   } catch (error) {
-    const message = error?.response?.data?.error?.message || error.message || "Upload failed";
-    return res.status(500).json({ success: false, message });
+    console.error("Image upload error:", error.message);
+    res.status(500).json({ success: false, message: "Server error during image upload." });
   }
 });
 
-export default uploadRouter;
-
-
+export default router;

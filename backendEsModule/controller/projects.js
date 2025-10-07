@@ -4,7 +4,6 @@ import {
   ACTION_TYPES,
   ENTITY_TYPES,
 } from "../services/loggingService.js";
-import { debitWallet, creditWallet } from "../services/walletService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 
 export const createProject = async (req, res) => {
@@ -518,33 +517,6 @@ export const listUsersByRole = async (req, res) => {
   }
 };
 
-// Public: list categories
-export const getCategories = async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT id, name, description FROM categories ORDER BY id ASC`
-    );
-    return res.json({ success: true, categories: rows });
-  } catch (error) {
-    console.error("getCategories error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// Public: list sub categories by category id (if table exists)
-export const getSubCategories = async (req, res) => {
-  try {
-    const { categoryId } = req.params;
-    const { rows } = await pool.query(
-      `SELECT id, name FROM sub_categories WHERE category_id = $1 ORDER BY id ASC`,
-      [categoryId]
-    );
-    return res.json({ success: true, subCategories: rows });
-  } catch (error) {
-    console.error("getSubCategories error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
 
 export const getRelatedFreelancers = async (req, res) => {
   const { categoryId } = req.params;
@@ -1019,88 +991,6 @@ export const getAllProjectForFreelancerById = async (req, res) => {
   }
 };
 
-export const uploadProjectFile = async (req, res) => {
-  try {
-    const userId = req.token?.userId;
-    const { projectId } = req.params;
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "File is required",
-      });
-    }
-
-    // تحقق أن المشروع موجود
-    const projectCheck = await pool.query(
-      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
-      [projectId]
-    );
-    if (!projectCheck.rows.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
-
-    // بيانات الملف من Cloudinary
-    const file_name = req.file.originalname;
-    const file_url = req.file.path;
-
-    // إدخال في قاعدة البيانات
-    const insertQuery = `
-      INSERT INTO project_files (project_id, sender_id, file_name, file_url)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(insertQuery, [
-      projectId,
-      userId,
-      file_name,
-      file_url,
-    ]);
-
-    return res.status(201).json({
-      success: true,
-      file: rows[0],
-    });
-  } catch (error) {
-    console.error("uploadProjectFile error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// ✅ جلب جميع الملفات
-export const getProjectFiles = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-
-    const { rows } = await pool.query(
-      `SELECT 
-         pf.*,
-         json_build_object(
-           'id', u.id,
-           'first_name', u.first_name,
-           'last_name', u.last_name,
-           'username', u.username,
-           'email', u.email,
-           'profile_pic_url', u.profile_pic_url
-         ) AS sender
-       FROM project_files pf
-       JOIN users u ON u.id = pf.sender_id
-       WHERE pf.project_id = $1
-       ORDER BY pf.sent_at ASC`,
-      [projectId]
-    );
-
-    res.status(200).json({
-      success: true,
-      files: rows,
-    });
-  } catch (error) {
-    console.error("getProjectFiles error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
 
 export const getCountProjectFreelancer = async (req, res) => {
   try {
@@ -1323,14 +1213,45 @@ export const approveOrRejectOffer = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+export const getProjectsByCategoryId = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    if (!categoryId || isNaN(categoryId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid category ID" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT p.*, u.username AS client_username, c.name AS category_name
+      FROM projects p
+      JOIN users u ON u.id = p.user_id
+      JOIN categories c ON c.id = p.category_id
+      WHERE p.category_id = $1 AND p.is_deleted = false
+      ORDER BY p.created_at DESC
+      `,
+      [categoryId]
+    );
+
+    return res.json({
+      success: true,
+      projects: result.rows,
+    });
+  } catch (error) {
+    console.error("getProjectsByCategoryId error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
+  }
+};
 
 export default {
   createProject,
   getMyProjects,
   assignProject,
   listUsersByRole,
-  getCategories,
-  getSubCategories,
   getRelatedFreelancers,
   getProjectById,
   updateAssignmentStatus,
@@ -1339,7 +1260,5 @@ export default {
   getProjectCompletion,
   submitWorkCompletion,
   getAllProjectForFreelancerById,
-  uploadProjectFile,
-  getProjectFiles,
   quitProject,
 };

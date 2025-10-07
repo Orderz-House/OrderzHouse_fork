@@ -216,7 +216,9 @@ const Dashboard = () => {
               actionIcon={<ArrowUpRight className="w-4 h-4 ml-1" />}
               onAction={handleWithdraw}
               loading={isLoading}
+              
             />
+            
           </div>
 
           {/* Project Stats */}
@@ -340,7 +342,7 @@ const Dashboard = () => {
           ) : (
             <>
               <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                ${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                JOD {value.toLocaleString("en-JO", { minimumFractionDigits: 2 })}
               </h3>
               {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
             </>
@@ -391,7 +393,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">Freelancer Hub</h1>
           <p className="text-sm text-gray-600 mt-1">Professional Dashboard</p>
         </div>

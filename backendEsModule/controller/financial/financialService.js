@@ -5,7 +5,7 @@ import pool from "../../models/db.js";
  * @param {number} userId - Client user ID
  * @returns {object} Combined payments, wallet transactions, escrow info, wallet balance
  */
-export const getClientFinancialOverview = async (userId) => {
+ const getClientFinancialOverview = async (userId) => {
   if (!userId) throw new Error("Invalid userId");
 
   // 1️⃣ Get payments made by client
@@ -113,3 +113,48 @@ export const getClientFinancialOverview = async (userId) => {
     overview: combined,
   };
 };
+ const creditWallet = async (userId, amount, note) => {
+  if (!userId || !amount || amount <= 0) throw new Error("Invalid parameters for creditWallet");
+  try {
+    await pool.query(
+      `INSERT INTO wallet_transactions (user_id, amount, type, note, created_at)
+       VALUES ($1, $2, 'credit', $3, CURRENT_TIMESTAMP)`,
+      [userId, amount, note]
+    );
+    await pool.query(
+      `UPDATE wallets SET balance = balance + $1 WHERE user_id = $2`,
+      [amount, userId]
+    );
+    return true;
+  } catch (error) {
+    console.error("Error crediting wallet:", error);
+    throw error;
+  }
+};
+
+ const debitWallet = async (userId, amount, note) => {
+  if (!userId || !amount || amount <= 0) throw new Error("Invalid parameters for debitWallet");
+  try {
+    const walletRes = await pool.query(
+      `SELECT balance FROM wallets WHERE user_id = $1`,
+      [userId]
+    );
+    if (!walletRes.rows.length || walletRes.rows[0].balance < amount) throw new Error("Insufficient balance");
+
+    await pool.query(
+      `INSERT INTO wallet_transactions (user_id, amount, type, note, created_at)
+       VALUES ($1, $2, 'debit', $3, CURRENT_TIMESTAMP)`,
+      [userId, amount, note]
+    );
+    await pool.query(
+      `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
+      [amount, userId]
+    );
+    return true;
+  } catch (error) {
+    console.error("Error debiting wallet:", error);
+    throw error;
+  }
+};
+
+export { getClientFinancialOverview, creditWallet, debitWallet };
