@@ -1,5 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
+import "./models/db.js";
 import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
@@ -28,9 +29,9 @@ import uploadRouter from './router/upload.js';
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import paymentsRouter from "./router/payments.js";
+import categoryRouter from "./router/category.js";
 
 // DB connection
-import "./models/db.js";
 dotenv.config();
 
 const app = express();
@@ -59,6 +60,7 @@ app.use(limiter);
 */
 
 // ✅ Routers
+app.use("/category", categoryRouter)
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);

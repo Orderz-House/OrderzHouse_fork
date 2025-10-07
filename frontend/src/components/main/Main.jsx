@@ -9,24 +9,6 @@ import Faq from './sections/Faq';
 import communityImg from "../../assets/community.jpg";
 
 export default function OrderzHousePageRedesign() {
-  const [openFaq, setOpenFaq] = useState(0);
-
-  const faqs = [
-    { question: "Do you offer a free trial?", answer: "No, a free trial is not necessary because we already provide a free plan." },
-    { question: "Can I upgrade or downgrade my plan?", answer: "Yes, but only after your current subscription period ends." },
-    { question: "Can I freeze my plan subscription?", answer: "No, plans cannot be frozen." },
-    { question: "When does my plan period start?", answer: "The plan time counter starts after you receive your first project." },
-    { question: "Can I deactivate my account?", answer: "Yes, you can deactivate your account, but only if you do not have any in-progress projects." },
-    { question: "What happens if I miss a project deadline?", answer: "If project deadlines are not met, the contract may be terminated." },
-    { question: "Do I need to pay for additional services?", answer: "Any additional services outside your selected plan may require extra fees, which will be clearly communicated before purchase." },
-    { question: "Are refunds available?", answer: "No refunds or returns are offered once a subscription is active." },
-    { question: "Is the free plan truly free?", answer: "Yes, the free plan includes limited features to get started with no payment required." },
-    { question: "Can I switch between monthly and annual billing?", answer: "You can choose your billing cycle when subscribing, but changes can only occur at the end of the current subscription period." },
-    { question: "Are there any hidden fees?", answer: "No, all fees including the one-time verification fee are clearly stated during the subscription process." },
-    { question: "What if I want to cancel my subscription?", answer: "You may cancel at any time, but no refunds are provided and your current plan will remain active until the end of the subscription period." },
-    { question: "Can I have multiple projects under the same plan?", answer: "Yes, your plan supports multiple projects, but the plan time counter starts when your first project is assigned." },
-  ]; 
-
   const handleSearch = (q) => console.log(q);
 
   return (

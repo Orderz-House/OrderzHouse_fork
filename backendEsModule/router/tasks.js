@@ -10,43 +10,42 @@ import {
   getUserRequestedTasks,
   getTaskRequests,
   updateTaskRequestStatus,
+  getTaskRequest
 } from "../controller/tasks.js";
 
 const taskRouter = express.Router();
 
+// Get my tasks
+taskRouter.get("/my-tasks", authentication, getFreelancerTasks);
 
-// Get tasks from all active freelancers
-taskRouter.get("/pool", getTaskPool);
+// Get task pool (other freelancers' tasks)
+taskRouter.get("/pool", authentication, getTaskPool);
 
-// Get tasks for a specific freelancer (no auth required)
-taskRouter.get("/freelancer/:freelancerId", getFreelancerTasks);
-
-// Get my own tasks (freelancer)
-taskRouter.get("/my", authentication, getFreelancerTasks);
-
-// Create a new task (freelancer)
+// Create new task
 taskRouter.post("/", authentication, createTask);
 
-// Update an existing task (freelancer)
+// Request a task (client)
+taskRouter.post("/request/:id", authentication, requestTask);
+
+// Update task
 taskRouter.put("/:id", authentication, updateTask);
 
-// Delete a task (freelancer)
+// Delete task
 taskRouter.delete("/:id", authentication, deleteTask);
 
-// Request a freelancer’s task (client)
-taskRouter.post("/:taskId/request", authentication, requestTask);
 
-// Get all tasks I requested (client)
-taskRouter.get("/requests/my", authentication, getUserRequestedTasks);
+// Get tasks requested by the logged-in client
+taskRouter.get("/requests/my", authentication, getUserRequestedTasks); // client
 
-// Get requests for my tasks (freelancer)
-taskRouter.get("/requests", authentication, getTaskRequests);
+// Get requests for a specific task (freelancer)
+taskRouter.get("/requests/:id", authentication, getTaskRequests);      // freelancer
 
-// Update a request’s status (freelancer accepts/rejects)
+// Get all pending requests for tasks owned by the authenticated freelancer
+taskRouter.get("/requests", authentication, getTaskRequest);      // freelancer
+
 taskRouter.patch(
   "/requests/:requestId/status",
   authentication,
   updateTaskRequestStatus
 );
-
 export default taskRouter;

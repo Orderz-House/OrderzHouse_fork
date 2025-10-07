@@ -6,7 +6,7 @@ import pool  from "../models/db.js";
  */
 
 // Notification types enum
-export const NOTIFICATION_TYPES = {
+ const NOTIFICATION_TYPES = {
   PROJECT_CREATED: "project_created",
   OFFER_SUBMITTED: "offer_submitted",
   OFFER_APPROVED: "offer_approved",
@@ -26,6 +26,10 @@ export const NOTIFICATION_TYPES = {
   APPOINTMENT_CANCELLED: "appointment_cancelled",
   REVIEW_SUBMITTED: "review_submitted",
   MESSAGE_RECEIVED: "message_received",
+  TASK_REQUESTED: "task_requested",
+  TASK_REQUEST_ACCEPTED: "task_request_accepted",
+  TASK_REQUEST_REJECTED: "task_request_rejected",
+  TASK_COMPLETED: "task_completed",
 };
 
 /**
@@ -37,7 +41,7 @@ export const NOTIFICATION_TYPES = {
  * @param {string} entityType - Type of related entity
  * @returns {Promise<Object>} Created notification
  */
-export const createNotification = async (
+ const createNotification = async (
   userId,
   type,
   message,
@@ -75,7 +79,7 @@ export const createNotification = async (
  * @param {string} entityType - Type of related entity
  * @returns {Promise<Array>} Array of created notifications
  */
-export const createBulkNotifications = async (
+ const createBulkNotifications = async (
   userIds,
   type,
   message,
@@ -120,7 +124,7 @@ export const createBulkNotifications = async (
  * @param {boolean} unreadOnly - Return only unread notifications
  * @returns {Promise<Array>} Array of notifications
  */
-export const getUserNotifications = async (
+ const getUserNotifications = async (
   userId,
   limit = 50,
   offset = 0,
@@ -158,7 +162,7 @@ export const getUserNotifications = async (
  * @param {number} userId - User ID (for security)
  * @returns {Promise<boolean>} Success status
  */
-export const markNotificationAsRead = async (notificationId, userId) => {
+ const markNotificationAsRead = async (notificationId, userId) => {
   try {
     const query = `
       UPDATE notifications 
@@ -180,7 +184,7 @@ export const markNotificationAsRead = async (notificationId, userId) => {
  * @param {number} userId - User ID
  * @returns {Promise<number>} Number of notifications updated
  */
-export const markAllNotificationsAsRead = async (userId) => {
+ const markAllNotificationsAsRead = async (userId) => {
   try {
     const query = `
       UPDATE notifications 
@@ -202,7 +206,7 @@ export const markAllNotificationsAsRead = async (userId) => {
  * @param {number} daysOld - Delete notifications older than this many days
  * @returns {Promise<number>} Number of notifications deleted
  */
-export const cleanupOldNotifications = async (daysOld = 90) => {
+ const cleanupOldNotifications = async (daysOld = 90) => {
   try {
     const query = `
       DELETE FROM notifications 
@@ -224,7 +228,7 @@ export const cleanupOldNotifications = async (daysOld = 90) => {
  * @param {boolean} unreadOnly - Count only unread notifications
  * @returns {Promise<number>} Notification count
  */
-export const getNotificationCount = async (userId, unreadOnly = false) => {
+ const getNotificationCount = async (userId, unreadOnly = false) => {
   try {
     let query = `
       SELECT COUNT(*) as count FROM notifications 
@@ -245,8 +249,9 @@ export const getNotificationCount = async (userId, unreadOnly = false) => {
   }
 };
 
+
 // Specific notification creators for common scenarios
-export const NotificationCreators = {
+ const NotificationCreators = {
   /**
    * Notify when a new project is created
    */
@@ -451,9 +456,74 @@ export const NotificationCreators = {
       throw error;
     }
   },
+    /**
+   * Notify freelancer when their task is requested
+   */
+  taskRequested: async (taskId, clientId, freelancerId, taskTitle) => {
+    try {
+      const message = `Your task "${taskTitle}" has been requested by a client.`;
+      return await createNotification(
+        freelancerId,
+        NOTIFICATION_TYPES.TASK_REQUESTED,
+        message,
+        taskId,
+        "task"
+      );
+    } catch (error) {
+      console.error("Error creating task requested notification:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Notify client when freelancer accepts or rejects their request
+   */
+  taskRequestStatusChanged: async (requestId, clientId, taskTitle, isAccepted) => {
+    try {
+      const message = isAccepted
+        ? `Your request for the task "${taskTitle}" has been accepted!`
+        : `Your request for the task "${taskTitle}" was rejected.`;
+
+      const type = isAccepted
+        ? NOTIFICATION_TYPES.TASK_REQUEST_ACCEPTED
+        : NOTIFICATION_TYPES.TASK_REQUEST_REJECTED;
+
+      return await createNotification(
+        clientId,
+        type,
+        message,
+        requestId,
+        "task_request"
+      );
+    } catch (error) {
+      console.error("Error creating task request status notification:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Notify freelancer when client marks task as completed
+   */
+  taskCompleted: async (taskId, freelancerId, taskTitle) => {
+    try {
+      const message = `The task "${taskTitle}" has been marked as completed.`;
+      return await createNotification(
+        freelancerId,
+        NOTIFICATION_TYPES.TASK_COMPLETED,
+        message,
+        taskId,
+        "task"
+      );
+    } catch (error) {
+      console.error("Error creating task completed notification:", error);
+      throw error;
+    }
+  },
+
 };
 
-export default {
+
+export {
   createNotification,
   createBulkNotifications,
   getUserNotifications,
@@ -462,5 +532,5 @@ export default {
   cleanupOldNotifications,
   getNotificationCount,
   NOTIFICATION_TYPES,
-  NotificationCreators,
+  NotificationCreators
 };

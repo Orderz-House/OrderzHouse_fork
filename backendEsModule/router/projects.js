@@ -8,8 +8,6 @@ import {
   assignProject,
   listUsersByRole,
   getRelatedFreelancers,
-  getCategories,
-  getSubCategories,
   getProjectById,
   updateAssignmentStatus,
   getAllProjectForOffer,
@@ -25,6 +23,7 @@ import {
   getProjectsByStatus,
   approveOrRejectOffer,
   completeHourlyProject,
+  getProjectsByCategoryId
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
@@ -150,15 +149,6 @@ projectsRouter.get(
   getCountProjectFreelancer
 );
 
-// ---------------------- Public Endpoints ----------------------
-
-// List categories
-projectsRouter.get("/public/categories", getCategories);
-
-// List subcategories by category ID
-projectsRouter.get("/public/categories/:categoryId/sub", getSubCategories);
-
-// ---------------------- Helper Endpoints ----------------------
 
 // List users by role
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
@@ -169,6 +159,11 @@ projectsRouter.post(
   authentication,
   requireVerified,
   approveOrRejectOffer
+);
+
+projectsRouter.get(
+  "/category/:categoryId",
+  getProjectsByCategoryId
 );
 
 export default projectsRouter;

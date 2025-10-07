@@ -297,19 +297,23 @@ const deleteUser = async (req, res) => {
     });
   }
 };
-const editUser = async (req, res) => {
-  const { userId } = req.params;
-  const {
-    first_name,
-    last_name,
-    email,
-    phone_number,
-    country,
-    username,
-    role_id,
-    profile_pic_url,
-    profilePicUrl,
-  } = req.body;
+
+
+export const updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.token?.userId; 
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const {
+      first_name,
+      last_name,
+      username,
+      phone_number,
+      country,
+      profile_pic_url,
+    } = req.body;
 
     const result = await pool.query(
       `UPDATE users

@@ -18,13 +18,75 @@ function calcCols() {
 // Component
 export default function CategoriesShowcase({
   title = "Popular services",
-  categories = SAMPLE,
+  categories = [],
   onSelect,
   pageSize = 5,
   loop = false,
 }) {
+  // Fetch categories from API
+  const [fetchedCategories, setFetchedCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch from backend on port 5000
+        const response = await fetch('http://localhost:5000/category');
+        
+        // Check if response is ok
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Check content type
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(`Expected JSON, got ${contentType}. The endpoint might not exist or is returning HTML.`);
+        }
+        
+        const data = await response.json();
+        
+        // Debug: Log the raw data from API
+        console.log('Raw API Response:', data);
+        console.log('First category:', data.categories?.[0]);
+        
+        if (data.success && data.categories) {
+          // Map database fields to component format
+          const mappedCategories = data.categories.map(cat => {
+            console.log('Mapping category:', cat.name, 'image_url:', cat.image_url);
+            return {
+              id: cat.id,
+              name: cat.name,
+              description: cat.description,
+              image: cat.image_url || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=70&auto=format&fit=crop',
+              tags: cat.related_words || [],
+              count: null,
+            };
+          });
+          console.log('Mapped categories:', mappedCategories);
+          setFetchedCategories(mappedCategories);
+        } else {
+          throw new Error('Invalid response format from API');
+        }
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Use fetched categories if available, otherwise fall back to prop categories
+  const allCategories = fetchedCategories.length > 0 ? fetchedCategories : categories;
+  
   // Slice
-  const cats = useMemo(() => categories.slice(0, 10), [categories]);
+  const cats = useMemo(() => allCategories.slice(0, 10), [allCategories]);
 
   // Columns
   const [cols, setCols] = useState(calcCols());
@@ -138,68 +200,99 @@ export default function CategoriesShowcase({
           </p>
         </div>
 
-        {/* Mobile */}
-        <div className="md:hidden">
-          <div className="relative">
-            <div
-              className="
-                flex gap-4 overflow-x-auto pb-2
-                snap-x snap-mandatory
-                [-ms-overflow-style:none] [scrollbar-width:none]
-              "
-              style={{ scrollBehavior: "smooth" }}
-            >
-              <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
-              {cats.map((cat) => (
+        {/* Loading state */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block w-8 h-8 border-4 border-[rgb(2,128,144)] border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-slate-600">Loading categories...</p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="text-center py-12">
+            <p className="text-red-600">Failed to load categories: {error}</p>
+          </div>
+        )}
+
+        {/* Content - only show when not loading and no error */}
+        {!loading && !error && cats.length > 0 && (
+          <>
+            {/* Mobile */}
+            <div className="md:hidden">
+              <div className="relative">
                 <div
-                  key={cat.id}
-                  className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]"
+                  className="
+                    flex gap-4 overflow-x-auto pb-2
+                    snap-x snap-mandatory
+                    [-ms-overflow-style:none] [scrollbar-width:none]
+                  "
+                  style={{ scrollBehavior: "smooth" }}
                 >
-                  <Card cat={cat} onClick={() => onSelect && onSelect(cat)} />
+                  <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
+                  {cats.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]"
+                    >
+                      <Card cat={cat} onClick={() => onSelect && onSelect(cat)} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Desktop */}
-        <div className="hidden md:block">
-          <div
-            className={`${grid} items-stretch`} // make-equal-heights
-            style={{
-              transition: `opacity ${D}ms ease, transform ${D}ms ease`,
-              ...anim,
-            }}
-          >
-            {visible.map((cat) => (
-              <Card
-                key={cat.id}
-                cat={cat}
-                onClick={() => onSelect && onSelect(cat)}
-              />
-            ))}
-          </div>
+            {/* Desktop */}
+            <div className="hidden md:block">
+              <div
+                className={`${grid} items-stretch`}
+                style={{
+                  transition: `opacity ${D}ms ease, transform ${D}ms ease`,
+                  ...anim,
+                }}
+              >
+                {visible.map((cat) => (
+                  <Card
+                    key={cat.id}
+                    cat={cat}
+                    onClick={() => onSelect && onSelect(cat)}
+                  />
+                ))}
+              </div>
 
-          {/* Controls */}
-          <NavButtons
-            onPrev={goPrev}
-            onNext={goNext}
-            hasPrev={loop || page > 0}
-            hasNext={loop || page < totalPages - 1}
-          />
+              {/* Controls - only show if there are multiple pages */}
+              {totalPages > 1 && (
+                <NavButtons
+                  onPrev={goPrev}
+                  onNext={goNext}
+                  hasPrev={loop || page > 0}
+                  hasNext={loop || page < totalPages - 1}
+                />
+              )}
 
-          {/* Dots */}
-          <div className="mt-6 flex items-center justify-center gap-2">
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
-                }`}
-              />
-            ))}
+              {/* Dots - only show if there are multiple pages */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && cats.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-slate-600">No categories available</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Styles */}
@@ -320,7 +413,7 @@ function Card({ cat, onClick }) {
             >
               {cat.name}
             </h3>
-            {typeof cat.count === "number" && (
+            {typeof cat.count === "number" && cat.count > 0 && (
               <span className="ml-0 inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[10px] tracking-wide whitespace-nowrap shrink-0">
                 {cat.count.toLocaleString()} jobs
               </span>
@@ -356,9 +449,9 @@ function Card({ cat, onClick }) {
 
           {cat.tags && cat.tags.length ? (
             <div className="mt-2 flex flex-wrap gap-1.5 min-h-[24px]">
-              {cat.tags.slice(0, 3).map((t) => (
+              {cat.tags.map((t, idx) => (
                 <span
-                  key={t}
+                  key={idx}
                   className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600"
                 >
                   {t}
@@ -392,107 +485,3 @@ function Card({ cat, onClick }) {
     </div>
   );
 }
-
-// Dataset
-const SAMPLE = [
-  {
-    id: "web",
-    name: "Website Development",
-    description:
-      "Landing pages, e-commerce, and bespoke websites built with React, Next.js and modern stacks.",
-    image:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=70&auto=format&fit=crop",
-    tags: ["React", "Next.js", "E-commerce"],
-    count: 324,
-  },
-  {
-    id: "design",
-    name: "UI/UX & Product Design",
-    description:
-      "Wireframes, design systems, and pixel-perfect prototypes to ship faster.",
-    image:
-      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Figma", "Design System", "Prototype"],
-    count: 210,
-  },
-  {
-    id: "video",
-    name: "Video Editing",
-    description:
-      "Shorts, ads, and cinematic edits for YouTube, TikTok, and campaigns.",
-    image:
-      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Premiere", "After Effects", "Color"],
-    count: 156,
-  },
-  {
-    id: "seo",
-    name: "SEO",
-    description:
-      "On-page, technical SEO, and content strategies that actually convert.",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=70&auto=format&fit=crop",
-    tags: ["On-page", "Technical", "Content"],
-    count: 298,
-  },
-  {
-    id: "ads",
-    name: "Digital Advertising",
-    description:
-      "Google Ads, Meta campaigns, and smart targeting to grow your business.",
-    image:
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Google", "Meta", "Campaigns"],
-    count: 187,
-  },
-  {
-    id: "content",
-    name: "Content Writing",
-    description:
-      "Blogs, landing copy, and product descriptions optimized for readability and SEO.",
-    image:
-      "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Copy", "Blog", "SEO"],
-    count: 132,
-  },
-  {
-    id: "mobile",
-    name: "Mobile App Development",
-    description:
-      "iOS and Android apps built with Flutter, React Native, or native stacks.",
-    image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=70&auto=format&fit=crop",
-    tags: ["iOS", "Android", "Flutter"],
-    count: 178,
-  },
-  {
-    id: "photo",
-    name: "Photography",
-    description:
-      "Product, lifestyle and event photography with studio-grade lighting.",
-    image:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Product", "Lifestyle", "Events"],
-    count: 96,
-  },
-  {
-    id: "data",
-    name: "Data Analysis",
-    description:
-      "Dashboards, KPI tracking and insights using Python, SQL and BI tools.",
-    image:
-      "https://images.unsplash.com/photo-1556155092-8707de31f9c4?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Python", "SQL", "BI"],
-    count: 141,
-  },
-  {
-    id: "support",
-    name: "Customer Support",
-    description:
-      "Multi-channel support, helpdesk setup and response automation.",
-    image:
-      "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?w=1200&q=70&auto=format&fit=crop",
-    tags: ["Helpdesk", "Zendesk", "Automation"],
-    count: 204,
-  },
-];

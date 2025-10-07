@@ -1,6 +1,6 @@
 import pool from "../models/db.js";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
-import { debitWallet, creditWallet } from "../services/walletService.js";
+import { debitWallet, creditWallet } from "./financial/financialService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 import cloudinary from "cloudinary";
 import multer from "multer";
