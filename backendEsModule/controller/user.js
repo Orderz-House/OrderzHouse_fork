@@ -1318,6 +1318,7 @@ const deactivateAccount = async (req, res) => {
 // ==================== EXPORTS ====================
 
 export {
+  getUserById,
   register,
   login,
   viewUsers,
