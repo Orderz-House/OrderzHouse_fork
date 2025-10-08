@@ -36,9 +36,11 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
     "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
     "recharts": "^3.2.0",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "speakeasy": "^2.0.0",
     "victory": "^37.3.6",
     "ws": "^8.18.3"
   },

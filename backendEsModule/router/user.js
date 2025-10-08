@@ -1,70 +1,52 @@
-// routes/users.js
 import express from "express";
 import {
   register,
   login,
   viewUsers,
   deleteUser,
-  updateMyProfile,
+  editUser,
   updateUser,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
   deleteFreelancerById,
   listOnlineUsers,
-  getUserById,
   getPortfolioByUserId,
   deletePortfolioFreelancer,
-  getFreelance,
   rateFreelancer,
   getTopFreelancers,
   getFreelanceById,
   checkVerificationStatus,
   updateVerificationStatus,
   getPortfolioByfreelance,
-  verifyFreelancerByAdmin,
+  getFreelance,
   rejectFreelancerByAdmin,
+  verifyFreelancerByAdmin,
+  verifyPassword,
+  updatePassword,
+  deactivateAccount,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js";
 import requireVerified from "../middleware/requireVerification.js";
 
 const usersRouter = express.Router();
-const router = express.Router();
-// Public routes
+
+// ==================== PUBLIC ROUTES ====================
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
+usersRouter.get("/freelancers/top-rated", getTopFreelancers);
+usersRouter.get("/allfreelance", getFreelance);
 
-// Authenticated routes
+// ==================== AUTHENTICATED ROUTES ====================
 usersRouter.get("/getUserdata", authentication, getUserById);
-
-// Freelancer profile routes
-usersRouter.get("/freelancers/:id", authentication, getFreelanceById); // Get single freelancer
-usersRouter.get("/freelancers", authentication, getFreelance); // Get all freelancers
-usersRouter.get("/freelancers/top-rated", getTopFreelancers); // Public top-rated
+usersRouter.get("/freelancers/:id", authentication, getFreelanceById);
+usersRouter.get("/freelancers", authentication, getFreelance);
 
 // Portfolio routes
-usersRouter.get(
-  "/freelancers/:id/portfolio",
-  authentication,
-  getPortfolioByUserId
-);
-usersRouter.post(
-  "/freelancers/portfolio/create",
-  authentication,
-  createPortfolio
-);
-usersRouter.put(
-  "/freelancers/portfolio/edit/:portfolioId",
-  authentication,
-  requireVerified,
-  editPortfolioFreelancer
-);
-usersRouter.delete(
-  "/freelancers/portfolio/delete",
-  authentication,
-  deletePortfolioFreelancer
-);
+usersRouter.get("/me/portfolio", authentication, getPortfolioByUserId);
+usersRouter.post("/portfolio", authentication, createPortfolio);
+usersRouter.put("/portfolio/:portfolioId", authentication, editPortfolioFreelancer);
+usersRouter.delete("/portfolio", authentication, deletePortfolioFreelancer);
 
 // Admin or authorized routes
 usersRouter.post(
@@ -77,7 +59,7 @@ usersRouter.delete(
   authentication,
   deleteUser
 );
-usersRouter.put("/edit", authentication, updateMyProfile);
+usersRouter.put("/edit/:userId", authentication, editUser);
 // Self-service user update (used by Edit Profile)
 usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(
@@ -99,57 +81,17 @@ usersRouter.get(
 // Rating
 usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
 
-// Verification
-usersRouter.get(
-  "/verification/status",
-  authentication,
-  checkVerificationStatus
-);
-usersRouter.post(
-  "/verification/update",
-  authentication,
-  updateVerificationStatus
-);
-usersRouter.get(
-  `/freelances/:userId/port`,
-  authentication,
-  getPortfolioByfreelance
-); // routes/users.js
-usersRouter.get("/allfreelance", getFreelance);
-usersRouter.put(
-  "/freelancers/:id/verify",
-  authentication,
-  verifyFreelancerByAdmin
-);
+// Password & Account Management
+usersRouter.post("/verify-password", authentication, verifyPassword);
+usersRouter.put("/update-password", authentication, updatePassword);
+usersRouter.put("/deactivate", authentication, deactivateAccount);
 
-usersRouter.put(
-  "/freelancers/:id/reject",
-  authentication,
-  rejectFreelancerByAdmin
-);
-// Get freelancer profile by ID
-router.get("/freelancers/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `SELECT id, first_name, last_name, username, email, phone_number, 
-              country, bio, profile_pic_url, category, rating, rating_count, 
-              violation_count, created_at, is_online
-       FROM users 
-       WHERE id = $1 AND role = 'freelancer'`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Freelancer not found" });
-    }
-
-    res.json({ success: true, freelancer: result.rows[0] });
-  } catch (err) {
-    console.error("Error fetching freelancer:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+// ==================== ADMIN ROUTES ====================
+usersRouter.get("/admin/users", authentication, viewUsers);
+usersRouter.delete("/admin/users/:id", authentication, deleteUser);
+usersRouter.get("/admin/freelancers/all", authentication, getAllFreelancers);
+usersRouter.delete("/admin/freelancers/:id", authentication, deleteFreelancerById);
+usersRouter.put("/admin/freelancers/:id/verify", authentication, verifyFreelancerByAdmin);
+usersRouter.put("/admin/freelancers/:id/reject", authentication, rejectFreelancerByAdmin);
 
 export default usersRouter;
