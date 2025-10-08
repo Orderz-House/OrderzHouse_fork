@@ -20,7 +20,7 @@ import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
-// import categoriesRouter from "./router/categories.js";
+import categoriesRouter from "./router/category.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
@@ -28,9 +28,6 @@ import earningsRouter from "./router/earning.js";
 import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
-import paymentsRouter from "./router/payments.js";
-import categoryRouter from "./router/category.js";
-
 // DB connection
 dotenv.config();
 
@@ -49,7 +46,7 @@ app.use(
   })
 );
 
-// ✅ Rate limiter (optional)
+// Rate limiter (optional)
 /*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -60,7 +57,7 @@ app.use(limiter);
 */
 
 // ✅ Routers
-app.use("/category", categoryRouter)
+app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
@@ -80,9 +77,8 @@ app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
-app.use("/payments", paymentsRouter);
 
-// ✅ Admin init
+//Admin init
 (async () => {
   await AdminInit(app);
 })();

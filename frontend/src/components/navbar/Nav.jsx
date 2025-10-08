@@ -45,6 +45,7 @@ export default function EnhancedNavbar() {
       const response = await axios.get("http://localhost:5000/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
+      });
 
       });
       } );
@@ -62,7 +63,7 @@ export default function EnhancedNavbar() {
       const response = await axios.get("http://localhost:5000/notifications/count", {
         headers: { authorization: `Bearer ${token}` },
         params: { unreadOnly: true },
-      } );
+      });
       if (response.data.success) {
         setUnreadCount(response.data.count);
       }
@@ -77,7 +78,7 @@ export default function EnhancedNavbar() {
         `http://localhost:5000/notifications/${notificationId}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications(
         notifications.map((notif) =>
           notif.id === notificationId ? { ...notif, is_read: true } : notif
@@ -95,7 +96,7 @@ export default function EnhancedNavbar() {
         "http://localhost:5000/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications(notifications.map((notif) => ({ ...notif, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -128,7 +129,7 @@ export default function EnhancedNavbar() {
   // Effects
   useEffect(() => {
     if (token && !userData) {
-      axios.get(`http://localhost:5000/users/getUserdata`, { headers: { authorization: `Bearer ${token}` } } )
+      axios.get(`http://localhost:5000/users/getUserdata`, { headers: { authorization: `Bearer ${token}` } })
         .then((res) => {
           dispatch(setUserData({ ...res.data.user, is_online: true }));
         })
@@ -172,13 +173,15 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Updated navLinks array with "SECTIONS"
+
 
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     { label: "ABOUT US", path: "/about", condition: true },
     { label: "NEWS", path: "/news", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
-    { label: "PROJECTS", path: "/dashboard/projects", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
+    { label: "SECTIONS", path: "/dashboard/sections", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
     { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
   ];
 
@@ -186,7 +189,6 @@ export default function EnhancedNavbar() {
     <nav className="relative top-0 left-0 right-0 z-[9999] bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-23">
-          
           {/* Logo */}
           <div className="flex items-center">
             <button onClick={() => handleNavigation("/", "HOME")} className="flex-shrink-0 flex items-center group cursor-pointer">
@@ -213,8 +215,6 @@ export default function EnhancedNavbar() {
                 <>
                   <button onClick={() => handleNavigation("/admin-verification", "VERIFICATION")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"}`}>
                     VERIFICATION
-                    <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === "VERIFICATION" ? "w-full" : "w-0 group-hover:w-full"}`}></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">VERIFICATION</span>
                   </button>
 
                   <button
@@ -248,8 +248,6 @@ export default function EnhancedNavbar() {
 
                   <button onClick={() => handleNavigation("/news/admin", "NEWS PENDING")} className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"}`}>
                     NEWS PENDING
-                    <span className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${activeLink === "NEWS PENDING" ? "w-full" : "w-0 group-hover:w-full"}`}></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">NEWS PENDING</span>
                   </button>
                 </>
               )}
@@ -270,7 +268,7 @@ export default function EnhancedNavbar() {
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -408,27 +406,22 @@ export default function EnhancedNavbar() {
                 <>
                   <div className="px-4 py-2">
                     <p className="font-medium text-gray-900 font-inter">{userData.first_name} {userData.last_name}</p>
-                    <p className="text-sm text-gray-500 break-words font-inter">{userData.email}</p>
+                    <p className="text-sm text-gray-500 break-words mt-1 font-inter">{userData.email}</p>
                   </div>
-                  <Link to="/notifications" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left px-4 py-3 text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter">
-                    <Bell className="h-4 w-4" />
-                    <span>Notifications</span>
-                    {unreadCount > 0 && <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
-                  </Link>
-                  <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left px-4 py-3 text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter">
-                    <Settings className="h-4 w-4" />
-                    <span>Profile Settings</span>
-                  </Link>
-                  <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter">
+                  <button onClick={() => { handleNavigation(userData.role_id === 3 ? "/freelancer/dashboard" : "/client/dashboard", "Dashboard"); setIsMobileMenuOpen(false); }} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#028090] transition-all duration-200 font-inter">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </button>
+                  <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200 font-inter">
                     <LogOut className="h-4 w-4" />
                     <span>Sign Out</span>
                   </button>
                 </>
               ) : (
-                <>
-                  <button onClick={() => { handleLogin(); setIsMobileMenuOpen(false); }} className="w-full px-4 py-3 text-left text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 font-inter">Sign In</button>
-                  <button onClick={() => { handleRegister(); setIsMobileMenuOpen(false); }} className="w-full px-4 py-3 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white font-medium rounded-2xl shadow-lg transform hover:scale-[1.02] transition-all duration-200 font-inter">Get Started</button>
-                </>
+                <div className="flex flex-col space-y-2 px-4">
+                  <button onClick={handleLogin} className="px-6 py-2.5 text-gray-700 hover:text-[#028090] font-medium transition-all duration-200 hover:bg-gray-50 rounded-2xl font-inter">Sign In</button>
+                  <button onClick={handleRegister} className="px-6 py-2.5 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white font-medium rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-inter">Get Started</button>
+                </div>
               )}
             </div>
           </div>

@@ -15,6 +15,8 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
+  Shield,
+  KeyRound,
 } from "lucide-react";
 import loginImage from "../../assets/login.png";
 
@@ -26,51 +28,120 @@ const Login = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState("");
+  const [show2FAInput, setShow2FAInput] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
   const navigate = useNavigate();
 
   const login = (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setMessage("");
 
     axios
       .post("http://localhost:5000/users/login", {
-        email,
+        email: email.toLowerCase(),
         password,
+        twoFactorToken: requires2FA ? twoFactorToken : undefined,
       })
       .then((res) => {
+        // Handle 2FA requirement
+        if (res.data.twoFactorRequired && !requires2FA) {
+          setRequires2FA(true);
+          setShow2FAInput(true);
+          setMessage("Please enter your 2FA verification code");
+          setIsLoading(false);
+          return;
+        }
+
+        // Successful login
         dispatch(
           setLogin({
             token: res.data.token,
             userId: res.data.userId,
             roleId: res.data.role,
             is_verified: res.data.is_verified,
+            userInfo: res.data.userInfo,
           })
         );
+        
         setStatus(true);
-        setMessage("Login successful!");
+        setMessage("Login successful! Redirecting...");
         setIsLoading(false);
+        
+        // Connect socket and navigate
         connectSocket(res.data.token, res.data.userId);
-        navigate("/");
+        
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       })
       .catch((err) => {
         setStatus(false);
-        setMessage(
-          err.response?.data?.message ||
-            "Login failed. Please check your credentials."
-        );
+        const errorMessage = err.response?.data?.message || 
+                           err.response?.data?.error || 
+                           "Login failed. Please check your credentials.";
+        
+        setMessage(errorMessage);
         setIsLoading(false);
+        
+        // Reset 2FA state on error
+        if (requires2FA) {
+          setRequires2FA(false);
+          setShow2FAInput(false);
+          setTwoFactorToken("");
+        }
       });
+  };
+
+  const handleGoogleSuccess = (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      console.log("Google User:", decoded);
+
+      dispatch(
+        setLogin({
+          token: credentialResponse.credential,
+          userId: decoded.sub,
+          roleId: "2", // Default to client role for Google sign-in
+          is_verified: true, // Google users are typically verified
+        })
+      );
+
+      setStatus(true);
+      setMessage("Google login successful! Redirecting...");
+      connectSocket(credentialResponse.credential, decoded.sub);
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+    } catch (error) {
+      setStatus(false);
+      setMessage("Google login failed. Please try again.");
+      console.error("Google login error:", error);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setStatus(false);
+    setMessage("Google login failed. Please try again.");
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setTwoFactorToken("");
+    setShow2FAInput(false);
+    setRequires2FA(false);
+    setMessage("");
+    setShowPassword(false);
   };
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Decorative Waves Behind Container */}
-      
-
       {/* Main Container */}
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 xl:px-16">
         <div className="flex items-center justify-center max-w-7xl w-full">
-          
           <div className="w-full max-w-6xl relative z-10">
             <div className="text-center mb-4">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-2 font-serif leading-tight">
@@ -102,8 +173,8 @@ const Login = () => {
                       />
                       <div className="hidden w-full h-48 lg:h-64 bg-gradient-to-br from-blue-100 via-teal-100 to-green-100 rounded-2xl flex-col items-center justify-center text-gray-500">
                         <div className="text-6xl mb-4">🔐</div>
-                        <p className="text-xl font-serif text-center font-bold">Login Image</p>
-                        <p className="text-sm text-center mt-2 px-4">Check your assets/login.png file path</p>
+                        <p className="text-xl font-serif text-center font-bold">Secure Login</p>
+                        <p className="text-sm text-center mt-2 px-4">Access your freelancer marketplace account</p>
                       </div>
                     </div>
                   </div>
@@ -112,78 +183,125 @@ const Login = () => {
                   <div className="flex-1 w-full">
                     <div className="text-center lg:text-left mb-6">
                       <h2 className="text-2xl lg:text-3xl font-medium text-gray-900 font-serif">
-                        Sign in to your account
+                        {requires2FA ? "Two-Factor Authentication" : "Sign in to your account"}
                       </h2>
                       <p className="text-gray-600 mt-2 font-serif text-base lg:text-lg">
-                        Enter your credentials to access your dashboard
+                        {requires2FA 
+                          ? "Enter the verification code from your authenticator app" 
+                          : "Enter your credentials to access your dashboard"}
                       </p>
                     </div>
 
-                    <div className="space-y-5">
-                      {/* Email */}
-                      <div>
-                        <label htmlFor="email" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
-                          Email Address
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Mail className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                    <form onSubmit={login} className="space-y-5">
+                      {/* Email - Only show if not in 2FA mode */}
+                      {!requires2FA && (
+                        <div>
+                          <label htmlFor="email" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                            Email Address
+                          </label>
+                          <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
+                              <Mail className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                            </div>
+                            <input
+                              type="email"
+                              id="email"
+                              placeholder="Enter your email address"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              required
+                              disabled={isLoading}
+                              className="pl-12 w-full px-5 py-3 lg:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base lg:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
                           </div>
-                          <input
-                            type="email"
-                            id="email"
-                            placeholder="Enter your email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 lg:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base lg:text-lg"
-                          />
                         </div>
-                      </div>
+                      )}
 
-                      {/* Password */}
-                      <div>
-                        <label htmlFor="password" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
-                          Password
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Lock className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                      {/* Password - Only show if not in 2FA mode */}
+                      {!requires2FA && (
+                        <div>
+                          <label htmlFor="password" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                            Password
+                          </label>
+                          <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
+                              <Lock className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                            </div>
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              id="password"
+                              placeholder="Enter your password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required
+                              disabled={isLoading}
+                              className="pl-12 pr-12 w-full px-5 py-3 lg:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base lg:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-teal-600 transition-colors disabled:opacity-50"
+                              onClick={() => setShowPassword(!showPassword)}
+                              disabled={isLoading}
+                            >
+                              {showPassword ? 
+                                <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" /> : 
+                                <Eye className="h-6 w-6 text-gray-400 hover:text-teal-600" />
+                              }
+                            </button>
                           </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            id="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="pl-12 pr-12 w-full px-5 py-3 lg:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base lg:text-lg"
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-teal-600 transition-colors"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" /> : <Eye className="h-6 w-6 text-gray-400 hover:text-teal-600" />}
-                          </button>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Remember Me */}
-                      <div className="flex items-center">
-                        <input id="remember-me" name="remember-me" type="checkbox" className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
-                        <label htmlFor="remember-me" className="ml-3 block text-base lg:text-lg text-gray-700 font-serif">
-                          Remember me
-                        </label>
-                      </div>
+                      {/* 2FA Input - Only show when required */}
+                      {show2FAInput && (
+                        <div className="animate-fadeIn">
+                          <label htmlFor="2fa" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                            Verification Code
+                          </label>
+                          <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
+                              <Shield className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                            </div>
+                            <input
+                              type="text"
+                              id="2fa"
+                              placeholder="Enter 6-digit code"
+                              value={twoFactorToken}
+                              onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              maxLength="6"
+                              required
+                              disabled={isLoading}
+                              className="pl-12 w-full px-5 py-3 lg:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base lg:text-lg text-center tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                          <p className="text-sm text-gray-500 mt-2 text-center">
+                            Enter the code from your authenticator app
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Remember Me - Only show if not in 2FA mode */}
+                      {!requires2FA && (
+                        <div className="flex items-center">
+                          <input 
+                            id="remember-me" 
+                            name="remember-me" 
+                            type="checkbox" 
+                            className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" 
+                            disabled={isLoading}
+                          />
+                          <label htmlFor="remember-me" className="ml-3 block text-base lg:text-lg text-gray-700 font-serif">
+                            Remember me
+                          </label>
+                        </div>
+                      )}
 
                       {/* Submit Button */}
                       <div>
                         <button
                           type="submit"
                           disabled={isLoading}
-                          onClick={login}
-                          className="w-full py-3 lg:py-4 px-6 bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 text-white font-semibold rounded-xl hover:from-teal-600 hover:via-green-500 hover:to-green-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center hover:shadow-lg transform hover:-translate-y-0.5 relative overflow-hidden group font-serif text-base lg:text-lg"
+                          className="w-full py-3 lg:py-4 px-6 bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 text-white font-semibold rounded-xl hover:from-teal-600 hover:via-green-500 hover:to-green-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center hover:shadow-lg transform hover:-translate-y-0.5 relative overflow-hidden group font-serif text-base lg:text-lg disabled:cursor-not-allowed"
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           <div className="relative z-10 flex items-center">
@@ -193,82 +311,88 @@ const Login = () => {
                                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Signing in...
+                                {requires2FA ? 'Verifying...' : 'Signing in...'}
                               </>
                             ) : (
                               <>
-                                <LogIn className="w-6 h-6 mr-2" />
-                                Sign in
+                                {requires2FA ? <KeyRound className="w-6 h-6 mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
+                                {requires2FA ? 'Verify & Sign In' : 'Sign in'}
                               </>
                             )}
                           </div>
                         </button>
                       </div>
 
-                      {/* Divider */}
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-300"></div>
+                      {/* Back to regular login button when in 2FA mode */}
+                      {requires2FA && (
+                        <div className="text-center">
+                          <button
+                            type="button"
+                            onClick={resetForm}
+                            disabled={isLoading}
+                            className="text-teal-600 hover:text-teal-700 font-semibold text-base font-serif disabled:opacity-50"
+                          >
+                            ← Back to email login
+                          </button>
                         </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-2 bg-white text-gray-500 font-serif">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
+                      )}
 
-                      {/* Google Login */}
-                      <div className="flex justify-center">
-                        <GoogleLogin
-                          onSuccess={(credentialResponse) => {
-                            const decoded = jwtDecode(credentialResponse.credential);
-                            console.log("Google User:", decoded);
+                      {/* Divider - Only show if not in 2FA mode */}
+                      {!requires2FA && (
+                        <>
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <div className="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                              <span className="px-2 bg-white text-gray-500 font-serif">
+                                Or continue with
+                              </span>
+                            </div>
+                          </div>
 
-                            dispatch(
-                              setLogin({
-                                token: credentialResponse.credential,
-                                userId: decoded.sub,
-                                roleId: "2",
-                              })
-                            );
-
-                            setStatus(true);
-                            setMessage("Google login successful!");
-                            connectSocket(credentialResponse.credential, decoded.sub);
-
-                            setTimeout(() => {
-                              navigate("/");
-                            }, 1000);
-                          }}
-                          onError={() => {
-                            setStatus(false);
-                            setMessage("Google login failed. Please try again.");
-                          }}
-                          theme="filled_blue"
-                          size="large"
-                          shape="pill"
-                          text="signin_with"
-                        />
-                      </div>
-                    </div>
+                          {/* Google Login */}
+                          <div className="flex justify-center">
+                            <GoogleLogin
+                              onSuccess={handleGoogleSuccess}
+                              onError={handleGoogleError}
+                              theme="filled_blue"
+                              size="large"
+                              shape="pill"
+                              text="signin_with"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </form>
 
                     {/* Status Message */}
                     {message && (
-                      <div className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm ${status ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}>
-                        {status ? <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" /> : <AlertCircle className="w-6 h-6 mt-0.5 mr-3 text-red-500 flex-shrink-0" />}
+                      <div className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm animate-fadeIn ${
+                        status ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"
+                      }`}>
+                        {status ? 
+                          <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" /> : 
+                          <AlertCircle className="w-6 h-6 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
+                        }
                         <p className="text-base font-serif">{message}</p>
                       </div>
                     )}
 
-                    {/* Sign Up Link */}
-                    <div className="mt-6 text-center pt-4 border-t border-gray-200">
-                      <p className="text-base lg:text-lg text-gray-600 font-serif">
-                        Don't have an account?{" "}
-                        <a href="/register" className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif">
-                          Sign up now <ArrowRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </a>
-                      </p>
-                    </div>
+                    {/* Sign Up Link - Only show if not in 2FA mode */}
+                    {!requires2FA && (
+                      <div className="mt-6 text-center pt-4 border-t border-gray-200">
+                        <p className="text-base lg:text-lg text-gray-600 font-serif">
+                          Don't have an account?{" "}
+                          <a 
+                            href="/register" 
+                            className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif"
+                          >
+                            Sign up now <ArrowRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </a>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -276,6 +400,17 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Add custom animation */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
