@@ -3,7 +3,6 @@ import fs from "fs";
 import cloudinary from "../cloudinary/setupfile.js";
 
 
-//  list categories
 export const getCategories = async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -17,6 +16,21 @@ export const getCategories = async (_req, res) => {
       success: true,
       categories: rows,
     });
+
+      `
+      SELECT 
+        id, 
+        name, 
+        description, 
+        image_url, 
+        related_words
+      FROM categories
+      WHERE is_deleted = false
+      ORDER BY id ASC;
+      `
+    );
+
+    return res.json({ success: true, categories: rows });
   } catch (error) {
     console.error("getCategories error:", error);
     return res
