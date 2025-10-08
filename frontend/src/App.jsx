@@ -9,7 +9,7 @@ import PrivacyPolicyPage from "./components/policy/Policy";
 import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
 import ContactUsPage from "./components/contact/Contact";
-// import Login from "./components/login/Login";
+import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import VerifyProfile from "./components/profile/VerifyProfile";
@@ -41,7 +41,6 @@ import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans"; 
 import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
-import AdminLayout from "./adminDash/layout/AdminLayout";
 
 function App() {
   const location = useLocation();
@@ -79,7 +78,7 @@ function App() {
         <Route path="/about" element={<ModernAboutPage />} />
         <Route path="/plans" element={<Plans />} /> 
         <Route path="/contact" element={<ContactUsPage />} />
-        <Route path="/login" element={<AdminLayout />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
         <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>
