@@ -369,7 +369,7 @@ const Login = () => {
                     {/* Status Message */}
                     {message && (
                       <div className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm animate-fadeIn ${
-                        status ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"
+                        status ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-blue-800 border-green-200"
                       }`}>
                         {status ? 
                           <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" /> : 

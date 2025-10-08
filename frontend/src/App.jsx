@@ -41,6 +41,8 @@ import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans"; 
 import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
+import Appointments from './components/Appointments/Appointments';
+
 
 function App() {
   const location = useLocation();
@@ -103,6 +105,7 @@ function App() {
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+        <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
 
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}

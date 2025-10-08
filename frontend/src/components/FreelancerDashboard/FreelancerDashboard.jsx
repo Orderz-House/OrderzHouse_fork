@@ -14,6 +14,7 @@ import {
   LogOut,
   Loader,
   CreditCard,
+  Calendar,
   BookOpen
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";
 import MyCourses from "./MyCourses";
+import Appointments from "../Appointments/Appointments";
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
@@ -143,13 +145,15 @@ const Dashboard = () => {
     switch (activeSection) {
       case "projects":
         return <FreelancerProjects />;
-      case "MyCourses":
+      case "appointments":
+        return <Appointments />;
+      case "myCourses":
         return <MyCourses />;
       case "tasks":
         return <FreelancerTasks />;
       case "payments":
         return <Payments />;
-      case "Settings":
+      case "settings":
         return <EditProfile />;
       case "profile":
         return <ProfileView />;
@@ -201,7 +205,7 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Project Stats - Simplified */}
+          {/* Project Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CountCard
               title="Active projects"
@@ -265,14 +269,24 @@ const Dashboard = () => {
             <Briefcase className="w-5 h-5 mr-3" /> Projects
           </button>
           <button
-            onClick={() => setActiveSection("MyCourses")}
+            onClick={() => setActiveSection("myCourses")}
             className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "MyCourses"
+              activeSection === "myCourses"
                 ? "bg-blue-100 text-blue-700"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <BookOpen className="w-5 h-5 mr-3" /> My Courses
+          </button>
+          <button
+            onClick={() => setActiveSection("appointments")}
+            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+              activeSection === "appointments"
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <Calendar className="w-5 h-5 mr-3" /> My Appointments
           </button>
           <button
             onClick={() => setActiveSection("payments")}
@@ -305,9 +319,9 @@ const Dashboard = () => {
             <User className="w-5 h-5 mr-3" /> Profile
           </button>
           <button
-            onClick={() => setActiveSection("Settings")}
+            onClick={() => setActiveSection("settings")}
             className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "Settings"
+              activeSection === "settings"
                 ? "bg-blue-100 text-blue-700"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
@@ -327,12 +341,12 @@ const Dashboard = () => {
       <div className="flex-1 overflow-auto">
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 capitalize">
-            {activeSection === "MyCourses" ? "My Courses" : activeSection}
+            {activeSection === "myCourses" ? "My Courses" : activeSection}
           </h1>
           <p className="text-sm text-gray-600">
             {activeSection === "dashboard"
               ? `Welcome back, ${userData?.first_name || userData?.name || "Freelancer"}!`
-              : `Manage your ${activeSection === "MyCourses" ? "courses" : activeSection}`}
+              : `Manage your ${activeSection === "myCourses" ? "courses" : activeSection}`}
           </p>
         </div>
         <div className="max-w-7xl mx-auto px-6 py-8">{renderActiveSection()}</div>
