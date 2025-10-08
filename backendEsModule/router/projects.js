@@ -23,7 +23,9 @@ import {
   getProjectsByStatus,
   approveOrRejectOffer,
   completeHourlyProject,
-  getProjectsByCategoryId
+  getProjectsByCategoryId,
+  getProjectsBySubCategoryId,
+ getProjectsBySubSubCategoryId
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
@@ -149,6 +151,8 @@ projectsRouter.get(
   getCountProjectFreelancer
 );
 
+projectsRouter.get("/subcategory/:subCategoryId", getProjectsBySubCategoryId);
+projectsRouter.get("/subsubcategory/:subSubCategoryId", getProjectsBySubSubCategoryId);
 
 // List users by role
 projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);

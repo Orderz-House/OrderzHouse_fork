@@ -60,6 +60,8 @@ app.use(limiter);
 
 // ✅ Routers
 
+
+app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
