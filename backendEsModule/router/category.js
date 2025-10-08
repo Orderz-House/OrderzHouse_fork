@@ -5,12 +5,12 @@ import { createCategory, getCategories , getSubCategories} from "../controller/c
 const categoryRouter = express.Router();
 
 // view categories
-categoryRouter.get("/", getCategories);
+categoryRouter.get("./categories/:categoryId", getCategories);
 
 // view sub categories by category id (not used currently)
 categoryRouter.get("/subcategories/:categoryId", getSubCategories);
 
 //create new category
-categoryRouter.post("/", createCategory);
+categoryRouter.post("./categories/:categoryId", createCategory);
 
 export default categoryRouter;
