@@ -20,7 +20,7 @@ import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
-// import categoriesRouter from "./router/categories.js";
+import categoriesRouter from "./router/category.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
@@ -57,6 +57,7 @@ app.use(limiter);
 */
 
 // ✅ Routers
+app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
