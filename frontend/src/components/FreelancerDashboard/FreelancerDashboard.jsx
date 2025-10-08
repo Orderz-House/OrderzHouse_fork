@@ -13,7 +13,8 @@ import {
   User,
   LogOut,
   Loader,
-  CreditCard
+  CreditCard,
+  BookOpen
 } from "lucide-react";
 
 import FreelancerProjects from "./FreelancerProjects";
@@ -21,6 +22,7 @@ import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";
+import MyCourses from "./MyCourses";
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
@@ -36,7 +38,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   const fetchProjectCounts = async () => {
-    // Check if we have required data
     if (!token) {
       setError("Authentication token missing");
       setIsLoading(false);
@@ -57,8 +58,6 @@ const Dashboard = () => {
           timeout: 10000
         }
       );
-
-      console.log("API Response:", res.data);
 
       if (res.data && res.data.success) {
         const counts = res.data.counts || {};
@@ -104,9 +103,6 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Debug logging
-    console.log("Dashboard mounted - UserData:", userData, "Token:", token ? "Present" : "Missing");
-    
     if (token && userData?.id) {
       fetchDashboardData();
     } else {
@@ -119,10 +115,36 @@ const Dashboard = () => {
     fetchDashboardData();
   };
 
+  const CountCard = ({ title, count, icon, action, onAction, loading, isActionCard = false }) => (
+    <div
+      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
+      onClick={onAction}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          {loading ? (
+            <Loader className="h-5 w-5 animate-spin text-gray-400 mt-1" />
+          ) : (
+            !isActionCard && <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
+          )}
+        </div>
+        <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
+      </div>
+      {action && (
+        <button className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+          {action} <ArrowUpRight className="w-4 h-4 ml-1" />
+        </button>
+      )}
+    </div>
+  );
+
   const renderActiveSection = () => {
     switch (activeSection) {
       case "projects":
         return <FreelancerProjects />;
+      case "MyCourses":
+        return <MyCourses />;
       case "tasks":
         return <FreelancerTasks />;
       case "payments":
@@ -180,7 +202,7 @@ const Dashboard = () => {
           </div>
 
           {/* Project Stats - Simplified */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CountCard
               title="Active projects"
               count={dashboardData.activeProjects}
@@ -207,82 +229,14 @@ const Dashboard = () => {
               isActionCard={true}
             />
           </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <ActionButton
-                title="View Projects"
-                description="Manage your projects"
-                icon={<Briefcase className="w-5 h-5" />}
-                onClick={() => setActiveSection("projects")}
-              />
-              <ActionButton
-                title="Payment History"
-                description="Check your earnings"
-                icon={<CreditCard className="w-5 h-5" />}
-                onClick={() => setActiveSection("payments")}
-              />
-              <ActionButton
-                title="Tasks"
-                description="View assigned tasks"
-                icon={<LayoutGrid className="w-5 h-5" />}
-                onClick={() => setActiveSection("tasks")}
-              />
-              <ActionButton
-                title="Profile"
-                description="Update your profile"
-                icon={<User className="w-5 h-5" />}
-                onClick={() => setActiveSection("profile")}
-              />
-            </div>
-          </div>
         </>
       )}
     </>
   );
 
-  const CountCard = ({ title, count, icon, action, onAction, loading, isActionCard = false }) => (
-    <div
-      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
-      onClick={onAction}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          {loading ? (
-            <Loader className="h-5 w-5 animate-spin text-gray-400 mt-1" />
-          ) : (
-            !isActionCard && <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
-          )}
-        </div>
-        <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
-      </div>
-      {action && (
-        <button className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
-          {action} <ArrowUpRight className="w-4 h-4 ml-1" />
-        </button>
-      )}
-    </div>
-  );
-
-  const ActionButton = ({ title, description, icon, onClick }) => (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center"
-    >
-      <div className="p-2 bg-blue-100 rounded-lg text-blue-600 mb-2">
-        {icon}
-      </div>
-      <h4 className="font-medium text-gray-900">{title}</h4>
-      <p className="text-sm text-gray-600 mt-1">{description}</p>
-    </button>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - Updated with Payments */}
+      {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">Freelancer Hub</h1>
@@ -309,6 +263,16 @@ const Dashboard = () => {
             }`}
           >
             <Briefcase className="w-5 h-5 mr-3" /> Projects
+          </button>
+          <button
+            onClick={() => setActiveSection("MyCourses")}
+            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+              activeSection === "MyCourses"
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <BookOpen className="w-5 h-5 mr-3" /> My Courses
           </button>
           <button
             onClick={() => setActiveSection("payments")}
@@ -363,12 +327,12 @@ const Dashboard = () => {
       <div className="flex-1 overflow-auto">
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 capitalize">
-            {activeSection}
+            {activeSection === "MyCourses" ? "My Courses" : activeSection}
           </h1>
           <p className="text-sm text-gray-600">
             {activeSection === "dashboard"
               ? `Welcome back, ${userData?.first_name || userData?.name || "Freelancer"}!`
-              : `Manage your ${activeSection}`}
+              : `Manage your ${activeSection === "MyCourses" ? "courses" : activeSection}`}
           </p>
         </div>
         <div className="max-w-7xl mx-auto px-6 py-8">{renderActiveSection()}</div>
