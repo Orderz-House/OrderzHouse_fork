@@ -5,9 +5,9 @@ import { createCategory, getCategories } from "../controller/category.js";
 const categoryRouter = express.Router();
 
 // view categories
-categoryRouter.get("/", getCategories);
+categoryRouter.get("./categories/:categoryId", getCategories);
 
 //create new category
-categoryRouter.post("/", createCategory);
+categoryRouter.post("./categories/:categoryId", createCategory);
 
 export default categoryRouter;

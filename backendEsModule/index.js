@@ -20,7 +20,7 @@ import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
-// import categoriesRouter from "./router/categories.js";
+import categoriesRouter from "./router/category.js";
 import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import adminRouter from "./router/adminUsers.js";
@@ -28,6 +28,8 @@ import earningsRouter from "./router/earning.js";
 import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
+import authRouter from "./router/auth.js";
+
 // DB connection
 dotenv.config();
 
@@ -57,11 +59,13 @@ app.use(limiter);
 */
 
 // ✅ Routers
+
 app.use("/tasks", tasksRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
 app.use("/earnings", earningsRouter);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/category", categoriesRouter);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
@@ -72,11 +76,10 @@ app.use("/feedbacks", feedbackRouter);
 app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
-// app.use("/categories", categoriesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
-
+app.use('/api/auth', authRouter);
 //Admin init
 (async () => {
   await AdminInit(app);

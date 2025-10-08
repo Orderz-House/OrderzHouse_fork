@@ -161,6 +161,8 @@ export default function EnhancedNavbar() {
     { label: "CONTACT", path: "/contact", condition: true },
     { label: "PROJECTS", path: "/dashboard/projects", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
     { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
+    { label: "CATEGORIES", path: "/projectsPage", condition: true },
+
   ];
 
   return (
@@ -275,8 +277,16 @@ export default function EnhancedNavbar() {
             {IsAuthenticated && userData ? (
               <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200" aria-label="User menu">
-                  <div className="w-8 h-8 bg-gradient-to-br from-[#028090] to-[#026e7a] rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#028090] to-[#026e7a] rounded-full flex items-center justify-center overflow-hidden">
+                  {userData.profile_pic_url ? (
+                     <img 
+                       src={userData.profile_pic_url} 
+                       alt="Profile" 
+                       className="w-full h-full object-cover"
+                     />
+                 ) : (
+                       <User className="h-4 w-4 text-white" />
+                     )}
                   </div>
                   <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
                 </button>
