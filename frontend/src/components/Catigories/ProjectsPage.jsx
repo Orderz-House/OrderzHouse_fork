@@ -5,7 +5,8 @@ import axios from "axios";
 import TopbarCategories from "./TopbarCategories.jsx";
 import CategoryBar from "./CategoryBar.jsx";
 import ProjectCard from "./ProjectCard.jsx";
-import Pagination from "./Pagination.jsx"; // ← جديد
+import Pagination from "./Pagination.jsx";
+import Navbar from "./Navbar.jsx";
 
 // ===== Theme & Catalog =====
 const THEME = "#028090";
@@ -325,6 +326,7 @@ export default function ProjectsPage() {
 
   return (
     <section className="relative min-h-[70vh] py-8 sm:py-10 md:py-12">
+            {/* <Navbar /> */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <TopbarCategories
           active={category}
