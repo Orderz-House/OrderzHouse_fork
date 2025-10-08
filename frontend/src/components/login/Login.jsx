@@ -18,7 +18,7 @@ import {
   Shield,
   KeyRound,
 } from "lucide-react";
-import loginImage from "../../assets/login.png";
+import GradientButton from "../buttons/GradientButton.jsx";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -141,7 +141,7 @@ const Login = () => {
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Main Container */}
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 xl:px-16">
-        <div className="flex items-center justify-center max-w-7xl w-full">
+        <div className="flex items-center justify-center max-w-2xl w-full">
           <div className="w-full max-w-6xl relative z-10">
             <div className="text-center mb-4">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-2 font-serif leading-tight">
@@ -158,26 +158,6 @@ const Login = () => {
 
               <div className="relative z-10">
                 <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
-                  
-                  {/* Left Side - Image */}
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
-                      <img 
-                        src={loginImage}
-                        alt="Login Illustration"
-                        className="w-full h-auto object-contain drop-shadow-xl rounded-2xl"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div className="hidden w-full h-48 lg:h-64 bg-gradient-to-br from-blue-100 via-teal-100 to-green-100 rounded-2xl flex-col items-center justify-center text-gray-500">
-                        <div className="text-6xl mb-4">🔐</div>
-                        <p className="text-xl font-serif text-center font-bold">Secure Login</p>
-                        <p className="text-sm text-center mt-2 px-4">Access your freelancer marketplace account</p>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Right Side - Form */}
                   <div className="flex-1 w-full">
@@ -298,29 +278,27 @@ const Login = () => {
 
                       {/* Submit Button */}
                       <div>
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full py-3 lg:py-4 px-6 bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 text-white font-semibold rounded-xl hover:from-teal-600 hover:via-green-500 hover:to-green-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center hover:shadow-lg transform hover:-translate-y-0.5 relative overflow-hidden group font-serif text-base lg:text-lg disabled:cursor-not-allowed"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          <div className="relative z-10 flex items-center">
-                            {isLoading ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                {requires2FA ? 'Verifying...' : 'Signing in...'}
-                              </>
-                            ) : (
-                              <>
-                                {requires2FA ? <KeyRound className="w-6 h-6 mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
-                                {requires2FA ? 'Verify & Sign In' : 'Sign in'}
-                              </>
-                            )}
-                          </div>
-                        </button>
+
+<GradientButton type="submit" disabled={isLoading}>
+  <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+  <div className="relative z-10 flex items-center">
+    {isLoading ? (
+      <>
+        <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {requires2FA ? 'Verifying...' : 'Signing in...'}
+      </>
+    ) : (
+      <>
+        {requires2FA ? <KeyRound className="w-6 h-6 mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
+        {requires2FA ? 'Verify & Sign In' : 'Sign in'}
+      </>
+    )}
+  </div>
+</GradientButton>
+
                       </div>
 
                       {/* Back to regular login button when in 2FA mode */}
