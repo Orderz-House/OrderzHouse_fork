@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import axios from "axios";
+import GradientButton from "../../buttons/GradientButton.jsx";
 
 // Theme
 const THEME = "#028090";
@@ -322,15 +323,9 @@ export default function HeroFreelancer({ onSearch }) {
                 />
               </svg>
             </div>
-            <button
-              className="rounded-2xl px-5 py-3 text-white font-medium shadow-lg hover:shadow-xl transition"
-              style={{
-                background: `linear-gradient(90deg, ${DARK}, ${THEME})`,
-              }}
-              onClick={() => onSearch?.("")}
-            >
-              Explore talents
-            </button>
+      <GradientButton >
+        Explore talents
+      </GradientButton>
           </div>
 
           {/* Stats */}

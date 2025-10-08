@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Users, Briefcase, Handshake } from "lucide-react";
 
 import HeroSection from './sections/Hero';

@@ -36,6 +36,7 @@ export default function ContactUsPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setSubmitStatus("success");
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       setSubmitStatus("error");
     } finally {
