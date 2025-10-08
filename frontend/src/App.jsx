@@ -43,6 +43,7 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import Appointments from './components/Appointments/Appointments';
 
+import AdminLayout from "./test admin/layout/AdminLayout.jsx";
 
 function App() {
   const location = useLocation();
@@ -106,6 +107,7 @@ function App() {
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+        <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
 
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
