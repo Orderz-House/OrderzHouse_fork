@@ -1,3 +1,5 @@
+import { authentication } from "../middleware/authentication.js"; 
+
 import express from "express";
 import {
   makeAppointment,

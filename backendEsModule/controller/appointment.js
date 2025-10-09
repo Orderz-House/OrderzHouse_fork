@@ -1,5 +1,5 @@
 import pool from "../models/db.js";
-
+import { authentication } from "../middleware/authentication.js"; 
 const makeAppointment = (req, res) => {
   const freelancer_id = req.token?.userId;
   const { appointment_date, message, appointment_type } = req.body;
