@@ -13,7 +13,6 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import VerifyProfile from "./components/profile/VerifyProfile";
-import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
@@ -43,10 +42,9 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
-
-import AdminLayout from "./test admin/layout/AdminLayout.jsx";
+import AdminLayout from "./adminDash/layout/AdminLayout.jsx";
 import CreateProject from "./components/createProject/CreateProject";
-
+import ManageCourses from "./adminDash/pages/ManageCourses";
 function App() {
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
@@ -131,6 +129,7 @@ function App() {
         
         <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
         {/* <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} /> */}
+        <Route path="/manageCourses" element={<ProtectedRoute><ManageCourses/></ProtectedRoute>}/>
 
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
