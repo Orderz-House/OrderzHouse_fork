@@ -7,14 +7,27 @@ import cloudinary from "../cloudinary/setupfile.js";
 export const getCategories = async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, description, image_url, related_words FROM categories ORDER BY id ASC`
+      `SELECT id, name, description, image_url, related_words
+       FROM categories
+       WHERE is_deleted = false
+       ORDER BY id ASC`
+      `SELECT id, name, description, image_url, related_words FROM categories 
+      WHERE is_deleted = false 
+      ORDER BY id ASC`
     );
-    return res.json({ success: true, categories: rows });
+
+    return res.json({
+      success: true,
+      categories: rows,
+    });
   } catch (error) {
     console.error("getCategories error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
+
 
 //  list sub categories by category id (not used currently)
 export const getSubCategories = async (req, res) => {
@@ -30,6 +43,33 @@ export const getSubCategories = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+export const getSubSubCategoriesByCategoryId = async (req, res) => {
+  const { categoryId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT 
+        ssc.id AS sub_sub_category_id,
+        ssc.name AS sub_sub_category_name,
+        ssc.description AS sub_sub_category_description,
+        sc.id AS sub_category_id,
+        sc.name AS sub_category_name,
+        c.id AS category_id,
+        c.name AS category_name
+      FROM sub_sub_categories ssc
+      JOIN sub_categories sc ON ssc.sub_category_id = sc.id
+      JOIN categories c ON sc.category_id = c.id
+      WHERE c.id = $1
+      ORDER BY sc.id, ssc.id;`,
+      [categoryId]
+    );
+
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 
 // Create a new category

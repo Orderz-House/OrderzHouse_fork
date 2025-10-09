@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
+import "./index.css";
 import "animate.css";
 import Counter from "./counter/Counter";
 import Navbar from "./components/navbar/Nav";
@@ -7,7 +8,6 @@ import EnhancedFooter from "./components/footer/Footer";
 import PrivacyPolicyPage from "./components/policy/Policy";
 import ModernAboutPage from "./components/about/About";
 import OrderzHousePage from "./components/main/Main";
-import Ask from "./components/ask/Ask";
 import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
@@ -45,6 +45,7 @@ import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
 
 import AdminLayout from "./test admin/layout/AdminLayout.jsx";
+import CreateProject from "./components/createProject/CreateProject";
 
 function App() {
   const location = useLocation();
@@ -98,7 +99,6 @@ function App() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/about" element={<ModernAboutPage />} />
         <Route path="/plans" element={<Plans />} /> 
-        <Route path="/ask-more" element={<Ask />} />
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -130,6 +130,7 @@ function App() {
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
         <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
+        {/* <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} /> */}
 
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
