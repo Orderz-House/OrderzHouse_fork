@@ -29,6 +29,7 @@ import uploadRouter from './router/upload.js';
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
+import offersRouter from "./router/offers.js";
 
 // DB connection
 dotenv.config();
@@ -61,6 +62,7 @@ app.use(limiter);
 // Routers
 
 app.use("/tasks", tasksRouter);
+app.use("/offers", offersRouter);
 app.use("/uploads", uploadRouter);
 app.use("/admins", adminRouter);
 app.use("/earnings", earningsRouter);

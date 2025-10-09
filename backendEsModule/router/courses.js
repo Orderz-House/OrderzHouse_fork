@@ -3,7 +3,6 @@ import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
-  getCategories,
   getCourses,
   getCoursesByCategory,
   getCourseById,
@@ -18,8 +17,7 @@ import {
 
 const coursesRouter = express.Router();
 
-/* Categories */
-coursesRouter.get("/categories", getCategories);
+
 
 /* Courses */
 coursesRouter.get("/view", authentication, getCourses);
