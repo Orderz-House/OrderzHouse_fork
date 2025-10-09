@@ -20,6 +20,8 @@ import {
   Shield,
   Check,
 } from "lucide-react";
+import GradientButton from '../buttons/GradientButton.jsx';
+
 
 const countries = [
   "Afghanistan",
@@ -328,9 +330,9 @@ const Register = () => {
 
   // Handle category selection
   const handleCategoryToggle = (categoryId) => {
-    setSelectedCategories(prev => {
+    setSelectedCategories((prev) => {
       if (prev.includes(categoryId)) {
-        return prev.filter(id => id !== categoryId);
+        return prev.filter((id) => id !== categoryId);
       } else {
         return [...prev, categoryId];
       }
@@ -339,7 +341,7 @@ const Register = () => {
 
   // Remove category from selection
   const removeCategory = (categoryId) => {
-    setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+    setSelectedCategories((prev) => prev.filter((id) => id !== categoryId));
   };
 
   const register = (e) => {
@@ -409,12 +411,9 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      
-
       {/* Main Container - Fixed Width */}
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 xl:px-16 py-8">
         <div className="flex items-center justify-center w-full max-w-7xl mx-auto">
-          
           {/* Registration Container - Fixed Width */}
           <div className="w-full max-w-6xl relative z-10">
             {/* Header */}
@@ -431,16 +430,12 @@ const Register = () => {
             <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden shadow-sm max-h-[85vh] overflow-y-auto">
               {/* Background gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl opacity-80"></div>
-              
-              <div className="relative z-10">
-              
 
+              <div className="relative z-10">
                 <form onSubmit={register} className="space-y-5">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    
                     {/* Left Column - Fixed Width */}
                     <div className="space-y-5 min-h-0">
-                      
                       {/* Role Selection */}
                       <div>
                         <label
@@ -479,22 +474,28 @@ const Register = () => {
                               Choose your areas of expertise (select multiple)
                             </span>
                           </label>
-                          
+
                           {/* Selected Categories Display - Fixed Height with Scroll */}
                           {selectedCategories.length > 0 && (
                             <div className="mb-4 max-h-20 overflow-y-auto">
                               <div className="flex flex-wrap gap-2">
                                 {selectedCategories.map((categoryId) => {
-                                  const category = categories.find(cat => cat.id === categoryId);
+                                  const category = categories.find(
+                                    (cat) => cat.id === categoryId
+                                  );
                                   return category ? (
                                     <div
                                       key={categoryId}
                                       className="inline-flex items-center bg-gradient-to-r from-teal-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm flex-shrink-0"
                                     >
-                                      <span className="truncate max-w-24">{category.name}</span>
+                                      <span className="truncate max-w-24">
+                                        {category.name}
+                                      </span>
                                       <button
                                         type="button"
-                                        onClick={() => removeCategory(categoryId)}
+                                        onClick={() =>
+                                          removeCategory(categoryId)
+                                        }
                                         className="ml-2 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors flex-shrink-0"
                                       >
                                         <X className="h-3 w-3" />
@@ -513,18 +514,24 @@ const Register = () => {
                                 <button
                                   key={category.id}
                                   type="button"
-                                  onClick={() => handleCategoryToggle(category.id)}
+                                  onClick={() =>
+                                    handleCategoryToggle(category.id)
+                                  }
                                   className={`p-3 rounded-lg border-2 transition-all duration-200 font-medium text-left ${
                                     selectedCategories.includes(category.id)
-                                      ? 'border-teal-500 bg-teal-50 text-teal-700'
-                                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
                                   }`}
                                 >
                                   <div className="flex items-center">
-                                    {selectedCategories.includes(category.id) && (
+                                    {selectedCategories.includes(
+                                      category.id
+                                    ) && (
                                       <Check className="w-4 h-4 text-teal-600 mr-2" />
                                     )}
-                                    <span className="truncate">{category.name}</span>
+                                    <span className="truncate">
+                                      {category.name}
+                                    </span>
                                   </div>
                                 </button>
                               ))}
@@ -582,33 +589,31 @@ const Register = () => {
                       </div>
 
                       <div>
-    <label htmlFor="username" className="block text-base font-semibold text-gray-700 mb-2 font-serif">
-      Username
-    </label>
-    <div className="relative group">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-        <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-      </div>
-      <input
-        type="text"
-        id="username"
-        placeholder="Choose a username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        required
-        className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-      />
-    </div>
-  </div>
-
-
-                      
-
+                        <label
+                          htmlFor="username"
+                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
+                        >
+                          Username
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
+                            <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            id="username"
+                            placeholder="Choose a username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Right Column - Fixed Width */}
                     <div className="space-y-5 min-h-0">
-                      
                       {/* Email */}
                       <div>
                         <label
@@ -666,38 +671,89 @@ const Register = () => {
                             )}
                           </button>
                         </div>
-                        
-                       {/* Password Strength Indicator */}
-  <div className="mt-2">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-sm font-medium text-gray-700">Password Strength:</span>
-      <span className={`text-sm font-semibold ${passwordStrengthInfo.color}`}>
-        {passwordStrengthInfo.text}
-      </span>
-    </div>
 
-    {/* 2-column grid for the 4 checks */}
-    <div className="grid grid-cols-2 gap-2">
-      <div className={`flex items-center text-xs ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-400'}`}>
-        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-300'}`} />
-        At least 8 characters
-      </div>
-      <div className={`flex items-center text-xs ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-400'}`}>
-        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasUpperCase ? 'text-green-600' : 'text-gray-300'}`} />
-        One uppercase letter
-      </div>
-      <div className={`flex items-center text-xs ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-400'}`}>
-        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasLowerCase ? 'text-green-600' : 'text-gray-300'}`} />
-        One lowercase letter
-      </div>
-      <div className={`flex items-center text-xs ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
-        <Check className={`w-3 h-3 mr-2 ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-300'}`} />
-        One number
-      </div>
-    </div>
-  </div>
+                        {/* Password Strength Indicator */}
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              Password Strength:
+                            </span>
+                            <span
+                              className={`text-sm font-semibold ${passwordStrengthInfo.color}`}
+                            >
+                              {passwordStrengthInfo.text}
+                            </span>
+                          </div>
 
-</div>
+                          {/* 2-column grid for the 4 checks */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div
+                              className={`flex items-center text-xs ${
+                                passwordStrength.hasMinLength
+                                  ? "text-green-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              <Check
+                                className={`w-3 h-3 mr-2 ${
+                                  passwordStrength.hasMinLength
+                                    ? "text-green-600"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                              At least 8 characters
+                            </div>
+                            <div
+                              className={`flex items-center text-xs ${
+                                passwordStrength.hasUpperCase
+                                  ? "text-green-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              <Check
+                                className={`w-3 h-3 mr-2 ${
+                                  passwordStrength.hasUpperCase
+                                    ? "text-green-600"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                              One uppercase letter
+                            </div>
+                            <div
+                              className={`flex items-center text-xs ${
+                                passwordStrength.hasLowerCase
+                                  ? "text-green-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              <Check
+                                className={`w-3 h-3 mr-2 ${
+                                  passwordStrength.hasLowerCase
+                                    ? "text-green-600"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                              One lowercase letter
+                            </div>
+                            <div
+                              className={`flex items-center text-xs ${
+                                passwordStrength.hasNumber
+                                  ? "text-green-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              <Check
+                                className={`w-3 h-3 mr-2 ${
+                                  passwordStrength.hasNumber
+                                    ? "text-green-600"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                              One number
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Country */}
                       <div>
@@ -752,8 +808,6 @@ const Register = () => {
                           />
                         </div>
                       </div>
-
-                     
                     </div>
                   </div>
 
@@ -771,26 +825,29 @@ const Register = () => {
                       className="ml-3 block text-base text-gray-700 font-serif"
                     >
                       I agree to the{" "}
-                      <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold transition-colors">
+                      <a
+                        href="#"
+                        className="text-teal-600 hover:text-blue-600 font-semibold transition-colors"
+                      >
                         Terms and Conditions
                       </a>{" "}
                       and{" "}
-                      <a href="#" className="text-teal-600 hover:text-blue-600 font-semibold transition-colors">
+                      <a
+                        href="#"
+                        className="text-teal-600 hover:text-blue-600 font-semibold transition-colors"
+                      >
                         Privacy Policy
                       </a>
                     </label>
                   </div>
 
                   {/* Submit Button */}
-                  <div>
-                    <button
-                      type="submit"
+                  <div className="flex items-center justify-center">
+                    <GradientButton
+                      className="px-16 flex items-center justify-center "
                       disabled={isLoading}
-                      className="w-full py-3 lg:py-4 px-6 bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 text-white font-semibold rounded-xl hover:from-teal-600 hover:via-green-500 hover:to-green-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center hover:shadow-lg transform hover:-translate-y-0.5 relative overflow-hidden group font-serif text-base lg:text-lg"
                     >
                       {/* Button background animation */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
                       <div className="relative z-10 flex items-center">
                         {isLoading ? (
                           <>
@@ -823,7 +880,7 @@ const Register = () => {
                           </>
                         )}
                       </div>
-                    </button>
+                    </GradientButton>
                   </div>
                 </form>
 
@@ -853,7 +910,7 @@ const Register = () => {
                       href="/login"
                       className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif"
                     >
-                      Sign in now 
+                      Sign in now
                       <ArrowLeft className="ml-1 h-5 w-5 group-hover:-translate-x-1 transition-transform rotate-180" />
                     </a>
                   </p>

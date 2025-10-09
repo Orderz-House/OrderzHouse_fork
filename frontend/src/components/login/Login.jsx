@@ -64,27 +64,28 @@ const Login = () => {
             userInfo: res.data.userInfo,
           })
         );
-        
+
         setStatus(true);
         setMessage("Login successful! Redirecting...");
         setIsLoading(false);
-        
+
         // Connect socket and navigate
         connectSocket(res.data.token, res.data.userId);
-        
+
         setTimeout(() => {
           navigate("/");
         }, 1500);
       })
       .catch((err) => {
         setStatus(false);
-        const errorMessage = err.response?.data?.message || 
-                           err.response?.data?.error || 
-                           "Login failed. Please check your credentials.";
-        
+        const errorMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Login failed. Please check your credentials.";
+
         setMessage(errorMessage);
         setIsLoading(false);
-        
+
         // Reset 2FA state on error
         if (requires2FA) {
           setRequires2FA(false);
@@ -158,16 +159,17 @@ const Login = () => {
 
               <div className="relative z-10">
                 <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
-
                   {/* Right Side - Form */}
                   <div className="flex-1 w-full">
                     <div className="text-center lg:text-left mb-6">
                       <h2 className="text-2xl lg:text-3xl font-medium text-gray-900 font-serif">
-                        {requires2FA ? "Two-Factor Authentication" : "Sign in to your account"}
+                        {requires2FA
+                          ? "Two-Factor Authentication"
+                          : "Sign in to your account"}
                       </h2>
                       <p className="text-gray-600 mt-2 font-serif text-base lg:text-lg">
-                        {requires2FA 
-                          ? "Enter the verification code from your authenticator app" 
+                        {requires2FA
+                          ? "Enter the verification code from your authenticator app"
                           : "Enter your credentials to access your dashboard"}
                       </p>
                     </div>
@@ -176,7 +178,10 @@ const Login = () => {
                       {/* Email - Only show if not in 2FA mode */}
                       {!requires2FA && (
                         <div>
-                          <label htmlFor="email" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                          <label
+                            htmlFor="email"
+                            className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif"
+                          >
                             Email Address
                           </label>
                           <div className="relative group">
@@ -200,7 +205,10 @@ const Login = () => {
                       {/* Password - Only show if not in 2FA mode */}
                       {!requires2FA && (
                         <div>
-                          <label htmlFor="password" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                          <label
+                            htmlFor="password"
+                            className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif"
+                          >
                             Password
                           </label>
                           <div className="relative group">
@@ -223,10 +231,11 @@ const Login = () => {
                               onClick={() => setShowPassword(!showPassword)}
                               disabled={isLoading}
                             >
-                              {showPassword ? 
-                                <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" /> : 
+                              {showPassword ? (
+                                <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" />
+                              ) : (
                                 <Eye className="h-6 w-6 text-gray-400 hover:text-teal-600" />
-                              }
+                              )}
                             </button>
                           </div>
                         </div>
@@ -235,7 +244,10 @@ const Login = () => {
                       {/* 2FA Input - Only show when required */}
                       {show2FAInput && (
                         <div className="animate-fadeIn">
-                          <label htmlFor="2fa" className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif">
+                          <label
+                            htmlFor="2fa"
+                            className="block text-base lg:text-lg font-semibold text-gray-700 mb-2 font-serif"
+                          >
                             Verification Code
                           </label>
                           <div className="relative group">
@@ -247,7 +259,11 @@ const Login = () => {
                               id="2fa"
                               placeholder="Enter 6-digit code"
                               value={twoFactorToken}
-                              onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              onChange={(e) =>
+                                setTwoFactorToken(
+                                  e.target.value.replace(/\D/g, "").slice(0, 6)
+                                )
+                              }
                               maxLength="6"
                               required
                               disabled={isLoading}
@@ -263,42 +279,63 @@ const Login = () => {
                       {/* Remember Me - Only show if not in 2FA mode */}
                       {!requires2FA && (
                         <div className="flex items-center">
-                          <input 
-                            id="remember-me" 
-                            name="remember-me" 
-                            type="checkbox" 
-                            className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" 
+                          <input
+                            id="remember-me"
+                            name="remember-me"
+                            type="checkbox"
+                            className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
                             disabled={isLoading}
                           />
-                          <label htmlFor="remember-me" className="ml-3 block text-base lg:text-lg text-gray-700 font-serif">
+                          <label
+                            htmlFor="remember-me"
+                            className="ml-3 block text-base lg:text-lg text-gray-700 font-serif"
+                          >
                             Remember me
                           </label>
                         </div>
                       )}
 
                       {/* Submit Button */}
-                      <div>
-
-<GradientButton type="submit" disabled={isLoading}>
-  <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-  <div className="relative z-10 flex items-center">
-    {isLoading ? (
-      <>
-        <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        {requires2FA ? 'Verifying...' : 'Signing in...'}
-      </>
-    ) : (
-      <>
-        {requires2FA ? <KeyRound className="w-6 h-6 mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
-        {requires2FA ? 'Verify & Sign In' : 'Sign in'}
-      </>
-    )}
-  </div>
-</GradientButton>
-
+                      <div className="flex items-center justify-center">
+                        <GradientButton type="submit" disabled={isLoading}>
+                          <div className="inset-0 bg-gradient-to-r from-teal-600 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="relative z-10 flex items-center px-16">
+                            {isLoading ? (
+                              <>
+                                <svg
+                                  className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                {requires2FA ? "Verifying..." : "Signing in..."}
+                              </>
+                            ) : (
+                              <>
+                                {requires2FA ? (
+                                  <KeyRound className="w-6 h-6 mr-2" />
+                                ) : (
+                                  <LogIn className="w-6 h-6 mr-2" />
+                                )}
+                                {requires2FA ? "Verify & Sign In" : "Sign in"}
+                              </>
+                            )}
+                          </div>
+                        </GradientButton>
                       </div>
 
                       {/* Back to regular login button when in 2FA mode */}
@@ -346,13 +383,18 @@ const Login = () => {
 
                     {/* Status Message */}
                     {message && (
-                      <div className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm animate-fadeIn ${
-                        status ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"
-                      }`}>
-                        {status ? 
-                          <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" /> : 
+                      <div
+                        className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm animate-fadeIn ${
+                          status
+                            ? "bg-green-50 text-green-800 border-green-200"
+                            : "bg-red-50 text-red-800 border-red-200"
+                        }`}
+                      >
+                        {status ? (
+                          <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" />
+                        ) : (
                           <AlertCircle className="w-6 h-6 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
-                        }
+                        )}
                         <p className="text-base font-serif">{message}</p>
                       </div>
                     )}
@@ -362,11 +404,12 @@ const Login = () => {
                       <div className="mt-6 text-center pt-4 border-t border-gray-200">
                         <p className="text-base lg:text-lg text-gray-600 font-serif">
                           Don't have an account?{" "}
-                          <a 
-                            href="/register" 
+                          <a
+                            href="/register"
                             className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif"
                           >
-                            Sign up now <ArrowRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                            Sign up now{" "}
+                            <ArrowRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                           </a>
                         </p>
                       </div>
@@ -382,8 +425,14 @@ const Login = () => {
       {/* Add custom animation */}
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
