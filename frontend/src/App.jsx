@@ -13,7 +13,6 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import VerifyProfile from "./components/profile/VerifyProfile";
-import CreateProject from "./components/createProject/CreateProject";
 import ProjectDetails from "./components/projects/ProjectDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
@@ -43,7 +42,7 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import Appointments from './components/Appointments/Appointments';
 
-import AdminLayout from "./test admin/layout/AdminLayout.jsx";
+// import AdminLayout from "./test admin/layout/AdminLayout.jsx";
 import CreateProject from "./components/createProject/CreateProject";
 
 function App() {
@@ -107,8 +106,6 @@ function App() {
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-        <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
-        {/* <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} /> */}
 
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
