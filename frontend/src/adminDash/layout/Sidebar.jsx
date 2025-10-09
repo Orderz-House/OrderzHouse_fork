@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { FaBars } from "react-icons/fa";
-import {
+//import { FaBars } from "react-icons/fa";
+/*import {
   FiHome,
   FiUser,
   FiUsers,
@@ -15,24 +15,24 @@ import {
   FiBarChart2,
   FiLayers,
 } from "react-icons/fi";
-
+*/
 const SECTIONS = [
   {
     title: "GENERAL",
-    items: [{ to: "/admin", label: "Overview", icon: FiHome, exact: true }],
+    items: [{ to: "/admin", label: "Overview",  exact: true }],
   },
   {
     title: "USERS",
     items: [
-      { to: "/admin/people/clients", label: "Clients", icon: FiUser },
-      { to: "/admin/people/freelancers", label: "Freelancers", icon: FiUsers },
+      { to: "/admin/people/clients", label: "Clients",  },
+      { to: "/admin/people/freelancers", label: "Freelancers"},
     ],
   },
   {
     title: "LEARNING",
     items: [
-      { to: "/admin/learning/courses", label: "Courses", icon: FiBookOpen },
-      { to: "/admin/learning/categories", label: "Categories", icon: FiTag },
+      { to: "/admin/learning/courses", label: "Courses"},
+      { to: "/admin/learning/categories", label: "Categories"},
     ],
   },
   {
@@ -41,30 +41,28 @@ const SECTIONS = [
       {
         to: "/admin/operations/appointments",
         label: "Appointments",
-        icon: FiCalendar,
       },
       {
         to: "/admin/operations/verifications",
         label: "Verifications",
-        icon: FiShield,
       },
-      { to: "/admin/projects", label: "Projects", icon: FiBriefcase },
+      { to: "/admin/projects", label: "Projects", },
     ],
   },
   {
     title: "COMMUNITY",
-    items: [{ to: "/admin/news", label: "News", icon: FiFileText }],
+    items: [{ to: "/admin/news", label: "News", }],
   },
   {
     title: "FINANCE",
     items: [
-      { to: "/admin/finance/payments", label: "Payments", icon: FiCreditCard },
-      { to: "/admin/finance/plans", label: "Plans", icon: FiLayers },
+      { to: "/admin/finance/payments", label: "Payments",},
+      { to: "/admin/finance/plans", label: "Plans", },
     ],
   },
   {
     title: "INSIGHTS",
-    items: [{ to: "/admin/analytics", label: "Analytics", icon: FiBarChart2 }],
+    items: [{ to: "/admin/analytics", label: "Analytics",}],
   },
 ];
 
@@ -116,7 +114,7 @@ export default function Sidebar() {
             <div
               className={`flex flex-col gap-1 ${open ? "" : "items-center"}`}
             >
-              {section.items.map(({ to, label, icon: Icon, exact }) => (
+              {section.items.map(({ to, label, exact }) => (
                 <NavLink
                   key={to}
                   to={to}

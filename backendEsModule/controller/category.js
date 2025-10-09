@@ -11,6 +11,9 @@ export const getCategories = async (_req, res) => {
        FROM categories
        WHERE is_deleted = false
        ORDER BY id ASC`
+      `SELECT id, name, description, image_url, related_words FROM categories 
+      WHERE is_deleted = false 
+      ORDER BY id ASC`
     );
 
     return res.json({
