@@ -19,7 +19,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
-import FreelancerDashboard from "./components/freelancerDashboard/FreelancerDashboard";
+import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
@@ -42,7 +42,7 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import Appointments from './components/Appointments/Appointments';
 
-import AdminLayout from "./test admin/layout/AdminLayout.jsx";
+import AdminLayout from "./adminDash/layout/AdminLayout.jsx";
 
 function App() {
   const location = useLocation();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { VscDebugRestart } from "react-icons/vsc";
 
 export default function PeopleTable({
   title,
@@ -219,14 +220,12 @@ export default function PeopleTable({
             />
           ))}
 
-          {(q || chip || Object.values(filterValues).some(Boolean)) && (
-            <button
-              onClick={resetFilters}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
-            >
-              Reset
-            </button>
-          )}
+          <button
+            onClick={resetFilters}
+            className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
+          >
+            <VscDebugRestart />
+          </button>
         </div>
       </div>
 
