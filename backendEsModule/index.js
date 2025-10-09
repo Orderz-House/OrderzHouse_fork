@@ -73,7 +73,7 @@ app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/orders", ordersRouter);
 app.use("/feedbacks", feedbackRouter);
-app.use("/api/appointments", appointmentsRouter);
+app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
