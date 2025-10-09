@@ -9,6 +9,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import GradientButton from '../buttons/GradientButton.jsx';
+
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
     name: "",
@@ -178,13 +180,13 @@ export default function ContactUsPage() {
                   className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
                 />
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-[#028090] to-[#02C39A] text-white font-semibold rounded-xl hover:from-[#05668D] hover:to-[#00A896] transition"
-                >
-                  {isSubmitting ? "Sending..." : "Send Message"}
-                </button>
+               <GradientButton
+  className="w-full md:w-auto px-6 py-3 font-semibold"
+  onClick={handleSubmit} 
+  disabled={isSubmitting}
+>
+  {isSubmitting ? "Sending..." : "Send Message"}
+</GradientButton>
               </form>
             </div>
           </div>
