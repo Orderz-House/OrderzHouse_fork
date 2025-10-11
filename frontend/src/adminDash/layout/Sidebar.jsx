@@ -128,7 +128,7 @@ export default function Sidebar() {
           open ? "px-3 py-3" : "p-2 text-center"
         }`}
       >
-        {open ? "© 2024" : "©"}
+        {open ? "© 2025" : "©"}
       </div>
     </aside>
   );
