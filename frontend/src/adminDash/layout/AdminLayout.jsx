@@ -37,16 +37,8 @@ const adminSections = [
   {
     title: "OPERATIONS",
     items: [
-      {
-        to: "/admin/operation/appointments",
-        label: "Appointments",
-        icon: FiCalendar,
-      },
-      {
-        to: "/admin/operation/verifications",
-        label: "Verifications",
-        icon: FiShield,
-      },
+      { to: "/admin/operation/appointments", label: "Appointments", icon: FiCalendar },
+      { to: "/admin/operation/verifications", label: "Verifications", icon: FiShield },
       { to: "/admin/operation/projects", label: "Projects", icon: FiBriefcase },
     ],
   },
@@ -75,14 +67,6 @@ export default function AdminLayout() {
 
       {/* المحتوى الرئيسي */}
       <main className="flex-1 px-4 md:px-6 pt-[104px] md:pt-6">
-
- 
-
-export default function AdminLayout() {
-  return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800">
-      <Sidebar />
-      <main className="flex-1 p-6">
         <Outlet />
       </main>
     </div>
