@@ -72,6 +72,7 @@ export default function Sidebar({ sections = [] }) {
             ))}
           </div>
         </nav>
+        {open ? "© 2025" : "©"}
       </div>
 
       {/* ===== Desktop Sidebar (md+) ===== */}
