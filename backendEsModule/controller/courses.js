@@ -48,18 +48,34 @@ export const getCoursesByCategory = async (req, res) => {
 export const getCourseById = async (req, res) => {
   try {
     const courseId = parseInt(req.params.id);
+    const freelancer_id = req.token.userId;
+    const userRole = req.token.roleId;
+    
     if (isNaN(courseId)) {
       return res.status(400).json({ success: false, error: "Invalid course ID" });
     }
 
+    // Check if user is admin (bypass access check)
+    if (userRole === 1) {
+      const query = `SELECT id, title, description, price FROM courses WHERE id = $1 AND is_deleted = FALSE`;
+      const { rows } = await pool.query(query, [courseId]);
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, error: "Course not found" });
+      }
+      return res.status(200).json({ success: true, course: rows[0] });
+    }
+
+    // For freelancers: check access permission
     const query = `
-      SELECT id, title, description, price
-      FROM courses
-      WHERE id = $1 AND is_deleted = FALSE
+      SELECT c.id, c.title, c.description, c.price
+      FROM courses c
+      INNER JOIN course_access ca ON c.id = ca.course_id
+      WHERE c.id = $1 AND c.is_deleted = FALSE AND ca.freelancer_id = $2 AND ca.can_access = TRUE
     `;
-    const { rows } = await pool.query(query, [courseId]);
+    const { rows } = await pool.query(query, [courseId, freelancer_id]);
+    
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Course not found" });
+      return res.status(403).json({ success: false, error: "Access denied" });
     }
 
     return res.status(200).json({ success: true, course: rows[0] });
@@ -197,20 +213,25 @@ export const adminEnrollFreelancer = async (req, res) => {
     if (!freelancer_id || !course_id)
       return res.status(400).json({ success: false, message: "freelancer_id and course_id are required" });
 
+    // Check if freelancer has ACCESS to this course
+    const accessCheck = await pool.query(
+      "SELECT can_access FROM course_access WHERE freelancer_id = $1 AND course_id = $2",
+      [freelancer_id, course_id]
+    );
+    
+    if (accessCheck.rows.length === 0 || !accessCheck.rows[0].can_access) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Freelancer does not have access to this course" 
+      });
+    }
+
     // Check course exists
     const courseCheck = await pool.query("SELECT * FROM courses WHERE id = $1 AND is_deleted = FALSE", [course_id]);
     if (courseCheck.rows.length === 0)
       return res.status(404).json({ success: false, message: "Course not found" });
 
-    // Check freelancer exists
-    const freelancerCheck = await pool.query(
-      "SELECT * FROM users WHERE id = $1 AND role = 'freelancer'",
-      [freelancer_id]
-    );
-    if (freelancerCheck.rows.length === 0)
-      return res.status(404).json({ success: false, message: "Freelancer not found" });
-
-    // Check duplicate
+    // Check duplicate enrollment
     const exists = await pool.query(
       "SELECT * FROM course_enrollments WHERE freelancer_id = $1 AND course_id = $2",
       [freelancer_id, course_id]
@@ -224,24 +245,101 @@ export const adminEnrollFreelancer = async (req, res) => {
       [freelancer_id, course_id]
     );
 
-    return res.status(201).json({ success: true, message: "Freelancer enrolled successfully", enrollment: result.rows[0] });
+    return res.status(201).json({ 
+      success: true, 
+      message: "Freelancer enrolled successfully", 
+      enrollment: result.rows[0] 
+    });
   } catch (error) {
     console.error("Admin enrollment error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-/* -------------------- Freelancer: Get My Courses -------------------- */
+/* -------------------- Freelancer: Get My Courses (RESTRICTED) -------------------- */
+export const getFreelancerAccessibleCourses = async (req, res) => {
+  try {
+    const freelancer_id = req.token.userId;
+
+    // Get courses that freelancer has access to (through access control)
+    const query = `
+      SELECT DISTINCT
+        c.id, 
+        c.title, 
+        c.description, 
+        c.price, 
+        c.created_at,
+        COALESCE(ca.can_access, FALSE) as has_access
+      FROM courses c
+      LEFT JOIN course_access ca ON c.id = ca.course_id AND ca.freelancer_id = $1
+      WHERE 
+        c.is_deleted = FALSE 
+        AND COALESCE(ca.can_access, FALSE) = TRUE
+      ORDER BY c.created_at DESC
+    `;
+    
+    const { rows } = await pool.query(query, [freelancer_id]);
+    return res.status(200).json({ success: true, courses: rows });
+  } catch (error) {
+    console.error("Error fetching accessible courses:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Check if freelancer has access to specific course
+export const checkCourseAccess = async (req, res) => {
+  try {
+    const { id: course_id } = req.params;
+    const freelancer_id = req.token.userId;
+
+    // Check if course exists and is not deleted
+    const courseQuery = `
+      SELECT id FROM courses WHERE id = $1 AND is_deleted = FALSE
+    `;
+    const courseResult = await pool.query(courseQuery, [course_id]);
+    
+    if (courseResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    // Check if freelancer has access
+    const accessQuery = `
+      SELECT can_access 
+      FROM course_access 
+      WHERE freelancer_id = $1 AND course_id = $2
+    `;
+    const accessResult = await pool.query(accessQuery, [freelancer_id, course_id]);
+    
+    const hasAccess = accessResult.rows.length > 0 && accessResult.rows[0].can_access;
+
+    return res.status(200).json({ 
+      success: true, 
+      hasAccess,
+      course_id: parseInt(course_id)
+    });
+  } catch (error) {
+    console.error("Error checking course access:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 export const getMyCourses = async (req, res) => {
   try {
     const freelancer_id = req.token.userId;
 
+    // Get courses that freelancer has ACCESS to AND is enrolled in
     const query = `
       SELECT 
-        c.id, c.title, c.description, c.price, c.created_at
+        c.id, c.title, c.description, c.price, c.created_at,
+        ce.progress,
+        ce.status
       FROM course_enrollments ce
       INNER JOIN courses c ON ce.course_id = c.id
-      WHERE ce.freelancer_id = $1 AND c.is_deleted = FALSE
+      INNER JOIN course_access ca ON c.id = ca.course_id AND ca.freelancer_id = $1
+      WHERE 
+        ce.freelancer_id = $1 
+        AND c.is_deleted = FALSE
+        AND ca.can_access = TRUE
       ORDER BY ce.enrolled_at DESC
     `;
     const { rows } = await pool.query(query, [freelancer_id]);
@@ -256,12 +354,28 @@ export const getMyCourses = async (req, res) => {
 export const getCourseMaterials = async (req, res) => {
   try {
     const { id: course_id } = req.params;
-    const query = `
-      SELECT id, title, file_url, file_type, created_at
-      FROM course_materials
-      WHERE course_id = $1
-      ORDER BY created_at DESC
+    const freelancer_id = req.token.userId;
+    const userRole = req.token.roleId;
+
+    // Admin can view any materials
+    if (userRole === 1) {
+      const query = `SELECT id, title, file_url, file_type, created_at FROM course_materials WHERE course_id = $1 ORDER BY created_at DESC`;
+      const { rows } = await pool.query(query, [course_id]);
+      return res.status(200).json({ success: true, materials: rows });
+    }
+
+    // Check if freelancer has access to this course
+    const accessQuery = `
+      SELECT 1 FROM course_access 
+      WHERE freelancer_id = $1 AND course_id = $2 AND can_access = TRUE
     `;
+    const accessResult = await pool.query(accessQuery, [freelancer_id, course_id]);
+    
+    if (accessResult.rows.length === 0) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const query = `SELECT id, title, file_url, file_type, created_at FROM course_materials WHERE course_id = $1 ORDER BY created_at DESC`;
     const { rows } = await pool.query(query, [course_id]);
     return res.status(200).json({ success: true, materials: rows });
   } catch (error) {

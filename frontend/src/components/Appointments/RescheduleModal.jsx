@@ -55,7 +55,7 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
       <div className="bg-white rounded-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Calendar className="w-6 h-6 mr-2 text-blue-600" />
+            <Calendar className="w-6 h-6 mr-2 text-teal-600" />
             Reschedule Appointment
           </h2>
           <button
@@ -83,8 +83,8 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
               onChange={handleDateChange}
               required
               min={getMinDateTime()}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                dateError ? 'border-red-300' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                dateError ? 'border-red-300' : 'border-teal-300'
               }`}
             />
             {dateError && (
@@ -103,14 +103,14 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-teal-300 text-teal-700 rounded-lg hover:bg-teal-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !newDate || !!dateError}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Rescheduling...' : 'Reschedule Appointment'}
             </button>

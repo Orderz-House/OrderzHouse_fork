@@ -38,7 +38,7 @@ import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";
-import MyCourses from "./MyCourses";
+import MyCourses from "../coursesManagement/MyRestrictedCourses.jsx";
 import Appointments from "../Appointments/FreelancerAppointments";
 
 import Sidebar from "../../adminDash/layout/Sidebar.jsx";

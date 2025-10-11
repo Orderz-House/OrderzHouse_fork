@@ -1,3 +1,4 @@
+// App.jsx
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "./index.css";
@@ -24,7 +25,7 @@ import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
-import CourseDetail from "./components/courseDetilas/CourseDetails";
+import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -40,12 +41,14 @@ import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans"; 
 import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
-// import AdminLayout from "./test admin/layout/AdminLayout.jsx";
 import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
 import AdminLayout from "./adminDash/layout/AdminLayout.jsx";
 import CreateProject from "./components/createProject/CreateProject";
-import ManageCourses from "./adminDash/pages/ManageCourses";
+import AdminAccessControl from "./components/coursesManagement/AdminAccessControl";
+import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
+import AccessDenied from "./components/coursesManagement/AccessDenied";
+
 function App() {
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
@@ -116,21 +119,34 @@ function App() {
         <Route path="/projects/" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        
+        {/* ✅ Course Management Routes */}
         <Route path="/courses" element={<ProtectedRoute><CoursesManagement /></ProtectedRoute>} />
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
+        
+        {/* ✅ Admin Course Access Control */}
+        <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminAccessControl /></ProtectedRoute>} />
+        
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+        
         {/* Appointments Routes */}
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments /></ProtectedRoute>} />
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
         <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
-        {/* <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} /> */}
-        <Route path="/manageCourses" element={<ProtectedRoute><ManageCourses/></ProtectedRoute>}/>
 
+        {/* ✅ Catch-all route for debugging */}
+        <Route path="*" element={
+          <div className="p-4 text-center">
+            <h2>404 - Page Not Found</h2>
+            <p>Requested path: {location.pathname}</p>
+          </div>
+        } />
       </Routes>
       {!shouldHideNavbar && <EnhancedFooter />}
       

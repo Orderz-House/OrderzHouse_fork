@@ -12,6 +12,8 @@ import {
   getCourseMaterials,
   adminEnrollFreelancer,
   getMyCourses,
+  getFreelancerAccessibleCourses,
+  checkCourseAccess
 } from "../controller/courses.js";
 
 const coursesRouter = express.Router();
@@ -22,7 +24,9 @@ coursesRouter.get("/view", authentication, getCourses);
 coursesRouter.get("/view/:id", authentication, getCourseById);
 coursesRouter.get("/:id/materials", authentication, getCourseMaterials);
 
-/* Freelancer-specific */
+/* Freelancer-specific (RESTRICTED) */
+coursesRouter.get("/accessible", authentication, getFreelancerAccessibleCourses);
+coursesRouter.get("/check-access/:id", authentication, checkCourseAccess);
 coursesRouter.get("/my-courses", authentication, getMyCourses);
 
 /* Admin-only */
