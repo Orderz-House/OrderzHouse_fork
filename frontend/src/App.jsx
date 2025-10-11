@@ -40,7 +40,6 @@ import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans"; 
 import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
-import Appointments from './components/Appointments/Appointments';
 // import AdminLayout from "./test admin/layout/AdminLayout.jsx";
 import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
