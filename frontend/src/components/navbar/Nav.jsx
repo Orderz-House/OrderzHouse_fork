@@ -212,7 +212,7 @@ export default function EnhancedNavbar() {
               <img
                 src={logo}
                 alt="Logo"
-                className="mt-7 h-24 w-auto mr-3"
+                className="h-24 w-auto"
               />
             </button>
           </div>
