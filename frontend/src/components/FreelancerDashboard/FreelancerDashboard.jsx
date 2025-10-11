@@ -18,6 +18,21 @@ import {
   BookOpen
 } from "lucide-react";
 
+import {
+  FiHome,
+  FiUser,
+  FiUsers,
+  FiBookOpen,
+  FiTag,
+  FiCalendar,
+  FiShield,
+  FiBriefcase,
+  FiFileText,
+  FiCreditCard,
+  FiLayers,
+  FiBarChart2,
+} from "react-icons/fi";
+
 import FreelancerProjects from "./FreelancerProjects";
 import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
@@ -25,6 +40,60 @@ import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";
 import MyCourses from "./MyCourses";
 import Appointments from "../Appointments/Appointments";
+
+import Sidebar from "../../adminDash/layout/Sidebar.jsx";
+
+const freelancerSide = [
+  {
+    title: "GENERAL",
+    items: [{ to: "/admin", label: "Overview", icon: FiHome, exact: true }],
+  },
+  {
+    title: "USERS",
+    items: [
+      { to: "/admin/people/clients", label: "Clients", icon: FiUser },
+      { to: "/admin/people/freelancers", label: "Freelancers", icon: FiUsers },
+    ],
+  },
+  {
+    title: "LEARNING",
+    items: [
+      { to: "/admin/learning/courses", label: "Courses", icon: FiBookOpen },
+      { to: "/admin/learning/categories", label: "Categories", icon: FiTag },
+    ],
+  },
+  {
+    title: "OPERATIONS",
+    items: [
+      {
+        to: "/admin/operation/appointments",
+        label: "Appointments",
+        icon: FiCalendar,
+      },
+      {
+        to: "/admin/operation/verifications",
+        label: "Verifications",
+        icon: FiShield,
+      },
+      { to: "/admin/operation/projects", label: "Projects", icon: FiBriefcase },
+    ],
+  },
+  {
+    title: "COMMUNITY",
+    items: [{ to: "/admin/news", label: "News", icon: FiFileText }],
+  },
+  {
+    title: "FINANCE",
+    items: [
+      { to: "/admin/finance/payments", label: "Payments", icon: FiCreditCard },
+      { to: "/admin/finance/plans", label: "Plans", icon: FiLayers },
+    ],
+  },
+  {
+    title: "INSIGHTS",
+    items: [{ to: "/admin/analytics", label: "Analytics", icon: FiBarChart2 }],
+  },
+];
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
@@ -241,101 +310,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Freelancer Hub</h1>
-          <p className="text-sm text-gray-600 mt-1">Professional Dashboard</p>
-        </div>
-
-        <div className="flex-1 p-4 space-y-1">
-          <button
-            onClick={() => setActiveSection("dashboard")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "dashboard"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 mr-3" /> Dashboard
-          </button>
-          <button
-            onClick={() => setActiveSection("projects")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "projects"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Briefcase className="w-5 h-5 mr-3" /> Projects
-          </button>
-          <button
-            onClick={() => setActiveSection("myCourses")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "myCourses"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <BookOpen className="w-5 h-5 mr-3" /> My Courses
-          </button>
-          <button
-            onClick={() => setActiveSection("appointments")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "appointments"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Calendar className="w-5 h-5 mr-3" /> My Appointments
-          </button>
-          <button
-            onClick={() => setActiveSection("payments")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "payments"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <CreditCard className="w-5 h-5 mr-3" /> Payments
-          </button>
-          <button
-            onClick={() => setActiveSection("tasks")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "tasks"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <LayoutGrid className="w-5 h-5 mr-3" /> Tasks
-          </button>
-          <button
-            onClick={() => setActiveSection("profile")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "profile"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <User className="w-5 h-5 mr-3" /> Profile
-          </button>
-          <button
-            onClick={() => setActiveSection("settings")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "settings"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Settings className="w-5 h-5 mr-3" /> Settings
-          </button>
-        </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">
-            <LogOut className="w-5 h-5 mr-3" /> Logout
-          </button>
-        </div>
-      </div>
+            <Sidebar sections={freelancerSide} />
+      
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
