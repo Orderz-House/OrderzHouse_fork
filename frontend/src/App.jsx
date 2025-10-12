@@ -120,12 +120,12 @@ function App() {
         <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
         
-        {/* ✅ Course Management Routes */}
+        {/* Course Management Routes */}
         <Route path="/courses" element={<ProtectedRoute><CoursesManagement /></ProtectedRoute>} />
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
         
-        {/* ✅ Admin Course Access Control */}
+        {/*  Admin Course Access Control */}
         <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminAccessControl /></ProtectedRoute>} />
         
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
@@ -134,7 +134,6 @@ function App() {
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
 
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-=========
         
         {/* Appointments Routes */}
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments /></ProtectedRoute>} />
