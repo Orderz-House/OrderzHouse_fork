@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media (min-width: 1700px) {
+  .no-wrap-1700 {
+    flex-wrap: nowrap !important;
+  }
+}

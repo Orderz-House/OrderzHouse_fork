@@ -11,7 +11,7 @@ const OutlineButton = ({
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border-2 text-white font-medium px-5 py-3 transition-transform duration-200 hover:scale-[.98] ${className}`}
+      className={`rounded-xl border-2 text-white font-medium px-5 py-3 transition-transform duration-200 hover:scale-[.98] flex items-center justify-center ${className}`}
       style={{
         ...style,
         background: "transparent",

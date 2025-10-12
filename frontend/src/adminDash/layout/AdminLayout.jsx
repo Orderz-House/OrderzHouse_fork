@@ -1,71 +1,73 @@
-import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
+import React, { useState } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import {
-  FiHome,
-  FiUser,
-  FiUsers,
-  FiBookOpen,
-  FiTag,
-  FiCalendar,
-  FiShield,
-  FiBriefcase,
-  FiFileText,
-  FiCreditCard,
-  FiLayers,
-  FiBarChart2,
-} from "react-icons/fi";
+  Home,
+  Users,
+  BookOpen,
+  FolderKanban,
+  Calendar,
+  Shield,
+  Clipboard,
+  FileText,
+  CreditCard,
+  DollarSign,
+  BarChart2,
+  User,
+  LogOut,
+} from "lucide-react";
 
-const adminSections = [
-  {
-    title: "GENERAL",
-    items: [{ to: "/admin", label: "Overview", icon: FiHome, exact: true }],
-  },
-  {
-    title: "USERS",
-    items: [
-      { to: "/admin/people/clients", label: "Clients", icon: FiUser },
-      { to: "/admin/people/freelancers", label: "Freelancers", icon: FiUsers },
-    ],
-  },
-  {
-    title: "LEARNING",
-    items: [
-      { to: "/admin/learning/courses", label: "Courses", icon: FiBookOpen },
-      { to: "/admin/learning/categories", label: "Categories", icon: FiTag },
-    ],
-  },
-  {
-    title: "OPERATIONS",
-    items: [
-      { to: "/admin/operation/appointments", label: "Appointments", icon: FiCalendar },
-      { to: "/admin/operation/verifications", label: "Verifications", icon: FiShield },
-      { to: "/admin/operation/projects", label: "Projects", icon: FiBriefcase },
-    ],
-  },
-  {
-    title: "COMMUNITY",
-    items: [{ to: "/admin/news", label: "News", icon: FiFileText }],
-  },
-  {
-    title: "FINANCE",
-    items: [
-      { to: "/admin/finance/payments", label: "Payments", icon: FiCreditCard },
-      { to: "/admin/finance/plans", label: "Plans", icon: FiLayers },
-    ],
-  },
-  {
-    title: "INSIGHTS",
-    items: [{ to: "/admin/analytics", label: "Analytics", icon: FiBarChart2 }],
-  },
-];
 
 export default function AdminLayout() {
+  const navigate = useNavigate();
+
+  const [activePage, setActivePage] = useState("overview");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navigation = [
+  { id: "overview", name: "Overview", icon: Home, onClick: () => navigate("/admin") },
+  { id: "clients", name: "Clients", icon: Users, onClick: () => navigate("/admin/people/clients") },
+  { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate("/admin/people/freelancers") },
+  { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate("/admin/learning/courses") },
+  { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => navigate("/admin/learning/categories") },
+  { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate("/admin/operation/appointments") },
+  { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate("/admin/operation/verifications") },
+  { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate("/admin/operation/projects") },
+  { id: "news", name: "News", icon: FileText, onClick: () => navigate("/admin/community/news") },
+  { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate("/admin/finance/payments") },
+  { id: "plans", name: "Plans", icon: DollarSign, onClick: () => navigate("/admin/finance/plans") },
+  { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => navigate("/admin/analytics") },
+];
+
+
+  const bottomNavigation = [
+    { id: "profile", name: "Profile", icon: User, onClick: () => navigate("/admin/profile") },
+    {
+      id: "logout",
+      name: "Logout",
+      icon: LogOut,
+      onClick: () => {
+        console.log("User logged out");
+      },
+    },
+  ];
+
   return (
     <div className="min-h-[100dvh] md:min-h-screen flex bg-slate-50 text-slate-800">
-      {/* تمرير البيانات إلى السايد بار */}
-      <Sidebar sections={adminSections} />
+      <Sidebar
+        activePage={activePage}
+        setActivePage={(id) => {
+          setActivePage(id);
+          const found = [...navigation, ...bottomNavigation].find((item) => item.id === id);
+          if (found?.onClick) found.onClick();
+        }}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        navigation={navigation}
+        bottomNavigation={bottomNavigation}
+        onLogout={() => console.log("Logout clicked")}
+      />
 
-      {/* المحتوى الرئيسي */}
       <main className="flex-1 px-4 md:px-6 pt-[104px] md:pt-6">
         <Outlet />
       </main>

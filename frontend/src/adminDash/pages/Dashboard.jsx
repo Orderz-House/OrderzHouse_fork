@@ -15,7 +15,10 @@ import {
   FiPlus,
 } from "react-icons/fi";
 
-const primary = "#05668D";
+import OutlineButton from "../../components/buttons/OutlineButton.jsx";
+import GradientButton from "../../components/buttons/GradientButton.jsx";
+
+const primary = "#028090";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
@@ -292,9 +295,8 @@ export default function Dashboard() {
       </div>
 
       {/* Chart + Pending */}
-      {/* تخطيط مستقر: عمودان يظهران من xl وما فوق بحدود دنيا عملية */}
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(560px,2fr)_minmax(340px,1fr)]">
-        {/* Revenue chart (أزلنا lg:col-span-2) */}
+        {/* Revenue chart */}
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div className="font-medium text-slate-700 text-sm sm:text-base">
@@ -305,21 +307,23 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-          {/* غلاف آمن يمنع أي تمدد */}
-          <div className="w-full max-w-full overflow-x-auto [overflow-anchor:none] [-webkit-overflow-scrolling:touch]">
-            {/* جعلنا الحد الأدنى 560px ليتطابق مع عمود الشبكة */}
-            <div className="min-w-[560px] px-2">
-              <div className="flex items-end gap-2 h-40 sm:h-44">
+
+          <div className="w-full max-w-full overflow-hidden">
+            <div className="px-1 sm:px-2">
+              <div className="flex items-end gap-[6px] sm:gap-2 h-36 sm:h-44">
                 {revSeries.map((v, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1">
+                  <div
+                    key={i}
+                    className="flex-1 min-w-0 flex flex-col items-center gap-1"
+                  >
                     <div
-                      className="w-5 sm:w-6 rounded-t"
+                      className="w-full rounded-t"
                       style={{
                         height: `${(v / maxRev) * 100}%`,
                         backgroundColor: primary,
                       }}
                     />
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-[10px] text-slate-500 truncate">
                       {revLabels[i]}
                     </div>
                   </div>
@@ -329,7 +333,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Pending verifications (منع تفكك النص والتفاف الأزرار) */}
+        {/* Pending verifications */}
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5 shadow-sm min-w-0">
           <div className="mb-3 font-semibold text-slate-800">
             Pending verifications
@@ -347,7 +351,6 @@ export default function Dashboard() {
                   key={id}
                   className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 overflow-hidden"
                 >
-                  {/* على الموبايل عمودي بالكامل لتجنّب أي تمدد */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
                       <div className="font-medium text-slate-800 break-words whitespace-normal">
@@ -359,25 +362,24 @@ export default function Dashboard() {
                         {v.email ? ` • ${v.email}` : ""}
                       </div>
                     </div>
-
-                    {/* الأزرار تلتف عند الضيق */}
-                    <div className="flex gap-2 sm:justify-end flex-wrap">
-                      <button
+                    <div className="flex gap-2 sm:justify-end flex-wrap no-wrap-1700">
+                      <GradientButton
                         onClick={() => approve(id)}
-                        className="inline-flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-white flex-1 sm:flex-none"
-                        style={{ backgroundColor: primary }}
+                        className="flex-1 sm:flex-none gap-1"
                         title="Approve"
                       >
-                        <FiCheckCircle />{" "}
+                        <FiCheckCircle />
                         <span className="text-sm">Approve</span>
-                      </button>
-                      <button
+                      </GradientButton>
+
+                      <OutlineButton
                         onClick={() => reject(id)}
-                        className="inline-flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600 flex-1 sm:flex-none"
+                        className=""
                         title="Reject"
                       >
-                        <FiXCircle /> <span className="text-sm">Reject</span>
-                      </button>
+                        <FiXCircle />
+                        <span className="text-sm">Reject</span>
+                      </OutlineButton>
                     </div>
                   </div>
                 </li>
@@ -389,9 +391,7 @@ export default function Dashboard() {
 
       {/* Recent Signups & Projects */}
       <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-        {/* Signups */}
         <Card title="Recent signups">
-          {/* Mobile cards */}
           <ul className="sm:hidden space-y-3">
             {signups.length === 0 && (
               <li className="rounded-xl border border-slate-200 bg-white p-3 text-slate-500 text-center">
@@ -415,7 +415,6 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
-          {/* Desktop table */}
           <div className="hidden sm:block">
             <Table
               header={["Name", "Type", "City", "Date"]}
@@ -424,7 +423,6 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Projects */}
         <Card
           title="Recent projects"
           action={
@@ -436,7 +434,6 @@ export default function Dashboard() {
             </Link>
           }
         >
-          {/* Mobile cards */}
           <ul className="sm:hidden space-y-3">
             {projects.length === 0 && (
               <li className="rounded-xl border border-slate-200 bg-white p-3 text-slate-500 text-center">
@@ -460,7 +457,6 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
-          {/* Desktop table */}
           <div className="hidden sm:block">
             <Table
               header={["Title", "Client", "Status", "Due"]}
@@ -507,7 +503,6 @@ function Card({ title, action, children }) {
   );
 }
 
-/** جدول مع سكرول أفقي تلقائي على الموبايل */
 function Table({ header = [], rows = [] }) {
   return (
     <div className="overflow-x-auto w-full max-w-full">
@@ -556,13 +551,18 @@ function Table({ header = [], rows = [] }) {
 
 function Quick({ to, icon, label }) {
   return (
-    <Link
-      to={to}
-      className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-white"
-      style={{ backgroundColor: primary }}
-      title={label}
-    >
-      <FiPlus /> {icon} <span className="hidden md:inline">{label}</span>
+    <Link to={to} title={label}>
+      <OutlineButton
+        className="inline-flex items-center gap-2 rounded-xl px-3 py-2"
+        style={{
+          borderColor: primary,
+          color: primary,
+        }}
+      >
+        <FiPlus />
+        {icon}
+        <span className="hidden md:inline">{label}</span>
+      </OutlineButton>
     </Link>
   );
 }
