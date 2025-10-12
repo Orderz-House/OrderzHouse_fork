@@ -18,7 +18,10 @@ import {
 
 const coursesRouter = express.Router();
 
-/* Public / Authenticated Routes */
+
+
+
+/* Courses */
 coursesRouter.get("/category/:categoryId", getCoursesByCategory);
 coursesRouter.get("/view", authentication, getCourses);
 coursesRouter.get("/view/:id", authentication, getCourseById);

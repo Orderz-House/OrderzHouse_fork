@@ -11,7 +11,6 @@ import {
   getProjectById,
   updateAssignmentStatus,
   getAllProjectForOffer,
-  sendOffer,
   getProjectCompletion,
   submitWorkCompletion,
   getAllProjectForFreelancerById,
@@ -93,12 +92,6 @@ projectsRouter.post(
 );
 
 // Send an offer for a project
-projectsRouter.post(
-  "/:projectId/offers",
-  authentication,
-  requireVerified,
-  sendOffer
-);
 
 // projectsRouter.post("/:projectId/files", upload.single("file"), uploadProjectFile);
 
