@@ -1,6 +1,6 @@
-// routes/courses.js
+// routes/course.js
 import express from "express";
-import { authentication } from "../middleware/authentication.js";
+import authentication  from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
   getCourses,
@@ -16,26 +16,25 @@ import {
   checkCourseAccess
 } from "../controller/courses.js";
 
-const coursesRouter = express.Router();
+const courseRouter = express.Router();
 
 
 
-
-/* Courses */
-coursesRouter.get("/category/:categoryId", getCoursesByCategory);
-coursesRouter.get("/view", authentication, getCourses);
-coursesRouter.get("/view/:id", authentication, getCourseById);
-coursesRouter.get("/:id/materials", authentication, getCourseMaterials);
+/* Public / Authenticated Routes */
+courseRouter.get("/category/:categoryId", getCoursesByCategory);
+courseRouter.get("/view", authentication, getCourses);
+courseRouter.get("/view/:id", authentication, getCourseById);
+courseRouter.get("/:id/materials", authentication, getCourseMaterials);
 
 /* Freelancer-specific (RESTRICTED) */
-coursesRouter.get("/accessible", authentication, getFreelancerAccessibleCourses);
-coursesRouter.get("/check-access/:id", authentication, checkCourseAccess);
-coursesRouter.get("/my-courses", authentication, getMyCourses);
+courseRouter.get("/accessible", authentication, getFreelancerAccessibleCourses);
+courseRouter.get("/check-access/:id", authentication, checkCourseAccess);
+courseRouter.get("/my-courses", authentication, getMyCourses);
 
 /* Admin-only */
-coursesRouter.post("/create", authentication, authorization(["admin"]), createCourse);
-coursesRouter.put("/update/:id", authentication, authorization(["admin"]), updateCourse);
-coursesRouter.delete("/delete/:id", authentication, authorization(["admin"]), deleteCourse);
-coursesRouter.post("/admin/enroll-freelancer", authentication, authorization(["admin"]), adminEnrollFreelancer);
+courseRouter.post("/create", authentication, authorization(["1"]), createCourse);
+courseRouter.put("/update/:id", authentication, authorization(["1"]), updateCourse);
+courseRouter.delete("/delete/:id", authentication, authorization(["1"]), deleteCourse);
+courseRouter.post("/admin/enroll-freelancer", authentication, authorization(["1"]), adminEnrollFreelancer);
 
-export default coursesRouter;
+export default courseRouter;

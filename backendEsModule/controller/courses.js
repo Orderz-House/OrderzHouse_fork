@@ -1,4 +1,4 @@
-// controller/courses.js
+// controller/course.js
 import pool from "../models/db.js";
 
 
@@ -7,7 +7,7 @@ import pool from "../models/db.js";
 export const getCourses = async (req, res) => {
   try {
     const query = `
-      SELECT id, title, description, price, created_at
+      SELECT id, title, description, price, category_id, created_at
       FROM courses
       WHERE is_deleted = FALSE
       ORDER BY created_at DESC

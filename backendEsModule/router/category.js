@@ -1,17 +1,27 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { createCategory, getCategories , getSubSubCategoriesByCategoryId } from "../controller/category.js";
-
+import authorization from "../middleware/authorization.js";
+import { 
+  createCategory, 
+  getCategories, 
+  getSubSubCategoriesByCategoryId,
+  getCategoryById,
+  updateCategory,
+  deleteCategory
+} from "../controller/category.js";
 
 const categoryRouter = express.Router();
 
-// view categories
+// Public routes
 categoryRouter.get("/", getCategories);
+categoryRouter.get("/:id", getCategoryById);
 
-//create new category
-categoryRouter.post("/", createCategory);
+// Admin-only routes
+categoryRouter.post("/", authentication, authorization(["1"]), createCategory);
+categoryRouter.put("/:id", authentication, authorization(["1"]), updateCategory);
+categoryRouter.delete("/:id", authentication, authorization(["1"]), deleteCategory);
 
-// get sub sub categories by category id
+// Other routes
 categoryRouter.get("/:categoryId/sub-sub-categories", getSubSubCategoriesByCategoryId);
 
 export default categoryRouter;

@@ -1,4 +1,4 @@
-import PeopleTable from "./PeopleTable";
+import PeopleTable from "../Tables";
 
 export default function Freelancers() {
   return (

@@ -32,6 +32,7 @@ import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 
+
 // DB connection
 dotenv.config();
 
@@ -83,7 +84,7 @@ app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use('/api/auth', authRouter);
-app.use("/api/access-control", accessControlRouter);
+app.use("/access-control", accessControlRouter);
 //Admin init
 (async () => {
   await AdminInit(app);

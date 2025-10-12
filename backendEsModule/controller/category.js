@@ -1,9 +1,9 @@
+// controller/category.js
 import pool from "../models/db.js";
 import fs from "fs";
 import cloudinary from "../cloudinary/setupfile.js";
 
-
-//  list categories
+// Get all active categories
 export const getCategories = async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -25,8 +25,7 @@ export const getCategories = async (_req, res) => {
   }
 };
 
-
-//  list sub categories by category id (not used currently)
+// Get sub categories by category id (not used currently)
 export const getSubCategories = async (req, res) => {
   try {
     const { categoryId } = req.params;
@@ -40,6 +39,7 @@ export const getSubCategories = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 export const getSubSubCategoriesByCategoryId = async (req, res) => {
   const { categoryId } = req.params;
   try {
@@ -67,10 +67,7 @@ export const getSubSubCategoriesByCategoryId = async (req, res) => {
   }
 };
 
-
-
 // Create a new category
-
 export const createCategory = async (req, res) => {
   try {
     const { name, description, related_words, image_url } = req.body;
@@ -134,5 +131,176 @@ export const createCategory = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Server error" });
+  }
+};
+
+// Get single category by ID
+export const getCategoryById = async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.id);
+    if (isNaN(categoryId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid category ID" 
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT id, name, description, image_url, related_words
+       FROM categories
+       WHERE id = $1 AND is_deleted = false`,
+      [categoryId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Category not found" 
+      });
+    }
+
+    return res.json({
+      success: true,
+      category: rows[0]
+    });
+  } catch (error) {
+    console.error("getCategoryById error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Update category (Admin only)
+export const updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, related_words, image_url } = req.body;
+
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid category ID" 
+      });
+    }
+
+    // Check if category exists
+    const existing = await pool.query(
+      `SELECT id FROM categories WHERE id = $1 AND is_deleted = false`,
+      [id]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Category not found" 
+      });
+    }
+
+    let wordsArray = related_words;
+    if (typeof related_words === "string") {
+      wordsArray = related_words
+        .split(",")
+        .map((w) => w.trim())
+        .filter((w) => w !== "");
+    }
+
+    let finalImageUrl = null;
+
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "categories",
+      });
+      finalImageUrl = uploadResult.secure_url;
+      fs.unlinkSync(req.file.path);
+    }
+    else if (image_url) {
+      const uploadResult = await cloudinary.uploader.upload(image_url, {
+        folder: "categories",
+      });
+      finalImageUrl = uploadResult.secure_url;
+    }
+
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name.trim());
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (finalImageUrl !== null) {
+      updates.push(`image_url = $${paramCount++}`);
+      values.push(finalImageUrl);
+    }
+    if (wordsArray !== undefined) {
+      updates.push(`related_words = $${paramCount++}`);
+      values.push(wordsArray);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "No fields to update" 
+      });
+    }
+
+    values.push(id);
+
+    const { rows } = await pool.query(
+      `UPDATE categories
+       SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $${paramCount} AND is_deleted = false
+       RETURNING id, name, description, image_url, related_words`,
+      values
+    );
+
+    return res.json({
+      success: true,
+      message: "Category updated successfully",
+      category: rows[0],
+    });
+  } catch (error) {
+    console.error("updateCategory error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Soft delete category (Admin only)
+export const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid category ID" 
+      });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE categories
+       SET is_deleted = true
+       WHERE id = $1 AND is_deleted = false
+       RETURNING id, name`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Category not found or already deleted" 
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Category deleted successfully",
+      deletedCategory: rows[0],
+    });
+  } catch (error) {
+    console.error("deleteCategory error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
