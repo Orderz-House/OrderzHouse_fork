@@ -12,9 +12,9 @@ import {
 const accessControlRouter = express.Router();
 
 // Admin-only routes
-accessControlRouter.post("/grant-access", authentication, authorization(["admin"]), grantCourseAccess);
-accessControlRouter.get("/all", authentication, authorization(["admin"]), getAllAccessControl);
-accessControlRouter.get("/freelancer/:freelancerId", authentication, authorization(["admin"]), getFreelancerAccess);
-accessControlRouter.get("/course/:courseId", authentication, authorization(["admin"]), getCourseAccessList);
+accessControlRouter.post("/grant-access", authentication, authorization(["1"]), grantCourseAccess);
+accessControlRouter.get("/all", authentication, authorization(["1"]), getAllAccessControl);
+accessControlRouter.get("/freelancer/:freelancerId", authentication, authorization(["1"]), getFreelancerAccess);
+accessControlRouter.get("/course/:courseId", authentication, authorization(["1"]), getCourseAccessList);
 
 export default accessControlRouter;
