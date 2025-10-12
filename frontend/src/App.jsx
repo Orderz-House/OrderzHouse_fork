@@ -41,12 +41,14 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage"; 
 import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
-import AdminLayout from "./adminDash/layout/AdminLayout.jsx";
 import CreateProject from "./components/createProject/CreateProject";
 import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
 import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
 import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
 import AccessDenied from "./components/coursesManagement/AccessDenied";
+import Terms from "./components/Terms/Terms.jsx";
+
+import AdminRouter from "./adminDash/routes/index";
 
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -106,6 +108,8 @@ function App() {
         {/* --- Account Suspended --- */}
         <Route path="account/suspended" element={<AccountSuspended />} />
 
+        {/* Public Pages */}
+
         {/* --- Test --- */}
         <Route path="/test" element={<Counter />} />
 
@@ -118,8 +122,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>Terms
         <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/verify-profile" element={<VerifyProfile />} />
+        <Route path="/terms" element={<Terms />} />
 
         {/* --- Protected Pages --- */}
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
@@ -149,6 +155,16 @@ function App() {
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments userData={userData} /></ProtectedRoute>} />
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
+        
+        {/* ✅ Admin Routes */}
+        <Route
+  path="/admin/*"
+  element={
+    <ProtectedRoute allowedRoles={[1]}>
+      <AdminRouter />
+    </ProtectedRoute>
+  }
+/>
 
         {/* --- Admin Layout --- */}
         <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />

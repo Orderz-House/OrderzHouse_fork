@@ -3,6 +3,8 @@ import axios from "axios";
 import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
 
+import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
+
 const primary = "#05668D";
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
@@ -110,14 +112,14 @@ export default function Categories() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">Categories</h1>
-        <button
+        <OutlineButton
           onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm"
-          style={{ backgroundColor: primary }}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm"
         >
-          <FiPlus /> <span className="hidden sm:inline">Add Category</span>
+          <FiPlus />
+          <span className="hidden sm:inline">Add Category</span>
           <span className="sm:hidden">Add</span>
-        </button>
+        </OutlineButton>
       </div>
 
       {/* Search */}

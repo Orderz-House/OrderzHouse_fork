@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
+import OutlineButton from "../../components/buttons/OutlineButton.jsx";
 
 export default function PeopleTable({
   title,
@@ -14,6 +15,8 @@ export default function PeopleTable({
   chips,
   chipField = "type",
   filters = [],
+  renderActions,
+  hideCrudActions = false,
 }) {
   const [rows, setRows] = useState(initialRows);
   const [loading, setLoading] = useState(!!endpoint);
@@ -29,7 +32,7 @@ export default function PeopleTable({
   const [filterValues, setFilterValues] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const primary = "#05668D";
+  const primary = "#028090";
 
   const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "",
@@ -97,14 +100,20 @@ export default function PeopleTable({
     };
   }, [endpoint, q, chip, filterValues, chipField, refreshKey]);
 
-  // Helpers
+  const getId = (r) => r.id ?? r._id;
+  const updateRow = (id, patch) => {
+    setRows((arr) =>
+      arr.map((r) => (getId(r) === id ? { ...r, ...patch } : r))
+    );
+  };
+
+  // ---------- CRUD ----------
   const makeEmptyForm = () =>
     formFields.reduce((acc, f) => {
       acc[f.key] = f.defaultValue ?? "";
       return acc;
     }, {});
 
-  // ---------- CRUD ----------
   const openAdd = () => {
     setEditingId(null);
     setForm(makeEmptyForm());
@@ -184,21 +193,35 @@ export default function PeopleTable({
     setFilterValues({});
   };
 
+  const firstCol = cols[0];
+  const restCols = cols.slice(1);
+
+  const helpers = {
+    updateRow,
+    openEdit,
+    deleteRow: onDelete,
+    rows,
+    setRows,
+    getId,
+    refresh: () => setRefreshKey((k) => k + 1),
+  };
+
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
-        <button
+        <OutlineButton
           onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm"
-          style={{ backgroundColor: primary }}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm"
         >
           <FiPlus />
           <span className="hidden sm:inline">{addLabel}</span>
           <span className="sm:hidden">Add</span>
-        </button>
+        </OutlineButton>
       </div>
 
+      {/* Search + filters */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <input
           placeholder="Search by name…"
@@ -223,120 +246,207 @@ export default function PeopleTable({
           <button
             onClick={resetFilters}
             className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
+            title="Reset"
           >
             <VscDebugRestart />
           </button>
         </div>
       </div>
 
-      {Array.isArray(chips) && chips.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {chips.map((c) => {
-            const active = chip === (c.value ?? "");
-            return (
-              <button
-                key={c.label}
-                onClick={() => setChip(c.value ?? "")}
-                className={`rounded-2xl px-3 py-1 text-sm border ${
-                  active ? "text-white" : "text-slate-700"
-                }`}
-                style={{
-                  backgroundColor: active ? primary : "transparent",
-                  borderColor: active ? primary : "rgba(148,163,184,0.5)",
-                }}
-              >
-                {c.label}
-              </button>
-            );
-          })}
+      {/* ===== Mobile (Compact list) ===== */}
+      <div className="lg:hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
+        <div className="px-4 py-2 bg-slate-50/70 text-slate-500 text-xs font-medium">
+          {title}
         </div>
-      )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
-        <table className="w-full table-fixed">
-          <thead className="bg-slate-50/70 text-slate-500 text-sm">
-            <tr>
-              {header.map((h, i) => (
-                <th
-                  key={i}
-                  className={`text-left font-medium px-6 py-3 ${
-                    i === header.length - 1 ? "w-28" : ""
-                  }`}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
+        <ul className="divide-y divide-slate-200">
+          {loading && (
+            <li className="px-4 py-6 text-center text-slate-500">Loading…</li>
+          )}
+          {!loading && error && (
+            <li className="px-4 py-6 text-center text-red-600">{error}</li>
+          )}
+          {!loading && !error && rows.length === 0 && (
+            <li className="px-4 py-6 text-center text-slate-500">
+              no data yet
+            </li>
+          )}
 
-          <tbody className="divide-y divide-slate-200 text-slate-800">
-            {loading && (
-              <tr>
-                <td
-                  colSpan={header.length}
-                  className="px-6 py-10 text-center text-slate-500"
-                >
-                  Loading
-                </td>
-              </tr>
-            )}
+          {!loading &&
+            !error &&
+            rows.map((row, idx) => {
+              const id = row.id ?? idx;
+              return (
+                <li key={id} className="px-4 py-3">
+                  {/* layout: left info + right actions */}
+                  <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+                    {/* Left: Title + meta */}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-800 truncate">
+                        {String(row[firstCol.key] ?? "-")}
+                      </div>
 
-            {!loading && error && (
-              <tr>
-                <td
-                  colSpan={header.length}
-                  className="px-6 py-10 text-center text-red-600"
-                >
-                  {error}
-                </td>
-              </tr>
-            )}
-
-            {!loading &&
-              !error &&
-              rows.map((row, idx) => (
-                <tr key={row.id ?? idx} className="hover:bg-slate-50">
-                  {cols.map((c) => (
-                    <td key={c.key} className="px-6 py-4">
-                      {row[c.key]}
-                    </td>
-                  ))}
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() => openEdit(idx)}
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
-                        style={{ backgroundColor: primary }}
-                        title="Edit"
-                      >
-                        <FiEdit2 />
-                      </button>
-                      <button
-                        onClick={() => onDelete(idx)}
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
-                        title="Delete"
-                      >
-                        <FiTrash2 />
-                      </button>
+                      <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
+                        {restCols.slice(0, 4).map((c) => (
+                          <div key={c.key} className="min-w-0">
+                            <div className="text-[11px] text-slate-500 truncate">
+                              {c.label}
+                            </div>
+                            <div className="text-xs text-slate-800 truncate">
+                              {row[c.key] ?? "-"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              ))}
 
-            {!loading && !error && rows.length === 0 && (
-              <tr>
-                <td
-                  colSpan={header.length}
-                  className="px-6 py-10 text-center text-slate-500"
-                >
-                  no data yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    {/* Right: actions */}
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {renderActions ? (
+                          renderActions({ row, idx, helpers })
+                        ) : !hideCrudActions ? (
+                          <>
+                            <button
+                              onClick={() => openEdit(idx)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white"
+                              style={{ backgroundColor: primary }}
+                              title="Edit"
+                            >
+                              <FiEdit2 />
+                            </button>
+                            <button
+                              onClick={() => onDelete(idx)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white bg-red-500 hover:bg-red-600"
+                              title="Delete"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+        </ul>
       </div>
 
+      {/* ===== Desktop / Tablet (Table) ===== */}
+      <div className="hidden lg:block rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
+        <div className="w-full overflow-x-auto">
+          <table className="min-w-[840px] w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "26%" }} />
+              {cols.slice(1).map((_, i) => (
+                <col
+                  key={i}
+                  style={{
+                    width: `${(66 / Math.max(1, cols.length - 1)).toFixed(2)}%`,
+                  }}
+                />
+              ))}
+              <col style={{ width: "8%" }} />
+            </colgroup>
+
+            <thead className="bg-slate-50/70 text-slate-500 text-sm">
+              <tr>
+                {header.map((h, i) => (
+                  <th
+                    key={i}
+                    className={`text-left font-medium px-4 py-3 ${
+                      i === header.length - 1 ? "text-right" : ""
+                    }`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-200 text-slate-800">
+              {loading && (
+                <tr>
+                  <td
+                    colSpan={header.length}
+                    className="px-6 py-10 text-center text-slate-500"
+                  >
+                    Loading
+                  </td>
+                </tr>
+              )}
+
+              {!loading && error && (
+                <tr>
+                  <td
+                    colSpan={header.length}
+                    className="px-6 py-10 text-center text-red-600"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                rows.map((row, idx) => (
+                  <tr key={row.id ?? idx} className="hover:bg-slate-50">
+                    {cols.map((c, j) => (
+                      <td
+                        key={c.key}
+                        className={`px-4 py-4 ${j === 0 ? "font-medium" : ""} ${
+                          j === 0 ? "truncate" : "whitespace-nowrap truncate"
+                        }`}
+                        title={String(row[c.key] ?? "")}
+                      >
+                        {String(row[c.key] ?? "")}
+                      </td>
+                    ))}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center gap-2 justify-end">
+                        {renderActions ? (
+                          renderActions({ row, idx, helpers })
+                        ) : !hideCrudActions ? (
+                          <>
+                            <button
+                              onClick={() => openEdit(idx)}
+                              className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
+                              style={{ backgroundColor: primary }}
+                              title="Edit"
+                            >
+                              <FiEdit2 />
+                            </button>
+                            <button
+                              onClick={() => onDelete(idx)}
+                              className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
+                              title="Delete"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+              {!loading && !error && rows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={header.length}
+                    className="px-6 py-10 text-center text-slate-500"
+                  >
+                    no data yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
@@ -373,14 +483,14 @@ export default function PeopleTable({
                     onClick={() => setIsOpen(false)}
                     className="rounded-xl px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50"
                   >
-                    إلغاء
+                    Cancle
                   </button>
                   <button
                     type="submit"
                     className="rounded-xl px-4 py-2 text-white shadow-sm"
                     style={{ backgroundColor: primary }}
                   >
-                    حفظ
+                    Save
                   </button>
                 </div>
               </form>
@@ -392,6 +502,7 @@ export default function PeopleTable({
   );
 }
 
+/* ------- small helpers ------- */
 function Field({ label, children }) {
   return (
     <label className="space-y-1">
@@ -441,7 +552,6 @@ function renderInput(field, value, onChange) {
       </select>
     );
 
-  // text | number | tel
   return (
     <input
       type={type}

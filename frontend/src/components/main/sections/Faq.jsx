@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
 
 // Theme
 const THEME = "#028090";
@@ -269,16 +271,6 @@ function QAItem({ q, a }) {
 export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
   const [openCat, setOpenCat] = useState(null);
 
-  useEffect(() => {
-    if (openCat) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [openCat]);
-
   const topics = useMemo(() => {
     const map = new Map();
     faqs.forEach((f) => {
@@ -461,8 +453,8 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
                 <div className="text-sm text-slate-600">
                   Didn’t find what you need?
                 </div>
-                <a
-                  href="#contact"
+                <Link
+                  to="/contact"
                   className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-white"
                   style={{
                     background: THEME,
@@ -477,7 +469,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
                   >
                     <path d="M12.293 4.293a1 1 0 011.414 0L18 8.586a2 2 0 010 2.828l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z" />
                   </svg>
-                </a>
+                </Link>
               </div>
             </div>
           </div>

@@ -13,7 +13,7 @@ const GradientButton = ({
     <button
       className={`rounded-2xl px-6 py-3 text-white font-medium text-sm sm:text-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 flex items-center justify-center ${className}`}
       style={{
-        background: `linear-gradient(90deg, ${DARK}, ${THEME})`,
+        background: `linear-gradient(to right, ${DARK}, ${THEME}, ${THEME})`,
         ...style,
       }}
       onClick={onClick}
