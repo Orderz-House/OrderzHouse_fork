@@ -8,8 +8,8 @@ const primaryLight = "rgb(0, 170, 180)";
 // Breakpoints
 function calcCols() {
   if (typeof window === "undefined") return 5;
-  if (window.matchMedia("(min-width: 1280px)").matches) return 5; // xl
-  if (window.matchMedia("(min-width: 1024px)").matches) return 4; // lg
+  if (window.matchMedia("(min-width: 1280px)").matches) return 3; // xl
+  if (window.matchMedia("(min-width: 1024px)").matches) return 3; // lg
   if (window.matchMedia("(min-width: 768px)").matches) return 3; // md
   if (window.matchMedia("(min-width: 640px)").matches) return 2; // sm
   return 1; // < sm
@@ -32,47 +32,56 @@ export default function CategoriesShowcase({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch from backend on port 5000
-        const response = await fetch('http://localhost:5000/category');
-        
+        const response = await fetch("http://localhost:5000/category");
+
         // Check if response is ok
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         // Check content type
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-          throw new Error(`Expected JSON, got ${contentType}. The endpoint might not exist or is returning HTML.`);
+          throw new Error(
+            `Expected JSON, got ${contentType}. The endpoint might not exist or is returning HTML.`
+          );
         }
-        
+
         const data = await response.json();
-        
+
         // Debug: Log the raw data from API
-        console.log('Raw API Response:', data);
-        console.log('First category:', data.categories?.[0]);
-        
+        console.log("Raw API Response:", data);
+        console.log("First category:", data.categories?.[0]);
+
         if (data.success && data.categories) {
           // Map database fields to component format
-          const mappedCategories = data.categories.map(cat => {
-            console.log('Mapping category:', cat.name, 'image_url:', cat.image_url);
+          const mappedCategories = data.categories.map((cat) => {
+            console.log(
+              "Mapping category:",
+              cat.name,
+              "image_url:",
+              cat.image_url
+            );
             return {
               id: cat.id,
               name: cat.name,
               description: cat.description,
-              image: cat.image_url || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=70&auto=format&fit=crop',
+              image:
+                cat.image_url ||
+                "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=70&auto=format&fit=crop",
               tags: cat.related_words || [],
               count: null,
             };
           });
-          console.log('Mapped categories:', mappedCategories);
+          console.log("Mapped categories:", mappedCategories);
           setFetchedCategories(mappedCategories);
         } else {
-          throw new Error('Invalid response format from API');
+          throw new Error("Invalid response format from API");
         }
       } catch (err) {
-        console.error('Failed to fetch categories:', err);
+        console.error("Failed to fetch categories:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -83,8 +92,9 @@ export default function CategoriesShowcase({
   }, []);
 
   // Use fetched categories if available, otherwise fall back to prop categories
-  const allCategories = fetchedCategories.length > 0 ? fetchedCategories : categories;
-  
+  const allCategories =
+    fetchedCategories.length > 0 ? fetchedCategories : categories;
+
   // Slice
   const cats = useMemo(() => allCategories.slice(0, 10), [allCategories]);
 
@@ -168,8 +178,13 @@ export default function CategoriesShowcase({
   }, [cats, page, effPageSize]);
 
   // Grid
-  const grid =
-    "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5";
+  const grid = `grid gap-4 sm:gap-5 justify-items-center
+  ${cols === 1 ? "grid-cols-1" : ""}
+  ${cols === 2 ? "sm:grid-cols-2" : ""}
+  ${cols === 3 ? "md:grid-cols-3" : ""}
+  ${cols === 4 ? "lg:grid-cols-4" : ""}
+  ${cols >= 5 ? "xl:grid-cols-5" : ""}
+`;
 
   return (
     // Section
@@ -235,7 +250,10 @@ export default function CategoriesShowcase({
                       key={cat.id}
                       className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]"
                     >
-                      <Card cat={cat} onClick={() => onSelect && onSelect(cat)} />
+                      <Card
+                        cat={cat}
+                        onClick={() => onSelect && onSelect(cat)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -244,46 +262,51 @@ export default function CategoriesShowcase({
 
             {/* Desktop */}
             <div className="hidden md:block">
-              <div
-                className={`${grid} items-stretch`}
-                style={{
-                  transition: `opacity ${D}ms ease, transform ${D}ms ease`,
-                  ...anim,
-                }}
-              >
-                {visible.map((cat) => (
-                  <Card
-                    key={cat.id}
-                    cat={cat}
-                    onClick={() => onSelect && onSelect(cat)}
-                  />
-                ))}
-              </div>
+  <div className="flex justify-center">
+    <div
+      className={`${
+        visible.length < cols
+          ? "flex flex-wrap justify-center gap-4 sm:gap-5 items-stretch"
+          : grid + " items-stretch"
+      }`}
+      style={{
+        transition: `opacity ${D}ms ease, transform ${D}ms ease`,
+        ...anim,
+      }}
+    >
+      {visible.map((cat) => (
+        <div key={cat.id} className="w-[300px]">
+          <Card cat={cat} onClick={() => onSelect && onSelect(cat)} />
+        </div>
+      ))}
+    </div>
+  </div>
 
-              {/* Controls - only show if there are multiple pages */}
-              {totalPages > 1 && (
-                <NavButtons
-                  onPrev={goPrev}
-                  onNext={goNext}
-                  hasPrev={loop || page > 0}
-                  hasNext={loop || page < totalPages - 1}
-                />
-              )}
+  {/* Controls */}  
+  {totalPages > 1 && (
+    <NavButtons
+      onPrev={goPrev}
+      onNext={goNext}
+      hasPrev={loop || page > 0}
+      hasNext={loop || page < totalPages - 1}
+    />
+  )}
 
-              {/* Dots - only show if there are multiple pages */}
-              {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <span
-                      key={i}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+  {/* Dots */}  
+  {totalPages > 1 && (
+    <div className="mt-6 flex items-center justify-center gap-2">
+      {Array.from({ length: totalPages }).map((_, i) => (
+        <span
+          key={i}
+          className={`h-1.5 rounded-full transition-all ${
+            i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
+          }`}
+        />
+      ))}
+    </div>
+  )}
+</div>
+
           </>
         )}
 
@@ -400,7 +423,7 @@ function Card({ cat, onClick }) {
             className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-20 blur-2xl"
             style={{ background: primaryLight }}
           />
-          <div className="relative z-10 grid grid-cols-[1fr_auto] items-start gap-3 h-[78px]">
+          <div className="relative z-10 grid grid-cols-[1fr_auto] items-start gap-3 h-[40px]">
             <h3
               className="font-bold text-base leading-tight line-clamp-2 pr-1"
               title={cat.name}
@@ -459,10 +482,10 @@ function Card({ cat, onClick }) {
               ))}
             </div>
           ) : (
-            <div className="mt-2 min-h-[24px]" />
+            <div className="min-h-[24px]" />
           )}
 
-          <div className="mt-3 flex-1" />
+          <div className="flex-1" />
 
           <div className="mt-2">
             <button

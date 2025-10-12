@@ -1,3 +1,4 @@
+// App.jsx
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "./index.css";
@@ -19,12 +20,12 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
-import FreelancerDashboard from "./components/freelancerDashboard/FreelancerDashboard";
+import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
-import CourseDetail from "./components/courseDetilas/CourseDetails";
+import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import CoursesManagement from "./components/coursesManagement/CoursesManagement";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -42,9 +43,11 @@ import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from './components/Appointments/AdminAppointments';
 import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
-
-// import AdminLayout from "./test admin/layout/AdminLayout.jsx";
+import AdminLayout from "./adminDash/layout/AdminLayout.jsx";
 import CreateProject from "./components/createProject/CreateProject";
+import AdminAccessControl from "./components/coursesManagement/AdminAccessControl";
+import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
+import AccessDenied from "./components/coursesManagement/AccessDenied";
 
 function App() {
   const location = useLocation();
@@ -116,13 +119,22 @@ function App() {
         <Route path="/projects/" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        
+        {/* ✅ Course Management Routes */}
         <Route path="/courses" element={<ProtectedRoute><CoursesManagement /></ProtectedRoute>} />
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
+        
+        {/* ✅ Admin Course Access Control */}
+        <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminAccessControl /></ProtectedRoute>} />
+        
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+=========
         
         {/* Appointments Routes */}
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments /></ProtectedRoute>} />

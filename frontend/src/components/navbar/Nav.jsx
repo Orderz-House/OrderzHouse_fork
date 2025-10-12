@@ -16,7 +16,7 @@ import { setLogout, setUserData } from "../../slice/auth/authSlice";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
-import logo from "../../assets/logo.webp";
+import logo from "../../assets/logo.png";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -212,7 +212,7 @@ export default function EnhancedNavbar() {
               <img
                 src={logo}
                 alt="Logo"
-                className="mt-7 h-24 w-auto mr-3"
+                className="h-16 my-2 w-auto"
               />
             </button>
           </div>

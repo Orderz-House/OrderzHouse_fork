@@ -5,6 +5,8 @@ import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
 import dotenv from "dotenv";
+import { Routes, Route, useLocation } from "react-router-dom";
+
 
 import { AdminInit } from "./Admin.js";
 
@@ -29,6 +31,7 @@ import uploadRouter from './router/upload.js';
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
+import accessControlRouter from "./router/accessControl.js";
 
 // DB connection
 dotenv.config();
@@ -80,6 +83,7 @@ app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use('/api/auth', authRouter);
+app.use("/api/access-control", accessControlRouter);
 //Admin init
 (async () => {
   await AdminInit(app);

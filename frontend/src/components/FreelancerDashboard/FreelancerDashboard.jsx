@@ -1,21 +1,30 @@
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setLogout } from "../../slice/auth/authSlice"; // استيراد action logout
 import axios from "axios";
 import {
   CheckCircle,
   Clock,
   AlertCircle,
   ArrowUpRight,
+  CreditCard,
+  Loader,
+  Home,
   Briefcase,
-  LayoutGrid,
-  BarChart3,
-  Settings,
+  Users,
+  BookOpen,
+  Tag,
+  Calendar,
+  Shield,
+  FileText,
+  Layers,
+  BarChart2,
   User,
   LogOut,
-  Loader,
-  CreditCard,
-  Calendar,
-  BookOpen
+  Settings,
+  LogIn,
+  Grid,
+  Menu, // ← تم إضافة أيقونة Menu لاستخدامها في الهيدر
 } from "lucide-react";
 
 import FreelancerProjects from "./FreelancerProjects";
@@ -23,21 +32,48 @@ import FreelancerTasks from "./FreelancerTasks";
 import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";
-import MyCourses from "./MyCourses";
+import MyCourses from "../coursesManagement/MyRestrictedCourses.jsx";
 import Appointments from "../Appointments/FreelancerAppointments";
+
+// --- استيراد الـ Sidebar الجديد ---
+import Sidebar from "../Sidebar/Sidebar.jsx"; // عدل المسار حسب هيكل مشروعك
 
 const Dashboard = () => {
   const { userData, token } = useSelector((state) => state.auth);
+  const dispatch = useDispatch(); // ← إضافة dispatch
 
   const [dashboardData, setDashboardData] = useState({
     completedProjects: 0,
     ongoingProjects: 0,
-    activeProjects: 0
+    activeProjects: 0,
   });
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [error, setError] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ← إضافة حالة الجوال
+
+  // --- تحويل القائمة القديمة إلى التنسيق الجديد ---
+  const navigation = [
+    { name: "Dashboard", id: "dashboard", icon: Home },
+    { name: "Projects", id: "projects", icon: Briefcase },
+    { name: "Tasks", id: "tasks", icon: Grid },
+    { name: "Appointments", id: "appointments", icon: Calendar },
+    { name: "My Courses", id: "myCourses", icon: BookOpen },
+    { name: "Payments", id: "payments", icon: CreditCard },
+  ];
+
+  const bottomNavigation = [
+    { name: "Profile", id: "profile", icon: User },
+    { name: "Settings", id: "settings", icon: Settings },
+    { name: "Log Out", id: "logout", icon: LogOut },
+  ];
+
+  // --- وظيفة تسجيل الخروج ---
+  const handleLogout = () => {
+    dispatch(setLogout());
+    window.location.href = "/login"; // أو استخدم react-router للانتقال
+  };
 
   const fetchProjectCounts = async () => {
     if (!token) {
@@ -55,9 +91,9 @@ const Dashboard = () => {
     try {
       const res = await axios.get(
         `http://localhost:5000/projects/freelancer/${userData.id}/counts`,
-        { 
+        {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
+          timeout: 10000,
         }
       );
 
@@ -66,7 +102,7 @@ const Dashboard = () => {
         setDashboardData({
           ongoingProjects: counts.active || 0,
           completedProjects: counts.completed || 0,
-          activeProjects: counts.active || 0
+          activeProjects: counts.active || 0,
         });
         setError(null);
       } else {
@@ -75,17 +111,20 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Error fetching project counts:", err);
       let errorMessage = "Failed to load project statistics";
-      
-      if (err.code === 'ECONNABORTED') {
+
+      if (err.code === "ECONNABORTED") {
         errorMessage = "Request timeout - Server is not responding";
       } else if (err.response) {
-        errorMessage = `Server error: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`;
+        errorMessage = `Server error: ${err.response.status} - ${
+          err.response.data?.message || "Unknown error"
+        }`;
       } else if (err.request) {
-        errorMessage = "Network error - Cannot connect to server. Make sure backend is running on port 5000.";
+        errorMessage =
+          "Network error - Cannot connect to server. Make sure backend is running on port 5000.";
       } else {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     }
   };
@@ -93,7 +132,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await fetchProjectCounts();
     } catch (err) {
@@ -117,7 +156,15 @@ const Dashboard = () => {
     fetchDashboardData();
   };
 
-  const CountCard = ({ title, count, icon, action, onAction, loading, isActionCard = false }) => (
+  const CountCard = ({
+    title,
+    count,
+    icon,
+    action,
+    onAction,
+    loading,
+    isActionCard = false,
+  }) => (
     <div
       className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
       onClick={onAction}
@@ -128,13 +175,17 @@ const Dashboard = () => {
           {loading ? (
             <Loader className="h-5 w-5 animate-spin text-gray-400 mt-1" />
           ) : (
-            !isActionCard && <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
+            !isActionCard && (
+              <h3 className="text-2xl font-bold text-gray-900 mt-1">{count}</h3>
+            )
           )}
         </div>
         <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
       </div>
       {action && (
-        <button className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+        <button
+          className="flex items-center text-sm font-medium text-[#028090]"
+        >
           {action} <ArrowUpRight className="w-4 h-4 ml-1" />
         </button>
       )}
@@ -172,7 +223,8 @@ const Dashboard = () => {
             <p className="text-red-700">{error}</p>
             {error.includes("Cannot connect to server") && (
               <p className="text-sm text-red-600 mt-1">
-                Make sure your backend server is running on http://localhost:5000
+                Make sure your backend server is running on
+                http://localhost:5000
               </p>
             )}
           </div>
@@ -198,7 +250,8 @@ const Dashboard = () => {
           {/* Welcome Message */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Welcome back, {userData?.first_name || userData?.name || "Freelancer"}!
+              Welcome back,{" "}
+              {userData?.first_name || userData?.name || "Freelancer"}!
             </h2>
             <p className="text-gray-600">
               Here's an overview of your projects and activities.
@@ -240,116 +293,60 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Freelancer Hub</h1>
-          <p className="text-sm text-gray-600 mt-1">Professional Dashboard</p>
-        </div>
+      {/* --- إضافة الـ Sidebar الجديد --- */}
+      <Sidebar
+        activePage={activeSection}
+        setActivePage={setActiveSection}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        navigation={navigation}
+        bottomNavigation={bottomNavigation}
+        onLogout={handleLogout}
+      />
 
-        <div className="flex-1 p-4 space-y-1">
-          <button
-            onClick={() => setActiveSection("dashboard")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "dashboard"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 mr-3" /> Dashboard
-          </button>
-          <button
-            onClick={() => setActiveSection("projects")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "projects"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Briefcase className="w-5 h-5 mr-3" /> Projects
-          </button>
-          <button
-            onClick={() => setActiveSection("myCourses")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "myCourses"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <BookOpen className="w-5 h-5 mr-3" /> My Courses
-          </button>
-          <button
-            onClick={() => setActiveSection("appointments")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "appointments"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Calendar className="w-5 h-5 mr-3" /> My Appointments
-          </button>
-          <button
-            onClick={() => setActiveSection("payments")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "payments"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <CreditCard className="w-5 h-5 mr-3" /> Payments
-          </button>
-          <button
-            onClick={() => setActiveSection("tasks")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "tasks"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <LayoutGrid className="w-5 h-5 mr-3" /> Tasks
-          </button>
-          <button
-            onClick={() => setActiveSection("profile")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "profile"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <User className="w-5 h-5 mr-3" /> Profile
-          </button>
-          <button
-            onClick={() => setActiveSection("settings")}
-            className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-              activeSection === "settings"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Settings className="w-5 h-5 mr-3" /> Settings
-          </button>
-        </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">
-            <LogOut className="w-5 h-5 mr-3" /> Logout
-          </button>
-        </div>
-      </div>
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 capitalize">
+      <div className="flex-1 flex flex-col">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Menu className="w-6 h-6 text-gray-700" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900 capitalize">
             {activeSection === "myCourses" ? "My Courses" : activeSection}
           </h1>
-          <p className="text-sm text-gray-600">
-            {activeSection === "dashboard"
-              ? `Welcome back, ${userData?.first_name || userData?.name || "Freelancer"}!`
-              : `Manage your ${activeSection === "myCourses" ? "courses" : activeSection}`}
-          </p>
+          <div className="w-10"></div>
+        </header>
+
+        <div className="flex-1 overflow-auto">
+          <div className="bg-white border-b border-gray-200 sticky top-0 z-20 px-6 py-4">
+            <h1 className="text-2xl font-bold text-gray-900 capitalize hidden lg:block">
+              {activeSection === "myCourses" ? "My Courses" : activeSection}
+            </h1>
+            <p className="text-sm text-gray-600 hidden lg:block">
+              {activeSection === "dashboard"
+                ? `Welcome back, ${
+                    userData?.first_name || userData?.name || "Freelancer"
+                  }!`
+                : `Manage your ${
+                    activeSection === "myCourses" ? "courses" : activeSection
+                  }`}
+            </p>
+          </div>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {renderActiveSection()}
+          </div>
         </div>
-        <div className="max-w-7xl mx-auto px-6 py-8">{renderActiveSection()}</div>
       </div>
     </div>
   );

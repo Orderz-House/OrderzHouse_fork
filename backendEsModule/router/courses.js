@@ -3,40 +3,36 @@ import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js";
 import {
-  getCategories,
   getCourses,
   getCoursesByCategory,
   getCourseById,
   createCourse,
   updateCourse,
   deleteCourse,
-  enrollInCourse,
   getCourseMaterials,
-  checkEnrollment,
-  getCourseEnrollments,
+  adminEnrollFreelancer,
+  getMyCourses,
+  getFreelancerAccessibleCourses,
+  checkCourseAccess
 } from "../controller/courses.js";
 
 const coursesRouter = express.Router();
 
-/* Categories */
-coursesRouter.get("/categories", getCategories);
-
-/* Courses */
-coursesRouter.get("/view", authentication, getCourses);
+/* Public / Authenticated Routes */
 coursesRouter.get("/category/:categoryId", getCoursesByCategory);
+coursesRouter.get("/view", authentication, getCourses);
 coursesRouter.get("/view/:id", authentication, getCourseById);
-
-/* Materials */
 coursesRouter.get("/:id/materials", authentication, getCourseMaterials);
 
-/* Enrollments */
-coursesRouter.get("/:id/enrollment", authentication, checkEnrollment);
-coursesRouter.post("/enroll", authentication, enrollInCourse);
-coursesRouter.get("/:id/enrollments", getCourseEnrollments);
+/* Freelancer-specific (RESTRICTED) */
+coursesRouter.get("/accessible", authentication, getFreelancerAccessibleCourses);
+coursesRouter.get("/check-access/:id", authentication, checkCourseAccess);
+coursesRouter.get("/my-courses", authentication, getMyCourses);
 
-/* Course CRUD (admin only) */
-coursesRouter.post("/create", createCourse);
-coursesRouter.put("/update/:id", updateCourse);
-coursesRouter.delete("/delete/:id", deleteCourse);
+/* Admin-only */
+coursesRouter.post("/create", authentication, authorization(["admin"]), createCourse);
+coursesRouter.put("/update/:id", authentication, authorization(["admin"]), updateCourse);
+coursesRouter.delete("/delete/:id", authentication, authorization(["admin"]), deleteCourse);
+coursesRouter.post("/admin/enroll-freelancer", authentication, authorization(["admin"]), adminEnrollFreelancer);
 
 export default coursesRouter;

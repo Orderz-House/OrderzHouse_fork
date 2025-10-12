@@ -33,7 +33,7 @@ const AdminAppointments = () => {
     rejectAppointment,
     rescheduleAppointment,
     createAppointmentByAdmin,
-    markAppointmentCompleted // تأكد من إضافة هذه الدالة في الـ hook
+    markAppointmentCompleted 
   } = useAppointments();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -43,13 +43,13 @@ const AdminAppointments = () => {
 
   // Website color scheme
   const colors = {
-    primary: '#3B82F6',    // Blue
-    secondary: '#10B981',  // Green
-    accent: '#8B5CF6',     // Purple
-    warning: '#F59E0B',    // Orange
-    danger: '#EF4444',     // Red
-    dark: '#1F2937',       // Dark Gray
-    light: '#F3F4F6'       // Light Gray
+    primary: '#028090',    // Teal
+    secondary: '#01535e',  // Dark Teal
+    accent: '#026a77',     // Medium Teal
+    warning: '#0296a9',    // Light Teal
+    danger: '#03adc2',     // Lighter Teal
+    dark: '#03c3db',       // Lightest Teal
+    light: '#e6f7fa'       // Very Light Teal
   };
 
   useEffect(() => {
@@ -61,11 +61,9 @@ const AdminAppointments = () => {
   // Load completed appointments from database
   const loadCompletedAppointments = async () => {
     try {
-      // افترض أن لديك دالة في الـ hook تجلب المواعيد المنتهية
       const completedFromDB = appointments.filter(app => app.status === 'completed');
       setCompletedAppointments(completedFromDB);
       
-      // حفظ في localStorage كنسخة احتياطية
       localStorage.setItem('completedAppointments', JSON.stringify(completedFromDB));
     } catch (error) {
       console.error('Error loading completed appointments:', error);
@@ -209,9 +207,9 @@ const AdminAppointments = () => {
     switch(status) {
       case 'accepted': 
         return {
-          bg: 'bg-green-50',
-          text: 'text-green-700',
-          border: 'border-green-200',
+          bg: 'bg-teal-50',
+          text: 'text-teal-700',
+          border: 'border-teal-200',
           label: 'Accepted'
         };
       case 'rejected': 
@@ -299,7 +297,7 @@ const AdminAppointments = () => {
                       <div className={`w-2 h-8 rounded-full ${
                         isCompleted ? 'bg-gray-400' : 
                         isPast ? 'bg-orange-400' : 
-                        'bg-blue-500'
+                        'bg-teal-500'
                       }`}></div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -322,7 +320,7 @@ const AdminAppointments = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-700 rounded-full flex items-center justify-center">
                         <User className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -338,11 +336,11 @@ const AdminAppointments = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full ${
-                      appointment.appointment_type === 'online' ? 'bg-blue-50' : 'bg-green-50'
+                      appointment.appointment_type === 'online' ? 'bg-teal-50' : 'bg-teal-100'
                     }`}>
                       {getTypeIcon(appointment.appointment_type)}
                       <span className={`text-sm font-medium ${
-                        appointment.appointment_type === 'online' ? 'text-blue-700' : 'text-green-700'
+                        appointment.appointment_type === 'online' ? 'text-teal-700' : 'text-teal-800'
                       }`}>
                         {appointment.appointment_type === 'online' ? 'Online' : 'In Company'}
                       </span>
@@ -361,7 +359,7 @@ const AdminAppointments = () => {
                           <>
                             <button
                               onClick={() => handleAccept(appointment.id)}
-                              className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                              className="p-2 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
                               title="Accept Appointment"
                             >
                               <CheckCircle className="w-4 h-4" />
@@ -380,7 +378,7 @@ const AdminAppointments = () => {
                         {!isCompleted && (
                           <button
                             onClick={() => setRescheduleAppointmentId(appointment.id)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                            className="p-2 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
                             title="Reschedule Appointment"
                           >
                             <RefreshCw className="w-4 h-4" />
@@ -391,7 +389,7 @@ const AdminAppointments = () => {
                         {showCompleteButton && !isCompleted && (
                           <button
                             onClick={() => markAsComplete(appointment)}
-                            className="p-2 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                            className="p-2 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
                             title="Mark as Completed"
                           >
                             <CheckSquare className="w-4 h-4" />
@@ -439,24 +437,24 @@ const AdminAppointments = () => {
 
   if (loading && appointments.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-white p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading appointments...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-teal-600">Loading appointments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-white p-6">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-200">
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-teal-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700">
                 <Calendar className="w-8 h-8 text-white" />
               </div>
               <div>
@@ -467,7 +465,7 @@ const AdminAppointments = () => {
             
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg"
+              className="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all shadow-lg"
             >
               <Plus className="w-5 h-5" />
               <span className="font-semibold">New Appointment</span>
@@ -478,7 +476,7 @@ const AdminAppointments = () => {
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+            <div key={index} className="bg-white rounded-2xl p-6 shadow-lg border border-teal-200 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.label}</p>
@@ -493,7 +491,7 @@ const AdminAppointments = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg p-2 mb-8 border border-gray-200">
+        <div className="bg-white rounded-2xl shadow-lg p-2 mb-8 border border-teal-200">
           <div className="flex space-x-2">
             {[
               { id: 'all', label: 'All Appointments', count: allActiveAppointments.length },
@@ -505,13 +503,13 @@ const AdminAppointments = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-3 px-6 py-3 rounded-xl font-semibold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-teal-500 to-teal-700 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-teal-50'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span className={`px-2 py-1 rounded-full text-xs ${
-                  activeTab === tab.id ? 'bg-white text-blue-600' : 'bg-gray-200 text-gray-600'
+                  activeTab === tab.id ? 'bg-white text-teal-600' : 'bg-teal-200 text-teal-600'
                 }`}>
                   {tab.count}
                 </span>
@@ -549,7 +547,7 @@ const AdminAppointments = () => {
           {/* Today's Appointments */}
           {activeTab === 'today' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-100 rounded-2xl p-6 border border-green-200">
+              <div className="bg-gradient-to-r from-teal-50 to-teal-100 rounded-2xl p-6 border border-teal-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Today's Schedule</h2>
@@ -562,7 +560,7 @@ const AdminAppointments = () => {
                       })}
                     </p>
                   </div>
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-3xl font-bold text-teal-600">
                     {today.length} {today.length === 1 ? 'Appointment' : 'Appointments'}
                   </div>
                 </div>
@@ -576,13 +574,13 @@ const AdminAppointments = () => {
                   showCompleteButton={true}
                 />
               ) : (
-                <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-teal-200">
+                  <Calendar className="w-16 h-16 text-teal-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No Appointments Today</h3>
                   <p className="text-gray-600 mb-6">There are no appointments scheduled for today.</p>
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all"
+                    className="px-6 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all"
                   >
                     Schedule New Appointment
                   </button>
@@ -594,10 +592,10 @@ const AdminAppointments = () => {
           {/* Completed Appointments */}
           {activeTab === 'completed' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl p-6 border border-gray-300">
+              <div className="bg-gradient-to-r from-teal-100 to-teal-200 rounded-2xl p-6 border border-teal-300">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <History className="w-8 h-8 text-gray-600" />
+                    <History className="w-8 h-8 text-teal-600" />
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">Completed Appointments</h2>
                       <p className="text-gray-600 mt-1">Historical record of all completed appointments</p>
@@ -609,11 +607,11 @@ const AdminAppointments = () => {
                       const dataBlob = new Blob([dataStr], { type: 'application/json' });
                       const url = URL.createObjectURL(dataBlob);
                       const link = document.createElement('a');
-                      link.href = url;
+                      link.href = url
                       link.download = 'completed-appointments.json';
                       link.click();
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     <span>Export Data</span>
@@ -629,8 +627,8 @@ const AdminAppointments = () => {
                   showCompleteButton={false}
                 />
               ) : (
-                <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200">
-                  <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-teal-200">
+                  <History className="w-16 h-16 text-teal-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No Completed Appointments</h3>
                   <p className="text-gray-600">Mark appointments as complete to see them here.</p>
                 </div>

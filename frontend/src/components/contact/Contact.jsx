@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import GradientButton from '../buttons/GradientButton.jsx';
+import GradientButton from "../buttons/GradientButton.jsx";
 
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -38,7 +38,7 @@ export default function ContactUsPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setSubmitStatus("success");
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       setSubmitStatus("error");
     } finally {
@@ -58,11 +58,18 @@ export default function ContactUsPage() {
       {/* ✅ PAGE CONTENT */}
       <div className="relative z-10">
         <section className="py-16 text-center">
-          <h1 className="text-5xl font-bold mb-4" style={{ fontFamily: "'Merriweather', serif" }}>
+          <h1
+            className="text-5xl font-bold mb-4"
+            style={{ fontFamily: "'Merriweather', serif" }}
+          >
             Get in <span className="text-[#028090]">Touch</span>
           </h1>
-          <p className="text-gray-600 max-w-xl mx-auto" style={{ fontFamily: "'Merriweather', serif" }}>
-            Have questions or need assistance? We're here to help you with anything you need.
+          <p
+            className="text-gray-600 max-w-xl mx-auto"
+            style={{ fontFamily: "'Merriweather', serif" }}
+          >
+            Have questions or need assistance? We're here to help you with
+            anything you need.
           </p>
         </section>
 
@@ -71,38 +78,49 @@ export default function ContactUsPage() {
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 xl:grid-cols-3 gap-12">
             {/* Contact Info */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-[#F0F3BD]/20">
-              <h2 className="text-2xl font-bold mb-8 text-gray-700" style={{ fontFamily: "'Merriweather', serif" }}>
+              <h2
+                className="text-2xl font-bold mb-8 text-gray-700"
+                style={{ fontFamily: "'Merriweather', serif" }}
+              >
                 Contact Information
               </h2>
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#05668D] to-[#028090] rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090]/90 to-[#028090]/100 rounded-xl flex items-center justify-center mr-4">
                     <Phone className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">Phone Number</h3>
+                    <h3 className="font-bold text-gray-700 mb-2">
+                      Phone Number
+                    </h3>
                     <p className="text-gray-600">+962 791 433 341</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090] to-[#00A896] rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090] to-[#028090]/90 rounded-xl flex items-center justify-center mr-4">
                     <Mail className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">Email Address</h3>
+                    <h3 className="font-bold text-gray-700 mb-2">
+                      Email Address
+                    </h3>
                     <p className="text-gray-600">info@orderzhouse.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#00A896] to-[#02C39A] rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090]/60 to-[#028090]  rounded-xl flex items-center justify-center mr-4">
                     <MapPin className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">Office Location</h3>
+                    <h3 className="font-bold text-gray-700 mb-2">
+                      Office Location
+                    </h3>
                     <p className="text-gray-600">Amman, Madinah Street</p>
-                    <p className="text-gray-600">Al-Basem Complex 2, Office 405</p>
+                    <p className="text-gray-600">
+                      Al-Basem Complex 2, Office 405
+                    </p>
                   </div>
                 </div>
               </div>
@@ -110,7 +128,10 @@ export default function ContactUsPage() {
 
             {/* Contact Form */}
             <div className="xl:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-[#F0F3BD]/20">
-              <h2 className="text-2xl font-bold mb-8 text-gray-700" style={{ fontFamily: "'Merriweather', serif" }}>
+              <h2
+                className="text-2xl font-bold mb-8 text-gray-700"
+                style={{ fontFamily: "'Merriweather', serif" }}
+              >
                 Send us a Message
               </h2>
 
@@ -134,7 +155,7 @@ export default function ContactUsPage() {
                     onChange={handleChange}
                     required
                     placeholder="Full Name *"
-                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
+                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
                   />
                   <input
                     type="email"
@@ -143,7 +164,7 @@ export default function ContactUsPage() {
                     onChange={handleChange}
                     required
                     placeholder="Email Address *"
-                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
+                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
                   />
                 </div>
 
@@ -153,7 +174,7 @@ export default function ContactUsPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone Number"
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
+                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
                 />
 
                 <select
@@ -161,7 +182,7 @@ export default function ContactUsPage() {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
+                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
                 >
                   <option value="">Select a subject *</option>
                   <option value="general">General Inquiry</option>
@@ -177,16 +198,16 @@ export default function ContactUsPage() {
                   required
                   rows="4"
                   placeholder="Your Message *"
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090]"
+                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
                 />
 
-               <GradientButton
-  className="w-full md:w-auto px-6 py-3 font-semibold"
-  onClick={handleSubmit} 
-  disabled={isSubmitting}
->
-  {isSubmitting ? "Sending..." : "Send Message"}
-</GradientButton>
+                <GradientButton
+                  className="w-full md:w-auto px-6 py-3 font-semibold"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Send Message"}
+                </GradientButton>
               </form>
             </div>
           </div>
