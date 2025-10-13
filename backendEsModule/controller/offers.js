@@ -1,5 +1,88 @@
 import pool  from "../models/db.js";
 
+// Allows clients to accept or reject freelancer offers and handle escrow
+export const approveOrRejectOffer = async (req, res) => {
+  try {
+    const clientId = req.token.userId;
+    const { offerId, action } = req.body;
+
+    const { rows: offerRows } = await pool.query(
+      `SELECT o.*, p.user_id AS client_id 
+       FROM offers o 
+       JOIN projects p ON o.project_id = p.id 
+       WHERE o.id = $1`,
+      [offerId]
+    );
+    if (!offerRows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Offer not found" });
+    }
+
+    const offer = offerRows[0];
+    if (offer.client_id !== clientId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    if (action === "reject") {
+      await pool.query(
+        `UPDATE offers SET offer_status = 'rejected' WHERE id = $1`,
+        [offerId]
+      );
+      return res.json({ success: true, message: "Offer rejected" });
+    }
+
+    if (action === "accept") {
+      await pool.query("BEGIN");
+
+      // Mark offer accepted
+      await pool.query(
+        `UPDATE offers SET offer_status = 'accepted' WHERE id = $1`,
+        [offerId]
+      );
+
+      // Assign freelancer
+      const { rows: assignmentRows } = await pool.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, status)
+         VALUES ($1, $2, 'active')
+         ON CONFLICT DO NOTHING RETURNING *`,
+        [offer.project_id, offer.freelancer_id]
+      );
+
+      // Update project table to reflect assigned freelancer
+      await pool.query(
+        `UPDATE projects
+         SET assigned_freelancer_id = $1, completion_status = 'not_started'
+         WHERE id = $2`,
+        [offer.freelancer_id, offer.project_id]
+      );
+
+      // Move budget into escrow
+      await pool.query(
+        `INSERT INTO escrow (project_id, freelancer_id, amount, status)
+         VALUES ($1, $2, $3, 'held')`,
+        [offer.project_id, offer.freelancer_id, offer.bid_amount]
+      );
+
+      await pool.query("COMMIT");
+
+      return res.json({
+        success: true,
+        message: "Offer accepted, freelancer assigned, escrow funded",
+        assignment: assignmentRows[0],
+      });
+    }
+
+    return res.status(400).json({ success: false, message: "Invalid action" });
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    console.error("approveOrRejectOffer error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 export const sendOffer = async (req, res) => {
   try {

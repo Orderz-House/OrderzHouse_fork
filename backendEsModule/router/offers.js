@@ -5,7 +5,7 @@ import { requireVerified } from "../middleware/requireVerification.js";
 
 const offersRouter = express.Router();
 
-import { sendOffer, getMyOffersForProject, getOffersForMyProjects } from "../controller/offers.js";
+import { sendOffer, getMyOffersForProject, getOffersForMyProjects, approveOrRejectOffer } from "../controller/offers.js";
 
 // Send an offer for a project
 offersRouter.post(
@@ -31,5 +31,12 @@ offersRouter.get(
   getOffersForMyProjects
 );
 ;
+
+offersRouter.post(
+  "/offers/approve-reject",
+  authentication,
+  requireVerified,
+  approveOrRejectOffer
+);
 
 export default offersRouter;

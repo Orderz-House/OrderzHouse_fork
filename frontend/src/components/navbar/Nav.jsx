@@ -189,7 +189,7 @@ export default function EnhancedNavbar() {
     { label: "CONTACT", path: "/contact", condition: true },
     {
       label: "PROJECTS",
-      path: "/dashboard/projects",
+      path: "/projectsPage",
       condition: userData && (userData.role_id === 2 || userData.role_id === 3),
     },
     {

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
+import { fetchSubSubCategoriesByCategoryId } from "./api/category";
 
 export default function CategoryBar({
   cat,
@@ -12,25 +13,101 @@ export default function CategoryBar({
   setPro,
   instant,
   setInstant,
-  catalog,
   theme,
   themeLight,
   themeDark,
-  // فلاتر الأزرار وتمرير التغييرات من/إلى الصفحة
   filters,
   onChangeFilters,
 }) {
-  const meta = catalog[cat] || {
+  const [meta, setMeta] = useState({
     title: "Projects",
     subtitle: "Browse projects by category and filters",
     subcats: [],
-  };
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch sub-sub-categories when category changes
+  useEffect(() => {
+    if (!cat) {
+      setMeta({
+        title: "Projects",
+        subtitle: "Browse projects by category and filters",
+        subcats: [],
+      });
+      setLoading(false);
+      return;
+    }
+    
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        console.log("Fetching sub-sub-categories for category:", cat);
+        const subSubCategoriesGrouped = await fetchSubSubCategoriesByCategoryId(cat);
+        
+        console.log("Raw API response:", subSubCategoriesGrouped);
+        
+        if (!alive) return;
+        
+        // Handle different possible response formats
+        let flattenedSubSubCats = [];
+        
+        // Case 1: Already an array
+        if (Array.isArray(subSubCategoriesGrouped)) {
+          console.log("Response is already an array");
+          flattenedSubSubCats = subSubCategoriesGrouped.map((ssc) => ({
+            id: ssc._id || ssc.id,
+            name: ssc.name
+          }));
+        }
+        // Case 2: Grouped object { subCatId: [items], subCatId2: [items] }
+        else if (subSubCategoriesGrouped && typeof subSubCategoriesGrouped === 'object') {
+          console.log("Response is a grouped object");
+          Object.entries(subSubCategoriesGrouped).forEach(([key, value]) => {
+            console.log(`Processing group "${key}":`, value);
+            if (Array.isArray(value)) {
+              value.forEach((ssc) => {
+                flattenedSubSubCats.push({
+                  id: ssc._id || ssc.id,
+                  name: ssc.name
+                });
+              });
+            }
+          });
+        }
+
+        console.log("Flattened sub-sub-categories:", flattenedSubSubCats);
+
+        setMeta({
+          title: "Projects",
+          subtitle: "Browse projects by category and filters",
+          subcats: flattenedSubSubCats,
+        });
+      } catch (err) {
+        console.error("Failed to load sub-sub-categories:", err);
+        console.error("Error details:", err.response?.data || err.message);
+        if (!alive) return;
+        setMeta({
+          title: "Projects",
+          subtitle: "Browse projects by category and filters",
+          subcats: [],
+        });
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [cat]);
 
   const wrapRef = useRef(null);
   const scrollBy = (dx) =>
     wrapRef.current?.scrollBy({ left: dx, behavior: "smooth" });
 
-  const [open, setOpen] = useState(null); // "service" | "seller" | "budget" | "delivery" | null
+  const [open, setOpen] = useState(null);
   useEffect(() => {
     const onEsc = (e) => e.key === "Escape" && setOpen(null);
     window.addEventListener("keydown", onEsc);
@@ -45,9 +122,7 @@ export default function CategoryBar({
 
   return (
     <div className="mb-8">
-      {/* السماح بالخروج عموديًا لمنع القصّ */}
       <div className="relative rounded-2xl p-5 sm:p-6 bg-white/70 backdrop-blur shadow-[0_12px_42px_rgba(2,128,144,0.10)] ring-1 ring-black/5 overflow-x-hidden overflow-y-visible">
-        {/* نحصر الخلفيات داخل طبقة داخلية */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div
             className="absolute -top-24 -right-24 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-30"
@@ -81,13 +156,13 @@ export default function CategoryBar({
           </div>
         </div>
 
-        {/* Subcats rail */}
-        {meta.subcats.length > 0 && (
+        {/* Sub-sub-categories rail */}
+        {!loading && meta.subcats.length > 0 && (
           <div className="relative mt-5">
             <button
               aria-label="Prev"
               onClick={() => scrollBy(-320)}
-              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md"
+              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md transition"
             >
               <svg viewBox="0 0 20 20" className="w-5 h-5">
                 <path
@@ -102,7 +177,7 @@ export default function CategoryBar({
             <button
               aria-label="Next"
               onClick={() => scrollBy(320)}
-              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md"
+              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md transition"
             >
               <svg viewBox="0 0 20 20" className="w-5 h-5">
                 <path
@@ -117,7 +192,7 @@ export default function CategoryBar({
 
             <div
               ref={wrapRef}
-              className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 px-10 sm:px-12"
+              className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 px-10 sm:px-12 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               style={{
                 WebkitMaskImage:
                   "linear-gradient(90deg, transparent 0, black 40px, black calc(100% - 40px), transparent 100%)",
@@ -159,6 +234,23 @@ export default function CategoryBar({
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="relative mt-5 flex items-center justify-center py-4">
+            <div className="text-sm text-slate-500">Loading categories...</div>
+          </div>
+        )}
+
+        {!loading && meta.subcats.length === 0 && cat && (
+          <div className="relative mt-5 flex items-center justify-center py-4">
+            <div className="text-sm text-slate-400">
+              No sub-categories available
+              <div className="text-xs mt-1 text-slate-400">
+                (Check browser console for debug info)
+              </div>
             </div>
           </div>
         )}
@@ -318,7 +410,7 @@ export default function CategoryBar({
                 { v: 7, t: "Up to 7 days" },
                 { v: 14, t: "Up to 14 days" },
               ].map((o) => (
-                <label key={o.t} className="flex items-center gap-2">
+                <label key={o.v ?? 'any'} className="flex items-center gap-2">
                   <input
                     type="radio"
                     name="dlv"
@@ -360,7 +452,6 @@ export default function CategoryBar({
   );
 }
 
-/* ========= عناصر مساعدة ========= */
 function Field({ label, children }) {
   return (
     <label className="block text-sm">
@@ -370,7 +461,6 @@ function Field({ label, children }) {
   );
 }
 
-// ============== أهم تعديل: قوائم بمنطق Portal ==============
 function FilterButton({ label, open, setOpen, children }) {
   const btnRef = useRef(null);
   const menuRef = useRef(null);
@@ -383,11 +473,10 @@ function FilterButton({ label, open, setOpen, children }) {
 
   const clamp = (val, min, max) => Math.max(min, Math.min(val, max));
 
-  // حساب موضع القائمة بالنسبة للنافذة + اختيار الاتجاه
   const syncPosition = () => {
     const r = btnRef.current?.getBoundingClientRect();
     if (!r) return;
-    const estMenuH = 260; // تقدير مبدئي قبل القياس الفعلي
+    const estMenuH = 260;
     const spaceBelow = window.innerHeight - r.bottom;
     const spaceAbove = r.top;
     const dropUp = spaceBelow < estMenuH + 16 && spaceAbove > estMenuH + 16;
@@ -416,7 +505,6 @@ function FilterButton({ label, open, setOpen, children }) {
     };
   }, [open]);
 
-  // إغلاق عند الضغط خارج
   useEffect(() => {
     function onDoc(e) {
       if (!open) return;
