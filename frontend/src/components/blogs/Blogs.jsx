@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   Calendar,
@@ -11,136 +11,11 @@ import {
   Bookmark,
 } from "lucide-react";
 
-
 export default function Blogs() {
-  const posts = useMemo(
-    () => [
-      {
-        id: "p-001",
-        title: "How to Hire the Right Freelancer",
-        excerpt:
-          "Define scope, compare proposals fairly, and start collaboration on the right foot.",
-        cover:
-          "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1200&auto=format&fit=crop",
-        author: "Noah Wilson",
-        date: "2025-01-07",
-        read: "6 min",
-        category: "Guides",
-        tags: ["Hiring", "Freelancers"],
-      },
-      {
-        id: "p-002",
-        title: "Design Systems that Ship Faster",
-        excerpt:
-          "Shared tokens and components align teams and shorten delivery cycles.",
-        cover:
-          "https://images.unsplash.com/photo-1551281044-8b89a5a3b33b?q=80&w=1200&auto=format&fit=crop",
-        author: "Ava Martin",
-        date: "2025-01-02",
-        read: "5 min",
-        category: "Design",
-        tags: ["UI", "Components"],
-      },
-      {
-        id: "p-003",
-        title: "Write Clear Scopes: From Brief to Budget",
-        excerpt:
-          "Simple templates to estimate effort and avoid scope creep.",
-        cover:
-          "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200&auto=format&fit=crop",
-        author: "Liam Carter",
-        date: "2024-12-28",
-        read: "7 min",
-        category: "Business",
-        tags: ["Scope", "Budget"],
-      },
-      {
-        id: "p-004",
-        title: "Remote Work: Common Mistakes & Fixes",
-        excerpt:
-          "Rituals and async habits that make distributed teams thrive.",
-        cover:
-          "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200&auto=format&fit=crop",
-        author: "Maya Perez",
-        date: "2024-12-20",
-        read: "4 min",
-        category: "Remote",
-        tags: ["Teamwork"],
-      },
-      {
-        id: "p-005",
-        title: "Freelance Pricing Models Explained",
-        excerpt:
-          "Fixed vs hourly vs milestone—when each model shines.",
-        cover:
-          "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=1200&auto=format&fit=crop",
-        author: "Ethan Park",
-        date: "2024-12-15",
-        read: "6 min",
-        category: "Business",
-        tags: ["Pricing"],
-      },
-      {
-        id: "p-006",
-        title: "Portfolios that Win Clients",
-        excerpt:
-          "Pick the right cases, tell outcomes, and keep it simple.",
-        cover:
-          "https://images.unsplash.com/photo-1529336953121-4f3c7c0f8a3e?q=80&w=1200&auto=format&fit=crop",
-        author: "Zara Lee",
-        date: "2024-12-08",
-        read: "5 min",
-        category: "Guides",
-        tags: ["Portfolio"],
-      },
-      {
-        id: "p-007",
-        title: "Accessibility Basics for Clients",
-        excerpt:
-          "Small checks with big impact on usability.",
-        cover:
-          "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop",
-        author: "Oliver Adams",
-        date: "2024-12-01",
-        read: "5 min",
-        category: "Design",
-        tags: ["a11y"],
-      },
-      {
-        id: "p-008",
-        title: "Legal Essentials in Freelance Contracts",
-        excerpt:
-          "Scope, IP, payment terms, liability—friendly overview.",
-        cover:
-          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1200&auto=format&fit=crop",
-        author: "Sara Kim",
-        date: "2024-11-22",
-        read: "8 min",
-        category: "Legal",
-        tags: ["Contracts"],
-      },
-      {
-        id: "p-009",
-        title: "Lean Analytics: Signals, Not Noise",
-        excerpt:
-          "A simple metric set to track project health.",
-        cover:
-          "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
-        author: "Leo Green",
-        date: "2024-11-10",
-        read: "6 min",
-        category: "Analytics",
-        tags: ["KPI"],
-      },
-    ],
-    []
-  );
-
-  // Categories
-  const categories = useMemo(() => {
-    const set = new Set(posts.map((p) => p.category));
-    return ["All", ...Array.from(set)];
-  }, [posts]);
+  const [posts, setPosts] = useState([]);
+  const [featured, setFeatured] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Filters + pagination
   const [q, setQ] = useState("");
@@ -148,17 +23,51 @@ export default function Blogs() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 6;
 
-  const filtered = useMemo(() => {
-    const t = q.toLowerCase().trim();
-    const byCat = posts.filter((p) => (cat === "All" ? true : p.category === cat));
-    if (!t) return byCat;
-    return byCat.filter(
-      (p) =>
-        p.title.toLowerCase().includes(t) ||
-        p.excerpt.toLowerCase().includes(t) ||
-        p.tags.some((x) => x.toLowerCase().includes(t))
-    );
-  }, [posts, q, cat]);
+  // Fetch data from backend
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:5000/blogs?page=${page}&limit=${PAGE_SIZE}&search=${q}&status=approved`
+        );
+        const data = await response.json();
+        
+        if (data.success) {
+          setPosts(data.data);
+          
+          // Set featured post (most recent)
+          if (data.data.length > 0) {
+            const sorted = [...data.data].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            setFeatured(sorted[0]);
+          }
+        } else {
+          setError(data.message || "Failed to fetch blogs");
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, [page, q, cat]);
+
+  // Categories
+  const categories = ["All", ...new Set(posts.map((p) => p.category))];
+
+  // Filter posts based on category
+  const filtered = q
+    ? posts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q.toLowerCase()) ||
+          p.description.toLowerCase().includes(q.toLowerCase()) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(q.toLowerCase()))
+      )
+    : cat === "All"
+    ? posts
+    : posts.filter((p) => p.category === cat);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -179,12 +88,33 @@ export default function Blogs() {
       year: "numeric",
     });
 
-  // Featured
-  const featured = useMemo(
-    () =>
-      [...posts].sort((a, b) => new Date(b.date) - new Date(a.date))[0],
-    [posts]
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#028090] mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading articles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center p-8">
+          <h2 className="text-2xl font-bold text-red-500 mb-2">Error</h2>
+          <p className="text-slate-600">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-[#028090] text-white rounded-lg hover:bg-[#026e7a]"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -193,41 +123,43 @@ export default function Blogs() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Featured card */}
-            <article className="rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm">
-              <div className="relative">
-                <img
-                  src={featured.cover}
-                  alt={featured.title}
-                  className="h-56 w-full object-cover"
-                />
-                <span className="absolute top-3 left-3 px-3 py-1 text-[12px] rounded-full bg-[#028090] text-white shadow">
-                  Featured
-                </span>
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-3 text-slate-600 text-sm">
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {formatDate(featured.date)}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    {featured.author}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {featured.read}
+            {featured && (
+              <article className="rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                <div className="relative">
+                  <img
+                    src={featured.cover}
+                    alt={featured.title}
+                    className="h-56 w-full object-cover"
+                  />
+                  <span className="absolute top-3 left-3 px-3 py-1 text-[12px] rounded-full bg-[#028090] text-white shadow">
+                    Featured
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">
-                  {featured.title}
-                </h1>
-                <p className="text-slate-600 mt-2">{featured.excerpt}</p>
-                <button className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[#028090] hover:bg-slate-50 transition">
-                  Read article <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </article>
+                <div className="p-5">
+                  <div className="flex items-center gap-3 text-slate-600 text-sm">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(featured.created_at)}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      {featured.fullname_user}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {featured.read_time}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">
+                    {featured.title}
+                  </h1>
+                  <p className="text-slate-600 mt-2">{featured.description.substring(0, 150)}...</p>
+                  <button className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[#028090] hover:bg-slate-50 transition">
+                    Read article <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </article>
+            )}
 
             {/* Actions */}
             <div className="space-y-5">
@@ -305,21 +237,21 @@ export default function Blogs() {
                       {p.title}
                     </h3>
                     <p className="text-slate-600 text-sm mt-2 line-clamp-2">
-                      {p.excerpt}
+                      {p.description.substring(0, 100)}...
                     </p>
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-slate-500 text-xs">
                       <span className="inline-flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
-                        {formatDate(p.date)}
+                        {formatDate(p.created_at)}
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <User className="w-4 h-4" />
-                        {p.author}
+                        {p.fullname_user}
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        {p.read}
+                        {p.read_time}
                       </span>
                     </div>
 

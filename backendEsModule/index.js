@@ -32,6 +32,7 @@ import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
+import blogsRouter from './router/blogs.js';
 
 
 // DB connection
@@ -83,8 +84,9 @@ app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
-app.use('/api/auth', authRouter);
+app.use('/auth', authRouter);
 app.use("/access-control", accessControlRouter);
+app.use("/blogs", blogsRouter);
 //Admin init
 (async () => {
   await AdminInit(app);
