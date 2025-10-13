@@ -23,10 +23,14 @@ import {
   getProjectsByStatus,
   approveOrRejectOffer,
   completeHourlyProject,
-  getProjectsByCategoryId
+  getProjectsByCategoryId,
+  getPublicCategories 
 } from "../controller/projects.js";
 
 const projectsRouter = express.Router();
+
+// Public route - no authentication needed
+projectsRouter.get("/public/categories", getPublicCategories); 
 
 // ---------------------- Authenticated & Verified ----------------------
 

@@ -45,6 +45,7 @@ import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCour
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx"
+=======
 import AdminRouter from "./adminDash/routes/index";
 
 
@@ -64,7 +65,6 @@ const RoleBasedAppointments = ({ userData }) => {
     );
   }
 };
-// --- --- ---
 
 function App() {
   const location = useLocation();
@@ -151,8 +151,15 @@ function App() {
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
-        {/* ✅ Admin Routes */}
-        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[1]}><AdminRouter /></ProtectedRoute>}/>
+        {/* Admin Routes */}
+        <Route
+  path="/admin/*"
+  element={
+    <ProtectedRoute allowedRoles={[1]}>
+      <AdminRouter />
+    </ProtectedRoute>
+  }
+/>
 
         <Route path="*" element={
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
