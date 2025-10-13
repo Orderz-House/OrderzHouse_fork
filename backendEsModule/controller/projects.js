@@ -103,7 +103,7 @@ export const createProject = async (req, res) => {
         budget_min, budget_max, hourly_rate,
         preferred_skills,
         status, is_deleted, updated_at,
-        refund_amount -- ✅ NEW COLUMN
+        refund_amount -- 
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
         $12, $13, false, null, $14
@@ -1328,6 +1328,17 @@ export const getProjectFiles = async (req, res) => {
   }
 };
 
+export const getPublicCategories = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name FROM categories WHERE is_active = true ORDER BY name`
+    );
+    res.json({ success: true, categories: rows });
+  } catch (error) {
+    console.error("getPublicCategories error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 export default {
   createProject,
@@ -1343,4 +1354,5 @@ export default {
   submitWorkCompletion,
   getAllProjectForFreelancerById,
   quitProject,
+  getPublicCategories, 
 };

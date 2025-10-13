@@ -47,7 +47,6 @@ import AdminCourseManagement from "./components/coursesManagement/AdminCourseMan
 import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
-
 import AdminRouter from "./adminDash/routes/index";
 
 
@@ -156,8 +155,15 @@ function App() {
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
-        {/* ✅ Admin Routes */}
-        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[1]}><AdminRouter /></ProtectedRoute>}/>
+        {/* Admin Routes */}
+        <Route
+  path="/admin/*"
+  element={
+    <ProtectedRoute allowedRoles={[1]}>
+      <AdminRouter />
+    </ProtectedRoute>
+  }
+/>
 
         <Route path="*" element={
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
