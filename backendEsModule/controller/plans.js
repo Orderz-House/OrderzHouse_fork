@@ -2,7 +2,7 @@ import pool from "../models/db.js";
 
 const getPlans = (req, res) => {
   pool
-    .query("SELECT * FROM Plans")
+    .query("SELECT * FROM plans ORDER BY id ASC")
     .then((result) => {
       res.status(200).json({
         success: true,
@@ -18,10 +18,14 @@ const getPlans = (req, res) => {
 };
 
 const createPlan = (req, res) => {
-  const { name, price, duration, description } = req.body;
-  const query =
-    "INSERT INTO Plans (name, price, duration, description) VALUES ($1, $2, $3, $4)";
-  const data = [name, price, duration, description];
+  const { name, price, duration, description, features } = req.body;
+  const query = `
+    INSERT INTO plans (name, price, duration, description, features)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *;
+  `;
+  const data = [name, price, duration, description, features];
+
   pool
     .query(query, data)
     .then((result) => {
@@ -42,10 +46,15 @@ const createPlan = (req, res) => {
 
 const editPlan = (req, res) => {
   const { id } = req.params;
-  const { name, price, duration, description } = req.body;
-  const query =
-    "UPDATE Plans SET name = $1, price = $2, duration = $3, description = $4 WHERE id = $5";
-  const data = [name, price, duration, description, id];
+  const { name, price, duration, description, features } = req.body;
+  const query = `
+    UPDATE plans
+    SET name = $1, price = $2, duration = $3, description = $4, features = $5
+    WHERE id = $6
+    RETURNING *;
+  `;
+  const data = [name, price, duration, description, features, id];
+
   pool
     .query(query, data)
     .then((result) => {
@@ -66,11 +75,11 @@ const editPlan = (req, res) => {
 
 const deletePlan = (req, res) => {
   const { id } = req.params;
-  const query = "DELETE FROM Plans WHERE id = $1";
-  const data = [id];
+  const query = "DELETE FROM plans WHERE id = $1";
+
   pool
-    .query(query, data)
-    .then((result) => {
+    .query(query, [id])
+    .then(() => {
       res.status(200).json({
         success: true,
         message: "Plan deleted successfully",
@@ -85,29 +94,22 @@ const deletePlan = (req, res) => {
     });
 };
 
-//show count users subscribed to each plan with table subscriptions in row plans
 const getPlanSubscriptions = (req, res) => {
   const { id } = req.params;
   const query = `
     SELECT 
-      Plans.id, 
-      Plans.name, 
-      Plans.price, 
-      Plans.duration, 
-      Plans.description,
-      COUNT(Subscriptions.id) AS subscription_count
-    FROM 
-      Plans
-    LEFT JOIN 
-      Subscriptions 
-    ON 
-      Plans.id = Subscriptions.plan_id
-    WHERE 
-      Plans.id = $1
-    GROUP BY 
-      Plans.id
-    ORDER BY 
-      Plans.id;
+      plans.id, 
+      plans.name, 
+      plans.price, 
+      plans.duration, 
+      plans.description,
+      COUNT(subscriptions.id) AS subscription_count
+    FROM plans
+    LEFT JOIN subscriptions 
+      ON plans.id = subscriptions.plan_id
+    WHERE plans.id = $1
+    GROUP BY plans.id
+    ORDER BY plans.id;
   `;
   pool
     .query(query, [id])
@@ -125,10 +127,113 @@ const getPlanSubscriptions = (req, res) => {
     });
 };
 
+const getFreelancerSubscription = (req, res) => {
+  const freelancerId = req.token?.userId; 
+  const query = `
+    SELECT s.*, p.name, p.price, p.duration, p.description
+    FROM subscriptions s
+    JOIN plans p ON s.plan_id = p.id
+    WHERE s.freelancer_id = $1 AND s.status = 'active';
+  `;
+
+  pool
+    .query(query, [freelancerId])
+    .then((result) => {
+      if (result.rows.length === 0) {
+        return res.status(200).json({ success: true, subscribed: false });
+      }
+      res.status(200).json({
+        success: true,
+        subscribed: true,
+        subscription: result.rows[0],
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    });
+};
+
+const subscribeToPlan = async (req, res) => {
+  const freelancerId = req.token?.userId;
+  const { plan_id } = req.body;
+
+  try {
+    const existing = await pool.query(
+      `SELECT * FROM subscriptions WHERE freelancer_id = $1 AND status = 'active'`,
+      [freelancerId]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "You already have an active subscription.",
+      });
+    }
+
+    const planRes = await pool.query("SELECT duration FROM plans WHERE id = $1", [plan_id]);
+    if (planRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Plan not found" });
+    }
+
+    const duration = planRes.rows[0].duration;
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + duration);
+
+    const insertQuery = `
+      INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
+      VALUES ($1, $2, $3, $4, 'active')
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [freelancerId, plan_id, startDate, endDate]);
+
+    res.status(201).json({
+      success: true,
+      message: "Subscription created successfully",
+      subscription: result.rows[0],
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+const cancelSubscription = (req, res) => {
+  const freelancerId = req.token?.userId;
+
+  const query = `
+    UPDATE subscriptions
+    SET status = 'cancelled'
+    WHERE freelancer_id = $1 AND status = 'active'
+    RETURNING *;
+  `;
+
+  pool
+    .query(query, [freelancerId])
+    .then((result) => {
+      if (result.rows.length === 0)
+        return res
+          .status(400)
+          .json({ success: false, message: "No active subscription found" });
+
+      res.status(200).json({
+        success: true,
+        message: "Subscription cancelled successfully",
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({ success: false, error: err.message });
+    });
+};
+
 export {
   getPlans,
   createPlan,
   editPlan,
   deletePlan,
   getPlanSubscriptions,
+  getFreelancerSubscription,
+  subscribeToPlan,
+  cancelSubscription,
 };

@@ -17,6 +17,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
+import CategoryMegaMenu from "../Catigories/CategoryMegaMenu"; 
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -223,30 +224,39 @@ export default function EnhancedNavbar() {
               {navLinks.map(
                 (item) =>
                   item.condition && (
-                    <button
-                      key={item.label}
-                      onClick={() =>
-                        item.label === "PLANS"
-                          ? handlePlansClick()
-                          : handleNavigation(item.path, item.label)
-                      }
-                      className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                        activeLink === item.label
-                          ? "text-[#028090]"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {item.label}
-                      <span
-                        className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                    item.label === "CATEGORIES" ? (
+                      <CategoryMegaMenu 
+                        key={item.label}
+                        activeLink={activeLink}
+                        onSetActiveLink={setActiveLink}
+                      />
+                    ) : (
+                      <button
+                        key={item.label}
+                        onClick={() =>
+                          item.label === "PLANS"
+                            ? handlePlansClick()
+                            : handleNavigation(item.path, item.label)
+                        }
+                        className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
                           activeLink === item.label
-                            ? "w-full"
-                            : "w-0 group-hover:w-full"
+                            ? "text-[#028090]"
+                            : "text-gray-700"
                         }`}
-                      ></span>
-                    </button>
+                      >
+                        {item.label}
+                        <span
+                          className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                            activeLink === item.label
+                              ? "w-full"
+                              : "w-0 group-hover:w-full"
+                          }`}
+                        ></span>
+                      </button>
+                    )
                   )
               )}
+              
               {userData?.role_id === 1 && (
                 <>
                   <button
@@ -267,9 +277,6 @@ export default function EnhancedNavbar() {
                           : "w-0 group-hover:w-full"
                       }`}
                     ></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      VERIFICATION
-                    </span>
                   </button>
                   <button
                     onClick={() =>
@@ -289,9 +296,6 @@ export default function EnhancedNavbar() {
                           : "w-0 group-hover:w-full"
                       }`}
                     ></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      NEWS PENDING
-                    </span>
                   </button>
                 </>
               )}
