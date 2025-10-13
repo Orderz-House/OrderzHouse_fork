@@ -157,17 +157,7 @@ function App() {
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
         {/* ✅ Admin Routes */}
-        <Route
-  path="/admin/*"
-  element={
-    <ProtectedRoute allowedRoles={[1]}>
-      <AdminRouter />
-    </ProtectedRoute>
-  }
-/>
-
-        {/* --- Admin Layout --- */}
-        <Route path="/AdminLayout" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
+        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[1]}><AdminRouter /></ProtectedRoute>}/>
 
         <Route path="*" element={
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">

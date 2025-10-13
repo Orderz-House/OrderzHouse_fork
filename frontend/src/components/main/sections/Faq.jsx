@@ -235,7 +235,7 @@ function QAItem({ q, a }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 transition"
       >
-        <span className="font-medium text-slate-900">{q}</span>
+        <span className="font-medium text-slate-900 text-sm sm:text-lg">{q}</span>
         <span
           className={`shrink-0 w-8 h-8 rounded-full border flex items-center justify-center text-slate-500 transition-all ${
             open
@@ -260,7 +260,7 @@ function QAItem({ q, a }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-4 pb-4 text-slate-700 leading-relaxed">{a}</div>
+          <div className="px-4 pb-4 text-slate-700 leading-relaxed text-xs sm:text-sm md:text-lg">{a}</div>
         </div>
       </div>
     </div>
@@ -337,7 +337,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
       </div>
 
       {/* Wrapper */}
-      <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-col items-center">
+      <div className="relative z-10 max-w-screen-xl mx-auto px-6 sm:px-5 lg:px-8 py-14 flex-col items-center">
         {/* Badge */}
         <div className="text-center max-w-3xl mx-auto">
           <div
@@ -450,12 +450,12 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
 
               {/* Footer */}
               <div className="p-5 border-t border-slate-200 flex items-center justify-between gap-3">
-                <div className="text-sm text-slate-600">
+                <div className="text-xs sm:text-sm text-slate-600">
                   Didn’t find what you need?
                 </div>
                 <Link
                   to="/contact"
-                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-white"
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-white text-xs sm:text-sm md:text-lg text-nowrap"
                   style={{
                     background: THEME,
                     boxShadow: "0 6px 16px rgba(2,128,144,0.25)",
