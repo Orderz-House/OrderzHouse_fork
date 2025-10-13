@@ -285,7 +285,7 @@ export default function HeroFreelancer({ onSearch }) {
           </p>
 
           {/* Sublead */}
-          <p className="mt-3 text-sm text-slate-600">
+          <p className="mt-3 text-sm sm:text-lg text-slate-600">
             Match instantly with{" "}
             <span className="font-semibold text-slate-800">vetted</span>{" "}
             <span
