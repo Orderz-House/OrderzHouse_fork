@@ -30,9 +30,6 @@ import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance"; 
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
-import NewsListPage from "./components/news/NewsPage";
-import NewsDetailPage from "./components/news/NewDetail";
-import AdminPendingNewsPage from "./components/news/AdminPendingNewsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
@@ -47,7 +44,7 @@ import AdminCourseManagement from "./components/coursesManagement/AdminCourseMan
 import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
-
+import Blogs from "./components/blogs/Blogs.jsx"
 import AdminRouter from "./adminDash/routes/index";
 
 
@@ -100,10 +97,8 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
-        {/* --- News Pages --- */}
-        <Route path="/news" element={<NewsListPage />} />
-        <Route path="/news/admin" element={<AdminPendingNewsPage />} />
-        <Route path="/news/:id" element={<NewsDetailPage />} />
+        {/* --- Blogs Pages --- */}
+        <Route path="/blogs" element={<Blogs />} />
 
         {/* --- Account Suspended --- */}
         <Route path="account/suspended" element={<AccountSuspended />} />
