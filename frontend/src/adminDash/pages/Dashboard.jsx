@@ -163,10 +163,10 @@ export default function Dashboard() {
         setErr("");
         const [{ data: summary }, { data: sgs }, { data: prj }, { data: vfs }] =
           await Promise.all([
-            api.get("/api/overview/summary"),
-            api.get("/api/overview/recent-signups", { params: { limit: 5 } }),
-            api.get("/api/overview/recent-projects", { params: { limit: 5 } }),
-            api.get("/api/verifications", {
+            api.get("/overview/summary"),
+            api.get("/overview/recent-signups", { params: { limit: 5 } }),
+            api.get("/overview/recent-projects", { params: { limit: 5 } }),
+            api.get("/verifications", {
               params: { status: "pending", limit: 5 },
             }),
           ]);
@@ -202,7 +202,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      await api.post(`/api/verifications/${id}/approve`);
+      await api.post(`/verifications/${id}/approve`);
       setKpis((k) => ({
         ...k,
         pendingVerifications: Math.max(0, k.pendingVerifications - 1),
@@ -223,7 +223,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      await api.post(`/api/verifications/${id}/reject`);
+      await api.post(`/verifications/${id}/reject`);
       setKpis((k) => ({
         ...k,
         pendingVerifications: Math.max(0, k.pendingVerifications - 1),

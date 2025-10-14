@@ -29,7 +29,7 @@ export default function Projects() {
     <PeopleTable
       title="Projects"
       addLabel="Add Project"
-      // endpoint="/api/projects"  ← احذفها الآن عشان نستخدم بيانات وهمية
+      // endpoint="/projects"  ← احذفها الآن عشان نستخدم بيانات وهمية
       initialRows={mockProjects} // ← هنا أضفنا البيانات الوهمية
       columns={[
         { label: "Title", key: "title" },

@@ -9,7 +9,7 @@ const DARK = "#05668D";
 
 // Config
 const USE_MOCK = true;
-const API_ENDPOINT = "/api/top-rated";
+const API_ENDPOINT = "/top-rated";
 
 // Axios
 const api = axios.create({

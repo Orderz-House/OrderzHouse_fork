@@ -53,7 +53,7 @@ export default function Plans() {
       try {
         setLoading(true);
         setErr("");
-        const { data } = await api.get("/api/plans");
+        const { data } = await api.get("/plans");
         setItems(Array.isArray(data) ? data : data?.items ?? []);
       } catch {
         setErr("Failed to load plans.");
@@ -103,7 +103,7 @@ export default function Plans() {
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
     if (MOCK) return;
     try {
-      await api.delete(`/api/plans/${id}`);
+      await api.delete(`/plans/${id}`);
     } catch {
       alert("Delete failed");
       setItems(prev);
@@ -135,10 +135,10 @@ export default function Plans() {
     }
     try {
       if (editId == null) {
-        const { data } = await api.post("/api/plans", payload);
+        const { data } = await api.post("/plans", payload);
         setItems((arr) => [data, ...arr]);
       } else {
-        const { data } = await api.put(`/api/plans/${editId}`, payload);
+        const { data } = await api.put(`/plans/${editId}`, payload);
         setItems((arr) =>
           arr.map((x) => ((x.id ?? x._id) === editId ? data : x))
         );

@@ -5,7 +5,7 @@ export default function Payments() {
     <PeopleTable
       title="Payments"
       addLabel="Add Payment"
-      endpoint="/api/payments"
+      endpoint="/payments"
       columns={[
         { label: "User", key: "user" },
         { label: "Amount", key: "amount" },

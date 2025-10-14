@@ -5,7 +5,7 @@ export default function News() {
     <PeopleTable
       title="News"
       addLabel="Add Post"
-      endpoint="/api/news"
+      endpoint="/news"
       columns={[
         { label: "Title", key: "title" },
         { label: "Category", key: "category" },

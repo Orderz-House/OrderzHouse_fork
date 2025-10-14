@@ -5,7 +5,7 @@ export default function Freelancers() {
     <PeopleTable
       title="Freelancers"
       addLabel="Add Freelancer"
-      endpoint="/api/freelancers"
+      endpoint="/freelancers"
       columns={[
         { label: "Name", key: "name" },
         { label: "Role", key: "role" },

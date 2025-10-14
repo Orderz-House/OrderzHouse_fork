@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 
 import FreelancerProjects from "./FreelancerProjects";
-import FreelancerTasks from "./FreelancerTasks";
+import FreelancerTasks from "../tasks/FreelancerTasks.jsx";
 import EditProfile from "../profile/EditProfile";
 import ProfileView from "../profile/ProfileView";
 import Payments from "./Payments";

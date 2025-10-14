@@ -54,7 +54,7 @@ export default function Courses() {
       try {
         setLoading(true);
         setErr("");
-        const { data } = await api.get("/api/courses", {
+        const { data } = await api.get("/courses", {
           params: { q, ...filters },
           cancelToken: new axios.CancelToken((c) => (cancel = c)),
         });
@@ -86,7 +86,7 @@ export default function Courses() {
   const openEdit = async (id) => {
     try {
       setLoading(true);
-      const { data } = await api.get(`/api/courses/${id}`);
+      const { data } = await api.get(`/courses/${id}`);
       setEditId(id);
       setForm({
         title: data.title ?? "",
@@ -112,7 +112,7 @@ export default function Courses() {
     const prev = items;
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
     try {
-      await api.delete(`/api/courses/${id}`);
+      await api.delete(`/courses/${id}`);
     } catch {
       alert("Delete failed, rolling back.");
       setItems(prev);
@@ -124,10 +124,10 @@ export default function Courses() {
     e.preventDefault();
     try {
       if (editId == null) {
-        const { data } = await api.post("/api/courses", form);
+        const { data } = await api.post("/courses", form);
         setItems((arr) => [data, ...arr]);
       } else {
-        const { data } = await api.put(`/api/courses/${editId}`, form);
+        const { data } = await api.put(`/courses/${editId}`, form);
         setItems((arr) =>
           arr.map((x) => ((x.id ?? x._id) === editId ? data : x))
         );

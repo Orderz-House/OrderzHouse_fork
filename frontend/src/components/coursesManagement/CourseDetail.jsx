@@ -22,7 +22,7 @@ const CourseDetail = () => {
       if (!token || !id) return;
       try {
         // 1. Check access first (important for freelancers)
-        const accessRes = await axios.get(`http://localhost:5000/api/courses/check-access/${id}`, {
+        const accessRes = await axios.get(`http://localhost:5000/courses/check-access/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHasAccess(accessRes.data.hasAccess);
@@ -30,10 +30,10 @@ const CourseDetail = () => {
         // 2. If has access or is admin, fetch course details
         if (accessRes.data.hasAccess || userData?.role_id === 1) {
             const [courseRes, materialsRes] = await Promise.all([
-              axios.get(`http://localhost:5000/api/courses/view/${id}`, {
+              axios.get(`http://localhost:5000/courses/view/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
               }),
-              axios.get(`http://localhost:5000/api/courses/${id}/materials`, {
+              axios.get(`http://localhost:5000/courses/${id}/materials`, {
                 headers: { Authorization: `Bearer ${token}` },
               }),
             ]);

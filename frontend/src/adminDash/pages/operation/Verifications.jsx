@@ -37,7 +37,7 @@ export default function Verifications() {
     <PeopleTable
       title="Verifications"
       addLabel="Add"
-      // endpoint="/api/verifications"  // أثناء الموك، علّقها
+      // endpoint="/verifications"  // أثناء الموك، علّقها
       initialRows={mockVerifications}
       columns={[
         { label: "Name", key: "name" },
@@ -88,13 +88,13 @@ export default function Verifications() {
           // تحديث فوري بالواجهة
           helpers.updateRow(id, { status: "Approved" });
           // وعند الربط لاحقًا:
-          // await api.patch(`/api/verifications/${id}`, { status: 'Approved' });
+          // await api.patch(`/verifications/${id}`, { status: 'Approved' });
         };
 
         const reject = async () => {
           helpers.updateRow(id, { status: "Rejected" });
           // وعند الربط لاحقًا:
-          // await api.patch(`/api/verifications/${id}`, { status: 'Rejected' });
+          // await api.patch(`/verifications/${id}`, { status: 'Rejected' });
         };
 
         return (

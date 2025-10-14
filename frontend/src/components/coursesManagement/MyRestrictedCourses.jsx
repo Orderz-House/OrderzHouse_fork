@@ -19,7 +19,7 @@ const MyRestrictedCourses = () => {
       try {
         setLoading(true);
         // Assuming your backend has an endpoint that returns courses the freelancer has ACCESS TO
-        const res = await axios.get('http://localhost:5000/api/courses/accessible', { // Or /api/courses/my-courses
+        const res = await axios.get('http://localhost:5000/courses/accessible', { // Or /courses/my-courses
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(res.data.courses || []);

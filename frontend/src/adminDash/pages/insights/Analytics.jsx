@@ -48,7 +48,7 @@ export default function Analytics() {
       return;
     }
     (async () => {
-      const { data } = await api.get("/api/analytics/summary", {
+      const { data } = await api.get("/analytics/summary", {
         params: { range },
       });
       setKpis(data.kpis);

@@ -45,8 +45,11 @@ import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCour
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx"
-import BlogPost  from "./components/blogs/BlogPost.jsx"
+import BlogPost from "./components/blogs/BlogPost.jsx"
 import AdminRouter from "./adminDash/routes/index";
+import TasksPool from "./components/tasks/TasksPool";
+import FreelancerTasks from "./components/tasks/FreelancerTasks";
+import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -146,7 +149,10 @@ function App() {
         <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
-
+       {/*----tasks routes----*/}
+       <Route path="/admin/task-approval" element={<ProtectedRoute allowedRoles={[1]}><AdminTaskApproval /></ProtectedRoute>} />
+        <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><TasksPool /></ProtectedRoute>} />
         {/* --- Course Management Routes --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
@@ -170,7 +176,7 @@ function App() {
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
-        {/* ✅ Admin Routes */}
+        {/* Admin Routes */}
         <Route
           path="/admin/*"
           element={

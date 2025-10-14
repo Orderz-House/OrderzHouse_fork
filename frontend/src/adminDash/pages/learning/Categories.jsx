@@ -34,7 +34,7 @@ export default function Categories() {
       try {
         setLoading(true);
         setErr("");
-        const { data } = await api.get("/api/categories", {
+        const { data } = await api.get("/categories", {
           params: { q },
           cancelToken: new axios.CancelToken((c) => (cancel = c)),
         });
@@ -56,7 +56,7 @@ export default function Categories() {
 
   const openEdit = async (id) => {
     try {
-      const { data } = await api.get(`/api/categories/${id}`);
+      const { data } = await api.get(`/categories/${id}`);
       setEditId(id);
       setForm({
         name: data.name ?? "",
@@ -75,7 +75,7 @@ export default function Categories() {
     const prev = items;
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
     try {
-      await api.delete(`/api/categories/${id}`);
+      await api.delete(`/categories/${id}`);
     } catch {
       alert("Delete failed, rolling back.");
       setItems(prev);
@@ -86,10 +86,10 @@ export default function Categories() {
     e.preventDefault();
     try {
       if (editId == null) {
-        const { data } = await api.post("/api/categories", form);
+        const { data } = await api.post("/categories", form);
         setItems((arr) => [data, ...arr]);
       } else {
-        const { data } = await api.put(`/api/categories/${editId}`, form);
+        const { data } = await api.put(`/categories/${editId}`, form);
         setItems((arr) =>
           arr.map((x) => ((x.id ?? x._id) === editId ? data : x))
         );

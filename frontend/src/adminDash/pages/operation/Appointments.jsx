@@ -5,7 +5,7 @@ export default function Appointments() {
     <PeopleTable
       title="Appointments"
       addLabel="Add Appointment"
-      endpoint="/api/appointments"
+      endpoint="/appointments"
       columns={[
         { label: "Subject", key: "subject" },
         { label: "With", key: "with" },

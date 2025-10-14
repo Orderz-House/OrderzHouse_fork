@@ -5,7 +5,7 @@ export default function Clients() {
     <PeopleTable
       title="Clients"
       addLabel="Add Client"
-      endpoint="/api/clients"
+      endpoint="/clients"
       columns={[
         { label: "Name", key: "name" },
         { label: "Type", key: "type" },

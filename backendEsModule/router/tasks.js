@@ -1,3 +1,4 @@
+// src/routes/tasksRouter.js
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import {
@@ -7,45 +8,32 @@ import {
   updateTask,
   deleteTask,
   requestTask,
-  getUserRequestedTasks,
   getTaskRequests,
   updateTaskRequestStatus,
-  getTaskRequest
+  getCategories,
+  adminApproveTask, 
+  addReview
 } from "../controller/tasks.js";
 
-const taskRouter = express.Router();
+const router = express.Router();
 
-// Get my tasks
-taskRouter.get("/my-tasks", authentication, getFreelancerTasks);
+// Freelancer routes
+router.get("/my-tasks", authentication, getFreelancerTasks);
+router.post("/", authentication, createTask);
+router.put("/:id", authentication, updateTask);
+router.delete("/:id", authentication, deleteTask);
+router.get("/requests", authentication, getTaskRequests);
+router.patch("/requests/:requestId/status", authentication, updateTaskRequestStatus);
 
-// Get task pool (other freelancers' tasks)
-taskRouter.get("/pool", authentication, getTaskPool);
+// Public/client routes
+router.get("/pool", authentication, getTaskPool); 
+router.post("/request/:id", authentication, requestTask);
+router.get("/categories", getCategories); // public
 
-// Create new task
-taskRouter.post("/", authentication, createTask);
+// Admin routes
+router.patch("/admin/approve", authentication, adminApproveTask); // Admin only
 
-// Request a task (client)
-taskRouter.post("/request/:id", authentication, requestTask);
+// Review routes
+router.post("/reviews", authentication, addReview); 
 
-// Update task
-taskRouter.put("/:id", authentication, updateTask);
-
-// Delete task
-taskRouter.delete("/:id", authentication, deleteTask);
-
-
-// Get tasks requested by the logged-in client
-taskRouter.get("/requests/my", authentication, getUserRequestedTasks); // client
-
-// Get requests for a specific task (freelancer)
-taskRouter.get("/requests/:id", authentication, getTaskRequests);      // freelancer
-
-// Get all pending requests for tasks owned by the authenticated freelancer
-taskRouter.get("/requests", authentication, getTaskRequest);      // freelancer
-
-taskRouter.patch(
-  "/requests/:requestId/status",
-  authentication,
-  updateTaskRequestStatus
-);
-export default taskRouter;
+export default router;

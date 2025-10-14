@@ -79,7 +79,7 @@ const CATALOG = {
 // ===== Mock + API =====
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") === "true";
 const API_BASE = import.meta.env.VITE_API_URL || "";
-const API_ENDPOINT = "/api/projects";
+const API_ENDPOINT = "/projects";
 const api = axios.create({ baseURL: API_BASE });
 
 const MOCK_PROJECTS = [
