@@ -142,13 +142,13 @@ const Login = () => {
       </div>
 
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8">
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-lg">
           {/* Title */}
           <div className="text-center mb-6">
-            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
               Welcome back
             </h1>
-            <p className="text-slate-500 mt-2">
+            <p className="text-slate-500 mt-2 text-sm">
               Sign in to continue to{" "}
               <span className="font-semibold text-[#028090]">ORDERZHOUSE</span>
             </p>

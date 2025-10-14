@@ -1,3 +1,5 @@
+
+
 import { Routes, Route } from "react-router-dom";
 import AdminLayout from "../layout/AdminLayout.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
@@ -14,6 +16,7 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 
+
 export default function AdminRouter() {
   return (
     <Routes>
@@ -21,29 +24,30 @@ export default function AdminRouter() {
         {/* Dashboard */}
         <Route index element={<Dashboard />} />
 
-        {/* People */}
+        {/* Admin */}
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
-
-        {/* Learning */}
         <Route path="learning/courses" element={<Courses />} />
         <Route path="learning/categories" element={<Categories />} />
-
-        {/* Operations */}
         <Route path="operation/appointments" element={<Appointments />} />
         <Route path="operation/verifications" element={<Verifications />} />
         <Route path="operation/projects" element={<Projects />} />
-
-        {/* Community */}
         <Route path="community/news" element={<News />} />
-
-        {/* Finance */}
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
-
-        {/* Insights */}
         <Route path="analytics" element={<Analytics />} />
+
+        {/* Client */}
+        <Route path="client/projects" element={<Projects />} />
+        <Route path="client/payments" element={<Payments />} />
+
+        {/* Freelancer */}
+        <Route path="freelancer/projects" element={<Projects />} />
+        <Route path="freelancer/payments" element={<Payments />} />
+        <Route path="freelancer/courses" element={<Courses />} />
+        <Route path="freelancer/appointments" element={<Appointments />} />
       </Route>
     </Routes>
   );
 }
+
