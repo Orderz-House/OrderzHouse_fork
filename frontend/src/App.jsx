@@ -23,6 +23,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
+import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
@@ -150,6 +151,7 @@ function App() {
         <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} />
 
         {/* --- Course Management Routes --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
