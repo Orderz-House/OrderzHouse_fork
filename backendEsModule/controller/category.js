@@ -74,28 +74,38 @@ export const getSubCategories = async (req, res) => {
 // ========== Get sub-sub-categories by main category ID ==========
 export const getSubSubCategoriesByCategoryId = async (req, res) => {
   const { categoryId } = req.params;
+
   try {
+    // Validate categoryId
+    if (!categoryId) {
+      return res.status(400).json({ success: false, message: "categoryId is required" });
+    }
+
     const result = await pool.query(
       `SELECT 
-        ssc.id AS sub_sub_category_id,
-        ssc.name AS sub_sub_category_name,
-        ssc.description AS sub_sub_category_description,
-        sc.id AS sub_category_id,
-        sc.name AS sub_category_name,
-        c.id AS category_id,
-        c.name AS category_name
+        ssc.id,
+        ssc.name
       FROM sub_sub_categories ssc
       JOIN sub_categories sc ON ssc.sub_category_id = sc.id
-      JOIN categories c ON sc.category_id = c.id
-      WHERE c.id = $1
-      ORDER BY sc.id, ssc.id;`,
+      WHERE sc.category_id = $1
+      ORDER BY ssc.name;`,
       [categoryId]
     );
 
-    return res.status(200).json({ success: true, subSubCategories: result.rows });
+    // Always return JSON, even if empty
+    return res.status(200).json({
+      success: true,
+      data: result.rows || [],
+    });
   } catch (err) {
     console.error("getSubSubCategoriesByCategoryId error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+
+    // Return JSON error instead of HTML
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      data: [],
+    });
   }
 };
 

@@ -9,12 +9,14 @@ function mapRole(roleId) {
 }
 
 export default function Payments() {
-  return (
-    <PeopleTable
-      title="Payments"
-      addLabel="Add Payment"
-      endpoint="/api/payments"
-      columns={[
+  const user = useSelector((state) => state.auth.userData);
+  const role = mapRole(user?.role_id);
+
+  // Configs for different roles
+  const configs = {
+    admin: {
+      endpoint: "/api/payments",
+      columns: [
         { label: "User", key: "user" },
         { label: "Amount", key: "amount" },
         { label: "Method", key: "method" },

@@ -11,7 +11,7 @@ import {
   getTaskRequests,
   updateTaskRequestStatus,
   getCategories
-} from "../controllers/tasks.js";
+} from "../controller/tasks.js";
 
 const router = express.Router();
 

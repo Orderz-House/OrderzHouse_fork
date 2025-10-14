@@ -67,7 +67,6 @@ app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
 app.use("/uploads", uploadRouter);
 app.use("/earnings", earningsRouter);
-app.use("/analytics", analyticsRoutes);
 app.use("/category", categoriesRouter);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);

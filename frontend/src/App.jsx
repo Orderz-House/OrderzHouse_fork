@@ -24,7 +24,7 @@ import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
 import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
-import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
+// import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
@@ -35,7 +35,7 @@ import NotificationsPage from "./components/profile/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
-import Plans from "./components/plans/plans";
+import Plans from "./components/plans/Plans.jsx";
 import Dashboard from "./components/User Dashboard/dashboard";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
@@ -50,7 +50,6 @@ import Blogs from "./components/blogs/Blogs.jsx"
 import BlogPost from "./components/blogs/BlogPost.jsx"
 import AdminRouter from "./adminDash/routes/index";
 import TasksPool from "./components/tasks/TasksPool";
-import FreelancerTasks from "./components/tasks/FreelancerTasks";
 import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
 
 const RoleBasedAppointments = ({ userData }) => {

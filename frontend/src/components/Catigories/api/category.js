@@ -26,7 +26,7 @@ export const fetchSubCategoriesByCategoryId = async (categoryId) => {
 // Get sub-sub-categories by category ID
 export const fetchSubSubCategoriesByCategoryId = async (categoryId) => {
   const { data } = await axios.get(`${API_BASE}/${categoryId}/sub-sub-categories`);
-  if (data.success) return data.data; // returned grouped by sub-category
+  if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch sub-sub-categories");
 };
 
