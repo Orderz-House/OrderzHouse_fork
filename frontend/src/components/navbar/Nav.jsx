@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setLogout, setUserData } from "../../slice/auth/authSlice";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { disconnectSocket } from "../../services/socketService";
+import { disconnectSocket, getSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu"; 
 
@@ -44,14 +44,14 @@ export default function EnhancedNavbar() {
 
     if (path === "/") setActiveLink("HOME");
     else if (path.startsWith("/about")) setActiveLink("ABOUT US");
-    else if (path.startsWith("/news")) setActiveLink("NEWS");
+    else if (path.startsWith("/blogs")) setActiveLink("BLOGS");
     else if (path.startsWith("/contact")) setActiveLink("CONTACT");
     else if (path.startsWith("/plans")) setActiveLink("PLANS");
     else if (path.startsWith("/projectsPage")) setActiveLink("CATEGORIES");
     else if (path.startsWith("/dashboard/projects")) setActiveLink("PROJECTS");
     else if (path.startsWith("/admin-verification"))
       setActiveLink("VERIFICATION");
-    else if (path.startsWith("/news/admin")) setActiveLink("NEWS PENDING");
+    else if (path.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
   }, [location.pathname]);
 
   // API Functions
@@ -97,7 +97,7 @@ export default function EnhancedNavbar() {
       );
       setNotifications(
         notifications.map((notif) =>
-          notif.id === notificationId ? { ...notif, is_read: true } : notif
+          notif.id === notificationId ? { ...notif, read_status: true } : notif
         )
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -114,13 +114,35 @@ export default function EnhancedNavbar() {
         { headers: { authorization: `Bearer ${token}` } }
       );
       setNotifications(
-        notifications.map((notif) => ({ ...notif, is_read: true }))
+        notifications.map((notif) => ({ ...notif, read_status: true }))
       );
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
   };
+
+  // Real-time notification handler
+  useEffect(() => {
+    if (IsAuthenticated && token) {
+      const socket = getSocket();
+      if (socket) {
+        const handleNewNotification = (notification) => {
+          // Only update if the notification is for the current user
+          if (notification.user_id === userData.id) {
+            setNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep only top 10
+            setUnreadCount(prev => prev + 1);
+          }
+        };
+
+        socket.on('newNotification', handleNewNotification);
+
+        return () => {
+          socket.off('newNotification', handleNewNotification);
+        };
+      }
+    }
+  }, [IsAuthenticated, token, userData]);
 
   // Event Handlers
   const handleLogout = () => {
@@ -185,7 +207,7 @@ export default function EnhancedNavbar() {
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     { label: "ABOUT US", path: "/about", condition: true },
-    { label: "NEWS", path: "/news", condition: true },
+    { label: "BLOGS", path: "/blogs", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
     {
       label: "PROJECTS",
@@ -280,22 +302,25 @@ export default function EnhancedNavbar() {
                   </button>
                   <button
                     onClick={() =>
-                      handleNavigation("/news/admin", "NEWS PENDING")
+                      handleNavigation("/blogs/admin", "BLOGS PENDING")
                     }
                     className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                      activeLink === "NEWS PENDING"
+                      activeLink === "BLOGS PENDING"
                         ? "text-[#028090]"
                         : "text-gray-700"
                     }`}
                   >
-                    NEWS PENDING
+                    BLOGS PENDING
                     <span
                       className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "NEWS PENDING"
+                        activeLink === "BLOGS PENDING"
                           ? "w-full"
                           : "w-0 group-hover:w-full"
                       }`}
                     ></span>
+                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      NEWS PENDING
+                    </span>
                   </button>
                 </>
               )}
@@ -343,16 +368,13 @@ export default function EnhancedNavbar() {
                             <div
                               key={notification.id}
                               className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                                !notification.is_read ? "bg-blue-50" : ""
+                                !notification.read_status ? "bg-blue-50" : ""
                               }`}
                               onClick={() => markAsRead(notification.id)}
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900 font-inter">
-                                    {notification.title || "Notification"}
-                                  </p>
-                                  <p className="text-sm text-gray-600 mt-1 font-inter">
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2 font-inter">
@@ -361,7 +383,7 @@ export default function EnhancedNavbar() {
                                     ).toLocaleDateString()}
                                   </p>
                                 </div>
-                                {!notification.is_read && (
+                                {!notification.read_status && (
                                   <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
                                 )}
                               </div>
@@ -532,12 +554,12 @@ export default function EnhancedNavbar() {
                   </button>
                   <button
                     onClick={() => {
-                      handleNavigation("/news/admin", "NEWS PENDING");
+                      handleNavigation("/blogs/admin", "BLOGS PENDING");
                       setIsMobileMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-3 text-base font-medium rounded-2xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-all duration-200 font-inter"
                   >
-                    NEWS PENDING
+                    BLOGS PENDING
                   </button>
                 </>
               )}

@@ -188,7 +188,7 @@ export default function CategoriesShowcase({
 
   return (
     // Section
-    <section className="relative py-10 sm:py-14 md:py-16 px-3 sm:px-5 lg:px-8 bg-white">
+    <section className="relative py-10 sm:py-14 md:py-16 px-6 sm:px-5 lg:px-8 bg-white">
       <div className="max-w-7xl mx-auto relative">
         {/* Header (centered) */}
         <div className="mb-8 sm:mb-10 text-center">
