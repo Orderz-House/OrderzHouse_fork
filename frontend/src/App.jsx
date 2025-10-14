@@ -27,8 +27,7 @@ import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
-// import CoursesManagement from "./components/coursesManagement/CoursesManagement";
+import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance"; 
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
@@ -46,7 +45,6 @@ import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCour
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx"
-=======
 import AdminRouter from "./adminDash/routes/index";
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -78,16 +76,31 @@ function App() {
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   useEffect(() => {
-    if (token && userId) {
+    if (token && userId) { 
       console.log("🔌 Initializing socket in App useEffect...");
       initSocket(token, userId);
     }
 
+    // Cleanup function
     return () => {
       console.log("Disconnecting socket in App useEffect cleanup...");
       disconnectSocket();
     };
-  }, [token, userId]);
+  }, [token, userId]); 
+
+  // Role-based appointments component
+  const RoleBasedAppointments = () => {
+    if (userData?.role_id === 1) return <AdminAppointments />;
+    if (userData?.role_id === 3) return <FreelancerAppointments />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600">Appointments are only available for admins and freelancers.</p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -115,6 +128,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>Terms
         <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/verify-profile" element={<VerifyProfile />} />
         <Route path="/terms" element={<Terms />} />
@@ -131,15 +145,19 @@ function App() {
         <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
 
-        {/* --- Courses --- */}
+        {/* --- Course Management Routes --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
         <Route path="/access-denied" element={<AccessDenied />} />
         <Route path="/admin/courses" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseManagement /></ProtectedRoute>} />
         <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseAccessControl /></ProtectedRoute>} />
-        {/* <Route path="/courses" element={<ProtectedRoute><CoursesManagement /></ProtectedRoute>} /> */}
 
-        {/* --- Notifications / Projects --- */}
+
+        {/* Course Management */}
+        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
+
+        {/* Notifications and Projects */}
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -149,8 +167,8 @@ function App() {
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments userData={userData} /></ProtectedRoute>} />
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
-
-        {/* --- Admin Routes --- */}
+        
+        {/* ✅ Admin Routes */}
         <Route
           path="/admin/*"
           element={
@@ -160,26 +178,20 @@ function App() {
           }
         />
 
-        {/* --- 404 --- */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                404 - Page Not Found
-              </h2>
-              <p className="text-gray-600 mb-4">
-                The page you are looking for does not exist.
-              </p>
-              <button
-                onClick={() => window.history.back()}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Go Back
-              </button>
-            </div>
-          }
-        />
+
+        <Route path="*" element={
+          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">404 - Page Not Found</h2>
+            <p className="text-gray-600 mb-4">The page you are looking for does not exist.</p>
+            <button
+              onClick={() => window.history.back()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        } />
+
       </Routes>
 
       {!shouldHideNavbar && <EnhancedFooter />}

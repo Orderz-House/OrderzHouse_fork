@@ -28,6 +28,7 @@ import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
+import offersRouter from "./router/offers.js";
 
 
 // DB connection
@@ -42,7 +43,7 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173", // Your frontend URL
+  origin: "http://localhost:5173", 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -79,10 +80,7 @@ app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use('/api/auth', authRouter);
 app.use("/access-control", accessControlRouter);
-//Admin init
-(async () => {
-  await AdminInit(app);
-})();
+
 
 let server, io;
 
