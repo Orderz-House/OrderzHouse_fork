@@ -69,8 +69,10 @@ export const getSubCategories = async (req, res) => {
 };
 
 // ========== Get sub-sub-categories by main category ID ==========
+
 export const getSubSubCategoriesByCategoryId = async (req, res) => {
-  const { categoryId } = req.params;
+  const { categoryId } = req.params; 
+
   try {
     const result = await pool.query(
       `SELECT 
@@ -84,12 +86,23 @@ export const getSubSubCategoriesByCategoryId = async (req, res) => {
       FROM sub_sub_categories ssc
       JOIN sub_categories sc ON ssc.sub_category_id = sc.id
       JOIN categories c ON sc.category_id = c.id
-      WHERE c.id = $1
+      WHERE c.name = $1
       ORDER BY sc.id, ssc.id;`,
       [categoryId]
     );
 
-    return res.status(200).json({ success: true, subSubCategories: result.rows });
+    // If no categories found
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found or has no sub-sub-categories",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      subSubCategories: result.rows,
+    });
   } catch (err) {
     console.error("getSubSubCategoriesByCategoryId error:", err);
     return res.status(500).json({ success: false, message: "Server error" });

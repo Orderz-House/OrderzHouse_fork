@@ -9,6 +9,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [loading, setLoading] = useState(false);
   const menuRef = useRef(null);
 
+  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -19,12 +20,14 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Fetch categories when menu opens
   useEffect(() => {
     if (isOpen && categories.length === 0) {
       fetchCategories();
     }
   }, [isOpen]);
 
+  // Fetch categories + nested data
   const fetchCategories = async () => {
     setLoading(true);
     try {
@@ -40,8 +43,8 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             const subSubData = await subSubRes.json();
 
             const subCategoriesMap = {};
-            if (subSubData.success) {
-              subSubData.data.forEach((item) => {
+            if (subSubData.success && Array.isArray(subSubData.subSubCategories)) {
+              subSubData.subSubCategories.forEach((item) => {
                 if (!subCategoriesMap[item.sub_category_id]) {
                   subCategoriesMap[item.sub_category_id] = {
                     id: item.sub_category_id,
@@ -63,8 +66,9 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             };
           })
         );
+
         setCategories(categoriesWithSubs);
-        setSelectedCategory(categoriesWithSubs[0]); // default first
+        setSelectedCategory(categoriesWithSubs[0]); // Default first category
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -72,6 +76,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     setLoading(false);
   };
 
+  // UI handlers
   const handleToggle = () => {
     setIsOpen(!isOpen);
     if (onSetActiveLink) onSetActiveLink("CATEGORIES");
@@ -88,7 +93,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Menu button */}
+      {/* Menu Button */}
       <button
         onClick={handleToggle}
         className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
@@ -110,7 +115,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
         ></span>
       </button>
 
-      {/* Mega menu */}
+      {/* Mega Menu */}
       {isOpen && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[95vw] max-w-[1300px]">
           {loading ? (
@@ -119,7 +124,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             </div>
           ) : (
             <div className="p-6 space-y-6">
-              {/* 1️⃣ Top row: Main categories */}
+              {/* 1️⃣ Top Row: Main Categories */}
               <div className="flex gap-6 overflow-x-auto pb-3 border-b border-gray-200">
                 {categories.map((cat) => (
                   <button
@@ -136,10 +141,10 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                 ))}
               </div>
 
-              {/* 2️⃣ Middle + right: Subcategories & sub-sub-categories */}
+              {/* 2️⃣ Middle + Right: Subcategories & Sub-sub-categories */}
               {selectedCategory && (
                 <div className="flex gap-6">
-                  {/* Left side: subcategories */}
+                  {/* Left: Subcategories */}
                   <div className="w-1/4 border-r border-gray-200 pr-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">
                       {selectedCategory.name} Types
@@ -161,7 +166,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     </div>
                   </div>
 
-                  {/* Right side: sub-sub-categories */}
+                  {/* Right: Sub-sub-categories */}
                   <div className="flex-1">
                     {selectedSubCategory ? (
                       <>
