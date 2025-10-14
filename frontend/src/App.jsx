@@ -23,6 +23,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
+import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
@@ -149,10 +150,7 @@ function App() {
         <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
-       {/*----tasks routes----*/}
-       <Route path="/admin/task-approval" element={<ProtectedRoute allowedRoles={[1]}><AdminTaskApproval /></ProtectedRoute>} />
-        <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} />
-        <Route path="/tasks" element={<ProtectedRoute><TasksPool /></ProtectedRoute>} />
+
         {/* --- Course Management Routes --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
