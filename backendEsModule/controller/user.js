@@ -11,7 +11,6 @@ import { createNotification } from "../services/notificationService.js";
 import pool from "../models/db.js";
 
 // ==================== AUTHENTICATION FUNCTIONS ====================
-
 const register = async (req, res) => {
   const {
     role_id,
@@ -24,106 +23,72 @@ const register = async (req, res) => {
     username,
     categories,
   } = req.body;
-  
+
+  // Validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
-  if (
-    !role_id ||
-    !first_name ||
-    !last_name ||
-    !email ||
-    !password ||
-    !phone_number ||
-    !country ||
-    !username
-  ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "All fields are required" });
+  if (!role_id || !first_name || !last_name || !email || !password || !phone_number || !country || !username) {
+    return res.status(400).json({ success: false, message: "All fields are required" });
   }
 
   if (!emailRegex.test(email)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid email format" });
+    return res.status(400).json({ success: false, message: "Invalid email format" });
   }
 
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message:
-        "Password must be at least 8 characters long, include 1 uppercase letter, 1 lowercase letter, and 1 number",
+      message: "Password must be at least 8 characters long, include 1 uppercase letter, 1 lowercase letter, and 1 number",
     });
   }
 
-  if (
-    role_id === 3 &&
-    (!categories || !Array.isArray(categories) || categories.length === 0)
-  ) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Freelancer must have at least one category",
-      });
+  if (role_id === 3 && (!categories || !Array.isArray(categories) || categories.length === 0)) {
+    return res.status(400).json({ success: false, message: "Freelancer must have at least one category" });
   }
 
   try {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const Email = email.toLowerCase();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const emailLower = email.toLowerCase();
 
+    // Check if email or username already exists
     const existingUser = await pool.query(
-      "SELECT id FROM Users WHERE email=$1 OR username=$2",
-      [Email, username]
+      "SELECT id FROM users WHERE email = $1 OR username = $2",
+      [emailLower, username]
     );
     if (existingUser.rows.length > 0) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Email or username already exists" });
+      return res.status(409).json({ success: false, message: "Email or username already exists" });
     }
 
+    // Insert user into users table
     const { rows: userRows } = await pool.query(
-      `INSERT INTO Users 
-      (role_id, first_name, last_name, email, password, phone_number, country, username) 
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [
-        role_id,
-        first_name,
-        last_name,
-        Email,
-        hashedPassword,
-        phone_number,
-        country,
-        username,
-      ]
+      `INSERT INTO users 
+        (role_id, first_name, last_name, email, password, phone_number, country, username)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [role_id, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
     );
     const user = userRows[0];
 
+    // Insert freelancer categories if role_id === 3
     if (role_id === 3) {
-      const insertValues = categories
-        .map((_, idx) => `($1, $${idx + 2})`)
-        .join(", ");
-      const queryParams = [user.id, ...categories];
-      await pool.query(
-        `INSERT INTO freelancer_categories (freelancer_id, category_id) VALUES ${insertValues}`,
-        queryParams
-      );
+      if (categories.length > 0) {
+        const insertPromises = categories.map((categoryId) =>
+          pool.query(
+            `INSERT INTO freelancer_categories (freelancer_id, category_id) VALUES ($1, $2)`,
+            [user.id, categoryId]
+          )
+        );
+        await Promise.all(insertPromises);
+      }
     }
 
-    const positionRole =
-      role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
+    // Logging
+    const positionRole = role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
     const actionUser = `${first_name} ${last_name}, a ${positionRole} from ${country}, has registered successfully.`;
-    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1,$2)", [
-      user.id,
-      actionUser,
-    ]);
-    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, {
-      role_id,
-      country,
-    });
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [user.id, actionUser]);
+    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, { role_id, country });
 
+    // Create welcome notification
     try {
       await createNotification(
         user.id,
@@ -136,20 +101,13 @@ const register = async (req, res) => {
       console.error("Error creating welcome notification:", notificationError);
     }
 
-    res
-      .status(201)
-      .json({ success: true, message: "User registered successfully", user });
+    res.status(201).json({ success: true, message: "User registered successfully", user });
   } catch (err) {
     console.error("Register Error:", err);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Internal server error",
-        error: err.message,
-      });
+    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
   }
 };
+
 
 const login = async (req, res) => {
   const { email, password, twoFactorToken } = req.body;

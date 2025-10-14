@@ -23,9 +23,6 @@ import {
 
 const projectsRouter = express.Router();
 
-// Public route - no authentication needed
-projectsRouter.get("/public/categories", getPublicCategories); 
-
 // ---------------------- Authenticated & Verified ----------------------
 
 
