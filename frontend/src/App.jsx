@@ -2,6 +2,11 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import "animate.css";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import Counter from "./counter/Counter";
 import Navbar from "./components/navbar/Nav";
 import EnhancedFooter from "./components/footer/Footer";
@@ -15,18 +20,13 @@ import EditProfile from "./components/profile/EditProfile";
 import VerifyProfile from "./components/profile/VerifyProfile";
 import ProjectDetails from "./components/projects/ProjectDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
-import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance"; 
 import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
@@ -35,9 +35,9 @@ import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/plans";
 import Dashboard from "./components/User Dashboard/dashboard";
-import ProjectsPage from "./components/Catigories/ProjectsPage"; 
-import AdminAppointments from './components/Appointments/AdminAppointments';
-import FreelancerAppointments from './components/Appointments/FreelancerAppointments';
+import ProjectsPage from "./components/Catigories/ProjectsPage";
+import AdminAppointments from "./components/Appointments/AdminAppointments";
+import FreelancerAppointments from "./components/Appointments/FreelancerAppointments";
 import CreateProject from "./components/createProject/CreateProject";
 import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
 import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
@@ -48,18 +48,19 @@ import Blogs from "./components/blogs/Blogs.jsx"
 import BlogPost  from "./components/blogs/BlogPost.jsx"
 import AdminRouter from "./adminDash/routes/index";
 
-
 const RoleBasedAppointments = ({ userData }) => {
-  if (userData?.role_id === 1) { 
+  if (userData?.role_id === 1) {
     return <AdminAppointments />;
-  } else if (userData?.role_id === 3) { 
+  } else if (userData?.role_id === 3) {
     return <FreelancerAppointments />;
   } else {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-4">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">Appointments are only available for admins and freelancers.</p>
+          <p className="text-gray-600">
+            Appointments are only available for admins and freelancers.
+          </p>
         </div>
       </div>
     );
@@ -71,8 +72,8 @@ function App() {
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
   const userData = useSelector((state) => state.auth.userData);
-  const hideNavbarRoutes = ["/account/suspended"];
 
+  const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   useEffect(() => {
@@ -88,27 +89,38 @@ function App() {
     };
   }, [token, userId]); 
 
+  // Role-based appointments component
+  const RoleBasedAppointments = () => {
+    if (userData?.role_id === 1) return <AdminAppointments />;
+    if (userData?.role_id === 3) return <FreelancerAppointments />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600">Appointments are only available for admins and freelancers.</p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {!shouldHideNavbar && <Navbar />}
+
       <Routes
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
         }}
       >
-        {/* --- Blogs Pages --- */}
+        {/* --- Blogs --- */}
         <Route path="/blogs" element={<Blogs />} />
 
         {/* --- Account Suspended --- */}
-        <Route path="account/suspended" element={<AccountSuspended />} />
-
-        {/* Public Pages */}
-
-        {/* --- Test --- */}
-        <Route path="/test" element={<Counter />} />
+        <Route path="/account/suspended" element={<AccountSuspended />} />
 
         {/* --- Public Pages --- */}
+        <Route path="/test" element={<Counter />} />
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/about" element={<ModernAboutPage />} />
@@ -132,8 +144,7 @@ function App() {
         <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
         <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
-        <Route path="/projects/" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
-        <Route path="/freelancers" element={<ProtectedRoute><AllFreeLance /></ProtectedRoute>} />
+        <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
 
         {/* --- Course Management Routes --- */}
@@ -143,25 +154,32 @@ function App() {
         <Route path="/admin/courses" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseManagement /></ProtectedRoute>} />
         <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseAccessControl /></ProtectedRoute>} />
 
+
+        {/* Course Management */}
+        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
+
+        {/* Notifications and Projects */}
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
         <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
 
-        {/* --- Appointments Routes --- */}
+        {/* --- Appointments --- */}
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments userData={userData} /></ProtectedRoute>} />
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
-        {/* Admin Routes */}
+        {/* ✅ Admin Routes */}
         <Route
-  path="/admin/*"
-  element={
-    <ProtectedRoute allowedRoles={[1]}>
-      <AdminRouter />
-    </ProtectedRoute>
-  }
-/>
+          path="/admin/*"
+          element={
+            <ProtectedRoute allowedRoles={[1]}>
+              <AdminRouter />
+            </ProtectedRoute>
+          }
+        />
+
 
         <Route path="*" element={
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -177,8 +195,8 @@ function App() {
         } />
 
       </Routes>
-      {!shouldHideNavbar && <EnhancedFooter />}
 
+      {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
     </>
   );

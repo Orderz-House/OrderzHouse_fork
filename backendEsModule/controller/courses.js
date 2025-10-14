@@ -1,6 +1,7 @@
 // controller/course.js
 import pool from "../models/db.js";
 
+
 /* -------------------- Courses -------------------- */
 // Get all active courses (admin or general use)
 export const getCourses = async (req, res) => {

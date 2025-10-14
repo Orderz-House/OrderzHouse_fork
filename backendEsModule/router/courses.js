@@ -18,6 +18,8 @@ import {
 
 const courseRouter = express.Router();
 
+
+
 /* Public / Authenticated Routes */
 courseRouter.get("/category/:categoryId", getCoursesByCategory);
 courseRouter.get("/view", authentication, getCourses);

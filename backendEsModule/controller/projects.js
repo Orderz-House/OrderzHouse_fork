@@ -12,6 +12,8 @@ export const createProject = async (req, res) => {
 
     const {
       category_id,
+      sub_category_id,
+      sub_sub_category_id,
       title,
       description,
       budget,
@@ -22,8 +24,7 @@ export const createProject = async (req, res) => {
       budget_min,
       budget_max,
       hourly_rate,
-      preferred_skills, // array of skills
-      refund_amount, 
+      preferred_skills // array of skills
     } = req.body;
 
     if (!category_id || !title || !description || !duration_type) {
@@ -34,7 +35,7 @@ export const createProject = async (req, res) => {
       });
     }
 
-    if (duration_type !== "days" && duration_type !== "hours") {
+    if (!["days", "hours"].includes(duration_type)) {
       return res.status(400).json({
         success: false,
         message: "duration_type must be either 'days' or 'hours'",
@@ -78,24 +79,20 @@ export const createProject = async (req, res) => {
       }
     }
 
-    if (project_type === "hourly") {
-      if (hourly_rate === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "hourly_rate is required for hourly projects",
-        });
-      }
+    if (project_type === "hourly" && hourly_rate === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "hourly_rate is required for hourly projects",
+      });
     }
 
-    // Determine project status based on project type
-    let projectStatus = "pending"; 
+    let projectStatus = "pending";
     if (project_type === "bidding") {
-      projectStatus = "bidding"; 
+      projectStatus = "bidding";
     } else if (project_type === "fixed" || project_type === "hourly") {
-      projectStatus = "pending_payment"; 
+      projectStatus = "pending_payment";
     }
 
-    // Insert project
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, title, description,
@@ -103,20 +100,22 @@ export const createProject = async (req, res) => {
         budget_min, budget_max, hourly_rate,
         preferred_skills,
         status, is_deleted, updated_at,
-        refund_amount -- 
+        refund_amount -- ✅ NEW COLUMN
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        $12, $13, false, null, $14
-      ) RETURNING *;
+        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        $10, $11, $12, $13, $14, $15, false, null
+      )
+      RETURNING *;
     `;
 
     const durationDaysValue = duration_type === "days" ? duration_days : null;
-    const durationHoursValue =
-      duration_type === "hours" ? duration_hours : null;
+    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
+      sub_category_id || null,
+      sub_sub_category_id || null,
       title,
       description,
       budget || null,
@@ -126,21 +125,17 @@ export const createProject = async (req, res) => {
       budget_min || null,
       budget_max || null,
       hourly_rate || null,
-      preferred_skills || null,
-      projectStatus,
-      refund_amount || 0, 
+      preferred_skills || [],
+      projectStatus
     ]);
 
     const project = rows[0];
 
-    // Calculate amount_to_pay
     let amountToPay = null;
     if (project.project_type === "fixed") {
       amountToPay = project.budget;
     } else if (project.project_type === "hourly") {
-      amountToPay = (project.budget || 0) * 3;
-    } else if (project.project_type === "bidding") {
-      amountToPay = null;
+      amountToPay = (project.hourly_rate || 0) * 3;
     }
 
     if (amountToPay !== null) {
@@ -149,27 +144,6 @@ export const createProject = async (req, res) => {
         [amountToPay, project.id]
       );
       Object.assign(project, update.rows[0]);
-    }
-
-    // Log creation
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.PROJECT_CREATE,
-      project.id,
-      true,
-      { title: project.title, category_id: project.category_id }
-    );
-
-    // Notification (non-blocking)
-    try {
-      await NotificationCreators.projectCreated(
-        project.id,
-        project.title,
-        userId,
-        project.category_id
-      );
-    } catch (notificationError) {
-      console.error("Error creating project notifications:", notificationError);
     }
 
     return res.status(201).json({
@@ -181,6 +155,7 @@ export const createProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 export const completeHourlyProject = async (req, res) => {
   try {
@@ -669,42 +644,7 @@ export const getAllProjectForOffer = (req, res) => {
     });
 };
 
-export const sendOffer = async (req, res) => {
-  try {
-    const freelancerId = req.token.userId;
-    const { projectId } = req.params;
-    const { bid_amount, delivery_time, proposal } = req.body;
 
-    // Prevent multiple offers from same freelancer
-    const existing = await pool.query(
-      `SELECT id FROM offers WHERE project_id = $1 AND freelancer_id = $2 AND offer_status = 'pending'`,
-      [projectId, freelancerId]
-    );
-    if (existing.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "You already have a pending offer for this project",
-      });
-    }
-
-    const { rows } = await pool.query(
-      `INSERT INTO offers (freelancer_id, project_id, bid_amount, delivery_time, proposal, offer_status) 
-       VALUES ($1,$2,$3,$4,$5,'pending') RETURNING *`,
-      [freelancerId, projectId, bid_amount, delivery_time, proposal]
-    );
-
-    const offer = rows[0];
-
-    res.status(201).json({
-      success: true,
-      message: "Offer sent successfully",
-      offer,
-    });
-  } catch (err) {
-    console.error("sendOffer error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
 
 // Get project completion status and history for each freelancer
 export const getProjectCompletion = async (req, res) => {
@@ -1349,7 +1289,6 @@ export default {
   getProjectById,
   updateAssignmentStatus,
   getAllProjectForOffer,
-  sendOffer,
   getProjectCompletion,
   submitWorkCompletion,
   getAllProjectForFreelancerById,

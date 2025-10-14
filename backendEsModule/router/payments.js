@@ -6,10 +6,11 @@ import { requireVerified } from "../middleware/requireVerification.js";
 import {
   recordOfflinePayment,
   approveOfflinePayment,
-  // takeProject,
   submitWorkCompletion,
   releasePayment,
   autoReleasePaymentsCron,
+  recordPlanPayment,
+  approvePlanPayment,
 } from "../controller/payments.js";
 import { getMyFinancialOverview } from "../controller/financial/financialOverview.js";
 
@@ -19,20 +20,19 @@ const paymentsRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 /**
- * CLIENT: Record offline payment (pending review by admin)
- * body: {  amount }
- * file: proof
+ * -------------------------------
+ * PROJECT PAYMENTS
+ * -------------------------------
  */
+
+// CLIENT: Record offline payment (pending review by admin)
 paymentsRouter.post(
   "/offline/record/:projectId",
   authentication,
   recordOfflinePayment
 );
 
-/**
- * ADMIN: Approve or reject offline payment
- * body: { paymentId, action: "approve" | "reject" }
- */
+// ADMIN: Approve or reject offline payment
 paymentsRouter.post(
   "/offline/approve",
   authentication,
@@ -40,21 +40,7 @@ paymentsRouter.post(
   approveOfflinePayment
 );
 
-// /**
-//  * FREELANCER: Take a project (first come, first served)
-//  * body: { projectId }
-//  */
-// paymentsRouter.post(
-//   "/projects/take",
-//   authentication,
-//   requireVerified,
-//   takeProject
-// );
-
-/**
- * FREELANCER: Submit work completion
- * params: :projectId
- */
+// FREELANCER: Submit work completion
 paymentsRouter.post(
   "/projects/:projectId/submit-completion",
   authentication,
@@ -62,10 +48,7 @@ paymentsRouter.post(
   submitWorkCompletion
 );
 
-/**
- * CLIENT: Release payment to freelancer (manual)
- * params: :projectId, :freelancerId
- */
+// CLIENT: Release payment to freelancer (manual)
 paymentsRouter.post(
   "/projects/:projectId/release-payment/:freelancerId",
   authentication,
@@ -73,6 +56,33 @@ paymentsRouter.post(
   releasePayment
 );
 
+/**
+ * -------------------------------
+ * PLAN PAYMENTS
+ * -------------------------------
+ */
+
+// FREELANCER: Record offline plan payment
+paymentsRouter.post(
+  "/plans/offline/record",
+  authentication,
+  upload.single("planProof"),
+  recordPlanPayment
+);
+
+// ADMIN: Approve or reject plan payment
+paymentsRouter.post(
+  "/plans/offline/approve",
+  authentication,
+  requireVerified,
+  approvePlanPayment
+);
+
+/**
+ * -------------------------------
+ * FINANCIAL OVERVIEW
+ * -------------------------------
+ */
 paymentsRouter.get(
   "/overview",
   authentication,
