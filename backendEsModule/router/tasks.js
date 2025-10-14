@@ -1,4 +1,3 @@
-// src/routes/tasksRouter.js
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import {
@@ -11,7 +10,7 @@ import {
   getTaskRequests,
   updateTaskRequestStatus,
   getCategories
-} from "../controllers/tasks.js";
+} from "../controller/tasks.js";
 
 const router = express.Router();
 

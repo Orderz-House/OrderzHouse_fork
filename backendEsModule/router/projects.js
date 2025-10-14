@@ -13,7 +13,13 @@ import {
   completeHourlyProject,
   getProjectsByCategoryId,
   getProjectsBySubCategoryId,
- getProjectsBySubSubCategoryId
+ getProjectsBySubSubCategoryId,
+ getMyProjectsAsFreelancer,
+ getCountProjectFreelancer,
+ listUsersByRole,
+ approveOrRejectOffer
+
+ 
 } from "../controller/projects.js";
 import {
   getProjectsByCategory,
