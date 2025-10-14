@@ -45,7 +45,8 @@ import AdminCourseManagement from "./components/coursesManagement/AdminCourseMan
 import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
-import Blogs from "./components/blogs/Blogs.jsx";
+import Blogs from "./components/blogs/Blogs.jsx"
+=======
 import AdminRouter from "./adminDash/routes/index";
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -117,6 +118,7 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/verify-profile" element={<VerifyProfile />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/blogs" element={<Blogs/>}/>
 
         {/* --- Protected Pages --- */}
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
