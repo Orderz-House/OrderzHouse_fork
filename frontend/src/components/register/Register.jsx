@@ -4,274 +4,44 @@ import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
 import { useNavigate } from "react-router";
 import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  Phone,
-  MapPin,
-  UserPlus,
-  AlertCircle,
-  CheckCircle,
-  Briefcase,
-  ArrowLeft,
-  X,
-  Shield,
-  Check,
+  Mail, Lock, Eye, EyeOff, User, Phone, MapPin,
+  AlertCircle, CheckCircle, Briefcase, ArrowLeft, X, Shield, Check
 } from "lucide-react";
-import GradientButton from '../buttons/GradientButton.jsx';
+import GradientButton from "../buttons/GradientButton.jsx";
 
-
-const countries = [
-  "Afghanistan",
-  "Albania",
-  "Algeria",
-  "American Samoa",
-  "Andorra",
-  "Angola",
-  "Anguilla",
-  "Antarctica",
-  "Antigua and Barbuda",
-  "Argentina",
-  "Armenia",
-  "Aruba",
-  "Australia",
-  "Austria",
-  "Azerbaijan",
-  "Bahamas (the)",
-  "Bahrain",
-  "Bangladesh",
-  "Barbados",
-  "Belarus",
-  "Belgium",
-  "Belize",
-  "Benin",
-  "Bermuda",
-  "Bhutan",
-  "Bolivia (Plurinational State of)",
-  "Bonaire, Sint Eustatius and Saba",
-  "Bosnia and Herzegovina",
-  "Botswana",
-  "Bouvet Island",
-  "Brazil",
-  "British Indian Ocean Territory (the)",
-  "Brunei Darussalam",
-  "Bulgaria",
-  "Burkina Faso",
-  "Burundi",
-  "Cabo Verde",
-  "Cambodia",
-  "Cameroon",
-  "Canada",
-  "Cayman Islands (the)",
-  "Central African Republic (the)",
-  "Chad",
-  "Chile",
-  "China",
-  "Christmas Island",
-  "Cocos (Keeling) Islands (the)",
-  "Colombia",
-  "Comoros (the)",
-  "Congo (the Democratic Republic of the)",
-  "Congo (the)",
-  "Cook Islands (the)",
-  "Costa Rica",
-  "Croatia",
-  "Cuba",
-  "Curaçao",
-  "Cyprus",
-  "Czechia",
-  "Côte d'Ivoire",
-  "Denmark",
-  "Djibouti",
-  "Dominica",
-  "Dominican Republic (the)",
-  "Ecuador",
-  "Egypt",
-  "El Salvador",
-  "Equatorial Guinea",
-  "Eritrea",
-  "Estonia",
-  "Eswatini",
-  "Ethiopia",
-  "Falkland Islands (the) [Malvinas]",
-  "Faroe Islands (the)",
-  "Fiji",
-  "Finland",
-  "France",
-  "French Guiana",
-  "French Polynesia",
-  "French Southern Territories (the)",
-  "Gabon",
-  "Gambia (the)",
-  "Georgia",
-  "Germany",
-  "Ghana",
-  "Gibraltar",
-  "Greece",
-  "Greenland",
-  "Grenada",
-  "Guadeloupe",
-  "Guam",
-  "Guatemala",
-  "Guernsey",
-  "Guinea",
-  "Guinea-Bissau",
-  "Guyana",
-  "Haiti",
-  "Heard Island and McDonald Islands",
-  "Holy See (the)",
-  "Honduras",
-  "Hong Kong",
-  "Hungary",
-  "Iceland",
-  "India",
-  "Indonesia",
-  "Iran (Islamic Republic of)",
-  "Iraq",
-  "Ireland",
-  "Isle of Man",
-  "Italy",
-  "Jamaica",
-  "Japan",
-  "Jersey",
-  "Jordan",
-  "Kazakhstan",
-  "Kenya",
-  "Kiribati",
-  "Korea (the Democratic People's Republic of)",
-  "Korea (the Republic of)",
-  "Kuwait",
-  "Kyrgyzstan",
-  "Lao People's Democratic Republic (the)",
-  "Latvia",
-  "Lebanon",
-  "Lesotho",
-  "Liberia",
-  "Libya",
-  "Liechtenstein",
-  "Lithuania",
-  "Luxembourg",
-  "Macao",
-  "Madagascar",
-  "Malawi",
-  "Malaysia",
-  "Maldives",
-  "Mali",
-  "Malta",
-  "Marshall Islands (the)",
-  "Martinique",
-  "Mauritania",
-  "Mauritius",
-  "Mayotte",
-  "Mexico",
-  "Micronesia (Federated States of)",
-  "Moldova (the Republic of)",
-  "Monaco",
-  "Mongolia",
-  "Montenegro",
-  "Montserrat",
-  "Morocco",
-  "Mozambique",
-  "Myanmar",
-  "Namibia",
-  "Nauru",
-  "Nepal",
-  "Netherlands (the)",
-  "New Caledonia",
-  "New Zealand",
-  "Nicaragua",
-  "Niger (the)",
-  "Nigeria",
-  "Niue",
-  "Norfolk Island",
-  "Northern Mariana Islands (the)",
-  "Norway",
-  "Oman",
-  "Pakistan",
-  "Palau",
-  "Palestine, State of",
-  "Panama",
-  "Papua New Guinea",
-  "Paraguay",
-  "Peru",
-  "Philippines (the)",
-  "Pitcairn",
-  "Poland",
-  "Portugal",
-  "Puerto Rico",
-  "Qatar",
-  "Republic of North Macedonia",
-  "Romania",
-  "Russian Federation (the)",
-  "Rwanda",
-  "Réunion",
-  "Saint Barthélemy",
-  "Saint Helena, Ascension and Tristan da Cunha",
-  "Saint Kitts and Nevis",
-  "Saint Lucia",
-  "Saint Martin (French part)",
-  "Saint Pierre and Miquelon",
-  "Saint Vincent and the Grenadines",
-  "Samoa",
-  "San Marino",
-  "Sao Tome and Principe",
-  "Saudi Arabia",
-  "Senegal",
-  "Serbia",
-  "Seychelles",
-  "Sierra Leone",
-  "Singapore",
-  "Sint Maarten (Dutch part)",
-  "Slovakia",
-  "Slovenia",
-  "Solomon Islands",
-  "Somalia",
-  "South Africa",
-  "South Georgia and the South Sandwich Islands",
-  "South Sudan",
-  "Spain",
-  "Sri Lanka",
-  "Sudan (the)",
-  "Suriname",
-  "Svalbard and Jan Mayen",
-  "Sweden",
-  "Switzerland",
-  "Syrian Arab Republic",
-  "Taiwan",
-  "Tajikistan",
-  "Tanzania, United Republic of",
-  "Thailand",
-  "Timor-Leste",
-  "Togo",
-  "Tokelau",
-  "Tonga",
-  "Trinidad and Tobago",
-  "Tunisia",
-  "Turkey",
-  "Turkmenistan",
-  "Turks and Caicos Islands (the)",
-  "Tuvalu",
-  "Uganda",
-  "Ukraine",
-  "United Arab Emirates (the)",
-  "United Kingdom of Great Britain and Northern Ireland (the)",
-  "United States Minor Outlying Islands (the)",
-  "United States of America (the)",
-  "Uruguay",
-  "Uzbekistan",
-  "Vanuatu",
-  "Venezuela (Bolivarian Republic of)",
-  "Viet Nam",
-  "Virgin Islands (British)",
-  "Virgin Islands (U.S.)",
-  "Wallis and Futuna",
-  "Western Sahara",
-  "Yemen",
-  "Zambia",
-  "Zimbabwe",
-  "Åland Islands",
+const countries = [/* … نفس القائمة كما هي … */ 
+  "Afghanistan","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica",
+  "Antigua and Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas (the)","Bahrain",
+  "Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia (Plurinational State of)",
+  "Bonaire, Sint Eustatius and Saba","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil",
+  "British Indian Ocean Territory (the)","Brunei Darussalam","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
+  "Cameroon","Canada","Cayman Islands (the)","Central African Republic (the)","Chad","Chile","China","Christmas Island",
+  "Cocos (Keeling) Islands (the)","Colombia","Comoros (the)","Congo (the Democratic Republic of the)","Congo (the)",
+  "Cook Islands (the)","Costa Rica","Croatia","Cuba","Curaçao","Cyprus","Czechia","Côte d'Ivoire","Denmark","Djibouti",
+  "Dominica","Dominican Republic (the)","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini",
+  "Ethiopia","Falkland Islands (the) [Malvinas]","Faroe Islands (the)","Fiji","Finland","France","French Guiana",
+  "French Polynesia","French Southern Territories (the)","Gabon","Gambia (the)","Georgia","Germany","Ghana","Gibraltar",
+  "Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guernsey","Guinea","Guinea-Bissau","Guyana","Haiti",
+  "Heard Island and McDonald Islands","Holy See (the)","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia",
+  "Iran (Islamic Republic of)","Iraq","Ireland","Isle of Man","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan",
+  "Kenya","Kiribati","Korea (the Democratic People's Republic of)","Korea (the Republic of)","Kuwait","Kyrgyzstan",
+  "Lao People's Democratic Republic (the)","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania",
+  "Luxembourg","Macao","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands (the)","Martinique",
+  "Mauritania","Mauritius","Mayotte","Mexico","Micronesia (Federated States of)","Moldova (the Republic of)","Monaco",
+  "Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands (the)",
+  "New Caledonia","New Zealand","Nicaragua","Niger (the)","Nigeria","Niue","Norfolk Island","Northern Mariana Islands (the)",
+  "Norway","Oman","Pakistan","Palau","Palestine, State of","Panama","Papua New Guinea","Paraguay","Peru","Philippines (the)",
+  "Pitcairn","Poland","Portugal","Puerto Rico","Qatar","Republic of North Macedonia","Romania","Russian Federation (the)",
+  "Rwanda","Réunion","Saint Barthélemy","Saint Helena, Ascension and Tristan da Cunha","Saint Kitts and Nevis","Saint Lucia",
+  "Saint Martin (French part)","Saint Pierre and Miquelon","Saint Vincent and the Grenadines","Samoa","San Marino",
+  "Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Sint Maarten (Dutch part)",
+  "Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and the South Sandwich Islands","South Sudan",
+  "Spain","Sri Lanka","Sudan (the)","Suriname","Svalbard and Jan Mayen","Sweden","Switzerland","Syrian Arab Republic","Taiwan",
+  "Tajikistan","Tanzania, United Republic of","Thailand","Timor-Leste","Togo","Tokelau","Tonga","Trinidad and Tobago","Tunisia",
+  "Turkey","Turkmenistan","Turks and Caicos Islands (the)","Tuvalu","Uganda","Ukraine","United Arab Emirates (the)",
+  "United Kingdom of Great Britain and Northern Ireland (the)","United States Minor Outlying Islands (the)",
+  "United States of America (the)","Uruguay","Uzbekistan","Vanuatu","Venezuela (Bolivarian Republic of)","Viet Nam",
+  "Virgin Islands (British)","Virgin Islands (U.S.)","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe","Åland Islands"
 ];
 
 const roles = [
@@ -298,7 +68,6 @@ const Register = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
-  // Password strength validation
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
@@ -306,7 +75,6 @@ const Register = () => {
     hasNumber: false,
   });
 
-  // Validate password strength
   useEffect(() => {
     setPasswordStrength({
       hasMinLength: password.length >= 8,
@@ -316,7 +84,6 @@ const Register = () => {
     });
   }, [password]);
 
-  // Fetch categories from API when the component mounts
   useEffect(() => {
     axios
       .get("http://localhost:5000/courses/categories")
@@ -328,18 +95,11 @@ const Register = () => {
       });
   }, []);
 
-  // Handle category selection
   const handleCategoryToggle = (categoryId) => {
-    setSelectedCategories((prev) => {
-      if (prev.includes(categoryId)) {
-        return prev.filter((id) => id !== categoryId);
-      } else {
-        return [...prev, categoryId];
-      }
-    });
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+    );
   };
-
-  // Remove category from selection
   const removeCategory = (categoryId) => {
     setSelectedCategories((prev) => prev.filter((id) => id !== categoryId));
   };
@@ -348,7 +108,6 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Prepare the data to send
     const userData = {
       role_id: parseInt(role_id),
       first_name,
@@ -359,8 +118,6 @@ const Register = () => {
       country,
       username,
     };
-
-    // Add categories array if the user is a freelancer
     if (role_id === "3") {
       userData.categories = selectedCategories;
     }
@@ -371,7 +128,6 @@ const Register = () => {
         setStatus(true);
         setMessage(result.data.message || "Registration successful");
 
-        // Auto login after successful registration
         axios
           .post("http://localhost:5000/users/login", { email, password })
           .then((res) => {
@@ -400,10 +156,10 @@ const Register = () => {
   const getPasswordStrengthText = () => {
     const validCount = Object.values(passwordStrength).filter(Boolean).length;
     if (validCount === 0) return { text: "", color: "" };
-    if (validCount === 1) return { text: "Very Weak", color: "text-red-600" };
-    if (validCount === 2) return { text: "Weak", color: "text-red-500" };
-    if (validCount === 3) return { text: "Good", color: "text-yellow-500" };
-    if (validCount === 4) return { text: "Strong", color: "text-green-600" };
+    if (validCount === 1) return { text: "Very Weak", color: "text-rose-600" };
+    if (validCount === 2) return { text: "Weak", color: "text-rose-500" };
+    if (validCount === 3) return { text: "Good", color: "text-amber-500" };
+    if (validCount === 4) return { text: "Strong", color: "text-emerald-600" };
     return { text: "", color: "" };
   };
 
@@ -411,511 +167,365 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Main Container - Fixed Width */}
-      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 xl:px-16 py-8">
-        <div className="flex items-center justify-center w-full max-w-7xl mx-auto">
-          {/* Registration Container - Fixed Width */}
-          <div className="w-full max-w-6xl relative z-10">
-            {/* Header */}
-            <div className="text-center mb-4">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-2 font-serif leading-tight">
-                Join{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-500 bg-clip-text text-transparent">
-                  ORDERZHOUSE
-                </span>
-              </h1>
-            </div>
+      {/* Soft background accents */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-28 -right-28 w-80 h-80 rounded-full bg-[#028090]/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-28 w-96 h-96 rounded-full bg-[#028090]/5 blur-3xl" />
+      </div>
 
-            {/* Registration Form Container - Fixed Dimensions */}
-            <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-gray-100 relative overflow-hidden shadow-sm max-h-[85vh] overflow-y-auto">
-              {/* Background gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl opacity-80"></div>
+      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8">
+        <div className="w-full max-w-5xl">
+          {/* Title */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
+              Create your account
+            </h1>
+            <p className="text-slate-500 mt-2">
+              Join <span className="font-semibold text-[#028090]">ORDERZHOUSE</span> in seconds
+            </p>
+          </div>
 
-              <div className="relative z-10">
-                <form onSubmit={register} className="space-y-5">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - Fixed Width */}
-                    <div className="space-y-5 min-h-0">
-                      {/* Role Selection */}
-                      <div>
-                        <label
-                          htmlFor="role_id"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          I want to register as
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Briefcase className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <select
-                            id="role_id"
-                            value={role_id}
-                            onChange={(e) => setRole_id(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          >
-                            <option value="">Select Role</option>
-                            {roles.map((role) => (
-                              <option key={role.id} value={role.id}>
-                                {role.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+          {/* Card */}
+          <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
+            <form onSubmit={register} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* LEFT */}
+                <div className="space-y-5">
+                  {/* Role */}
+                  <div>
+                    <label htmlFor="role_id" className="block text-sm text-slate-700 mb-1.5">
+                      I want to register as
+                    </label>
+                    <div className="relative">
+                      <Briefcase className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <select
+                        id="role_id"
+                        value={role_id}
+                        onChange={(e) => setRole_id(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      >
+                        <option value="">Select Role</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-                      {/* Multiple Categories Selection (Freelancer Only) - Fixed Container */}
-                      {role_id === "3" && (
-                        <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                          <label className="block text-base font-semibold text-gray-700 mb-3 font-serif">
-                            What category would you like to work in?
-                            <span className="block text-sm font-normal text-gray-500 mt-1">
-                              Choose your areas of expertise (select multiple)
-                            </span>
-                          </label>
+                  {/* Categories (Freelancer only) */}
+                  {role_id === "3" && (
+                    <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60">
+                      <label className="block text-sm text-slate-700 mb-2">
+                        What category would you like to work in?
+                        <span className="block text-xs text-slate-500">
+                          Choose your areas of expertise (select multiple)
+                        </span>
+                      </label>
 
-                          {/* Selected Categories Display - Fixed Height with Scroll */}
-                          {selectedCategories.length > 0 && (
-                            <div className="mb-4 max-h-20 overflow-y-auto">
-                              <div className="flex flex-wrap gap-2">
-                                {selectedCategories.map((categoryId) => {
-                                  const category = categories.find(
-                                    (cat) => cat.id === categoryId
-                                  );
-                                  return category ? (
-                                    <div
-                                      key={categoryId}
-                                      className="inline-flex items-center bg-gradient-to-r from-teal-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm flex-shrink-0"
-                                    >
-                                      <span className="truncate max-w-24">
-                                        {category.name}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          removeCategory(categoryId)
-                                        }
-                                        className="ml-2 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors flex-shrink-0"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  ) : null;
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Category Selection Grid - Fixed Height with Scroll */}
-                          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
-                            <div className="grid grid-cols-1 gap-2 p-3">
-                              {categories.map((category) => (
-                                <button
-                                  key={category.id}
-                                  type="button"
-                                  onClick={() =>
-                                    handleCategoryToggle(category.id)
-                                  }
-                                  className={`p-3 rounded-lg border-2 transition-all duration-200 font-medium text-left ${
-                                    selectedCategories.includes(category.id)
-                                      ? "border-teal-500 bg-teal-50 text-teal-700"
-                                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                                  }`}
+                      {selectedCategories.length > 0 && (
+                        <div className="mb-3 max-h-20 overflow-y-auto">
+                          <div className="flex flex-wrap gap-2">
+                            {selectedCategories.map((categoryId) => {
+                              const category = categories.find((cat) => cat.id === categoryId);
+                              return category ? (
+                                <div
+                                  key={categoryId}
+                                  className="inline-flex items-center bg-[#028090] text-white px-3 py-1 rounded-full text-xs"
                                 >
-                                  <div className="flex items-center">
-                                    {selectedCategories.includes(
-                                      category.id
-                                    ) && (
-                                      <Check className="w-4 h-4 text-teal-600 mr-2" />
-                                    )}
-                                    <span className="truncate">
-                                      {category.name}
-                                    </span>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
+                                  <span className="truncate max-w-24">{category.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCategory(categoryId)}
+                                    className="ml-2 hover:bg-white/20 rounded-full p-0.5"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ) : null;
+                            })}
                           </div>
                         </div>
                       )}
 
-                      {/* First Name */}
-                      <div>
-                        <label
-                          htmlFor="first_name"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          First Name
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="text"
-                            id="first_name"
-                            placeholder="Enter your first name"
-                            value={first_name}
-                            onChange={(e) => setFirst_name(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Last Name */}
-                      <div>
-                        <label
-                          htmlFor="last_name"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Last Name
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="text"
-                            id="last_name"
-                            placeholder="Enter your last name"
-                            value={last_name}
-                            onChange={(e) => setLast_name(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="username"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Username
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <User className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="text"
-                            id="username"
-                            placeholder="Choose a username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
+                      <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+                        <div className="grid grid-cols-1 gap-2 p-3">
+                          {categories.map((category) => (
+                            <button
+                              key={category.id}
+                              type="button"
+                              onClick={() => handleCategoryToggle(category.id)}
+                              className={`p-3 rounded-lg border text-left transition ${
+                                selectedCategories.includes(category.id)
+                                  ? "border-[#028090] bg-[#028090]/5 text-[#028090]"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                {selectedCategories.includes(category.id) && (
+                                  <Check className="w-4 h-4 text-[#028090] mr-2" />
+                                )}
+                                <span className="truncate">{category.name}</span>
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
+                  )}
 
-                    {/* Right Column - Fixed Width */}
-                    <div className="space-y-5 min-h-0">
-                      {/* Email */}
-                      <div>
-                        <label
-                          htmlFor="email"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Email Address
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Mail className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="email"
-                            id="email"
-                            placeholder="Enter your email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Password with Strength Indicator */}
-                      <div>
-                        <label
-                          htmlFor="password"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Password
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Lock className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            id="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="pl-12 pr-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-teal-600 transition-colors"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-6 w-6 text-gray-400 hover:text-teal-600" />
-                            ) : (
-                              <Eye className="h-6 w-6 text-gray-400 hover:text-teal-600" />
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Password Strength Indicator */}
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">
-                              Password Strength:
-                            </span>
-                            <span
-                              className={`text-sm font-semibold ${passwordStrengthInfo.color}`}
-                            >
-                              {passwordStrengthInfo.text}
-                            </span>
-                          </div>
-
-                          {/* 2-column grid for the 4 checks */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div
-                              className={`flex items-center text-xs ${
-                                passwordStrength.hasMinLength
-                                  ? "text-green-600"
-                                  : "text-gray-400"
-                              }`}
-                            >
-                              <Check
-                                className={`w-3 h-3 mr-2 ${
-                                  passwordStrength.hasMinLength
-                                    ? "text-green-600"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                              At least 8 characters
-                            </div>
-                            <div
-                              className={`flex items-center text-xs ${
-                                passwordStrength.hasUpperCase
-                                  ? "text-green-600"
-                                  : "text-gray-400"
-                              }`}
-                            >
-                              <Check
-                                className={`w-3 h-3 mr-2 ${
-                                  passwordStrength.hasUpperCase
-                                    ? "text-green-600"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                              One uppercase letter
-                            </div>
-                            <div
-                              className={`flex items-center text-xs ${
-                                passwordStrength.hasLowerCase
-                                  ? "text-green-600"
-                                  : "text-gray-400"
-                              }`}
-                            >
-                              <Check
-                                className={`w-3 h-3 mr-2 ${
-                                  passwordStrength.hasLowerCase
-                                    ? "text-green-600"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                              One lowercase letter
-                            </div>
-                            <div
-                              className={`flex items-center text-xs ${
-                                passwordStrength.hasNumber
-                                  ? "text-green-600"
-                                  : "text-gray-400"
-                              }`}
-                            >
-                              <Check
-                                className={`w-3 h-3 mr-2 ${
-                                  passwordStrength.hasNumber
-                                    ? "text-green-600"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                              One number
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Country */}
-                      <div>
-                        <label
-                          htmlFor="country"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Country
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <MapPin className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <select
-                            id="country"
-                            value={country}
-                            onChange={(e) => setCountry(e.target.value)}
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          >
-                            <option value="">Select Country</option>
-                            {countries.map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Phone Number */}
-                      <div>
-                        <label
-                          htmlFor="phone_number"
-                          className="block text-base font-semibold text-gray-700 mb-2 font-serif"
-                        >
-                          Phone Number
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                            <Phone className="h-6 w-6 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
-                          </div>
-                          <input
-                            type="tel"
-                            id="phone_number"
-                            placeholder="Enter your phone number"
-                            value={phone_number}
-                            onChange={(e) => setPhone_number(e.target.value)}
-                            pattern="^[0-9+\-\s()]*$"
-                            required
-                            className="pl-12 w-full px-5 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-all duration-300 bg-white font-serif text-base"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Terms Checkbox */}
-                  <div className="flex items-start">
-                    <input
-                      id="terms"
-                      name="terms"
-                      type="checkbox"
-                      className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
-                      required
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="ml-3 block text-base text-gray-700 font-serif"
-                    >
-                      I agree to the{" "}
-                      <a
-                        href="#"
-                        className="text-teal-600 hover:text-blue-600 font-semibold transition-colors"
-                      >
-                        Terms and Conditions
-                      </a>{" "}
-                      and{" "}
-                      <a
-                        href="#"
-                        className="text-teal-600 hover:text-blue-600 font-semibold transition-colors"
-                      >
-                        Privacy Policy
-                      </a>
+                  {/* First Name */}
+                  <div>
+                    <label htmlFor="first_name" className="block text-sm text-slate-700 mb-1.5">
+                      First Name
                     </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        id="first_name"
+                        placeholder="Your first name"
+                        value={first_name}
+                        onChange={(e) => setFirst_name(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="flex items-center justify-center">
-                    <GradientButton
-                      className="px-16 flex items-center justify-center "
-                      disabled={isLoading}
-                    >
-                      {/* Button background animation */}
-                      <div className="relative z-10 flex items-center">
-                        {isLoading ? (
-                          <>
-                            <svg
-                              className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Creating secure account...
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="w-6 h-6 mr-2" />
-                            Create Secure Account
-                          </>
-                        )}
+                  {/* Last Name */}
+                  <div>
+                    <label htmlFor="last_name" className="block text-sm text-slate-700 mb-1.5">
+                      Last Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        id="last_name"
+                        placeholder="Your last name"
+                        value={last_name}
+                        onChange={(e) => setLast_name(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Username */}
+                  <div>
+                    <label htmlFor="username" className="block text-sm text-slate-700 mb-1.5">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        id="username"
+                        placeholder="Choose a username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT */}
+                <div className="space-y-5">
+                  {/* Email */}
+                  <div>
+                    <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        id="email"
+                        placeholder="you@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password + strength */}
+                  <div>
+                    <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#028090]"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-slate-600">Password Strength:</span>
+                        <span className={`text-xs font-medium ${passwordStrengthInfo.color}`}>
+                          {passwordStrengthInfo.text}
+                        </span>
                       </div>
-                    </GradientButton>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className={`flex items-center text-[11px] ${passwordStrength.hasMinLength ? "text-emerald-600" : "text-slate-400"}`}>
+                          <Check className={`w-3 h-3 mr-1.5 ${passwordStrength.hasMinLength ? "text-emerald-600" : "text-slate-300"}`} />
+                          At least 8 characters
+                        </div>
+                        <div className={`flex items-center text-[11px] ${passwordStrength.hasUpperCase ? "text-emerald-600" : "text-slate-400"}`}>
+                          <Check className={`w-3 h-3 mr-1.5 ${passwordStrength.hasUpperCase ? "text-emerald-600" : "text-slate-300"}`} />
+                          One uppercase letter
+                        </div>
+                        <div className={`flex items-center text-[11px] ${passwordStrength.hasLowerCase ? "text-emerald-600" : "text-slate-400"}`}>
+                          <Check className={`w-3 h-3 mr-1.5 ${passwordStrength.hasLowerCase ? "text-emerald-600" : "text-slate-300"}`} />
+                          One lowercase letter
+                        </div>
+                        <div className={`flex items-center text-[11px] ${passwordStrength.hasNumber ? "text-emerald-600" : "text-slate-400"}`}>
+                          <Check className={`w-3 h-3 mr-1.5 ${passwordStrength.hasNumber ? "text-emerald-600" : "text-slate-300"}`} />
+                          One number
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </form>
 
-                {/* Status Message */}
-                {message && (
-                  <div
-                    className={`mt-6 p-4 rounded-xl flex items-start border backdrop-blur-sm ${
-                      status
-                        ? "bg-green-50 text-green-800 border-green-200"
-                        : "bg-red-50 text-red-800 border-red-200"
-                    }`}
-                  >
-                    {status ? (
-                      <CheckCircle className="w-6 h-6 mt-0.5 mr-3 text-green-500 flex-shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-6 h-6 mt-0.5 mr-3 text-red-500 flex-shrink-0" />
-                    )}
-                    <p className="text-base font-serif">{message}</p>
+                  {/* Country */}
+                  <div>
+                    <label htmlFor="country" className="block text-sm text-slate-700 mb-1.5">
+                      Country
+                    </label>
+                    <div className="relative">
+                      <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <select
+                        id="country"
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      >
+                        <option value="">Select Country</option>
+                        {countries.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                )}
 
-                {/* Login Link */}
-                <div className="mt-6 text-center pt-4 border-t border-gray-200">
-                  <p className="text-base lg:text-lg text-gray-600 font-serif">
-                    Already have an account?{" "}
-                    <a
-                      href="/login"
-                      className="font-semibold text-teal-600 hover:text-blue-600 inline-flex items-center transition-colors group font-serif"
-                    >
-                      Sign in now
-                      <ArrowLeft className="ml-1 h-5 w-5 group-hover:-translate-x-1 transition-transform rotate-180" />
-                    </a>
-                  </p>
+                  {/* Phone */}
+                  <div>
+                    <label htmlFor="phone_number" className="block text-sm text-slate-700 mb-1.5">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        id="phone_number"
+                        placeholder="Your phone"
+                        value={phone_number}
+                        onChange={(e) => setPhone_number(e.target.value)}
+                        pattern="^[0-9+\-\s()]*$"
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Terms */}
+              <div className="flex items-start">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  className="h-4 w-4 text-[#028090] focus:ring-[#028090] border-slate-300 rounded mt-0.5"
+                  required
+                />
+                <label htmlFor="terms" className="ml-2 text-sm text-slate-700">
+                  I agree to the{" "}
+                  <a href="#" className="text-[#028090] hover:underline">Terms and Conditions</a> and{" "}
+                  <a href="#" className="text-[#028090] hover:underline">Privacy Policy</a>
+                </label>
+              </div>
+
+              {/* Submit */}
+              <div className="flex items-center justify-center">
+                <GradientButton className="px-14 flex items-center justify-center" disabled={isLoading}>
+                  <div className="relative z-10 flex items-center">
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating secure account...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="w-5 h-5 mr-2" />
+                        Create Secure Account
+                      </>
+                    )}
+                  </div>
+                </GradientButton>
+              </div>
+            </form>
+
+            {message && (
+              <div
+                className={`mt-6 p-4 rounded-xl flex items-start border ${
+                  status
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                    : "bg-rose-50 text-rose-800 border-rose-200"
+                }`}
+              >
+                {status ? (
+                  <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-rose-600" />
+                )}
+                <p className="text-sm">{message}</p>
+              </div>
+            )}
+
+            <div className="mt-6 text-center pt-4 border-t border-slate-200">
+              <p className="text-sm text-slate-600">
+                Already have an account?{" "}
+                <a
+                  href="/login"
+                  className="font-medium text-[#028090] inline-flex items-center hover:underline"
+                >
+                  Sign in
+                  <ArrowLeft className="ml-1 h-4 w-4 rotate-180" />
+                </a>
+              </p>
             </div>
           </div>
         </div>
