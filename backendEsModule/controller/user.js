@@ -1144,7 +1144,7 @@ const rejectFreelancerByAdmin = async (req, res) => {
 // ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
 
 /**
- * @route   POST /api/users/verify-password
+ * @route   POST /users/verify-password
  * @desc    Verify user's current password
  * @access  Private
  */
@@ -1182,7 +1182,7 @@ const verifyPassword = async (req, res) => {
 };
 
 /**
- * @route   PUT /api/users/update-password
+ * @route   PUT /users/update-password
  * @desc    Update user password
  * @access  Private
  */
@@ -1259,7 +1259,7 @@ const updatePassword = async (req, res) => {
 };
 
 /**
- * @route   PUT /api/users/deactivate
+ * @route   PUT /users/deactivate
  * @desc    Deactivate user account
  * @access  Private
  */

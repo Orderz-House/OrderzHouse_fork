@@ -1,10 +1,15 @@
-import { getClientFinancialOverview } from "./financialService.js";
+import { getFinancialOverview } from "./financialService.js";
 
 export const getMyFinancialOverview = async (req, res) => {
-  const clientId = req.token?.userId;
+  const userId = req.token?.userId;
+  const role = req.token?.role; // 2 = client, 3 = freelancer
+
+  if (!userId || !role) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
 
   try {
-    const data = await getClientFinancialOverview(clientId);
+    const data = await getFinancialOverview(userId, role);
     return res.json({
       success: true,
       data,

@@ -81,7 +81,7 @@ const ProfileSettings = () => {
       };
 
       // Make the API call to the standardized backend endpoint
-      const result = await axios.put(`/api/users/me`, payload, {
+      const result = await axios.put(`/users/me`, payload, {
         headers: { authorization: `Bearer ${token}` },
       });
 

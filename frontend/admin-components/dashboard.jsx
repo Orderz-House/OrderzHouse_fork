@@ -83,7 +83,7 @@ export default function Dashboard() {
     const logInterval = setInterval(async () => {
       if (!mountedRef.current || fetchingRef.current) return;
       try {
-        const response = await fetch("/api/admin/dashboard/logs");
+        const response = await fetch("/admin/dashboard/logs");
         if (response.ok) {
           const newLogs = await response.json();
           if (mountedRef.current && newLogs?.recentLogs) {

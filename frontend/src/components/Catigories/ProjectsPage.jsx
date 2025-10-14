@@ -1,24 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 
-import TopbarCategories from "./TopbarCategories.jsx";
-import CategoryBar from "./CategoryBar.jsx";
+import { CategoriesRail } from "./TopbarCategories.jsx"; 
 import ProjectCard from "./ProjectCard.jsx";
 import Pagination from "./Pagination.jsx";
-import Navbar from "./Navbar.jsx";
 
-// ===== Theme & Catalog =====
 const THEME = "#028090";
 const THEME_DARK = "#05668D";
-const THEME_LIGHT = "#02C39A";
-const PAGE_SIZE = 12; // ← حجم الصفحة
+const PAGE_SIZE = 12;
 
+/** Catalog with subcats for the sidebar accordion */
 const CATALOG = {
   web: {
     title: "Software Development",
-    subtitle:
-      "Add features to your website with custom web applications and extensions",
+    subtitle: "Add features to your website with custom web applications and extensions",
     subcats: [
       { id: "fullstack", name: "Full Stack Web Applications" },
       { id: "automations", name: "Automations & Workflows" },
@@ -29,7 +25,7 @@ const CATALOG = {
   },
   design: {
     title: "Design",
-    subtitle: "UI/UX, design systems, and brand visuals to ship faster",
+    subtitle: "UI/UX, design systems, and brand visuals",
     subcats: [
       { id: "uiux", name: "UI/UX" },
       { id: "designsystem", name: "Design Systems" },
@@ -39,7 +35,7 @@ const CATALOG = {
   },
   video: {
     title: "Video Editing",
-    subtitle: "Shorts, ads, and cinematic edits for your channels",
+    subtitle: "Shorts, ads, and cinematic edits",
     subcats: [
       { id: "ads", name: "Ads" },
       { id: "youtube", name: "YouTube" },
@@ -49,7 +45,7 @@ const CATALOG = {
   },
   seo: {
     title: "SEO",
-    subtitle: "On-page, technical SEO, and content strategies",
+    subtitle: "On-page, technical SEO, and content",
     subcats: [
       { id: "onpage", name: "On-page" },
       { id: "technical", name: "Technical" },
@@ -76,7 +72,6 @@ const CATALOG = {
   },
 };
 
-// ===== Mock + API =====
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") === "true";
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const API_ENDPOINT = "/api/projects";
@@ -174,223 +169,210 @@ function useProjects({
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true);
-      setError("");
       try {
+        setState((s) => ({ ...s, loading: true, error: "" }));
         if (USE_MOCK) {
-          await new Promise((r) => setTimeout(r, 200));
-
-          // فلترة
-          let all = MOCK_PROJECTS.filter((p) => {
-            if (category && p.category !== category) return false;
-            if (sub && p.sub !== sub) return false;
-            if (filters?.video != null && p.offersVideo !== filters.video)
-              return false;
-            if (filters?.vetted != null && p.seller?.vetted !== filters.vetted)
-              return false;
-            if (filters?.ad != null && p.seller?.isAd !== filters.ad)
-              return false;
-            if (filters?.budget) {
-              const min = filters.budget.min ?? -Infinity;
-              const max = filters.budget.max ?? Infinity;
-              if (!(p.from >= min && p.from <= max)) return false;
-            }
-            if (filters?.delivery != null) {
-              if (p.deliveryDays == null || p.deliveryDays > filters.delivery)
-                return false;
-            }
-            if (pro && !p.seller?.vetted) return false;
-            if (instant && !(p.deliveryDays <= 7)) return false;
-            return true;
-          });
-
-          // فرز
-          if (sort === "price_low")
-            all = [...all].sort((a, b) => a.from - b.from);
-          else if (sort === "price_high")
-            all = [...all].sort((a, b) => b.from - a.from);
-          else if (sort === "top")
-            all = [...all].sort((a, b) => b.rating.score - a.rating.score);
-
+          let all = MOCK.filter(p => !category || p.category === category);
+          if (sub) all = all.filter(p => p.sub === sub);
           const total = all.length;
-          // تقطيع حسب الصفحة
-          const start = (page - 1) * pageSize;
-          const end = start + pageSize;
-          const items = all.slice(start, end);
-
+          const start = (page - 1) * PAGE_SIZE;
+          const items = all.slice(start, start + PAGE_SIZE);
           if (!alive) return;
-          setData({ items, total });
+          setState({ items, total, loading: false, error: "" });
         } else {
-          // API: مرّر باراميترات التقطيع
           const res = await api.get(API_ENDPOINT, {
-            params: {
-              cat: category,
-              sub,
-              page,
-              limit: pageSize,
-              sort,
-              pro: pro ? 1 : 0,
-              instant: instant ? 1 : 0,
-              video: filters?.video ?? undefined,
-              vetted: filters?.vetted ?? undefined,
-              ad: filters?.ad ?? undefined,
-              budget_min: filters?.budget?.min ?? undefined,
-              budget_max: filters?.budget?.max ?? undefined,
-              delivery: filters?.delivery ?? undefined,
-            },
+            params: { cat: category, sub, page, limit: PAGE_SIZE }
           });
-          const payload = res.data ?? { items: [], total: 0 };
           if (!alive) return;
-          setData(payload);
+          setState({
+            items: res.data?.items ?? [],
+            total: res.data?.total ?? 0,
+            loading: false,
+            error: ""
+          });
         }
       } catch (e) {
         if (!alive) return;
-        setError(e?.message || "Failed to load projects");
-      } finally {
-        // eslint-disable-next-line no-unsafe-finally
-        if (!alive) return;
-        setLoading(false);
+        setState((s) => ({ ...s, loading: false, error: e?.message || "Failed to load" }));
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, [category, sub, page, pageSize, filters, sort, pro, instant]);
+    return () => { alive = false; };
+  }, [category, sub, page]);
 
-  return { ...data, loading, error };
+  return state;
 }
 
-// ===== الصفحة =====
 export default function ProjectsPage() {
-  const [search, setSearch] = useSearchParams();
-  const category = search.get("cat") || "web";
-  const sub = search.get("sub") || "";
-  const page = Math.max(1, parseInt(search.get("page") || "1", 10) || 1);
+  const [sp, setSp] = useSearchParams();
+  const category = sp.get("cat") || "web";
+  const sub = sp.get("sub") || "";
+  const page = Math.max(1, parseInt(sp.get("page") || "1", 10) || 1);
 
-  const [sort, setSort] = useState("best");
-  const [pro, setPro] = useState(false);
-  const [instant, setInstant] = useState(false);
-
-  // فلاتر الأزرار الأربع
-  const [filters, setFilters] = useState({
-    video: null,
-    vetted: null,
-    ad: null,
-    budget: { min: null, max: null },
-    delivery: null,
-  });
-
-  const { items, total, loading, error } = useProjects({
-    category,
-    sub,
-    page,
-    pageSize: PAGE_SIZE,
-    filters,
-    sort,
-    pro,
-    instant,
-  });
-
-  // تأكيد بقاء الصفحة ضمن المدى عند تغيّر النتائج
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    if (page > totalPages) {
-      const next = new URLSearchParams(search);
-      next.set("page", String(totalPages));
-      setSearch(next, { replace: true });
-    }
-  }, [total]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { items, total, loading, error } = useProjects({ category, sub, page });
+  const meta = CATALOG[category] || { title: "Projects", subtitle: "", subcats: [] };
 
   const setPage = (p) => {
-    const next = new URLSearchParams(search);
+    const next = new URLSearchParams(sp);
     next.set("page", String(p));
-    setSearch(next, { replace: false });
-    // optional: scroll لأعلى الشبكة
+    setSp(next, { replace: false });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSelectCategory = (catId) => {
-    const next = new URLSearchParams(search);
-    next.set("cat", catId);
+  // لائحة الأقسام للسايدبار
+  const catList = useMemo(
+    () => Object.entries(CATALOG).map(([id, v]) => ({ id, name: v.title })),
+    []
+  );
+
+  // عدادات بسيطة من الموك (اختياري)
+  const counts = useMemo(() => {
+    const c = {};
+    for (const p of MOCK) c[p.category] = (c[p.category] || 0) + 1;
+    return c;
+  }, []);
+
+  // تبديل القسم من السايدبار (يمسح sub)
+  const chooseCat = (id) => {
+    const next = new URLSearchParams(sp);
+    next.set("cat", id);
     next.delete("sub");
-    next.set("page", "1"); // بداية من الصفحة الأولى
-    setSearch(next, { replace: false });
+    next.set("page", "1");
+    setSp(next, { replace: false });
   };
-  const handleSelectSub = (v) => {
-    const next = new URLSearchParams(search);
-    if (v) next.set("sub", v);
-    else next.delete("sub");
-    next.set("page", "1"); // بداية من الصفحة الأولى
-    setSearch(next, { replace: false });
+
+  // تبديل sub
+  const chooseSub = (subId) => {
+    const next = new URLSearchParams(sp);
+    if (subId) next.set("sub", subId); else next.delete("sub");
+    next.set("page", "1");
+    setSp(next, { replace: false });
   };
 
   return (
     <section className="relative min-h-[70vh] py-8 sm:py-10 md:py-12">
-            {/* <Navbar /> */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <TopbarCategories
+        {/* Rail العلوي الصغير */}
+        <CategoriesRail
           active={category}
-          onSelect={handleSelectCategory}
+          onSelect={chooseCat}
           catalog={CATALOG}
           theme={THEME}
           themeDark={THEME_DARK}
         />
 
-        <CategoryBar
-          cat={category}
-          sub={sub}
-          total={total}
-          onSelectSub={handleSelectSub}
-          sort={sort}
-          setSort={setSort}
-          pro={pro}
-          setPro={setPro}
-          instant={instant}
-          setInstant={setInstant}
-          catalog={CATALOG}
-          theme={THEME}
-          themeLight={THEME_LIGHT}
-          themeDark={THEME_DARK}
-          filters={filters}
-          onChangeFilters={(name, value) =>
-            setFilters((f) => ({ ...f, [name]: value }))
-          }
-        />
+        {/* تخطيط: يسار شبكة — يمين سايدبار */}
+        <div className="grid grid-cols-12 gap-8">
+          {/* LEFT */}
+          <div className="col-span-12 lg:col-span-9">
+            <header className="mb-5">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: THEME_DARK }}>
+                {meta.title}
+              </h1>
+              <p className="text-slate-600 mt-1">{meta.subtitle}</p>
+            </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {loading &&
-            Array.from({ length: PAGE_SIZE }).map((_, i) => (
-              <CardSkeleton key={i} />
-            ))}
-          {!loading &&
-            !error &&
-            items.map((p) => <ProjectCard key={p.id} {...p} theme={THEME} />)}
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading && Array.from({ length: PAGE_SIZE }).map((_, i) => <CardSkeleton key={i} />)}
+              {!loading && !error && items.map((p) => <ProjectCard key={p.id} {...p} theme={THEME} />)}
+            </div>
 
-        {!loading && items.length === 0 && !error && (
-          <div className="mt-12 text-center text-slate-600">
-            No projects found.
+            {!loading && items.length === 0 && !error && (
+              <div className="mt-10 text-slate-600">No projects found.</div>
+            )}
+            {!loading && error && (
+              <div className="mt-10 text-red-600">{error}</div>
+            )}
+
+            {!loading && total > PAGE_SIZE && (
+              <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+            )}
           </div>
-        )}
-        {!loading && error && (
-          <div className="mt-12 text-center text-red-600">{error}</div>
-        )}
 
-        {/* الترقيم */}
-        {!loading && total > PAGE_SIZE && (
-          <Pagination
-            page={page}
-            total={total}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-          />
-        )}
+          {/* RIGHT: Sticky sidebar with accordion */}
+          <aside className="col-span-12 lg:col-span-3">
+            <div className="lg:sticky lg:top-6 space-y-6">
+              {/* Search */}
+              <div className="rounded-2xl bg-white shadow ring-1 ring-black/5 p-4">
+                <label className="text-sm text-slate-600 block mb-2">Search</label>
+                <input className="w-full rounded-xl border border-slate-200 px-3 py-2.5" placeholder="Search projects…" />
+              </div>
+
+              {/* Categories + Subcategories (Accordion) */}
+              <div className="rounded-2xl bg-white shadow ring-1 ring-black/5 p-4">
+                <h3 className="text-slate-800 font-semibold">Categories</h3>
+                <ul className="mt-3 space-y-1.5">
+                  {catList.map((c) => {
+                    const isActive = c.id === category;
+                    const subs = CATALOG[c.id]?.subcats || [];
+                    return (
+                      <li key={c.id} className="group">
+                        {/* Category row */}
+                        <button
+                          onClick={() => chooseCat(c.id)}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition"
+                          style={{
+                            background: isActive ? "#F8FAFC" : "transparent",
+                            color: isActive ? THEME_DARK : "#0f172a",
+                            boxShadow: isActive ? `inset 0 0 0 1px ${THEME}33` : "none",
+                          }}
+                        >
+                          <span className="truncate">{c.name}</span>
+                          <span className="ml-3 text-[11px] rounded-full px-2 py-[2px]" style={{ background:"rgba(2,128,144,.10)", color:THEME_DARK }}>
+                            {(counts[c.id] ?? 0)}
+                          </span>
+                        </button>
+
+                        {/* Subcats panel (expand when active) */}
+                        {isActive && subs.length > 0 && (
+                          <div className="mt-2 pl-2">
+                            <div className="max-h-64 overflow-auto pr-1">
+                              <div className="flex flex-wrap gap-2">
+                                {subs.map((s) => {
+                                  const isSub = sub === s.id;
+                                  return (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => chooseSub(isSub ? "" : s.id)}
+                                      className="px-3 py-1.5 rounded-full text-xs transition"
+                                      style={{
+                                        background: isSub ? `${THEME}15` : "#F1F5F9",
+                                        color: isSub ? THEME_DARK : "#0f172a",
+                                        boxShadow: isSub ? `inset 0 0 0 1px ${THEME}` : "none",
+                                      }}
+                                      title={s.name}
+                                    >
+                                      {s.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              {/* Sort */}
+              <div className="rounded-2xl bg-white shadow ring-1 ring-black/5 p-4">
+                <label className="text-sm text-slate-600 block mb-2">Sort by</label>
+                <select className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
+                  <option>Best selling</option>
+                  <option>Top rated</option>
+                  <option>Price: Low → High</option>
+                  <option>Price: High → Low</option>
+                </select>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
   );
 }
 
-// Skeleton للكارد
 function CardSkeleton() {
   return (
     <div>

@@ -1,36 +1,37 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import { requireVerified } from "../middleware/requireVerification.js";
+import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
+
 import authorization from "../middleware/authorization.js";
 import {
   createProject,
-  getMyProjects,
   assignProject,
-  listUsersByRole,
   getRelatedFreelancers,
-  getProjectById,
   updateAssignmentStatus,
   getAllProjectForOffer,
-  sendOffer,
-  getProjectCompletion,
-  submitWorkCompletion,
-  getAllProjectForFreelancerById,
-  uploadProjectFile,
-  getProjectFiles,
-  getCountProjectFreelancer,
-  getMyProjectsAsFreelancer,
-  quitProject,
-  getProjectsByStatus,
-  approveOrRejectOffer,
   completeHourlyProject,
   getProjectsByCategoryId,
   getProjectsBySubCategoryId,
  getProjectsBySubSubCategoryId
 } from "../controller/projects.js";
+import {
+  getProjectsByCategory,
+  getProjectsBySubCategory,
+  getProjectsBySubSubCategory,
+} from "../controller/projectsManagment/projectsFiltering.js"; 
+
 
 const projectsRouter = express.Router();
 
+
 // ---------------------- Authenticated & Verified ----------------------
+
+
+
+/* ==============================
+   ✅ Project Management Routes
+   ============================== */
 
 // Create a new project
 projectsRouter.post(
@@ -39,31 +40,23 @@ projectsRouter.post(
   authorization("create_project"),
   createProject
 );
+
+// Complete hourly project with final hours calculation
 projectsRouter.put(
   "/hourly/:projectId",
   authentication,
-  completeHourlyProject)
-
-// Get projects created by the authenticated user
-projectsRouter.get("/mine", authentication, getMyProjects);
-
-// Get project by ID
-projectsRouter.get(
-  "/:projectId",
-  authentication,
-  requireVerified,
-  getProjectById
+  completeHourlyProject
 );
 
 // Assign a freelancer to a project
 projectsRouter.post(
   "/:projectId/assign",
   authentication,
-  requireVerified,
+  requireVerifiedWithSubscription, // ✅ enforce verified + active subscription
   assignProject
 );
 
-// Update assignment status
+// Update assignment status (active, kicked, quit, banned, completed)
 projectsRouter.put(
   "/assigned/:projectId",
   authentication,
@@ -71,41 +64,12 @@ projectsRouter.put(
   updateAssignmentStatus
 );
 
-// Get project completion details
+// Get related freelancers for a specific category
 projectsRouter.get(
-  "/:projectId/completion",
+  "/categories/:categoryId/related-freelancers",
   authentication,
-  requireVerified,
-  getProjectCompletion
+  getRelatedFreelancers
 );
-
-// Submit work completion request
-projectsRouter.post(
-  "/:projectId/complete",
-  authentication,
-  submitWorkCompletion
-);
-
-// Quit project (freelancer)
-projectsRouter.post(
-  "/:projectId/quit",
-  authentication,
-  requireVerified,
-  quitProject
-);
-
-// Send an offer for a project
-projectsRouter.post(
-  "/:projectId/offers",
-  authentication,
-  requireVerified,
-  sendOffer
-);
-
-// projectsRouter.post("/:projectId/files", upload.single("file"), uploadProjectFile);
-
-// Get all project files
-projectsRouter.get("/:projectId/files", authentication, getProjectFiles);
 
 // Get all available projects for freelancers to make offers
 projectsRouter.get(
@@ -115,25 +79,29 @@ projectsRouter.get(
   getAllProjectForOffer
 );
 
-// Get related freelancers for a project
+/* ==============================
+   ✅ Category-based Project Filters
+   ============================== */
+
+// Get projects by main category
 projectsRouter.get(
-  "/categories/:categoryId/related-freelancers",
+  "/category/:category_id",
   authentication,
-  getRelatedFreelancers
+  getProjectsByCategory
 );
 
-// Get projects by freelancer with status filter
+// Get projects by sub-category
 projectsRouter.get(
-  "/freelancer/:freelancerId/status",
+  "/sub-category/:sub_category_id",
   authentication,
-  getProjectsByStatus
+  getProjectsBySubCategory
 );
 
-// Get all projects for a specific freelancer
+// Get projects by sub-sub-category
 projectsRouter.get(
-  "/freelancer/projects/:freelancerId",
+  "/sub-sub-category/:sub_sub_category_id",
   authentication,
-  getAllProjectForFreelancerById
+  getProjectsBySubSubCategory
 );
 
 // Get projects assigned to authenticated freelancer

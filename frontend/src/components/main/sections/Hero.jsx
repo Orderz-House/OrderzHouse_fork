@@ -9,7 +9,7 @@ const DARK = "#05668D";
 
 // Config
 const USE_MOCK = true;
-const API_ENDPOINT = "/api/top-rated";
+const API_ENDPOINT = "/top-rated";
 
 // Axios
 const api = axios.create({
@@ -242,7 +242,7 @@ export default function HeroFreelancer({ onSearch }) {
       />
 
       {/* Content */}
-      <div className="relative z-10 max-w-screen-xl mx-auto px-6 w-full grid lg:grid-cols-[1.1fr_.9fr] gap-10 items-center">
+      <div className="relative z-10 max-w-screen-xl mx-auto px-6 py-10 sm:py-14 md:py-16 w-full grid lg:grid-cols-[1.1fr_.9fr] gap-10 items-center">
         {/* Left */}
         <div className="relative z-20">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 bg-white/70 backdrop-blur text-slate-700 mb-6 shadow-sm">
@@ -285,7 +285,7 @@ export default function HeroFreelancer({ onSearch }) {
           </p>
 
           {/* Sublead */}
-          <p className="mt-3 text-lg text-slate-600">
+          <p className="mt-3 text-sm sm:text-lg text-slate-600">
             Match instantly with{" "}
             <span className="font-semibold text-slate-800">vetted</span>{" "}
             <span

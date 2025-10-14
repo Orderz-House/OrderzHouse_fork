@@ -3,7 +3,7 @@ import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 
 /**
- * @route   POST /api/auth/2fa/generate
+ * @route   POST /auth/2fa/generate
  * @desc    Generate a new 2FA secret and QR code for the user.
  * @access  Private
  */
@@ -62,7 +62,7 @@ export const generateTwoFactorSecret = async (req, res) => {
 };
 
 /**
- * @route   POST /api/auth/2fa/verify
+ * @route   POST /auth/2fa/verify
  * @desc    Verify the user's TOTP token and permanently enable 2FA.
  * @access  Private
  */
@@ -127,7 +127,7 @@ export const verifyTwoFactorToken = async (req, res) => {
 };
 
 /**
- * @route   POST /api/auth/2fa/disable
+ * @route   POST /auth/2fa/disable
  * @desc    Disable 2FA for the user.
  * @access  Private
  */
