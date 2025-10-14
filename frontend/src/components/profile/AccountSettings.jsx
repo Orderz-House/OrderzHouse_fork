@@ -109,7 +109,7 @@ const AccountSettings = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/2fa/generate', {}, {
+      const response = await axios.post('http://localhost:5000/auth/2fa/generate', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setQrCodeUrl(response.data.qrCodeUrl);
@@ -129,7 +129,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/2fa/verify', { token: verificationCode }, {
+      const response = await axios.post('http://localhost:5000/auth/2fa/verify', { token: verificationCode }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccess(response.data.message);
@@ -153,7 +153,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const verifyResponse = await axios.post('/api/users/verify-password', {
+      const verifyResponse = await axios.post('/users/verify-password', {
         password: currentPassword
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -164,7 +164,7 @@ const AccountSettings = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/auth/2fa/disable', {}, {
+      await axios.post('http://localhost:5000/auth/2fa/disable', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -197,7 +197,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.put('/api/users/update-password', {
+      const response = await axios.put('/users/update-password', {
         currentPassword,
         newPassword
       }, {
@@ -231,7 +231,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const verifyResponse = await axios.post('/api/users/verify-password', {
+      const verifyResponse = await axios.post('/users/verify-password', {
         password: deactivatePassword
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -242,7 +242,7 @@ const AccountSettings = () => {
         return;
       }
 
-      const response = await axios.put('/api/users/deactivate', {}, {
+      const response = await axios.put('/users/deactivate', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

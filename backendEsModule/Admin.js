@@ -148,10 +148,10 @@ export const AdminInit = async (app) => {
     next();
   };
 
-  app.use("/api/admin", requireAdmin, adminRoutes);
+  app.use("/admin", requireAdmin, adminRoutes);
 
   // --- NEW: Single User Analytics API endpoint ---
-  app.get("/api/analytics/users", requireAdmin, async (req, res) => {
+  app.get("/analytics/users", requireAdmin, async (req, res) => {
     try {
       const { timeRange } = req.query;
       const analytics = await getUsersAnalytics(pool, timeRange);

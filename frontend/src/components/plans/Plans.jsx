@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux'; // Import useSelector
 
+// =================== CUSTOM HOOK TO GET AUTH INFO (Using Redux) ===================
 const useAuth = () => {
   // Get user data and token directly from the Redux store
   const { user, token } = useSelector((state) => ({
@@ -12,7 +13,7 @@ const useAuth = () => {
   // The hook now returns the user and token from the global state
   return { user, token };
 };
-
+// =================================================================================
 
 const plans = [
   { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
@@ -28,22 +29,22 @@ function PlanCard({ plan, user, navigate }) {
 
     // 1. If the user is NOT logged in, redirect to the login page.
     if (!user) {
-      navigate('/login');
+      window.location.href = "/login";
       return;
     }
-
-    // 2. If the user has role_id 3 (Freelancer), redirect to WhatsApp.
     if (user.role_id === 3) {
       const baseUrl = "https://api.whatsapp.com/send/";
-      const phoneNumber = "962791433341"; // Your WhatsApp Number
+      const phoneNumber = "962791433341";
       const message = `I am a freelancer and I want to subscribe to this plan: ${plan.name}`;
-      const encodedMessage = encodeURIComponent(message );
+      const encodedMessage = encodeURIComponent(message);
       const finalUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
-      
-      window.open(finalUrl, '_blank');
+      window.open(finalUrl, "_blank");
       return;
     }
+    alert("Subscription through WhatsApp is only available for Freelancers.");
   };
+
+  const displayedPlans = plans.filter(plan => plan.plan_type === billingCycle);
 
   return (
     <div
@@ -137,11 +138,9 @@ export default function Plans() {
     fontSize: "1.3rem",
     fontWeight: "600",
 
+    // color: "#026e7a",
+    // color: "#004d40",
     color: "#004d40",
-
-    color: "#026e7a",
-
-
     maxWidth: "900px",
     marginLeft: "auto",
     marginRight: "auto",
@@ -157,10 +156,12 @@ export default function Plans() {
   return (
     <div style={bodyStyle}>
 
-
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
 
       <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", color: "#004d40" }}>Our Pricing Plans</h1>
+
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
       <div style={containerStyle}>
         {plans.map(plan => (
           <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
@@ -172,4 +173,5 @@ export default function Plans() {
       </div>
     </div>
   );
-}
+};
+

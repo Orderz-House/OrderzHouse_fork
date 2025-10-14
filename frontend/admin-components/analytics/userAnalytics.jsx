@@ -38,7 +38,7 @@ const UsersAnalytics = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/analytics/users?timeRange=${timeRange}`, {
+      const res = await fetch(`/analytics/users?timeRange=${timeRange}`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }

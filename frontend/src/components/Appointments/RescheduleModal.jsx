@@ -1,17 +1,53 @@
 import React, { useState } from 'react';
-import { X, Calendar } from 'lucide-react';
-import { useAppointments } from '../../hook/useAppointments';
+import { X, Calendar, AlertCircle } from 'lucide-react';
+import { useAppointments } from './hook/useAppointments';
 
-const RescheduleModal = ({ appointmentId, onClose, onSuccess }) => {
+const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) => {
   const { rescheduleAppointment, loading, error } = useAppointments();
   const [newDate, setNewDate] = useState('');
+  const [dateError, setDateError] = useState('');
+
+  // Validate date in real-time
+  const validateDateTime = (dateTime) => {
+    if (!dateTime) return true;
+    
+    const selectedDate = new Date(dateTime);
+    const now = new Date();
+    
+    if (selectedDate <= now) {
+      setDateError('Cannot reschedule to a past date. Please select a future date and time.');
+      return false;
+    }
+    
+    setDateError('');
+    return true;
+  };
+
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+    setNewDate(selectedDate);
+    validateDateTime(selectedDate);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Final validation before submission
+    if (!validateDateTime(newDate)) {
+      return;
+    }
+    
     const result = await rescheduleAppointment(appointmentId, newDate);
     if (result.success) {
-      onSuccess();
+      onSuccess(newDate);
     }
+  };
+
+  // Set minimum datetime to current time
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    return now.toISOString().slice(0, 16);
   };
 
   return (
@@ -19,7 +55,7 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess }) => {
       <div className="bg-white rounded-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Calendar className="w-6 h-6 mr-2 text-blue-600" />
+            <Calendar className="w-6 h-6 mr-2 text-teal-600" />
             Reschedule Appointment
           </h2>
           <button
@@ -39,31 +75,44 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              New Date & Time
+              New Date & Time *
             </label>
             <input
               type="datetime-local"
               value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
+              onChange={handleDateChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              min={getMinDateTime()}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                dateError ? 'border-red-300' : 'border-teal-300'
+              }`}
             />
+            {dateError && (
+              <div className="flex items-center space-x-2 mt-2 text-red-600 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>{dateError}</span>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Select a new date and time for this appointment
+            </p>
           </div>
 
+          {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-teal-300 text-teal-700 rounded-lg hover:bg-teal-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading || !newDate}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={loading || !newDate || !!dateError}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Rescheduling...' : 'Reschedule'}
+              {loading ? 'Rescheduling...' : 'Reschedule Appointment'}
             </button>
           </div>
         </form>

@@ -76,7 +76,7 @@ export default function CreateProject() {
 
   useEffect(() => {
     axios
-      .get(`${API_BASE}/projects/public/categories`)
+      .get(`${API_BASE}/category`)
       .then((res) => setCategories(res.data.categories || []))
       .catch((err) => console.error(err));
   }, []);

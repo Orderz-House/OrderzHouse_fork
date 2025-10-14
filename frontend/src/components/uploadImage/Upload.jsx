@@ -28,7 +28,7 @@ const Upload = ({ onUpload, currentImageUrl }) => {
       // =================================================================
       // THE FIX IS HERE: The URL must start with '/api' to trigger the proxy.
       // =================================================================
-      const response = await axios.post('/api/upload', formData, {
+      const response = await axios.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

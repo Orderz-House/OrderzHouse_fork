@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
 
 // Theme
 const THEME = "#028090";
@@ -233,7 +235,7 @@ function QAItem({ q, a }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 transition"
       >
-        <span className="font-medium text-slate-900">{q}</span>
+        <span className="font-medium text-slate-900 text-sm sm:text-lg">{q}</span>
         <span
           className={`shrink-0 w-8 h-8 rounded-full border flex items-center justify-center text-slate-500 transition-all ${
             open
@@ -258,7 +260,7 @@ function QAItem({ q, a }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-4 pb-4 text-slate-700 leading-relaxed">{a}</div>
+          <div className="px-4 pb-4 text-slate-700 leading-relaxed text-xs sm:text-sm md:text-lg">{a}</div>
         </div>
       </div>
     </div>
@@ -268,16 +270,6 @@ function QAItem({ q, a }) {
 // Component
 export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
   const [openCat, setOpenCat] = useState(null);
-
-  useEffect(() => {
-    if (openCat) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [openCat]);
 
   const topics = useMemo(() => {
     const map = new Map();
@@ -345,7 +337,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
       </div>
 
       {/* Wrapper */}
-      <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-col items-center">
+      <div className="relative z-10 max-w-screen-xl mx-auto px-6 sm:px-5 lg:px-8 py-14 flex-col items-center">
         {/* Badge */}
         <div className="text-center max-w-3xl mx-auto">
           <div
@@ -458,12 +450,12 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
 
               {/* Footer */}
               <div className="p-5 border-t border-slate-200 flex items-center justify-between gap-3">
-                <div className="text-sm text-slate-600">
+                <div className="text-xs sm:text-sm text-slate-600">
                   Didn’t find what you need?
                 </div>
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-white"
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-white text-xs sm:text-sm md:text-lg text-nowrap"
                   style={{
                     background: THEME,
                     boxShadow: "0 6px 16px rgba(2,128,144,0.25)",
@@ -477,7 +469,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
                   >
                     <path d="M12.293 4.293a1 1 0 011.414 0L18 8.586a2 2 0 010 2.828l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z" />
                   </svg>
-                </a>
+                </Link>
               </div>
             </div>
           </div>

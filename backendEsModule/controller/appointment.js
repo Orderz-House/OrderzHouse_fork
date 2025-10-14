@@ -1,5 +1,6 @@
 import pool from "../models/db.js";
 import { authentication } from "../middleware/authentication.js"; 
+
 const makeAppointment = (req, res) => {
   const freelancer_id = req.token?.userId;
   const { appointment_date, message, appointment_type } = req.body;
@@ -47,6 +48,7 @@ const makeAppointment = (req, res) => {
       });
     });
 };
+
 const rescheduleAppointment = (req, res) => {
   const { appointment_id } = req.params;
   const { appointment_date } = req.body;
@@ -302,6 +304,51 @@ const createAppointmentByAdmin = (req, res) => {
       });
     });
 };
+const markAppointmentCompleted = (req, res) => {
+  const { appointment_id } = req.params;
+  const admin_id = req.token?.userId;
+
+  if (!appointment_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Appointment ID is required",
+    });
+  }
+
+  const query = `
+    UPDATE appointments 
+    SET status = 'completed', 
+        completed_at = NOW(),
+        completed_by = $1
+    WHERE id = $2
+    RETURNING *
+  `;
+
+  pool
+    .query(query, [admin_id, appointment_id])
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Appointment not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Appointment marked as completed successfully",
+        appointment: result.rows[0],
+      });
+    })
+    .catch((err) => {
+      console.error("Error marking appointment as completed:", err);
+      res.status(500).json({
+        success: false,
+        message: "Server error while marking appointment as completed",
+        error: err.message,
+      });
+    });
+};
 
 export {
   makeAppointment,
@@ -310,5 +357,6 @@ export {
   getAllAppointments,
   getAppointmentsByFreelancer,
   rejectAppointment,
-  createAppointmentByAdmin
+  createAppointmentByAdmin,
+  markAppointmentCompleted  
 };

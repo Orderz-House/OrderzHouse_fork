@@ -80,7 +80,7 @@ export const authenticateAdmin = (pool) => {
  * ✅ Unified AdminJS + HTTP logger
  * Logs:
  * - AdminJS actions (new/edit/delete/list/etc.)
- * - API requests under `/api/admin`
+ * - API requests under `/admin`
  */
 export const createAdminLogMiddleware = (pool) => {
   return (req, res, next) => {
@@ -106,8 +106,8 @@ export const createAdminLogMiddleware = (pool) => {
         } - Status: ${statusCode}`;
       }
 
-      // 🔹 Custom API routes (`/api/admin/...`)
-      else if (req.originalUrl.startsWith("/api/admin")) {
+      // 🔹 Custom API routes (`/admin/...`)
+      else if (req.originalUrl.startsWith("/admin")) {
         message = `🌐 [API] Admin ${req.user.email} -> ${req.method} ${req.originalUrl} - Status: ${statusCode}`;
       }
 

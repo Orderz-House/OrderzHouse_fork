@@ -81,7 +81,7 @@ export default function NotificationsPage() {
 
       // Update local state
       setNotifications(notifications.map(notif => 
-        notif.id === notificationId ? { ...notif, is_read: true } : notif
+        notif.id === notificationId ? { ...notif, read_status: true } : notif
       ));
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -98,7 +98,7 @@ export default function NotificationsPage() {
       });
 
       // Update local state
-      setNotifications(notifications.map(notif => ({ ...notif, is_read: true })));
+      setNotifications(notifications.map(notif => ({ ...notif, read_status: true })));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -178,9 +178,9 @@ export default function NotificationsPage() {
 
     // Apply read/unread filter
     if (filter === "unread") {
-      filtered = filtered.filter(notif => !notif.is_read);
+      filtered = filtered.filter(notif => !notif.read_status);
     } else if (filter === "read") {
-      filtered = filtered.filter(notif => notif.is_read);
+      filtered = filtered.filter(notif => notif.read_status);
     }
 
     // Apply search filter
@@ -188,7 +188,6 @@ export default function NotificationsPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(notif =>
         notif.message?.toLowerCase().includes(query) ||
-        notif.title?.toLowerCase().includes(query) ||
         notif.type?.toLowerCase().includes(query)
       );
     }
@@ -204,16 +203,18 @@ export default function NotificationsPage() {
   // Get notification icon based on type
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'message':
+      case 'message_received':
         return <Mail className="h-5 w-5 text-blue-500" />;
-      case 'project':
+      case 'project_created':
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'review':
+      case 'review_submitted':
         return <Star className="h-5 w-5 text-yellow-500" />;
-      case 'system':
-        return <Info className="h-5 w-5 text-purple-500" />;
-      case 'warning':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case 'work_completion_requested':
+        return <CheckCircle2 className="h-5 w-5 text-purple-500" />;
+      case 'offer_submitted':
+        return <Info className="h-5 w-5 text-indigo-500" />;
+      case 'work_submitted':
+        return <CheckCircle2 className="h-5 w-5 text-teal-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -386,7 +387,7 @@ export default function NotificationsPage() {
                 <div
                   key={notification.id}
                   className={`p-6 hover:bg-gray-50 transition-colors ${
-                    !notification.is_read ? 'bg-blue-50' : ''
+                    !notification.read_status ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className="flex items-start space-x-4">
@@ -404,16 +405,13 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-medium text-gray-900">
-                            {notification.title || 'Notification'}
-                          </h3>
                           <p className="text-gray-600 mt-1">
                             {notification.message}
                           </p>
                         </div>
                         
                         <div className="flex items-center space-x-3 ml-4">
-                          {!notification.is_read && (
+                          {!notification.read_status && (
                             <button
                               onClick={() => markAsRead(notification.id)}
                               className="p-1 text-gray-400 hover:text-green-600 transition-colors"

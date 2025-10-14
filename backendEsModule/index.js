@@ -5,8 +5,9 @@ import cors from "cors";
 import { Server } from "socket.io";
 import http from "http";
 import dotenv from "dotenv";
+import { Routes, Route, useLocation } from "react-router-dom";
 
-import { AdminInit } from "./Admin.js";
+
 
 // Routers
 import tasksRouter from "./router/tasks.js";
@@ -15,20 +16,20 @@ import plansRouter from "./router/plans.js";
 import feedbackRouter from "./router/feedback.js";
 import appointmentsRouter from "./router/appointment.js";
 import coursesRouter from "./router/courses.js";
-import ordersRouter from "./router/orders.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import verificationRouter from "./router/verification.js";
 import newsRouter from "./router/news.js";
 import categoriesRouter from "./router/category.js";
-import analyticsRoutes from "./Admin/routes/analyticsRoutes.js";
 import subscriptionsRouter from "./router/subscriptions.js";
-import adminRouter from "./router/adminUsers.js";
 import earningsRouter from "./router/earning.js";
 import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
+import accessControlRouter from "./router/accessControl.js";
+import offersRouter from "./router/offers.js";
+//mort analyticsRoutes from "./router/analytics.js";
 
 // DB connection
 dotenv.config();
@@ -42,7 +43,7 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173", // Your frontend URL
+  origin: "http://localhost:5173", 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -63,29 +64,25 @@ app.use(limiter);
 
 app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
+app.use("/offers", offersRouter);
 app.use("/uploads", uploadRouter);
-app.use("/admins", adminRouter);
 app.use("/earnings", earningsRouter);
-app.use("/api/analytics", analyticsRoutes);
 app.use("/category", categoriesRouter);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
-app.use("/orders", ordersRouter);
 app.use("/feedbacks", feedbackRouter);
-app.use("/api/appointments", appointmentsRouter);
+app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
-app.use('/api/auth', authRouter);
-//Admin init
-(async () => {
-  await AdminInit(app);
-})();
+app.use("/auth", authRouter);
+app.use("/access-control", accessControlRouter);
+
 
 let server, io;
 
