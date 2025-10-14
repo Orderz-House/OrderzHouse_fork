@@ -129,7 +129,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>Terms
+        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>
         <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/verify-profile" element={<VerifyProfile />} />
         <Route path="/terms" element={<Terms />} />

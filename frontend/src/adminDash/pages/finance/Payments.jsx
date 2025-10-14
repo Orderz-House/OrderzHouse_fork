@@ -1,59 +1,66 @@
+import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
 
+function mapRole(roleId) {
+  if (roleId === 1) return "admin";
+  if (roleId === 2) return "client";
+  if (roleId === 3) return "freelancer";
+  return "user";
+}
+
 export default function Payments() {
-  return (
-    <PeopleTable
-      title="Payments"
-      addLabel="Add Payment"
-      endpoint="/api/payments"
-      columns={[
+  const { userData } = useSelector((s) => s.auth);
+  const role = mapRole(userData?.role_id);
+
+  const configs = {
+    admin: {
+      endpoint: "/api/admin/payments",
+      columns: [
         { label: "User", key: "user" },
         { label: "Amount", key: "amount" },
         { label: "Method", key: "method" },
         { label: "Status", key: "status" },
         { label: "Date", key: "date" },
         { label: "Reference", key: "ref" },
-      ]}
-      formFields={[
-        { key: "user", label: "User", required: true },
-        { key: "amount", label: "Amount", type: "number" },
-        {
-          key: "method",
-          label: "Method",
-          type: "select",
-          options: ["Card", "PayPal", "Bank", "Cash"],
-          defaultValue: "Card",
-        },
-        {
-          key: "status",
-          label: "Status",
-          type: "select",
-          options: ["Paid", "Pending", "Refunded", "Failed"],
-          defaultValue: "Paid",
-        },
-        { key: "date", label: "Date", type: "date" },
-        { key: "ref", label: "Reference" },
-      ]}
-      chips={[
-        { label: "All", value: "" },
-        { label: "Paid", value: "Paid" },
-        { label: "Pending", value: "Pending" },
-        { label: "Refunded", value: "Refunded" },
-        { label: "Failed", value: "Failed" },
-      ]}
-      chipField="status"
-      filters={[
-        {
-          key: "method",
-          label: "Method",
-          options: ["Card", "PayPal", "Bank", "Cash"],
-        },
-        {
-          key: "status",
-          label: "Status",
-          options: ["Paid", "Pending", "Refunded", "Failed"],
-        },
-      ]}
+      ],
+    },
+    client: {
+      endpoint: "/api/client/payments",
+      columns: [
+        { label: "Project", key: "project" },
+        { label: "Amount", key: "amount" },
+        { label: "Method", key: "method" },
+        { label: "Status", key: "status" },
+        { label: "Date", key: "date" },
+      ],
+    },
+    freelancer: {
+      endpoint: "/api/freelancer/payments",
+      columns: [
+        { label: "Project", key: "project" },
+        { label: "Amount", key: "amount" },
+        { label: "Status", key: "status" },
+        { label: "Date", key: "date" },
+      ],
+    },
+    user: {
+      endpoint: "/api/payments",
+      columns: [
+        { label: "Amount", key: "amount" },
+        { label: "Status", key: "status" },
+        { label: "Date", key: "date" },
+      ],
+    },
+  };
+
+  const { endpoint, columns } = configs[role] ?? configs.user;
+
+  return (
+    <PeopleTable
+      title="Payments"
+      addLabel="Add Payment"
+      endpoint={endpoint}
+      columns={columns}
     />
   );
 }

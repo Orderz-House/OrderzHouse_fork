@@ -1,46 +1,9 @@
-import { useRef, useState, useEffect, useLayoutEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
+// Topbar.jsx
+import React, { useRef, useState, useEffect, useMemo } from "react";
 
-/* ============== NEW: CategoriesRail (chips only) ============== */
-export function CategoriesRail({ active, onSelect, catalog, theme = "#028090", themeDark = "#05668D" }) {
-import { useMemo, useRef, useEffect, useState } from "react";
-import { fetchCategories } from "./api/category.js"; // adjust path
-
-export default function TopbarCategories({
-  active,
-  onSelect,
-  theme, // THEME
-  themeDark, // THEME_DARK
-}) {
-  const [catalog, setCatalog] = useState({});
-
-  // ===== Fetch categories from API =====
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const categories = await fetchCategories();
-        if (!alive) return;
-
-        // Transform API result into same shape as before { id: { title } }
-        const transformed = {};
-        categories.forEach((cat) => {
-          transformed[cat.id] = { title: cat.name };
-        });
-        setCatalog(transformed);
-      } catch (err) {
-        console.error("Failed to load categories:", err);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const list = useMemo(
-    () => Object.entries(catalog).map(([id, v]) => ({ id, name: v.title })),
-    [catalog]
-  );
+/* ============== CategoriesRail (chips only) ============== */
+export function CategoriesRail({ active, onSelect, catalog = {}, theme = "#028090", themeDark = "#05668D" }) {
+  const list = useMemo(() => Object.entries(catalog || {}).map(([id, v]) => ({ id, name: v.title })), [catalog]);
 
   const Icon = ({ id }) => {
     const cls = "w-5 h-5";
@@ -57,48 +20,6 @@ export default function TopbarCategories({
         return (<svg viewBox="0 0 24 24" className={cls} fill="none"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 9h8M8 13h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>);
       default:
         return (<svg viewBox="0 0 24 24" className={cls} fill="none"><rect x="4" y="10" width="4" height="8" rx="1" fill="currentColor"/><rect x="10" y="6" width="4" height="12" rx="1" fill="currentColor"/><rect x="16" y="12" width="4" height="6" rx="1" fill="currentColor"/></svg>);
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-            <path d="M3 12h18M12 3c3 3 3 18 0 18M12 3c-3 3-3 18 0 18" stroke="currentColor" strokeWidth="2"/>
-          </svg>
-        );
-      case "design":
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <path d="M4 16l6-10 6 10H4z" stroke="currentColor" strokeWidth="2"/>
-            <circle cx="16" cy="17" r="2" fill="currentColor"/>
-          </svg>
-        );
-      case "video":
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2"/>
-            <path d="M17 10l4-2v8l-4-2v-4z" fill="currentColor"/>
-          </svg>
-        );
-      case "seo":
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <path d="M4 13l4 4 8-10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        );
-      case "content":
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-            <path d="M8 9h8M8 13h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        );
-      case "data":
-      default:
-        return (
-          <svg viewBox="0 0 24 24" className={cls} fill="none">
-            <rect x="4" y="10" width="4" height="8" rx="1" fill="currentColor"/>
-            <rect x="10" y="6" width="4" height="12" rx="1" fill="currentColor"/>
-            <rect x="16" y="12" width="4" height="6" rx="1" fill="currentColor"/>
-          </svg>
-        );
     }
   };
 
@@ -112,12 +33,6 @@ export default function TopbarCategories({
           <div
             ref={railRef}
             className="flex gap-2 sm:gap-3 overflow-x-auto py-2 sm:py-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]"
-
-            className="
-              flex gap-2 sm:gap-3 overflow-x-auto py-2 sm:py-3
-              snap-x snap-mandatory
-              [-ms-overflow-style:none] [scrollbar-width:none]
-            "
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <style>{`div::-webkit-scrollbar{display:none}`}</style>
@@ -126,7 +41,7 @@ export default function TopbarCategories({
               return (
                 <button
                   key={c.id}
-                  onClick={() => onSelect(c.id)}
+                  onClick={() => onSelect?.(c.id)}
                   aria-current={isActive ? "true" : "false"}
                   className="snap-start shrink-0 rounded-xl px-3.5 sm:px-4 py-2.5 flex items-center gap-2 whitespace-nowrap transition active:scale-[.98] touch-manipulation min-h-[40px]"
                   style={{
@@ -144,21 +59,10 @@ export default function TopbarCategories({
             })}
           </div>
 
-          <button
-            aria-label="Prev"
-            onClick={() => doScroll(-380)}
-            className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md"
-          >
+          <button aria-label="Prev" onClick={() => doScroll(-380)} className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md">
             <svg viewBox="0 0 20 20" className="w-5 h-5"><path d="M12.5 4.5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            <svg viewBox="0 0 20 20" className="w-5 h-5">
-              <path d="M12.5 4.5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
           </button>
-          <button
-            aria-label="Next"
-            onClick={() => doScroll(380)}
-            className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md"
-          >
+          <button aria-label="Next" onClick={() => doScroll(380)} className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md">
             <svg viewBox="0 0 20 20" className="w-5 h-5"><path d="M7.5 4.5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           </button>
 
@@ -170,12 +74,11 @@ export default function TopbarCategories({
   );
 }
 
-/* ============== EXISTING default Topbar (unchanged) ============== */
-/* ملاحظة: أبقينا الكود كما كان لديك مع CategoryBar كي لا نكسر صفحات أخرى */
+/* ============== TOPBAR (default export) ============== */
 export default function Topbar({
-  active, onSelect, catalog, theme, themeDark,
+  active, onSelect, catalog = {}, theme = "#028090", themeDark = "#05668D", themeLight = "#9AE6B4",
   cat, sub, total = 0, onSelectSub, sort, setSort, pro, setPro, instant, setInstant,
-  themeLight, filters, onChangeFilters,
+  filters, onChangeFilters,
 }) {
   const currentCat = cat ?? active;
   const handleTopSelect = (id) => {
@@ -216,11 +119,9 @@ export default function Topbar({
 }
 
 /* --- Internal TopbarCategories used by default Topbar --- */
-function TopbarCategories({ active, onSelect, catalog, theme, themeDark }) {
-  const list = useMemo(
-    () => Object.entries(catalog).map(([id, v]) => ({ id, name: v.title })),
-    [catalog]
-  );
+function TopbarCategories({ active, onSelect, catalog = {}, theme = "#028090", themeDark = "#05668D" }) {
+  // reuse same structure as CategoriesRail (but internal)
+  const list = useMemo(() => Object.entries(catalog || {}).map(([id, v]) => ({ id, name: v.title })), [catalog]);
 
   const Icon = ({ id }) => {
     const cls = "w-5 h-5";
@@ -258,7 +159,7 @@ function TopbarCategories({ active, onSelect, catalog, theme, themeDark }) {
               return (
                 <button
                   key={c.id}
-                  onClick={() => onSelect(c.id)}
+                  onClick={() => onSelect?.(c.id)}
                   aria-current={isActive ? "true" : "false"}
                   className="snap-start shrink-0 rounded-xl px-3.5 sm:px-4 py-2.5 flex items-center gap-2 whitespace-nowrap transition active:scale-[.98] touch-manipulation min-h-[40px]"
                   style={{
@@ -281,9 +182,6 @@ function TopbarCategories({ active, onSelect, catalog, theme, themeDark }) {
           </button>
           <button aria-label="Next" onClick={() => doScroll(380)} className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md">
             <svg viewBox="0 0 20 20" className="w-5 h-5"><path d="M7.5 4.5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            <svg viewBox="0 0 20 20" className="w-5 h-5">
-              <path d="M7.5 4.5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
           </button>
 
           <div className="pointer-events-none absolute inset-y-0 left-0 w-6 sm:w-10 rounded-l-2xl bg-gradient-to-r from-white to-transparent" />
@@ -294,10 +192,10 @@ function TopbarCategories({ active, onSelect, catalog, theme, themeDark }) {
   );
 }
 
-/* -------- CategoryBar (unchanged) ---------- */
+/* -------- CategoryBar (unchanged logic, cleaned) ---------- */
 function CategoryBar({
   cat, sub, total, onSelectSub, sort, setSort, pro, setPro, instant, setInstant,
-  catalog, theme, themeLight, themeDark, filters, onChangeFilters,
+  catalog = {}, theme = "#028090", themeLight = "#9AE6B4", themeDark = "#05668D", filters, onChangeFilters,
 }) {
   const meta = catalog[cat] || { title: "Projects", subtitle: "Browse projects by category and filters", subcats: [] };
   const wrapRef = useRef(null);
@@ -327,7 +225,7 @@ function CategoryBar({
         <div className="text-sm text-slate-500">{total.toLocaleString()} results</div>
       </div>
 
-      {meta.subcats.length > 0 && (
+      {meta.subcats && meta.subcats.length > 0 && (
         <div className="relative mt-5">
           <button aria-label="Prev" onClick={() => scrollBy(-320)} className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white shadow ring-1 ring-black/5 items-center justify-center hover:shadow-md">
             <svg viewBox="0 0 20 20" className="w-5 h-5"><path d="M12.5 4.5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -346,15 +244,15 @@ function CategoryBar({
             }}
           >
             {meta.subcats.map((s) => {
-              const active = sub === s.id;
+              const isActive = sub === s.id;
               return (
                 <button
                   key={s.id}
-                  onClick={() => onSelectSub(active ? "" : s.id)}
-                  className={`rounded-2xl pr-4 pl-2 py-2.5 whitespace-nowrap flex items-center gap-3 transition shadow-sm ${active ? "scale-[1.02]" : ""}`}
+                  onClick={() => onSelectSub(isActive ? "" : s.id)}
+                  className={`rounded-2xl pr-4 pl-2 py-2.5 whitespace-nowrap flex items-center gap-3 transition shadow-sm ${isActive ? "scale-[1.02]" : ""}`}
                   style={{
-                    background: active ? `linear-gradient(180deg, ${theme}0f, #fff)` : "#fff",
-                    boxShadow: active ? `inset 0 0 0 2px ${theme}` : "0 1px 0 rgba(15,23,42,.06)",
+                    background: isActive ? `linear-gradient(180deg, ${theme}0f, #fff)` : "#fff",
+                    boxShadow: isActive ? `inset 0 0 0 2px ${theme}` : "0 1px 0 rgba(15,23,42,.06)",
                   }}
                 >
                   <span className="w-8 h-8 rounded-full grid place-items-center text-[12px]" style={{ background: "rgba(2,128,144,.10)", color: theme }}>●</span>
@@ -367,8 +265,8 @@ function CategoryBar({
       )}
 
       <div className="relative z-10 mt-4 flex items-center gap-4 flex-wrap">
-        <Toggle label="Pro services" checked={pro} onChange={setPro} />
-        <Toggle label="Instant response" checked={instant} onChange={setInstant} />
+        <Toggle label="Pro services" checked={pro} onChange={setPro} theme={theme} />
+        <Toggle label="Instant response" checked={instant} onChange={setInstant} theme={theme} />
         <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-slate-600">Sort by</span>
           <select
@@ -389,12 +287,13 @@ function CategoryBar({
 }
 
 /* Helpers used by CategoryBar */
-function Toggle({ label, checked, onChange }) {
+function Toggle({ label, checked, onChange, theme = "#028090" }) {
+
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-700 select-none cursor-pointer">
+    <label className="inline-flex items-center gap-2 text-sm text-slate-700 select-none cursor-pointer" style={{ ['--t']: theme }}>
       <span className="relative inline-flex items-center">
         <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        <span className="w-10 h-6 rounded-full bg-slate-300 peer-checked:bg-[color:var(--t)] transition" style={{ ["--t"]: "#028090" }} />
+        <span className="w-10 h-6 rounded-full bg-slate-300 peer-checked:bg-[color:var(--t)] transition" />
         <span className="absolute left-0 top-0 w-6 h-6 rounded-full bg-white shadow translate-x-0 peer-checked:translate-x-4 transition" />
       </span>
       {label}

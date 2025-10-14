@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 
-import { CategoriesRail } from "./TopbarCategories.jsx"; // rail فقط
+import { CategoriesRail } from "./TopbarCategories.jsx"; 
 import ProjectCard from "./ProjectCard.jsx";
 import Pagination from "./Pagination.jsx";
 
