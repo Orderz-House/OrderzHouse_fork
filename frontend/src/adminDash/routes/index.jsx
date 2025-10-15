@@ -1,5 +1,3 @@
-
-
 import { Routes, Route } from "react-router-dom";
 import AdminLayout from "../layout/AdminLayout.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
@@ -15,16 +13,16 @@ import News from "../pages/community/News.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
-
+// import Tasks from "../pages/operation/Tasks.jsx";
 
 export default function AdminRouter() {
   return (
     <Routes>
       <Route path="/" element={<AdminLayout />}>
-        {/* Dashboard */}
+        {/* index */}
         <Route index element={<Dashboard />} />
 
-        {/* Admin */}
+        {/* admin-only sections */}
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
         <Route path="learning/courses" element={<Courses />} />
@@ -37,17 +35,13 @@ export default function AdminRouter() {
         <Route path="finance/plans" element={<Plans />} />
         <Route path="analytics" element={<Analytics />} />
 
-        {/* Client */}
-        <Route path="client/projects" element={<Projects />} />
-        <Route path="client/payments" element={<Payments />} />
-
-        {/* Freelancer */}
-        <Route path="freelancer/projects" element={<Projects />} />
-        <Route path="freelancer/payments" element={<Payments />} />
-        <Route path="freelancer/courses" element={<Courses />} />
-        <Route path="freelancer/appointments" element={<Appointments />} />
+        {/* generic sections — تُستخدم تحت /admin و /client و /freelancer */}
+        <Route path="projects" element={<Projects />} />
+        <Route path="payments" element={<Payments />} />
+        {/* <Route path="tasks" element={<Tasks />} /> */}
+        <Route path="courses" element={<Courses />} />
+        <Route path="appointments" element={<Appointments />} />
       </Route>
     </Routes>
   );
 }
-

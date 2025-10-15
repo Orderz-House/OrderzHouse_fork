@@ -1,18 +1,126 @@
+// src/.../Courses.jsx
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { useSelector } from "react-redux";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiX,
+  FiBookOpen,
+  FiPlay,
+  FiBookmark,
+} from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
-
 import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
 
-const primary = "#05668D";
+const primary = "#028090";
+const themeDark = "#05668D";
+const ring = "rgba(15,23,42,.10)";
+const ringStyle = { border: `1px solid ${ring}` };
+
+/* ================= MOCK TOGGLE ================= */
+const USE_MOCK = true;
+
+const MOCK_ADMIN_COURSES = [
+  {
+    id: "adm-101",
+    title: "Design Systems 101",
+    category: "Design",
+    level: "Beginner",
+    duration: "6h / 12 lessons",
+    instructor: "Ava Martin",
+    status: "Published",
+    price: 49,
+    description: "Foundations of tokens, components, and documentation flow.",
+  },
+  {
+    id: "adm-102",
+    title: "Advanced React Patterns",
+    category: "Programming",
+    level: "Advanced",
+    duration: "8h / 16 lessons",
+    instructor: "Liam Carter",
+    status: "Draft",
+    price: 79,
+    description: "Patterns for scalability, composition, and performance.",
+  },
+  {
+    id: "adm-103",
+    title: "SEO for Product Teams",
+    category: "Marketing",
+    level: "Intermediate",
+    duration: "4h / 9 lessons",
+    instructor: "Noah Wilson",
+    status: "Archived",
+    price: 39,
+    description: "A pragmatic approach to on-page, tech SEO, and analytics.",
+  },
+];
+
+const MOCK_FREELANCER_COURSES = [
+  {
+    id: "fr-201",
+    title: "Clean UI Basics",
+    category: "Design",
+    level: "Beginner",
+    duration: "3h / 6 lessons",
+    instructor: "Zara Lee",
+    status: "Published",
+    price: 0,
+    description: "Simple, effective UI practices for daily work.",
+    progress: 45,
+  },
+  {
+    id: "fr-202",
+    title: "React in Practice",
+    category: "Programming",
+    level: "Intermediate",
+    duration: "7h / 14 lessons",
+    instructor: "Ethan Park",
+    status: "Published",
+    price: 59,
+    description: "Real-world patterns, state, routing, and data fetching.",
+    progress: 0,
+  },
+  {
+    id: "fr-203",
+    title: "Growth Content 101",
+    category: "Marketing",
+    level: "Beginner",
+    duration: "5h / 10 lessons",
+    instructor: "Maya Perez",
+    status: "Published",
+    price: 29,
+    description: "Content ideas and planning to grow product adoption.",
+    progress: 70,
+  },
+];
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
 
+// ---- helpers
+function mapRole(roleId) {
+  if (roleId === 1) return "admin";
+  if (roleId === 3) return "freelancer";
+  return "client"; 
+}
+
+/* ================= ROOT (role switcher) ================= */
 export default function Courses() {
+  const { userData } = useSelector((s) => s.auth);
+  const role = mapRole(userData?.role_id);
+
+  if (role === "admin") return <AdminCourses />;
+  if (role === "freelancer") return <FreelancerCourses />;
+  return <AccessDenied />;
+}
+
+/* ================= ADMIN (full management) ================= */
+function AdminCourses() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -45,20 +153,42 @@ export default function Courses() {
     () => ["Beginner", "Intermediate", "Advanced"],
     []
   );
-  const statusOptions = useMemo(() => ["Draft", "Published", "Archived"], []);
+  const statusOptions = useMemo(
+    () => ["Draft", "Published", "Archived"],
+    []
+  );
 
-  // (Server-side filtering)
+  // ---- fetch (MOCK vs API)
   useEffect(() => {
     let cancel;
     (async () => {
       try {
         setLoading(true);
         setErr("");
-        const { data } = await api.get("/courses", {
-          params: { q, ...filters },
-          cancelToken: new axios.CancelToken((c) => (cancel = c)),
-        });
-        setItems(Array.isArray(data) ? data : data?.items ?? []);
+
+        if (USE_MOCK) {
+         
+          const ql = q.trim().toLowerCase();
+          const filtered = MOCK_ADMIN_COURSES.filter((c) => {
+            const okQ =
+              !ql ||
+              c.title.toLowerCase().includes(ql) ||
+              (c.description || "").toLowerCase().includes(ql) ||
+              (c.instructor || "").toLowerCase().includes(ql);
+            const okCat = !filters.category || c.category === filters.category;
+            const okLvl = !filters.level || c.level === filters.level;
+            const okSt = !filters.status || c.status === filters.status;
+            return okQ && okCat && okLvl && okSt;
+          });
+          
+          setItems(filtered.map((x) => ({ ...x })));
+        } else {
+          const { data } = await api.get("/courses", {
+            params: { q, ...filters },
+            cancelToken: new axios.CancelToken((c) => (cancel = c)),
+          });
+          setItems(Array.isArray(data) ? data : data?.items ?? []);
+        }
       } catch (e) {
         if (!axios.isCancel(e)) setErr("Failed to load courses.");
       } finally {
@@ -84,6 +214,24 @@ export default function Courses() {
   };
 
   const openEdit = async (id) => {
+    if (USE_MOCK) {
+      const src = [...items, ...MOCK_ADMIN_COURSES];
+      const data = src.find((c) => (c.id ?? c._id) === id);
+      if (!data) return alert("Not found");
+      setEditId(id);
+      setForm({
+        title: data.title ?? "",
+        category: data.category ?? "",
+        level: data.level ?? "",
+        duration: data.duration ?? "",
+        instructor: data.instructor ?? "",
+        status: data.status ?? "Draft",
+        price: data.price ?? "",
+        description: data.description ?? "",
+      });
+      setOpen(true);
+      return;
+    }
     try {
       setLoading(true);
       const { data } = await api.get(`/courses/${id}`);
@@ -106,9 +254,12 @@ export default function Courses() {
     }
   };
 
-  // delete
   const onDelete = async (id) => {
     if (!confirm("Delete this course?")) return;
+    if (USE_MOCK) {
+      setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
+      return;
+    }
     const prev = items;
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
     try {
@@ -119,9 +270,21 @@ export default function Courses() {
     }
   };
 
-  // edit
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (USE_MOCK) {
+      if (editId == null) {
+        const newItem = { id: `mock-${Date.now()}`, ...form };
+        setItems((arr) => [newItem, ...arr]);
+      } else {
+        setItems((arr) =>
+          arr.map((x) => ((x.id ?? x._id) === editId ? { ...(x.id ? { id: x.id } : { _id: x._id }), ...form } : x))
+        );
+      }
+      setOpen(false);
+      return;
+    }
+
     try {
       if (editId == null) {
         const { data } = await api.post("/courses", form);
@@ -144,53 +307,68 @@ export default function Courses() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Courses</h1>
-        <OutlineButton
-          onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm"
-        >
-          <FiPlus />
-          <span className="hidden sm:inline">Add Course</span>
-          <span className="sm:hidden">Add</span>
-        </OutlineButton>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by title…"
-          className="w-full md:max-w-sm rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={filters.category}
-            placeholder="Category"
-            onChange={(v) => setFilters((s) => ({ ...s, category: v }))}
-            options={categoryOptions}
-          />
-          <Select
-            value={filters.level}
-            placeholder="Level"
-            onChange={(v) => setFilters((s) => ({ ...s, level: v }))}
-            options={levelOptions}
-          />
-          <Select
-            value={filters.status}
-            placeholder="Status"
-            onChange={(v) => setFilters((s) => ({ ...s, status: v }))}
-            options={statusOptions}
-          />
-          <button
-            onClick={resetFilters}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
+      <div
+        className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5"
+        style={ringStyle}
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold" style={{ color: themeDark }}>
+              Courses
+            </h1>
+            <p className="text-slate-500 text-sm">
+              Create, publish, and manage your catalog
+            </p>
+          </div>
+          <OutlineButton
+            onClick={openAdd}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm"
           >
-            <VscDebugRestart />
-          </button>
+            <FiPlus />
+            <span className="hidden sm:inline">Add Course</span>
+            <span className="sm:hidden">Add</span>
+          </OutlineButton>
+        </div>
+
+        {/* Search + filters */}
+        <div className="mt-3 sm:mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={`Search by title… ${USE_MOCK ? "(mock)" : ""}`}
+            className="w-full md:max-w-sm rounded-xl bg-white px-3 py-2 outline-none focus:ring-2"
+            style={ringStyle}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={filters.category}
+              placeholder="Category"
+              onChange={(v) => setFilters((s) => ({ ...s, category: v }))}
+              options={categoryOptions}
+            />
+            <Select
+              value={filters.level}
+              placeholder="Level"
+              onChange={(v) => setFilters((s) => ({ ...s, level: v }))}
+              options={levelOptions}
+            />
+            <Select
+              value={filters.status}
+              placeholder="Status"
+              onChange={(v) => setFilters((s) => ({ ...s, status: v }))}
+              options={statusOptions}
+            />
+            <button
+              onClick={resetFilters}
+              className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+              style={ringStyle}
+              title="Reset"
+            >
+              <VscDebugRestart />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -209,15 +387,24 @@ export default function Courses() {
             return (
               <article
                 key={id}
-                className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-2xl bg-white/90 p-4 shadow-sm hover:shadow transition"
+                style={ringStyle}
               >
                 <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    {c.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-9 h-9 rounded-xl grid place-items-center text-white"
+                      style={{ background: primary }}
+                    >
+                      <FiBookOpen />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-800">
+                      {c.title}
+                    </h3>
+                  </div>
                   <span
                     className="rounded-full px-2 py-1 text-xs text-white"
-                    style={{ backgroundColor: primary }}
+                    style={{ backgroundColor: themeDark }}
                   >
                     {c.status ?? "—"}
                   </span>
@@ -263,7 +450,7 @@ export default function Courses() {
       {open && (
         <Modal
           onClose={() => setOpen(false)}
-          title={editId == null ? "Add Course" : "Edit"}
+          title={editId == null ? "Add Course" : "Edit Course"}
         >
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -271,7 +458,8 @@ export default function Courses() {
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                  className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
+                  style={ringStyle}
                   required
                 />
               </Field>
@@ -296,7 +484,8 @@ export default function Courses() {
                     setForm({ ...form, duration: e.target.value })
                   }
                   placeholder="e.g. 6h / 12 lessons"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                  className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
+                  style={ringStyle}
                 />
               </Field>
               <Field label="Instructor">
@@ -305,22 +494,26 @@ export default function Courses() {
                   onChange={(e) =>
                     setForm({ ...form, instructor: e.target.value })
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                  className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
+                  style={ringStyle}
                 />
               </Field>
               <Field label="Status">
                 <Select
                   value={form.status}
                   onChange={(v) => setForm({ ...form, status: v })}
-                  options={statusOptions}
+                  options={["Draft", "Published", "Archived"]}
                 />
               </Field>
               <Field label="Price">
                 <input
                   type="number"
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                  onChange={(e) =>
+                    setForm({ ...form, price: e.target.value })
+                  }
+                  className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
+                  style={ringStyle}
                 />
               </Field>
             </div>
@@ -331,7 +524,8 @@ export default function Courses() {
                   setForm({ ...form, description: e.target.value })
                 }
                 rows={4}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
+                style={ringStyle}
               />
             </Field>
 
@@ -339,7 +533,8 @@ export default function Courses() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50"
+                className="rounded-xl px-4 py-2 hover:bg-slate-50"
+                style={ringStyle}
               >
                 Cancel
               </button>
@@ -358,7 +553,248 @@ export default function Courses() {
   );
 }
 
-/* UI helpers */
+/* ================= FREELANCER (library) ================= */
+function FreelancerCourses() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  const [q, setQ] = useState("");
+  const [filters, setFilters] = useState({
+    category: "",
+    level: "",
+    status: "Published",
+  });
+
+  const categoryOptions = useMemo(
+    () => ["Design", "Programming", "Marketing"],
+    []
+  );
+  const levelOptions = useMemo(
+    () => ["Beginner", "Intermediate", "Advanced"],
+    []
+  );
+
+  useEffect(() => {
+    let cancel;
+    (async () => {
+      try {
+        setLoading(true);
+        setErr("");
+
+        if (USE_MOCK) {
+          const ql = q.trim().toLowerCase();
+          const filtered = MOCK_FREELANCER_COURSES.filter((c) => {
+            const okQ =
+              !ql ||
+              c.title.toLowerCase().includes(ql) ||
+              (c.description || "").toLowerCase().includes(ql) ||
+              (c.instructor || "").toLowerCase().includes(ql);
+            const okCat = !filters.category || c.category === filters.category;
+            const okLvl = !filters.level || c.level === filters.level;
+            return okQ && okCat && okLvl;
+          });
+          setItems(filtered.map((x) => ({ ...x })));
+        } else {
+          const { data } = await api.get("/courses", {
+            params: { q, ...filters },
+            cancelToken: new axios.CancelToken((c) => (cancel = c)),
+          });
+          setItems(Array.isArray(data) ? data : data?.items ?? []);
+        }
+      } catch (e) {
+        if (!axios.isCancel(e)) setErr("Failed to load courses.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => cancel && cancel();
+  }, [q, filters]);
+
+  const resetFilters = () => {
+    setQ("");
+    setFilters({ category: "", level: "", status: "Published" });
+  };
+
+  return (
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
+      {/* Header */}
+      <div
+        className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5"
+        style={ringStyle}
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold" style={{ color: themeDark }}>
+              My learning
+            </h1>
+            <p className="text-slate-500 text-sm">
+              Browse published courses and keep growing
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+              style={ringStyle}
+              title="Saved"
+            >
+              <FiBookmark />
+            </button>
+          </div>
+        </div>
+
+        {/* Search + filters */}
+        <div className="mt-3 sm:mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={`Search course title… ${USE_MOCK ? "(mock)" : ""}`}
+            className="w-full md:max-w-sm rounded-xl bg-white px-3 py-2 outline-none focus:ring-2"
+            style={ringStyle}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={filters.category}
+              placeholder="Category"
+              onChange={(v) => setFilters((s) => ({ ...s, category: v }))}
+              options={categoryOptions}
+            />
+            <Select
+              value={filters.level}
+              placeholder="Level"
+              onChange={(v) => setFilters((s) => ({ ...s, level: v }))}
+              options={levelOptions}
+            />
+            <button
+              onClick={resetFilters}
+              className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+              style={ringStyle}
+              title="Reset"
+            >
+              <VscDebugRestart />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {loading && <CardSkeleton />}
+        {!loading && err && <div className="text-red-600">{err}</div>}
+        {!loading && !err && items.length === 0 && (
+          <div className="text-slate-500">No courses found.</div>
+        )}
+
+        {!loading &&
+          !err &&
+          items.map((c) => {
+            const id = c.id ?? c._id;
+            const progress = c.progress ?? null;
+            return (
+              <article
+                key={id}
+                className="rounded-2xl bg-white/90 p-4 shadow-sm hover:shadow transition"
+                style={ringStyle}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-9 h-9 rounded-xl grid place-items-center text-white"
+                      style={{ background: primary }}
+                    >
+                      <FiBookOpen />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-800 truncate">
+                        {c.title}
+                      </h3>
+                      <div className="text-xs text-slate-500 truncate">
+                        {c.instructor ?? "—"}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className="rounded-full px-2 py-1 text-xs text-white"
+                    style={{ backgroundColor: themeDark }}
+                  >
+                    Published
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
+                  <Info label="Category" value={c.category} />
+                  <Info label="Level" value={c.level} />
+                  <Info label="Duration" value={c.duration} />
+                  <Info label="Price" value={c.price ? `$${c.price}` : "—"} />
+                </div>
+
+                {c.description && (
+                  <p className="mt-3 text-sm text-slate-600 line-clamp-3">
+                    {c.description}
+                  </p>
+                )}
+
+                {typeof progress === "number" && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, progress))}%`,
+                          background: primary,
+                        }}
+                      />
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {progress}% completed
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <button
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-white"
+                    style={{ background: primary }}
+                  >
+                    <FiPlay />
+                    <span className="text-sm">{progress ? "Continue" : "Start"}</span>
+                  </button>
+                  <button
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+                    style={ringStyle}
+                  >
+                    <FiBookmark />
+                    <span className="text-sm">Save</span>
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+/* ================= ACCESS DENIED ================= */
+function AccessDenied() {
+  return (
+    <div className="min-h-[50vh] grid place-items-center">
+      <div
+        className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-8 text-center"
+        style={ringStyle}
+      >
+        <h2 className="text-xl font-semibold" style={{ color: themeDark }}>
+          Access denied
+        </h2>
+        <p className="mt-2 text-slate-600">
+          Courses are available to Admins and Freelancers only.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ================= UI helpers (shared) ================= */
 function Info({ label, value }) {
   return (
     <div>
@@ -386,7 +822,8 @@ function Select({ value, onChange, placeholder, options = [] }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2 focus:ring-slate-300"
+      className="w-full rounded-xl bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2"
+      style={ringStyle}
     >
       <option value="">{placeholder ?? "Select…"}</option>
       {options.map((opt) => (
@@ -401,7 +838,10 @@ function Select({ value, onChange, placeholder, options = [] }) {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl"
+        style={ringStyle}
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
           <button
@@ -420,7 +860,10 @@ function Modal({ title, onClose, children }) {
 
 function CardSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm animate-pulse">
+    <div
+      className="rounded-2xl bg-white/90 p-4 shadow-sm animate-pulse"
+      style={ringStyle}
+    >
       <div className="h-5 w-2/3 bg-slate-200 rounded"></div>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="h-4 bg-slate-200 rounded"></div>
