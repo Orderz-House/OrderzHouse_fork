@@ -18,19 +18,18 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import EditProfile from "./components/profile/EditProfile";
 import VerifyProfile from "./components/profile/VerifyProfile";
-import ProjectDetails from "./components/projects/ProjectDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
+//import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
+
 import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 // import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
-import ProjectsDashboard from "./components/projects/ProjectsDashboard";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance"; 
-import ProjectsAvalible from "./components/projects/ProjectsAvalible";
 import NotificationsPage from "./components/profile/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
@@ -145,12 +144,13 @@ function App() {
         <Route path="/create-project" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
         <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} />
         <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
-        <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
-        <Route path="/dashboard/projects" element={<ProtectedRoute><ProjectsDashboard /></ProtectedRoute>} />
-        <Route path="/projects" element={<ProtectedRoute><ProjectsAvalible /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        <Route path="/admin/task-approval" element={<ProtectedRoute><AdminTaskApproval /></ProtectedRoute>} />
         <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><TasksPool /></ProtectedRoute>} />
+
+
 
         {/* --- Course Management Routes --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
