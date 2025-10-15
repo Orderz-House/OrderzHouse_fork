@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import axios from "axios";
 import PeopleTable from "../Tables";
 import {
   Plus,
@@ -31,50 +33,11 @@ function mapRole(roleId) {
   return "user";
 }
 
-/* Mock */
-const MOCK = true;
-const mockProjects = [
-  {
-    id: "p1",
-    title: "Website Redesign",
-    client: "Tech Corp",
-    owner: "Ali Ahmed",
-    due: "2025-11-01",
-    budget: 12000,
-    progress: 62,
-    status: "Active",
-  },
-  {
-    id: "p2",
-    title: "Brand Identity",
-    client: "Design House",
-    owner: "Sara Khalid",
-    due: "2025-12-10",
-    budget: 5000,
-    progress: 30,
-    status: "Planning",
-  },
-  {
-    id: "p3",
-    title: "Mobile App MVP",
-    client: "Atlas",
-    owner: "Mohammad Z.",
-    due: "2025-10-28",
-    budget: 18000,
-    progress: 15,
-    status: "On hold",
-  },
-  {
-    id: "p4",
-    title: "Landing Page",
-    client: "Innova",
-    owner: "Lina S.",
-    due: "2025-10-20",
-    budget: 2400,
-    progress: 100,
-    status: "Done",
-  },
-];
+/* axios instance */
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "",
+  headers: { "Content-Type": "application/json" },
+});
 
 export default function Projects() {
   const { userData } = useSelector((s) => s.auth);
@@ -86,7 +49,7 @@ export default function Projects() {
   return <ClientProjects />;
 }
 
-/* ===================== Admin (PeopleTable) ===================== */
+/* ===================== Admin (PeopleTable  API) ===================== */
 function AdminProjects() {
   const columns = [
     { label: "Title", key: "title" },
@@ -124,11 +87,12 @@ function AdminProjects() {
     { key: "status", label: "Status", options: ["Planning", "Active", "On hold", "Done"] },
   ];
 
+  // PeopleTable
   return (
     <PeopleTable
       title="Projects"
       addLabel="Add Project"
-      initialRows={MOCK ? mockProjects : undefined}
+      endpoint="/api/admin/projects"
       columns={columns}
       formFields={formFields}
       chips={chips}
@@ -140,20 +104,44 @@ function AdminProjects() {
 
 /* ===================== Client (Kanban-style) ===================== */
 function ClientProjects() {
+  const { token } = useSelector((s) => s.auth);
   const [q, setQ] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const statuses = ["Planning", "Active", "On hold", "Done"];
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get("/api/client/projects", {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!alive) return;
+        const list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        setItems(list);
+      } catch {
+        if (!alive) return;
+        setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => (alive = false);
+  }, [token]);
 
   const data = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return mockProjects.filter((p) => {
+    return items.filter((p) => {
       if (!t) return true;
       return (
-        p.title.toLowerCase().includes(t) ||
-        p.client.toLowerCase().includes(t) ||
+        (p.title ?? "").toLowerCase().includes(t) ||
+        (p.client ?? "").toLowerCase().includes(t) ||
         (p.owner ?? "").toLowerCase().includes(t)
       );
     });
-  }, [q]);
+  }, [q, items]);
 
   const groups = useMemo(() => {
     const map = Object.fromEntries(statuses.map((s) => [s, []]));
@@ -177,13 +165,15 @@ function ClientProjects() {
               Organize requests and milestones at a glance
             </p>
           </div>
-          <button
+
+          <Link
+            to="/create-project"
             className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50"
             style={ringStyle}
           >
             <Plus className="w-4 h-4" />
-            <span className="text-sm">New Request</span>
-          </button>
+            <span className="text-sm">New Project</span>
+          </Link>
         </div>
 
         {/* search */}
@@ -201,34 +191,40 @@ function ClientProjects() {
         </div>
       </header>
 
-      {/* Kanban Columns */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {statuses.map((s) => {
-          const list = groups[s] || [];
-          return (
-            <div key={s} className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-3 sm:p-4 min-h-[220px]" style={ringStyle}>
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={s} />
-                  <div className="font-semibold text-slate-800">{s}</div>
+      {/* Loading / Empty */}
+      {loading ? (
+        <div className="rounded-2xl bg-white/80 backdrop-blur p-5 text-slate-500 text-center" style={ringStyle}>
+          Loading…
+        </div>
+      ) : (
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {statuses.map((s) => {
+            const list = groups[s] || [];
+            return (
+              <div key={s} className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-3 sm:p-4 min-h-[220px]" style={ringStyle}>
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <StatusIcon status={s} />
+                    <div className="font-semibold text-slate-800">{s}</div>
+                  </div>
+                  <div className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                    {list.length}
+                  </div>
                 </div>
-                <div className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
-                  {list.length}
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                {list.length === 0 && (
-                  <div className="text-slate-400 text-sm">No items.</div>
-                )}
-                {list.map((p) => (
-                  <ClientCard key={p.id} p={p} />
-                ))}
+                <div className="space-y-3">
+                  {list.length === 0 && (
+                    <div className="text-slate-400 text-sm">No items.</div>
+                  )}
+                  {list.map((p) => (
+                    <ClientCard key={p.id ?? p._id} p={p} />
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </section>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
@@ -253,10 +249,12 @@ function ClientCard({ p }) {
           <Calendar className="w-3.5 h-3.5" />
           {p.due}
         </div>
-        <div className="text-xs font-semibold text-slate-700">${p.budget.toLocaleString()}</div>
+        <div className="text-xs font-semibold text-slate-700">
+          {typeof p.budget === "number" ? `$${p.budget.toLocaleString()}` : "—"}
+        </div>
       </div>
       <div className="mt-2">
-        <ProgressBar value={p.progress} />
+        <ProgressBar value={p.progress ?? 0} />
       </div>
     </div>
   );
@@ -264,19 +262,43 @@ function ClientCard({ p }) {
 
 /* ===================== Freelancer (Focused list) ===================== */
 function FreelancerProjects() {
+  const { token } = useSelector((s) => s.auth);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("due_asc");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get("/api/freelancer/projects", {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!alive) return;
+        const list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        setItems(list);
+      } catch {
+        if (!alive) return;
+        setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => (alive = false);
+  }, [token]);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
-    let arr = mockProjects.filter((p) => {
+    let arr = items.filter((p) => {
       const matchQ =
         !t ||
-        p.title.toLowerCase().includes(t) ||
-        p.client.toLowerCase().includes(t) ||
+        (p.title ?? "").toLowerCase().includes(t) ||
+        (p.client ?? "").toLowerCase().includes(t) ||
         (p.owner ?? "").toLowerCase().includes(t);
-      const matchS = status === "all" || p.status.toLowerCase() === status;
+      const matchS = status === "all" || (p.status ?? "").toLowerCase() === status;
       return matchQ && matchS;
     });
 
@@ -287,19 +309,19 @@ function FreelancerProjects() {
       return 0;
     });
     return arr;
-  }, [q, status, sort]);
+  }, [q, status, sort, items]);
 
   const kpis = useMemo(() => {
-    const active = mockProjects.filter((p) => p.status === "Active").length;
-    const done = mockProjects.filter((p) => p.status === "Done").length;
-    const dueSoon = mockProjects.filter((p) => {
+    const active = items.filter((p) => p.status === "Active").length;
+    const done = items.filter((p) => p.status === "Done").length;
+    const dueSoon = items.filter((p) => {
       const d = new Date(p.due);
       const now = new Date();
       const diff = (d - now) / (1000 * 60 * 60 * 24);
       return diff >= 0 && diff <= 7 && p.status !== "Done";
     }).length;
     return { active, dueSoon, done };
-  }, []);
+  }, [items]);
 
   return (
     <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
@@ -365,18 +387,24 @@ function FreelancerProjects() {
       </header>
 
       {/* List */}
-      <section className="grid gap-3 sm:gap-4">
-        {filtered.length === 0 ? (
-          <div
-            className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-5 text-center text-slate-500"
-            style={ringStyle}
-          >
-            No projects found.
-          </div>
-        ) : (
-          filtered.map((p) => <FreelancerRow key={p.id} p={p} />)
-        )}
-      </section>
+      {loading ? (
+        <div className="rounded-2xl bg-white/80 backdrop-blur p-5 text-slate-500 text-center" style={ringStyle}>
+          Loading…
+        </div>
+      ) : (
+        <section className="grid gap-3 sm:gap-4">
+          {filtered.length === 0 ? (
+            <div
+              className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-5 text-center text-slate-500"
+              style={ringStyle}
+            >
+              No projects found.
+            </div>
+          ) : (
+            filtered.map((p) => <FreelancerRow key={p.id ?? p._id} p={p} />)
+          )}
+        </section>
+      )}
     </div>
   );
 }
@@ -395,13 +423,15 @@ function FreelancerRow({ p }) {
             <span>{p.due}</span>
           </div>
           <div className="mt-2">
-            <ProgressBar value={p.progress} />
+            <ProgressBar value={p.progress ?? 0} />
           </div>
         </div>
 
         <div className="shrink-0 text-right">
           <StatusBadge status={p.status} />
-          <div className="mt-2 text-sm font-semibold text-slate-700">${p.budget.toLocaleString()}</div>
+          <div className="mt-2 text-sm font-semibold text-slate-700">
+            {typeof p.budget === "number" ? `$${p.budget.toLocaleString()}` : "—"}
+          </div>
         </div>
       </div>
     </div>
