@@ -16,6 +16,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
+import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -161,7 +162,6 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ FIX: dashboard path per role (admin/client/freelancer)
   const getDashboardPath = (roleId) => {
     switch (roleId) {
       case 1:
@@ -182,7 +182,6 @@ export default function EnhancedNavbar() {
     { label: "CONTACT", path: "/contact", condition: true },
     { label: "PROJECTS", path: "/projectsPage", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
     { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
-    { label: "CATEGORIES", path: "/projectsPage", condition: true },
   ];
 
   return (
@@ -228,6 +227,12 @@ export default function EnhancedNavbar() {
                     </button>
                   )
               )}
+
+              {/* Category Mega Menu */}
+              <CategoryMegaMenu 
+                activeLink={activeLink} 
+                onSetActiveLink={setActiveLink} 
+              />
 
               {/* Admin links */}
               {userData?.role_id === 1 && (
@@ -382,7 +387,6 @@ export default function EnhancedNavbar() {
                     </div>
 
                     <div className="py-2">
-                      {/* ✅ Dashboard per role */}
                       <Link
                         to={getDashboardPath(userData.role_id)}
                         onClick={() => setIsUserMenuOpen(false)}
@@ -443,7 +447,7 @@ export default function EnhancedNavbar() {
           </div>
         </div>
 
-        {/* Mobile Menu & Notifications */}
+        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-100">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
