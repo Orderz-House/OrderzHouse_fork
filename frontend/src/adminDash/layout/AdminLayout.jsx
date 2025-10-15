@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
@@ -26,83 +26,17 @@ function mapRole(roleId) {
   return "user";
 }
 
-// helper: إزالة بادئة /admin من المسار للمقارنة
-function stripAdminPrefix(pathname) {
-  if (!pathname) return "/";
-  return pathname.startsWith("/admin") ? pathname.slice(6) || "/" : pathname;
+function getBasePrefix(pathname) {
+  if (pathname.startsWith("/client")) return "/client";
+  if (pathname.startsWith("/freelancer")) return "/freelancer";
+  return "/admin";
 }
 
-// ✅ عناصر السايدبار بحسب الدور (كلها تحت /admin)
-function getNav(role, navigate) {
-  const go = (subPath) => navigate(`/admin${subPath}`);
-
-  if (role === "admin") {
-    const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => go("") },
-      { id: "clients", name: "Clients", icon: Users, onClick: () => go("/people/clients") },
-      { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => go("/people/freelancers") },
-      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => go("/learning/courses") },
-      { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => go("/learning/categories") },
-      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => go("/operation/appointments") },
-      { id: "verifications", name: "Verifications", icon: Shield, onClick: () => go("/operation/verifications") },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => go("/operation/projects") },
-      { id: "news", name: "News", icon: FileText, onClick: () => go("/community/news") },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => go("/finance/payments") },
-      { id: "plans", name: "Plans", icon: DollarSign, onClick: () => go("/finance/plans") },
-      { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => go("/analytics") },
-    ];
-    const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => go("/profile") },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
-    ];
-    return { navigation, bottomNavigation };
-  }
-
-  if (role === "client") {
-    const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => go("") },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => go("/client/projects") },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => go("/client/payments") },
-      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => go("/client/tasks") },
-    ];
-    const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => go("/profile") },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
-    ];
-    return { navigation, bottomNavigation };
-  }
-
-  if (role === "freelancer") {
-    const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => go("") },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => go("/freelancer/projects") },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => go("/freelancer/payments") },
-      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => go("/freelancer/tasks") },
-      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => go("/freelancer/courses") },
-      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => go("/freelancer/appointments") },
-    ];
-    const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => go("/profile") },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
-    ];
-    return { navigation, bottomNavigation };
-  }
-
-  // fallback
-  const navigation = [{ id: "overview", name: "Overview", icon: Home, onClick: () => go("") }];
-  const bottomNavigation = [
-    { id: "profile", name: "Profile", icon: User, onClick: () => go("/profile") },
-    { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
-  ];
-  return { navigation, bottomNavigation };
-}
-
-// إبراز الأكتف من المسار الحالي (بعد إزالة /admin)
 function getActiveFromPath(pathname) {
-  const p = stripAdminPrefix(pathname);
-  if (p === "/" || p === "") return "overview";
+  const base = getBasePrefix(pathname);
+  const p = pathname.replace(base, "") || "/";
 
-  // admin
+  if (p === "/" || p === "") return "overview";
   if (p.startsWith("/people/clients")) return "clients";
   if (p.startsWith("/people/freelancers")) return "freelancers";
   if (p.startsWith("/learning/courses")) return "courses";
@@ -114,21 +48,76 @@ function getActiveFromPath(pathname) {
   if (p.startsWith("/finance/payments")) return "payments";
   if (p.startsWith("/finance/plans")) return "plans";
   if (p.startsWith("/analytics")) return "analytics";
-
-  // client
-  if (p.startsWith("/client/projects")) return "projects";
-  if (p.startsWith("/client/payments")) return "payments";
-  if (p.startsWith("/client/tasks")) return "tasks";
-
-  // freelancer
-  if (p.startsWith("/freelancer/projects")) return "projects";
-  if (p.startsWith("/freelancer/payments")) return "payments";
-  if (p.startsWith("/freelancer/tasks")) return "tasks";
-  if (p.startsWith("/freelancer/courses")) return "courses";
-  if (p.startsWith("/freelancer/appointments")) return "appointments";
+  if (p.startsWith("/projects")) return "projects";
+  if (p.startsWith("/payments")) return "payments";
+  if (p.startsWith("/tasks")) return "tasks";
+  if (p.startsWith("/courses")) return "courses";
+  if (p.startsWith("/appointments")) return "appointments";
 
   if (p.startsWith("/profile")) return "profile";
   return "overview";
+}
+
+function getNav(role, navigate, base) {
+  if (role === "admin") {
+    const navigation = [
+      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
+      { id: "clients", name: "Clients", icon: Users, onClick: () => navigate(`${base}/people/clients`) },
+      { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate(`${base}/people/freelancers`) },
+      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
+      { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => navigate(`${base}/learning/categories`) },
+      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/operation/appointments`) },
+      { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate(`${base}/operation/verifications`) },
+      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/operation/projects`) },
+      { id: "news", name: "News", icon: FileText, onClick: () => navigate(`${base}/community/news`) },
+      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/finance/payments`) },
+      { id: "plans", name: "Plans", icon: DollarSign, onClick: () => navigate(`${base}/finance/plans`) },
+      { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => navigate(`${base}/analytics`) },
+    ];
+    const bottomNavigation = [
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+    ];
+    return { navigation, bottomNavigation };
+  }
+
+  if (role === "client") {
+    const navigation = [
+      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
+      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
+      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
+      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
+    ];
+    const bottomNavigation = [
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+    ];
+    return { navigation, bottomNavigation };
+  }
+
+  if (role === "freelancer") {
+    const navigation = [
+      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
+      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
+      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
+      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
+      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
+      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/appointments`) },
+    ];
+    const bottomNavigation = [
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+    ];
+    return { navigation, bottomNavigation };
+  }
+
+  // fallback
+  const navigation = [{ id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) }];
+  const bottomNavigation = [
+    { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+    { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+  ];
+  return { navigation, bottomNavigation };
 }
 
 export default function AdminLayout() {
@@ -136,8 +125,11 @@ export default function AdminLayout() {
   const location = useLocation();
   const { userData } = useSelector((s) => s.auth);
 
-  const role = mapRole(userData?.role_id);
-  const { navigation, bottomNavigation } = getNav(role, navigate);
+  const roleId = userData?.role_id ?? Number(localStorage.getItem("roled"));
+  const role = mapRole(roleId);
+
+  const base = getBasePrefix(location.pathname);
+  const { navigation, bottomNavigation } = getNav(role, navigate, base);
 
   const [activePage, setActivePage] = useState(() => getActiveFromPath(location.pathname));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

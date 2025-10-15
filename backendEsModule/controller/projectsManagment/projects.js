@@ -228,231 +228,93 @@ export const completeHourlyProject = async (req, res) => {
 };
 
 // Assigns a freelancer to a project with validation and notifications
+
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
     const { freelancer_id, assignment_type = "solo" } = req.body;
 
-    // Validate freelancer_id
     if (!freelancer_id) {
-      return res
-        .status(400)
-        .json({ success: false, message: "freelancer_id is required" });
+      return res.status(400).json({ success: false, message: "freelancer_id is required" });
     }
 
-    // Check if project exists
-    const projectResult = await pool.query(
-      `SELECT id, status FROM projects WHERE id = $1 AND is_deleted = false`,
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, duration_days, duration_hours, start_date, status 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
-    if (!projectResult.rows.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
+    if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
 
-    // Check if freelancer exists, is role 3
-    const userResult = await pool.query(
+    const project = projectRows[0];
+
+    const { rows: userRows } = await pool.query(
       `SELECT role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
-    if (!userResult.rows.length || userResult.rows[0].role_id !== 3) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Only freelancers can be assigned" });
+    if (!userRows.length || userRows[0].role_id !== 3) {
+      return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
     }
 
-    // ✅ Check if freelancer is verified
-    if (!userResult.rows[0].is_verified) {
-      return res.status(403).json({
-        success: false,
-        message: "Freelancer must be verified to apply to projects",
-      });
+    if (!userRows[0].is_verified) {
+      return res.status(403).json({ success: false, message: "Freelancer must be verified" });
     }
 
-    // ✅ Check if freelancer has active subscription
-    const subscriptionQuery = await pool.query(
-      `SELECT id FROM subscriptions
-       WHERE freelancer_id = $1
-         AND status = 'active'
-         AND end_date >= NOW()
-       LIMIT 1`,
-      [freelancer_id]
-    );
-    if (!subscriptionQuery.rows.length) {
-      return res.status(403).json({
-        success: false,
-        message: "Freelancer must have an active subscription to apply",
-      });
-    }
-
-    // If solo assignment, ensure no one is already assigned
-    if (assignment_type === "solo") {
-      const soloCheck = await pool.query(
-        `SELECT id FROM project_assignments 
-         WHERE project_id = $1 AND assignment_type = 'solo'`,
-        [projectId]
-      );
-      if (soloCheck.rows.length) {
-        return res.status(400).json({
-          success: false,
-          message: "This project already has a solo assignment",
-        });
-      }
-    }
-
-    // Check if freelancer already assigned
-    const existsResult = await pool.query(
-      `SELECT id FROM project_assignments 
-       WHERE project_id = $1 AND freelancer_id = $2`,
+    const { rows: existing } = await pool.query(
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
     );
-    if (existsResult.rows.length) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Freelancer already assigned" });
+    if (existing.length) {
+      return res.status(400).json({ success: false, message: "Freelancer already assigned" });
     }
 
-    // Insert assignment
-    const insertAssign = `
-      INSERT INTO project_assignments (project_id, freelancer_id, status, assignment_type)
-      VALUES ($1, $2, 'active', $3)
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(insertAssign, [
-      projectId,
-      freelancer_id,
-      assignment_type,
-    ]);
-
-    if (rows.length > 0) {
-      // Update project status if solo assignment
-      if (assignment_type === "solo") {
-        await pool.query(
-          `UPDATE projects
-           SET completion_status = 'not_started',
-               status = 'active'
-           WHERE id = $1`,
-          [projectId]
-        );
-      }
-
-      // Log assignment
-      await LogCreators.projectOperation(
-        req.token?.userId || 0,
-        ACTION_TYPES.ASSIGNMENT_CREATE,
-        projectId,
-        true,
-        { freelancer_id, assignment_id: rows[0].id, assignment_type }
+    if (assignment_type === "solo") {
+      const { rows: soloCheck } = await pool.query(
+        `SELECT id FROM project_assignments WHERE project_id = $1 AND assignment_type = 'solo'`,
+        [projectId]
       );
-
-      // Notification
-      try {
-        await NotificationCreators.freelancerAssignmentChanged(
-          projectId,
-          freelancer_id,
-          req.token?.userId || 0,
-          true
-        );
-      } catch (notificationError) {
-        console.error(
-          "Error creating assignment notification:",
-          notificationError
-        );
+      if (soloCheck.length) {
+        return res.status(400).json({ success: false, message: "This project already has a solo assignment" });
       }
     }
 
-    return res.status(201).json({ success: true, assignment: rows[0] });
-  } catch (error) {
-    console.error("assignProject error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// Updates freelancer assignment status (active, kicked, quit, banned, completed)
-export const updateAssignmentStatus = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-    const { freelancer_id, status } = req.body;
-
-    if (!freelancer_id || !status) {
-      return res.status(400).json({
-        success: false,
-        message: "freelancer_id and status are required",
-      });
+    const assignedAt = new Date();
+    let deadline = null;
+    if (project.duration_days) {
+      deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
+    } else if (project.duration_hours) {
+      deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
     }
 
-    // ✅ السماح فقط بالقيم المحددة
-    const validStatuses = ["active", "kicked", "quit", "banned", "completed"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status. Allowed values: ${validStatuses.join(", ")}`,
-      });
-    }
-
-    // تحقق أن المشروع موجود
-    const projectResult = await pool.query(
-      `SELECT id FROM projects WHERE id = $1 AND is_deleted = false`,
-      [projectId]
+    const { rows: inserted } = await pool.query(
+      `INSERT INTO project_assignments 
+       (project_id, freelancer_id, assigned_at, status, assignment_type, deadline)
+       VALUES ($1, $2, $3, 'active', $4, $5)
+       RETURNING *`,
+      [projectId, freelancer_id, assignedAt, assignment_type, deadline]
     );
-    if (!projectResult.rows.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
 
-    // تحديث الحالة
-    const updateQuery = `
-      UPDATE project_assignments
-      SET status = $3
-      WHERE project_id = $1 AND freelancer_id = $2
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(updateQuery, [
-      projectId,
-      freelancer_id,
-      status,
-    ]);
-
-    if (!rows.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Assignment not found for this freelancer in the project",
-      });
+    if (assignment_type === "solo") {
+      await pool.query(
+        `UPDATE projects
+         SET status = 'active',
+             completion_status = 'not_started'
+         WHERE id = $1`,
+        [projectId]
+      );
     }
 
     await LogCreators.projectOperation(
       req.token?.userId || 0,
-      ACTION_TYPES.ASSIGNMENT_STATUS_CHANGE,
+      ACTION_TYPES.ASSIGNMENT_CREATE,
       projectId,
       true,
-      { freelancer_id, status, assignment_id: rows[0].id }
+      { freelancer_id, assignment_id: inserted[0].id, assignment_type }
     );
 
-    if (status === "kicked" || status === "banned") {
-      try {
-        await NotificationCreators.freelancerAssignmentChanged(
-          projectId,
-          freelancer_id,
-          req.token?.userId || 0,
-          false
-        );
-      } catch (notificationError) {
-        console.error(
-          "Error creating assignment status notification:",
-          notificationError
-        );
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: `Assignment status updated to '${status}'`,
-      assignment: rows[0],
-    });
+    return res.status(201).json({ success: true, assignment: inserted[0] });
   } catch (error) {
-    console.error("updateAssignmentStatus error:", error);
+    console.error("assignProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import http from "http";
 import dotenv from "dotenv";
 import { Routes, Route, useLocation } from "react-router-dom";
+import "./cron/autoCancelAssignments.js"
 
 
 
@@ -67,7 +68,7 @@ app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
 app.use("/uploads", uploadRouter);
 app.use("/earnings", earningsRouter);
-app.use("/analytics", analyticsRoutes);
+//app.use("/analytics", analyticsRoutes);
 app.use("/category", categoriesRouter);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);
