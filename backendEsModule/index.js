@@ -29,6 +29,7 @@ import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
+import ratingsRouter from "./router/rating.js";
 //import analyticsRoutes from "./router/analytics.js";
 
 // DB connection
@@ -83,6 +84,7 @@ app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
+app.use("/ratings", ratingsRouter);
 
 
 let server, io;

@@ -1,11 +1,15 @@
-// src/controllers/tasksController.js
 import pool from "../models/db.js";
+import { NotificationCreators } from "../services/notificationService.js";
 
-// Get tasks of authenticated freelancer
+/**
+ * @desc Get all tasks created by the currently authenticated freelancer.
+ * @route GET /api/tasks/my-tasks
+ * @access Private (Freelancer only)
+ */
 export const getFreelancerTasks = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const freelancerId = req.token.userId;
     const result = await pool.query(
@@ -23,12 +27,16 @@ export const getFreelancerTasks = async (req, res) => {
     );
     res.json({ success: true, tasks: result.rows });
   } catch (err) {
-    console.error("❌ getFreelancerTasks:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ getFreelancerTasks error:", err);
+    res.status(500).json({ success: false, message: "Server error while fetching tasks." });
   }
 };
 
-// Get task pool (exclude own tasks)
+/**
+ * @desc Get all available tasks for clients to browse (task pool).
+ * @route GET /api/tasks
+ * @access Public
+ */
 export const getTaskPool = async (req, res) => {
   try {
     const freelancerId = req.token?.role === 3 ? req.token.userId : null;
@@ -41,172 +49,176 @@ export const getTaskPool = async (req, res) => {
       FROM tasks t
       JOIN users u ON t.freelancer_id = u.id
       LEFT JOIN categories c ON t.category_id = c.id
-      WHERE t.is_deleted = FALSE`;
+      WHERE t.is_deleted = FALSE AND t.status = 'approved'`; // Only show approved tasks
     const params = [];
 
     if (freelancerId) {
       query += ` AND t.freelancer_id <> $1`;
       params.push(freelancerId);
     }
-
     if (req.query.category) {
-      query += params.length ? ` AND t.category_id = $${params.length + 1}` : ` AND t.category_id = $1`;
+      query += ` AND t.category_id = $${params.length + 1}`;
       params.push(parseInt(req.query.category));
     }
-
     query += ` ORDER BY t.id DESC`;
 
     const result = await pool.query(query, params);
     res.json({ success: true, tasks: result.rows });
   } catch (err) {
-    console.error("❌ getTaskPool:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ getTaskPool error:", err);
+    res.status(500).json({ success: false, message: "Server error while fetching task pool." });
   }
 };
 
-// Create task
+/**
+ * @desc Create a new task as a freelancer.
+ * @route POST /api/tasks
+ * @access Private (Freelancer only)
+ */
 export const createTask = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const { title, description, price, category_id, duration_days = 0, duration_hours = 0, attachments } = req.body;
     const freelancerId = req.token.userId;
 
-    // Insert with status = pending_approval
     const result = await pool.query(
-      `INSERT INTO tasks (title, description, price, freelancer_id, category_id, duration_days, duration_hours, attachments)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
+      `INSERT INTO tasks (title, description, price, freelancer_id, category_id, duration_days, duration_hours, attachments, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_approval') RETURNING *`,
       [title, description, price, freelancerId, category_id, duration_days, duration_hours, attachments || null]
     );
-    res.status(201).json({ success: true, task: result.rows[0] });
+    const newTask = result.rows[0];
+
+    try {
+        // NOTE: Ensure a 'taskNeedsApproval' creator exists in your notificationService.
+        // This function should get all admin IDs and send them a notification.
+        await NotificationCreators.taskNeedsApproval(newTask.id, newTask.title, req.token.username);
+    } catch (notificationError) {
+        console.error(`Failed to create task approval notification for task ${newTask.id}:`, notificationError);
+    }
+
+    res.status(201).json({ success: true, task: newTask });
   } catch (err) {
-    console.error("❌ createTask:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ createTask error:", err);
+    res.status(500).json({ success: false, message: "Server error while creating task." });
   }
 };
 
-// Update task (only if owned by freelancer and status is pending_approval)
+/**
+ * @desc Update a task owned by the freelancer.
+ * @route PUT /api/tasks/:id
+ * @access Private (Freelancer only)
+ */
 export const updateTask = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const { id } = req.params;
     const { title, description, price, category_id, duration_days, duration_hours, attachments } = req.body;
     const freelancerId = req.token.userId;
 
-    // Only allow updating if status is still pending approval
     const result = await pool.query(
-      `UPDATE tasks
-       SET title = $1, description = $2, price = $3, category_id = $4,
+      `UPDATE tasks SET title = $1, description = $2, price = $3, category_id = $4,
            duration_days = $5, duration_hours = $6, attachments = $7
-       WHERE id = $8 AND freelancer_id = $9 AND is_deleted = FALSE
+       WHERE id = $8 AND freelancer_id = $9 AND is_deleted = FALSE AND status = 'pending_approval'
        RETURNING *`,
       [title, description, price, category_id, duration_days, duration_hours, attachments || null, id, freelancerId]
     );
 
     if (!result.rows.length) {
-      return res.status(404).json({ success: false, message: "Task not found, not owned by you, or already approved/rejected." });
+      return res.status(404).json({ success: false, message: "Task not found, not owned by you, or cannot be edited." });
     }
     res.json({ success: true, task: result.rows[0] });
   } catch (err) {
-    console.error("❌ updateTask:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ updateTask error:", err);
+    res.status(500).json({ success: false, message: "Server error while updating task." });
   }
 };
 
-// Soft delete
+/**
+ * @desc Soft delete a task owned by the freelancer.
+ * @route DELETE /api/tasks/:id
+ * @access Private (Freelancer only)
+ */
 export const deleteTask = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const { id } = req.params;
     const freelancerId = req.token.userId;
 
-    // Only allow deleting if status is still pending approval
     const result = await pool.query(
       `UPDATE tasks SET is_deleted = TRUE WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_approval' RETURNING id`,
       [id, freelancerId]
     );
     if (!result.rows.length) {
-      return res.status(404).json({ success: false, message: "Task not found, not owned by you, or already approved/rejected." });
+      return res.status(404).json({ success: false, message: "Task not found, not owned by you, or cannot be deleted." });
     }
-    res.json({ success: true, message: "Task deleted" });
+    res.json({ success: true, message: "Task deleted successfully." });
   } catch (err) {
-    console.error("❌ deleteTask:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ deleteTask error:", err);
+    res.status(500).json({ success: false, message: "Server error while deleting task." });
   }
 };
 
-// Request a task (client only)
+/**
+ * @desc A client requests to purchase a task.
+ * @route POST /api/tasks/:id/request
+ * @access Private (Client only)
+ */
 export const requestTask = async (req, res) => {
   try {
     const userId = req.token?.userId;
-    const userRole = req.token?.role;
+    if (req.token?.role !== 2) {
+      return res.status(403).json({ success: false, message: "Access denied. Clients only." });
+    }
     const { id: taskId } = req.params;
     const { message, attachments } = req.body;
 
-    if (!userId || userRole === 3) {
-      return res.status(403).json({ success: false, message: "Clients only" });
-    }
-
-    // Check if task exists and not owned by client
-    const taskRes = await pool.query(
-      `SELECT freelancer_id FROM tasks WHERE id = $1 AND is_deleted = FALSE`,
-      [taskId]
-    );
+    const taskRes = await pool.query(`SELECT freelancer_id, title FROM tasks WHERE id = $1 AND is_deleted = FALSE AND status = 'approved'`, [taskId]);
     if (!taskRes.rows.length || taskRes.rows[0].freelancer_id === userId) {
-      return res.status(400).json({ success: false, message: "Invalid task" });
+      return res.status(400).json({ success: false, message: "This task is not available for request." });
     }
+    const { freelancer_id: freelancerId, title: taskTitle } = taskRes.rows[0];
 
-    // Block if active request exists (pending or accepted)
-    const existing = await pool.query(
-      `SELECT status FROM tasks_req 
-       WHERE task_id = $1 AND client_id = $2 AND status IN ('pending', 'accepted')`,
-      [taskId, userId]
-    );
+    const existing = await pool.query(`SELECT status FROM tasks_req WHERE task_id = $1 AND client_id = $2 AND status IN ('pending', 'accepted')`, [taskId, userId]);
     if (existing.rows.length) {
-      return res.status(400).json({
-        success: false,
-        message: existing.rows[0].status === 'accepted'
-          ? "You already have an accepted request. Please wait for completion."
-          : "You already have a pending request for this task."
-      });
+      return res.status(409).json({ success: false, message: "You already have an active request for this task." });
     }
 
-    // Create request
-    const reqResult = await pool.query(
-      `INSERT INTO tasks_req (task_id, client_id, message, attachments)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id`,
-      [taskId, userId, message || null, attachments || null]
-    );
-
-    // Increment counter
+    const reqResult = await pool.query(`INSERT INTO tasks_req (task_id, client_id, message, attachments) VALUES ($1, $2, $3, $4) RETURNING id`, [taskId, userId, message || null, attachments || null]);
     await pool.query(`UPDATE tasks SET total_requests = total_requests + 1 WHERE id = $1`, [taskId]);
 
-    res.status(201).json({ success: true, requestId: reqResult.rows[0].id });
+    try {
+        await NotificationCreators.taskRequested(taskId, taskTitle, freelancerId);
+    } catch (notificationError) {
+        console.error(`Failed to create task request notification for task ${taskId}:`, notificationError);
+    }
+
+    res.status(201).json({ success: true, message: "Task requested successfully.", requestId: reqResult.rows[0].id });
   } catch (err) {
-    console.error("❌ requestTask:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ requestTask error:", err);
+    res.status(500).json({ success: false, message: "Server error while requesting task." });
   }
 };
 
-// Get all pending requests for freelancer
+/**
+ * @desc Get all pending task requests for the authenticated freelancer.
+ * @route GET /api/tasks/requests
+ * @access Private (Freelancer only)
+ */
 export const getTaskRequests = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const freelancerId = req.token.userId;
-
     const result = await pool.query(
       `SELECT tr.id, tr.client_id, tr.message, tr.attachments, tr.requested_at,
-              u.first_name || ' ' || u.last_name AS client_name,
-              u.profile_pic_url AS client_avatar,
+              u.first_name || ' ' || u.last_name AS client_name, u.profile_pic_url AS client_avatar,
               t.title AS task_title, t.price AS task_price
        FROM tasks_req tr
        JOIN users u ON tr.client_id = u.id
@@ -217,53 +229,69 @@ export const getTaskRequests = async (req, res) => {
     );
     res.json({ success: true, requests: result.rows });
   } catch (err) {
-    console.error("❌ getTaskRequests:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ getTaskRequests error:", err);
+    res.status(500).json({ success: false, message: "Server error while fetching task requests." });
   }
 };
 
-// Update request status
+/**
+ * @desc A freelancer accepts, rejects, or completes a task request.
+ * @route PUT /api/tasks/requests/:requestId
+ * @access Private (Freelancer only)
+ */
 export const updateTaskRequestStatus = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
-      return res.status(403).json({ success: false, message: "Freelancers only" });
+      return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
     }
     const { requestId } = req.params;
     const { status } = req.body;
     const freelancerId = req.token.userId;
 
     if (!['accepted', 'rejected', 'completed'].includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
+      return res.status(400).json({ success: false, message: "Invalid status provided." });
     }
 
-    // Verify ownership
     const check = await pool.query(
-      `SELECT tr.id FROM tasks_req tr
-       JOIN tasks t ON tr.task_id = t.id
+      `SELECT tr.id, tr.client_id, t.id as task_id, t.title as task_title
+       FROM tasks_req tr JOIN tasks t ON tr.task_id = t.id
        WHERE tr.id = $1 AND t.freelancer_id = $2`,
       [requestId, freelancerId]
     );
     if (!check.rows.length) {
-      return res.status(404).json({ success: false, message: "Request not found" });
+      return res.status(404).json({ success: false, message: "Request not found or you do not own this task." });
     }
+    const { client_id: clientId, task_id: taskId, task_title: taskTitle } = check.rows[0];
 
     const fields = [`status = $1`];
     const values = [status, requestId];
     if (status === 'accepted') fields.push(`approved_at = NOW()`);
     if (status === 'completed') fields.push(`completed_at = NOW()`);
 
-    await pool.query(
-      `UPDATE tasks_req SET ${fields.join(', ')} WHERE id = $${values.length}`,
-      values
-    );
-    res.json({ success: true, message: `Request ${status}` });
+    await pool.query(`UPDATE tasks_req SET ${fields.join(', ')} WHERE id = $${values.length}`, values);
+
+    try {
+        if (status === 'accepted' || status === 'rejected') {
+            await NotificationCreators.taskRequestStatusChanged(requestId, taskTitle, clientId, status === 'accepted');
+        } else if (status === 'completed') {
+            await NotificationCreators.taskCompleted(taskId, taskTitle, clientId);
+        }
+    } catch (notificationError) {
+        console.error(`Failed to create task status notification for request ${requestId}:`, notificationError);
+    }
+
+    res.json({ success: true, message: `Request has been successfully ${status}.` });
   } catch (err) {
-    console.error("❌ updateTaskRequestStatus:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ updateTaskRequestStatus error:", err);
+    res.status(500).json({ success: false, message: "Server error while updating task request." });
   }
 };
 
-// Get categories (for filtering)
+/**
+ * @desc Get all available categories.
+ * @route GET /api/categories
+ * @access Public
+ */
 export const getCategories = async (req, res) => {
   try {
     const result = await pool.query(
@@ -271,7 +299,7 @@ export const getCategories = async (req, res) => {
     );
     res.json({ success: true, categories: result.rows });
   } catch (err) {
-    console.error("❌ getCategories:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ getCategories error:", err);
+    res.status(500).json({ success: false, message: "Server error while fetching categories." });
   }
 };
