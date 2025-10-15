@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import pool from "./db.js";
+import pool from "../models/db.js";
 
 // Run every 5 minutes
 cron.schedule("*/5 * * * *", async () => {
