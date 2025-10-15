@@ -13,7 +13,7 @@ import {
   completeHourlyProject,
   getProjectsByCategoryId,
   getProjectsBySubCategoryId,
-  getProjectsBySubSubCategoryId
+ getProjectsBySubSubCategoryId
 } from "../controller/projects.js";
 
 import {
