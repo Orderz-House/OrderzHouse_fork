@@ -180,6 +180,7 @@ function App() {
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
         
         {/* Admin Routes */}
+        
         <Route
           path="/admin/*"
           element={
@@ -187,8 +188,24 @@ function App() {
               <AdminRouter />
             </ProtectedRoute>
           }
+        />    
+        <Route
+          path="/client/*"
+          element={
+            <ProtectedRoute allowedRoles={[2]}>
+              <AdminRouter />
+            </ProtectedRoute>
+          }
+        />   
+        <Route
+          path="/freelancer/*"
+          element={
+            <ProtectedRoute allowedRoles={[3]}>
+              <AdminRouter />
+            </ProtectedRoute>
+          }
         />
-
+        
 
         <Route path="*" element={
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
