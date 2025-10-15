@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
+import {
+  fetchCategories,
+  fetchSubCategoriesByCategoryId,
+  fetchSubSubCategoriesBySubId,
+} from "./api/category";
 
 const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,7 +14,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [loading, setLoading] = useState(false);
   const menuRef = useRef(null);
 
-  // Close when clicking outside
+  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -23,57 +28,50 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   // Fetch categories when menu opens
   useEffect(() => {
     if (isOpen && categories.length === 0) {
-      fetchCategories();
+      loadCategories();
     }
   }, [isOpen]);
 
-  // Fetch categories + nested data
-  const fetchCategories = async () => {
+  // Load categories + subcategories + sub-sub-categories
+  const loadCategories = async () => {
     setLoading(true);
     try {
-      const categoriesRes = await fetch("http://localhost:5000/category");
-      const categoriesData = await categoriesRes.json();
+      const cats = await fetchCategories();
 
-      if (categoriesData.success) {
-        const categoriesWithSubs = await Promise.all(
-          categoriesData.categories.map(async (category) => {
-            const subSubRes = await fetch(
-              `http://localhost:5000/category/${category.id}/sub-sub-categories`
-            );
-            const subSubData = await subSubRes.json();
+      const categoriesWithSubs = await Promise.all(
+        cats.map(async (category) => {
+          const subCats = await fetchSubCategoriesByCategoryId(category.id);
 
-            const subCategoriesMap = {};
-            if (subSubData.success && Array.isArray(subSubData.subSubCategories)) {
-              subSubData.subSubCategories.forEach((item) => {
-                if (!subCategoriesMap[item.sub_category_id]) {
-                  subCategoriesMap[item.sub_category_id] = {
-                    id: item.sub_category_id,
-                    name: item.sub_category_name,
-                    subSubCategories: [],
-                  };
-                }
-                subCategoriesMap[item.sub_category_id].subSubCategories.push({
-                  id: item.sub_sub_category_id,
-                  name: item.sub_sub_category_name,
-                  description: item.sub_sub_category_description,
-                });
-              });
-            }
+          const subCategoriesWithSubs = await Promise.all(
+            subCats.map(async (sub) => {
+              const subSubs = await fetchSubSubCategoriesBySubId(sub.id);
+              return {
+                ...sub,
+                subSubCategories: subSubs || [],
+              };
+            })
+          );
 
-            return {
-              ...category,
-              subCategories: Object.values(subCategoriesMap),
-            };
-          })
-        );
+          return {
+            ...category,
+            subCategories: subCategoriesWithSubs,
+          };
+        })
+      );
 
-        setCategories(categoriesWithSubs);
-        setSelectedCategory(categoriesWithSubs[0]); // Default first category
+      setCategories(categoriesWithSubs);
+      setSelectedCategory(categoriesWithSubs[0] || null);
+      // Auto-select first subcategory if exists
+      if (categoriesWithSubs[0]?.subCategories?.length) {
+        setSelectedSubCategory(categoriesWithSubs[0].subCategories[0]);
+      } else {
+        setSelectedSubCategory(null);
       }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // UI handlers
@@ -84,7 +82,11 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   const handleSelectCategory = (cat) => {
     setSelectedCategory(cat);
-    setSelectedSubCategory(null);
+    if (cat.subCategories?.length) {
+      setSelectedSubCategory(cat.subCategories[0]); // auto-select first sub
+    } else {
+      setSelectedSubCategory(null);
+    }
   };
 
   const handleSelectSubCategory = (sub) => {
@@ -124,11 +126,11 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             </div>
           ) : (
             <div className="p-6 space-y-6">
-              {/* 1️⃣ Top Row: Main Categories */}
+              {/* Top Row: Main Categories */}
               <div className="flex gap-6 overflow-x-auto pb-3 border-b border-gray-200">
                 {categories.map((cat) => (
                   <button
-                    key={cat.id}
+                    key={`cat-${cat.id}`} // unique key
                     onClick={() => handleSelectCategory(cat)}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                       selectedCategory?.id === cat.id
@@ -141,7 +143,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                 ))}
               </div>
 
-              {/* 2️⃣ Middle + Right: Subcategories & Sub-sub-categories */}
+              {/* Subcategories & Sub-sub-categories */}
               {selectedCategory && (
                 <div className="flex gap-6">
                   {/* Left: Subcategories */}
@@ -152,7 +154,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     <div className="flex flex-col gap-2">
                       {selectedCategory.subCategories?.map((sub) => (
                         <button
-                          key={sub.id}
+                          key={`sub-${selectedCategory.id}-${sub.id}`} // unique key
                           onClick={() => handleSelectSubCategory(sub)}
                           className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                             selectedSubCategory?.id === sub.id
@@ -176,12 +178,12 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                         <div className="flex flex-wrap gap-3">
                           {selectedSubCategory.subSubCategories?.map((s) => (
                             <a
-                              key={s.id}
-                              href={`/category/${selectedCategory.id}/sub/${selectedSubCategory.id}/sub-sub/${s.id}`}
+                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`} // fully unique key
+                              href={`/category/${selectedCategory.id}/sub/${selectedSubCategory.id}/sub-sub/${s.sub_sub_category_id}`}
                               className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                               onClick={() => setIsOpen(false)}
                             >
-                              {s.name}
+                              {s.sub_sub_category_name}
                             </a>
                           ))}
                         </div>

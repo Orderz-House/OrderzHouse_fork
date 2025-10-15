@@ -26,13 +26,16 @@ export const fetchSubCategoriesByCategoryId = async (categoryId) => {
 // Get sub-sub-categories by category ID
 export const fetchSubSubCategoriesByCategoryId = async (categoryId) => {
   const { data } = await axios.get(`${API_BASE}/${categoryId}/sub-sub-categories`);
-  if (data.success) return data.data; // returned grouped by sub-category
+  if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch sub-sub-categories");
 };
 
 // Get sub-sub-categories by sub-category ID
 export const fetchSubSubCategoriesBySubId = async (subCategoryId) => {
-  const { data } = await axios.get(`${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`);
-  if (data.success) return data.data;
+  const { data } = await axios.get(
+    `${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`
+  );
+
+  if (data.success) return data.subSubCategories; 
   throw new Error(data.message || "Failed to fetch sub-sub-categories by sub-category");
 };

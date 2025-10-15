@@ -9,9 +9,10 @@ function mapRole(roleId) {
 }
 
 export default function Payments() {
-  const { user } = useSelector((state) => state.auth);
+  const user = useSelector((state) => state.auth.userData);
   const role = mapRole(user?.role_id);
 
+  // Configs for different roles
   const configs = {
     admin: {
       endpoint: "/api/payments",
