@@ -83,7 +83,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const handleSelectCategory = (cat) => {
     setSelectedCategory(cat);
     if (cat.subCategories?.length) {
-      setSelectedSubCategory(cat.subCategories[0]); // auto-select first sub
+      setSelectedSubCategory(cat.subCategories[0]); 
     } else {
       setSelectedSubCategory(null);
     }
