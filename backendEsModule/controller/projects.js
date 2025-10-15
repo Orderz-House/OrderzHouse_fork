@@ -12,19 +12,18 @@ export const createProject = async (req, res) => {
 
     const {
       category_id,
-      sub_category_id,
-      sub_sub_category_id,
       title,
       description,
       budget,
-      duration_type, // "days" or "hours"
+      duration_type,
       duration_days,
       duration_hours,
-      project_type, // 'fixed' | 'bidding' | 'hourly'
+      project_type,
       budget_min,
       budget_max,
       hourly_rate,
-      preferred_skills // array of skills
+      preferred_skills, // array of skills
+      refund_amount, 
     } = req.body;
 
     if (!category_id || !title || !description || !duration_type) {
@@ -79,33 +78,33 @@ export const createProject = async (req, res) => {
       }
     }
 
-    if (project_type === "hourly" && hourly_rate === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "hourly_rate is required for hourly projects",
-      });
+    if (project_type === "hourly") {
+      if (hourly_rate === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "hourly_rate is required for hourly projects",
+        });
+      }
     }
 
-    let projectStatus = "pending";
+    // Determine project status based on project type
+    let projectStatus = "pending"; 
     if (project_type === "bidding") {
-      projectStatus = "bidding";
+      projectStatus = "bidding"; 
     } else if (project_type === "fixed" || project_type === "hourly") {
-      projectStatus = "pending_payment";
+      projectStatus = "pending_payment"; 
     }
 
     const insertQuery = `
       INSERT INTO projects (
-        user_id, category_id, title, description,
-        budget, duration_days, duration_hours, project_type,
-        budget_min, budget_max, hourly_rate,
-        preferred_skills,
-        status, is_deleted, updated_at,
-        refund_amount -- ✅ NEW COLUMN
+        user_id, category_id, sub_category_id, sub_sub_category_id,
+        title, description, budget, duration_days, duration_hours, project_type,
+        budget_min, budget_max, hourly_rate, preferred_skills,
+        status, is_deleted, updated_at, refund_amount
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, false, null
-      )
-      RETURNING *;
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+        $12, $13, false, null, $14
+      ) RETURNING *;
     `;
 
     const durationDaysValue = duration_type === "days" ? duration_days : null;
@@ -114,8 +113,6 @@ export const createProject = async (req, res) => {
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
-      sub_category_id || null,
-      sub_sub_category_id || null,
       title,
       description,
       budget || null,
@@ -125,8 +122,9 @@ export const createProject = async (req, res) => {
       budget_min || null,
       budget_max || null,
       hourly_rate || null,
-      preferred_skills || [],
-      projectStatus
+      preferred_skills || null,
+      projectStatus,
+      refund_amount || 0, 
     ]);
 
     const project = rows[0];
@@ -135,7 +133,9 @@ export const createProject = async (req, res) => {
     if (project.project_type === "fixed") {
       amountToPay = project.budget;
     } else if (project.project_type === "hourly") {
-      amountToPay = (project.hourly_rate || 0) * 3;
+      amountToPay = (project.budget || 0) * 3;
+    } else if (project.project_type === "bidding") {
+      amountToPay = null;
     }
 
     if (amountToPay !== null) {
@@ -144,6 +144,27 @@ export const createProject = async (req, res) => {
         [amountToPay, project.id]
       );
       Object.assign(project, update.rows[0]);
+    }
+
+    // Log creation
+    await LogCreators.projectOperation(
+      userId,
+      ACTION_TYPES.PROJECT_CREATE,
+      project.id,
+      true,
+      { title: project.title, category_id: project.category_id }
+    );
+
+    // Notification (non-blocking)
+    try {
+      await NotificationCreators.projectCreated(
+        project.id,
+        project.title,
+        userId,
+        project.category_id
+      );
+    } catch (notificationError) {
+      console.error("Error creating project notifications:", notificationError);
     }
 
     return res.status(201).json({
@@ -183,16 +204,13 @@ export const completeHourlyProject = async (req, res) => {
     let extraPayment = 0;
 
     if (total_hours < prepaidHours) {
-      // Refund unused prepaid hours
       refundAmount = (prepaidHours - total_hours) * hourlyRate;
     } else if (total_hours > prepaidHours) {
-      // Charge extra for overtime
       extraPayment = (total_hours - prepaidHours) * hourlyRate;
     }
 
     const finalAmount = total_hours * hourlyRate;
 
-    // Update project
     const { rows: updated } = await pool.query(
       `UPDATE projects 
        SET total_hours = $1, amount_to_pay = $2, status = 'completed'
@@ -200,7 +218,6 @@ export const completeHourlyProject = async (req, res) => {
       [total_hours, finalAmount, projectId]
     );
 
-    // Refund logic
     if (refundAmount > 0) {
       await pool.query(
         `UPDATE wallets SET balance = balance + $1 WHERE user_id = $2`,
@@ -208,7 +225,6 @@ export const completeHourlyProject = async (req, res) => {
       );
     }
 
-    // Extra payment logic
     if (extraPayment > 0) {
       await pool.query(
         `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
@@ -243,8 +259,9 @@ export const getMyProjects = async (req, res) => {
       SELECT 
         p.*, 
         c.name AS category_name,
+        sc.name AS sub_category_name, 
         pa.freelancer_id,
-        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name, -- ✅ full name
+        CONCAT(u.first_name, ' ', u.last_name) AS freelancer_name, 
         pa.assignment_type,
         CASE 
           WHEN p.duration_days IS NOT NULL AND pa.assigned_at IS NOT NULL
@@ -256,6 +273,7 @@ export const getMyProjects = async (req, res) => {
         END AS remaining_hours
       FROM projects p
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id 
       LEFT JOIN project_assignments pa ON pa.project_id = p.id
       LEFT JOIN users u ON pa.freelancer_id = u.id 
       WHERE p.user_id = $1
@@ -272,7 +290,6 @@ export const getMyProjects = async (req, res) => {
   }
 };
 
-// Assign a freelancer to a project
 export const assignProject = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -1267,6 +1284,77 @@ export const getProjectFiles = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+export const getProjectsBySubCategoryId = async (req, res) => {
+  try {
+    const { subCategoryId } = req.params;
+
+    // Validate
+    if (!subCategoryId || isNaN(subCategoryId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid subcategory ID" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT 
+        p.*, 
+        u.username AS client_username, 
+        c.name AS category_name,
+        sc.name AS sub_category_name
+      FROM projects p
+      JOIN users u ON u.id = p.user_id
+      JOIN categories c ON c.id = p.category_id
+      LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
+      WHERE p.sub_category_id = $1 
+        AND p.is_deleted = false
+      ORDER BY p.created_at DESC;
+      `,
+      [subCategoryId]
+    );
+
+    return res.json({
+      success: true,
+      projects: result.rows,
+    });
+  } catch (error) {
+    console.error("getProjectsBySubCategoryId error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
+  }
+};
+export const getProjectsBySubSubCategoryId = async (req, res) => {
+  try {
+    const { subSubCategoryId } = req.params;
+
+    if (!subSubCategoryId || isNaN(subSubCategoryId)) {
+      return res.status(400).json({ success: false, message: "Invalid sub-subcategory ID" });
+    }
+
+    const { rows } = await pool.query(`
+      SELECT 
+        p.*,
+        u.username AS client_username,
+        c.name AS category_name,
+        sc.name AS sub_category_name,
+        ssc.name AS sub_sub_category_name
+      FROM projects p
+      JOIN users u ON u.id = p.user_id
+      LEFT JOIN categories c ON c.id = p.category_id
+      LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
+      LEFT JOIN sub_sub_categories ssc ON ssc.id = p.sub_sub_category_id
+      WHERE p.sub_sub_category_id = $1 AND p.is_deleted = false
+      ORDER BY p.created_at DESC;
+    `, [subSubCategoryId]);
+
+    return res.json({ success: true, projects: rows });
+  } catch (err) {
+    console.error("getProjectsBySubSubCategoryId error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 export const getPublicCategories = async (req, res) => {
   try {

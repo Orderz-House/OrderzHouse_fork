@@ -1,31 +1,33 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useSelector } from "react-redux";
-import GradientButton from "../buttons/GradientButton.jsx";
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux'; // Import useSelector
 
-const Plans = () => {
-  const [plans, setPlans] = useState([]);
-  const [billingCycle, setBillingCycle] = useState("yearly");
-
-  const { user } = useSelector((state) => ({
+// =================== CUSTOM HOOK TO GET AUTH INFO (Using Redux) ===================
+const useAuth = () => {
+  // Get user data and token directly from the Redux store
+  const { user, token } = useSelector((state) => ({
     user: state.auth.userData,
+    token: state.auth.token,
   }));
 
-  const fetchPlans = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/plans");
-      setPlans(res.data.plans || []);
-    } catch (err) {
-      console.error("Error fetching plans:", err);
-      setPlans([]);
-    }
-  };
+  // The hook now returns the user and token from the global state
+  return { user, token };
+};
+// =================================================================================
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
+const plans = [
+  { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
+  { id: 2, name: "1 month", description: "Best value for professionals", subscriptionFee: "20", earnLimit: "Unlimited" },
+  { id: 3, name: "1 Year", description: "Most popular choice", subscriptionFee: "45", earnLimit: "Unlimited", isPopular: true },
+  { id: 4, name: "2 Year Plan", description: "Maximum value for serious professionals", subscriptionFee: "65", earnLimit: "Unlimited" },
+];
 
-  const handleSubscribeWhatsApp = (plan) => {
+function PlanCard({ plan, user, navigate }) {
+
+  const handleChoosePlan = () => {
+    // *** MODIFICATION: Logic updated to match requirements ***
+
+    // 1. If the user is NOT logged in, redirect to the login page.
     if (!user) {
       window.location.href = "/login";
       return;
@@ -45,112 +47,131 @@ const Plans = () => {
   const displayedPlans = plans.filter(plan => plan.plan_type === billingCycle);
 
   return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Clear and Fair Pricing for Everyone
-          </h1>
-          <p className="text-gray-500 text-lg">
-            Over 100,000 entrepreneurs have launched their businesses effortlessly with our platform.
-          </p>
-        </div>
+    <div
+      style={{
+        width: "18rem",
+        minHeight: "24rem",
+        border: `0.3rem solid ${plan.isPopular ? "#026d80ff" : "gray"}`,
+        borderRadius: "1.2rem",
+        boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+        margin: "1rem",
+        padding: "1.5rem",
+        textAlign: "center",
+        fontFamily: "Merriweather, serif",
+        backgroundColor: "white",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        transition: "all 0.3s ease",
+        position: "relative",
+        cursor: "pointer"
+      }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f0f9ff"; }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
+    >
+      {plan.isPopular && (
+        <span style={{
+          position: "absolute",
+          top: "0.5rem",
+          right: "0.5rem",
+          backgroundColor: "#88e4dfff",
+          color: "#028090",
+          fontSize: "0.7rem",
+          fontWeight: "600",
+          padding: "0.25rem 0.5rem",
+          borderRadius: "9999px"
+        }}>Popular</span>
+      )}
+      <div>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: "700" }}>{plan.name}</h2>
+        <p style={{ marginTop: "1rem", fontSize: "2.5rem", fontWeight: "700" }}>{plan.subscriptionFee} JD</p>
+        <p style={{ color: "#000000ff", marginTop: "0.5rem", fontSize: "0.9rem" }}>Earn Limit: {plan.earnLimit}</p>
+        <p style={{ marginTop: "1rem", fontSize: "1.5rem", color: "#065f46" }}>{plan.description}</p>
+      </div>
+      <button 
+        style={{
+          marginTop: "1.5rem",
+          width: "100%",
+          background: "#005f6bff",
+          color: "white",
+          padding: "0.5rem",
+          borderRadius: "0.5rem",
+          fontWeight: "600",
+          border: "none",
+          cursor: "pointer"
+        }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor="#026e7a"}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor="#028090"}
+        onClick={handleChoosePlan}
+      >
+        Choose {plan.name}
+      </button>
+    </div>
+  );
+}
 
-        {/* Billing toggle */}
-        <div className="flex justify-center gap-2 mb-12">
-          <button
-            onClick={() => setBillingCycle("monthly")}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-              billingCycle === "monthly"
-                ? "bg-gray-200 text-gray-900"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingCycle("yearly")}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-              billingCycle === "yearly"
-                ? "bg-cyan-500 text-white"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Annual
-          </button>
-        </div>
+export default function Plans() {
+  const { user } = useAuth(); // Get user from Redux via the hook
+  const navigate = useNavigate();
 
-        {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {displayedPlans.map((plan) => {
-            const isPro = plan.id === 5; // Only plan with id 5 is most popular
-            return (
-              <div
-                key={plan.id}
-                className={`relative rounded-2xl border border-gray-200 shadow-sm bg-white p-6 flex flex-col h-full`} // h-full ensures same height
-              >
-                {isPro && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-cyan-500 text-white text-xs font-semibold px-4 py-1 rounded-full">
-                      ⭐ Most Popular
-                    </span>
-                  </div>
-                )}
+  // Effect to hide the entire page for Clients (role_id 2)
+  useEffect(() => {
+    if (user && user.role_id === 2) {
+      navigate("/"); // Redirect to home page or another appropriate page
+    }
+  }, 
+  [user, navigate]);
 
-                <div className="mb-6 flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4">{plan.description}</p>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">{plan.price} JD</span>
-                    {plan.price !== 0 && (
-                      <span className="text-sm text-gray-400 line-through ml-2">
-                        {parseFloat(plan.price) + 20} JD
-                      </span>
-                    )}
-                    <div className="text-sm text-gray-500 mt-1">
-                      {plan.plan_type === "yearly"
-                        ? "per agent, per year, billed annually"
-                        : "per agent, per month, billed monthly"}
-                    </div>
-                  </div>
+  // Prevent rendering the component for role_id 2 to avoid a screen flash
+  if (user && user.role_id === 2) {
+    return null; 
+  }
 
-                  {plan.features?.length > 0 && (
-                    <ul className="space-y-3 mt-4">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <svg
-                            className="w-5 h-5 text-cyan-500 flex-shrink-0 mt-0.5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span className="text-sm text-gray-700">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+  // Styles
+  const containerStyle = { display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "2rem", padding: "2rem" };
+  const noteStyle = {
+    marginTop: "3rem",
+    background: "linear-gradient(to right, #e0f7fa, #b2ebf2)",
+    padding: "2rem",
+    borderRadius: "1rem",
+    textAlign: "center",
+    fontSize: "1.3rem",
+    fontWeight: "600",
 
-                <div className="mt-auto">
-                  <GradientButton
-                    onClick={() => handleSubscribeWhatsApp(plan)}
-                    className="w-full py-3"
-                  >
-                    Subscribe via WhatsApp
-                  </GradientButton>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    // color: "#026e7a",
+    // color: "#004d40",
+    color: "#004d40",
+    maxWidth: "900px",
+    marginLeft: "auto",
+    marginRight: "auto",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+  };
+  const bodyStyle = {
+    minHeight: "100vh",
+    fontFamily: "Merriweather, serif",
+    background: "#f7fafc",
+    paddingBottom: "4rem"
+  };
+
+  return (
+    <div style={bodyStyle}>
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "2rem", color: "#004d40" }}>Our Pricing Plans</h1>
+
+
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
+      <div style={containerStyle}>
+        {plans.map(plan => (
+          <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
+        ))}
+      </div>
+      <div style={noteStyle}>
+        <p>* A contract is signed after subscription.</p>
+        <p>* Account verification fee is a one-time payment across all plans (25 JD).</p>
       </div>
     </div>
   );
 };
 
-export default Plans;

@@ -7,7 +7,6 @@ import {
   User,
   Settings,
   LogOut,
-  Briefcase,
   LayoutDashboard,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -15,9 +14,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { setLogout, setUserData } from "../../slice/auth/authSlice";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { disconnectSocket, getSocket } from "../../services/socketService";
+import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
-import CategoryMegaMenu from "../Catigories/CategoryMegaMenu"; 
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -41,7 +39,6 @@ export default function EnhancedNavbar() {
 
   useEffect(() => {
     const path = location.pathname;
-
     if (path === "/") setActiveLink("HOME");
     else if (path.startsWith("/about")) setActiveLink("ABOUT US");
     else if (path.startsWith("/blogs")) setActiveLink("BLOGS");
@@ -49,8 +46,7 @@ export default function EnhancedNavbar() {
     else if (path.startsWith("/plans")) setActiveLink("PLANS");
     else if (path.startsWith("/projectsPage")) setActiveLink("CATEGORIES");
     else if (path.startsWith("/dashboard/projects")) setActiveLink("PROJECTS");
-    else if (path.startsWith("/admin-verification"))
-      setActiveLink("VERIFICATION");
+    else if (path.startsWith("/admin-verification")) setActiveLink("VERIFICATION");
     else if (path.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
   }, [location.pathname]);
 
@@ -73,13 +69,10 @@ export default function EnhancedNavbar() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const response = await axios.get(
-        "http://localhost:5000/notifications/count",
-        {
-          headers: { authorization: `Bearer ${token}` },
-          params: { unreadOnly: true },
-        }
-      );
+      const response = await axios.get("http://localhost:5000/notifications/count", {
+        headers: { authorization: `Bearer ${token}` },
+        params: { unreadOnly: true },
+      });
       if (response.data.success) {
         setUnreadCount(response.data.count);
       }
@@ -113,38 +106,14 @@ export default function EnhancedNavbar() {
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
-      setNotifications(
-        notifications.map((notif) => ({ ...notif, read_status: true }))
-      );
+      setNotifications(notifications.map((notif) => ({ ...notif, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
   };
 
-  // Real-time notification handler
-  useEffect(() => {
-    if (IsAuthenticated && token) {
-      const socket = getSocket();
-      if (socket) {
-        const handleNewNotification = (notification) => {
-          // Only update if the notification is for the current user
-          if (notification.user_id === userData.id) {
-            setNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep only top 10
-            setUnreadCount(prev => prev + 1);
-          }
-        };
-
-        socket.on('newNotification', handleNewNotification);
-
-        return () => {
-          socket.off('newNotification', handleNewNotification);
-        };
-      }
-    }
-  }, [IsAuthenticated, token, userData]);
-
-  // Event Handlers
+  // Event handlers
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
@@ -168,34 +137,30 @@ export default function EnhancedNavbar() {
 
   // Effects
   useEffect(() => {
-    if (token && !userData) {
-      axios
-        .get(`http://localhost:5000/users/getUserdata`, {
-          headers: { authorization: `Bearer ${token}` },
-        })
-        .then((res) => {
-          dispatch(setUserData({ ...res.data.user, is_online: true }));
-        })
-        .catch((err) => {
-          console.error("Token is invalid, logging out:", err.message);
-          handleLogout();
-        });
-    }
-    if (IsAuthenticated) {
-      fetchNotifications();
-      fetchUnreadCount();
-    }
-  }, [dispatch, token, userData, IsAuthenticated]);
+    if (!token) return;
+
+    axios
+      .get(`http://localhost:5000/users/getUserdata`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const user = { ...res.data.user, is_online: true };
+        dispatch(setUserData(user));
+        fetchNotifications();
+        fetchUnreadCount();
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user data:", err.message);
+        handleLogout();
+      });
+  }, [dispatch, token]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target)
-      ) {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setIsNotificationsOpen(false);
       }
     };
@@ -203,22 +168,13 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Corrected navLinks array
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     { label: "ABOUT US", path: "/about", condition: true },
     { label: "BLOGS", path: "/blogs", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
-    {
-      label: "PROJECTS",
-      path: "/projectsPage",
-      condition: userData && (userData.role_id === 2 || userData.role_id === 3),
-    },
-    {
-      label: "PLANS",
-      path: "/plans",
-      condition: !userData || (userData.role_id !== 2 && userData.role_id == 3),
-    },
+    { label: "PROJECTS", path: "/dashboard/projects", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
+    { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
     { label: "CATEGORIES", path: "/projectsPage", condition: true },
   ];
 
@@ -232,11 +188,7 @@ export default function EnhancedNavbar() {
               onClick={() => handleNavigation("/", "HOME")}
               className="flex-shrink-0 flex items-center group cursor-pointer"
             >
-              <img
-                src={logo}
-                alt="Logo"
-                className="h-16 my-2 w-auto"
-              />
+              <img src={logo} alt="Logo" className="h-16 my-2 w-auto" />
             </button>
           </div>
 
@@ -246,76 +198,62 @@ export default function EnhancedNavbar() {
               {navLinks.map(
                 (item) =>
                   item.condition && (
-                    item.label === "CATEGORIES" ? (
-                      <CategoryMegaMenu 
-                        key={item.label}
-                        activeLink={activeLink}
-                        onSetActiveLink={setActiveLink}
-                      />
-                    ) : (
-                      <button
-                        key={item.label}
-                        onClick={() =>
-                          item.label === "PLANS"
-                            ? handlePlansClick()
-                            : handleNavigation(item.path, item.label)
-                        }
-                        className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                          activeLink === item.label
-                            ? "text-[#028090]"
-                            : "text-gray-700"
+                    <button
+                      key={item.label}
+                      onClick={() =>
+                        item.label === "PLANS"
+                          ? handlePlansClick()
+                          : handleNavigation(item.path, item.label)
+                      }
+                      className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
+                        activeLink === item.label ? "text-[#028090]" : "text-gray-700"
+                      }`}
+                    >
+                      {item.label}
+                      <span
+                        className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                          activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"
                         }`}
-                      >
+                      ></span>
+                      <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                         {item.label}
-                        <span
-                          className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                            activeLink === item.label
-                              ? "w-full"
-                              : "w-0 group-hover:w-full"
-                          }`}
-                        ></span>
-                      </button>
-                    )
+                      </span>
+                    </button>
                   )
               )}
-              
+
+              {/* Admin links */}
               {userData?.role_id === 1 && (
                 <>
                   <button
                     onClick={() =>
                       handleNavigation("/admin-verification", "VERIFICATION")
                     }
-                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                      activeLink === "VERIFICATION"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
+                      activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
                     VERIFICATION
                     <span
                       className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "VERIFICATION"
-                          ? "w-full"
-                          : "w-0 group-hover:w-full"
+                        activeLink === "VERIFICATION" ? "w-full" : "w-0 group-hover:w-full"
                       }`}
                     ></span>
+                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      VERIFICATION
+                    </span>
                   </button>
+
                   <button
-                    onClick={() =>
-                      handleNavigation("/blogs/admin", "BLOGS PENDING")
-                    }
-                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                      activeLink === "BLOGS PENDING"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                    onClick={() => handleNavigation("/news/admin", "NEWS PENDING")}
+                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
+                      activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
-                    BLOGS PENDING
+                    NEWS PENDING
                     <span
                       className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "BLOGS PENDING"
-                          ? "w-full"
-                          : "w-0 group-hover:w-full"
+                        activeLink === "NEWS PENDING" ? "w-full" : "w-0 group-hover:w-full"
                       }`}
                     ></span>
                     <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -341,7 +279,7 @@ export default function EnhancedNavbar() {
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -378,9 +316,7 @@ export default function EnhancedNavbar() {
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2 font-inter">
-                                    {new Date(
-                                      notification.created_at
-                                    ).toLocaleDateString()}
+                                    {new Date(notification.created_at).toLocaleDateString()}
                                   </p>
                                 </div>
                                 {!notification.read_status && (
@@ -412,6 +348,8 @@ export default function EnhancedNavbar() {
                 )}
               </div>
             )}
+
+            {/* User Menu or Auth Buttons */}
             {IsAuthenticated && userData ? (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -507,11 +445,7 @@ export default function EnhancedNavbar() {
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -541,6 +475,8 @@ export default function EnhancedNavbar() {
                     </button>
                   )
               )}
+
+              {/* Admin mobile links */}
               {userData?.role_id === 1 && (
                 <>
                   <button
@@ -554,12 +490,12 @@ export default function EnhancedNavbar() {
                   </button>
                   <button
                     onClick={() => {
-                      handleNavigation("/blogs/admin", "BLOGS PENDING");
+                      handleNavigation("/news/admin", "NEWS PENDING");
                       setIsMobileMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-3 text-base font-medium rounded-2xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-all duration-200 font-inter"
                   >
-                    BLOGS PENDING
+                    NEWS PENDING
                   </button>
                 </>
               )}

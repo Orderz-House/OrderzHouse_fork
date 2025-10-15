@@ -1,5 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
+
 import authorization from "../middleware/authorization.js";
 import { 
   createCategory, 
@@ -18,11 +19,17 @@ const categoryRouter = express.Router();
 // Get all categories
 categoryRouter.get("/", getCategories);
 
+// view sub categories by category id (not used currently)
+categoryRouter.get("/subcategories/:categoryId", getSubCategories);
+
+//create new category
+categoryRouter.post("/", createCategory);
 // Get sub-categories
 categoryRouter.get("/:categoryId/sub-categories", getSubCategories);
 
 // Get sub-sub-categories by main category ID
 categoryRouter.get("/:categoryId/sub-sub-categories", getSubSubCategoriesByCategoryId);
+
 
 // Get sub-sub-categories by sub-category ID
 categoryRouter.get("/sub-category/:subCategoryId/sub-sub-categories", getSubSubCategoriesBySubId);

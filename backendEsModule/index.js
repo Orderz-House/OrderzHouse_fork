@@ -30,7 +30,7 @@ import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
-//mort analyticsRoutes from "./router/analytics.js";
+//import analyticsRoutes from "./router/analytics.js";
 
 // DB connection
 dotenv.config();
@@ -62,11 +62,13 @@ app.use(limiter);
 
 // Routers
 
+
+app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
 app.use("/uploads", uploadRouter);
 app.use("/earnings", earningsRouter);
-app.use("/analytics", analyticsRoutes);
+//app.use("/analytics", analyticsRoutes);
 app.use("/category", categoriesRouter);
 app.use("/news", newsRouter);
 app.use("/verification", verificationRouter);

@@ -12,7 +12,14 @@ import {
   getAllProjectForOffer,
   completeHourlyProject,
   getProjectsByCategoryId,
-  getPublicCategories 
+  getProjectsBySubCategoryId,
+ getProjectsBySubSubCategoryId,
+ getMyProjectsAsFreelancer,
+ getCountProjectFreelancer,
+ listUsersByRole,
+ approveOrRejectOffer
+
+ 
 } from "../controller/projects.js";
 import {
   getProjectsByCategory,
@@ -22,6 +29,7 @@ import {
 
 
 const projectsRouter = express.Router();
+
 
 // ---------------------- Authenticated & Verified ----------------------
 
@@ -100,6 +108,40 @@ projectsRouter.get(
   "/sub-sub-category/:sub_sub_category_id",
   authentication,
   getProjectsBySubSubCategory
+);
+
+// Get projects assigned to authenticated freelancer
+projectsRouter.get(
+  "/freelancer/my-projects",
+  authentication,
+  requireVerified,
+  getMyProjectsAsFreelancer
+);
+
+// Get project counts for a freelancer
+projectsRouter.get(
+  "/freelancer/:freelancer_id/counts",
+  authentication,
+  getCountProjectFreelancer
+);
+
+projectsRouter.get("/subcategory/:subCategoryId", getProjectsBySubCategoryId);
+projectsRouter.get("/subsubcategory/:subSubCategoryId", getProjectsBySubSubCategoryId);
+
+// List users by role
+projectsRouter.get("/users/by-role/:roleId", authentication, listUsersByRole);
+
+// ---------------------- Offers Approval (Client) ----------------------
+projectsRouter.post(
+  "/offers/approve-reject",
+  authentication,
+  requireVerified,
+  approveOrRejectOffer
+);
+
+projectsRouter.get(
+  "/category/:categoryId",
+  getProjectsByCategoryId
 );
 
 export default projectsRouter;

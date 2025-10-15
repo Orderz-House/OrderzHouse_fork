@@ -3,6 +3,7 @@ import pool from "../models/db.js";
 import fs from "fs";
 import cloudinary from "../cloudinary/setupfile.js";
 
+
 // ========== Get all active categories ==========
 export const getCategories = async (_req, res) => {
   try {
@@ -17,6 +18,8 @@ export const getCategories = async (_req, res) => {
       success: true,
       categories: rows,
     });
+
+    return res.json({ success: true, categories: rows });
   } catch (error) {
     console.error("getCategories error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
