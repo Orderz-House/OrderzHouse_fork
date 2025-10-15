@@ -1,11 +1,15 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js"; 
 import { requireVerified } from "../middleware/requireVerification.js";
+import { sendOffer, getMyOffersForProject, getOffersForMyProjects, approveOrRejectOffer } from "../controller/offers.js";
 
 const offersRouter = express.Router();
 
-import { sendOffer, getMyOffersForProject, getOffersForMyProjects, approveOrRejectOffer } from "../controller/offers.js";
+/**
+ * -------------------------------
+ * FREELANCER ROUTES
+ * -------------------------------
+ */
 
 // Send an offer for a project
 offersRouter.post(
@@ -23,15 +27,21 @@ offersRouter.get(
   getMyOffersForProject
 );
 
-// Get all offers for all projects owned by the logged-in user (project owner)
+/**
+ * -------------------------------
+ * CLIENT ROUTES
+ * -------------------------------
+ */
+
+// Get all offers for all projects owned by the logged-in client
 offersRouter.get(
   "/my-projects/offers",
   authentication,
   requireVerified,
   getOffersForMyProjects
 );
-;
 
+// Approve or reject an offer
 offersRouter.post(
   "/offers/approve-reject",
   authentication,

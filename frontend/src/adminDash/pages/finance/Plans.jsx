@@ -1,61 +1,29 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
-
 import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
 
 const primary = "#028090";
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
-
-const MOCK = true;
-const DEMO = [
-  {
-    id: "pl1",
-    name: "Basic",
-    price: 0,
-    period: "/mo",
-    status: "Active",
-    features: ["1 Project", "Community Support"],
-  },
-  {
-    id: "pl2",
-    name: "Pro",
-    price: 19.9,
-    period: "/mo",
-    status: "Active",
-    features: ["10 Projects", "Priority Support", "Analytics"],
-  },
-  {
-    id: "pl3",
-    name: "Business",
-    price: 49,
-    period: "/mo",
-    status: "Hidden",
-    features: ["Unlimited Projects", "Team Seats", "SLA"],
-  },
-];
 
 export default function Plans() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  // Fetch plans from backend
   useEffect(() => {
-    if (MOCK) {
-      setItems(DEMO);
-      setLoading(false);
-      return;
-    }
     (async () => {
       try {
         setLoading(true);
         setErr("");
         const { data } = await api.get("/plans");
         setItems(Array.isArray(data) ? data : data?.items ?? []);
-      } catch {
+      } catch (e) {
         setErr("Failed to load plans.");
       } finally {
         setLoading(false);
@@ -63,6 +31,7 @@ export default function Plans() {
     })();
   }, []);
 
+  // Modal state
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({
@@ -84,6 +53,7 @@ export default function Plans() {
     });
     setOpen(true);
   };
+
   const openEdit = (id) => {
     const r = items.find((x) => (x.id ?? x._id) === id);
     if (!r) return;
@@ -97,11 +67,11 @@ export default function Plans() {
     });
     setOpen(true);
   };
+
   const onDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
     const prev = items;
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
-    if (MOCK) return;
     try {
       await api.delete(`/plans/${id}`);
     } catch {
@@ -109,6 +79,7 @@ export default function Plans() {
       setItems(prev);
     }
   };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     const payload = {
@@ -119,20 +90,7 @@ export default function Plans() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-    if (MOCK) {
-      if (editId == null)
-        setItems((arr) => [{ id: crypto.randomUUID(), ...payload }, ...arr]);
-      else
-        setItems((arr) =>
-          arr.map((x) =>
-            (x.id ?? x._id) === editId
-              ? { ...(x.id ? { id: x.id } : { _id: x._id }), ...payload }
-              : x
-          )
-        );
-      setOpen(false);
-      return;
-    }
+
     try {
       if (editId == null) {
         const { data } = await api.post("/plans", payload);
@@ -151,6 +109,7 @@ export default function Plans() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">Plans</h1>
         <OutlineButton
@@ -163,9 +122,11 @@ export default function Plans() {
         </OutlineButton>
       </div>
 
+      {/* Loading / Error */}
       {loading && <div className="text-slate-500">Loading…</div>}
       {!loading && err && <div className="text-red-600">{err}</div>}
 
+      {/* Cards */}
       {!loading && !err && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => {
@@ -186,28 +147,33 @@ export default function Plans() {
                     {p.status}
                   </span>
                 </div>
+
                 <div className="mt-2 text-2xl font-bold text-slate-800">
                   ${p.price}
                   <span className="text-base font-normal text-slate-500">
                     {p.period}
                   </span>
                 </div>
+
                 <ul className="mt-3 space-y-1 text-sm text-slate-700 list-disc list-inside">
                   {(p.features ?? []).map((f, i) => (
                     <li key={i}>{f}</li>
                   ))}
                 </ul>
+
                 <div className="mt-4 flex items-center justify-end gap-2">
                   <button
                     onClick={() => openEdit(id)}
                     className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
                     style={{ backgroundColor: primary }}
+                    title="Edit"
                   >
                     <FiEdit2 />
                   </button>
                   <button
                     onClick={() => onDelete(id)}
                     className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
+                    title="Delete"
                   >
                     <FiTrash2 />
                   </button>
@@ -218,6 +184,7 @@ export default function Plans() {
         </div>
       )}
 
+      {/* Modal */}
       {open && (
         <Modal
           title={editId == null ? "Add Plan" : "Edit"}
@@ -233,6 +200,7 @@ export default function Plans() {
                   required
                 />
               </Field>
+
               <Field label="Price" required>
                 <input
                   type="number"
@@ -242,6 +210,7 @@ export default function Plans() {
                   required
                 />
               </Field>
+
               <Field label="Period">
                 <input
                   value={form.period}
@@ -249,6 +218,7 @@ export default function Plans() {
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none"
                 />
               </Field>
+
               <Field label="Status">
                 <select
                   value={form.status}
@@ -260,6 +230,7 @@ export default function Plans() {
                 </select>
               </Field>
             </div>
+
             <Field label="Features (one per line)">
               <textarea
                 rows={5}
@@ -270,6 +241,7 @@ export default function Plans() {
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none"
               />
             </Field>
+
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -303,6 +275,7 @@ function Field({ label, children, required }) {
     </label>
   );
 }
+
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
@@ -312,6 +285,7 @@ function Modal({ title, onClose, children }) {
           <button
             onClick={onClose}
             className="h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-600"
+            aria-label="Close"
           >
             <FiX />
           </button>

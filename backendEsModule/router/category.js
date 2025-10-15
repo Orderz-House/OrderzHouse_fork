@@ -18,8 +18,6 @@ const categoryRouter = express.Router();
 // Get all categories
 categoryRouter.get("/", getCategories);
 
-// view sub categories by category id (not used currently)
-categoryRouter.get("/subcategories/:categoryId", getSubCategories);
 
 //create new category
 categoryRouter.post("/", createCategory);

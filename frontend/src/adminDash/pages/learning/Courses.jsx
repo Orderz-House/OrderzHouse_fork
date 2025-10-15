@@ -1,4 +1,3 @@
-// src/.../Courses.jsx
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -19,84 +18,6 @@ const themeDark = "#05668D";
 const ring = "rgba(15,23,42,.10)";
 const ringStyle = { border: `1px solid ${ring}` };
 
-/* ================= MOCK TOGGLE ================= */
-const USE_MOCK = true;
-
-const MOCK_ADMIN_COURSES = [
-  {
-    id: "adm-101",
-    title: "Design Systems 101",
-    category: "Design",
-    level: "Beginner",
-    duration: "6h / 12 lessons",
-    instructor: "Ava Martin",
-    status: "Published",
-    price: 49,
-    description: "Foundations of tokens, components, and documentation flow.",
-  },
-  {
-    id: "adm-102",
-    title: "Advanced React Patterns",
-    category: "Programming",
-    level: "Advanced",
-    duration: "8h / 16 lessons",
-    instructor: "Liam Carter",
-    status: "Draft",
-    price: 79,
-    description: "Patterns for scalability, composition, and performance.",
-  },
-  {
-    id: "adm-103",
-    title: "SEO for Product Teams",
-    category: "Marketing",
-    level: "Intermediate",
-    duration: "4h / 9 lessons",
-    instructor: "Noah Wilson",
-    status: "Archived",
-    price: 39,
-    description: "A pragmatic approach to on-page, tech SEO, and analytics.",
-  },
-];
-
-const MOCK_FREELANCER_COURSES = [
-  {
-    id: "fr-201",
-    title: "Clean UI Basics",
-    category: "Design",
-    level: "Beginner",
-    duration: "3h / 6 lessons",
-    instructor: "Zara Lee",
-    status: "Published",
-    price: 0,
-    description: "Simple, effective UI practices for daily work.",
-    progress: 45,
-  },
-  {
-    id: "fr-202",
-    title: "React in Practice",
-    category: "Programming",
-    level: "Intermediate",
-    duration: "7h / 14 lessons",
-    instructor: "Ethan Park",
-    status: "Published",
-    price: 59,
-    description: "Real-world patterns, state, routing, and data fetching.",
-    progress: 0,
-  },
-  {
-    id: "fr-203",
-    title: "Growth Content 101",
-    category: "Marketing",
-    level: "Beginner",
-    duration: "5h / 10 lessons",
-    instructor: "Maya Perez",
-    status: "Published",
-    price: 29,
-    description: "Content ideas and planning to grow product adoption.",
-    progress: 70,
-  },
-];
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   headers: { "Content-Type": "application/json" },
@@ -106,7 +27,7 @@ const api = axios.create({
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 3) return "freelancer";
-  return "client"; 
+  return "client";
 }
 
 /* ================= ROOT (role switcher) ================= */
@@ -158,37 +79,18 @@ function AdminCourses() {
     []
   );
 
-  // ---- fetch (MOCK vs API)
+  // ---- fetch (API only)
   useEffect(() => {
     let cancel;
     (async () => {
       try {
         setLoading(true);
         setErr("");
-
-        if (USE_MOCK) {
-         
-          const ql = q.trim().toLowerCase();
-          const filtered = MOCK_ADMIN_COURSES.filter((c) => {
-            const okQ =
-              !ql ||
-              c.title.toLowerCase().includes(ql) ||
-              (c.description || "").toLowerCase().includes(ql) ||
-              (c.instructor || "").toLowerCase().includes(ql);
-            const okCat = !filters.category || c.category === filters.category;
-            const okLvl = !filters.level || c.level === filters.level;
-            const okSt = !filters.status || c.status === filters.status;
-            return okQ && okCat && okLvl && okSt;
-          });
-          
-          setItems(filtered.map((x) => ({ ...x })));
-        } else {
-          const { data } = await api.get("/courses", {
-            params: { q, ...filters },
-            cancelToken: new axios.CancelToken((c) => (cancel = c)),
-          });
-          setItems(Array.isArray(data) ? data : data?.items ?? []);
-        }
+        const { data } = await api.get("/courses", {
+          params: { q, ...filters },
+          cancelToken: new axios.CancelToken((c) => (cancel = c)),
+        });
+        setItems(Array.isArray(data) ? data : data?.items ?? []);
       } catch (e) {
         if (!axios.isCancel(e)) setErr("Failed to load courses.");
       } finally {
@@ -214,24 +116,6 @@ function AdminCourses() {
   };
 
   const openEdit = async (id) => {
-    if (USE_MOCK) {
-      const src = [...items, ...MOCK_ADMIN_COURSES];
-      const data = src.find((c) => (c.id ?? c._id) === id);
-      if (!data) return alert("Not found");
-      setEditId(id);
-      setForm({
-        title: data.title ?? "",
-        category: data.category ?? "",
-        level: data.level ?? "",
-        duration: data.duration ?? "",
-        instructor: data.instructor ?? "",
-        status: data.status ?? "Draft",
-        price: data.price ?? "",
-        description: data.description ?? "",
-      });
-      setOpen(true);
-      return;
-    }
     try {
       setLoading(true);
       const { data } = await api.get(`/courses/${id}`);
@@ -256,10 +140,6 @@ function AdminCourses() {
 
   const onDelete = async (id) => {
     if (!confirm("Delete this course?")) return;
-    if (USE_MOCK) {
-      setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
-      return;
-    }
     const prev = items;
     setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
     try {
@@ -272,19 +152,6 @@ function AdminCourses() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (USE_MOCK) {
-      if (editId == null) {
-        const newItem = { id: `mock-${Date.now()}`, ...form };
-        setItems((arr) => [newItem, ...arr]);
-      } else {
-        setItems((arr) =>
-          arr.map((x) => ((x.id ?? x._id) === editId ? { ...(x.id ? { id: x.id } : { _id: x._id }), ...form } : x))
-        );
-      }
-      setOpen(false);
-      return;
-    }
-
     try {
       if (editId == null) {
         const { data } = await api.post("/courses", form);
@@ -337,7 +204,7 @@ function AdminCourses() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={`Search by title… ${USE_MOCK ? "(mock)" : ""}`}
+            placeholder="Search by title…"
             className="w-full md:max-w-sm rounded-xl bg-white px-3 py-2 outline-none focus:ring-2"
             style={ringStyle}
           />
@@ -509,9 +376,7 @@ function AdminCourses() {
                 <input
                   type="number"
                   value={form.price}
-                  onChange={(e) =>
-                    setForm({ ...form, price: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
                   className="w-full rounded-xl px-3 py-2 outline-none focus:ring-2"
                   style={ringStyle}
                 />
@@ -581,27 +446,11 @@ function FreelancerCourses() {
       try {
         setLoading(true);
         setErr("");
-
-        if (USE_MOCK) {
-          const ql = q.trim().toLowerCase();
-          const filtered = MOCK_FREELANCER_COURSES.filter((c) => {
-            const okQ =
-              !ql ||
-              c.title.toLowerCase().includes(ql) ||
-              (c.description || "").toLowerCase().includes(ql) ||
-              (c.instructor || "").toLowerCase().includes(ql);
-            const okCat = !filters.category || c.category === filters.category;
-            const okLvl = !filters.level || c.level === filters.level;
-            return okQ && okCat && okLvl;
-          });
-          setItems(filtered.map((x) => ({ ...x })));
-        } else {
-          const { data } = await api.get("/courses", {
-            params: { q, ...filters },
-            cancelToken: new axios.CancelToken((c) => (cancel = c)),
-          });
-          setItems(Array.isArray(data) ? data : data?.items ?? []);
-        }
+        const { data } = await api.get("/courses", {
+          params: { q, ...filters },
+          cancelToken: new axios.CancelToken((c) => (cancel = c)),
+        });
+        setItems(Array.isArray(data) ? data : data?.items ?? []);
       } catch (e) {
         if (!axios.isCancel(e)) setErr("Failed to load courses.");
       } finally {
@@ -648,11 +497,11 @@ function FreelancerCourses() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={`Search course title… ${USE_MOCK ? "(mock)" : ""}`}
+            placeholder="Search course title…"
             className="w-full md:max-w-sm rounded-xl bg-white px-3 py-2 outline-none focus:ring-2"
             style={ringStyle}
           />
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <Select
               value={filters.category}
               placeholder="Category"

@@ -2,10 +2,10 @@ import pool from "../models/db.js";
 
 export const requireVerified = async (req, res, next) => {
   try {
-    const user_id = req.token?.userId;
-    const role_id = req.token?.role;
+    const freelancerId = req.token?.userId;
+    const roleId = req.token?.role;
 
-    if (!user_id || !role_id) {
+    if (!freelancerId || !roleId) {
       return res.status(401).json({ success: false, message: "غير مصرح" });
     }
 
@@ -13,19 +13,20 @@ export const requireVerified = async (req, res, next) => {
     if (
       req.method === "DELETE" &&
       req.path === "/users/freelancers/portfolio/delete" &&
-      role_id === 3
+      roleId === 3
     ) {
       return next();
     }
 
-    // ✅ التحقق من وجود اشتراك نشط
+    // ✅ التحقق من وجود اشتراك نشط ومفعل (start_date موجود و end_date بعد اليوم)
     const subscriptionQuery = await pool.query(
-      `SELECT id FROM subscriptions 
-       WHERE user_id = $1 
+      `SELECT id, start_date, end_date FROM subscriptions 
+       WHERE freelancer_id = $1
          AND status = 'active'
-         AND (expires_at IS NULL OR expires_at > NOW()) 
+         AND start_date IS NOT NULL
+         AND end_date >= NOW()
        LIMIT 1`,
-      [user_id]
+      [freelancerId]
     );
 
     if (subscriptionQuery.rows.length === 0) {
@@ -35,7 +36,6 @@ export const requireVerified = async (req, res, next) => {
       });
     }
 
-    // ✅ إذا عنده اشتراك نشط، نسمح له
     next();
   } catch (error) {
     console.error("requireVerified error:", error);

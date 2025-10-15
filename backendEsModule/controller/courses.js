@@ -1,5 +1,5 @@
-// controller/course.js
 import pool from "../models/db.js";
+import { NotificationCreators } from "../services/notificationService.js";
 
 
 /* -------------------- Courses -------------------- */
@@ -228,9 +228,10 @@ export const adminEnrollFreelancer = async (req, res) => {
     }
 
     // Check course exists
-    const courseCheck = await pool.query("SELECT * FROM courses WHERE id = $1 AND is_deleted = FALSE", [course_id]);
+    const courseCheck = await pool.query("SELECT title FROM courses WHERE id = $1 AND is_deleted = FALSE", [course_id]);
     if (courseCheck.rows.length === 0)
       return res.status(404).json({ success: false, message: "Course not found" });
+    const courseTitle = courseCheck.rows[0].title;
 
     // Check duplicate enrollment
     const exists = await pool.query(
@@ -245,11 +246,19 @@ export const adminEnrollFreelancer = async (req, res) => {
       "INSERT INTO course_enrollments (freelancer_id, course_id, progress) VALUES ($1, $2, 0) RETURNING *",
       [freelancer_id, course_id]
     );
+    const newEnrollment = result.rows[0];
+
+    // ✨ NOTIFICATION INTEGRATION: Notify the freelancer that an admin has enrolled them in a course.
+    try {
+      await NotificationCreators.courseEnrolled(freelancer_id, course_id, courseTitle);
+    } catch (notificationError) {
+      console.error(`Failed to create course enrollment notification for freelancer ${freelancer_id}:`, notificationError);
+    }
 
     return res.status(201).json({ 
       success: true, 
       message: "Freelancer enrolled successfully", 
-      enrollment: result.rows[0] 
+      enrollment: newEnrollment
     });
   } catch (error) {
     console.error("Admin enrollment error:", error);

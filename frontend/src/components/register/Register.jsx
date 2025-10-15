@@ -86,7 +86,7 @@ const Register = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/courses/categories")
+      .get("api/category")
       .then((response) => {
         setCategories(response.data.categories || []);
       })
@@ -123,13 +123,13 @@ const Register = () => {
     }
 
     axios
-      .post("http://localhost:5000/users/register", userData)
+      .post("/api/users/register", userData)
       .then((result) => {
         setStatus(true);
         setMessage(result.data.message || "Registration successful");
 
         axios
-          .post("http://localhost:5000/users/login", { email, password })
+          .post("/api/users/login", { email, password })
           .then((res) => {
             dispatch(
               setLogin({
