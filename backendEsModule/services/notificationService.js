@@ -1,890 +1,287 @@
-// services/notificationService.js
-
 import pool from "../models/db.js";
 
-// Notification types enum
-const NOTIFICATION_TYPES = {
+
+export const NOTIFICATION_TYPES = {
+  // Project & Offer Lifecycle
   PROJECT_CREATED: "project_created",
   OFFER_SUBMITTED: "offer_submitted",
   OFFER_APPROVED: "offer_approved",
   OFFER_REJECTED: "offer_rejected",
-  WORK_COMPLETION_REQUESTED: "work_completion_requested",
-  PAYMENT_RELEASED: "payment_released",
   FREELANCER_ASSIGNED: "freelancer_assigned",
   FREELANCER_REMOVED: "freelancer_removed",
   PROJECT_STATUS_CHANGED: "project_status_changed",
-  ASSIGNMENT_STATUS_CHANGED: "assignment_status_changed",
+
+  // Work & Payment Lifecycle
+  WORK_SUBMITTED: "work_submitted",
+  WORK_APPROVED: "work_approved",
+  WORK_REVISION_REQUESTED: "work_revision_requested",
   ESCROW_CREATED: "escrow_created",
   ESCROW_RELEASED: "escrow_released",
-  USER_REGISTERED: "user_registered",
-  USER_VERIFIED: "user_verified",
-  COURSE_ENROLLED: "course_enrolled",
-  APPOINTMENT_SCHEDULED: "appointment_scheduled",
-  APPOINTMENT_CANCELLED: "appointment_cancelled",
-  REVIEW_SUBMITTED: "review_submitted",
-  MESSAGE_RECEIVED: "message_received",
+  PAYMENT_RELEASED: "payment_released",
+  PAYMENT_APPROVED: "payment_approved",
+  PAYMENT_REJECTED: "payment_rejected",
+  PAYMENT_PENDING: "payment_pending", // For notifying admins
+
+  // Task Lifecycle
   TASK_REQUESTED: "task_requested",
   TASK_REQUEST_ACCEPTED: "task_request_accepted",
   TASK_REQUEST_REJECTED: "task_request_rejected",
   TASK_COMPLETED: "task_completed",
-  WORK_SUBMITTED: "work_submitted", // NEW: Freelancer submits work
-};
+  TASK_NEEDS_APPROVAL: "task_needs_approval",
 
-// Role-based notification rules
-const ROLE_NOTIFICATIONS = {
-  1: [ // Admin (role_id = 1) - Receives ALL
-    'project_created',
-    'offer_submitted',
-    'offer_approved',
-    'offer_rejected',
-    'work_completion_requested',
-    'payment_released',
-    'freelancer_assigned',
-    'freelancer_removed',
-    'project_status_changed',
-    'assignment_status_changed',
-    'escrow_created',
-    'escrow_released',
-    'user_registered',
-    'user_verified',
-    'course_enrolled',
-    'appointment_scheduled',
-    'appointment_cancelled',
-    'review_submitted',
-    'message_received',
-    'task_requested',
-    'task_request_accepted',
-    'task_request_rejected',
-    'task_completed',
-    'work_submitted'
-  ],
-  2: [ // Client (role_id = 2)
-    'user_registered',           // Welcome after signup
-    'message_received',          // When get chat
-    'offer_submitted',           // When receive offer on their project
-    'work_submitted',            // When freelancer submits work
-    'task_request_accepted',     // When freelancer accepts task request
-    'task_request_rejected'      // When freelancer rejects task request
-  ],
-  3: [ // Freelancer (role_id = 3)
-    'project_created',           // When new project posted in their category
-    'task_requested',            // When client requests their task
-    'task_request_accepted',     // When client accepts their request
-    'task_request_rejected',     // When client rejects their request
-    'task_completed',            // When client marks task as completed
-    'offer_approved',            // When their offer is approved
-    'offer_rejected',            // When their offer is rejected
-    'freelancer_assigned',       // When assigned to a project
-    'freelancer_removed',        // When removed from a project
-    'work_completion_requested', // When client requests work completion
-    'payment_released',          // When payment is released
-    'message_received',          // When they get a chat message
-    'appointment_scheduled',     // When appointment is booked
-    'appointment_cancelled',     // When appointment is cancelled
-    'course_enrolled',           // When admin gives access to course
-    'review_submitted'           // When client submits review
-  ]
+  // User & System Lifecycle
+  USER_REGISTERED: "user_registered",
+  USER_VERIFIED: "user_verified",
+  USER_VERIFICATION_REJECTED: "user_verification_rejected",
+  REVIEW_SUBMITTED: "review_submitted",
+  MESSAGE_RECEIVED: "message_received",
+  APPOINTMENT_SCHEDULED: "appointment_scheduled",
+  APPOINTMENT_CANCELLED: "appointment_cancelled",
+  APPOINTMENT_REQUESTED: "appointment_requested",
+  APPOINTMENT_RESCHEDULED: "appointment_rescheduled",
+  APPOINTMENT_COMPLETED: "appointment_completed",
+  COURSE_ENROLLED: "course_enrolled",
+  SUBSCRIPTION_STATUS_CHANGED: "subscription_status_changed",
+  SYSTEM_ANNOUNCEMENT: "system_announcement",
 };
 
 /**
- * Create a notification for a single user (role-based filtering)
+ * Role-based rules engine. This is the "brain" that decides which user role
+ * is allowed to receive which type of notification.
  */
-const createNotification = async (
-  userId,
-  type,
-  message,
-  relatedEntityId = null,
-  entityType = null
-) => {
-  try {
-    // Get user's role
-    const { rows: userRows } = await pool.query(
-      `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
-      [userId]
-    );
+const ROLE_NOTIFICATIONS = {
+  1: Object.values(NOTIFICATION_TYPES), // Admin (role_id = 1) receives all notifications.
+  2: [ /* Client */
+    NOTIFICATION_TYPES.USER_REGISTERED, NOTIFICATION_TYPES.MESSAGE_RECEIVED, NOTIFICATION_TYPES.OFFER_SUBMITTED,
+    NOTIFICATION_TYPES.WORK_SUBMITTED, NOTIFICATION_TYPES.TASK_REQUEST_ACCEPTED, NOTIFICATION_TYPES.TASK_REQUEST_REJECTED,
+    NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED, NOTIFICATION_TYPES.WORK_APPROVED, NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
+    NOTIFICATION_TYPES.PAYMENT_APPROVED, NOTIFICATION_TYPES.PAYMENT_REJECTED,
+  ],
+  3: [ /* Freelancer */
+    NOTIFICATION_TYPES.PROJECT_CREATED, NOTIFICATION_TYPES.TASK_REQUESTED, NOTIFICATION_TYPES.OFFER_APPROVED,
+    NOTIFICATION_TYPES.OFFER_REJECTED, NOTIFICATION_TYPES.FREELANCER_ASSIGNED, NOTIFICATION_TYPES.FREELANCER_REMOVED,
+    NOTIFICATION_TYPES.WORK_REVISION_REQUESTED, NOTIFICATION_TYPES.PAYMENT_RELEASED, NOTIFICATION_TYPES.MESSAGE_RECEIVED,
+    NOTIFICATION_TYPES.APPOINTMENT_SCHEDULED, NOTIFICATION_TYPES.APPOINTMENT_CANCELLED, NOTIFICATION_TYPES.COURSE_ENROLLED,
+    NOTIFICATION_TYPES.REVIEW_SUBMITTED, NOTIFICATION_TYPES.TASK_COMPLETED, NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
+    NOTIFICATION_TYPES.USER_VERIFIED, NOTIFICATION_TYPES.USER_VERIFICATION_REJECTED, NOTIFICATION_TYPES.PAYMENT_APPROVED,
+    NOTIFICATION_TYPES.PAYMENT_REJECTED, NOTIFICATION_TYPES.APPOINTMENT_REQUESTED, NOTIFICATION_TYPES.APPOINTMENT_RESCHEDULED,
+    NOTIFICATION_TYPES.APPOINTMENT_COMPLETED, NOTIFICATION_TYPES.SUBSCRIPTION_STATUS_CHANGED,
+  ],
+};
 
-    if (!userRows.length) return null; // User not found or deleted
+// =================================================================
+// CORE & HELPER FUNCTIONS
+// =================================================================
+
+export const createNotification = async (userId, type, message, relatedEntityId = null, entityType = null) => {
+  try {
+    const { rows: userRows } = await pool.query(`SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`, [userId]);
+    if (!userRows.length) return null;
 
     const roleId = userRows[0].role_id;
-
-    // Check if this notification type is allowed for this role
-    const allowedTypes = ROLE_NOTIFICATIONS[roleId] || [];
-    if (!allowedTypes.includes(type)) {
-      return null; // Skip notification for this role
+    if (!(ROLE_NOTIFICATIONS[roleId] || []).includes(type)) {
+      return null;
     }
 
-    const query = `
-      INSERT INTO notifications (user_id, type, message, related_entity_id, entity_type, read_status, created_at)
-      VALUES ($1, $2, $3, $4, $5, false, CURRENT_TIMESTAMP)
-      RETURNING *
-    `;
-
-    const { rows } = await pool.query(query, [
-      userId,
-      type,
-      message,
-      relatedEntityId,
-      entityType,
-    ]);
-
+    const { rows } = await pool.query(
+      `INSERT INTO notifications (user_id, type, message, related_entity_id, entity_type) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [userId, type, message, relatedEntityId, entityType]
+    );
     return rows[0];
   } catch (error) {
-    console.error("Error creating notification:", error);
+    console.error(`Error in createNotification for user ${userId}:`, error);
     throw error;
   }
 };
 
-/**
- * Create notifications for multiple users (role-based filtering)
- */
-const createBulkNotifications = async (
-  userIds,
-  type,
-  message,
-  relatedEntityId = null,
-  entityType = null
-) => {
-  try {
-    if (!userIds || userIds.length === 0) return [];
-
-    const notifications = [];
-    for (const userId of userIds) {
-      try {
-        const notification = await createNotification(
-          userId,
-          type,
-          message,
-          relatedEntityId,
-          entityType
-        );
-        
-        if (notification) { // Only add if notification was created
-          notifications.push(notification);
-        }
-      } catch (error) {
-        console.error(
-          `Failed to create notification for user ${userId}:`,
-          error
-        );
-        // Continue with other users even if one fails
-      }
-    }
-
-    return notifications;
-  } catch (error) {
-    console.error("Error creating bulk notifications:", error);
-    throw error;
-  }
+export const createBulkNotifications = async (userIds, type, message, relatedEntityId = null, entityType = null) => {
+  if (!Array.isArray(userIds) || userIds.length === 0) return [];
+  const promises = userIds.map(id => createNotification(id, type, message, relatedEntityId, entityType).catch(e => {
+    console.error(`Failed to create notification for user ${id} in bulk operation:`, e);
+    return null;
+  }));
+  const results = await Promise.all(promises);
+  return results.filter(Boolean);
 };
 
-/**
- * Get notifications for a specific user
- */
-const getUserNotifications = async (
-  userId,
-  limit = 50,
-  offset = 0,
-  unreadOnly = false
-) => {
-  try {
-    let query = `
-      SELECT * FROM notifications 
-      WHERE user_id = $1
-    `;
+const getAdmins = async () => (await pool.query(`SELECT id FROM users WHERE role_id = 1 AND is_deleted = false`)).rows.map(r => r.id);
+const getProjectClient = async (projectId) => (await pool.query(`SELECT user_id FROM projects WHERE id = $1`, [projectId])).rows[0]?.user_id || null;
+const getFreelancersByCategory = async (categoryId) => (await pool.query(`SELECT u.id FROM users u JOIN freelancer_categories fc ON u.id = fc.freelancer_id WHERE u.role_id = 3 AND fc.category_id = $1 AND u.is_deleted = false`, [categoryId])).rows.map(r => r.id);
 
-    const params = [userId];
-    let paramIndex = 2;
+// =================================================================
+// NOTIFICATION CREATORS (The Public API of this Service)
+// =================================================================
 
-    if (unreadOnly) {
-      query += ` AND read_status = false`;
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${
-      paramIndex + 1
-    }`;
-    params.push(limit, offset);
-
-    const { rows } = await pool.query(query, params);
-    return rows;
-  } catch (error) {
-    console.error("Error getting user notifications:", error);
-    throw error;
-  }
-};
-
-/**
- * Mark notification as read
- */
-const markNotificationAsRead = async (notificationId, userId) => {
-  try {
-    const query = `
-      UPDATE notifications 
-      SET read_status = true 
-      WHERE id = $1 AND user_id = $2
-      RETURNING id
-    `;
-
-    const { rows } = await pool.query(query, [notificationId, userId]);
-    return rows.length > 0;
-  } catch (error) {
-    console.error("Error marking notification as read:", error);
-    throw error;
-  }
-};
-
-/**
- * Mark all notifications as read for a user
- */
-const markAllNotificationsAsRead = async (userId) => {
-  try {
-    const query = `
-      UPDATE notifications 
-      SET read_status = true 
-      WHERE user_id = $1 AND read_status = false
-      RETURNING id
-    `;
-
-    const { rows } = await pool.query(query, [userId]);
-    return rows.length;
-  } catch (error) {
-    console.error("Error marking all notifications as read:", error);
-    throw error;
-  }
-};
-
-/**
- * Delete old notifications (cleanup utility)
- */
-const cleanupOldNotifications = async (daysOld = 90) => {
-  try {
-    const query = `
-      DELETE FROM notifications 
-      WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '${daysOld} days'
-      AND read_status = true
-    `;
-
-    const { rowCount } = await pool.query(query);
-    return rowCount;
-  } catch (error) {
-    console.error("Error cleaning up old notifications:", error);
-    throw error;
-  }
-};
-
-/**
- * Get notification count for a user
- */
-const getNotificationCount = async (userId, unreadOnly = false) => {
-  try {
-    let query = `
-      SELECT COUNT(*) as count FROM notifications 
-      WHERE user_id = $1
-    `;
-
-    const params = [userId];
-
-    if (unreadOnly) {
-      query += ` AND read_status = false`;
-    }
-
-    const { rows } = await pool.query(query, params);
-    return parseInt(rows[0].count);
-  } catch (error) {
-    console.error("Error getting notification count:", error);
-    throw error;
-  }
-};
-
-/**
- * Get freelancers by category (using your exact table structure)
- */
-const getFreelancersByCategory = async (categoryId) => {
-  try {
-    const { rows } = await pool.query(
-      `
-      SELECT u.id 
-      FROM users u
-      JOIN freelancer_categories fc 
-        ON u.id = fc.freelancer_id
-      WHERE u.role_id = 3  -- Freelancer role
-        AND fc.category_id = $1
-        AND u.is_deleted = false
-      `,
-      [categoryId]
-    );
-    
-    // Return array of freelancer IDs
-    return rows.map(row => row.id);
-  } catch (error) {
-    console.error("Error fetching freelancers by category:", error);
-    throw error;
-  }
-};
-
-/**
- * Get client of a project (helper function)
- */
-const getProjectClient = async (projectId) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT client_id FROM projects WHERE id = $1`,
-      [projectId]
-    );
-    return rows[0]?.client_id || null;
-  } catch (error) {
-    console.error("Error fetching project client:", error);
-    throw error;
-  }
-};
-
-/**
- * Get client of a task (helper function)
- */
-const getTaskClient = async (taskId) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT p.client_id 
-       FROM tasks t
-       JOIN projects p ON t.project_id = p.id
-       WHERE t.id = $1`,
-      [taskId]
-    );
-    return rows[0]?.client_id || null;
-  } catch (error) {
-    console.error("Error fetching task client:", error);
-    throw error;
-  }
-};
-
-// Specific notification creators
-const NotificationCreators = {
-  /**
-   * Notify freelancers when a new project is created (category-based)
-   */
-  projectCreated: async (projectId, projectTitle, clientId, categoryId) => {
-    try {
-      // Get freelancers who have this category
-      const freelancerIds = await getFreelancersByCategory(categoryId);
-      
-      if (freelancerIds.length === 0) return [];
-
-      const message = `New project "${projectTitle}" has been posted in your category`;
-
-      return await createBulkNotifications(
-        freelancerIds,
-        NOTIFICATION_TYPES.PROJECT_CREATED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating project created notifications:", error);
-      throw error;
-    }
+export const NotificationCreators = {
+  // --- Project & Offer Lifecycle ---
+  projectCreated: async (projectId, projectTitle, categoryId) => {
+    const freelancerIds = await getFreelancersByCategory(categoryId);
+    const adminIds = await getAdmins();
+    const message = `New project posted: "${projectTitle}"`;
+    await createBulkNotifications([...new Set([...freelancerIds, ...adminIds])], NOTIFICATION_TYPES.PROJECT_CREATED, message, projectId, "project");
+  },
+  offerSubmitted: async (offerId, projectId, projectTitle, freelancerName) => {
+    const clientId = await getProjectClient(projectId);
+    const adminIds = await getAdmins();
+    const message = `You received a new offer from ${freelancerName} for "${projectTitle}".`;
+    await createBulkNotifications([...new Set([clientId, ...adminIds].filter(Boolean))], NOTIFICATION_TYPES.OFFER_SUBMITTED, message, offerId, "offer");
+  },
+  offerStatusChanged: async (offerId, projectTitle, freelancerId, isApproved) => {
+    const type = isApproved ? NOTIFICATION_TYPES.OFFER_APPROVED : NOTIFICATION_TYPES.OFFER_REJECTED;
+    const message = isApproved ? `Congratulations! Your offer for "${projectTitle}" has been approved.` : `Your offer for "${projectTitle}" was not accepted.`;
+    await createNotification(freelancerId, type, message, offerId, "offer");
+  },
+  freelancerAssignmentChanged: async (projectId, projectTitle, freelancerId, isAssigned) => {
+    const type = isAssigned ? NOTIFICATION_TYPES.FREELANCER_ASSIGNED : NOTIFICATION_TYPES.FREELANCER_REMOVED;
+    const message = isAssigned ? `You have been assigned to the project: "${projectTitle}".` : `You have been removed from the project: "${projectTitle}".`;
+    await createNotification(freelancerId, type, message, projectId, "project");
+  },
+  projectStatusChanged: async (projectId, projectTitle, userId, oldStatus, newStatus) => {
+    const message = `The status of your project "${projectTitle}" has been updated from ${oldStatus} to ${newStatus}.`;
+    await createNotification(userId, NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED, message, projectId, "project");
   },
 
-  /**
-   * Notify client when freelancer submits work on project/task
-   */
-  workSubmitted: async (projectId, taskId, freelancerId, clientIds = null) => {
-    try {
-      let clientIdsArray = clientIds;
-      
-      // If clientIds not provided, get from project
-      if (!clientIdsArray) {
-        if (taskId) {
-          const clientId = await getTaskClient(taskId);
-          if (clientId) clientIdsArray = [clientId];
-        } else if (projectId) {
-          const clientId = await getProjectClient(projectId);
-          if (clientId) clientIdsArray = [clientId];
-        }
-      }
-
-      if (!clientIdsArray || clientIdsArray.length === 0) return [];
-
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId || taskId ? await getTaskClient(taskId) : null]
-      );
-
-      if (projectRows.length === 0) return [];
-
-      const projectTitle = projectRows[0].title;
-      const message = `Freelancer has submitted work for project "${projectTitle}"`;
-
-      return await createBulkNotifications(
-        clientIdsArray,
-        NOTIFICATION_TYPES.WORK_SUBMITTED,
-        message,
-        projectId || taskId,
-        taskId ? "task" : "project"
-      );
-    } catch (error) {
-      console.error("Error creating work submitted notification:", error);
-      throw error;
-    }
+  // --- Work & Payment Lifecycle ---
+  workSubmitted: async (projectId, projectTitle, freelancerName) => {
+    const clientId = await getProjectClient(projectId);
+    const message = `${freelancerName} has submitted work for your project "${projectTitle}".`;
+    await createNotification(clientId, NOTIFICATION_TYPES.WORK_SUBMITTED, message, projectId, "project");
+  },
+  workStatusChanged: async (projectId, projectTitle, freelancerId, isApproved) => {
+    const type = isApproved ? NOTIFICATION_TYPES.WORK_APPROVED : NOTIFICATION_TYPES.WORK_REVISION_REQUESTED;
+    const message = isApproved ? `The work for "${projectTitle}" has been approved by the client.` : `The client has requested revisions for your work on "${projectTitle}".`;
+    await createNotification(freelancerId, type, message, projectId, "project");
+  },
+  escrowFunded: async (projectId, projectTitle, freelancerId, amount) => {
+    const message = `The client has funded the escrow with $${amount.toFixed(2)} for project "${projectTitle}".`;
+    await createNotification(freelancerId, NOTIFICATION_TYPES.ESCROW_CREATED, message, projectId, "project");
+  },
+  paymentReleased: async (projectId, projectTitle, freelancerId, amount) => {
+    const message = `Payment of $${amount.toFixed(2)} has been released for your work on "${projectTitle}".`;
+    await createNotification(freelancerId, NOTIFICATION_TYPES.PAYMENT_RELEASED, message, projectId, "project");
+  },
+  paymentApproved: async (paymentId, projectId, userId, amount) => {
+    const message = `Your payment of $${amount.toFixed(2)} has been approved.`;
+    await createNotification(userId, NOTIFICATION_TYPES.PAYMENT_APPROVED, message, paymentId, "payment");
+  },
+  paymentRejected: async (paymentId, projectId, userId) => {
+    const message = `Your recent payment submission was rejected. Please check the details and resubmit.`;
+    await createNotification(userId, NOTIFICATION_TYPES.PAYMENT_REJECTED, message, paymentId, "payment");
+  },
+  planPaymentSubmitted: async (paymentId, freelancerName, amount) => {
+    const adminIds = await getAdmins();
+    const message = `${freelancerName} has submitted proof for a plan payment of $${amount.toFixed(2)}.`;
+    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.PAYMENT_PENDING, message, paymentId, "payment");
+  },
+  projectPaymentSubmitted: async (paymentId, projectTitle, clientName, amount) => {
+    const adminIds = await getAdmins();
+    const message = `${clientName} has submitted proof for a project payment of $${amount.toFixed(2)} for "${projectTitle}".`;
+    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.PAYMENT_PENDING, message, paymentId, "payment");
   },
 
-  /**
-   * Notify when an offer is submitted
-   */
-  offerSubmitted: async (offerId, projectId, freelancerId, clientId) => {
-    try {
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId]
-      );
-
-      if (projectRows.length === 0) return;
-
-      const projectTitle = projectRows[0].title;
-      const message = `New offer submitted for project "${projectTitle}"`;
-
-      return await createNotification(
-        clientId,
-        NOTIFICATION_TYPES.OFFER_SUBMITTED,
-        message,
-        offerId,
-        "offer"
-      );
-    } catch (error) {
-      console.error("Error creating offer submitted notification:", error);
-      throw error;
-    }
+  // --- Task Lifecycle ---
+  taskNeedsApproval: async (taskId, taskTitle, freelancerName) => {
+    const adminIds = await getAdmins();
+    const message = `New task "${taskTitle}" from ${freelancerName} is pending approval.`;
+    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.TASK_NEEDS_APPROVAL, message, taskId, "task");
+  },
+  taskRequested: async (taskId, taskTitle, freelancerId) => {
+    const message = `A client has requested your task: "${taskTitle}".`;
+    await createNotification(freelancerId, NOTIFICATION_TYPES.TASK_REQUESTED, message, taskId, "task");
+  },
+  taskRequestStatusChanged: async (requestId, taskTitle, clientId, isAccepted) => {
+    const type = isAccepted ? NOTIFICATION_TYPES.TASK_REQUEST_ACCEPTED : NOTIFICATION_TYPES.TASK_REQUEST_REJECTED;
+    const message = isAccepted ? `Your request for the task "${taskTitle}" has been accepted!` : `Your request for the task "${taskTitle}" was rejected.`;
+    await createNotification(clientId, type, message, requestId, "task_request");
+  },
+  taskCompleted: async (taskId, taskTitle, recipientId) => {
+    const message = `The task "${taskTitle}" has been marked as completed.`;
+    await createNotification(recipientId, NOTIFICATION_TYPES.TASK_COMPLETED, message, taskId, "task");
   },
 
-  /**
-   * Notify when an offer is approved/rejected
-   */
-  offerStatusChanged: async (
-    offerId,
-    projectId,
-    freelancerId,
-    clientId,
-    isApproved
-  ) => {
-    try {
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId]
-      );
-
-      if (projectRows.length === 0) return;
-
-      const projectTitle = projectRows[0].title;
-      const type = isApproved
-        ? NOTIFICATION_TYPES.OFFER_APPROVED
-        : NOTIFICATION_TYPES.OFFER_REJECTED;
-      const message = isApproved
-        ? `Your offer for project "${projectTitle}" has been approved!`
-        : `Your offer for project "${projectTitle}" has been rejected.`;
-
-      return await createNotification(
-        freelancerId,
-        type,
-        message,
-        offerId,
-        "offer"
-      );
-    } catch (error) {
-      console.error("Error creating offer status change notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when work completion is requested
-   */
-  workCompletionRequested: async (projectId, freelancerId, clientId) => {
-    try {
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId]
-      );
-
-      if (projectRows.length === 0) return;
-
-      const projectTitle = projectRows[0].title;
-      const message = `Work completion requested for project "${projectTitle}"`;
-
-      return await createNotification(
-        clientId,
-        NOTIFICATION_TYPES.WORK_COMPLETION_REQUESTED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating work completion notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when payment is released
-   */
-  paymentReleased: async (projectId, freelancerId, clientId, amount) => {
-    try {
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId]
-      );
-
-      if (projectRows.length === 0) return;
-
-      const projectTitle = projectRows[0].title;
-      const message = `Payment of $${amount} has been released for project "${projectTitle}"`;
-
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.PAYMENT_RELEASED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating payment released notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when freelancer is assigned/removed
-   */
-  freelancerAssignmentChanged: async (
-    projectId,
-    freelancerId,
-    clientId,
-    isAssigned
-  ) => {
-    try {
-      const { rows: projectRows } = await pool.query(
-        `SELECT title FROM projects WHERE id = $1`,
-        [projectId]
-      );
-
-      if (projectRows.length === 0) return;
-
-      const projectTitle = projectRows[0].title;
-      const type = isAssigned
-        ? NOTIFICATION_TYPES.FREELANCER_ASSIGNED
-        : NOTIFICATION_TYPES.FREELANCER_REMOVED;
-      const message = isAssigned
-        ? `You have been assigned to project "${projectTitle}"`
-        : `You have been removed from project "${projectTitle}"`;
-
-      return await createNotification(
-        freelancerId,
-        type,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error(
-        "Error creating freelancer assignment notification:",
-        error
-      );
-      throw error;
-    }
-  },
-
-  /**
-   * Notify freelancer when their task is requested
-   */
-  taskRequested: async (taskId, clientId, freelancerId, taskTitle) => {
-    try {
-      const message = `Your task "${taskTitle}" has been requested by a client.`;
-      
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.TASK_REQUESTED,
-        message,
-        taskId,
-        "task"
-      );
-    } catch (error) {
-      console.error("Error creating task requested notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify client when freelancer accepts or rejects their request
-   */
-  taskRequestStatusChanged: async (requestId, clientId, taskTitle, isAccepted) => {
-    try {
-      const message = isAccepted
-        ? `Your request for the task "${taskTitle}" has been accepted!`
-        : `Your request for the task "${taskTitle}" was rejected.`;
-
-      const type = isAccepted
-        ? NOTIFICATION_TYPES.TASK_REQUEST_ACCEPTED
-        : NOTIFICATION_TYPES.TASK_REQUEST_REJECTED;
-
-      return await createNotification(
-        clientId,
-        type,
-        message,
-        requestId,
-        "task_request"
-      );
-    } catch (error) {
-      console.error("Error creating task request status notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify freelancer when client marks task as completed
-   */
-  taskCompleted: async (taskId, freelancerId, taskTitle) => {
-    try {
-      const message = `The task "${taskTitle}" has been marked as completed.`;
-      
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.TASK_COMPLETED,
-        message,
-        taskId,
-        "task"
-      );
-    } catch (error) {
-      console.error("Error creating task completed notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when project status changes
-   */
-  projectStatusChanged: async (projectId, projectTitle, clientId, oldStatus, newStatus) => {
-    try {
-      const message = `Project "${projectTitle}" status changed from "${oldStatus}" to "${newStatus}"`;
-
-      return await createNotification(
-        clientId,
-        NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating project status change notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when assignment status changes
-   */
-  assignmentStatusChanged: async (projectId, freelancerId, clientId, oldStatus, newStatus) => {
-    try {
-      const message = `Assignment status changed from "${oldStatus}" to "${newStatus}"`;
-
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.ASSIGNMENT_STATUS_CHANGED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating assignment status change notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when escrow is created
-   */
-  escrowCreated: async (projectId, freelancerId, clientId, amount) => {
-    try {
-      const message = `Escrow account created with $${amount} for project`;
-
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.ESCROW_CREATED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating escrow created notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when escrow is released
-   */
-  escrowReleased: async (projectId, freelancerId, clientId, amount) => {
-    try {
-      const message = `Escrow funds of $${amount} have been released`;
-
-      return await createNotification(
-        freelancerId,
-        NOTIFICATION_TYPES.ESCROW_RELEASED,
-        message,
-        projectId,
-        "project"
-      );
-    } catch (error) {
-      console.error("Error creating escrow released notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when user is registered
-   */
+  // --- User & System Lifecycle ---
   userRegistered: async (userId, userName) => {
-    try {
-      const message = `Welcome, ${userName}! You've successfully registered.`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.USER_REGISTERED,
-        message,
-        userId,
-        "user"
-      );
-    } catch (error) {
-      console.error("Error creating user registered notification:", error);
-      throw error;
-    }
+    await createNotification(userId, NOTIFICATION_TYPES.USER_REGISTERED, `Welcome to the platform, ${userName}!`, userId, "user");
+    const adminIds = await getAdmins();
+    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.USER_REGISTERED, `New user registered: ${userName} (ID: ${userId}).`, userId, "user");
   },
-
-  /**
-   * Notify when user is verified
-   */
   userVerified: async (userId, userName) => {
-    try {
-      const message = `${userName} has been verified!`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.USER_VERIFIED,
-        message,
-        userId,
-        "user"
-      );
-    } catch (error) {
-      console.error("Error creating user verified notification:", error);
-      throw error;
-    }
+    const message = `Congratulations, ${userName}! Your account has been verified.`;
+    await createNotification(userId, NOTIFICATION_TYPES.USER_VERIFIED, message, userId, "user");
   },
-
-  /**
-   * Notify when freelancer enrolls in course
-   */
+  userVerificationRejected: async (userId, reason) => {
+    const message = `Your verification request was not approved. Reason: ${reason}`;
+    await createNotification(userId, NOTIFICATION_TYPES.USER_VERIFICATION_REJECTED, message, userId, "user");
+  },
+  reviewSubmitted: async (reviewId, recipientId, reviewerName) => {
+    const message = `You have received a new review from ${reviewerName}.`;
+    await createNotification(recipientId, NOTIFICATION_TYPES.REVIEW_SUBMITTED, message, reviewId, "review");
+  },
+  messageReceived: async (recipientId, messageId, content) => {
+    const message = `You have a new message: "${content.substring(0, 50)}..."`;
+    await createNotification(recipientId, NOTIFICATION_TYPES.MESSAGE_RECEIVED, message, messageId, "message");
+  },
+  appointmentRequested: async (appointmentId, date, freelancerName) => {
+    const adminIds = await getAdmins();
+    const message = `${freelancerName} has requested an appointment for ${new Date(date).toLocaleString()}.`;
+    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.APPOINTMENT_REQUESTED, message, appointmentId, "appointment");
+  },
+  appointmentStatusChanged: async (appointmentId, recipientId, details, isScheduled) => {
+    const type = isScheduled ? NOTIFICATION_TYPES.APPOINTMENT_SCHEDULED : NOTIFICATION_TYPES.APPOINTMENT_CANCELLED;
+    const message = isScheduled ? `Your appointment ${details} has been scheduled.` : `Your appointment ${details} has been cancelled.`;
+    await createNotification(recipientId, type, message, appointmentId, "appointment");
+  },
+  appointmentRescheduled: async (appointmentId, recipientId, details) => {
+    const message = `Your appointment has been rescheduled. New details: ${details}.`;
+    await createNotification(recipientId, NOTIFICATION_TYPES.APPOINTMENT_RESCHEDULED, message, appointmentId, "appointment");
+  },
+  appointmentCompleted: async (appointmentId, recipientId, details) => {
+    const message = `Your appointment ${details} has been marked as completed.`;
+    await createNotification(recipientId, NOTIFICATION_TYPES.APPOINTMENT_COMPLETED, message, appointmentId, "appointment");
+  },
   courseEnrolled: async (userId, courseId, courseName) => {
-    try {
-      const message = `You've enrolled in "${courseName}"`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.COURSE_ENROLLED,
-        message,
-        courseId,
-        "course"
-      );
-    } catch (error) {
-      console.error("Error creating course enrolled notification:", error);
-      throw error;
-    }
+    const message = `You have been successfully enrolled in the course: "${courseName}".`;
+    await createNotification(userId, NOTIFICATION_TYPES.COURSE_ENROLLED, message, courseId, "course");
   },
-
-  /**
-   * Notify when appointment is scheduled
-   */
-  appointmentScheduled: async (userId, appointmentId, appointmentDetails) => {
-    try {
-      const message = `Appointment scheduled: ${appointmentDetails}`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.APPOINTMENT_SCHEDULED,
-        message,
-        appointmentId,
-        "appointment"
-      );
-    } catch (error) {
-      console.error("Error creating appointment scheduled notification:", error);
-      throw error;
-    }
+  subscriptionStatusChanged: async (subscriptionId, userId, planName, status) => {
+    const message = `Your subscription to the "${planName}" plan is now ${status}.`;
+    await createNotification(userId, NOTIFICATION_TYPES.SUBSCRIPTION_STATUS_CHANGED, message, subscriptionId, "subscription");
   },
-
-  /**
-   * Notify when appointment is cancelled
-   */
-  appointmentCancelled: async (userId, appointmentId, appointmentDetails) => {
-    try {
-      const message = `Appointment cancelled: ${appointmentDetails}`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.APPOINTMENT_CANCELLED,
-        message,
-        appointmentId,
-        "appointment"
-      );
-    } catch (error) {
-      console.error("Error creating appointment cancelled notification:", error);
-      throw error;
+  systemAnnouncement: async (message, userIds = []) => {
+    let recipients = userIds;
+    if (recipients.length === 0) {
+        recipients = (await pool.query(`SELECT id FROM users WHERE is_deleted = false`)).rows.map(r => r.id);
     }
-  },
-
-  /**
-   * Notify when review is submitted
-   */
-  reviewSubmitted: async (userId, reviewId, reviewDetails) => {
-    try {
-      const message = `Review submitted: ${reviewDetails}`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.REVIEW_SUBMITTED,
-        message,
-        reviewId,
-        "review"
-      );
-    } catch (error) {
-      console.error("Error creating review submitted notification:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Notify when message is received
-   */
-  messageReceived: async (userId, messageId, messageContent) => {
-    try {
-      const message = `New message: ${messageContent.substring(0, 50)}...`;
-
-      return await createNotification(
-        userId,
-        NOTIFICATION_TYPES.MESSAGE_RECEIVED,
-        message,
-        messageId,
-        "message"
-      );
-    } catch (error) {
-      console.error("Error creating message received notification:", error);
-      throw error;
-    }
+    await createBulkNotifications(recipients, NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT, message, null, "system");
   },
 };
 
-export {
-  createNotification,
-  createBulkNotifications,
-  getUserNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  cleanupOldNotifications,
-  getNotificationCount,
-  NOTIFICATION_TYPES,
-  NotificationCreators
+// =================================================================
+// DATA ACCESS FUNCTIONS (for use in notificationsController)
+// =================================================================
+
+export const getUserNotifications = async (userId, limit = 50, offset = 0, unreadOnly = false) => {
+  const query = `SELECT * FROM notifications WHERE user_id = $1 ${unreadOnly ? 'AND read_status = false' : ''} ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
+  const { rows } = await pool.query(query, [userId, limit, offset]);
+  return rows;
+};
+
+export const markNotificationAsRead = async (notificationId, userId) => {
+  const { rowCount } = await pool.query(`UPDATE notifications SET read_status = true WHERE id = $1 AND user_id = $2`, [notificationId, userId]);
+  return rowCount > 0;
+};
+
+export const markAllNotificationsAsRead = async (userId) => {
+  const { rowCount } = await pool.query(`UPDATE notifications SET read_status = true WHERE user_id = $1 AND read_status = false`, [userId]);
+  return rowCount;
+};
+
+export const getNotificationCount = async (userId, unreadOnly = true) => {
+  const { rows } = await pool.query(`SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 ${unreadOnly ? 'AND read_status = false' : ''}`, [userId]);
+  return parseInt(rows[0].count, 10);
+};
+
+export const cleanupOldNotifications = async (daysOld = 90) => {
+  const { rowCount } = await pool.query(`DELETE FROM notifications WHERE read_status = true AND created_at < NOW() - INTERVAL '${parseInt(daysOld)} days'`);
+  return rowCount;
 };

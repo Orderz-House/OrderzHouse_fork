@@ -1,23 +1,18 @@
+/**
+ * Payments Router
+ */
 import express from "express";
-import multer from "multer";
 import { authentication } from "../middleware/authentication.js";
 import { requireVerified } from "../middleware/requireVerification.js";
-
 import {
   recordOfflinePayment,
   approveOfflinePayment,
-  submitWorkCompletion,
   releasePayment,
   autoReleasePaymentsCron,
-  recordPlanPayment,
-  approvePlanPayment,
 } from "../controller/payments.js";
 import { getMyFinancialOverview } from "../controller/financial/financialOverview.js";
 
 const paymentsRouter = express.Router();
-
-// Multer setup for file uploads
-const upload = multer({ dest: "uploads/" });
 
 /**
  * -------------------------------
@@ -25,14 +20,14 @@ const upload = multer({ dest: "uploads/" });
  * -------------------------------
  */
 
-// CLIENT: Record offline payment (pending review by admin)
+// CLIENT: Record offline payment
 paymentsRouter.post(
   "/offline/record/:projectId",
   authentication,
   recordOfflinePayment
 );
 
-// ADMIN: Approve or reject offline payment
+// ADMIN: Approve/reject offline payment
 paymentsRouter.post(
   "/offline/approve",
   authentication,
@@ -40,15 +35,7 @@ paymentsRouter.post(
   approveOfflinePayment
 );
 
-// FREELANCER: Submit work completion
-paymentsRouter.post(
-  "/projects/:projectId/submit-completion",
-  authentication,
-  requireVerified,
-  submitWorkCompletion
-);
-
-// CLIENT: Release payment to freelancer (manual)
+// CLIENT: Release payment to freelancer
 paymentsRouter.post(
   "/projects/:projectId/release-payment/:freelancerId",
   authentication,
@@ -58,35 +45,9 @@ paymentsRouter.post(
 
 /**
  * -------------------------------
- * PLAN PAYMENTS
- * -------------------------------
- */
-
-// FREELANCER: Record offline plan payment
-paymentsRouter.post(
-  "/plans/offline/record",
-  authentication,
-  upload.single("planProof"),
-  recordPlanPayment
-);
-
-// ADMIN: Approve or reject plan payment
-paymentsRouter.post(
-  "/plans/offline/approve",
-  authentication,
-  requireVerified,
-  approvePlanPayment
-);
-
-/**
- * -------------------------------
  * FINANCIAL OVERVIEW
  * -------------------------------
  */
-paymentsRouter.get(
-  "/overview",
-  authentication,
-  getMyFinancialOverview
-);
+paymentsRouter.get("/overview", authentication, getMyFinancialOverview);
 
 export default paymentsRouter;

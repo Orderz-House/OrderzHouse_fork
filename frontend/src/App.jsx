@@ -23,35 +23,30 @@ import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
 import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
 import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
-import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
-//import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
-
-import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
-// import { AllFreeLance } from "./components/allFreelance/AllFreeLance";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance"; 
-import NotificationsPage from "./components/profile/NotificationsPage";
+import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
+import NotificationsPage from "./components/notifications/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/Plans.jsx";
-import Dashboard from "./components/User Dashboard/dashboard";
+// import Dashboard from "./components/User Dashboard/ClientDashboard.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
 import FreelancerAppointments from "./components/Appointments/FreelancerAppointments";
-import CreateProject from "./components/createProject/CreateProject";
 import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
 import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
 import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
 import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
-import Blogs from "./components/blogs/Blogs.jsx"
-import BlogPost from "./components/blogs/BlogPost.jsx"
+import Blogs from "./components/blogs/Blogs.jsx";
+import BlogPost from "./components/blogs/BlogPost.jsx";
 import AdminRouter from "./adminDash/routes/index";
 import TasksPool from "./components/tasks/TasksPool";
 import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
+import CreateProjectWizard from "./components/CreateProjects/CreateProjectWizard.jsx";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -82,31 +77,16 @@ function App() {
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   useEffect(() => {
-    if (token && userId) { 
+    if (token && userId) {
       console.log("🔌 Initializing socket in App useEffect...");
       initSocket(token, userId);
     }
 
-    // Cleanup function
     return () => {
       console.log("Disconnecting socket in App useEffect cleanup...");
       disconnectSocket();
     };
-  }, [token, userId]); 
-
-  // Role-based appointments component
-  const RoleBasedAppointments = () => {
-    if (userData?.role_id === 1) return <AdminAppointments />;
-    if (userData?.role_id === 3) return <FreelancerAppointments />;
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">Appointments are only available for admins and freelancers.</p>
-        </div>
-      </div>
-    );
-  };
+  }, [token, userId]);
 
   return (
     <>
@@ -120,6 +100,7 @@ function App() {
       >
         {/* --- Blogs --- */}
         <Route path="/blogs" element={<Blogs />} />
+        <Route path="/blogs/:id" element={<BlogPost />} />
 
         {/* --- Account Suspended --- */}
         <Route path="/account/suspended" element={<AccountSuspended />} />
@@ -134,16 +115,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin-verification" element={<AdminVerificationPage />} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileView/></ProtectedRoute>}/>
         <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/verify-profile" element={<VerifyProfile />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/blogs" element={<Blogs/>}/>
-        <Route path="/blogs/:id" element={<BlogPost />} />
 
         {/* --- Protected Pages --- */}
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/create-project" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+        <Route path="/create-project" element={<ProtectedRoute><CreateProjectWizard /></ProtectedRoute>} />
         <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} />
         <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
@@ -152,33 +130,24 @@ function App() {
         <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><TasksPool /></ProtectedRoute>} />
 
-
-
-        {/* --- Course Management Routes --- */}
+        {/* --- Course Management --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
         <Route path="/access-denied" element={<AccessDenied />} />
         <Route path="/admin/courses" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseManagement /></ProtectedRoute>} />
         <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseAccessControl /></ProtectedRoute>} />
 
-
-        {/* Course Management */}
-        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
-
-        {/* Notifications and Projects */}
+        {/* --- Notifications & Projects --- */}
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
-        <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
 
         {/* --- Appointments --- */}
         <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments userData={userData} /></ProtectedRoute>} />
         <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
         <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
-        
-        {/* Admin Routes */}
-        
+
+        {/* --- Admin / Client / Freelancer Routes --- */}
         <Route
           path="/admin/*"
           element={
@@ -186,7 +155,7 @@ function App() {
               <AdminRouter />
             </ProtectedRoute>
           }
-        />    
+        />
         <Route
           path="/client/*"
           element={
@@ -194,30 +163,32 @@ function App() {
               <AdminRouter />
             </ProtectedRoute>
           }
-        />   
+        />
         <Route
           path="/freelancer/*"
           element={
             <ProtectedRoute allowedRoles={[3]}>
               <AdminRouter />
             </ProtectedRoute>
-          }
+          }
         />
-        
 
-        <Route path="*" element={
-          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">404 - Page Not Found</h2>
-            <p className="text-gray-600 mb-4">The page you are looking for does not exist.</p>
-            <button
-              onClick={() => window.history.back()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Go Back
-            </button>
-          </div>
-        } />
-
+        {/* --- 404 Fallback --- */}
+        <Route
+          path="*"
+          element={
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">404 - Page Not Found</h2>
+              <p className="text-gray-600 mb-4">The page you are looking for does not exist.</p>
+              <button
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          }
+        />
       </Routes>
 
       {!shouldHideNavbar && <EnhancedFooter />}

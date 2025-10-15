@@ -29,49 +29,61 @@ const ProfileView = () => {
   
   const { token, userData: currentUser } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-  const  userId = currentUser.id;
+  const { userId: paramUserId } = useParams();
+  const userId = paramUserId || currentUser.id;
+
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [portfolio,setPortfolio] = useState([]);
+  const [portfolio, setPortfolio] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
+      if (!userId) return;
       try {
         setIsLoading(true);
-        const response = await axios.get(
-          `http://localhost:5000/users/getUserdata`,
-          {
+        // This endpoint should fetch a user's public profile data by their ID.
+        const profileUrl = `http://localhost:5000/users/freelancers/${userId}`;
+        const response = await axios.get(profileUrl, {
             headers: { Authorization: `Bearer ${token}` },
+        } );
+
+        if (response.data && response.data.freelancer) {
+          setProfileData(response.data.freelancer);
+          setIsOwnProfile(currentUser?.id === parseInt(userId));
+
+          if (response.data.freelancer.role_id === 3) {
+            const responsePortfolio = await axios.get(`http://localhost:5000/users/freelancers/${userId}/portfolio`, {
+              headers: { Authorization: `Bearer ${token}` },
+            } );
+            setPortfolio(responsePortfolio.data.portfolios);
           }
-        );
-
-        const responsePortfolio = await axios.get(`http://localhost:5000/users/freelancers/${currentUser.id}/portfolio`,
-            {
-            headers: { Authorization: `Bearer ${token}` },
-            }
-         )
-
-
-        console.log(response);
-        
-        if (response.data && response.data.user) {
-          setProfileData(response.data.user);
-          setIsOwnProfile(currentUser?.id === response.data.user.id);
-          setPortfolio(responsePortfolio.data.portfolios)
         }
-        
-        //if(responsePortfolio)
       } catch (error) {
         console.error("Error fetching profile data:", error);
+        setProfileData(null); // Clear data on error
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (userId && token) {
+    const fetchReviews = async () => {
+        if (!userId) return;
+        try {
+            const response = await axios.get(`http://localhost:5000/api/ratings/freelancer/${userId}` );
+            if (response.data.success) {
+                setReviews(response.data.reviews);
+            }
+        } catch (error) {
+            console.error("Failed to fetch reviews:", error);
+        }
+    };
+
+    if (token) {
       fetchProfileData();
+      fetchReviews();
     }
   }, [userId, token, currentUser]);
 
@@ -101,10 +113,11 @@ const ProfileView = () => {
     );
   }
 
-  const isFreelancer = profileData.role_id === 3; // Assuming 3 is freelancer role
-  const isClient = profileData.role_id === 2; // Assuming 2 is client role
+  const isFreelancer = profileData.role_id === 3;
+  const isClient = profileData.role_id === 2;
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -114,21 +127,18 @@ const ProfileView = () => {
 
   const renderOverview = () => (
     <div className="space-y-6">
-      {/* Bio Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">About</h3>
         <p className="text-gray-700">
           {profileData.bio || `${profileData.first_name} hasn't added a bio yet.`}
         </p>
       </div>
-
-      {/* Stats Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <Star className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{profileData.rating || "0.0"}</p>
+            <p className="text-2xl font-bold text-gray-900">{parseFloat(profileData.rating).toFixed(1) || "0.0"}</p>
             <p className="text-sm text-gray-600">Rating</p>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -138,51 +148,13 @@ const ProfileView = () => {
           </div>
           <div className="text-center p-4 bg-purple-50 rounded-lg">
             <ThumbsUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{profileData.reviews_count || 0}</p>
+            <p className="text-2xl font-bold text-gray-900">{reviews.length}</p>
             <p className="text-sm text-gray-600">Reviews</p>
           </div>
           <div className="text-center p-4 bg-orange-50 rounded-lg">
             <Clock className="w-8 h-8 text-orange-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-gray-900">{profileData.response_time || "N/A"}</p>
             <p className="text-sm text-gray-600">Avg. Response</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Skills Section (for freelancers) */}
-      {isFreelancer && profileData.skills && profileData.skills.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills & Expertise</h3>
-          <div className="flex flex-wrap gap-2">
-            {profileData.skills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-              <span>Completed a project</span>
-            </div>
-            <span className="text-sm text-gray-500">2 days ago</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <Star className="w-5 h-5 text-yellow-500 mr-3" />
-              <span>Received a 5-star review</span>
-            </div>
-            <span className="text-sm text-gray-500">1 week ago</span>
           </div>
         </div>
       </div>
@@ -218,39 +190,45 @@ const ProfileView = () => {
 
   const renderReviews = () => (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Reviews</h3>
-      {profileData.reviews && profileData.reviews.length > 0 ? (
-        <div className="space-y-6">
-          {profileData.reviews.map((review, index) => (
-            <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                    <User className="w-5 h-5 text-gray-500" />
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Client Feedback ({reviews.length})</h3>
+      {reviews.length > 0 ? (
+        <div className="space-y-8">
+          {reviews.map((review) => (
+            <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+              <div className="flex items-start">
+                <img 
+                  src={review.client.profile_pic_url || `https://ui-avatars.com/api/?name=${review.client.username}&background=random`} 
+                  alt={review.client.username}
+                  className="w-12 h-12 rounded-full object-cover mr-4"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{review.client.username}</h4>
+                      <p className="text-sm text-gray-500">For project: <strong>{review.project_title}</strong></p>
+                    </div>
+                    <div className="flex items-center">
+                      {Array.from({ length: 5 } ).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{review.reviewer_name}</h4>
-                    <p className="text-sm text-gray-500">{review.project_title}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                    />
-                  ))}
+                  {review.comment && (
+                    <p className="text-gray-700 mt-3 italic">"{review.comment}"</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-3">{formatDate(review.created_at)}</p>
                 </div>
               </div>
-              <p className="text-gray-700">{review.comment}</p>
-              <p className="text-sm text-gray-500 mt-2">{formatDate(review.date)}</p>
             </div>
           ))}
         </div>
       ) : (
         <div className="text-center py-12">
           <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">No reviews yet.</p>
+          <p className="text-gray-600">No reviews yet for this freelancer.</p>
         </div>
       )}
     </div>
@@ -258,7 +236,7 @@ const ProfileView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header Section */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
@@ -272,7 +250,6 @@ const ProfileView = () => {
           </button>
           
           <div className="flex flex-col md:flex-row md:items-start md:space-x-8">
-            {/* Profile Image */}
             <div className="flex-shrink-0 mb-6 md:mb-0">
               <div className="w-32 h-32 bg-gray-200 rounded-2xl overflow-hidden flex items-center justify-center">
                 {profileData.profile_pic_url ? (
@@ -287,7 +264,6 @@ const ProfileView = () => {
               </div>
             </div>
 
-            {/* Profile Info */}
             <div className="flex-1">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between">
                 <div>
@@ -295,7 +271,6 @@ const ProfileView = () => {
                     {profileData.first_name} {profileData.last_name}
                   </h1>
                   <p className="text-gray-600 mb-2">@{profileData.username}</p>
-                  
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-1" />
@@ -308,8 +283,6 @@ const ProfileView = () => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                       {isFreelancer ? 'Freelancer' : 'Client'}
@@ -320,28 +293,14 @@ const ProfileView = () => {
                         Verified
                       </span>
                     )}
-                    {profileData.is_online && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                        Online
-                      </span>
-                    )}
                   </div>
                 </div>
-
-                {/* Action Buttons */}
                 <div className="flex space-x-3 mb-6 md:mb-0">
                   {!isOwnProfile && (
-                    <>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Message
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                        <Heart className="w-4 h-4 mr-2" />
-                        Follow
-                      </button>
-                    </>
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Message
+                    </button>
                   )}
                   {isOwnProfile && (
                     <Link
@@ -353,8 +312,6 @@ const ProfileView = () => {
                   )}
                 </div>
               </div>
-
-              {/* Rating */}
               <div className="flex items-center mb-4">
                 <div className="flex items-center mr-2">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -364,86 +321,64 @@ const ProfileView = () => {
                     />
                   ))}
                 </div>
-                <span className="text-lg font-semibold text-gray-900">{profileData.rating || "0.0"}</span>
+                <span className="text-lg font-semibold text-gray-900">{parseFloat(profileData.rating).toFixed(1) || "0.0"}</span>
                 <span className="text-gray-600 ml-2">
-                  ({profileData.reviews_count || 0} reviews)
+                  ({reviews.length} reviews)
                 </span>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900">{profileData.completed_projects || 0}</p>
-                  <p className="text-sm text-gray-600">Projects</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900">{profileData.response_rate || "100%"}</p>
-                  <p className="text-sm text-gray-600">Response Rate</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900">{profileData.on_time_delivery || "100%"}</p>
-                  <p className="text-sm text-gray-600">On Time</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900">{profileData.repeat_clients || 0}</p>
-                  <p className="text-sm text-gray-600">Repeat Clients</p>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-xl border border-gray-200 mb-6 overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px overflow-x-auto">
+        {/* Tabs Navigation */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex -mb-px overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
+                activeTab === "overview"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Overview
+            </button>
+            {isFreelancer && (
               <button
-                onClick={() => setActiveTab("overview")}
+                onClick={() => setActiveTab("portfolio")}
                 className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "overview"
+                  activeTab === "portfolio"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                <Eye className="w-4 h-4 mr-2" />
-                Overview
+                <Briefcase className="w-4 h-4 mr-2" />
+                Portfolio
               </button>
-              {isFreelancer && (
-                <button
-                  onClick={() => setActiveTab("portfolio")}
-                  className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                    activeTab === "portfolio"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  Portfolio
-                </button>
-              )}
-              <button
-                onClick={() => setActiveTab("reviews")}
-                className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
-                  activeTab === "reviews"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Reviews ({profileData.reviews_count || 0})
-              </button>
-            </nav>
-          </div>
+            )}
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={`py-4 px-6 text-sm font-medium border-b-2 flex items-center whitespace-nowrap ${
+                activeTab === "reviews"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <Star className="w-4 h-4 mr-2" />
+              Reviews ({reviews.length})
+            </button>
+          </nav>
+        </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
-            {activeTab === "overview" && renderOverview()}
-            {activeTab === "portfolio" && renderPortfolio()}
-            {activeTab === "reviews" && renderReviews()}
-          </div>
+        {/* Tab Content Rendering */}
+        <div>
+          {activeTab === "overview" && renderOverview()}
+          {activeTab === "portfolio" && renderPortfolio()}
+          {activeTab === "reviews" && renderReviews()}
         </div>
       </div>
     </div>

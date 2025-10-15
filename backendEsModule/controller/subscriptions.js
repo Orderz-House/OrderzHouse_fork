@@ -1,4 +1,7 @@
-import  pool  from "../models/db.js";
+import pool from "../models/db.js";
+// ✨ 1. IMPORT: Import the notification service to be used in this controller.
+import { NotificationCreators } from "../services/notificationService.js";
+
 // Create a subscription
 const subscriptionToPlan = async (req, res) => {
   const { freelancer_id, plan_id, status } = req.body;
@@ -10,12 +13,12 @@ const subscriptionToPlan = async (req, res) => {
   }
 
   try {
-    // Validate plan
-    const planResult = await pool.query("SELECT duration FROM plans WHERE id = $1", [plan_id]);
+    // Validate plan and get its name for the notification
+    const planResult = await pool.query("SELECT name, duration FROM plans WHERE id = $1", [plan_id]);
     if (!planResult.rows.length) {
       return res.status(404).json({ success: false, message: "Plan not found" });
     }
-    const duration = planResult.rows[0].duration;
+    const { name: planName, duration } = planResult.rows[0];
 
     // Calculate dates
     const startDate = new Date().toISOString().split("T")[0];
@@ -28,11 +31,20 @@ const subscriptionToPlan = async (req, res) => {
       "INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [freelancer_id, plan_id, startDate, endDateStr, status]
     );
+    const newSubscription = insertResult.rows[0];
+
+    // ✨ NOTIFICATION INTEGRATION: Notify the freelancer that they have subscribed to a plan.
+    try {
+      // NOTE: You may need to add a 'subscriptionStatusChanged' creator function to your notificationService.
+      await NotificationCreators.subscriptionStatusChanged(newSubscription.id, freelancer_id, planName, status);
+    } catch (notificationError) {
+      console.error(`Failed to create subscription notification for freelancer ${freelancer_id}:`, notificationError);
+    }
 
     return res.status(201).json({
       success: true,
       message: "Subscription created successfully",
-      subscription: insertResult.rows[0],
+      subscription: newSubscription,
     });
   } catch (err) {
     return res.status(500).json({
@@ -88,6 +100,7 @@ const updateSubscription = async (req, res) => {
     if (!subResult.rows.length) {
       return res.status(404).json({ success: false, message: "Subscription not found" });
     }
+    const originalSubscription = subResult.rows[0];
 
     const fields = [];
     const values = [];
@@ -117,11 +130,23 @@ const updateSubscription = async (req, res) => {
     values.push(subscriptionId);
     const query = `UPDATE subscriptions SET ${fields.join(", ")} WHERE id = $${counter} RETURNING *`;
     const updateResult = await pool.query(query, values);
+    const updatedSubscription = updateResult.rows[0];
+
+    // ✨ NOTIFICATION INTEGRATION: Notify the freelancer if their subscription status was changed.
+    if (status && status !== originalSubscription.status) {
+        try {
+            const planResult = await pool.query("SELECT name FROM plans WHERE id = $1", [updatedSubscription.plan_id]);
+            const planName = planResult.rows.length ? planResult.rows[0].name : "your plan";
+            await NotificationCreators.subscriptionStatusChanged(updatedSubscription.id, updatedSubscription.freelancer_id, planName, status);
+        } catch (notificationError) {
+            console.error(`Failed to create subscription update notification for freelancer ${updatedSubscription.freelancer_id}:`, notificationError);
+        }
+    }
 
     return res.status(200).json({
       success: true,
       message: "Subscription updated successfully",
-      subscription: updateResult.rows[0],
+      subscription: updatedSubscription,
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Failed to update subscription", error: err.message });
@@ -140,6 +165,16 @@ const deleteSubscription = async (req, res) => {
     const result = await pool.query("DELETE FROM subscriptions WHERE id = $1 RETURNING *", [subscriptionId]);
     if (!result.rows.length) {
       return res.status(404).json({ success: false, message: "Subscription not found" });
+    }
+    const deletedSubscription = result.rows[0];
+
+    // ✨ NOTIFICATION INTEGRATION: Notify the freelancer their subscription was cancelled/deleted.
+    try {
+        const planResult = await pool.query("SELECT name FROM plans WHERE id = $1", [deletedSubscription.plan_id]);
+        const planName = planResult.rows.length ? planResult.rows[0].name : "your plan";
+        await NotificationCreators.subscriptionStatusChanged(deletedSubscription.id, deletedSubscription.freelancer_id, planName, 'cancelled');
+    } catch (notificationError) {
+        console.error(`Failed to create subscription deletion notification for freelancer ${deletedSubscription.freelancer_id}:`, notificationError);
     }
 
     return res.status(200).json({ success: true, message: "Subscription deleted successfully" });

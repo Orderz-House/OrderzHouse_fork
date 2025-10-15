@@ -29,45 +29,16 @@ const mapRole = (roleId) =>
   roleId === 1 ? "admin" : roleId === 2 ? "client" : roleId === 3 ? "freelancer" : "user";
 
 const fmtMoney = (n, c = "USD") =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: c, maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: c,
+    maximumFractionDigits: 0,
+  }).format(n);
 
 const card = "rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5";
 const ringStyle = { border: `1px solid ${T.ring}` };
 
-/* ---------- MOCK toggle ---------- */
-const MOCK = true;
-
-/* ---------- demo data ---------- */
-const DEMO = {
-  admin: {
-    totals: { volume: 183_400, paid: 152_950, pending: 24_300, failed: 6_150 },
-    items: [
-      { id: "a1", user: "Mahmoud R.", project: "ERP Website", amount: 1200, method: "Card", status: "Paid", date: "2025-10-05", ref: "INV-4102" },
-      { id: "a2", user: "Innova LLC", project: "Mobile App", amount: 5400, method: "Wire", status: "Pending", date: "2025-10-04", ref: "INV-4099" },
-      { id: "a3", user: "Sara K.", project: "Landing Page", amount: 350, method: "Card", status: "Failed", date: "2025-10-03", ref: "INV-4095" },
-      { id: "a4", user: "Atlas Co.", project: "Data Pipeline", amount: 2200, method: "PayPal", status: "Paid", date: "2025-10-02", ref: "INV-4090" },
-    ],
-  },
-  client: {
-    totals: { paid: 6200, due: 1400, refunds: 0 },
-    items: [
-      { id: "c1", title: "Initial deposit", project: "ERP Website", amount: 3000, method: "Card", status: "Paid", date: "2025-10-03" },
-      { id: "c2", title: "Milestone #1", project: "ERP Website", amount: 2200, method: "Card", status: "Paid", date: "2025-10-07" },
-      { id: "c3", title: "Milestone #2", project: "ERP Website", amount: 1400, method: "Card", status: "Due", date: "2025-10-21" },
-    ],
-  },
-  freelancer: {
-    totals: { earned: 12_900, clearing: 1_250, withdrawn: 9_200 },
-    items: [
-      { id: "f1", title: "Mobile App – Milestone #1", amount: 2200, status: "Clearing", date: "2025-10-06", method: "Escrow" },
-      { id: "f2", title: "ERP Website – Deposit", amount: 3000, status: "Available", date: "2025-10-03", method: "Escrow" },
-      { id: "f3", title: "Payout to Bank", amount: 1800, status: "Withdrawn", date: "2025-10-02", method: "Wire" },
-      { id: "f4", title: "Landing – Final", amount: 950, status: "Available", date: "2025-09-29", method: "Escrow" },
-    ],
-  },
-};
-
-/* ---------- real endpoints (when MOCK=false) ---------- */
+/* ---------- real endpoints ---------- */
 const endpoints = {
   admin: { url: "/api/payments" },
   client: { url: "/api/client/payments" },
@@ -79,51 +50,103 @@ const endpoints = {
    Root (role-aware)
    ========================================================= */
 export default function Payments() {
+  const { userData, user } = useSelector((s) => s.auth);
+  const role = mapRole(userData?.role_id ?? user?.role_id);
 
-  const user = useSelector((state) => state.auth.userData);
-  const role = mapRole(user?.role_id);
+  const [rows, setRows] = useState([]);
+  const [totals, setTotals] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // Configs for different roles
-  const configs = {
-    admin: {
-      endpoint: "/api/payments",
-      columns: [
-        { label: "User", key: "user" },
-        { label: "Amount", key: "amount" },
-        { label: "Method", key: "method" },
-        { label: "Status", key: "status" },
-        { label: "Date", key: "date" },
-        { label: "Reference", key: "ref" },
-      ],
-    },
-    client: {
-      endpoint: "/api/client/payments",
-      columns: [
-        { label: "Project", key: "project" },
-        { label: "Amount", key: "amount" },
-        { label: "Method", key: "method" },
-        { label: "Status", key: "status" },
-        { label: "Date", key: "date" },
-      ],
-    },
-    freelancer: {
-      endpoint: "/api/freelancer/payments",
-      columns: [
-        { label: "Project", key: "project" },
-        { label: "Amount", key: "amount" },
-        { label: "Status", key: "status" },
-        { label: "Date", key: "date" },
-      ],
-    },
-    user: {
-      endpoint: "/api/payments",
-      columns: [
-        { label: "Amount", key: "amount" },
-        { label: "Status", key: "status" },
-        { label: "Date", key: "date" },
-      ],
-    },
-  };
+  // simple filters for cards
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
+  const [method, setMethod] = useState("all");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        if (MOCK) {
+          const pack =
+            role === "admin" ? DEMO.admin :
+            role === "freelancer" ? DEMO.freelancer :
+            DEMO.client;
+          if (!alive) return;
+          setRows(pack.items);
+          setTotals(pack.totals);
+        } else {
+          const { url } = endpoints[role] ?? endpoints.user;
+          const { data } = await axios.get(url);
+          if (!alive) return;
+          setRows(Array.isArray(data?.items) ? data.items : data);
+          setTotals(data?.totals ?? {});
+        }
+      } catch (e) {
+        console.error("Payments fetch failed:", e);
+        if (alive) { setRows([]); setTotals({}); }
+      } finally {
+        alive && setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [role]);
+
+  // filter for client/freelancer cards
+  const filtered = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return rows.filter((it) => {
+      const matchQ =
+        !t || Object.values(it).some((v) => String(v ?? "").toLowerCase().includes(t));
+      const matchStatus = status === "all" || String(it.status).toLowerCase() === status;
+      const matchMethod = method === "all" || String(it.method).toLowerCase() === method;
+      return matchQ && matchStatus && matchMethod;
+    });
+  }, [rows, q, status, method]);
+
+  if (role === "admin") {
+    return (
+      <AdminFinance
+        totals={totals}
+        loading={loading}
+        // ✅ your table here
+        tableProps={{
+          title: "Payments",
+          addLabel: "Add Payment",
+          initialRows: MOCK ? rows : [],
+          endpoint: MOCK ? undefined : endpoints.admin.url,
+          columns: [
+            { label: "User", key: "user" },
+            { label: "Project", key: "project" },
+            { label: "Amount", key: "amount" },
+            { label: "Method", key: "method" },
+            { label: "Status", key: "status" },
+            { label: "Date", key: "date" },
+            { label: "Reference", key: "ref" },
+          ],
+          filters: [
+            { key: "status", label: "Status" },
+            { key: "method", label: "Method" },
+          ],
+          hideCrudActions: true,
+        }}
+      />
+    );
+  }
+
+  if (role === "freelancer") {
+    return (
+      <FreelancerEarnings
+        loading={loading}
+        rows={filtered}
+        totals={totals}
+        q={q}
+        setQ={setQ}
+        status={setStatus}
+        method={setMethod}
+      />
+    );
+  }
 
   const { endpoint, columns } = configs[role] ?? configs.user;
 
@@ -198,11 +221,17 @@ function ClientBilling({ loading, rows, totals, q, setQ, status, method }) {
             <p className="text-slate-500 text-sm">Your payments & invoices</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50" style={ringStyle}>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50"
+              style={ringStyle}
+            >
               <ArrowUpRight className="w-4 h-4" />
               <span className="text-sm">Add funds</span>
             </button>
-            <button className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50" style={ringStyle}>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50"
+              style={ringStyle}
+            >
               <CreditCard className="w-4 h-4" />
               <span className="text-sm">Pay invoice</span>
             </button>
@@ -230,25 +259,31 @@ function ClientBilling({ loading, rows, totals, q, setQ, status, method }) {
               style={ringStyle}
             />
           </div>
-          <Select label="Status" options={["all","paid","due","failed"]} onChange={status} />
-          <Select label="Method" options={["all","card","paypal","wire","escrow"]} onChange={method} />
+          <Select label="Status" options={["all", "paid", "due", "failed"]} onChange={status} />
+          <Select label="Method" options={["all", "card", "paypal", "wire", "escrow"]} onChange={method} />
         </div>
       </section>
 
       {/* Timeline */}
       <section className="grid gap-3 sm:gap-4">
         {loading ? (
-          <div className={`${card} text-center text-slate-500`} style={ringStyle}>Loading…</div>
+          <div className={`${card} text-center text-slate-500`} style={ringStyle}>
+            Loading…
+          </div>
         ) : rows.length === 0 ? (
-          <div className={`${card} text-center text-slate-500`} style={ringStyle}>No payments found.</div>
+          <div className={`${card} text-center text-slate-500`} style={ringStyle}>
+            No payments found.
+          </div>
         ) : (
           rows.map((p) => (
-            <div key={p.id} className={`${card} flex items-center justify-between gap-3`} style={ringStyle}>
+            <div key={p.id ?? p._id} className={`${card} flex items-center justify-between gap-3`} style={ringStyle}>
               <div className="min-w-0">
                 <div className="text-slate-800 font-medium truncate">
                   {p.title} • <span className="text-slate-500">{p.project}</span>
                 </div>
-                <div className="text-xs text-slate-500">{p.method} • {p.date}</div>
+                <div className="text-xs text-slate-500">
+                  {p.method} • {p.date}
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone={toneFromStatus(p.status)}>{p.status}</Badge>
@@ -311,23 +346,29 @@ function FreelancerEarnings({ loading, rows, totals, q, setQ, status, method }) 
               style={ringStyle}
             />
           </div>
-          <Select label="Status" options={["all","available","clearing","withdrawn"]} onChange={status} />
-          <Select label="Method" options={["all","escrow","paypal","wire"]} onChange={method} />
+          <Select label="Status" options={["all", "available", "clearing", "withdrawn"]} onChange={status} />
+          <Select label="Method" options={["all", "escrow", "paypal", "wire"]} onChange={method} />
         </div>
       </section>
 
       <section className="grid gap-3 sm:gap-4">
         {loading ? (
-          <div className={`${card} text-center text-slate-500`} style={ringStyle}>Loading…</div>
+          <div className={`${card} text-center text-slate-500`} style={ringStyle}>
+            Loading…
+          </div>
         ) : rows.length === 0 ? (
-          <div className={`${card} text-center text-slate-500`} style={ringStyle}>No items found.</div>
+          <div className={`${card} text-center text-slate-500`} style={ringStyle}>
+            No items found.
+          </div>
         ) : (
           rows.map((r) => (
-            <div key={r.id} className={`${card}`} style={ringStyle}>
+            <div key={r.id ?? r._id} className={`${card}`} style={ringStyle}>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-slate-800 font-medium truncate">{r.title}</div>
-                  <div className="text-xs text-slate-500">{r.method} • {r.date}</div>
+                  <div className="text-xs text-slate-500">
+                    {r.method} • {r.date}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge tone={toneFromStatus(r.status)}>{r.status}</Badge>
@@ -380,7 +421,9 @@ function Select({ label, options, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           {options.map((x) => (
-            <option key={x} value={x}>{x[0].toUpperCase() + x.slice(1)}</option>
+            <option key={x} value={x}>
+              {x[0].toUpperCase() + x.slice(1)}
+            </option>
           ))}
         </select>
         <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
