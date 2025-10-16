@@ -154,7 +154,8 @@ export default function Payments() {
     );
   }
 
-  // default: client
+  const { endpoint, columns } = configs[role] ?? configs.user;
+
   return (
     <ClientBilling
       loading={loading}

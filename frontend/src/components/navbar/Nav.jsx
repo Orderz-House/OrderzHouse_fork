@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   LayoutDashboard,
+  Plus,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,6 +17,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
+import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -49,6 +51,7 @@ export default function EnhancedNavbar() {
     else if (path.startsWith("/admin-verification"))
       setActiveLink("VERIFICATION");
     else if (path.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
+    else if (path.startsWith("/create-project")) setActiveLink("ADD PROJECT");
   }, [location.pathname]);
 
   // API
@@ -170,7 +173,6 @@ export default function EnhancedNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ FIX: dashboard path per role (admin/client/freelancer)
   const getDashboardPath = (roleId) => {
     switch (roleId) {
       case 1:
@@ -189,21 +191,8 @@ export default function EnhancedNavbar() {
     { label: "ABOUT US", path: "/about", condition: true },
     { label: "BLOGS", path: "/blogs", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
-<<<<<<< HEAD
     { label: "PROJECTS", path: "/projectsPage", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
     { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
-=======
-    {
-      label: "PROJECTS",
-      path: "/dashboard/projects",
-      condition: userData && (userData.role_id === 2 || userData.role_id === 3),
-    },
-    {
-      label: "PLANS",
-      path: "/plans",
-      condition: !userData || (userData.role_id !== 2 && userData.role_id == 3),
-    },
->>>>>>> e3833e34616a4d92026adf544ac511ed00c08a75
     { label: "CATEGORIES", path: "/projectsPage", condition: true },
   ];
 
@@ -235,9 +224,7 @@ export default function EnhancedNavbar() {
                           : handleNavigation(item.path, item.label)
                       }
                       className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                        activeLink === item.label
-                          ? "text-[#028090]"
-                          : "text-gray-700"
+                        activeLink === item.label ? "text-[#028090]" : "text-gray-700"
                       }`}
                     >
                       {item.label}
@@ -255,6 +242,36 @@ export default function EnhancedNavbar() {
                   )
               )}
 
+              {/* Category Mega Menu */}
+              <CategoryMegaMenu 
+                activeLink={activeLink} 
+                onSetActiveLink={setActiveLink} 
+              />
+
+              {/* Add Project Button for Clients */}
+              {userData?.role_id === 2 && (
+                <button
+                  onClick={() => handleNavigation("/create-project", "ADD PROJECT")}
+                  className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
+                    activeLink === "ADD PROJECT" ? "text-[#028090]" : "text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Plus className="h-4 w-4" />
+                    <span>ADD PROJECT</span>
+                  </div>
+                  <span
+                    className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                      activeLink === "ADD PROJECT" ? "w-full" : "w-0 group-hover:w-full"
+                    }`}
+                  ></span>
+                  <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <Plus className="h-4 w-4 mr-2" />
+                    ADD PROJECT
+                  </span>
+                </button>
+              )}
+
               {/* Admin links */}
               {userData?.role_id === 1 && (
                 <>
@@ -263,9 +280,7 @@ export default function EnhancedNavbar() {
                       handleNavigation("/admin-verification", "VERIFICATION")
                     }
                     className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                      activeLink === "VERIFICATION"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                      activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
                     VERIFICATION
@@ -282,13 +297,9 @@ export default function EnhancedNavbar() {
                   </button>
 
                   <button
-                    onClick={() =>
-                      handleNavigation("/news/admin", "NEWS PENDING")
-                    }
+                    onClick={() => handleNavigation("/news/admin", "NEWS PENDING")}
                     className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                      activeLink === "NEWS PENDING"
-                        ? "text-[#028090]"
-                        : "text-gray-700"
+                      activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"
                     }`}
                   >
                     NEWS PENDING
@@ -322,7 +333,7 @@ export default function EnhancedNavbar() {
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -432,7 +443,6 @@ export default function EnhancedNavbar() {
                     </div>
 
                     <div className="py-2">
-                      {/* ✅ Dashboard per role */}
                       <Link
                         to={getDashboardPath(userData.role_id)}
                         onClick={() => setIsUserMenuOpen(false)}
@@ -499,7 +509,7 @@ export default function EnhancedNavbar() {
           </div>
         </div>
 
-        {/* Mobile Menu & Notifications */}
+        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-100">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
@@ -525,6 +535,22 @@ export default function EnhancedNavbar() {
                   )
               )}
 
+              {/* Add Project Button for Clients - Mobile */}
+              {userData?.role_id === 2 && (
+                <button
+                  onClick={() => {
+                    handleNavigation("/create-project", "ADD PROJECT");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter flex items-center space-x-2 ${
+                    activeLink === "ADD PROJECT" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                  }`}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>ADD PROJECT</span>
+                </button>
+              )}
+
               {/* Admin mobile links */}
               {userData?.role_id === 1 && (
                 <>
@@ -533,7 +559,9 @@ export default function EnhancedNavbar() {
                       handleNavigation("/admin-verification", "VERIFICATION");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-3 text-base font-medium rounded-2xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-all duration-200 font-inter"
+                    className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
+                      activeLink === "VERIFICATION" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                    }`}
                   >
                     VERIFICATION
                   </button>
@@ -542,7 +570,9 @@ export default function EnhancedNavbar() {
                       handleNavigation("/news/admin", "NEWS PENDING");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-3 text-base font-medium rounded-2xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-all duration-200 font-inter"
+                    className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
+                      activeLink === "NEWS PENDING" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                    }`}
                   >
                     NEWS PENDING
                   </button>
