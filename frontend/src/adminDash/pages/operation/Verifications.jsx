@@ -1,44 +1,14 @@
 import { FiCheck, FiX } from "react-icons/fi";
-import PeopleTable from "../Tables"; // أو من "../Tables" إن كنت تعيد التصدير من هناك
+import PeopleTable from "../Tables"; 
 
 export default function Verifications() {
-  // بيانات وهمية للتجربة
-  const mockVerifications = [
-    {
-      id: "v1",
-      name: "Omar Khaled",
-      email: "omar@example.com",
-      phone: "+96650000000",
-      specialization: "Frontend",
-      submittedAt: "2025-10-01",
-      status: "Pending",
-    },
-    {
-      id: "v2",
-      name: "Lina Saeed",
-      email: "lina@example.com",
-      phone: "+97150000000",
-      specialization: "Backend",
-      submittedAt: "2025-10-02",
-      status: "Approved",
-    },
-    {
-      id: "v3",
-      name: "Aya N.",
-      email: "aya@example.com",
-      phone: "+201000000000",
-      specialization: "Graphic Design",
-      submittedAt: "2025-10-03",
-      status: "Rejected",
-    },
-  ];
-
   return (
     <PeopleTable
       title="Verifications"
       addLabel="Add"
-      // endpoint="/verifications"  // أثناء الموك، علّقها
-      initialRows={mockVerifications}
+
+      endpoint="/api/admin/verifications"
+
       columns={[
         { label: "Name", key: "name" },
         { label: "Email", key: "email" },
@@ -47,6 +17,7 @@ export default function Verifications() {
         { label: "Submitted", key: "submittedAt" },
         { label: "Status", key: "status" },
       ]}
+
       formFields={[
         { key: "name", label: "Name", required: true },
         { key: "email", label: "Email", type: "email" },
@@ -61,6 +32,7 @@ export default function Verifications() {
           defaultValue: "Pending",
         },
       ]}
+
       chips={[
         { label: "All", value: "" },
         { label: "Pending", value: "Pending" },
@@ -70,31 +42,22 @@ export default function Verifications() {
       chipField="status"
       filters={[
         { key: "specialization", label: "Specialization" },
-        {
-          key: "status",
-          label: "Status",
-          options: ["Pending", "Approved", "Rejected"],
-        },
+        { key: "status", label: "Status", options: ["Pending", "Approved", "Rejected"] },
       ]}
-      // نخفي أكشنات Edit/Delete الافتراضية
+
       hideCrudActions
-      // أزرار قبول/رفض
+
       renderActions={({ row, helpers }) => {
         const id = row.id ?? row._id;
         const isApproved = row.status === "Approved";
         const isRejected = row.status === "Rejected";
 
         const approve = async () => {
-          // تحديث فوري بالواجهة
           helpers.updateRow(id, { status: "Approved" });
-          // وعند الربط لاحقًا:
-          // await api.patch(`/verifications/${id}`, { status: 'Approved' });
         };
 
         const reject = async () => {
           helpers.updateRow(id, { status: "Rejected" });
-          // وعند الربط لاحقًا:
-          // await api.patch(`/verifications/${id}`, { status: 'Rejected' });
         };
 
         return (

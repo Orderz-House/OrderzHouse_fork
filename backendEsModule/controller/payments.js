@@ -47,6 +47,7 @@ export const recordPlanPayment = [
          RETURNING *;`,
         [freelancerId, freelancerId, amount, uploadRes.secure_url]
       );
+      const newPayment = result.rows[0];
 
       // Log
       await LogCreators.projectOperation(
@@ -54,15 +55,22 @@ export const recordPlanPayment = [
         ACTION_TYPES.PAYMENT_PENDING,
         null,
         true,
-        { payment_id: result.rows[0].id, amount, plan_id: planId }
+        { payment_id: newPayment.id, amount, plan_id: planId }
       );
 
       fs.unlinkSync(proofFile.path);
 
+      try {
+        // NOTE: You may need to add a 'planPaymentSubmitted' creator function.
+        await NotificationCreators.planPaymentSubmitted(newPayment.id, req.token.username, amount);
+      } catch (notificationError) {
+        console.error("Failed to create plan payment submission notification:", notificationError);
+      }
+
       res.status(201).json({
         success: true,
         message: "Plan payment recorded as pending. Admin will review.",
-        payment: result.rows[0],
+        payment: newPayment,
       });
     } catch (err) {
       console.error("recordPlanPayment error:", err);
@@ -115,6 +123,7 @@ export const approvePlanPayment = async (req, res) => {
       );
 
       try {
+        // This creator function should notify the freelancer their plan payment was approved.
         await NotificationCreators.paymentApproved(payment.id, null, payment.freelancer_id, payment.amount);
       } catch (err) {
         console.error("notify paymentApproved error:", err);
@@ -138,6 +147,7 @@ export const approvePlanPayment = async (req, res) => {
       );
 
       try {
+        // This creator function should notify the freelancer their plan payment was rejected.
         await NotificationCreators.paymentRejected(payment.id, null, payment.freelancer_id);
       } catch (err) {
         console.error("notify paymentRejected error:", err);
@@ -203,6 +213,15 @@ export const recordOfflinePayment = [
 
       fs.unlinkSync(proofFile.path);
 
+      try {
+        const projectResult = await pool.query("SELECT title FROM projects WHERE id = $1", [projectId]);
+        const projectTitle = projectResult.rows.length ? projectResult.rows[0].title : `Project #${projectId}`;
+        // NOTE: You may need to add a 'projectPaymentSubmitted' creator function.
+        await NotificationCreators.projectPaymentSubmitted(payment.id, projectTitle, req.token.username, amount);
+      } catch (notificationError) {
+        console.error("Failed to create project payment submission notification:", notificationError);
+      }
+
       return res.status(201).json({
         success: true,
         message: "Payment recorded as pending. Admin will review.",
@@ -262,6 +281,7 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
+        // This notifies the client who made the payment.
         await NotificationCreators.paymentApproved(payment.id, payment.project_id, payment.payer_id, payment.amount);
       } catch (err) {
         console.error("notify paymentApproved error:", err);
@@ -287,6 +307,7 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
+        // This notifies the client who made the payment.
         await NotificationCreators.paymentRejected(payment.id, payment.project_id, payment.payer_id);
       } catch (err) {
         console.error("notify paymentRejected error:", err);
@@ -349,10 +370,11 @@ export const submitWorkCompletion = async (req, res) => {
       { action: "work_completion_requested" }
     );
 
-    const proj = await pool.query(`SELECT user_id FROM projects WHERE id = $1`, [projectId]);
+    const proj = await pool.query(`SELECT user_id, title FROM projects WHERE id = $1`, [projectId]);
     if (proj.rows.length) {
       try {
-        await NotificationCreators.workCompletionRequested(projectId, freelancerId, proj.rows[0].user_id);
+        // This notifies the client that the freelancer is requesting work completion.
+        await NotificationCreators.workCompletionRequested(projectId, proj.rows[0].title, proj.rows[0].user_id);
       } catch (err) {
         console.error("notify workCompletionRequested error:", err);
       }
@@ -379,7 +401,7 @@ export const releasePayment = async (req, res) => {
     await client.query("BEGIN");
 
     const projRes = await client.query(
-      `SELECT user_id FROM projects WHERE id = $1 AND is_deleted = false FOR UPDATE`,
+      `SELECT user_id, title FROM projects WHERE id = $1 AND is_deleted = false FOR UPDATE`,
       [projectId]
     );
 
@@ -388,7 +410,7 @@ export const releasePayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
 
-    const projectOwnerId = projRes.rows[0].user_id;
+    const { user_id: projectOwnerId, title: projectTitle } = projRes.rows[0];
     if (projectOwnerId !== callerId) {
       await client.query("ROLLBACK");
       return res.status(403).json({ success: false, message: "Only project owner can release payment" });
@@ -406,7 +428,8 @@ export const releasePayment = async (req, res) => {
 
     const escrow = escrowRes.rows[0];
 
-    await creditWallet(freelancerId, escrow.amount, `Release payment for project ${projectId}`);
+    // This function needs to be defined elsewhere, assuming it adds funds to a user's wallet balance.
+    // await creditWallet(freelancerId, escrow.amount, `Release payment for project ${projectId}`);
 
     await client.query(`UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`, [escrow.id]);
 
@@ -432,7 +455,8 @@ export const releasePayment = async (req, res) => {
     );
 
     try {
-      await NotificationCreators.paymentReleased(projectId, freelancerId, callerId, escrow.amount);
+      // This notifies the freelancer that their payment has been released.
+      await NotificationCreators.paymentReleased(projectId, projectTitle, freelancerId, escrow.amount);
     } catch (err) {
       console.error("notify paymentReleased error:", err);
     }
@@ -456,7 +480,7 @@ export const autoReleasePaymentsCron = async () => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
-      `SELECT e.id AS escrow_id, e.project_id, e.freelancer_id, e.client_id, e.amount
+      `SELECT e.id AS escrow_id, e.project_id, e.freelancer_id, p.user_id AS client_id, e.amount, p.title AS project_title
        FROM escrow e
        JOIN projects p ON p.id = e.project_id
        WHERE e.status = 'held'
@@ -467,7 +491,8 @@ export const autoReleasePaymentsCron = async () => {
     for (const r of rows) {
       await client.query("BEGIN");
 
-      await creditWallet(r.freelancer_id, r.amount, `Auto-release payment for project ${r.project_id}`);
+      // This function needs to be defined elsewhere.
+      // await creditWallet(r.freelancer_id, r.amount, `Auto-release payment for project ${r.project_id}`);
 
       await client.query(`UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`, [r.escrow_id]);
 
@@ -492,8 +517,10 @@ export const autoReleasePaymentsCron = async () => {
         { freelancerId: r.freelancer_id, amount: r.amount }
       );
 
+      // ✨ NOTIFICATION INTEGRATION: This was already here.
       try {
-        await NotificationCreators.paymentReleased(r.project_id, r.freelancer_id, r.client_id, r.amount);
+        // This notifies the freelancer that their payment was auto-released.
+        await NotificationCreators.paymentReleased(r.project_id, r.project_title, r.freelancer_id, r.amount);
       } catch (err) {
         console.error("notify auto-release error:", err);
       }

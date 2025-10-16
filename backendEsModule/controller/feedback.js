@@ -1,4 +1,6 @@
-import  pool  from "../models/db.js";
+import pool from "../models/db.js";
+import { NotificationCreators } from "../services/notificationService.js";
+
 const addFeedback = (req, res) => {
   const user_id = req.token?.userId;
   const { freelancer_id, content, type } = req.body;
@@ -17,10 +19,20 @@ const addFeedback = (req, res) => {
       [user_id, freelancer_id, content, type]
     )
     .then((result) => {
+      const newFeedback = result.rows[0];
+
+      try {
+        // This reuses the 'reviewSubmitted' creator, which is perfect for this case.
+        // It notifies the freelancer (freelancer_id) that a user (req.token.username) left feedback.
+        NotificationCreators.reviewSubmitted(newFeedback.id, freelancer_id, req.token.username || 'A user');
+      } catch (notificationError) {
+        console.error(`Failed to create feedback notification for freelancer ${freelancer_id}:`, notificationError);
+      }
+
       res.status(201).json({
         success: true,
         message: "Feedback added successfully",
-        feedback: result.rows[0],
+        feedback: newFeedback,
       });
     })
     .catch((err) => {
