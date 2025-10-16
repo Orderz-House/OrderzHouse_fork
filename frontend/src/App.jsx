@@ -26,7 +26,6 @@ import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import NotificationsPage from "./components/profile/NotificationsPage";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
@@ -48,7 +47,7 @@ import BlogPost from "./components/blogs/BlogPost.jsx";
 import AdminRouter from "./adminDash/routes/index";
 import TasksPool from "./components/tasks/TasksPool";
 import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
-import CreateProjectWizard from "./components/CreateProjects/CreateProjectWizard.jsx";
+import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -123,7 +122,7 @@ function App() {
 
         {/* --- Protected Pages --- */}
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/create-project" element={<ProtectedRoute><CreateProjectWizard /></ProtectedRoute>} />
+        <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
         <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} />
         <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />

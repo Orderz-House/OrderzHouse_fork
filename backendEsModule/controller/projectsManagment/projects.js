@@ -2,6 +2,7 @@ import pool from "../../models/db.js";
 import { LogCreators, ACTION_TYPES } from "../../services/loggingService.js";
 import { NotificationCreators } from "../../services/notificationService.js";
 import cloudinary from "../../cloudinary/setupfile.js"
+import { Readable } from "stream";
 import multer from "multer";
 
 // Multer memory storage
@@ -345,10 +346,9 @@ export const completeHourlyProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 /**
  * -------------------------------
- * GET RELATED FREELANCERS
+ * GET AVAILABLE FREELANCERS (Not currently working)
  * -------------------------------
  */
 export const getRelatedFreelancers = async (req, res) => {
@@ -356,16 +356,40 @@ export const getRelatedFreelancers = async (req, res) => {
 
   try {
     const { rows: freelancers } = await pool.query(
-      `SELECT u.* FROM users u
-       JOIN freelancer_categories fc ON u.id = fc.freelancer_id
-       WHERE fc.category_id = $1 AND u.role_id = 3 AND u.is_deleted = false`,
+      `
+      SELECT DISTINCT u.*
+      FROM users u
+      JOIN freelancer_categories fc ON u.id = fc.freelancer_id
+      WHERE 
+        fc.category_id = $1
+        AND u.role_id = 3
+        AND u.is_deleted = false
+        AND u.is_verified = true
+        AND NOT EXISTS (
+          SELECT 1 FROM project_assignments pa
+          JOIN projects p ON pa.project_id = p.id
+          WHERE 
+            pa.freelancer_id = u.id
+            AND pa.status IN ('active', 'not_started')
+            AND p.completion_status IN ('not_started', 'in_progress', 'pending_review')
+            AND p.is_deleted = false
+        )
+      ORDER BY u.id DESC;
+      `,
       [categoryId]
     );
 
-    res.status(200).json({ success: true, freelancers });
+    res.status(200).json({
+      success: true,
+      count: freelancers.length,
+      freelancers,
+    });
   } catch (error) {
-    console.error("Error fetching related freelancers:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching available freelancers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching available freelancers",
+    });
   }
 };
 
@@ -447,5 +471,235 @@ export const resubmitWorkCompletion = async (req, res) => {
   } catch (err) {
     console.error("resubmitWorkCompletion error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * Upload file buffer (from multer.memoryStorage) to Cloudinary
+ * @param {Buffer} buffer - The file buffer
+ * @param {String} filename - The original file name
+ * @param {String} folder - Optional Cloudinary folder (default: "project_files")
+ * @returns {Promise<{secure_url: string, public_id: string}>}
+ */
+export const uploadToCloudinary = (buffer, filename, folder = "project_files") => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    const stream = Readable.from(buffer);
+    stream.pipe(uploadStream);
+  });
+};
+
+export const addProjectFiles = async (req, res) => {
+  const { projectId } = req.params;
+  const userId = req.user.id; 
+
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ success: false, message: "No files uploaded" });
+  }
+
+  try {
+    const uploadedFiles = [];
+
+    for (const file of req.files) {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: `projects/${projectId}`,
+      });
+
+      const { rows } = await pool.query(
+        `INSERT INTO project_files 
+          (project_id, sender_id, file_name, file_url, file_size, public_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING *`,
+        [projectId, userId, file.originalname, result.secure_url, file.size, result.public_id]
+      );
+
+      uploadedFiles.push(rows[0]);
+    }
+
+    res.json({ success: true, files: uploadedFiles });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "File upload failed", error: err.message });
+  }
+};
+
+/**
+ * -------------------------------
+ * INVITE FREELANCER TO PROJECT
+ * -------------------------------
+ * Client sends an invitation. Freelancer must accept.
+ * -------------------------------
+ */
+export const assignFreelancer = async (req, res) => {
+  try {
+    const clientId = req.token?.userId; // ID of the client making the request
+    const { projectId } = req.params;
+    const { freelancer_id } = req.body;
+
+    if (!freelancer_id) {
+      return res.status(400).json({ success: false, message: "freelancer_id is required" });
+    }
+
+    // Validate project exists and belongs to client
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, title, user_id, status 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+    const project = projectRows[0];
+
+    if (project.user_id !== clientId) {
+      return res.status(403).json({ success: false, message: "You can only invite freelancers to your own projects" });
+    }
+
+    // Validate freelancer exists and is verified
+    const { rows: freelancerRows } = await pool.query(
+      `SELECT id, role_id, is_verified 
+       FROM users 
+       WHERE id = $1 AND is_deleted = false`,
+      [freelancer_id]
+    );
+    if (!freelancerRows.length) {
+      return res.status(404).json({ success: false, message: "Freelancer not found" });
+    }
+    const freelancer = freelancerRows[0];
+
+    if (freelancer.role_id !== 3 || !freelancer.is_verified) {
+      return res.status(400).json({ success: false, message: "Invalid freelancer" });
+    }
+
+    // Check if freelancer already invited or assigned
+    const { rows: existing } = await pool.query(
+      `SELECT id, status 
+       FROM project_assignments 
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancer_id]
+    );
+    if (existing.length) {
+      return res.status(400).json({ success: false, message: "Freelancer already invited or assigned" });
+    }
+
+    // Create a pending invitation
+    const assignedAt = new Date();
+    const { rows: assignmentRows } = await pool.query(
+      `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type)
+       VALUES ($1, $2, $3, 'pending_acceptance', 'solo')
+       RETURNING *`,
+      [projectId, freelancer_id, assignedAt]
+    );
+    const assignment = assignmentRows[0];
+
+    // Log operation (optional, depends on your system)
+    await LogCreators.projectOperation(clientId, ACTION_TYPES.ASSIGNMENT_CREATE, projectId, true, {
+      freelancer_id,
+      assignment_id: assignment.id,
+      type: "solo",
+    });
+
+    // Send notification (best effort)
+    try {
+      await NotificationCreators.freelancerInvited(freelancer_id, projectId, project.title);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Invitation sent successfully. Waiting for freelancer response.",
+      assignment,
+    });
+
+  } catch (error) {
+    console.error("assignFreelancer error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * FREELANCER ACCEPT ASSIGNMENT
+ * -------------------------------
+ */
+export const acceptAssignment = async (req, res) => {
+  try {
+    const freelancerId = req.token?.userId;
+    const { assignmentId } = req.params;
+
+    // Verify assignment
+    const { rows } = await pool.query(
+      `SELECT * FROM project_assignments WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
+      [assignmentId, freelancerId]
+    );
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "No pending invitation found" });
+
+    const assignment = rows[0];
+
+    // Update assignment and project
+    await pool.query(`UPDATE project_assignments SET status = 'active' WHERE id = $1`, [assignmentId]);
+    await pool.query(
+      `UPDATE projects SET status = 'active', completion_status = 'not_started', assigned_freelancer_id = $1 WHERE id = $2`,
+      [freelancerId, assignment.project_id]
+    );
+
+    // Log & notify
+    await LogCreators.projectOperation(freelancerId, ACTION_TYPES.ASSIGNMENT_ACCEPT, assignment.project_id, true);
+    try {
+      await NotificationCreators.freelancerAcceptedAssignment(assignment.project_id, freelancerId);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+
+    res.json({ success: true, message: "Assignment accepted successfully" });
+  } catch (error) {
+    console.error("acceptAssignment error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * FREELANCER REJECT ASSIGNMENT
+ * -------------------------------
+ */
+export const rejectAssignment = async (req, res) => {
+  try {
+    const freelancerId = req.token?.userId;
+    const { assignmentId } = req.params;
+
+    const { rows } = await pool.query(
+      `SELECT * FROM project_assignments WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
+      [assignmentId, freelancerId]
+    );
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "No pending invitation found" });
+
+    const assignment = rows[0];
+
+    // Delete or mark rejected
+    await pool.query(`UPDATE project_assignments SET status = 'rejected' WHERE id = $1`, [assignmentId]);
+
+    await LogCreators.projectOperation(freelancerId, ACTION_TYPES.ASSIGNMENT_REJECT, assignment.project_id, true);
+    try {
+      await NotificationCreators.freelancerRejectedAssignment(assignment.project_id, freelancerId);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+
+    res.json({ success: true, message: "Assignment rejected successfully" });
+  } catch (error) {
+    console.error("rejectAssignment error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
