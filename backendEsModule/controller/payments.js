@@ -33,6 +33,148 @@ const upload = multer({ dest: "uploads/" });
 
 /**
  * -------------------------------
+ * PLAN PAYMENTS (offline only)
+ * -------------------------------
+ */
+
+// Record offline subscription payment
+export const recordPlanPayment = [
+  upload.single("planProof"),
+  async (req, res) => {
+    const freelancerId = req.token?.userId;
+    const { planId, amount } = req.body;
+    const proofFile = req.file;
+
+    if (!planId || !amount || !proofFile) {
+      return res.status(400).json({
+        success: false,
+        message: "planId, amount, and planProof file are required",
+      });
+    }
+
+    try {
+      const uploadRes = await cloudinary.v2.uploader.upload(proofFile.path, {
+        folder: "plan_payment_proofs",
+      });
+
+      const result = await pool.query(
+        `INSERT INTO payments (payer_id, freelancer_id, amount, proof_url, payment_date)
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING *;`,
+        [freelancerId, freelancerId, amount, uploadRes.secure_url]
+      );
+
+      // Log
+      await LogCreators.projectOperation(
+        freelancerId,
+        ACTION_TYPES.PAYMENT_PENDING,
+        null,
+        true,
+        { payment_id: result.rows[0].id, amount, plan_id: planId }
+      );
+
+      fs.unlinkSync(proofFile.path);
+
+      res.status(201).json({
+        success: true,
+        message: "Plan payment recorded as pending. Admin will review.",
+        payment: result.rows[0],
+      });
+    } catch (err) {
+      console.error("recordPlanPayment error:", err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+];
+
+// Admin approves/rejects plan payment
+export const approvePlanPayment = async (req, res) => {
+  const adminId = req.token?.userId;
+  const { paymentId, action, planId } = req.body;
+
+  if (!paymentId || !action || !planId) {
+    return res.status(400).json({ success: false, message: "paymentId, action, and planId required" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `SELECT * FROM payments WHERE id = $1 FOR UPDATE`,
+      [paymentId]
+    );
+
+    if (!rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Payment not found" });
+    }
+
+    const payment = rows[0];
+
+    if (action === "approve") {
+      // Insert subscription (pending start)
+      await client.query(
+        `INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
+         VALUES ($1, $2, NULL, NULL, 'pending')`,
+        [payment.freelancer_id, planId]
+      );
+
+      await client.query("COMMIT");
+
+      await LogCreators.projectOperation(
+        adminId,
+        ACTION_TYPES.PAYMENT_APPROVED,
+        null,
+        true,
+        { paymentId, amount: payment.amount, planId }
+      );
+
+      try {
+        await NotificationCreators.paymentApproved(payment.id, null, payment.freelancer_id, payment.amount);
+      } catch (err) {
+        console.error("notify paymentApproved error:", err);
+      }
+
+      return res.json({
+        success: true,
+        message: "Plan payment approved. Subscription will start on first project assignment.",
+      });
+    }
+
+    if (action === "reject") {
+      await client.query("COMMIT");
+
+      await LogCreators.projectOperation(
+        adminId,
+        ACTION_TYPES.PAYMENT_REJECTED,
+        null,
+        true,
+        { paymentId, amount: payment.amount, planId }
+      );
+
+      try {
+        await NotificationCreators.paymentRejected(payment.id, null, payment.freelancer_id);
+      } catch (err) {
+        console.error("notify paymentRejected error:", err);
+      }
+
+      return res.json({ success: true, message: "Plan payment rejected" });
+    }
+
+    await client.query("ROLLBACK");
+    return res.status(400).json({ success: false, message: "Invalid action" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("approvePlanPayment error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * -------------------------------
  * PROJECT PAYMENTS (offline only)
  * -------------------------------
  */
@@ -76,18 +218,6 @@ export const recordOfflinePayment = [
       );
 
       fs.unlinkSync(proofFile.path);
-
-      try {
-        const projectResult = await pool.query(
-          "SELECT title FROM projects WHERE id = $1",
-          [projectId]
-        );
-        const projectTitle = projectResult.rows.length ? projectResult.rows[0].title : `Project #${projectId}`;
-
-        await NotificationCreators.projectPaymentSubmitted(payment.id, projectTitle, req.token.username, amount);
-      } catch (notificationError) {
-        console.error("Failed to create project payment submission notification:", notificationError);
-      }
 
       return res.status(201).json({
         success: true,
@@ -143,6 +273,7 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
+        // This notifies the client who made the payment.
         await NotificationCreators.paymentApproved(payment.id, payment.project_id, payment.payer_id, payment.amount);
       } catch (err) {
         console.error("notify paymentApproved error:", err);
@@ -168,6 +299,7 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
+        // This notifies the client who made the payment.
         await NotificationCreators.paymentRejected(payment.id, payment.project_id, payment.payer_id);
       } catch (err) {
         console.error("notify paymentRejected error:", err);
@@ -184,6 +316,65 @@ export const approveOfflinePayment = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   } finally {
     client.release();
+  }
+};
+
+/**
+ * -------------------------------
+ * FREELANCER WORK COMPLETION
+ * -------------------------------
+ */
+export const submitWorkCompletion = async (req, res) => {
+  const freelancerId = req.token?.userId;
+  const { projectId } = req.params;
+
+  try {
+    const check = await pool.query(
+      `SELECT assigned_freelancer_id FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!check.rows.length || check.rows[0].assigned_freelancer_id !== freelancerId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only assigned freelancer can submit completion",
+      });
+    }
+
+    await pool.query(
+      `UPDATE projects
+       SET completion_status = 'pending_review', completion_requested_at = NOW()
+       WHERE id = $1`,
+      [projectId]
+    );
+
+    await pool.query(
+      `INSERT INTO completion_history (project_id, event, timestamp, actor, notes)
+       VALUES ($1, 'completion_requested', NOW(), $2, $3)`,
+      [projectId, freelancerId, "Freelancer requested completion"]
+    );
+
+    await LogCreators.projectOperation(
+      freelancerId,
+      ACTION_TYPES.PROJECT_STATUS_CHANGE,
+      projectId,
+      true,
+      { action: "work_completion_requested" }
+    );
+
+    const proj = await pool.query(`SELECT user_id FROM projects WHERE id = $1`, [projectId]);
+    if (proj.rows.length) {
+      try {
+        await NotificationCreators.workCompletionRequested(projectId, freelancerId, proj.rows[0].user_id);
+      } catch (err) {
+        console.error("notify workCompletionRequested error:", err);
+      }
+    }
+
+    return res.json({ success: true, message: "Completion requested" });
+  } catch (err) {
+    console.error("submitWorkCompletion error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -228,8 +419,7 @@ export const releasePayment = async (req, res) => {
 
     const escrow = escrowRes.rows[0];
 
-    // Here you should credit freelancer's wallet
-    // await creditWallet(freelancerId, escrow.amount, `Release payment for project ${projectId}`);
+    await creditWallet(freelancerId, escrow.amount, `Release payment for project ${projectId}`);
 
     await client.query(`UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`, [escrow.id]);
 
@@ -255,7 +445,7 @@ export const releasePayment = async (req, res) => {
     );
 
     try {
-      await NotificationCreators.paymentReleased(projectId, projectTitle, freelancerId, escrow.amount);
+      await NotificationCreators.paymentReleased(projectId, freelancerId, callerId, escrow.amount);
     } catch (err) {
       console.error("notify paymentReleased error:", err);
     }
@@ -290,8 +480,7 @@ export const autoReleasePaymentsCron = async () => {
     for (const r of rows) {
       await client.query("BEGIN");
 
-      // Credit freelancer's wallet here
-      // await creditWallet(r.freelancer_id, r.amount, `Auto-release payment for project ${r.project_id}`);
+      await creditWallet(r.freelancer_id, r.amount, `Auto-release payment for project ${r.project_id}`);
 
       await client.query(`UPDATE escrow SET status = 'released', released_at = NOW() WHERE id = $1`, [r.escrow_id]);
 
@@ -316,8 +505,9 @@ export const autoReleasePaymentsCron = async () => {
         { freelancerId: r.freelancer_id, amount: r.amount }
       );
 
+      // ✨ NOTIFICATION INTEGRATION: This was already here.
       try {
-        await NotificationCreators.paymentReleased(r.project_id, r.project_title, r.freelancer_id, r.amount);
+        await NotificationCreators.paymentReleased(r.project_id, r.freelancer_id, r.client_id, r.amount);
       } catch (err) {
         console.error("notify auto-release error:", err);
       }

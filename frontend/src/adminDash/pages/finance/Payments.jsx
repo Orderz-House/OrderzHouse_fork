@@ -50,7 +50,7 @@ const endpoints = {
    Root (role-aware)
    ========================================================= */
 export default function Payments() {
-  const { userData, user } = useSelector((s) => s.auth);
+  const { userData, user, token } = useSelector((s) => s.auth);
   const role = mapRole(userData?.role_id ?? user?.role_id);
 
   const [rows, setRows] = useState([]);
@@ -64,33 +64,40 @@ export default function Payments() {
 
   useEffect(() => {
     let alive = true;
+
     (async () => {
       setLoading(true);
       try {
-        if (MOCK) {
-          const pack =
-            role === "admin" ? DEMO.admin :
-            role === "freelancer" ? DEMO.freelancer :
-            DEMO.client;
-          if (!alive) return;
-          setRows(pack.items);
-          setTotals(pack.totals);
-        } else {
-          const { url } = endpoints[role] ?? endpoints.user;
-          const { data } = await axios.get(url);
-          if (!alive) return;
-          setRows(Array.isArray(data?.items) ? data.items : data);
-          setTotals(data?.totals ?? {});
-        }
+        const { url } = endpoints[role] ?? endpoints.user;
+
+        const { data } = await axios.get(url, {
+          // ⬇️ إن احتجت توكن، أضِفه هنا
+          // headers: { authorization: `Bearer ${token}` },
+        });
+
+        if (!alive) return;
+
+        // نتوقع هيكلة مثل: { items: [...], totals: {...} }
+        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        const totalsObj = data?.totals ?? {};
+
+        setRows(items);
+        setTotals(totalsObj);
       } catch (e) {
         console.error("Payments fetch failed:", e);
-        if (alive) { setRows([]); setTotals({}); }
+        if (alive) {
+          setRows([]);
+          setTotals({});
+        }
       } finally {
         alive && setLoading(false);
       }
     })();
-    return () => { alive = false; };
-  }, [role]);
+
+    return () => {
+      alive = false;
+    };
+  }, [role, token]);
 
   // filter for client/freelancer cards
   const filtered = useMemo(() => {
@@ -109,12 +116,11 @@ export default function Payments() {
       <AdminFinance
         totals={totals}
         loading={loading}
-        // ✅ your table here
         tableProps={{
           title: "Payments",
           addLabel: "Add Payment",
-          initialRows: MOCK ? rows : [],
-          endpoint: MOCK ? undefined : endpoints.admin.url,
+          initialRows: rows, // يُستخدم فقط إن لم يُمرر endpoint داخل PeopleTable
+          endpoint: endpoints.admin.url,
           columns: [
             { label: "User", key: "user" },
             { label: "Project", key: "project" },

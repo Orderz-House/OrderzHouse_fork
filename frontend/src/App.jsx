@@ -26,12 +26,14 @@ import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
+import NotificationsPage from "./components/profile/NotificationsPage";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/Plans.jsx";
+//import Dashboard from "./components/User Dashboard/dashboard";
 // import Dashboard from "./components/User Dashboard/ClientDashboard.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
@@ -140,6 +142,7 @@ function App() {
         {/* --- Notifications & Projects --- */}
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} />
+        {/* <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
 
         {/* --- Appointments --- */}
