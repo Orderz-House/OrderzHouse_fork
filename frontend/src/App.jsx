@@ -26,7 +26,6 @@ import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import NotificationsPage from "./components/profile/NotificationsPage";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
