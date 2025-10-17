@@ -4,116 +4,56 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import BlogTopBar from "./components/BlogTopBar.jsx";
 
-const MOCK = true;
-
-const MOCK_POSTS = [
-  {
-    id: "p-001",
-    title: "How to Hire the Right Freelancer",
-    excerpt:
-      "Define scope, compare proposals fairly, and start collaboration on the right foot.",
-    cover:
-      "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1600&auto=format&fit=crop",
-    author: "Noah Wilson",
-    date: "2025-01-07",
-    read: "6 min",
-    category: "Guides",
-    tags: ["Hiring", "Freelancers", "Projects"],
-    sections: [
-      {
-        id: "define-scope",
-        h: "1. Define a clear scope",
-        p: [
-          "Start with goals, constraints, deliverables, and acceptance criteria. A one-page brief beats a long vague document.",
-          "Include what’s out-of-scope to avoid assumptions and prevent scope creep later.",
-        ],
-      },
-      {
-        id: "shortlist",
-        h: "2. Shortlist fairly",
-        p: [
-          "Filter proposals using the same checklist: relevant experience, examples, and availability.",
-          "Ask candidates to outline their approach in 3–5 bullets rather than writing long pitches.",
-        ],
-      },
-      {
-        id: "collaboration",
-        h: "3. Set up collaboration rituals",
-        p: [
-          "Create a shared space for files and decisions, agree on response times, and schedule quick weekly check-ins.",
-          "Document decisions in a running log to retain context even if people change.",
-        ],
-      },
-      {
-        id: "payments",
-        h: "4. Payments & milestones",
-        p: [
-          "Break the project into small milestones. Tie payments to outcomes, not hours—unless the task is purely exploratory.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "p-002",
-    title: "Design Systems that Ship Faster",
-    excerpt:
-      "Shared tokens and components align teams and shorten delivery cycles.",
-    cover:
-      "https://images.unsplash.com/photo-1551281044-8b89a5a3b33b?q=80&w=1600&auto=format&fit=crop",
-    author: "Ava Martin",
-    date: "2025-01-02",
-    read: "5 min",
-    category: "Design",
-    tags: ["UI", "Components", "Workflow"],
-    sections: [
-      { id: "why", h: "Why design systems", p: ["A design system reduces decision fatigue and drives consistency."] },
-      { id: "tokens", h: "Tokens", p: ["Tokens unify spacing, color, and typography across platforms."] },
-      { id: "components", h: "Components", p: ["Composable components accelerate both design and development."] },
-    ],
-  },
-];
-
 export default function BlogPost() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { state } = useLocation();
 
-  const [loading, setLoading] = useState(!MOCK);
+  // If we navigated from the list with state, use it as a warm cache
+  const [post, setPost] = useState(() => (state && state.id === id ? state : null));
+  const [loading, setLoading] = useState(!post);
   const [err, setErr] = useState(null);
-  const [post, setPost] = useState(() => {
-    if (state && state.id === id) {
-      if (MOCK) {
-        const withSections = MOCK_POSTS.find((p) => p.id === id);
-        return { ...withSections, ...state };
-      }
-      return state;
-    }
-    if (MOCK) return MOCK_POSTS.find((p) => p.id === id) || null;
-    return null;
-  });
 
+  // Fetch post from API (no mock)
   useEffect(() => {
     let mounted = true;
+
     async function load() {
-      if (MOCK) return;
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`/api/blogs/${encodeURIComponent(id)}`);
-        if (mounted) setPost(data || null);
+        const { data } = await axios.get(`/api/blogs/${encodeURIComponent(id)}`, {
+          // If you need auth:
+          // headers: { authorization: `Bearer ${token}` },
+        });
+        if (!mounted) return;
+
+        // Accept either a single object or { item: {...} }
+        const item = data?.item ?? data ?? null;
+        setPost(item);
       } catch (e) {
-        if (mounted) setErr(e?.message || "Error");
+        if (!mounted) return;
+        setErr(e?.response?.data?.message || e?.message || "Failed to load");
+        setPost(null);
       } finally {
-        if (mounted) setLoading(false);
+        mounted && setLoading(false);
       }
     }
-    if (!post || !post.sections) load();
+
+    // Load when:
+    // - there's no post, or
+    // - the post doesn't match the current id (direct link), or
+    // - the post is missing sections (want full details)
+    if (!post || (post?.id ?? post?._id) !== id || !post?.sections) {
+      load();
+    }
+
     return () => {
       mounted = false;
     };
-  }, [id]); 
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // progress + toc
+  // reading progress
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -133,6 +73,8 @@ export default function BlogPost() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // active section (for future TOC)
   const [activeId, setActiveId] = useState(null);
   useEffect(() => {
     if (!post?.sections) return;
@@ -168,16 +110,17 @@ export default function BlogPost() {
         style={{ width: `${progress}%` }}
       />
 
+      {/* Top bar (no mock) */}
       <BlogTopBar
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        mock={MOCK}
         createUrl="/api/blogs"
         onCreated={(created) => {
-          if (created?.id) navigate(`/blogs/${created.id}`);
+          const newId = created?.id ?? created?._id;
+          if (newId) navigate(`/blogs/${newId}`);
         }}
-        currentId={post?.id}
+        currentId={post?.id ?? post?._id}
         currentTitle={post?.title}
         currentExcerpt={post?.excerpt}
       />
@@ -205,12 +148,14 @@ export default function BlogPost() {
                 <Clock className="w-4 h-4" />
                 {post.read}
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Tag className="w-4 h-4" />
-                <span className="px-2 py-0.5 rounded-full border border-[#028090] text-[#028090] text-xs">
-                  {post.category}
+              {post.category && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Tag className="w-4 h-4" />
+                  <span className="px-2 py-0.5 rounded-full border border-[#028090] text-[#028090] text-xs">
+                    {post.category}
+                  </span>
                 </span>
-              </span>
+              )}
             </div>
             <h1 className="mt-3 text-3xl sm:text-4xl font-semibold leading-tight text-slate-900">
               {post.title}
@@ -232,18 +177,18 @@ export default function BlogPost() {
         </div>
       )}
 
-      {/* Content + TOC */}
+      {/* Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0 py-10">
         {!post ? null : (
           <div className="grid lg:grid-cols-[1fr,280px] gap-10">
             <article ref={contentRef} className="space-y-8">
               {(post.sections || []).map((s) => (
-                <section key={s.id} id={s.id} data-article-section>
+                <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
                   <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
                     {s.h}
                   </h2>
                   <div className="mt-3 space-y-3 text-slate-700 leading-relaxed">
-                    {s.p.map((para, i) => (
+                    {(s.p || []).map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}
                   </div>

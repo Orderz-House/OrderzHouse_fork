@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Search,
   Calendar,
@@ -14,49 +14,35 @@ import axios from "axios";
 import BlogCard from "./components/BlogCard.jsx";
 import BlogTopBar from "./components/BlogTopBar.jsx";
 
-const MOCK = true;
-
-const MOCK_POSTS = [
-  { id: "p-001", title: "How to Hire the Right Freelancer", excerpt: "Define scope, compare proposals fairly, and start collaboration on the right foot.", cover: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1200&auto=format&fit=crop", author: "Noah Wilson", date: "2025-01-07", read: "6 min", category: "Guides", tags: ["Hiring", "Freelancers"] },
-  { id: "p-002", title: "Design Systems that Ship Faster", excerpt: "Shared tokens and components align teams and shorten delivery cycles.", cover: "https://images.unsplash.com/photo-1551281044-8b89a5a3b33b?q=80&w=1200&auto=format&fit=crop", author: "Ava Martin", date: "2025-01-02", read: "5 min", category: "Design", tags: ["UI", "Components"] },
-  { id: "p-003", title: "Write Clear Scopes: From Brief to Budget", excerpt: "Simple templates to estimate effort and avoid scope creep.", cover: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200&auto=format&fit=crop", author: "Liam Carter", date: "2024-12-28", read: "7 min", category: "Business", tags: ["Scope", "Budget"] },
-  { id: "p-004", title: "Remote Work: Common Mistakes & Fixes", excerpt: "Rituals and async habits that make distributed teams thrive.", cover: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200&auto=format&fit=crop", author: "Maya Perez", date: "2024-12-20", read: "4 min", category: "Remote", tags: ["Teamwork"] },
-  { id: "p-005", title: "Freelance Pricing Models Explained", excerpt: "Fixed vs hourly vs milestone—when each model shines.", cover: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=1200&auto=format&fit=crop", author: "Ethan Park", date: "2024-12-15", read: "6 min", category: "Business", tags: ["Pricing"] },
-  { id: "p-006", title: "Portfolios that Win Clients", excerpt: "Pick the right cases, tell outcomes, and keep it simple.", cover: "https://images.unsplash.com/photo-1529336953121-4f3c7c0f8a3e?q=80&w=1200&auto=format&fit=crop", author: "Zara Lee", date: "2024-12-08", read: "5 min", category: "Guides", tags: ["Portfolio"] },
-  { id: "p-007", title: "Accessibility Basics for Clients", excerpt: "Small checks with big impact on usability.", cover: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop", author: "Oliver Adams", date: "2024-12-01", read: "5 min", category: "Design", tags: ["a11y"] },
-  { id: "p-008", title: "Legal Essentials in Freelance Contracts", excerpt: "Scope, IP, payment terms, liability—friendly overview.", cover: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1200&auto=format&fit=crop", author: "Sara Kim", date: "2024-11-22", read: "8 min", category: "Legal", tags: ["Contracts"] },
-  { id: "p-009", title: "Lean Analytics: Signals, Not Noise", excerpt: "A simple metric set to track project health.", cover: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop", author: "Leo Green", date: "2024-11-10", read: "6 min", category: "Analytics", tags: ["KPI"] },
-];
-
 export default function Blogs() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      try {
-        setLoading(true);
-        setErr(null);
-        if (MOCK) {
-          if (mounted) setPosts(MOCK_POSTS);
-        } else {
-          const { data } = await axios.get("/api/blogs");
-          if (mounted) setPosts(Array.isArray(data) ? data : []);
-        }
-      } catch (e) {
-        if (mounted) setErr(e.message || "Error");
-      } finally {
-        if (mounted) setLoading(false);
-      }
+  // --- fetch from API (no mock) ---
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setErr(null);
+      const { data } = await axios.get("/api/blogs", {
+        // headers: { authorization: `Bearer ${token}` },
+      });
+      setPosts(Array.isArray(data) ? data : data?.items ?? []);
+    } catch (e) {
+      setErr(e?.message || "Failed to load blogs");
+      setPosts([]);
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  // --- derived data / filters ---
   const categories = useMemo(() => {
-    const set = new Set(posts.map((p) => p.category));
+    const set = new Set(posts.map((p) => p.category).filter(Boolean));
     return ["All", ...Array.from(set)];
   }, [posts]);
 
@@ -71,8 +57,8 @@ export default function Blogs() {
     if (!t) return byCat;
     return byCat.filter(
       (p) =>
-        p.title.toLowerCase().includes(t) ||
-        p.excerpt.toLowerCase().includes(t) ||
+        String(p.title).toLowerCase().includes(t) ||
+        String(p.excerpt).toLowerCase().includes(t) ||
         (Array.isArray(p.tags) && p.tags.some((x) => String(x).toLowerCase().includes(t)))
     );
   }, [posts, q, cat]);
@@ -93,7 +79,8 @@ export default function Blogs() {
 
   return (
     <div className="min-h-screen bg-white">
-      <BlogTopBar enableNew mock={MOCK} createUrl="/api/blogs" onCreated={() => {}} />
+      {/* Top bar: keep same props; onCreated -> refetch */}
+      <BlogTopBar enableNew createUrl="/api/blogs" onCreated={fetchPosts} />
 
       {/* Header */}
       <header className="border-b border-slate-200/60 bg-white">
@@ -102,7 +89,9 @@ export default function Blogs() {
             {/* Featured card */}
             <article className="relative rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm">
               {!featured ? (
-                <div className="p-8 text-slate-500">{loading ? "Loading…" : "No articles"}</div>
+                <div className="p-8 text-slate-500">
+                  {loading ? "Loading…" : err ? "No articles" : "No articles"}
+                </div>
               ) : (
                 <>
                   <div className="relative">
@@ -113,15 +102,24 @@ export default function Blogs() {
                   </div>
                   <div className="p-5">
                     <div className="flex items-center gap-3 text-slate-600 text-sm">
-                      <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" />{formatDate(featured.date)}</span>
-                      <span className="inline-flex items-center gap-1"><User className="w-4 h-4" />{featured.author}</span>
-                      <span className="inline-flex items-center gap-1"><Clock className="w-4 h-4" />{featured.read}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(featured.date)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        {featured.author}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {featured.read}
+                      </span>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">{featured.title}</h1>
                     <p className="text-slate-600 mt-2">{featured.excerpt}</p>
 
                     <Link
-                      to={`/blogs/${featured.id}`}
+                      to={`/blogs/${featured.id ?? featured._id}`}
                       state={featured}
                       className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[#028090] hover:bg-slate-50 transition"
                     >
@@ -187,20 +185,28 @@ export default function Blogs() {
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {pageData.map((p) => (
-                <BlogCard key={p.id} post={p} />
+                <BlogCard key={p.id ?? p._id} post={p} />
               ))}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-8 flex items-center justify-center gap-2">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 bg-white disabled:opacity-40">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 bg-white disabled:opacity-40"
+                >
                   <ChevronLeft className="w-4 h-4" /> Prev
                 </button>
                 <div className="px-3 py-2 text-sm text-slate-600">
                   Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
                 </div>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 bg-white disabled:opacity-40">
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 bg-white disabled:opacity-40"
+                >
                   Next <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

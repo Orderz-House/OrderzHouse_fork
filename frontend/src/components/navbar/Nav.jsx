@@ -36,33 +36,41 @@ export default function EnhancedNavbar() {
     userData: state.auth.userData,
     IsAuthenticated: !!state.auth.token,
   }));
+
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Active link
   useEffect(() => {
-    const path = location.pathname;
-    if (path === "/") setActiveLink("HOME");
-    else if (path.startsWith("/about")) setActiveLink("ABOUT US");
-    else if (path.startsWith("/blogs")) setActiveLink("BLOGS");
-    else if (path.startsWith("/contact")) setActiveLink("CONTACT");
-    else if (path.startsWith("/plans")) setActiveLink("PLANS");
-    else if (path.startsWith("/projectsPage")) setActiveLink("CATEGORIES");
-    else if (path.startsWith("/dashboard/projects")) setActiveLink("PROJECTS");
-    else if (path.startsWith("/admin-verification"))
+    const p = (location.pathname || "").toLowerCase();
+
+    if (p === "/") setActiveLink("HOME");
+    else if (p.startsWith("/about")) setActiveLink("ABOUT US");
+    else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
+    else if (p.startsWith("/contact")) setActiveLink("CONTACT");
+    else if (p.startsWith("/plans")) setActiveLink("PLANS");
+    else if (
+      p.startsWith("/projects") ||
+      p.startsWith("/projectspage") ||
+      p.startsWith("/dashboard/projects")
+    ) {
+      setActiveLink("PROJECTS");
+    } else if (p.startsWith("/admin-verification"))
       setActiveLink("VERIFICATION");
-    else if (path.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
-    else if (path.startsWith("/create-project")) setActiveLink("ADD PROJECT");
+    else if (p.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
+    else if (p.startsWith("/create-project")) setActiveLink("ADD PROJECT");
+    else setActiveLink(null);
   }, [location.pathname]);
 
-  // API
+  // API: notifications
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const response = await axios.get("http://localhost:5000/notifications", {
+      const { data } = await axios.get("http://localhost:5000/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
       });
-      if (response.data.success) setNotifications(response.data.notifications);
+      if (data.success) setNotifications(data.notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
@@ -71,14 +79,14 @@ export default function EnhancedNavbar() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const response = await axios.get(
+      const { data } = await axios.get(
         "http://localhost:5000/notifications/count",
         {
           headers: { authorization: `Bearer ${token}` },
           params: { unreadOnly: true },
         }
       );
-      if (response.data.success) setUnreadCount(response.data.count);
+      if (data.success) setUnreadCount(data.count);
     } catch (error) {
       console.error("Error fetching notification count:", error);
     }
@@ -109,7 +117,8 @@ export default function EnhancedNavbar() {
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
-      setNotifications((list) => list.map((n) => ({ ...n, is_read: true })));
+      // توحيد الحقل مع بقية الكود (read_status)
+      setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all as read:", error);
@@ -138,7 +147,7 @@ export default function EnhancedNavbar() {
   const handleLogin = () => navigate("/login");
   const handleRegister = () => navigate("/register");
 
-  // fetch user + notifications
+  // Fetch user + notifications
   useEffect(() => {
     if (!token) return;
     axios
@@ -191,9 +200,19 @@ export default function EnhancedNavbar() {
     { label: "ABOUT US", path: "/about", condition: true },
     { label: "BLOGS", path: "/blogs", condition: true },
     { label: "CONTACT", path: "/contact", condition: true },
-    { label: "PROJECTS", path: "/projectsPage", condition: userData && (userData.role_id === 2 || userData.role_id === 3) },
-    { label: "PLANS", path: "/plans", condition: !userData || (userData.role_id !== 2 && userData.role_id == 3) },
-    { label: "CATEGORIES", path: "/projectsPage", condition: true },
+    // Projects tab (clients & freelancers)
+    {
+      label: "PROJECTS",
+      path: "/projectsPage",
+      condition: userData && (userData.role_id === 2 || userData.role_id === 3),
+    },
+    // Plans (لغير العميل، وتظهر للزائرين)
+    {
+      label: "PLANS",
+      path: "/plans",
+      condition:
+        !userData || (userData.role_id !== 2 && userData.role_id == 3),
+    },
   ];
 
   return (
@@ -223,8 +242,10 @@ export default function EnhancedNavbar() {
                           ? handlePlansClick()
                           : handleNavigation(item.path, item.label)
                       }
-                      className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                        activeLink === item.label ? "text-[#028090]" : "text-gray-700"
+                      className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
+                        activeLink === item.label
+                          ? "text-[#028090]"
+                          : "text-gray-700"
                       }`}
                     >
                       {item.label}
@@ -234,7 +255,7 @@ export default function EnhancedNavbar() {
                             ? "w-full"
                             : "w-0 group-hover:w-full"
                         }`}
-                      ></span>
+                      />
                       <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                         {item.label}
                       </span>
@@ -242,85 +263,42 @@ export default function EnhancedNavbar() {
                   )
               )}
 
-              {/* Category Mega Menu */}
-              <CategoryMegaMenu 
-                activeLink={activeLink} 
-                onSetActiveLink={setActiveLink} 
+              {/* Mega menu */}
+              <CategoryMegaMenu
+                activeLink={activeLink}
+                onSetActiveLink={setActiveLink}
               />
-
-              {/* Add Project Button for Clients */}
-              {userData?.role_id === 2 && (
-                <button
-                  onClick={() => handleNavigation("/create-project", "ADD PROJECT")}
-                  className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-                    activeLink === "ADD PROJECT" ? "text-[#028090]" : "text-gray-700"
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Plus className="h-4 w-4" />
-                    <span>ADD PROJECT</span>
-                  </div>
-                  <span
-                    className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                      activeLink === "ADD PROJECT" ? "w-full" : "w-0 group-hover:w-full"
-                    }`}
-                  ></span>
-                  <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <Plus className="h-4 w-4 mr-2" />
-                    ADD PROJECT
-                  </span>
-                </button>
-              )}
-
-              {/* Admin links */}
-              {userData?.role_id === 1 && (
-                <>
-                  <button
-                    onClick={() =>
-                      handleNavigation("/admin-verification", "VERIFICATION")
-                    }
-                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                      activeLink === "VERIFICATION" ? "text-[#028090]" : "text-gray-700"
-                    }`}
-                  >
-                    VERIFICATION
-                    <span
-                      className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "VERIFICATION"
-                          ? "w-full"
-                          : "w-0 group-hover:w-full"
-                      }`}
-                    ></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      VERIFICATION
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNavigation("/news/admin", "NEWS PENDING")}
-                    className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                      activeLink === "NEWS PENDING" ? "text-[#028090]" : "text-gray-700"
-                    }`}
-                  >
-                    NEWS PENDING
-                    <span
-                      className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                        activeLink === "NEWS PENDING"
-                          ? "w-full"
-                          : "w-0 group-hover:w-full"
-                      }`}
-                    ></span>
-                    <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      NEWS PENDING
-                    </span>
-                  </button>
-                </>
-              )}
             </div>
           </div>
 
-          {/* Desktop Actions */}
+          {/* Desktop Actions (right) */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Client: Add Project */}
+            {userData?.role_id === 2 && (
+              <Link
+                to="/create-project"
+                onClick={() => setActiveLink("ADD PROJECT")}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-[#028090] text-white hover:bg-[#026e7a] transition-all shadow-sm hover:shadow-md"
+                title="Create a new project"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add project</span>
+              </Link>
+            )}
+
+            {/* Freelancer: Add Task */}
+            {userData?.role_id === 3 && (
+              <Link
+                to="/freelancer/tasks/new"
+                onClick={() => setActiveLink("ADD TASK")}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-[#028090] text-white hover:bg-[#026e7a] transition-all shadow-sm hover:shadow-md"
+                title="Create a new task"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add task</span>
+              </Link>
+            )}
+
             {IsAuthenticated && (
               <div className="relative" ref={notificationsRef}>
                 <button
@@ -356,27 +334,27 @@ export default function EnhancedNavbar() {
                     <div className="max-h-96 overflow-y-auto">
                       {notifications.length > 0 ? (
                         <div className="divide-y divide-gray-100">
-                          {notifications.map((notification) => (
+                          {notifications.map((n) => (
                             <div
-                              key={notification.id}
+                              key={n.id}
                               className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                                !notification.read_status ? "bg-blue-50" : ""
+                                !n.read_status ? "bg-blue-50" : ""
                               }`}
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => markAsRead(n.id)}
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900 font-inter">
-                                    {notification.message}
+                                    {n.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2 font-inter">
                                     {new Date(
-                                      notification.created_at
+                                      n.created_at
                                     ).toLocaleDateString()}
                                   </p>
                                 </div>
-                                {!notification.read_status && (
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
+                                {!n.read_status && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1" />
                                 )}
                               </div>
                             </div>
@@ -405,7 +383,7 @@ export default function EnhancedNavbar() {
               </div>
             )}
 
-            {/* User Menu or Auth Buttons */}
+            {/* User menu / Auth */}
             {IsAuthenticated && userData ? (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -500,11 +478,7 @@ export default function EnhancedNavbar() {
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -535,7 +509,7 @@ export default function EnhancedNavbar() {
                   )
               )}
 
-              {/* Add Project Button for Clients - Mobile */}
+              {/* Client: Add project (mobile) */}
               {userData?.role_id === 2 && (
                 <button
                   onClick={() => {
@@ -543,42 +517,35 @@ export default function EnhancedNavbar() {
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter flex items-center space-x-2 ${
-                    activeLink === "ADD PROJECT" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                    activeLink === "ADD PROJECT"
+                      ? "text-[#028090] bg-gray-50"
+                      : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
                   }`}
                 >
                   <Plus className="h-4 w-4" />
-                  <span>ADD PROJECT</span>
+                  <span>Add project</span>
                 </button>
               )}
 
-              {/* Admin mobile links */}
-              {userData?.role_id === 1 && (
-                <>
-                  <button
-                    onClick={() => {
-                      handleNavigation("/admin-verification", "VERIFICATION");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
-                      activeLink === "VERIFICATION" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
-                    }`}
-                  >
-                    VERIFICATION
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleNavigation("/news/admin", "NEWS PENDING");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
-                      activeLink === "NEWS PENDING" ? "text-[#028090] bg-gray-50" : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
-                    }`}
-                  >
-                    NEWS PENDING
-                  </button>
-                </>
+              {/* Freelancer: Add task (mobile) */}
+              {userData?.role_id === 3 && (
+                <button
+                  onClick={() => {
+                    handleNavigation("/freelancer/tasks/new", "ADD TASK");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter flex items-center space-x-2 ${
+                    activeLink === "ADD TASK"
+                      ? "text-[#028090] bg-gray-50"
+                      : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                  }`}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add task</span>
+                </button>
               )}
             </div>
+
             <div className="pt-4 space-y-3 px-2 pb-4 border-t border-gray-100">
               {IsAuthenticated && userData ? (
                 <>

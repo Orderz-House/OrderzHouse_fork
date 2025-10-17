@@ -1,1 +1,5 @@
-/backendEsModule/.adminjs/bundle.js
+node_modules/
+dist/
+build/
+.env
+.env.*
