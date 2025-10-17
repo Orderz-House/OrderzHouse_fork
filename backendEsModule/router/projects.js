@@ -12,7 +12,11 @@ import {
 completeHourlyProject,
   submitWorkCompletion,
   approveWorkCompletion,
-  resubmitWorkCompletion
+  resubmitWorkCompletion,
+  addProjectFiles,
+  assignFreelancer,
+  acceptAssignment,
+  rejectAssignment
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -25,7 +29,7 @@ import {
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 const projectsRouter = express.Router();
-const upload = multer({ storage: multer.memoryStorage() }); // for file uploads
+const upload = multer({ storage: multer.memoryStorage() }); 
 
 /* ==============================
    🔒 Authenticated & Verified Routes
@@ -35,7 +39,6 @@ const upload = multer({ storage: multer.memoryStorage() }); // for file uploads
 projectsRouter.post(
   "/",
   authentication,
-  authorization("create_project"),
   createProject
 );
 
@@ -47,12 +50,7 @@ projectsRouter.put(
 );
 
 // Assign a freelancer
-projectsRouter.post(
-  "/:projectId/assign",
-  authentication,
-  requireVerifiedWithSubscription,
-  assignProject
-);
+projectsRouter.post("/:projectId/assign", authentication, assignFreelancer);
 
 
 // Freelancer submits work completion
@@ -86,6 +84,16 @@ projectsRouter.get(
   "/categories/:categoryId/related-freelancers",
   authentication,
   getRelatedFreelancers
+);
+
+/* ==============================
+   Post Project File Uploads
+   ============================== */
+projectsRouter.post(
+  "/:projectId/files",
+  authentication,
+  upload.array("files", 5), 
+  addProjectFiles
 );
 
 
@@ -135,5 +143,9 @@ projectsRouter.get(
   "/public/subsubcategory/:subSubCategoryId",
   getProjectsBySubSubCategoryId
 );
+
+projectsRouter.post("/assignments/:assignmentId/accept", authentication, acceptAssignment);
+projectsRouter.post("/assignments/:assignmentId/reject", authentication, rejectAssignment);
+
 
 export default projectsRouter;

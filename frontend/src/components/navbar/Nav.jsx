@@ -117,7 +117,6 @@ export default function EnhancedNavbar() {
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
-      // توحيد الحقل مع بقية الكود (read_status)
       setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -147,24 +146,29 @@ export default function EnhancedNavbar() {
   const handleLogin = () => navigate("/login");
   const handleRegister = () => navigate("/register");
 
-  // Fetch user + notifications
+  // Fetch user + notifications - FIXED: Added location to dependencies
   useEffect(() => {
     if (!token) return;
-    axios
-      .get(`http://localhost:5000/users/getUserdata`, {
-        headers: { authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
+    
+    const fetchUserData = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/users/getUserdata`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
         fetchNotifications();
         fetchUnreadCount();
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Failed to fetch user data:", err.message);
-        handleLogout();
-      });
-  }, [dispatch, token]);
+        if (err.response?.status === 401) {
+          handleLogout();
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [token, dispatch, location.pathname]); // FIXED: Added location.pathname
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -195,6 +199,7 @@ export default function EnhancedNavbar() {
     }
   };
 
+  // FIXED: Improved condition logic for Plans
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     { label: "ABOUT US", path: "/about", condition: true },
@@ -206,12 +211,11 @@ export default function EnhancedNavbar() {
       path: "/projectsPage",
       condition: userData && (userData.role_id === 2 || userData.role_id === 3),
     },
-    // Plans (لغير العميل، وتظهر للزائرين)
+    // Plans (for non-clients and guests)
     {
       label: "PLANS",
       path: "/plans",
-      condition:
-        !userData || (userData.role_id !== 2 && userData.role_id == 3),
+      condition: !userData || userData.role_id !== 2,
     },
   ];
 
