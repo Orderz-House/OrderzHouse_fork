@@ -9,19 +9,17 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
   const [loading, setLoading] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
-  // Fetch sub-sub-categories whenever categoryId changes
+  // تحميل sub-sub-categories عند تغيّر categoryId
   useEffect(() => {
     if (!categoryId) {
       setSubSubs([]);
+      setProjects([]);
       return;
     }
-
     const loadSubSubs = async () => {
       setLoading(true);
       try {
-        console.log("Fetching sub-sub-categories for categoryId:", categoryId);
         const data = await fetchSubSubCategoriesByCategoryId(Number(categoryId));
-        console.log("Fetched sub-sub-categories:", data);
         setSubSubs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to load sub-sub-categories", err);
@@ -30,29 +28,24 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
         setLoading(false);
       }
     };
-
     loadSubSubs();
   }, [categoryId]);
 
-  // Fetch projects whenever activeSubSub or categoryId changes
+  // تحميل المشاريع حسب الفلتر
   useEffect(() => {
     if (!categoryId) {
       setProjects([]);
       return;
     }
-
     const loadProjects = async () => {
       setLoadingProjects(true);
       try {
         let data;
         if (activeSubSub) {
-          console.log("Fetching projects for sub-sub-category:", activeSubSub);
           data = await fetchProjectsBySubSubCategory(Number(activeSubSub));
         } else {
-          console.log("Fetching all projects for category:", categoryId);
           data = await fetchProjectsByCategory(Number(categoryId));
         }
-        console.log("Fetched projects:", data);
         setProjects(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to load projects", err);
@@ -61,73 +54,83 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
         setLoadingProjects(false);
       }
     };
-
     loadProjects();
   }, [categoryId, activeSubSub]);
 
   if (!categoryId) return null;
 
-  if (loading) {
+  // هياكل التحميل
+  if (loading && subSubs.length === 0) {
     return (
-      <div className="flex gap-6">
-        <aside className="w-72 flex-shrink-0 p-6">
-          <div className="animate-pulse space-y-3">
-            <div className="h-6 bg-slate-200 rounded w-3/4 mb-4"></div>
-            <div className="h-10 bg-slate-100 rounded"></div>
-            <div className="h-10 bg-slate-100 rounded"></div>
-            <div className="h-10 bg-slate-100 rounded"></div>
+      <div className="flex w-full gap-8">
+        <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[16/9] bg-slate-200 rounded-xl mb-3"></div>
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+              </div>
+            ))}
           </div>
-        </aside>
+        </div>
       </div>
     );
   }
 
-  if (!subSubs || subSubs.length === 0) return null;
+  const hasSidebar = subSubs && subSubs.length > 0;
 
   return (
-    <div className="flex gap-6">
-      {/* Sidebar */}
-      <aside className="w-72 flex-shrink-0">
-        <nav className="p-3 overflow-y-auto" style={{ maxHeight: "calc(100vh - 120px)" }}>
-          <ul className="space-y-1">
-            <li>
-              <button
-                onClick={() => onSelectSubSub("")}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
-                  !activeSubSub ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
-                }`}
-                style={{ borderLeftColor: !activeSubSub ? theme : "transparent" }}
-              >
-                <span className={`text-sm font-semibold ${!activeSubSub ? "text-slate-900" : "text-slate-700"}`}>
-                  All
-                </span>
-              </button>
-            </li>
-            {subSubs.map((sub) => {
-              const isActive = sub.id.toString() === activeSubSub;
-              return (
-                <li key={sub.id}>
+    <div className="flex w-full gap-8">
+      {/* Sidebar (يظهر فقط عند توفر عناصر) */}
+      {hasSidebar && (
+        <aside className="w-72 flex-shrink-0">
+          <div className="sticky top-24 rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+            <div className="p-3 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-700">Filter</h3>
+            </div>
+            <nav className="p-3 overflow-y-auto" style={{ maxHeight: "calc(100vh - 160px)" }}>
+              <ul className="space-y-1">
+                <li>
                   <button
-                    onClick={() => onSelectSubSub(sub.id.toString())}
+                    onClick={() => onSelectSubSub("")}
                     className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
-                      isActive ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
+                      !activeSubSub ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
                     }`}
-                    style={{ borderLeftColor: isActive ? theme : "transparent" }}
+                    style={{ borderLeftColor: !activeSubSub ? theme : "transparent" }}
                   >
-                    <span
-                      className={`text-sm font-semibold transition-colors ${
-                        isActive ? "text-slate-900" : "text-slate-700 group-hover:text-slate-900"
-                      }`}
-                    >
-                      {sub.name}
+                    <span className={`text-sm font-semibold ${!activeSubSub ? "text-slate-900" : "text-slate-700"}`}>
+                      All
                     </span>
                   </button>
                 </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </aside>
+                {subSubs.map((sub) => {
+                  const isActive = sub.id.toString() === activeSubSub;
+                  return (
+                    <li key={sub.id}>
+                      <button
+                        onClick={() => onSelectSubSub(sub.id.toString())}
+                        className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
+                          isActive ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
+                        }`}
+                        style={{ borderLeftColor: isActive ? theme : "transparent" }}
+                      >
+                        <span
+                          className={`text-sm font-semibold transition-colors ${
+                            isActive ? "text-slate-900" : "text-slate-700 group-hover:text-slate-900"
+                          }`}
+                        >
+                          {sub.name}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </div>
+        </aside>
+      )}
 
       {/* Projects Grid */}
       <div className="flex-1 min-w-0">

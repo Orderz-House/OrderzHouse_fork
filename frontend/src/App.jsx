@@ -26,7 +26,6 @@ import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import NotificationsPage from "./components/profile/NotificationsPage";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
@@ -49,6 +48,7 @@ import AdminRouter from "./adminDash/routes/index";
 import TasksPool from "./components/tasks/TasksPool";
 import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
 import CreateProjectWizard from "./components/CreateProjects/CreateProjectWizard.jsx";
+import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -175,6 +175,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/projects/:id"
+  element={
+    <ProtectedRoute>
+      <ProjectDetails />
+    </ProtectedRoute>
+  }
+/>
 
         {/* --- 404 Fallback --- */}
         <Route
