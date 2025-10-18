@@ -1,4 +1,8 @@
+// components/Projects/ProjectCard.jsx
+import { Link } from "react-router-dom";
+
 export default function ProjectCard({
+  id,            // 👈 تأكد إنك تمرره من قائمة المشاريع (DB)
   title,
   cover,
   seller,
@@ -7,22 +11,51 @@ export default function ProjectCard({
   offersVideo,
   tags = [],
   theme = "#028090",
+  project,       // (اختياري) لو عندك كائن المشروع كامل، مرّره لنعطيه للدetail مباشرة
 }) {
+  // نكوّن كائن مشروع خفيف لو ما وصلنا project كامل
+  const projectForState =
+    project ??
+    {
+      id,
+      title,
+      cover,
+      seller,
+      rating,
+      price: from,
+      offersVideo,
+      tags,
+      // ممكن تضيف خصائص إضافية موجودة عندك في اللستة (images, description...) إن وُجدت
+    };
+
+  const to = `/projects/${id}`;
+
   return (
     <article className="group">
       <div className="relative rounded-xl overflow-hidden">
-        <div className="aspect-[16/9] w-full bg-slate-100 overflow-hidden">
-          <img
-            src={cover}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-            loading="lazy"
-          />
-        </div>
+        {/* رابط الصورة يغطي المعاينة وينقل للديتايلز مع state */}
+        <Link
+          to={to}
+          state={{ project: projectForState }}
+          className="block"
+          title={title}
+        >
+          <div className="aspect-[16/9] w-full bg-slate-100 overflow-hidden">
+            <img
+              src={cover}
+              alt={title}
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+        </Link>
 
+        {/* زر الحفظ يبقى زر مستقل */}
         <button
+          onClick={(e) => e.stopPropagation()}
           className="absolute top-2 right-2 w-9 h-9 rounded-full bg-white/95 shadow ring-1 ring-black/5 flex items-center justify-center hover:bg-white"
           aria-label="Save"
+          type="button"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5 text-slate-700">
             <path
@@ -76,6 +109,7 @@ export default function ProjectCard({
           )}
         </div>
 
+        {/* العنوان كرابط للديتايلز أيضًا */}
         <h3
           className="mt-1 text-[15px] text-slate-800 line-clamp-2"
           title={title}
@@ -86,20 +120,24 @@ export default function ProjectCard({
             overflow: "hidden",
           }}
         >
-          {title}
+          <Link to={to} state={{ project: projectForState }} className="hover:underline">
+            {title}
+          </Link>
         </h3>
 
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1 text-sm">
             <Star />
-            <span className="font-semibold">{rating?.score?.toFixed(1)}</span>
+            <span className="font-semibold">{rating?.score?.toFixed?.(1) ?? rating?.toFixed?.(1) ?? "4.9"}</span>
             <span className="text-slate-500 text-xs">
-              ({rating?.count?.toLocaleString?.() || 0})
+              ({rating?.count?.toLocaleString?.() ?? 0})
             </span>
           </div>
           <div className="text-sm">
             <span className="text-slate-500 mr-1">From</span>
-            <span className="font-semibold text-slate-900">${from}</span>
+            <span className="font-semibold text-slate-900">
+              ${typeof from === "number" ? from : projectForState.price ?? "—"}
+            </span>
           </div>
         </div>
 

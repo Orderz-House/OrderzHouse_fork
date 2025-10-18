@@ -47,6 +47,7 @@ import BlogPost from "./components/blogs/BlogPost.jsx";
 import AdminRouter from "./adminDash/routes/index";
 import TasksPool from "./components/tasks/TasksPool";
 import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
+import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -174,6 +175,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/projects/:id"
+  element={
+    <ProtectedRoute>
+      <ProjectDetails />
+    </ProtectedRoute>
+  }
+/>
 
         {/* --- 404 Fallback --- */}
         <Route

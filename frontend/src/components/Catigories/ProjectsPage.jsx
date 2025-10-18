@@ -31,10 +31,23 @@ export default function ProjectsPage() {
     loadCategories();
   }, []);
 
+  // اختر أول تصنيف تلقائيًا لو ما فيه cat في الرابط
+  useEffect(() => {
+    if (!category && Object.keys(catalog).length > 0) {
+      const firstId = Object.keys(catalog)[0];
+      const next = new URLSearchParams(sp);
+      next.set("cat", firstId);
+      next.delete("sub");
+      next.set("page", "1");
+      setSp(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, category]);
+
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
     next.set("cat", id.toString());
-    next.delete("sub");
+    next.delete("sub");               // ديفولت: All
     next.set("page", "1");
     setSp(next, { replace: false });
   };
@@ -50,7 +63,7 @@ export default function ProjectsPage() {
   const meta = catalog[category] || { title: "Projects", subtitle: "" };
 
   return (
-    <section className="relative min-h-[70vh] py-8">
+    <section className="relative min-h-[70vh] py-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Topbar Categories */}
         <div className="mb-6">
@@ -63,29 +76,21 @@ export default function ProjectsPage() {
           />
         </div>
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
+        {/* الهيدر */}
+        <header className="mb-6">
+          <h1 className="text-3xl font-black tracking-tight" style={{ color: THEME_DARK }}>
+            {meta.title || "Projects"}
+          </h1>
+        </header>
+
+        {/* المحتوى الرئيسي */}
+        <div className="flex gap-8">
           <SubSidebar
             categoryId={category}
             activeSubSub={sub}
             onSelectSubSub={chooseSub}
             theme={THEME}
           />
-
-          {/* Main content */}
-          <div className="flex-1">
-            <header className="mb-5">
-              <h1
-                className="text-2xl sm:text-3xl font-black tracking-tight"
-                style={{ color: THEME_DARK }}
-              >
-                {meta.title}
-              </h1>
-            </header>
-
-            <div className="text-slate-600 mt-10">
-            </div>
-          </div>
         </div>
       </div>
     </section>

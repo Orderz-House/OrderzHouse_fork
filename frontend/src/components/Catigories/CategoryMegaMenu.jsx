@@ -1,3 +1,4 @@
+// CategoryMegaMenu.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import {
@@ -12,12 +13,17 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [loading, setLoading] = useState(false);
-  const menuRef = useRef(null);
 
-  // Close menu when clicking outside
+  // refs
+  const menuRef = useRef(null);
+  const anchorRef = useRef(null); // زر "CATEGORIES" لقياس موضعه
+  const [menuTop, setMenuTop] = useState(0); // موضع ظهور الميجا منيو عموديًا
+
+  // اغلاق عند النقر خارجًا
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target) &&
+          anchorRef.current && !anchorRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
@@ -25,14 +31,30 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch categories when menu opens
-  useEffect(() => {
-    if (isOpen && categories.length === 0) {
-      loadCategories();
-    }
-  }, [isOpen]);
+  // حساب موضع الـ top بحيث تظهر تحت الهيدر لكن في منتصف الشاشة أفقيًا
+  const updateMenuTop = () => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    // نضيف scrollY لأننا نستخدم position: fixed
+    setMenuTop(rect.bottom + window.scrollY + 8); // +8px = mt-2 تقريبًا
+  };
 
-  // Load categories + subcategories + sub-sub-categories
+  // عند الفتح: تحميل البيانات + تموضع القائمة، وأعد التموضع عند التمرير/تغيير الحجم
+  useEffect(() => {
+    if (isOpen) {
+      updateMenuTop();
+      if (categories.length === 0) loadCategories();
+
+      window.addEventListener("scroll", updateMenuTop, { passive: true });
+      window.addEventListener("resize", updateMenuTop);
+      return () => {
+        window.removeEventListener("scroll", updateMenuTop);
+        window.removeEventListener("resize", updateMenuTop);
+      };
+    }
+  }, [isOpen]); // eslint-disable-line
+
+  // تحميل الداتا
   const loadCategories = async () => {
     setLoading(true);
     try {
@@ -43,30 +65,20 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
           const subCats = await fetchSubCategoriesByCategoryId(category.id);
 
           const subCategoriesWithSubs = await Promise.all(
-            subCats.map(async (sub) => {
+            (subCats || []).map(async (sub) => {
               const subSubs = await fetchSubSubCategoriesBySubId(sub.id);
-              return {
-                ...sub,
-                subSubCategories: subSubs || [],
-              };
+              return { ...sub, subSubCategories: subSubs || [] };
             })
           );
 
-          return {
-            ...category,
-            subCategories: subCategoriesWithSubs,
-          };
+          return { ...category, subCategories: subCategoriesWithSubs };
         })
       );
 
       setCategories(categoriesWithSubs);
-      setSelectedCategory(categoriesWithSubs[0] || null);
-      // Auto-select first subcategory if exists
-      if (categoriesWithSubs[0]?.subCategories?.length) {
-        setSelectedSubCategory(categoriesWithSubs[0].subCategories[0]);
-      } else {
-        setSelectedSubCategory(null);
-      }
+      const firstCat = categoriesWithSubs[0] || null;
+      setSelectedCategory(firstCat);
+      setSelectedSubCategory(firstCat?.subCategories?.[0] || null);
     } catch (err) {
       console.error("Error loading categories:", err);
     } finally {
@@ -76,27 +88,22 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   // UI handlers
   const handleToggle = () => {
-    setIsOpen(!isOpen);
+    setIsOpen((prev) => !prev);
     if (onSetActiveLink) onSetActiveLink("CATEGORIES");
   };
 
   const handleSelectCategory = (cat) => {
     setSelectedCategory(cat);
-    if (cat.subCategories?.length) {
-      setSelectedSubCategory(cat.subCategories[0]); 
-    } else {
-      setSelectedSubCategory(null);
-    }
+    setSelectedSubCategory(cat.subCategories?.[0] || null);
   };
 
-  const handleSelectSubCategory = (sub) => {
-    setSelectedSubCategory(sub);
-  };
+  const handleSelectSubCategory = (sub) => setSelectedSubCategory(sub);
 
   return (
-    <div className="relative" ref={menuRef}>
-      {/* Menu Button */}
+    <div className="relative">
+      {/* زر القائمة */}
       <button
+        ref={anchorRef}
         onClick={handleToggle}
         className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
           activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700"
@@ -105,32 +112,32 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
         <span className="flex items-center gap-1">
           CATEGORIES
           <ChevronDown
-            className={`h-4 w-4 transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           />
         </span>
         <span
           className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
             activeLink === "CATEGORIES" ? "w-full" : "w-0 group-hover:w-full"
           }`}
-        ></span>
+        />
       </button>
 
-      {/* Mega Menu */}
+      {/* الميجا منيو (متمركزة في منتصف الشاشة أفقيًا) */}
       {isOpen && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[95vw] max-w-[1300px]">
+        <div
+          ref={menuRef}
+          style={{ top: menuTop }}
+          className="fixed left-1/2 -translate-x-1/2 z-50 mt-0 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
+        >
           {loading ? (
-            <div className="p-8 text-center text-gray-500 font-inter">
-              Loading...
-            </div>
+            <div className="p-8 text-center text-gray-500 font-inter">Loading...</div>
           ) : (
             <div className="p-6 space-y-6">
-              {/* Top Row: Main Categories */}
+              {/* الصف العلوي: التصنيفات الرئيسية */}
               <div className="flex gap-6 overflow-x-auto pb-3 border-b border-gray-200">
                 {categories.map((cat) => (
                   <button
-                    key={`cat-${cat.id}`} // unique key
+                    key={`cat-${cat.id}`}
                     onClick={() => handleSelectCategory(cat)}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                       selectedCategory?.id === cat.id
@@ -143,18 +150,17 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                 ))}
               </div>
 
-              {/* Subcategories & Sub-sub-categories */}
+              {/* اليسار: Subcategories — اليمين: Sub-sub-categories */}
               {selectedCategory && (
                 <div className="flex gap-6">
-                  {/* Left: Subcategories */}
-                  <div className="w-1/4 border-r border-gray-200 pr-4">
+                  <div className="w-1/4 border-r border-gray-200 pr-4 min-w-[220px]">
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">
                       {selectedCategory.name} Types
                     </h3>
                     <div className="flex flex-col gap-2">
                       {selectedCategory.subCategories?.map((sub) => (
                         <button
-                          key={`sub-${selectedCategory.id}-${sub.id}`} // unique key
+                          key={`sub-${selectedCategory.id}-${sub.id}`}
                           onClick={() => handleSelectSubCategory(sub)}
                           className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                             selectedSubCategory?.id === sub.id
@@ -168,7 +174,6 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     </div>
                   </div>
 
-                  {/* Right: Sub-sub-categories */}
                   <div className="flex-1">
                     {selectedSubCategory ? (
                       <>
@@ -178,7 +183,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                         <div className="flex flex-wrap gap-3">
                           {selectedSubCategory.subSubCategories?.map((s) => (
                             <a
-                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`} // fully unique key
+                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`}
                               href={`/category/${selectedCategory.id}/sub/${selectedSubCategory.id}/sub-sub/${s.sub_sub_category_id}`}
                               className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                               onClick={() => setIsOpen(false)}
