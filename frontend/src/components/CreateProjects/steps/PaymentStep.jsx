@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { recordOfflinePaymentApi } from "../api/projects"; 
-import { useSelector } from "react-redux";
+import { createProjectApi, recordOfflinePaymentApi } from "../api/projects"; 
 
-export default function PaymentStep({ projectId, onBack, onNext }) {
+export default function PaymentStep({ onBack, projectData, files, selectedFreelancer }) {
   const [proofFile, setProofFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -11,20 +10,29 @@ export default function PaymentStep({ projectId, onBack, onNext }) {
   };
 
   const handleSubmit = async () => {
-    if (!proofFile) {
-      alert("Please upload a payment proof.");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      await recordOfflinePaymentApi(projectId, proofFile);
+      // 1️⃣ Create project first
+      const payload = {
+        ...projectData,
+        files,
+        freelancer_id: selectedFreelancer?.id,
+      };
+      const createdProject = await createProjectApi(payload);
+
+      // 2️⃣ If payment proof uploaded, send it
+      if (proofFile) {
+        await recordOfflinePaymentApi(createdProject.id, proofFile);
+      }
+
       alert(
-        "Payment proof submitted! Admin will review. Once approved, your project will be available to freelancers."
+        "Project created successfully! Payment proof submitted (if provided). Admin will review the payment."
       );
-      onNext();
+      // optionally redirect to project page
+      // navigate(`/projects/${createdProject.id}`);
     } catch (err) {
-      alert(err.message || "Failed to submit payment proof");
+      alert(err.message || "Failed to create project or submit payment");
     } finally {
       setLoading(false);
     }
@@ -33,14 +41,14 @@ export default function PaymentStep({ projectId, onBack, onNext }) {
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Record Offline Payment</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment & Submit</h2>
         <p className="text-gray-600">
-          Upload a proof of payment. Admin will review and approve your payment.
+          Upload a proof of payment (optional). Admin will review and approve your payment.
         </p>
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Upload Proof</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Upload Proof (Optional)</label>
         <input
           type="file"
           accept="image/*,application/pdf"
@@ -58,10 +66,10 @@ export default function PaymentStep({ projectId, onBack, onNext }) {
         </button>
         <button
           onClick={handleSubmit}
-          disabled={loading || !proofFile}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Submitting..." : "Submit Proof & Continue"}
+          {loading ? "Submitting..." : "Create Project & Submit Payment"}
         </button>
       </div>
 
