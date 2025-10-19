@@ -23,12 +23,17 @@ export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState(null);
+
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [isExploreMobileOpen, setIsExploreMobileOpen] = useState(false);
+
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+  const exploreRef = useRef(null);
 
   const dispatch = useDispatch();
   const { token, userData, IsAuthenticated } = useSelector((state) => ({
@@ -39,30 +44,36 @@ export default function EnhancedNavbar() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const path = (location.pathname || "").toLowerCase();
 
-  // Active link
+  // ===== Helper: unified dashboard path (like it was before)
+  const getDashboardPath = (roleId) =>
+    roleId === 1 || roleId === 2 || roleId === 3 ? "/admin" : "/login";
+
+  // ========= Active link by route =========
   useEffect(() => {
-    const p = (location.pathname || "").toLowerCase();
-
-    if (p === "/") setActiveLink("HOME");
-    else if (p.startsWith("/about")) setActiveLink("ABOUT US");
-    else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
-    else if (p.startsWith("/contact")) setActiveLink("CONTACT");
-    else if (p.startsWith("/plans")) setActiveLink("PLANS");
+    if (path === "/") setActiveLink("HOME");
     else if (
-      p.startsWith("/projects") ||
-      p.startsWith("/projectspage") ||
-      p.startsWith("/dashboard/projects")
-    ) {
+      path.startsWith("/about") ||
+      path.startsWith("/contact") ||
+      path.startsWith("/blogs") ||
+      path.startsWith("/plans")
+    )
+      setActiveLink("EXPLORE");
+    else if (
+      path.startsWith("/projects") ||
+      path.startsWith("/projectspage") ||
+      path.startsWith("/dashboard/projects")
+    )
       setActiveLink("PROJECTS");
-    } else if (p.startsWith("/admin-verification"))
+    else if (path.startsWith("/admin-verification"))
       setActiveLink("VERIFICATION");
-    else if (p.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
-    else if (p.startsWith("/create-project")) setActiveLink("ADD PROJECT");
+    else if (path.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
+    else if (path.startsWith("/create-project")) setActiveLink("ADD PROJECT");
     else setActiveLink(null);
-  }, [location.pathname]);
+  }, [path]);
 
-  // API: notifications
+  // ===== Notifications API =====
   const fetchNotifications = async () => {
     if (!token) return;
     try {
@@ -126,6 +137,9 @@ export default function EnhancedNavbar() {
 
   // Helpers
   const handleLogout = () => {
+    setIsUserMenuOpen(false);
+    setIsNotificationsOpen(false);
+    setIsMobileMenuOpen(false);
     disconnectSocket();
     Cookies.remove("userData");
     dispatch(setLogout());
@@ -133,20 +147,21 @@ export default function EnhancedNavbar() {
     window.location.reload();
   };
 
-  const handleNavigation = (path, label) => {
+  const handleNavigation = (p, label) => {
     setActiveLink(label);
-    navigate(path);
+    navigate(p);
   };
 
-  const handlePlansClick = () => {
-    setActiveLink("PLANS");
-    navigate("/plans");
+  const go = (p) => {
+    navigate(p);
+    setIsExploreOpen(false);
+    setIsExploreMobileOpen(false);
   };
 
   const handleLogin = () => navigate("/login");
   const handleRegister = () => navigate("/register");
 
-  // Fetch user + notifications - FIXED: Added location to dependencies
+  // fetch user + notifications
   useEffect(() => {
     if (!token) return;
     
@@ -172,40 +187,34 @@ export default function EnhancedNavbar() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target))
         setIsUserMenuOpen(false);
-      }
+
       if (
         notificationsRef.current &&
         !notificationsRef.current.contains(event.target)
-      ) {
+      )
         setIsNotificationsOpen(false);
+
+      if (exploreRef.current && !exploreRef.current.contains(event.target)) {
+        if (isExploreOpen) setIsExploreOpen(false);
       }
+      if (path === "/") setActiveLink("HOME");
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isExploreOpen, path]);
 
-  const getDashboardPath = (roleId) => {
-    switch (roleId) {
-      case 1:
-        return "/admin";
-      case 2:
-        return "/client";
-      case 3:
-        return "/freelancer";
-      default:
-        return "/login";
+  const setActiveFromChild = (label) => {
+    if (path === "/" && (label === "CATEGORIES" || label === "EXPLORE")) {
+      return;
     }
+    setActiveLink(label);
   };
 
   // FIXED: Improved condition logic for Plans
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
-    { label: "ABOUT US", path: "/about", condition: true },
-    { label: "BLOGS", path: "/blogs", condition: true },
-    { label: "CONTACT", path: "/contact", condition: true },
-    // Projects tab (clients & freelancers)
     {
       label: "PROJECTS",
       path: "/projectsPage",
@@ -219,12 +228,26 @@ export default function EnhancedNavbar() {
     },
   ];
 
+  const exploreItems = [
+    { label: "About", path: "/about" },
+    { label: "Blogs", path: "/blogs" },
+    { label: "Contact", path: "/contact" },
+    { label: "Plans", path: "/plans" },
+  ];
+
+  const onExploreRoute =
+    path.startsWith("/about") ||
+    path.startsWith("/contact") ||
+    path.startsWith("/blogs") ||
+    path.startsWith("/plans");
+  const exploreIsActive = isExploreOpen || onExploreRoute;
+
   return (
     <nav className="relative top-0 left-0 right-0 z-[9999] bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-23">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-[140px]">
             <button
               onClick={() => handleNavigation("/", "HOME")}
               className="flex-shrink-0 flex items-center group cursor-pointer"
@@ -233,19 +256,15 @@ export default function EnhancedNavbar() {
             </button>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:block flex-1">
+          {/* Desktop Navigation (≥ xl) */}
+          <div className="hidden xl:block flex-1">
             <div className="flex items-center justify-center space-x-1">
               {navLinks.map(
                 (item) =>
                   item.condition && (
                     <button
                       key={item.label}
-                      onClick={() =>
-                        item.label === "PLANS"
-                          ? handlePlansClick()
-                          : handleNavigation(item.path, item.label)
-                      }
+                      onClick={() => handleNavigation(item.path, item.label)}
                       className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
                         activeLink === item.label
                           ? "text-[#028090]"
@@ -267,17 +286,54 @@ export default function EnhancedNavbar() {
                   )
               )}
 
-              {/* Mega menu */}
+              {/* Explore (Desktop) */}
+              <div className="relative" ref={exploreRef}>
+                <button
+                  onClick={() => setIsExploreOpen((v) => !v)}
+                  className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter flex items-center gap-1 ${
+                    exploreIsActive ? "text-[#028090]" : "text-gray-700"
+                  }`}
+                >
+                  Explore
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isExploreOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                  <span
+                    className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+                      exploreIsActive ? "w-full" : "w-0 group-hover:w-full"
+                    }`}
+                  />
+                </button>
+
+                {isExploreOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-2">
+                      {exploreItems.map((it) => (
+                        <button
+                          key={it.path}
+                          onClick={() => go(it.path)}
+                          className="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-[#028090] transition-colors font-inter"
+                        >
+                          {it.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Categories (Mega Menu) */}
               <CategoryMegaMenu
                 activeLink={activeLink}
-                onSetActiveLink={setActiveLink}
+                onSetActiveLink={setActiveFromChild}
               />
             </div>
           </div>
 
-          {/* Desktop Actions (right) */}
+          {/* Desktop Actions (≥ md) */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Client: Add Project */}
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"
@@ -290,7 +346,6 @@ export default function EnhancedNavbar() {
               </Link>
             )}
 
-            {/* Freelancer: Add Task */}
             {userData?.role_id === 3 && (
               <Link
                 to="/freelancer/tasks/new"
@@ -312,6 +367,7 @@ export default function EnhancedNavbar() {
                   }}
                   className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
                   aria-label="Notifications"
+                  type="button"
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
@@ -330,6 +386,7 @@ export default function EnhancedNavbar() {
                         <button
                           onClick={markAllAsRead}
                           className="text-xs text-[#028090] hover:text-[#026e7a] font-medium font-inter"
+                          type="button"
                         >
                           Mark all as read
                         </button>
@@ -394,6 +451,7 @@ export default function EnhancedNavbar() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
                   aria-label="User menu"
+                  type="button"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-[#028090] to-[#026e7a] rounded-full flex items-center justify-center overflow-hidden">
                     {userData.profile_pic_url ? (
@@ -423,8 +481,8 @@ export default function EnhancedNavbar() {
                         {userData.email}
                       </p>
                     </div>
-
                     <div className="py-2">
+                      {/* Dashboard (fixed to role-agnostic /admin) */}
                       <Link
                         to={getDashboardPath(userData.role_id)}
                         onClick={() => setIsUserMenuOpen(false)}
@@ -433,8 +491,9 @@ export default function EnhancedNavbar() {
                         <LayoutDashboard className="h-4 w-4" />
                         <span>Dashboard</span>
                       </Link>
-
+                      {/* Logout (fixed) */}
                       <button
+                        type="button"
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-all duration-200 font-inter"
                       >
@@ -459,37 +518,89 @@ export default function EnhancedNavbar() {
                 >
                   Get Started
                 </button>
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="xl:hidden p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
+                  aria-label="Toggle menu"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
+                </button>
               </div>
             )}
+            {/* Tablet menu toggle (md–xl) */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="xl:hidden p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="lg:hidden flex items-center space-x-2">
+          {/* ===== Mobile header (< md) ===== */}
+          <div className="md:hidden flex items-center space-x-2">
             {IsAuthenticated && (
-              <button
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
+                  aria-label="Notifications"
+                  type="button"
+                >
+                  <Bell className="h-6 w-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="p-1 rounded-full hover:bg-gray-100 transition"
+                    aria-label="User menu"
+                    type="button"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#028090] to-[#026e7a] flex items-center justify-center">
+                      {userData?.profile_pic_url ? (
+                        <img
+                          src={userData.profile_pic_url}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-4 w-4 text-white" />
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </>
             )}
+
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? (
+                <X className="h-7 w-7" />
+              ) : (
+                <Menu className="h-7 w-7" />
+              )}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ===== Mobile Menu Panel ===== */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-100">
+          <div className="xl:hidden border-t border-gray-100">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
               {navLinks.map(
                 (item) =>
@@ -497,9 +608,7 @@ export default function EnhancedNavbar() {
                     <button
                       key={item.label}
                       onClick={() => {
-                        item.label === "PLANS"
-                          ? handlePlansClick()
-                          : handleNavigation(item.path, item.label);
+                        handleNavigation(item.path, item.label);
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
@@ -507,13 +616,50 @@ export default function EnhancedNavbar() {
                           ? "text-[#028090] bg-gray-50"
                           : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
                       }`}
+                      type="button"
                     >
                       {item.label}
                     </button>
                   )
               )}
 
-              {/* Client: Add project (mobile) */}
+              {/* Explore (mobile accordion) */}
+              <div className="mt-2">
+                <button
+                  onClick={() => setIsExploreMobileOpen((v) => !v)}
+                  className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter flex items-center justify-between ${
+                    isExploreMobileOpen || onExploreRoute
+                      ? "text-[#028090] bg-gray-50"
+                      : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                  }`}
+                  type="button"
+                >
+                  <span>Explore</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${
+                      isExploreMobileOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isExploreMobileOpen && (
+                  <div className="pl-2 pr-2 pb-2">
+                    {exploreItems.map((it) => (
+                      <button
+                        key={it.path}
+                        onClick={() => {
+                          go(it.path);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm rounded-xl text-gray-700 hover:text-[#028090] hover:bg-gray-50 transition-colors font-inter"
+                        type="button"
+                      >
+                        {it.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {userData?.role_id === 2 && (
                 <button
                   onClick={() => {
@@ -525,13 +671,13 @@ export default function EnhancedNavbar() {
                       ? "text-[#028090] bg-gray-50"
                       : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
                   }`}
+                  type="button"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add project</span>
                 </button>
               )}
 
-              {/* Freelancer: Add task (mobile) */}
               {userData?.role_id === 3 && (
                 <button
                   onClick={() => {
@@ -543,6 +689,7 @@ export default function EnhancedNavbar() {
                       ? "text-[#028090] bg-gray-50"
                       : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
                   }`}
+                  type="button"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add task</span>
@@ -553,14 +700,6 @@ export default function EnhancedNavbar() {
             <div className="pt-4 space-y-3 px-2 pb-4 border-t border-gray-100">
               {IsAuthenticated && userData ? (
                 <>
-                  <div className="px-4 py-2">
-                    <p className="font-medium text-gray-900 font-inter">
-                      {userData.first_name} {userData.last_name}
-                    </p>
-                    <p className="text-sm text-gray-500 break-words font-inter">
-                      {userData.email}
-                    </p>
-                  </div>
                   <Link
                     to="/notifications"
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -582,11 +721,18 @@ export default function EnhancedNavbar() {
                     <Settings className="h-4 w-4" />
                     <span>Profile Settings</span>
                   </Link>
+                  {/* Mobile quick: Dashboard & Logout (follow same behavior) */}
+                  <Link
+                    to={getDashboardPath(userData.role_id)}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left px-4 py-3 text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
                   <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
+                    type="button"
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 flex items-center space-x-2 font-inter"
                   >
                     <LogOut className="h-4 w-4" />
@@ -601,6 +747,7 @@ export default function EnhancedNavbar() {
                       setIsMobileMenuOpen(false);
                     }}
                     className="w-full px-4 py-3 text-left text-gray-700 hover:text-[#028090] hover:bg-gray-50 rounded-2xl font-medium transition-all duration-200 font-inter"
+                    type="button"
                   >
                     Sign In
                   </button>
@@ -610,6 +757,7 @@ export default function EnhancedNavbar() {
                       setIsMobileMenuOpen(false);
                     }}
                     className="w-full px-4 py-3 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white font-medium rounded-2xl shadow-lg transform hover:scale-[1.02] transition-all duration-200 font-inter"
+                    type="button"
                   >
                     Get Started
                   </button>
