@@ -2,11 +2,9 @@ import express from "express";
 import {
   register,
   login,
-  verifyOTP,
   viewUsers,
   deleteUser,
   editUser,
-  // updateUser,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
@@ -27,8 +25,6 @@ import {
   updatePassword,
   deactivateAccount,
   getUserById,
-  sendOtpController
-  
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 import requireVerified from "../middleware/requireVerification.js";
@@ -38,8 +34,6 @@ const usersRouter = express.Router();
 // ==================== PUBLIC ROUTES ====================
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
-usersRouter.post("/verify-otp", verifyOTP);
-usersRouter.post("/send-otp", sendOtpController);
 usersRouter.get("/freelancers/verification-status", authentication, checkVerificationStatus);
 usersRouter.put("/freelancers/verification-status", authentication, updateVerificationStatus);
 usersRouter.get("/freelancers/:id/portfolio", getPortfolioByfreelance);
@@ -69,8 +63,6 @@ usersRouter.delete(
   deleteUser
 );
 usersRouter.put("/edit/:userId", authentication, editUser);
-// Self-service user update (used by Edit Profile)
-// usersRouter.put("/update/:userId", authentication, updateUser);
 usersRouter.get(
   "/freelancers/all",
   authentication,

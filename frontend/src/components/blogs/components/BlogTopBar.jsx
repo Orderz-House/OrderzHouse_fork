@@ -1,3 +1,4 @@
+// src/components/BlogTopBar.jsx
 import { useEffect, useState, useRef } from "react";
 import {
   ArrowLeft,
@@ -7,19 +8,14 @@ import {
   X,
   Bookmark,
   Image as ImageIcon,
-  Upload as UploadIcon,
-  Link2,
+  Paperclip,
 } from "lucide-react";
 import axios from "axios";
-
 
 export default function BlogTopBar({
   showBack = false,
   onBack,
   enableNew = true,
-  createUrl = "/api/blogs",
-  uploadUrl = "/api/uploads",
-  mock = true,
   onCreated,
   currentId,
   currentTitle,
@@ -50,7 +46,7 @@ export default function BlogTopBar({
     }
   };
 
-  /* -------- Favorites (localStorage) -------- */
+  /* -------- Favorites -------- */
   const [fav, setFav] = useState(false);
   useEffect(() => {
     if (!currentId) return;
@@ -72,32 +68,11 @@ export default function BlogTopBar({
   /* -------- Modal: New Blog -------- */
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-
-  // Cover source: 'upload' | 
-  const [coverMode, setCoverMode] = useState("upload");
-  const [coverUrl, setCoverUrl] = useState("");
   const [coverFile, setCoverFile] = useState(null);
-  const [coverPreview, setCoverPreview] = useState(""); 
-
+  const [coverPreview, setCoverPreview] = useState("");
+  const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
-
-  const handleFile = (file) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Please choose an image.");
-      return;
-    }
-    setCoverFile(file);
-    const url = URL.createObjectURL(file);
-    setCoverPreview(url);
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer.files?.[0];
-    handleFile(file);
-  };
+  const attachmentsRef = useRef(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -110,32 +85,33 @@ export default function BlogTopBar({
   });
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Resolve cover URL depending on mode
-  const resolveCover = async () => {
-    if (coverMode === "url") {
-      const u = coverUrl.trim();
-      if (!u) throw new Error("Please paste a cover URL or switch to Upload.");
-      return u;
+  // Handle cover image
+  const handleCoverFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image for cover.");
+      return;
     }
-    // upload mode
-    if (!coverFile) {
-      if (mock && coverPreview) return coverPreview; // allow preview as cover in MOCK
-      throw new Error("Please import an image for the cover.");
-    }
-    if (mock) {
-      // In mock: just use preview
-      return coverPreview;
-    }
-    // Real upload
-    const fd = new FormData();
-    fd.append("file", coverFile);
-    const { data } = await axios.post(uploadUrl, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  };
+
+  // Handle attachments
+  const handleAttachments = (files) => {
+    const validFiles = Array.from(files).filter(file => {
+      const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/msword', 'application/vnd.openxmlformats-officedocument'];
+      return allowedTypes.some(type => file.type.startsWith(type));
     });
-    if (!data || !data.url) {
-      throw new Error("Upload failed: server did not return a URL.");
+    
+    if (validFiles.length !== files.length) {
+      alert("Some files were skipped (unsupported format). Only images, PDFs, docs, and text files allowed.");
     }
-    return data.url;
+    
+    setAttachments(prev => [...prev, ...validFiles.slice(0, 5 - prev.length)]); // Max 5 attachments
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const submitNew = async (e) => {
@@ -143,62 +119,67 @@ export default function BlogTopBar({
     try {
       setCreating(true);
 
-      const cover = await resolveCover();
-      const payload = {
-        title: form.title.trim(),
-        category: form.category.trim(),
-        cover,
-        excerpt: form.excerpt.trim(),
-        date: form.date,
-        read: form.read.trim() || "5 min",
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        sections: [
-          {
-            id: "intro",
-            h: "Introduction",
-            p: form.content.split("\n\n").map((x) => x.trim()).filter(Boolean),
-          },
-        ],
-      };
-
-      if (!payload.title || !payload.category || !payload.cover) {
-        alert("Please fill title, category, and cover image.");
+      if (!coverFile) {
+        alert("Please select a cover image.");
         setCreating(false);
         return;
       }
 
-      let created = payload;
-      if (mock) {
-        console.log("MOCK CREATE BLOG =>", payload);
-        alert("Mock: blog data captured in console.");
-      } else {
-        const { data } = await axios.post(createUrl, payload);
-        created = data || payload;
-        alert("Blog created!");
+      if (!form.title.trim() || !form.category.trim() || !form.content.trim()) {
+        alert("Please fill title, category, and content.");
+        setCreating(false);
+        return;
+      }
+      
+      // ✅ الخطوة 1: الحصول على اسم المؤلف تلقائيًا من localStorage
+      const userRaw = localStorage.getItem("user");
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      const authorName = user?.name || "Anonymous"; // استخدم اسم المستخدم أو قيمة افتراضية إذا لم يكن موجودًا
+
+      // Create FormData for file uploads
+      const formData = new FormData();
+      formData.append('title', form.title.trim());
+      formData.append('description', form.content.trim());
+      formData.append('category', form.category.trim());
+      formData.append('read_time', form.read.trim() || "5 min");
+      formData.append('cover', coverFile);
+      
+      // ✅ الخطوة 2: إضافة اسم المؤلف إلى البيانات المرسلة
+      formData.append('author', authorName);
+      
+      // Add tags as comma-separated string
+      const tags = form.tags
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean);
+      if (tags.length > 0) {
+        formData.append('tags', tags.join(","));
       }
 
-      // Reset
+      // Add attachments
+      attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("http://localhost:5000/blogs", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {} ),
+        },
+      });
+
+      alert("Blog created!");
       setOpen(false);
-      setForm((f) => ({
-        ...f,
-        title: "",
-        category: "",
-        excerpt: "",
-        content: "",
-        tags: "",
-      }));
+      setForm({ title: "", category: "", excerpt: "", content: "", tags: "", read: "5 min" });
       setCoverFile(null);
       setCoverPreview("");
-      setCoverUrl("");
-      setCoverMode("upload");
-
-      onCreated?.(created);
+      setAttachments([]);
+      onCreated?.(data);
     } catch (err) {
-      console.error(err);
-      alert(err.message || "Failed to create blog.");
+      console.error("Blog creation error:", err);
+      alert(err.response?.data?.message || err.message || "Failed to create blog.");
     } finally {
       setCreating(false);
     }
@@ -223,7 +204,6 @@ export default function BlogTopBar({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Favorite */}
             {currentId && (
               <button
                 onClick={toggleFav}
@@ -236,7 +216,6 @@ export default function BlogTopBar({
               </button>
             )}
 
-            {/* Copy */}
             <button
               onClick={copyLink}
               className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2"
@@ -246,7 +225,6 @@ export default function BlogTopBar({
               <span className="text-sm text-slate-700 hidden sm:inline">Copy</span>
             </button>
 
-            {/* Share */}
             <button
               onClick={shareLink}
               className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2"
@@ -256,7 +234,6 @@ export default function BlogTopBar({
               <span className="text-sm text-slate-700 hidden sm:inline">Share</span>
             </button>
 
-            {/* New Blog */}
             {enableNew && (
               <button
                 onClick={() => setOpen(true)}
@@ -291,131 +268,47 @@ export default function BlogTopBar({
                 </button>
               </div>
 
-              <form
-                onSubmit={submitNew}
-                className="p-4 sm:p-6 grid gap-6 overflow-y-auto max-h-[calc(85vh-56px)]"
-              >
+              <form onSubmit={submitNew} className="p-4 sm:p-6 grid gap-6 overflow-y-auto max-h-[calc(85vh-56px)]">
                 <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Cover Image Upload */}
                   <div>
-                    <label className="block text-sm text-slate-600 mb-2">Cover image *</label>
-
-                    {/* Mode toggle */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setCoverMode("upload")}
-                        className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                          coverMode === "upload"
-                            ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
-                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-                        }`}
-                      >
-                        Upload
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCoverMode("url")}
-                        className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                          coverMode === "url"
-                            ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
-                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-                        }`}
-                      >
-                        URL
-                      </button>
-                    </div>
-
-                    {coverMode === "upload" ? (
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onDrop={onDrop}
-                        className="rounded-xl border border-dashed border-slate-300 hover:border-slate-400 transition p-4"
-                      >
-                        {coverPreview ? (
-                          <div className="relative">
-                            <img
-                              src={coverPreview}
-                              alt="Cover preview"
-                              className="w-full h-44 object-cover rounded-lg"
-                            />
-                            <div className="mt-3 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2"
-                              >
-                                <UploadIcon className="w-4 h-4" />
-                                <span className="text-sm">Change image</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCoverFile(null);
-                                  setCoverPreview("");
-                                }}
-                                className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <div className="mx-auto w-12 h-12 rounded-full grid place-items-center bg-slate-100">
-                              <ImageIcon className="w-6 h-6 text-slate-500" />
-                            </div>
-                            <p className="mt-2 text-sm text-slate-600">
-                              Drag & drop an image here, or
-                            </p>
-                            <div className="mt-3">
-                              <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2"
-                              >
-                                <UploadIcon className="w-4 h-4" />
-                                <span className="text-sm">Import image</span>
-                              </button>
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => handleFile(e.target.files?.[0])}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
+                    <label className="block text-sm text-slate-600 mb-2">Cover Image *</label>
+                    <div 
+                      className="rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-400 transition p-4 cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {coverPreview ? (
                         <div className="relative">
-                          <Link2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            value={coverUrl}
-                            onChange={(e) => setCoverUrl(e.target.value)}
-                            placeholder="https://example.com/cover.jpg"
-                            className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50 bg-white"
-                          />
-                        </div>
-                        {!!coverUrl && (
                           <img
-                            src={coverUrl}
+                            src={coverPreview}
                             alt="Cover preview"
-                            className="w-full h-44 object-cover rounded-lg border border-slate-200"
-                            onError={(e) => {
-                              e.currentTarget.src = "";
-                            }}
+                            className="w-full h-44 object-cover rounded-lg"
                           />
-                        )}
-                      </div>
-                    )}
+                          <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                            <span className="text-white text-sm">Change cover</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <div className="mx-auto w-12 h-12 rounded-full grid place-items-center bg-slate-100">
+                            <ImageIcon className="w-6 h-6 text-slate-500" />
+                          </div>
+                          <p className="mt-2 text-sm text-slate-600">
+                            Click to upload cover image
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleCoverFile(e.target.files?.[0])}
+                    />
                   </div>
 
-                  {/*  Title + Category + Excerpt + Tags */}
+                  {/* Form Fields */}
                   <div className="grid gap-4 content-start">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
@@ -436,7 +329,7 @@ export default function BlogTopBar({
                           value={form.category}
                           onChange={onChange}
                           className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
-                          placeholder="e.g. Guides"
+                          placeholder="e.g. Tutorial"
                           required
                         />
                       </div>
@@ -448,13 +341,12 @@ export default function BlogTopBar({
                         name="excerpt"
                         value={form.excerpt}
                         onChange={onChange}
-                        rows={4}
+                        rows={2}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
                         placeholder="Short summary..."
                       />
                     </div>
 
-                    {/* ✅ Tags input */}
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">Tags (comma separated)</label>
                       <input
@@ -462,7 +354,7 @@ export default function BlogTopBar({
                         value={form.tags}
                         onChange={onChange}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
-                        placeholder="e.g. Hiring, Freelancers"
+                        placeholder="React, JavaScript"
                       />
                     </div>
                   </div>
@@ -470,15 +362,64 @@ export default function BlogTopBar({
 
                 {/* Content */}
                 <div>
-                  <label className="block text-sm text-slate-600 mb-1">Content</label>
+                  <label className="block text-sm text-slate-600 mb-1">Content *</label>
                   <textarea
                     name="content"
                     value={form.content}
                     onChange={onChange}
-                    rows={8}
+                    rows={6}
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
-                    placeholder="Write your article. Use empty lines to split paragraphs."
+                    placeholder="Write your article..."
+                    required
                   />
+                </div>
+
+                {/* Attachments */}
+                <div>
+                  <label className="block text-sm text-slate-600 mb-2">
+                    Attachments (optional)
+                    <span className="text-xs text-slate-500 ml-2">Max 5 files (images, PDFs, docs)</span>
+                  </label>
+                  <div 
+                    className="rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-400 transition p-4 cursor-pointer"
+                    onClick={() => attachmentsRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <Paperclip className="w-6 h-6 text-slate-500" />
+                      <p className="mt-2 text-sm text-slate-600">
+                        {attachments.length > 0 
+                          ? `${attachments.length} file(s) selected` 
+                          : "Click to add attachments"}
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    ref={attachmentsRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleAttachments(e.target.files)}
+                  />
+                  
+                  {/* Attachment previews */}
+                  {attachments.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {attachments.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <div className="bg-slate-100 rounded-lg p-2 text-xs truncate">
+                            {file.name}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(index)}
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}

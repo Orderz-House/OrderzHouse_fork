@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Calendar, User, Clock, ChevronRight, Tag } from "lucide-react";
+import { Calendar, User, Clock, ChevronRight, Tag, Paperclip, FileText, Image, File } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import BlogTopBar from "./components/BlogTopBar.jsx";
@@ -22,7 +22,7 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`/api/blogs/${encodeURIComponent(id)}`, {
+        const { data } = await axios.get(`http://localhost:5000/blogs/${encodeURIComponent(id)}`, {
           // If you need auth:
           // headers: { authorization: `Bearer ${token}` },
         });
@@ -51,7 +51,7 @@ export default function BlogPost() {
     return () => {
       mounted = false;
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]); // eslint-disable-line react-hooks-exhaustive-deps
 
   // reading progress
   const contentRef = useRef(null);
@@ -102,6 +102,31 @@ export default function BlogPost() {
       year: "numeric",
     });
 
+  // Helper to get file icon based on type
+  const getFileIcon = (url) => {
+    if (!url) return <File className="w-5 h-5" />;
+    
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
+      return <Image className="w-5 h-5 text-emerald-600" />;
+    } else if (lowerUrl.match(/\.(pdf)$/)) {
+      return <FileText className="w-5 h-5 text-rose-600" />;
+    } else if (lowerUrl.match(/\.(doc|docx|txt|rtf)$/)) {
+      return <FileText className="w-5 h-5 text-blue-600" />;
+    }
+    return <File className="w-5 h-5 text-slate-600" />;
+  };
+
+  // Helper to get file name from URL
+  const getFileName = (url) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname.split('/').pop() || 'attachment';
+    } catch {
+      return url.split('/').pop() || 'attachment';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Reading progress */}
@@ -115,7 +140,7 @@ export default function BlogPost() {
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl="/api/blogs"
+        createUrl="http://localhost:5000/blogs"
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);
@@ -124,9 +149,9 @@ export default function BlogPost() {
         currentTitle={post?.title}
         currentExcerpt={post?.excerpt}
       />
-
+     
       {/* Header */}
-      <header className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0 pt-8 pb-4">
+      <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
         {loading && !post ? (
           <div className="text-slate-500">Loading…</div>
         ) : err ? (
@@ -135,7 +160,7 @@ export default function BlogPost() {
           <div className="text-slate-500">Not found.</div>
         ) : (
           <>
-            <div className="flex items-center gap-3 text-slate-600 text-sm">
+            <div className="flex flex-wrap items-center gap-3 text-slate-600 text-sm mb-4">
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
                 {formatDate(post.date)}
@@ -157,7 +182,7 @@ export default function BlogPost() {
                 </span>
               )}
             </div>
-            <h1 className="mt-3 text-3xl sm:text-4xl font-semibold leading-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
               {post.title}
             </h1>
           </>
@@ -166,72 +191,121 @@ export default function BlogPost() {
 
       {/* Cover */}
       {!post ? null : (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0">
-          <div className="rounded-3xl overflow-hidden border border-slate-200 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
             <img
               src={post.cover}
               alt={post.title}
-              className="w-full h-[320px] sm:h-[420px] object-cover"
+              className="w-full h-64 sm:h-80 object-cover"
             />
           </div>
         </div>
       )}
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0 py-10">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {!post ? null : (
-          <div className="grid lg:grid-cols-[1fr,280px] gap-10">
-            <article ref={contentRef} className="space-y-8">
-              {(post.sections || []).map((s) => (
-                <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
-                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
-                    {s.h}
-                  </h2>
-                  <div className="mt-3 space-y-3 text-slate-700 leading-relaxed">
-                    {(s.p || []).map((para, i) => (
-                      <p key={i}>{para}</p>
-                    ))}
-                  </div>
-                </section>
-              ))}
-
-              {Array.isArray(post.tags) && post.tags.length > 0 && (
-                <div className="pt-4 border-t border-slate-200">
-                  <div className="flex flex-wrap gap-2">
-                    {post.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs"
-                      >
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
+          <article ref={contentRef} className="space-y-8">
+            {(post.sections || []).map((s) => (
+              <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
+                <h2 className="text-xl font-bold text-slate-900 mb-3">
+                  {s.h}
+                </h2>
+                <div className="space-y-4 text-slate-700 leading-relaxed">
+                  {(s.p || []).map((para, i) => (
+                    <p key={i} className="text-base">
+                      {para}
+                    </p>
+                  ))}
                 </div>
-              )}
-            </article>
-          </div>
+              </section>
+            ))}
+
+            {Array.isArray(post.tags) && post.tags.length > 0 && (
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Attachments Section - Compact Icons */}
+            {post.attachments && (
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <Paperclip className="w-5 h-5 text-slate-600" />
+                  <h3 className="text-lg font-semibold text-slate-900">Attachments</h3>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  {(() => {
+                    let attachments = [];
+                    if (Array.isArray(post.attachments)) {
+                      attachments = post.attachments;
+                    } else if (typeof post.attachments === 'string') {
+                      try {
+                        const parsed = JSON.parse(post.attachments);
+                        if (Array.isArray(parsed)) {
+                          attachments = parsed;
+                        } else {
+                          attachments = [post.attachments];
+                        }
+                      } catch {
+                        attachments = [post.attachments];
+                      }
+                    }
+                    
+                    return attachments.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex flex-col items-center w-20"
+                        title={getFileName(url)}
+                      >
+                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center mb-2 group-hover:bg-slate-200 transition-colors">
+                          {getFileIcon(url)}
+                        </div>
+                        <span className="text-xs text-slate-600 text-center truncate w-full">
+                          {getFileName(url).substring(0, 12)}
+                          {getFileName(url).length > 12 ? '...' : ''}
+                        </span>
+                      </a>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </article>
         )}
 
         {/* Prev/Next (placeholder) */}
-        <div className="mt-10 grid sm:grid-cols-2 gap-4">
+        <div className="mt-12 grid sm:grid-cols-2 gap-4">
           <button
             disabled
-            className="group text-left rounded-2xl border border-slate-200 bg-white p-4 disabled:opacity-50"
+            className="group text-left rounded-xl border border-slate-200 bg-white p-4 disabled:opacity-50"
           >
             <div className="text-xs text-slate-500">Previous</div>
-            <div className="flex items-center gap-2 text-slate-800">
+            <div className="flex items-center gap-2 text-slate-800 mt-1">
               <ChevronRight className="w-4 h-4 -scale-x-100 text-slate-400" />
-              <span className="line-clamp-1">—</span>
+              <span className="line-clamp-1 text-sm">—</span>
             </div>
           </button>
           <button
             disabled
-            className="group text-right rounded-2xl border border-slate-200 bg-white p-4 disabled:opacity-50"
+            className="group text-right rounded-xl border border-slate-200 bg-white p-4 disabled:opacity-50"
           >
             <div className="text-xs text-slate-500">Next</div>
-            <div className="flex items-center justify-end gap-2 text-slate-800">
-              <span className="line-clamp-1">—</span>
+            <div className="flex items-center justify-end gap-2 text-slate-800 mt-1">
+              <span className="line-clamp-1 text-sm">—</span>
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
           </button>

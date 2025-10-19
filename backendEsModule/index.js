@@ -31,7 +31,9 @@ import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
+import blogsRouter from "./router/blogs.js";
 //import analyticsRoutes from "./router/analytics.js";
+
 
 // DB connection
 dotenv.config();
@@ -41,6 +43,7 @@ const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
+  
 }
 
 app.use(express.json());
@@ -86,6 +89,7 @@ app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
+app.use("/blogs", blogsRouter);
 
 
 let server, io;
