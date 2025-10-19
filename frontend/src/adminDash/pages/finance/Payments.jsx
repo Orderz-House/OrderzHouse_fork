@@ -154,7 +154,8 @@ export default function Payments() {
     );
   }
 
-  const { endpoint, columns } = configs[role] ?? configs.user;
+  // ❌ تمت إزالة السطر الذي يسبب الخطأ:
+  // const { endpoint, columns } = configs[role] ?? configs.user;
 
   return (
     <ClientBilling
