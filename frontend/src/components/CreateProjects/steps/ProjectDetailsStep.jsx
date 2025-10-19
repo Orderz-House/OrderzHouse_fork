@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { fetchCategories, fetchSubSubCategoriesByCategoryId } from "../api/category";
 
+const THEME = "#028090";
+
 export default function ProjectDetailsStep({ onNext, projectData, setProjectData }) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
@@ -25,9 +27,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    fetchCategories()
-      .then(setCategories)
-      .catch(console.error);
+    fetchCategories().then(setCategories).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -44,15 +44,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Fields that cannot be 0
     const noZeroFields = ["budget", "hourly_rate", "duration_days", "duration_hours", "budget_min", "budget_max"];
-
     let newValue = value;
-    if (noZeroFields.includes(name)) {
-      newValue = Math.max(Number(value), 1); // minimum 1
-    }
-
+    if (noZeroFields.includes(name)) newValue = Math.max(Number(value), 1);
     setForm(prev => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
@@ -60,22 +54,13 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const handleAddSkill = () => {
     const newSkill = skillsInput.trim();
     if (!newSkill) return;
-    if (form.preferred_skills.includes(newSkill)) {
-      setSkillsInput("");
-      return;
-    }
-    setForm(prev => ({
-      ...prev,
-      preferred_skills: [...prev.preferred_skills, newSkill]
-    }));
+    if (form.preferred_skills.includes(newSkill)) return setSkillsInput("");
+    setForm(prev => ({ ...prev, preferred_skills: [...prev.preferred_skills, newSkill] }));
     setSkillsInput("");
   };
 
   const handleRemoveSkill = (skill) => {
-    setForm(prev => ({
-      ...prev,
-      preferred_skills: prev.preferred_skills.filter(s => s !== skill)
-    }));
+    setForm(prev => ({ ...prev, preferred_skills: prev.preferred_skills.filter(s => s !== skill) }));
   };
 
   const calculateAmountToPay = () => {
@@ -90,7 +75,6 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     if (!form.description.trim()) newErrors.description = "Description is required";
     if (!form.category_id) newErrors.category_id = "Category is required";
     if (!form.sub_sub_category_id) newErrors.sub_sub_category_id = "Sub-category is required";
-
     if (form.project_type === "fixed" && form.budget <= 0) newErrors.budget = "Budget must be greater than 0";
     if (form.project_type === "hourly" && form.hourly_rate <= 0) newErrors.hourly_rate = "Hourly rate must be greater than 0";
     if (form.project_type === "bidding") {
@@ -98,7 +82,6 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
       if (form.budget_max <= 0) newErrors.budget_max = "Max budget must be greater than 0";
       if (form.budget_max < form.budget_min) newErrors.budget_max = "Max budget must be greater than min budget";
     }
-
     if (showErrors) setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,17 +93,19 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     onNext();
   };
 
+  const inputBase = "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent transition";
+
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Details</h2>
-        <p className="text-gray-600">Tell us about your project</p>
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="p-6 bg-gradient-to-r from-[#02C39A]/10 via-[#028090]/10 to-[#05668D]/10 border-b border-slate-100">
+        <h2 className="text-2xl font-black tracking-tight text-slate-800">Project Details</h2>
+        <p className="text-slate-500">Tell us about your project</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Title */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
             Project Title <span className="text-red-500">*</span>
           </label>
           <input
@@ -128,30 +113,30 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
             placeholder="e.g., Build a responsive website"
             value={form.title}
             onChange={handleChange}
-            className={`w-full border-2 ${errors.title ? 'border-red-500' : 'border-gray-300'} px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+            className={`${inputBase} ${errors.title ? "ring-red-400 border-red-300" : ""}`}
           />
           {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
             Description <span className="text-red-500">*</span>
           </label>
           <textarea
             name="description"
+            rows={6}
             placeholder="Describe your project in detail..."
             value={form.description}
             onChange={handleChange}
-            rows={5}
-            className={`w-full border-2 ${errors.description ? 'border-red-500' : 'border-gray-300'} px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none`}
+            className={`${inputBase} resize-y ${errors.description ? "ring-red-400 border-red-300" : ""}`}
           />
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
         </div>
 
         {/* Preferred Skills */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Skills</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Preferred Skills</label>
           <div className="flex gap-3 mb-3">
             <input
               type="text"
@@ -159,26 +144,26 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               onChange={(e) => setSkillsInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
               placeholder="Type a skill and press Enter or Add"
-              className="flex-1 border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className={inputBase}
             />
             <button
               type="button"
               onClick={handleAddSkill}
-              className="bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all"
+              className="px-5 rounded-xl font-semibold text-white transition"
+              style={{ background: THEME }}
             >
               Add
             </button>
           </div>
-
           {form.preferred_skills.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {form.preferred_skills.map((skill, i) => (
-                <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                <span key={i} className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 border border-slate-200">
                   {skill}
                   <button
                     type="button"
                     onClick={() => handleRemoveSkill(skill)}
-                    className="text-blue-500 hover:text-blue-700 font-bold"
+                    className="text-slate-500 hover:text-slate-700 font-bold"
                   >
                     ×
                   </button>
@@ -191,25 +176,23 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         {/* Categories */}
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
               Category <span className="text-red-500">*</span>
             </label>
             <select
               name="category_id"
               value={form.category_id}
               onChange={handleChange}
-              className={`w-full border-2 ${errors.category_id ? 'border-red-500' : 'border-gray-300'} px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+              className={`${inputBase} ${errors.category_id ? "ring-red-400 border-red-300" : ""}`}
             >
               <option value="">Select Category</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
+              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
             {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
               Sub-category <span className="text-red-500">*</span>
             </label>
             <select
@@ -217,12 +200,10 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               value={form.sub_sub_category_id}
               onChange={handleChange}
               disabled={!form.category_id}
-              className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.sub_sub_category_id ? "ring-red-400 border-red-300" : ""}`}
             >
               <option value="">Select Sub-category</option>
-              {subSubCategories.map(sub => (
-                <option key={sub.id} value={sub.id}>{sub.name}</option>
-              ))}
+              {subSubCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
             </select>
             {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
           </div>
@@ -230,39 +211,42 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
 
         {/* Project Type */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">
             Project Type <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {[
               { value: "fixed", label: "Fixed Price", icon: "💰" },
               { value: "hourly", label: "Hourly Rate", icon: "⏰" },
               { value: "bidding", label: "Bidding", icon: "🎯" }
-            ].map(type => (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => handleChange({ target: { name: "project_type", value: type.value } })}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  form.project_type === type.value
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className="text-2xl mb-1">{type.icon}</div>
-                <div className="font-medium text-sm">{type.label}</div>
-              </button>
-            ))}
+            ].map(type => {
+              const active = form.project_type === type.value;
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => handleChange({ target: { name: "project_type", value: type.value } })}
+                  className={`p-4 rounded-xl border-2 transition-all text-center ${
+                    active ? "border-[#028090] bg-[#E6F7F6] shadow-sm" : "border-slate-200 hover:border-[#028090]/50"
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{type.icon}</div>
+                  <div className="font-semibold text-slate-800">{type.label}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Budget */}
-        <div className="bg-gray-50 p-6 rounded-lg">
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
           {form.project_type === "fixed" && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Budget <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Budget <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <span className="absolute left-4 top-3.5 text-gray-500 font-medium">$</span>
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
                 <input
                   name="budget"
                   type="number"
@@ -270,19 +254,21 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                   placeholder="0.00"
                   value={form.budget}
                   onChange={handleChange}
-                  className={`w-full border-2 ${errors.budget ? 'border-red-500' : 'border-gray-300'} pl-8 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                  className={`${inputBase} pl-8 ${errors.budget ? "ring-red-400 border-red-300" : ""}`}
                 />
               </div>
               {errors.budget && <p className="mt-1 text-sm text-red-500">{errors.budget}</p>}
-              <p className="mt-1 text-gray-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
+              <p className="mt-2 text-slate-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
             </div>
           )}
 
           {form.project_type === "hourly" && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Hourly Rate <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Hourly Rate <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <span className="absolute left-4 top-3.5 text-gray-500 font-medium">$/hr</span>
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$/hr</span>
                 <input
                   name="hourly_rate"
                   type="number"
@@ -290,20 +276,20 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                   placeholder="0.00"
                   value={form.hourly_rate}
                   onChange={handleChange}
-                  className={`w-full border-2 ${errors.hourly_rate ? 'border-red-500' : 'border-gray-300'} pl-14 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                  className={`${inputBase} pl-14 ${errors.hourly_rate ? "ring-red-400 border-red-300" : ""}`}
                 />
               </div>
               {errors.hourly_rate && <p className="mt-1 text-sm text-red-500">{errors.hourly_rate}</p>}
-              <p className="mt-1 text-gray-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
+              <p className="mt-2 text-slate-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
             </div>
           )}
 
           {form.project_type === "bidding" && (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Min Budget <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Min Budget <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-4 top-3.5 text-gray-500 font-medium">$</span>
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
                   <input
                     name="budget_min"
                     type="number"
@@ -311,15 +297,15 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                     placeholder="0.00"
                     value={form.budget_min}
                     onChange={handleChange}
-                    className={`w-full border-2 ${errors.budget_min ? 'border-red-500' : 'border-gray-300'} pl-8 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                    className={`${inputBase} pl-8 ${errors.budget_min ? "ring-red-400 border-red-300" : ""}`}
                   />
                 </div>
                 {errors.budget_min && <p className="mt-1 text-sm text-red-500">{errors.budget_min}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Max Budget <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Max Budget <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-4 top-3.5 text-gray-500 font-medium">$</span>
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
                   <input
                     name="budget_max"
                     type="number"
@@ -327,7 +313,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                     placeholder="0.00"
                     value={form.budget_max}
                     onChange={handleChange}
-                    className={`w-full border-2 ${errors.budget_max ? 'border-red-500' : 'border-gray-300'} pl-8 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                    className={`${inputBase} pl-8 ${errors.budget_max ? "ring-red-400 border-red-300" : ""}`}
                   />
                 </div>
                 {errors.budget_max && <p className="mt-1 text-sm text-red-500">{errors.budget_max}</p>}
@@ -339,18 +325,17 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         {/* Duration */}
         {form.project_type !== "hourly" && (
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Project Duration</label>
-            <div className="grid md:grid-cols-2 gap-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-3">Project Duration</label>
+            <div className="grid sm:grid-cols-2 gap-4">
               <select
                 name="duration_type"
                 value={form.duration_type}
                 onChange={handleChange}
-                className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className={inputBase}
               >
                 <option value="days">Days</option>
                 <option value="hours">Hours</option>
               </select>
-
               <input
                 name={form.duration_type === "days" ? "duration_days" : "duration_hours"}
                 type="number"
@@ -358,7 +343,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 placeholder={`Duration in ${form.duration_type}`}
                 value={form.duration_type === "days" ? form.duration_days : form.duration_hours}
                 onChange={handleChange}
-                className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className={inputBase}
               />
             </div>
           </div>
@@ -368,7 +353,8 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         <button
           type="submit"
           disabled={!isFormValid}
-          className={`w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`w-full h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 disabled:opacity-60`}
+          style={{ background: THEME }}
         >
           Continue to Files
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,5 +1,7 @@
 import React, { useRef, useState } from "react";
 
+const THEME = "#028090";
+
 export default function PaymentStep({
   onBack,
   files,
@@ -14,40 +16,25 @@ export default function PaymentStep({
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setProofFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setProofFile(e.target.files[0]);
   };
-
   const removeProofFile = () => {
     setProofFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024, sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
+  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setProofFile(e.dataTransfer.files[0]);
-    }
+    e.preventDefault(); setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) setProofFile(e.dataTransfer.files[0]);
   };
 
   const calculateAmount = () => {
@@ -55,64 +42,55 @@ export default function PaymentStep({
     if (projectData.project_type === "fixed") return projectData.budget || 0;
     if (projectData.project_type === "hourly") return (projectData.hourly_rate || 0) * 3;
     if (projectData.project_type === "bidding") {
-      const min = projectData.budget_min || 0;
-      const max = projectData.budget_max || 0;
+      const min = projectData.budget_min || 0, max = projectData.budget_max || 0;
       return `${min} - ${max}`;
     }
     return 0;
   };
 
   const getProjectTypeLabel = () => {
-    const types = {
-      fixed: "Fixed Price",
-      hourly: "Hourly Rate",
-      bidding: "Bidding"
-    };
+    const types = { fixed: "Fixed Price", hourly: "Hourly Rate", bidding: "Bidding" };
     return types[projectData.project_type] || "Not specified";
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment & Submit</h2>
-        <p className="text-gray-600">
-          Review your project details and upload proof of payment to continue.
-        </p>
+        <h2 className="text-2xl font-black tracking-tight text-slate-900">Payment & Submit</h2>
+        <p className="text-slate-600">Review your project and upload payment proof to continue.</p>
       </div>
 
       {/* Project Preview */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-100">
-        <h3 className="font-bold text-lg text-gray-900 mb-4">Project Preview</h3>
-        
-        <div className="space-y-3">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Title</label>
-            <p className="text-gray-900 font-medium mt-1">{projectData.title || 'No title provided'}</p>
+      <div className="rounded-2xl border border-slate-200 p-6 mb-6 bg-gradient-to-br from-[#02C39A]/10 via-[#028090]/10 to-[#05668D]/10">
+        <h3 className="font-bold text-lg text-slate-900 mb-4">Project Preview</h3>
+        <div className="grid gap-3">
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Title</label>
+            <p className="text-slate-900 font-medium mt-1">{projectData.title || "No title provided"}</p>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Description</label>
-            <p className="text-gray-900 mt-1 line-clamp-3">{projectData.description || 'No description provided'}</p>
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
+            <p className="text-slate-800 mt-1">{projectData.description || "No description provided"}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-3">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Project Type</label>
-              <p className="text-gray-900 font-medium mt-1">{getProjectTypeLabel()}</p>
+            <div className="bg-white rounded-xl p-4 border border-slate-200">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Project Type</label>
+              <p className="text-slate-900 font-medium mt-1">{getProjectTypeLabel()}</p>
             </div>
-
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Budget / Rate</label>
-              <p className="text-gray-900 font-medium mt-1 text-green-600">${calculateAmount()}</p>
+            <div className="bg-white rounded-xl p-4 border border-slate-200">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Budget / Rate</label>
+              <p className="text-slate-900 font-semibold mt-1" style={{ color: THEME }}>${calculateAmount()}</p>
             </div>
           </div>
 
           {projectData.preferred_skills?.length > 0 && (
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Required Skills</label>
+            <div className="bg-white rounded-xl p-4 border border-slate-200">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Required Skills</label>
               <div className="flex flex-wrap gap-2">
                 {projectData.preferred_skills.map((skill, i) => (
-                  <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span key={i} className="px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 border border-slate-200">
                     {skill}
                   </span>
                 ))}
@@ -124,39 +102,60 @@ export default function PaymentStep({
 
       {/* Payment Proof Upload */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
           Upload Payment Proof <span className="text-red-500">*</span>
         </label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={handleFileChange}
-          className="border p-3 rounded-lg w-full"
-        />
+
+        <div
+          className={`rounded-xl border-2 border-dashed p-6 text-center transition-all ${
+            isDragging ? "border-[#028090] bg-[#E6F7F6]" : "border-slate-300 hover:border-[#028090]/50"
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={handleFileChange}
+            className="hidden"
+            id="proof-upload"
+          />
+          <label htmlFor="proof-upload" className="cursor-pointer block">
+            <svg className="mx-auto h-10 w-10 text-slate-400 mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <p className="text-slate-600">Drop file here or click to browse</p>
+          </label>
+        </div>
+
         {proofFile && (
-          <div className="mt-3 bg-green-50 p-3 rounded-lg flex justify-between items-center">
-            <span>{proofFile.name} ({formatFileSize(proofFile.size)})</span>
-            <button onClick={removeProofFile} className="text-red-600 font-semibold">Remove</button>
+          <div className="mt-3 bg-[#E6F7F6] border border-[#028090]/30 p-3 rounded-xl flex justify-between items-center">
+            <span className="text-slate-800">
+              {proofFile.name} ({formatFileSize(proofFile.size)})
+            </span>
+            <button onClick={removeProofFile} className="text-red-600 font-semibold hover:underline">Remove</button>
           </div>
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Actions */}
       <div className="flex gap-4">
         <button
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex-1 bg-gray-100 text-gray-700 py-4 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 h-12 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-60"
         >
           Back
         </button>
         <button
           onClick={onSubmit}
           disabled={isSubmitting || !proofFile}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 disabled:opacity-60"
+          style={{ background: THEME }}
         >
-          {isSubmitting ? 'Submitting...' : 'Create Project'}
+          {isSubmitting ? "Submitting..." : "Create Project"}
         </button>
       </div>
     </div>
