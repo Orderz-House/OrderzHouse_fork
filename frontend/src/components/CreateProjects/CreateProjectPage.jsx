@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; // ✅ import useNavigate
 
 import ProjectDetailsStep from "./steps/ProjectDetailsStep";
 import ProjectFilesStep from "./steps/ProjectFilesStep";
@@ -15,6 +16,7 @@ import {
 
 export default function CreateProjectPage() {
   const token = useSelector(state => state.auth.token);
+  const navigate = useNavigate(); // ✅ initialize navigate
 
   const [step, setStep] = useState(1);
   const [projectData, setProjectData] = useState({});
@@ -50,12 +52,20 @@ export default function CreateProjectPage() {
 
       // 4️⃣ Submit payment proof
       if (proofFile) {
-        await recordOfflinePaymentApi(projectId, proofFile, token);
+        let amount = 0;
+        if (projectData.project_type === "fixed") amount = Number(projectData.budget);
+        else if (projectData.project_type === "hourly") amount = Number(projectData.hourly_rate);
+        else if (projectData.project_type === "bidding") amount = Number(projectData.budget_max);
+
+        if (!isNaN(amount) && amount > 0) {
+          await recordOfflinePaymentApi(projectId, proofFile, token, amount);
+        } else {
+          alert("Invalid payment amount. Cannot submit payment proof.");
+        }
       }
 
       alert("Project created successfully!");
-      // optionally redirect to project page
-      // navigate(`/projects/${projectId}`);
+      navigate("/"); // ✅ navigate to home after success
     } catch (err) {
       alert(err.message || "Failed to create project");
       console.error(err);
@@ -104,7 +114,18 @@ export default function CreateProjectPage() {
           {step === 1 && <ProjectDetailsStep onNext={nextStep} projectData={projectData} setProjectData={setProjectData} />}
           {step === 2 && <ProjectFilesStep onNext={nextStep} onBack={prevStep} files={files} setFiles={setFiles} />}
           {step === 3 && <AssignFreelancersStep onNext={nextStep} onBack={prevStep} categoryId={projectData.category_id} selectedFreelancer={selectedFreelancer} setSelectedFreelancer={setSelectedFreelancer} />}
-          {step === 4 && <PaymentStep onBack={prevStep} files={files} selectedFreelancer={selectedFreelancer} proofFile={proofFile} setProofFile={setProofFile} isSubmitting={isSubmitting} onSubmit={handleFinalSubmit} />}
+{step === 4 && (
+  <PaymentStep
+    onBack={prevStep}
+    files={files}
+    projectData={projectData} 
+    selectedFreelancer={selectedFreelancer}
+    proofFile={proofFile}
+    setProofFile={setProofFile}
+    isSubmitting={isSubmitting}
+    onSubmit={handleFinalSubmit}
+  />
+)}
         </div>
       </div>
     </div>

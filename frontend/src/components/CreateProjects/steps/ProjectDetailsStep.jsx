@@ -4,23 +4,25 @@ import { fetchCategories, fetchSubSubCategoriesByCategoryId } from "../api/categ
 export default function ProjectDetailsStep({ onNext, projectData, setProjectData }) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
+  const [skillsInput, setSkillsInput] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
     category_id: "",
     sub_sub_category_id: "",
     duration_type: "days",
-    duration_days: 0,
-    duration_hours: 0,
+    duration_days: 1,
+    duration_hours: 1,
     project_type: "fixed",
-    budget: 0,
-    budget_min: 0,
-    budget_max: 0,
-    hourly_rate: 0,
+    budget: 1,
+    budget_min: 1,
+    budget_max: 1,
+    hourly_rate: 1,
     preferred_skills: [],
     ...projectData
   });
   const [errors, setErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     fetchCategories()
@@ -36,17 +38,58 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     setForm(prev => ({ ...prev, sub_sub_category_id: "" }));
   }, [form.category_id]);
 
+  useEffect(() => {
+    setIsFormValid(validateForm(false));
+  }, [form]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+
+    // Fields that cannot be 0
+    const noZeroFields = ["budget", "hourly_rate", "duration_days", "duration_hours", "budget_min", "budget_max"];
+
+    let newValue = value;
+    if (noZeroFields.includes(name)) {
+      newValue = Math.max(Number(value), 1); // minimum 1
+    }
+
+    setForm(prev => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
-  const validateForm = () => {
+  const handleAddSkill = () => {
+    const newSkill = skillsInput.trim();
+    if (!newSkill) return;
+    if (form.preferred_skills.includes(newSkill)) {
+      setSkillsInput("");
+      return;
+    }
+    setForm(prev => ({
+      ...prev,
+      preferred_skills: [...prev.preferred_skills, newSkill]
+    }));
+    setSkillsInput("");
+  };
+
+  const handleRemoveSkill = (skill) => {
+    setForm(prev => ({
+      ...prev,
+      preferred_skills: prev.preferred_skills.filter(s => s !== skill)
+    }));
+  };
+
+  const calculateAmountToPay = () => {
+    if (form.project_type === "fixed") return form.budget;
+    if (form.project_type === "hourly") return form.hourly_rate * 3;
+    return null;
+  };
+
+  const validateForm = (showErrors = true) => {
     const newErrors = {};
     if (!form.title.trim()) newErrors.title = "Title is required";
     if (!form.description.trim()) newErrors.description = "Description is required";
     if (!form.category_id) newErrors.category_id = "Category is required";
+    if (!form.sub_sub_category_id) newErrors.sub_sub_category_id = "Sub-category is required";
 
     if (form.project_type === "fixed" && form.budget <= 0) newErrors.budget = "Budget must be greater than 0";
     if (form.project_type === "hourly" && form.hourly_rate <= 0) newErrors.hourly_rate = "Hourly rate must be greater than 0";
@@ -56,17 +99,15 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
       if (form.budget_max < form.budget_min) newErrors.budget_max = "Max budget must be greater than min budget";
     }
 
-    setErrors(newErrors);
+    if (showErrors) setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    // Send form data to parent for draft project creation
     setProjectData(form);
-    onNext(form);
+    onNext();
   };
 
   return (
@@ -108,6 +149,45 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
         </div>
 
+        {/* Preferred Skills */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Skills</label>
+          <div className="flex gap-3 mb-3">
+            <input
+              type="text"
+              value={skillsInput}
+              onChange={(e) => setSkillsInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
+              placeholder="Type a skill and press Enter or Add"
+              className="flex-1 border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            />
+            <button
+              type="button"
+              onClick={handleAddSkill}
+              className="bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all"
+            >
+              Add
+            </button>
+          </div>
+
+          {form.preferred_skills.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {form.preferred_skills.map((skill, i) => (
+                <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(skill)}
+                    className="text-blue-500 hover:text-blue-700 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Categories */}
         <div className="grid md:grid-cols-2 gap-6">
           <div>
@@ -129,7 +209,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Sub-category</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Sub-category <span className="text-red-500">*</span>
+            </label>
             <select
               name="sub_sub_category_id"
               value={form.sub_sub_category_id}
@@ -142,12 +224,15 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>
+            {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
           </div>
         </div>
 
         {/* Project Type */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Project Type <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Project Type <span className="text-red-500">*</span>
+          </label>
           <div className="grid grid-cols-3 gap-4">
             {[
               { value: "fixed", label: "Fixed Price", icon: "💰" },
@@ -181,6 +266,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 <input
                   name="budget"
                   type="number"
+                  min={1}
                   placeholder="0.00"
                   value={form.budget}
                   onChange={handleChange}
@@ -188,6 +274,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 />
               </div>
               {errors.budget && <p className="mt-1 text-sm text-red-500">{errors.budget}</p>}
+              <p className="mt-1 text-gray-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
             </div>
           )}
 
@@ -199,6 +286,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 <input
                   name="hourly_rate"
                   type="number"
+                  min={1}
                   placeholder="0.00"
                   value={form.hourly_rate}
                   onChange={handleChange}
@@ -206,6 +294,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 />
               </div>
               {errors.hourly_rate && <p className="mt-1 text-sm text-red-500">{errors.hourly_rate}</p>}
+              <p className="mt-1 text-gray-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
             </div>
           )}
 
@@ -218,6 +307,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                   <input
                     name="budget_min"
                     type="number"
+                    min={1}
                     placeholder="0.00"
                     value={form.budget_min}
                     onChange={handleChange}
@@ -233,6 +323,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                   <input
                     name="budget_max"
                     type="number"
+                    min={1}
                     placeholder="0.00"
                     value={form.budget_max}
                     onChange={handleChange}
@@ -246,34 +337,38 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         </div>
 
         {/* Duration */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Project Duration</label>
-          <div className="grid md:grid-cols-2 gap-4">
-            <select
-              name="duration_type"
-              value={form.duration_type}
-              onChange={handleChange}
-              className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-            >
-              <option value="days">Days</option>
-              <option value="hours">Hours</option>
-            </select>
+        {form.project_type !== "hourly" && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Project Duration</label>
+            <div className="grid md:grid-cols-2 gap-4">
+              <select
+                name="duration_type"
+                value={form.duration_type}
+                onChange={handleChange}
+                className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              >
+                <option value="days">Days</option>
+                <option value="hours">Hours</option>
+              </select>
 
-            <input
-              name={form.duration_type === "days" ? "duration_days" : "duration_hours"}
-              type="number"
-              placeholder={`Duration in ${form.duration_type}`}
-              value={form.duration_type === "days" ? form.duration_days : form.duration_hours}
-              onChange={handleChange}
-              className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-            />
+              <input
+                name={form.duration_type === "days" ? "duration_days" : "duration_hours"}
+                type="number"
+                min={1}
+                placeholder={`Duration in ${form.duration_type}`}
+                value={form.duration_type === "days" ? form.duration_days : form.duration_hours}
+                onChange={handleChange}
+                className="border-2 border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          disabled={!isFormValid}
+          className={`w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           Continue to Files
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
