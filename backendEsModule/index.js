@@ -11,6 +11,7 @@ import "./cron/autoCancelAssignments.js"
 
 
 // Routers
+import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
@@ -31,8 +32,9 @@ import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
-import paymentsRouter from "./router/payments.js";
+import Blogsrouter from "./router/blogs.js"
 //import analyticsRoutes from "./router/analytics.js";
+
 
 // DB connection
 dotenv.config();
@@ -42,6 +44,7 @@ const PORT = process.env.NODE_ENV === "test" ? 0 : process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
+  
 }
 
 app.use(express.json());
@@ -64,7 +67,8 @@ app.use(limiter);
 
 // Routers
 
-
+app.use("/blogs", Blogsrouter)
+app.use("/admUser" , AdminUser)
 app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
@@ -87,7 +91,6 @@ app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
-app.use("/payment", paymentsRouter); 
 
 
 let server, io;

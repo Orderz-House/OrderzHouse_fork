@@ -24,7 +24,7 @@ export default function Blogs() {
     try {
       setLoading(true);
       setErr(null);
-      const { data } = await axios.get("/api/blogs", {
+      const { data } = await axios.get("http://localhost:5000/blogs", {
         // headers: { authorization: `Bearer ${token}` },
       });
       setPosts(Array.isArray(data) ? data : data?.items ?? []);
@@ -80,7 +80,11 @@ export default function Blogs() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top bar: keep same props; onCreated -> refetch */}
-      <BlogTopBar enableNew createUrl="/api/blogs" onCreated={fetchPosts} />
+      <BlogTopBar 
+  createUrl="/blogs" 
+  mock={false} 
+  onCreated={fetchPosts} 
+/>
 
       {/* Header */}
       <header className="border-b border-slate-200/60 bg-white">

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 
-const countries = [/* … نفس القائمة كما هي … */ 
+const countries = [
   "Afghanistan","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica",
   "Antigua and Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas (the)","Bahrain",
   "Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia (Plurinational State of)",

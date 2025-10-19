@@ -1,13 +1,6 @@
 import { useState } from "react";
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Send,
-  MessageCircle,
-  User,
-  AlertCircle,
-} from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import emailjs from "@emailjs/browser"; 
 
 import GradientButton from "../buttons/GradientButton.jsx";
 
@@ -30,32 +23,47 @@ export default function ContactUsPage() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSubmitStatus("success");
-      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-      // eslint-disable-next-line no-unused-vars
-    } catch (error) {
-      setSubmitStatus("error");
-    } finally {
-      setIsSubmitting(false);
-    }
+
+    const serviceID = "service_xjlxu9w";
+    const templateID = "template_cqt07lu";
+    const publicKey = "pfn428lvrdzy-q3WR";
+
+    const templateParams = {
+      from_name: formData.name,
+      from_email: formData.email,
+      phone_number: formData.phone,
+      subject: formData.subject,
+      message: formData.message,
+    };
+
+    emailjs
+      .send(serviceID, templateID, templateParams, publicKey)
+      .then((response) => {
+        console.log("SUCCESS!", response.status, response.text);
+        setSubmitStatus("success");
+        setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+      })
+      .catch((err) => {
+        console.error("FAILED...", err);
+        setSubmitStatus("error");
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
-      {/* ✅ BACKGROUND (contained inside this page only) */}
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#F0F3BD]/10 via-white to-[#02C39A]/5 pointer-events-none"></div>
       <div className="absolute top-10 left-4 sm:top-20 sm:left-10 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#F0F3BD]/20 to-[#02C39A]/10 blur-xl animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-10 right-4 sm:bottom-20 sm:right-10 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-[#05668D]/10 to-[#028090]/20 blur-2xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-1/2 left-1/4 w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#00A896]/5 to-[#F0F3BD]/10 blur-3xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-1/4 right-1/3 w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-[#028090]/8 to-[#02C39A]/15 blur-2xl animate-pulse pointer-events-none"></div>
 
-      {/* ✅ PAGE CONTENT */}
       <div className="relative z-10">
         <section className="py-16 text-center">
           <h1
@@ -73,10 +81,8 @@ export default function ContactUsPage() {
           </p>
         </section>
 
-        {/* Contact Form & Details */}
         <section className="pb-20">
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 xl:grid-cols-3 gap-12">
-            {/* Contact Info */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-[#F0F3BD]/20">
               <h2
                 className="text-2xl font-bold mb-8 text-gray-700"
@@ -202,8 +208,8 @@ export default function ContactUsPage() {
                 />
 
                 <GradientButton
+                  type="submit" 
                   className="w-full md:w-auto px-6 py-3 font-semibold"
-                  onClick={handleSubmit}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
