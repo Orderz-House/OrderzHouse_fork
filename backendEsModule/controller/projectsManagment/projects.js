@@ -165,7 +165,9 @@ export const assignProject = async (req, res) => {
     if (!freelancer_id) return res.status(400).json({ success: false, message: "freelancer_id required" });
 
     const { rows: projectRows } = await pool.query(
-      `SELECT id, duration_days, duration_hours, status, title FROM projects WHERE id = $1 AND is_deleted = false`,
+      `SELECT id, duration_days, duration_hours, status, title 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
     if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
@@ -176,8 +178,10 @@ export const assignProject = async (req, res) => {
       `SELECT role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
-    if (!userRows.length || userRows[0].role_id !== 3) return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
-    if (!userRows[0].is_verified) return res.status(403).json({ success: false, message: "Freelancer must be verified" });
+    if (!userRows.length || userRows[0].role_id !== 3) 
+      return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
+    if (!userRows[0].is_verified) 
+      return res.status(403).json({ success: false, message: "Freelancer must be verified" });
 
     const { rows: existing } = await pool.query(
       `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
@@ -195,8 +199,10 @@ export const assignProject = async (req, res) => {
 
     const assignedAt = new Date();
     let deadline = null;
-    if (project.duration_days) deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
-    else if (project.duration_hours) deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
+    if (project.duration_days) 
+      deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
+    else if (project.duration_hours) 
+      deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
 
     const { rows: inserted } = await pool.query(
       `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type, deadline)
@@ -204,17 +210,25 @@ export const assignProject = async (req, res) => {
       [projectId, freelancer_id, assignedAt, assignment_type, deadline]
     );
 
+    // Set start_date when freelancer is assigned
     if (assignment_type === "solo") {
       await pool.query(
-        `UPDATE projects SET status = 'active', completion_status = 'not_started' WHERE id = $1`,
+        `UPDATE projects
+         SET start_date = NOW(),
+             completion_status = 'not_started'
+         WHERE id = $1`,
         [projectId]
       );
     }
 
-    // Log assignment creation
-    await LogCreators.projectOperation(req.token?.userId || 0, ACTION_TYPES.ASSIGNMENT_CREATE, projectId, true, { freelancer_id, assignment_id: inserted[0].id, assignment_type });
+    await LogCreators.projectOperation(
+      req.token?.userId || 0,
+      ACTION_TYPES.ASSIGNMENT_CREATE,
+      projectId,
+      true,
+      { freelancer_id, assignment_id: inserted[0].id, assignment_type }
+    );
 
-    // Send notifications
     try {
       await NotificationCreators.freelancerAssigned(freelancer_id, projectId, project.title);
       await NotificationCreators.projectAssignedToClient(req.token?.userId || 0, projectId, project.title);
