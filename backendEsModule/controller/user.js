@@ -137,7 +137,7 @@ const login = async (req, res) => {
     if (!validPassword) return res.status(401).json({ message: "Invalid credentials" });
 
     // Generate OTP
-    const otp = generateOtp();
+    /*const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
     await pool.query("UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3", [
@@ -150,7 +150,7 @@ const login = async (req, res) => {
 
     await deliverOtp(destination, "email", otp);
 
-    return res.status(200).json({ message: "OTP sent successfully", user_id: user.id });
+    return res.status(200).json({ message: "OTP sent successfully", user_id: user.id });*/
   } catch (err) {
     console.error("Login Error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -158,7 +158,7 @@ const login = async (req, res) => {
 };
 
 // ===================== VERIFY OTP =====================
-export const verifyOTP = async (req, res) => {
+/*export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -207,7 +207,7 @@ export const sendOtpController = async (req, res) => {
     return res.status(500).json({ success: false, message: "Login error", error: err.message });
   }
 };
-
+*/
 // ==================== USER MANAGEMENT FUNCTIONS ====================
 
 const viewUsers = async (req, res) => {
@@ -219,7 +219,6 @@ const viewUsers = async (req, res) => {
   }
 };
 
-// ... (تكملة من الأعلى)
 
 const deleteUser = async (req, res) => {
   try {

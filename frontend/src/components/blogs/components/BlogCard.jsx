@@ -9,11 +9,9 @@ export default function BlogCard({ post }) {
       year: "numeric",
     });
 
-  // ✅ استخدمنا post.id أو post._id لضمان التوافق
   const postUrl = `/blogs/${post.id ?? post._id}`;
 
   return (
-    // أضفنا `group` هنا لجعل تأثيرات hover تعمل بشكل صحيح مع الرابط المطلق
     <article className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-shadow duration-300">
       
       <div className="relative">

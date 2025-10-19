@@ -131,12 +131,10 @@ export default function BlogTopBar({
         return;
       }
       
-      // ✅ الخطوة 1: الحصول على اسم المؤلف تلقائيًا من localStorage
       const userRaw = localStorage.getItem("user");
       const user = userRaw ? JSON.parse(userRaw) : null;
-      const authorName = user?.name || "Anonymous"; // استخدم اسم المستخدم أو قيمة افتراضية إذا لم يكن موجودًا
+      const authorName = user?.name || "Anonymous"; 
 
-      // Create FormData for file uploads
       const formData = new FormData();
       formData.append('title', form.title.trim());
       formData.append('description', form.content.trim());
