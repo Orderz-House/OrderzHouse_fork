@@ -1,172 +1,188 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux'; // Import useSelector
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-// =================== CUSTOM HOOK TO GET AUTH INFO (Using Redux) ===================
+const THEME = "#028090";
+
+// ================ Auth Hook ================
 const useAuth = () => {
-  // Get user data and token directly from the Redux store
-  const { user, token } = useSelector((state) => ({
-    user: state.auth.userData,
-    token: state.auth.token,
+  const { user, token } = useSelector((s) => ({
+    user: s.auth?.userData,
+    token: s.auth?.token,
   }));
-
-  // The hook now returns the user and token from the global state
   return { user, token };
 };
-// =================================================================================
+// ==========================================
 
 const plans = [
-  { id: 1, name: "Free", description: "Perfect for getting started", subscriptionFee: "0", earnLimit: "100" },
-  { id: 2, name: "1 month", description: "Best value for professionals", subscriptionFee: "20", earnLimit: "Unlimited" },
-  { id: 3, name: "1 Year", description: "Most popular choice", subscriptionFee: "45", earnLimit: "Unlimited", isPopular: true },
-  { id: 4, name: "2 Year Plan", description: "Maximum value for serious professionals", subscriptionFee: "65", earnLimit: "Unlimited" },
+  { id: 1, name: "Basic",   label: "Free",    price: "0",  period: "JD", description: ["Perfect for getting started"], earnLimit: "100" },
+  { id: 2, name: "Advance", label: "1 month", price: "20", period: "JD", description: ["Best value for professionals"], earnLimit: "Unlimited" },
+  { id: 3, name: "Premium", label: "1 Year",  price: "45", period: "JD", description: ["Most popular choice"], earnLimit: "Unlimited", isPopular: true },
+  { id: 4, name: "Pro+",    label: "2 Year",  price: "65", period: "JD", description: ["Maximum value for serious professionals"], earnLimit: "Unlimited" },
 ];
 
-function PlanCard({ plan, user, navigate }) {
+// WhatsApp helper
+const PHONE = "962791433341";
+const buildWA = (plan, user) => {
+  const text =
+    `Hello, I want to subscribe:\n` +
+    `- Plan: ${plan.label}\n- Fee: ${plan.price} JD\n- Earn Limit: ${plan.earnLimit}\n` +
+    (user ? `- User: ${user?.name || user?.username || "N/A"} (role_id: ${user?.role_id ?? "N/A"})` : `- User: (guest)`);
+  return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
+};
 
-  const handleChoosePlan = () => {
-    // *** MODIFICATION: Logic updated to match requirements ***
+function PlanCard({ plan, user }) {
+  const isPopular = !!plan.isPopular;
 
-    // 1. If the user is NOT logged in, redirect to the login page.
+  const onChoose = () => {
     if (!user) {
       window.location.href = "/login";
       return;
     }
     if (user.role_id === 3) {
-      const baseUrl = "https://api.whatsapp.com/send/";
-      const phoneNumber = "962791433341";
-      const message = `I am a freelancer and I want to subscribe to this plan: ${plan.name}`;
-      const encodedMessage = encodeURIComponent(message);
-      const finalUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
-      window.open(finalUrl, "_blank");
+      window.open(buildWA(plan, user), "_blank");
       return;
     }
     alert("Subscription through WhatsApp is only available for Freelancers.");
   };
 
-  //const displayedPlans = plans.filter(plan => plan.plan_type === billingCycle);
-
   return (
     <div
+      onClick={onChoose}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onChoose()}
+      className={[
+        "group relative flex w-full max-w-sm cursor-pointer flex-col rounded-2xl border bg-white",
+        "transition-all duration-300 ease-out",
+        "hover:-translate-y-1 hover:shadow-xl",
+        isPopular ? "border-[2px]" : "border",
+      ].join(" ")}
       style={{
-        width: "18rem",
-        minHeight: "24rem",
-        border: `0.3rem solid ${plan.isPopular ? "#026d80ff" : "gray"}`,
-        borderRadius: "1.2rem",
-        boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-        margin: "1rem",
-        padding: "1.5rem",
-        textAlign: "center",
-        fontFamily: "Merriweather, serif",
-        backgroundColor: "white",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        transition: "all 0.3s ease",
-        position: "relative",
-        cursor: "pointer"
+        borderColor: isPopular ? THEME : "rgba(2,128,144,0.15)",
+        boxShadow: isPopular ? "0 8px 28px rgba(2,128,144,0.18)" : "0 6px 18px rgba(0,0,0,0.06)",
       }}
-      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f0f9ff"; }}
-      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
     >
-      {plan.isPopular && (
-        <span style={{
-          position: "absolute",
-          top: "0.5rem",
-          right: "0.5rem",
-          backgroundColor: "#88e4dfff",
-          color: "#028090",
-          fontSize: "0.7rem",
-          fontWeight: "600",
-          padding: "0.25rem 0.5rem",
-          borderRadius: "9999px"
-        }}>Popular</span>
-      )}
-      <div>
-        <h2 style={{ fontSize: "1.5rem", fontWeight: "700" }}>{plan.name}</h2>
-        <p style={{ marginTop: "1rem", fontSize: "2.5rem", fontWeight: "700" }}>{plan.subscriptionFee} JD</p>
-        <p style={{ color: "#000000ff", marginTop: "0.5rem", fontSize: "0.9rem" }}>Earn Limit: {plan.earnLimit}</p>
-        <p style={{ marginTop: "1rem", fontSize: "1.5rem", color: "#065f46" }}>{plan.description}</p>
+      {/* Header */}
+      <div className="px-6 pt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="rounded-full border px-3 py-1 text-xs font-semibold"
+            style={{ borderColor: "rgba(2,128,144,0.25)", color: THEME }}>
+            {plan.name}
+          </span>
+          {isPopular && (
+            <span
+              className="rounded-full px-3 py-1 text-xs font-semibold"
+              style={{ backgroundColor: "rgba(2,128,144,0.08)", color: THEME }}
+            >
+              Popular
+            </span>
+          )}
+        </div>
+
+        <h3 className="text-2xl font-extrabold tracking-tight" style={{ color: THEME }}>
+          {plan.label}
+        </h3>
+
+        <div className="mt-3 flex items-end gap-2">
+          <span className="text-4xl font-extrabold text-slate-900">{plan.price}</span>
+          <span className="mb-1 text-sm font-semibold text-slate-500">{plan.period}</span>
+        </div>
       </div>
-      <button 
-        style={{
-          marginTop: "1.5rem",
-          width: "100%",
-          background: "#005f6bff",
-          color: "white",
-          padding: "0.5rem",
-          borderRadius: "0.5rem",
-          fontWeight: "600",
-          border: "none",
-          cursor: "pointer"
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor="#026e7a"}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor="#028090"}
-        onClick={handleChoosePlan}
-      >
-        Choose {plan.name}
-      </button>
+
+      {/* Divider */}
+      <div className="mx-6 my-5 h-px" style={{ background: "rgba(2,128,144,0.12)" }} />
+
+      {/* Features */}
+      <ul className="mx-6 mb-4 space-y-2 text-sm text-slate-600">
+        {plan.description?.map((item, i) => (
+          <li key={i} className="flex items-center gap-2">
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: THEME }}
+            />
+            {item}
+          </li>
+        ))}
+        <li className="mt-1 text-xs text-slate-500">
+          <span className="font-semibold" style={{ color: THEME }}>Earn Limit:</span> {plan.earnLimit}
+        </li>
+      </ul>
+
+      {/* CTA */}
+      <div className="px-6 pb-6">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onChoose(); }}
+          className="w-full rounded-xl px-4 py-2 font-bold text-white transition"
+          style={{ background: THEME }}
+          onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.08)")}
+          onMouseLeave={(e) => (e.currentTarget.style.filter = "none")}
+        >
+          Choose Plan
+        </button>
+        <p className="mt-2 text-center text-[11px] text-slate-400">Tap card or button to contact via WhatsApp</p>
+      </div>
     </div>
   );
 }
 
 export default function Plans() {
-  const { user } = useAuth(); // Get user from Redux via the hook
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Effect to hide the entire page for Clients (role_id 2)
+  // hide page for clients
   useEffect(() => {
-    if (user && user.role_id === 2) {
-      navigate("/"); // Redirect to home page or another appropriate page
-    }
-  }, 
-  [user, navigate]);
-
-  // Prevent rendering the component for role_id 2 to avoid a screen flash
-  if (user && user.role_id === 2) {
-    return null; 
-  }
-
-  // Styles
-  const containerStyle = { display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "2rem", padding: "2rem" };
-  const noteStyle = {
-    marginTop: "3rem",
-    background: "linear-gradient(to right, #e0f7fa, #b2ebf2)",
-    padding: "2rem",
-    borderRadius: "1rem",
-    textAlign: "center",
-    fontSize: "1.3rem",
-    fontWeight: "600",
-
-    // color: "#026e7a",
-    // color: "#004d40",
-    color: "#004d40",
-    maxWidth: "900px",
-    marginLeft: "auto",
-    marginRight: "auto",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
-  };
-  const bodyStyle = {
-    minHeight: "100vh",
-    fontFamily: "Merriweather, serif",
-    background: "#f7fafc",
-    paddingBottom: "4rem"
-  };
+    if (user && user.role_id === 2) navigate("/");
+  }, [user, navigate]);
+  if (user && user.role_id === 2) return null;
 
   return (
-    <div style={bodyStyle}>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* Header */}
+      <div className="mx-auto max-w-6xl px-4 pt-10 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">Choose Your Plan</h1>
 
-      <h1 style={{ fontSize: "2.5rem", fontWeight: "700", textAlign: "center", marginTop: "0.05rem", background:"linear-gradient(to right, #e0f7fa, #b2ebf2)" }}>Our Pricing Plans</h1>
-      <div style={containerStyle}>
-        {plans.map(plan => (
-          <PlanCard key={plan.id} plan={plan} user={user} navigate={navigate} />
+        <div
+          role="presentation"
+          className="mx-auto mt-5 flex w-full max-w-xs items-center justify-center rounded-full border bg-white p-1 select-none"
+          style={{ borderColor: "rgba(2,128,144,0.2)" }}
+        >
+          <span
+            className="w-1/2 rounded-full px-3 py-1 text-center text-sm font-semibold text-white"
+            style={{ background: THEME }}
+          >
+            Simple pricing
+          </span>
+          <span
+            className="w-1/2 rounded-full px-3 py-1 text-center text-sm font-semibold text-slate-500"
+          >
+            No hidden fees
+          </span>
+        </div>
+
+        <p className="mt-4 text-sm text-slate-500">
+          Best Plans For <span className="font-semibold" style={{ color: THEME }}>FreeLancer</span>
+        </p>
+      </div>
+
+      {/* Cards grid */}
+      <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {plans.map((p) => (
+          <div key={p.id} className="flex justify-center">
+            <PlanCard plan={p} user={user} />
+          </div>
         ))}
       </div>
-      <div style={noteStyle}>
+
+      {/* Note */}
+      <div
+        className="mx-auto mt-10 max-w-4xl rounded-2xl border bg-white px-6 py-6 text-center text-sm font-semibold text-slate-700"
+        style={{ borderColor: "rgba(2,128,144,0.15)" }}
+      >
         <p>* A contract is signed after subscription.</p>
-        <p>* Account verification fee is a one-time payment across all plans (25 JD).</p>
+        <p className="mt-1">* Account verification fee is a one-time payment across all plans (25 JD).</p>
       </div>
     </div>
   );
-};
-
+}
