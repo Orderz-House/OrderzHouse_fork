@@ -17,6 +17,7 @@ import {
   assignFreelancer,
   acceptAssignment,
   rejectAssignment,
+  // startProject,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -26,6 +27,7 @@ import {
   getProjectsByCategoryId,
   getProjectsBySubCategoryId,
   getProjectsBySubSubCategoryId,
+  getProjectById 
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 const projectsRouter = express.Router();
@@ -37,6 +39,18 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Create a new project
 projectsRouter.post("/", authentication, createProject);
+
+
+//get a project details 
+projectsRouter.get(
+  "/:projectId",
+  authentication,         
+  getProjectById
+);
+
+// client approve for Freelancer assignment
+
+// projectsRouter.post("/:projectId/start", authentication, startProject);
 
 // Complete hourly project
 projectsRouter.put("/hourly/:projectId", authentication, completeHourlyProject);

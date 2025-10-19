@@ -40,10 +40,6 @@ export const getProjectsByCategory = async (req, res) => {
       WHERE p.category_id = $1
         AND p.status = 'active'
         AND p.is_deleted = false
-        AND NOT EXISTS (
-          SELECT 1 FROM project_assignments pa 
-          WHERE pa.project_id = p.id
-        )
       ORDER BY p.created_at DESC
       `,
       [category_id]
@@ -271,5 +267,63 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
   } catch (err) {
     console.error("getProjectsBySubSubCategoryId error:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+/**
+ * -------------------------------
+ * GET PROJECT BY ID
+ * -------------------------------
+ * Fetch a project and its details by project ID.
+ * Returns project data if found and not deleted.
+ * -------------------------------
+ */
+export const getProjectById = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    // Validate input
+    if (!projectId) {
+      return res.status(400).json({ success: false, message: "projectId is required" });
+    }
+
+    // Fetch project
+    const { rows: projectRows } = await pool.query(
+      `SELECT 
+         p.*,
+         u.username AS client_username,
+         u.email AS client_email,
+         c.name AS category_name,
+         sc.name AS sub_category_name,
+         ssc.name AS sub_sub_category_name
+       FROM projects p
+       LEFT JOIN users u ON p.user_id = u.id
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+       WHERE p.id = $1 AND p.is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+
+    const { rows: assignments } = await pool.query(
+      `SELECT pa.id, pa.status, u.id AS freelancer_id, u.username, u.email
+       FROM project_assignments pa
+       JOIN users u ON pa.freelancer_id = u.id
+       WHERE pa.project_id = $1`,
+      [projectId]
+    );
+
+    project.assignments = assignments;
+
+    return res.status(200).json({ success: true, project });
+
+  } catch (err) {
+    console.error("getProjectById error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
