@@ -2,7 +2,7 @@ import express from "express";
 import {
   register,
   login,
-  verifyOTP,
+
   viewUsers,
   deleteUser,
   editUser,
@@ -27,7 +27,7 @@ import {
   updatePassword,
   deactivateAccount,
   getUserById,
-  sendOtpController
+  // sendOtpController
   
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
@@ -38,8 +38,8 @@ const usersRouter = express.Router();
 // ==================== PUBLIC ROUTES ====================
 usersRouter.post("/register", register);
 usersRouter.post("/login", login);
-usersRouter.post("/verify-otp", verifyOTP);
-usersRouter.post("/send-otp", sendOtpController);
+// usersRouter.post("/verify-otp", verifyOTP);
+// usersRouter.post("/send-otp", sendOtpController);
 usersRouter.get("/freelancers/verification-status", authentication, checkVerificationStatus);
 usersRouter.put("/freelancers/verification-status", authentication, updateVerificationStatus);
 usersRouter.get("/freelancers/:id/portfolio", getPortfolioByfreelance);

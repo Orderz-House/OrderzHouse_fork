@@ -13,7 +13,7 @@ import News from "../pages/community/News.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
-// import Tasks from "../pages/operation/Tasks.jsx";
+import Tasks from "../pages/operation/Tasks.jsx";
 
 export default function AdminRouter() {
   return (
@@ -30,6 +30,7 @@ export default function AdminRouter() {
         <Route path="operation/appointments" element={<Appointments />} />
         <Route path="operation/verifications" element={<Verifications />} />
         <Route path="operation/projects" element={<Projects />} />
+        <Route path="operation/tasks" element={<Tasks />} />
         <Route path="community/news" element={<News />} />
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
@@ -38,9 +39,9 @@ export default function AdminRouter() {
         {/* generic sections — تُستخدم تحت /admin و /client و /freelancer */}
         <Route path="projects" element={<Projects />} />
         <Route path="payments" element={<Payments />} />
-        {/* <Route path="tasks" element={<Tasks />} /> */}
         <Route path="courses" element={<Courses />} />
         <Route path="appointments" element={<Appointments />} />
+        <Route path="tasks" element={<Tasks />} />
       </Route>
     </Routes>
   );
