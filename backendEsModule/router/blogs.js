@@ -15,7 +15,7 @@ import {
   saveBlog
 } from "../controller/blogs.js";
 
-const router = express.Router();
+const Blogsrouter = express.Router();
 
 // Configure multer for memory storage (required for Cloudinary)
 const storage = multer.memoryStorage();
@@ -49,16 +49,16 @@ const upload = multer({
 ]);
 
 // Public routes
-router.get("/", getBlogs);
-router.get("/:id", getBlogById);
+Blogsrouter.get("/", getBlogs);
+Blogsrouter.get("/:id", getBlogById);
 
 // Protected routes with upload middleware
-router.post("/", authentication, upload, createBlog);
-router.put("/:id", authentication, upload, updateBlog);
-router.delete("/:id", authentication, deleteBlog);
-router.put("/:id/approve", authentication, authorization("admin"), approveBlog);
-router.put("/:id/reject", authentication, authorization("admin"), rejectBlog);
-router.post("/:id/like", authentication, likeBlog);
-router.post("/:id/save", authentication, saveBlog);
+Blogsrouter.post("/", authentication, upload, createBlog);
+Blogsrouter.put("/:id", authentication, upload, updateBlog);
+Blogsrouter.delete("/:id", authentication, deleteBlog);
+Blogsrouter.put("/:id/approve", authentication, authorization("admin"), approveBlog);
+Blogsrouter.put("/:id/reject", authentication, authorization("admin"), rejectBlog);
+Blogsrouter.post("/:id/like", authentication, likeBlog);
+Blogsrouter.post("/:id/save", authentication, saveBlog);
 
-export default router;
+export default Blogsrouter;

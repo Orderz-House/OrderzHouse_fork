@@ -11,6 +11,7 @@ import "./cron/autoCancelAssignments.js"
 
 
 // Routers
+import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
@@ -31,6 +32,7 @@ import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
+import Blogsrouter from "./router/blogs.js"
 //import analyticsRoutes from "./router/analytics.js";
 
 
@@ -65,7 +67,8 @@ app.use(limiter);
 
 // Routers
 
-
+app.use("/blogs", Blogsrouter)
+app.use("/admUser" , AdminUser)
 app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);

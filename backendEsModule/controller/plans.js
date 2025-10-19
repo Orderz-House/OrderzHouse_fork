@@ -2,139 +2,176 @@
  * -------------------------------
  * PLANS & SUBSCRIPTIONS BACKEND
  * -------------------------------
- * Story:
- * - Freelancers can subscribe to plans.
- * - Subscription starts when freelancer is assigned their first project.
- * - Plans have: name, price, duration (days), description, features.
- * - Subscription status: active, cancelled, pending_start.
  */
 
 import pool from "../models/db.js";
 
 /**
+ * Utility: consistent error handler
+ */
+const handleError = (res, err, message = "Server error") => {
+  console.error(message, err);
+  return res.status(500).json({ success: false, message, error: err.message });
+};
+
+/**
  * Get all plans
  */
-const getPlans = (req, res) => {
-  pool
-    .query("SELECT * FROM plans ORDER BY id ASC")
-    .then((result) => {
-      res.status(200).json({ success: true, plans: result.rows });
-    })
-    .catch((err) => res.status(500).json({ success: false, error: err.message }));
+export const getPlans = async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT * FROM plans ORDER BY id ASC");
+    res.status(200).json({ success: true, plans: rows });
+  } catch (err) {
+    handleError(res, err, "Failed to fetch plans");
+  }
 };
 
 /**
  * Create a new plan
  */
-const createPlan = (req, res) => {
-  const { name, price, duration, description, features } = req.body;
-  const query = `
-    INSERT INTO plans (name, price, duration, description, features)
-    VALUES ($1, $2, $3, $4, $5)
-    RETURNING *;
-  `;
-  pool
-    .query(query, [name, price, duration, description, features])
-    .then((result) => res.status(201).json({
+export const createPlan = async (req, res) => {
+  const { name, price, duration, description, features, plan_type } = req.body;
+
+  if (!name || !price || !duration) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: name, price, duration",
+    });
+  }
+
+  try {
+    const query = `
+      INSERT INTO plans (name, price, duration, description, features, plan_type)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [
+      name,
+      price,
+      duration,
+      description || "",
+      features || [],
+      plan_type || "monthly",
+    ]);
+    res.status(201).json({
       success: true,
       message: "Plan created successfully",
-      plan: result.rows[0],
-    }))
-    .catch((err) => res.status(500).json({
-      success: false,
-      message: "Failed to create plan",
-      error: err.message,
-    }));
+      plan: rows[0],
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to create plan");
+  }
 };
 
 /**
  * Edit a plan
  */
-const editPlan = (req, res) => {
+export const editPlan = async (req, res) => {
   const { id } = req.params;
-  const { name, price, duration, description, features } = req.body;
-  const query = `
-    UPDATE plans
-    SET name = $1, price = $2, duration = $3, description = $4, features = $5
-    WHERE id = $6
-    RETURNING *;
-  `;
-  pool
-    .query(query, [name, price, duration, description, features, id])
-    .then((result) => res.status(200).json({
+  const { name, price, duration, description, features, plan_type } = req.body;
+
+  try {
+    const query = `
+      UPDATE plans
+      SET name = $1, price = $2, duration = $3, description = $4, features = $5, plan_type = $6
+      WHERE id = $7
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [
+      name,
+      price,
+      duration,
+      description,
+      features,
+      plan_type || "monthly",
+      id,
+    ]);
+
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Plan not found" });
+
+    res.status(200).json({
       success: true,
       message: "Plan updated successfully",
-      plan: result.rows[0],
-    }))
-    .catch((err) => res.status(500).json({
-      success: false,
-      message: "Failed to update plan",
-      error: err.message,
-    }));
+      plan: rows[0],
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to update plan");
+  }
 };
 
 /**
  * Delete a plan
  */
-const deletePlan = (req, res) => {
+export const deletePlan = async (req, res) => {
   const { id } = req.params;
-  pool
-    .query("DELETE FROM plans WHERE id = $1", [id])
-    .then(() => res.status(200).json({ success: true, message: "Plan deleted successfully" }))
-    .catch((err) => res.status(500).json({ success: false, message: "Failed to delete plan", error: err.message }));
+
+  try {
+    const { rowCount } = await pool.query("DELETE FROM plans WHERE id = $1", [id]);
+    if (rowCount === 0)
+      return res.status(404).json({ success: false, message: "Plan not found" });
+
+    res.status(200).json({ success: true, message: "Plan deleted successfully" });
+  } catch (err) {
+    handleError(res, err, "Failed to delete plan");
+  }
 };
 
 /**
- * Get plan subscriptions count
+ * Get plan with subscription count
  */
-const getPlanSubscriptions = (req, res) => {
+export const getPlanSubscriptions = async (req, res) => {
   const { id } = req.params;
-  const query = `
-    SELECT plans.id, plans.name, plans.price, plans.duration, plans.description,
-      COUNT(subscriptions.id) AS subscription_count
-    FROM plans
-    LEFT JOIN subscriptions ON plans.id = subscriptions.plan_id
-    WHERE plans.id = $1
-    GROUP BY plans.id
-    ORDER BY plans.id;
-  `;
-  pool
-    .query(query, [id])
-    .then((result) => res.status(200).json({ success: true, plans: result.rows }))
-    .catch((err) => res.status(500).json({ success: false, error: err.message }));
+
+  try {
+    const query = `
+      SELECT p.*, COUNT(s.id) AS subscription_count
+      FROM plans p
+      LEFT JOIN subscriptions s ON p.id = s.plan_id
+      WHERE p.id = $1
+      GROUP BY p.id;
+    `;
+    const { rows } = await pool.query(query, [id]);
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Plan not found" });
+
+    res.status(200).json({ success: true, plan: rows[0] });
+  } catch (err) {
+    handleError(res, err, "Failed to fetch plan subscriptions");
+  }
 };
 
 /**
- * Get freelancer active subscription
- * - Status: active or pending_start (if start_date is null)
+ * Get freelancer's active subscription
  */
-const getFreelancerSubscription = (req, res) => {
+export const getFreelancerSubscription = async (req, res) => {
   const freelancerId = req.token?.userId;
-  const query = `
-    SELECT s.*, p.name, p.price, p.duration, p.description,
-      CASE WHEN s.start_date IS NULL THEN 'pending_start' ELSE s.status END AS current_status
-    FROM subscriptions s
-    JOIN plans p ON s.plan_id = p.id
-    WHERE s.freelancer_id = $1 AND s.status = 'active';
-  `;
-  pool
-    .query(query, [freelancerId])
-    .then((result) => {
-      if (!result.rows.length) return res.status(200).json({ success: true, subscribed: false });
-      res.status(200).json({
-        success: true,
-        subscribed: true,
-        subscription: result.rows[0],
-      });
-    })
-    .catch((err) => res.status(500).json({ success: false, error: err.message }));
+  try {
+    const query = `
+      SELECT s.*, p.name, p.price, p.duration, p.description, p.plan_type,
+        CASE WHEN s.start_date IS NULL THEN 'pending_start' ELSE s.status END AS current_status
+      FROM subscriptions s
+      JOIN plans p ON s.plan_id = p.id
+      WHERE s.freelancer_id = $1 AND s.status = 'active';
+    `;
+    const { rows } = await pool.query(query, [freelancerId]);
+    if (!rows.length)
+      return res.status(200).json({ success: true, subscribed: false });
+
+    res.status(200).json({
+      success: true,
+      subscribed: true,
+      subscription: rows[0],
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to fetch freelancer subscription");
+  }
 };
 
 /**
  * Subscribe to a plan
- * - Subscription starts on first project assignment
  */
-const subscribeToPlan = async (req, res) => {
+export const subscribeToPlan = async (req, res) => {
   const freelancerId = req.token?.userId;
   const { plan_id } = req.body;
 
@@ -143,56 +180,61 @@ const subscribeToPlan = async (req, res) => {
       `SELECT * FROM subscriptions WHERE freelancer_id = $1 AND status = 'active'`,
       [freelancerId]
     );
-    if (existing.rows.length > 0) return res.status(400).json({ success: false, message: "You already have an active subscription." });
+    if (existing.rows.length > 0)
+      return res
+        .status(400)
+        .json({ success: false, message: "Already subscribed to an active plan." });
 
-    const planRes = await pool.query("SELECT duration FROM plans WHERE id = $1", [plan_id]);
-    if (planRes.rows.length === 0) return res.status(404).json({ success: false, message: "Plan not found" });
+    const planRes = await pool.query(
+      "SELECT duration FROM plans WHERE id = $1",
+      [plan_id]
+    );
+    if (!planRes.rows.length)
+      return res.status(404).json({ success: false, message: "Plan not found" });
 
-    // Create subscription with pending start
     const insertQuery = `
       INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
       VALUES ($1, $2, NULL, NULL, 'active')
       RETURNING *;
     `;
-    const result = await pool.query(insertQuery, [freelancerId, plan_id]);
+    const { rows } = await pool.query(insertQuery, [freelancerId, plan_id]);
 
     res.status(201).json({
       success: true,
-      message: "Subscription created successfully. Start date will be set on first project assignment.",
-      subscription: result.rows[0],
+      message:
+        "Subscription created successfully. It will start when your first project is assigned.",
+      subscription: rows[0],
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    handleError(res, err, "Failed to subscribe to plan");
   }
 };
 
 /**
- * Cancel active subscription
+ * Cancel subscription
  */
-const cancelSubscription = (req, res) => {
+export const cancelSubscription = async (req, res) => {
   const freelancerId = req.token?.userId;
-  const query = `
-    UPDATE subscriptions
-    SET status = 'cancelled'
-    WHERE freelancer_id = $1 AND status = 'active'
-    RETURNING *;
-  `;
-  pool
-    .query(query, [freelancerId])
-    .then((result) => {
-      if (!result.rows.length) return res.status(400).json({ success: false, message: "No active subscription found" });
-      res.status(200).json({ success: true, message: "Subscription cancelled successfully" });
-    })
-    .catch((err) => res.status(500).json({ success: false, error: err.message }));
-};
 
-export {
-  getPlans,
-  createPlan,
-  editPlan,
-  deletePlan,
-  getPlanSubscriptions,
-  getFreelancerSubscription,
-  subscribeToPlan,
-  cancelSubscription,
+  try {
+    const { rows } = await pool.query(
+      `UPDATE subscriptions
+       SET status = 'cancelled'
+       WHERE freelancer_id = $1 AND status = 'active'
+       RETURNING *;`,
+      [freelancerId]
+    );
+
+    if (!rows.length)
+      return res.status(400).json({
+        success: false,
+        message: "No active subscription found.",
+      });
+
+    res
+      .status(200)
+      .json({ success: true, message: "Subscription cancelled successfully." });
+  } catch (err) {
+    handleError(res, err, "Failed to cancel subscription");
+  }
 };
