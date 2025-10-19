@@ -38,13 +38,38 @@ export const createProject = async (req, res) => {
       preferred_skills
     } = req.body;
 
-    if (!category_id || !title || !description || !duration_type) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    // --- Validate required fields ---
+    const missingFields = [];
+    if (!category_id) missingFields.push("category_id");
+    if (!sub_category_id) missingFields.push("sub_category_id");
+    if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
+    if (!title) missingFields.push("title");
+    if (!description) missingFields.push("description");
+    if (!duration_type) missingFields.push("duration_type");
+
+    // Project type specific checks
+    if (project_type === "fixed" && (!budget || budget <= 0)) missingFields.push("budget");
+    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0)) missingFields.push("hourly_rate");
+    if (project_type === "bidding") {
+      if (!budget_min || budget_min <= 0) missingFields.push("budget_min");
+      if (!budget_max || budget_max <= 0) missingFields.push("budget_max");
+      if (budget_max < budget_min) missingFields.push("budget_max < budget_min");
     }
 
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Missing or invalid required fields: ${missingFields.join(", ")}` 
+      });
+    }
+
+    // --- Determine project status ---
     let projectStatus = "pending";
     if (project_type === "bidding") projectStatus = "bidding";
     else if (["fixed", "hourly"].includes(project_type)) projectStatus = "pending_payment";
+
+    const durationDaysValue = duration_type === "days" ? duration_days : null;
+    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
     const insertQuery = `
       INSERT INTO projects (
@@ -58,14 +83,11 @@ export const createProject = async (req, res) => {
       ) RETURNING *;
     `;
 
-    const durationDaysValue = duration_type === "days" ? duration_days : null;
-    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
-
     const { rows } = await pool.query(insertQuery, [
       userId,
       category_id,
-      sub_category_id || null,
-      sub_sub_category_id || null,
+      sub_category_id,
+      sub_sub_category_id,
       title,
       description,
       budget || null,
@@ -81,9 +103,11 @@ export const createProject = async (req, res) => {
 
     const project = rows[0];
 
+    // --- Calculate amount_to_pay ---
     let amountToPay = null;
     if (project.project_type === "fixed") amountToPay = project.budget;
     else if (project.project_type === "hourly") amountToPay = (project.hourly_rate || 0) * 3;
+    // bidding remains null
 
     if (amountToPay !== null) {
       const update = await pool.query(
@@ -93,10 +117,32 @@ export const createProject = async (req, res) => {
       Object.assign(project, update.rows[0]);
     }
 
-    // Log project creation
-    await LogCreators.projectOperation(userId, ACTION_TYPES.PROJECT_CREATE, project.id, true, { project });
+    // --- Log creation ---
+    await LogCreators.projectOperation(
+      userId,
+      ACTION_TYPES.PROJECT_CREATE,
+      project.id,
+      true,
+      { title: project.title, category_id: project.category_id }
+    );
 
-    return res.status(201).json({ success: true, project });
+    // --- Notification (non-blocking) ---
+    try {
+      await NotificationCreators.projectCreated(
+        project.id,
+        project.title,
+        userId,
+        project.category_id
+      );
+    } catch (notificationError) {
+      console.error("Error creating project notifications:", notificationError);
+    }
+
+    return res.status(201).json({
+      success: true,
+      project,
+    });
+
   } catch (error) {
     console.error("createProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -119,7 +165,9 @@ export const assignProject = async (req, res) => {
     if (!freelancer_id) return res.status(400).json({ success: false, message: "freelancer_id required" });
 
     const { rows: projectRows } = await pool.query(
-      `SELECT id, duration_days, duration_hours, status, title FROM projects WHERE id = $1 AND is_deleted = false`,
+      `SELECT id, duration_days, duration_hours, status, title 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
     if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
@@ -130,8 +178,10 @@ export const assignProject = async (req, res) => {
       `SELECT role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
-    if (!userRows.length || userRows[0].role_id !== 3) return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
-    if (!userRows[0].is_verified) return res.status(403).json({ success: false, message: "Freelancer must be verified" });
+    if (!userRows.length || userRows[0].role_id !== 3) 
+      return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
+    if (!userRows[0].is_verified) 
+      return res.status(403).json({ success: false, message: "Freelancer must be verified" });
 
     const { rows: existing } = await pool.query(
       `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
@@ -149,8 +199,10 @@ export const assignProject = async (req, res) => {
 
     const assignedAt = new Date();
     let deadline = null;
-    if (project.duration_days) deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
-    else if (project.duration_hours) deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
+    if (project.duration_days) 
+      deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
+    else if (project.duration_hours) 
+      deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
 
     const { rows: inserted } = await pool.query(
       `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type, deadline)
@@ -158,17 +210,25 @@ export const assignProject = async (req, res) => {
       [projectId, freelancer_id, assignedAt, assignment_type, deadline]
     );
 
+    // Set start_date when freelancer is assigned
     if (assignment_type === "solo") {
       await pool.query(
-        `UPDATE projects SET status = 'active', completion_status = 'not_started' WHERE id = $1`,
+        `UPDATE projects
+         SET start_date = NOW(),
+             completion_status = 'not_started'
+         WHERE id = $1`,
         [projectId]
       );
     }
 
-    // Log assignment creation
-    await LogCreators.projectOperation(req.token?.userId || 0, ACTION_TYPES.ASSIGNMENT_CREATE, projectId, true, { freelancer_id, assignment_id: inserted[0].id, assignment_type });
+    await LogCreators.projectOperation(
+      req.token?.userId || 0,
+      ACTION_TYPES.ASSIGNMENT_CREATE,
+      projectId,
+      true,
+      { freelancer_id, assignment_id: inserted[0].id, assignment_type }
+    );
 
-    // Send notifications
     try {
       await NotificationCreators.freelancerAssigned(freelancer_id, projectId, project.title);
       await NotificationCreators.projectAssignedToClient(req.token?.userId || 0, projectId, project.title);
@@ -477,11 +537,10 @@ export const resubmitWorkCompletion = async (req, res) => {
 /**
  * Upload file buffer (from multer.memoryStorage) to Cloudinary
  * @param {Buffer} buffer - The file buffer
- * @param {String} filename - The original file name
  * @param {String} folder - Optional Cloudinary folder (default: "project_files")
  * @returns {Promise<{secure_url: string, public_id: string}>}
  */
-export const uploadToCloudinary = (buffer, filename, folder = "project_files") => {
+export const uploadToCloudinary = (buffer, folder = "project_files") => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       { folder },
@@ -498,19 +557,18 @@ export const uploadToCloudinary = (buffer, filename, folder = "project_files") =
 
 export const addProjectFiles = async (req, res) => {
   const { projectId } = req.params;
-  const userId = req.user.id; 
+  const userId = req.token?.userId;
 
-  if (!req.files || req.files.length === 0) {
+  if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!req.files || req.files.length === 0)
     return res.status(400).json({ success: false, message: "No files uploaded" });
-  }
 
   try {
     const uploadedFiles = [];
 
     for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: `projects/${projectId}`,
-      });
+      // upload buffer instead of path
+      const result = await uploadToCloudinary(file.buffer, `projects/${projectId}`);
 
       const { rows } = await pool.query(
         `INSERT INTO project_files 
@@ -529,6 +587,7 @@ export const addProjectFiles = async (req, res) => {
     res.status(500).json({ success: false, message: "File upload failed", error: err.message });
   }
 };
+
 
 /**
  * -------------------------------

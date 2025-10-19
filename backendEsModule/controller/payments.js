@@ -260,7 +260,14 @@ export const approveOfflinePayment = async (req, res) => {
     const payment = rows[0];
 
     if (action === "approve") {
-      await client.query(`UPDATE projects SET status = 'available' WHERE id = $1`, [payment.project_id]);
+      // Only change status to active, do not set start_date
+      await client.query(
+        `UPDATE projects 
+         SET status = 'active', 
+             completion_status = 'not_started'
+         WHERE id = $1`,
+        [payment.project_id]
+      );
 
       await client.query("COMMIT");
 
@@ -273,7 +280,6 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
-        // This notifies the client who made the payment.
         await NotificationCreators.paymentApproved(payment.id, payment.project_id, payment.payer_id, payment.amount);
       } catch (err) {
         console.error("notify paymentApproved error:", err);
@@ -281,13 +287,12 @@ export const approveOfflinePayment = async (req, res) => {
 
       return res.json({
         success: true,
-        message: "Payment approved and project is now available",
+        message: "Payment approved and project is now active",
       });
     }
 
     if (action === "reject") {
       await client.query(`UPDATE payments SET order_id = -1 WHERE id = $1`, [paymentId]);
-
       await client.query("COMMIT");
 
       await LogCreators.projectOperation(
@@ -299,7 +304,6 @@ export const approveOfflinePayment = async (req, res) => {
       );
 
       try {
-        // This notifies the client who made the payment.
         await NotificationCreators.paymentRejected(payment.id, payment.project_id, payment.payer_id);
       } catch (err) {
         console.error("notify paymentRejected error:", err);
@@ -318,6 +322,7 @@ export const approveOfflinePayment = async (req, res) => {
     client.release();
   }
 };
+
 
 /**
  * -------------------------------

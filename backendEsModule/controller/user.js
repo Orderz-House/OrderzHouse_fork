@@ -121,91 +121,87 @@ const register = async (req, res) => {
   }
 };
 
+
+// ===================== LOGIN + OTP =====================
 const login = async (req, res) => {
-  const { email, password, twoFactorToken } = req.body;
-
-  function getClientIp(req) {
-    const forwarded = req.headers["x-forwarded-for"];
-    const ip = forwarded ? forwarded.split(",")[0] : req.connection.remoteAddress;
-    return ip === "::1" ? "127.0.0.1" : ip;
-  }
-
   try {
-    const emailLower = email.toLowerCase();
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1 AND is_deleted = FALSE",
-      [emailLower]
-    );
+    const { email, password, otpMethod = "email" } = req.body;
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
-    if (result.rows.length === 0) {
-      return res.status(403).json({ success: false, message: "Invalid credentials" });
+    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [email.toLowerCase()]);
+    const user = rows[0];
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(401).json({ message: "Invalid credentials" });
+
+    // Generate OTP
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+    await pool.query("UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3", [
+      otp,
+      expiresAt,
+      user.id,
+    ]);
+
+    const destination = otpMethod === "email" ? user.email : user.phone_number;
+
+    await deliverOtp(destination, "email", otp);
+
+    return res.status(200).json({ message: "OTP sent successfully", user_id: user.id });
+  } catch (err) {
+    console.error("Login Error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ===================== VERIFY OTP =====================
+export const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [email.toLowerCase()]);
+    const user = rows[0];
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.otp_code !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    const user = result.rows[0];
-    const match = await bcrypt.compare(password, user.password);
-
-    if (!match) {
-      return res.status(403).json({ success: false, message: "Invalid credentials" });
+    if (new Date() > new Date(user.otp_expires)) {
+      return res.status(400).json({ message: "OTP expired" });
     }
 
-    if (user.is_two_factor_enabled) {
-      if (!twoFactorToken) {
-        return res.status(200).json({
-          success: true,
-          twoFactorRequired: true,
-          message: "2FA token required",
-        });
-      }
+    // Clear OTP
+    await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL WHERE id=$1", [user.id]);
 
-      const verified = speakeasy.totp.verify({
-        secret: user.two_factor_secret,
-        encoding: "base32",
-        token: twoFactorToken,
-        window: 1,
-      });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-      if (!verified) {
-        return res.status(401).json({ success: false, message: "Invalid 2FA token" });
-      }
-    }
+    return res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
-    const payload = {
-      userId: user.id,
-      role: user.role_id,
-      is_verified: user.is_verified,
-      username: user.username,
-    };
+// ===================== SEND OTP (Manual API) =====================
+export const sendOtpController = async (req, res) => {
+  try {
+    const { email, method = "email" } = req.body;
+    if (!email) return res.status(400).json({ message: "Email required" });
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const otp = generateOtp();
+    const expires = new Date(Date.now() + 2 * 60 * 1000);
+    await pool.query("UPDATE users SET otp_code = $1, otp_expires = $2 WHERE email = $3", [
+      otp,
+      expires,
+      email.toLowerCase(),
+    ]);
 
-    if (!token) {
-      return res.status(500).json({ success: false, message: "Token generation failed" });
-    }
-
-    // Log IP for freelancers
-    if (user.role_id === 3) {
-      const ipAddress = getClientIp(req);
-      await pool.query("INSERT INTO ip_adress (user_id, ip_address) VALUES ($1, $2)", [
-        user.id,
-        ipAddress,
-      ]);
-    }
-
-    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_LOGIN, true, {
-      role_id: user.role_id,
-      country: user.country,
-      ip: req.ip,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Login successful",
-      token,
-      userId: user.id,
-      role: user.role_id,
-      userInfo: user,
-      is_verified: user.is_verified,
-    });
+    await deliverOtp(email, method, otp);
+    return res.status(200).json({ message: "OTP sent" });
   } catch (err) {
     console.error("Login Error:", err);
     return res.status(500).json({ success: false, message: "Login error", error: err.message });

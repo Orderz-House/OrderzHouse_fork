@@ -1,90 +1,163 @@
-import React, { useState } from "react";
-import { recordOfflinePaymentApi } from "../api/projects"; 
-import { useSelector } from "react-redux";
+import React, { useRef, useState } from "react";
 
-export default function PaymentStep({ projectId, onBack, onNext }) {
-  const [proofFile, setProofFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+export default function PaymentStep({
+  onBack,
+  files,
+  projectData = {},
+  selectedFreelancer,
+  proofFile,
+  setProofFile,
+  isSubmitting,
+  onSubmit
+}) {
+  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e) => {
-    setProofFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      setProofFile(e.target.files[0]);
+    }
   };
 
-  const handleSubmit = async () => {
-    if (!proofFile) {
-      alert("Please upload a payment proof.");
-      return;
-    }
+  const removeProofFile = () => {
+    setProofFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    setLoading(true);
-    try {
-      await recordOfflinePaymentApi(projectId, proofFile);
-      alert(
-        "Payment proof submitted! Admin will review. Once approved, your project will be available to freelancers."
-      );
-      onNext();
-    } catch (err) {
-      alert(err.message || "Failed to submit payment proof");
-    } finally {
-      setLoading(false);
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setProofFile(e.dataTransfer.files[0]);
     }
+  };
+
+  const calculateAmount = () => {
+    if (!projectData.project_type) return 0;
+    if (projectData.project_type === "fixed") return projectData.budget || 0;
+    if (projectData.project_type === "hourly") return (projectData.hourly_rate || 0) * 3;
+    if (projectData.project_type === "bidding") {
+      const min = projectData.budget_min || 0;
+      const max = projectData.budget_max || 0;
+      return `${min} - ${max}`;
+    }
+    return 0;
+  };
+
+  const getProjectTypeLabel = () => {
+    const types = {
+      fixed: "Fixed Price",
+      hourly: "Hourly Rate",
+      bidding: "Bidding"
+    };
+    return types[projectData.project_type] || "Not specified";
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Record Offline Payment</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment & Submit</h2>
         <p className="text-gray-600">
-          Upload a proof of payment. Admin will review and approve your payment.
+          Review your project details and upload proof of payment to continue.
         </p>
       </div>
 
+      {/* Project Preview */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-100">
+        <h3 className="font-bold text-lg text-gray-900 mb-4">Project Preview</h3>
+        
+        <div className="space-y-3">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Title</label>
+            <p className="text-gray-900 font-medium mt-1">{projectData.title || 'No title provided'}</p>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Description</label>
+            <p className="text-gray-900 mt-1 line-clamp-3">{projectData.description || 'No description provided'}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Project Type</label>
+              <p className="text-gray-900 font-medium mt-1">{getProjectTypeLabel()}</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Budget / Rate</label>
+              <p className="text-gray-900 font-medium mt-1 text-green-600">${calculateAmount()}</p>
+            </div>
+          </div>
+
+          {projectData.preferred_skills?.length > 0 && (
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Required Skills</label>
+              <div className="flex flex-wrap gap-2">
+                {projectData.preferred_skills.map((skill, i) => (
+                  <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Payment Proof Upload */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Upload Proof</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Upload Payment Proof <span className="text-red-500">*</span>
+        </label>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*,application/pdf"
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-700 border-2 border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border p-3 rounded-lg w-full"
         />
+        {proofFile && (
+          <div className="mt-3 bg-green-50 p-3 rounded-lg flex justify-between items-center">
+            <span>{proofFile.name} ({formatFileSize(proofFile.size)})</span>
+            <button onClick={removeProofFile} className="text-red-600 font-semibold">Remove</button>
+          </div>
+        )}
       </div>
 
+      {/* Action Buttons */}
       <div className="flex gap-4">
         <button
           onClick={onBack}
-          className="flex-1 bg-gray-100 text-gray-700 py-4 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+          disabled={isSubmitting}
+          className="flex-1 bg-gray-100 text-gray-700 py-4 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Back
         </button>
         <button
-          onClick={handleSubmit}
-          disabled={loading || !proofFile}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={onSubmit}
+          disabled={isSubmitting || !proofFile}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Submitting..." : "Submit Proof & Continue"}
+          {isSubmitting ? 'Submitting...' : 'Create Project'}
         </button>
-      </div>
-
-      <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-        <svg
-          className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-          />
-        </svg>
-        <div>
-          <p className="font-semibold text-green-900">Secure Submission</p>
-          <p className="text-sm text-green-700 mt-1">
-            Your payment proof is uploaded securely and reviewed by admin.
-          </p>
-        </div>
       </div>
     </div>
   );
