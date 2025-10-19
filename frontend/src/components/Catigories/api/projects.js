@@ -3,20 +3,19 @@ import store from "../../../store/store";
 
 const API_BASE = "http://localhost:5000/projects";
 
+// ✅ FIXED: Centralized token retrieval
+const getAuthToken = () => {
+  return store?.getState()?.auth?.token || localStorage.getItem("token") || null;
+};
 
 const getAuthHeaders = () => {
-  const token =
-    store?.getState()?.auth?.token || localStorage.getItem("token") || null;
-
-  return token
-    ? { headers: { Authorization: `Bearer ${token}` } }
-    : {};
+  const token = getAuthToken();
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 };
 
 /* ==============================
    🔒 Authenticated (Token Required)
    ============================== */
-
 export const fetchAuthProjectsByCategory = async (categoryId) => {
   try {
     const { data } = await axios.get(
@@ -96,25 +95,46 @@ export const fetchProjectsBySubSubCategory = async (subSubCategoryId) => {
    ============================== */
 
 export const fetchProjectsByCategoryAuto = async (categoryId) => {
-  const token =
-    store?.getState()?.auth?.token || localStorage.getItem("token");
+  const token = getAuthToken();
   return token
     ? fetchAuthProjectsByCategory(categoryId)
     : fetchProjectsByCategory(categoryId);
 };
 
 export const fetchProjectsBySubCategoryAuto = async (subCategoryId) => {
-  const token =
-    store?.getState()?.auth?.token || localStorage.getItem("token");
+  const token = getAuthToken();
   return token
     ? fetchAuthProjectsBySubCategory(subCategoryId)
     : fetchProjectsBySubCategory(subCategoryId);
 };
 
 export const fetchProjectsBySubSubCategoryAuto = async (subSubCategoryId) => {
-  const token =
-    store?.getState()?.auth?.token || localStorage.getItem("token");
+  const token = getAuthToken();
   return token
     ? fetchAuthProjectsBySubSubCategory(subSubCategoryId)
     : fetchProjectsBySubSubCategory(subSubCategoryId);
+};
+
+/* ==============================
+   📌 GET PROJECT BY ID
+   ============================== */
+export const getProjectByIdApi = async (projectId, token) => {
+  if (!projectId) throw new Error("Missing projectId");
+  
+  // ✅ FIXED: Use the centralized getAuthToken function
+  const authToken = token || getAuthToken();
+
+  try {
+    const config = authToken 
+      ? { headers: { Authorization: `Bearer ${authToken}` } }
+      : {};
+
+    const { data } = await axios.get(`${API_BASE}/${projectId}`, config);
+
+    if (!data.success) throw new Error(data.message || "Failed to fetch project");
+    return data.project;
+  } catch (err) {
+    console.error("Get project by ID error:", err.response?.data || err.message);
+    throw err.response?.data || err;
+  }
 };
