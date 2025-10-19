@@ -260,7 +260,7 @@ function QAItem({ q, a }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-4 pb-4 text-slate-700 leading-relaxed text-xs sm:text-sm md:text-lg">{a}</div>
+          <div className="px-4 pb-4 text-slate-700 leading-relaxed text-xs sm:text-sm md:text-md">{a}</div>
         </div>
       </div>
     </div>

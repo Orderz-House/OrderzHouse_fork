@@ -9,49 +9,54 @@ import {
   createProject,
   assignProject,
   getRelatedFreelancers,
-completeHourlyProject,
+  completeHourlyProject,
   submitWorkCompletion,
   approveWorkCompletion,
   resubmitWorkCompletion,
   addProjectFiles,
   assignFreelancer,
   acceptAssignment,
-  rejectAssignment
+  rejectAssignment,
+  // startProject,
 } from "../controller/projectsManagment/projects.js";
 
 import {
   getProjectsByCategory,
   getProjectsBySubCategory,
   getProjectsBySubSubCategory,
-   getProjectsByCategoryId,
+  getProjectsByCategoryId,
   getProjectsBySubCategoryId,
-  getProjectsBySubSubCategoryId
+  getProjectsBySubSubCategoryId,
+  getProjectById 
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 const projectsRouter = express.Router();
-const upload = multer({ storage: multer.memoryStorage() }); 
+const upload = multer({ storage: multer.memoryStorage() });
 
 /* ==============================
    🔒 Authenticated & Verified Routes
    ============================== */
 
 // Create a new project
-projectsRouter.post(
-  "/",
-  authentication,
-  createProject
+projectsRouter.post("/", authentication, createProject);
+
+
+//get a project details 
+projectsRouter.get(
+  "/:projectId",
+  authentication,         
+  getProjectById
 );
 
+// client approve for Freelancer assignment
+
+// projectsRouter.post("/:projectId/start", authentication, startProject);
+
 // Complete hourly project
-projectsRouter.put(
-  "/hourly/:projectId",
-  authentication,
-  completeHourlyProject
-);
+projectsRouter.put("/hourly/:projectId", authentication, completeHourlyProject);
 
 // Assign a freelancer
 projectsRouter.post("/:projectId/assign", authentication, assignFreelancer);
-
 
 // Freelancer submits work completion
 projectsRouter.post(
@@ -87,35 +92,34 @@ projectsRouter.get(
 );
 
 /* ==============================
-   Post Project File Uploads
+   📂 Project File Uploads
    ============================== */
 projectsRouter.post(
   "/:projectId/files",
   authentication,
-  upload.array("files", 5), 
+  upload.array("files", 5),
   addProjectFiles
 );
-
 
 /* ==============================
    🔒 Authenticated Category-Based Filters
    ============================== */
 
-// Main category
+// Main category (requires token)
 projectsRouter.get(
   "/category/:category_id",
   authentication,
   getProjectsByCategory
 );
 
-// Sub-category
+// Sub-category (requires token)
 projectsRouter.get(
   "/sub-category/:sub_category_id",
   authentication,
   getProjectsBySubCategory
 );
 
-// Sub-sub-category
+// Sub-sub-category (requires token)
 projectsRouter.get(
   "/sub-sub-category/:sub_sub_category_id",
   authentication,
@@ -123,7 +127,7 @@ projectsRouter.get(
 );
 
 /* ==============================
-   🔓 Public Category-Based Filters
+   🌐 Public Category-Based Filters
    ============================== */
 
 // Public main category
@@ -144,8 +148,19 @@ projectsRouter.get(
   getProjectsBySubSubCategoryId
 );
 
-projectsRouter.post("/assignments/:assignmentId/accept", authentication, acceptAssignment);
-projectsRouter.post("/assignments/:assignmentId/reject", authentication, rejectAssignment);
+/* ==============================
+   🔒 Assignment Acceptance / Rejection
+   ============================== */
+projectsRouter.post(
+  "/assignments/:assignmentId/accept",
+  authentication,
+  acceptAssignment
+);
 
+projectsRouter.post(
+  "/assignments/:assignmentId/reject",
+  authentication,
+  rejectAssignment
+);
 
 export default projectsRouter;

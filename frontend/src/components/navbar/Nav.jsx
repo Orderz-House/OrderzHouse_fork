@@ -27,8 +27,13 @@ export default function EnhancedNavbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // NEW: Explore dropdown (desktop + mobile)
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [isExploreMobileOpen, setIsExploreMobileOpen] = useState(false);
+
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+  const exploreRef = useRef(null);
 
   const dispatch = useDispatch();
   const { token, userData, IsAuthenticated } = useSelector((state) => ({
@@ -69,6 +74,7 @@ export default function EnhancedNavbar() {
       const { data } = await axios.get("http://localhost:5000/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
+        __silent: true,
       });
       if (data.success) setNotifications(data.notifications);
     } catch (error) {
@@ -136,40 +142,38 @@ export default function EnhancedNavbar() {
   const handleNavigation = (path, label) => {
     setActiveLink(label);
     navigate(path);
+    setIsExploreOpen(false);
   };
 
   const handlePlansClick = () => {
     setActiveLink("PLANS");
     navigate("/plans");
+    setIsExploreOpen(false);
   };
 
   const handleLogin = () => navigate("/login");
   const handleRegister = () => navigate("/register");
 
-  // Fetch user + notifications - FIXED: Added location to dependencies
+  // Fetch user + notifications
   useEffect(() => {
     if (!token) return;
-    
-    const fetchUserData = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5000/users/getUserdata`, {
-          headers: { authorization: `Bearer ${token}` },
-        });
+    axios
+      .get(`http://localhost:5000/users/getUserdata`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
         fetchNotifications();
         fetchUnreadCount();
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error("Failed to fetch user data:", err.message);
-        if (err.response?.status === 401) {
-          handleLogout();
-        }
-      }
-    };
+        handleLogout();
+      });
+  }, [dispatch, token]);
 
-    fetchUserData();
-  }, [token, dispatch, location.pathname]); // FIXED: Added location.pathname
-
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -180,6 +184,9 @@ export default function EnhancedNavbar() {
         !notificationsRef.current.contains(event.target)
       ) {
         setIsNotificationsOpen(false);
+      }
+      if (exploreRef.current && !exploreRef.current.contains(event.target)) {
+        setIsExploreOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -199,23 +206,27 @@ export default function EnhancedNavbar() {
     }
   };
 
-  // FIXED: Improved condition logic for Plans
+  // Top-level links kept minimal (we moved About/Blogs/Contact/Plans under Explore)
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
-    { label: "ABOUT US", path: "/about", condition: true },
-    { label: "BLOGS", path: "/blogs", condition: true },
-    { label: "CONTACT", path: "/contact", condition: true },
-    // Projects tab (clients & freelancers)
     {
       label: "PROJECTS",
       path: "/projectsPage",
       condition: userData && (userData.role_id === 2 || userData.role_id === 3),
     },
-    // Plans (for non-clients and guests)
+  ];
+
+  // Items under Explore
+  const exploreItems = [
+    { label: "ABOUT US", path: "/about", onClick: () => handleNavigation("/about", "ABOUT US") },
+    { label: "BLOGS", path: "/blogs", onClick: () => handleNavigation("/blogs", "BLOGS") },
+    { label: "CONTACT", path: "/contact", onClick: () => handleNavigation("/contact", "CONTACT") },
     {
       label: "PLANS",
       path: "/plans",
-      condition: !userData || userData.role_id !== 2,
+      onClick: handlePlansClick,
+      // نفس شرط الظهور السابق للـ Plans
+      condition: !userData || (userData.role_id !== 2 && userData.role_id == 3),
     },
   ];
 
@@ -241,23 +252,15 @@ export default function EnhancedNavbar() {
                   item.condition && (
                     <button
                       key={item.label}
-                      onClick={() =>
-                        item.label === "PLANS"
-                          ? handlePlansClick()
-                          : handleNavigation(item.path, item.label)
-                      }
+                      onClick={() => handleNavigation(item.path, item.label)}
                       className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                        activeLink === item.label
-                          ? "text-[#028090]"
-                          : "text-gray-700"
+                        activeLink === item.label ? "text-[#028090]" : "text-gray-700"
                       }`}
                     >
                       {item.label}
                       <span
                         className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                          activeLink === item.label
-                            ? "w-full"
-                            : "w-0 group-hover:w-full"
+                          activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"
                         }`}
                       />
                       <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -267,7 +270,49 @@ export default function EnhancedNavbar() {
                   )
               )}
 
-              {/* Mega menu */}
+              {/* NEW: Explore dropdown */}
+              <div className="relative" ref={exploreRef}>
+                <button
+                  onClick={() => setIsExploreOpen((v) => !v)}
+                  className={`group inline-flex items-center gap-1 px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
+                    ["ABOUT US", "BLOGS", "CONTACT", "PLANS"].includes(activeLink)
+                      ? "text-[#028090]"
+                      : "text-gray-700"
+                  }`}
+                >
+                  Explore
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isExploreOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {isExploreOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-[fadeIn_.15s_ease-out]">
+                    <ul className="py-2">
+                      {exploreItems
+                        .filter((it) => it.condition === undefined ? true : it.condition)
+                        .map((it) => (
+                          <li key={it.label}>
+                            <button
+                              onClick={it.onClick}
+                              className={`w-full text-left px-4 py-3 text-sm font-medium transition-all duration-200 font-inter ${
+                                activeLink === it.label
+                                  ? "text-[#028090] bg-gray-50"
+                                  : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                              }`}
+                            >
+                              {it.label}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Existing Mega menu (unchanged) */}
               <CategoryMegaMenu
                 activeLink={activeLink}
                 onSetActiveLink={setActiveLink}
@@ -277,25 +322,25 @@ export default function EnhancedNavbar() {
 
           {/* Desktop Actions (right) */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Client: Add Project */}
+            {/* NEW STYLE: Client Add Project (outlined capsule like screenshot) */}
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"
                 onClick={() => setActiveLink("ADD PROJECT")}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-[#028090] text-white hover:bg-[#026e7a] transition-all shadow-sm hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white transition-all shadow-sm hover:shadow-md"
                 title="Create a new project"
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add project</span>
+                <span className="hidden sm:inline text-sm">Add project</span>
               </Link>
             )}
 
-            {/* Freelancer: Add Task */}
+            {/* NEW STYLE: Freelancer Add Task */}
             {userData?.role_id === 3 && (
               <Link
                 to="/freelancer/tasks/new"
                 onClick={() => setActiveLink("ADD TASK")}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-[#028090] text-white hover:bg-[#026e7a] transition-all shadow-sm hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white transition-all shadow-sm hover:shadow-md"
                 title="Create a new task"
               >
                 <Plus className="h-4 w-4" />
@@ -352,9 +397,7 @@ export default function EnhancedNavbar() {
                                     {n.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-2 font-inter">
-                                    {new Date(
-                                      n.created_at
-                                    ).toLocaleDateString()}
+                                    {new Date(n.created_at).toLocaleDateString()}
                                   </p>
                                 </div>
                                 {!n.read_status && (
@@ -497,9 +540,7 @@ export default function EnhancedNavbar() {
                     <button
                       key={item.label}
                       onClick={() => {
-                        item.label === "PLANS"
-                          ? handlePlansClick()
-                          : handleNavigation(item.path, item.label);
+                        handleNavigation(item.path, item.label);
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
@@ -512,6 +553,43 @@ export default function EnhancedNavbar() {
                     </button>
                   )
               )}
+
+              {/* NEW: Explore (mobile) */}
+              <div className="px-2">
+                <button
+                  onClick={() => setIsExploreMobileOpen((v) => !v)}
+                  className="w-full flex items-center justify-between px-2 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                >
+                  <span>Explore</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isExploreMobileOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isExploreMobileOpen && (
+                  <div className="mt-1 ml-2">
+                    {exploreItems
+                      .filter((it) => (it.condition === undefined ? true : it.condition))
+                      .map((it) => (
+                        <button
+                          key={it.label}
+                          onClick={() => {
+                            it.onClick();
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter ${
+                            activeLink === it.label
+                              ? "text-[#028090] bg-gray-50"
+                              : "text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                          }`}
+                        >
+                          {it.label}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
 
               {/* Client: Add project (mobile) */}
               {userData?.role_id === 2 && (

@@ -44,6 +44,7 @@ function getActiveFromPath(pathname) {
   if (p.startsWith("/operation/appointments")) return "appointments";
   if (p.startsWith("/operation/verifications")) return "verifications";
   if (p.startsWith("/operation/projects")) return "projects";
+  if (p.startsWith("/operation/tasks")) return "tasks";
   if (p.startsWith("/community/news")) return "news";
   if (p.startsWith("/finance/payments")) return "payments";
   if (p.startsWith("/finance/plans")) return "plans";
