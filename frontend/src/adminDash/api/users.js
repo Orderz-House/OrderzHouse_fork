@@ -1,48 +1,73 @@
-import axios from "axios";
+import API from "./axios";
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
-  withCredentials: true,
-});
-
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// 🟢 Create new user
-export const createUser = async (userData) => {
-  const res = await API.post("/admUser", userData);
+/**
+ * Create a new user (admin only)
+ */
+export const createUser = async (userData, token) => {
+  const res = await API.post("/admUser", userData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-// 🟢 Get all users (admin)
-export const getUsers = async () => {
-  const res = await API.get("/admUser");
+/**
+ * Get all users or users by role (admin only)
+ * @param {number} [roleId] 
+ * @param {string} token
+ */
+export const getUsers = async (roleId, token) => {
+  const endpoint = roleId ? `/admUser/role/${roleId}` : "/admUser";
+  const res = await API.get(endpoint, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-// 🟢 Get user by ID
-export const getUserById = async (id) => {
-  const res = await API.get(`/admUser/${id}`);
+/**
+ * Get user by ID (admin only)
+ */
+export const getUserById = async (id, token) => {
+  const res = await API.get(`/admUser/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-// 🟢 Update user
-export const updateUser = async (id, updatedData) => {
-  const res = await API.put(`/admUser/${id}`, updatedData);
+/**
+ * Update user by ID (admin only)
+ */
+export const updateUser = async (id, userData, token) => {
+  const res = await API.put(`/admUser/${id}`, userData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-// 🟢 Delete user
-export const deleteUser = async (id) => {
-  const res = await API.delete(`/admUser/${id}`);
+/**
+ * Delete user by ID (admin only)
+ */
+export const deleteUser = async (id, token) => {
+  const res = await API.delete(`/admUser/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-// 🟢 Verify freelancer (admin only)
-export const verifyFreelancer = async (id) => {
-  const res = await API.patch(`/admUser/verify/${id}`);
+/**
+ * Verify a freelancer (admin only)
+ */
+export const verifyFreelancer = async (id, token) => {
+  const res = await API.patch(`/admUser/verify/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
+};
+
+export default {
+  createUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  verifyFreelancer,
 };

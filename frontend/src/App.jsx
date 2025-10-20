@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import "animate.css";
+import "./components/loadingScreen/axiosLoading.js";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
@@ -21,19 +22,14 @@ import VerifyProfile from "./components/profile/VerifyProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 import TopRatedFreelancers from "./components/topRated/TopRate";
-//import FreelancerDashboard from "./components/FreelancerDashboard/FreelancerDashboard.jsx";
-//import FreelancerTasks from "./components/tasks/FreelancerTasks.jsx";
 import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
-//import FreelancerManageProject from "./components/freelancerDashboard/FreelancerManageProject";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/Plans.jsx";
-//import Dashboard from "./components/User Dashboard/dashboard";
-// import Dashboard from "./components/User Dashboard/ClientDashboard.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
 import FreelancerAppointments from "./components/Appointments/FreelancerAppointments";
@@ -45,10 +41,10 @@ import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx";
 import BlogPost from "./components/blogs/BlogPost.jsx";
 import AdminRouter from "./adminDash/routes/index";
-// import TasksPool from "./components/tasks/TasksPool";
-// import AdminTaskApproval from "./components/tasks/AdminTaskApproval";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
+import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
+
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -92,6 +88,8 @@ function App() {
 
   return (
     <>
+        <GlobalLoadingProvider>
+
       {!shouldHideNavbar && <Navbar />}
 
       <Routes
@@ -124,13 +122,10 @@ function App() {
         {/* --- Protected Pages --- */}
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-        {/* <Route path="/freelancer/dashboard" element={<ProtectedRoute><FreelancerDashboard /></ProtectedRoute>} /> */}
         <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
-        {/* <Route path="/admin/task-approval" element={<ProtectedRoute><AdminTaskApproval /></ProtectedRoute>} />
-        <Route path="/freelancer/tasks" element={<ProtectedRoute><FreelancerTasks /></ProtectedRoute>} /> */}
-        {/* <Route path="/tasks" element={<ProtectedRoute><TasksPool /></ProtectedRoute>} /> */}
+        
 
         {/* --- Course Management --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
@@ -141,8 +136,6 @@ function App() {
 
         {/* --- Notifications & Projects --- */}
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-        {/* <Route path="/freelancer/project/:projectId" element={<ProtectedRoute><FreelancerManageProject /></ProtectedRoute>} /> */}
-        {/* <Route path="/client/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
         <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
 
         {/* --- Appointments --- */}
@@ -204,6 +197,8 @@ function App() {
 
       {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
+            </GlobalLoadingProvider>
+
     </>
   );
 }

@@ -41,7 +41,6 @@ export const createProject = async (req, res) => {
     // --- Validate required fields ---
     const missingFields = [];
     if (!category_id) missingFields.push("category_id");
-    if (!sub_category_id) missingFields.push("sub_category_id");
     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
     if (!title) missingFields.push("title");
     if (!description) missingFields.push("description");

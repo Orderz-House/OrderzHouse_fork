@@ -9,7 +9,10 @@ import {
   subscribeToPlan,
   cancelSubscription,
 } from "../controller/plans.js";
-import { requireVerified } from "../middleware/requireVerification.js"; 
+
+import authentication from "../middleware/authentication.js";
+import adminOnly from "../middleware/adminOnly.js"; 
+import { requireVerified } from "../middleware/requireVerification.js";
 
 const plansRouter = express.Router();
 
@@ -22,15 +25,16 @@ plansRouter.get("/:id/subscriptions", getPlanSubscriptions);
 // ----------------------
 // Admin routes
 // ----------------------
-plansRouter.post("/create", createPlan);
-plansRouter.put("/edit/:id", editPlan);
-plansRouter.delete("/delete/:id", deletePlan);
+// Only accessible to authenticated admins
+plansRouter.post("/create", authentication, adminOnly, createPlan);
+plansRouter.put("/edit/:id", authentication, adminOnly, editPlan);
+plansRouter.delete("/delete/:id", authentication, adminOnly, deletePlan);
 
 // ----------------------
 // Freelancer routes (require verified login)
 // ----------------------
-plansRouter.get("/subscription/me", requireVerified, getFreelancerSubscription);
-plansRouter.post("/subscribe", requireVerified, subscribeToPlan);
-plansRouter.patch("/cancel", requireVerified, cancelSubscription);
+plansRouter.get("/subscription/me", authentication, requireVerified, getFreelancerSubscription);
+plansRouter.post("/subscribe", authentication, requireVerified, subscribeToPlan);
+plansRouter.patch("/cancel", authentication, requireVerified, cancelSubscription);
 
 export default plansRouter;

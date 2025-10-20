@@ -1,28 +1,86 @@
 import pool from "../models/db.js";
 
+
 /**
- * Get all users (admin only)
+ * Get users by role (admin only)
  */
-export const getUsers = async (req, res) => {
+export const getUsersByRole = async (req, res) => {
   try {
-    // Only admin can view all users
-    if (req.token.roleId !== 1)
-      return res.status(403).json({ success: false, message: "Access denied" });
+    // Check admin access
+    if (Number(req.token.role) !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
 
-    const result = await pool.query(
-      `SELECT id, role_id, first_name, last_name, email, phone_number, country,
-              username, is_verified, is_online, created_at, updated_at, is_deleted
-       FROM users
-       WHERE is_deleted = false
-       ORDER BY id ASC`
-    );
+    const { roleId } = req.params;
 
-    res.status(200).json({ success: true, users: result.rows });
+    if (!roleId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing roleId parameter.",
+      });
+    }
+
+    // Build the base query for shared columns
+    let query = `
+      SELECT 
+        id, 
+        role_id, 
+        first_name, 
+        last_name, 
+        email, 
+        password,
+        is_deleted,
+        phone_number, 
+        country, 
+        profile_pic_url,
+        username, 
+        created_at, 
+        is_online, 
+        updated_at, 
+        bio,
+        is_two_factor_enabled, 
+        is_locked
+    `;
+
+    // Add freelancer-specific fields
+    if (Number(roleId) === 3) {
+      query += `,
+        is_verified,
+        rating_sum,
+        rating_count,
+        CASE 
+          WHEN rating_count > 0 
+          THEN ROUND(CAST(rating_sum AS NUMERIC) / rating_count, 2)
+          ELSE 0 
+        END as rating
+      `;
+    }
+
+    query += `
+      FROM users
+      WHERE role_id = $1
+        AND is_deleted = false
+      ORDER BY id ASC
+    `;
+
+    const { rows } = await pool.query(query, [roleId]);
+
+    res.status(200).json({
+      success: true,
+      users: rows,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("getUsersByRole error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
+      error: err.message,
+    });
   }
 };
-
 /**
  * Get user by ID (admin or self)
  */

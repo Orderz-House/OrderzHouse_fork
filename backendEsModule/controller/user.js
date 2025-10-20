@@ -120,25 +120,80 @@ const register = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
   }
 };
+// ===================== HELPER FUNCTIONS =====================
 
+const generateOtp = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+const deliverOtp = async (destination, method, otp) => {
+  try {
+    if (method === "email") {
+      console.log(` Sending OTP ${otp} to email: ${destination}`);
+    } else if (method === "sms") {
+      console.log(` Sending OTP ${otp} to phone: ${destination}`);
+    } else {
+      throw new Error("Invalid OTP method");
+    }
+  } catch (error) {
+    console.error("Error delivering OTP:", error.message);
+    throw error;
+  }
+};
 
 // ===================== LOGIN + OTP =====================
 const login = async (req, res) => {
   try {
     const { email, password, otpMethod = "email" } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password required" });
+    }
 
     const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [email.toLowerCase()]);
     const user = rows[0];
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Generate OTP
-    /*const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    if (validPassword) {
+      
+      if (user.failed_login_attempts === 0) {
+        await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL WHERE id=$1", [user.id]);
+        
+        const tokenPayload = {
+          userId: user.id,
+          role: user.role_id,
+          is_verified: user.is_verified,
+        };
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
+        
+        return res.status(200).json({
+          success: true,
+          message: "Login successful",
+          token: token,
+          userInfo: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role_id: user.role_id
+          }
+        });
+      }
+      
+      
+      await pool.query("UPDATE users SET failed_login_attempts=0 WHERE id=$1", [user.id]);
+
+    } else {
+      const newAttempts = (user.failed_login_attempts || 0) + 1;
+      await pool.query("UPDATE users SET failed_login_attempts=$1 WHERE id=$2", [newAttempts, user.id]);
+
+      if (newAttempts < 3) {
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
+      }
+    }
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // دقيقتان
 
     await pool.query("UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3", [
       otp,
@@ -147,18 +202,21 @@ const login = async (req, res) => {
     ]);
 
     const destination = otpMethod === "email" ? user.email : user.phone_number;
+    await deliverOtp(destination, otpMethod, otp); 
 
-    await deliverOtp(destination, "email", otp);
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+      user_id: user.id, 
+    });
 
-    return res.status(200).json({ message: "OTP sent successfully", user_id: user.id });*/
   } catch (err) {
     console.error("Login Error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 // ===================== VERIFY OTP =====================
-/*export const verifyOTP = async (req, res) => {
+export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -174,8 +232,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: "OTP expired" });
     }
 
-    // Clear OTP
-    await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL WHERE id=$1", [user.id]);
+    await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL, failed_login_attempts=0 WHERE id=$1", [user.id]);
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
@@ -207,7 +264,7 @@ export const sendOtpController = async (req, res) => {
     return res.status(500).json({ success: false, message: "Login error", error: err.message });
   }
 };
-*/
+
 // ==================== USER MANAGEMENT FUNCTIONS ====================
 
 const viewUsers = async (req, res) => {

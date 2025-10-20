@@ -1,5 +1,5 @@
 import axios from "axios";
-import store from "../../store/store"; // Your Redux store
+import store from "../../store/store"; 
 import { setLogout } from "../../slice/auth/authSlice"
 
 const API = axios.create({

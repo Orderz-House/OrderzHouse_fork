@@ -1,25 +1,25 @@
 import express from "express";
 import {
-  getUsers,
+  getUsersByRole,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
   verifyFreelancer,
-} from "../controller/users.js";
-import { requireVerified } from "../middleware/requireVerification.js";
+} from "../controller/adminUser.js";
+import { authentication } from "../middleware/authentication.js"; 
+import adminOnly from "../middleware/adminOnly.js"; 
 
 const AdminUser = express.Router();
 
-// Public or registration route
-AdminUser.post("/", createUser);
-
-// Admin only
-AdminUser.get("/", requireVerified, getUsers);
-AdminUser.patch("/verify/:id", requireVerified, verifyFreelancer);
-
-AdminUser.get("/:id", requireVerified, getUserById);
-AdminUser.put("/:id", requireVerified, updateUser);
-AdminUser.delete("/:id", requireVerified, deleteUser);
+// ----------------------
+// Admin-only routes
+// ----------------------
+AdminUser.post("/", authentication, adminOnly, createUser); 
+AdminUser.get("/role/:roleId", authentication, adminOnly, getUsersByRole);
+AdminUser.get("/:id", adminOnly, getUserById);
+AdminUser.put("/:id", authentication, adminOnly, updateUser);
+AdminUser.delete("/:id", authentication, adminOnly, deleteUser);
+AdminUser.patch("/verify/:id", authentication, adminOnly, verifyFreelancer);
 
 export default AdminUser;
