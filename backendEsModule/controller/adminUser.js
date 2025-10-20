@@ -5,21 +5,37 @@ import pool from "../models/db.js";
  */
 export const getUsers = async (req, res) => {
   try {
-    // Only admin can view all users
-    if (req.token.roleId !== 1)
-      return res.status(403).json({ success: false, message: "Access denied" });
+    if (req.token.roleId !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
 
-    const result = await pool.query(
-      `SELECT id, role_id, first_name, last_name, email, phone_number, country,
-              username, is_verified, is_online, created_at, updated_at, is_deleted
-       FROM users
-       WHERE is_deleted = false
-       ORDER BY id ASC`
-    );
+    const { role } = req.query;
+    let query = `
+      SELECT id, role_id, first_name, last_name, email, phone_number, country,
+             username, is_verified, is_online, created_at, updated_at, is_deleted
+      FROM users
+      WHERE is_deleted = false
+    `;
+    const values = [];
 
-    res.status(200).json({ success: true, users: result.rows });
+    if (role) {
+      query += ` AND role_id = $1 ORDER BY id ASC`;
+      values.push(role);
+    } else {
+      query += ` ORDER BY id ASC`;
+    }
+
+    const { rows } = await pool.query(query, values);
+    res.status(200).json({ success: true, users: rows });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("getUsers error:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
   }
 };
 
