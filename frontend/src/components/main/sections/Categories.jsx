@@ -1,11 +1,12 @@
+// Categories.jsx
 import { useMemo, useState, useEffect, useCallback } from "react";
 
-// Colors
-const primary = "rgb(2, 128, 144)";
+// ألوان الثيم (نفس السابق)
+const primary = "rgb(2, 128, 144)";      // #028090
 const primaryDark = "rgb(0, 90, 100)";
 const primaryLight = "rgb(0, 170, 180)";
 
-// Breakpoints
+// نفس دالة الأعمدة
 function calcCols() {
   if (typeof window === "undefined") return 5;
   if (window.matchMedia("(min-width: 1280px)").matches) return 3;
@@ -15,7 +16,6 @@ function calcCols() {
   return 1;
 }
 
-// Component
 export default function CategoriesShowcase({
   title = "Popular services",
   categories = [],
@@ -23,6 +23,7 @@ export default function CategoriesShowcase({
   pageSize = 5,
   loop = false,
 }) {
+  // نفس منطق الجلب
   const [fetchedCategories, setFetchedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,31 +84,16 @@ export default function CategoriesShowcase({
 
   const totalPages = Math.max(1, Math.ceil(cats.length / effPageSize));
   const [page, setPage] = useState(0);
-
   useEffect(() => setPage((p) => Math.min(p, totalPages - 1)), [totalPages]);
 
-  const D = 250;
-  const [anim, setAnim] = useState({ opacity: 1, transform: "translateX(0px)" });
-
-  const animateTo = (newPage, dir = "next") => {
-    setAnim({ opacity: 0, transform: `translateX(${dir === "next" ? -24 : 24}px)` });
-    setTimeout(() => {
-      setPage(newPage);
-      setAnim({ opacity: 0, transform: `translateX(${dir === "next" ? 24 : -24}px)` });
-      requestAnimationFrame(() =>
-        setAnim({ opacity: 1, transform: "translateX(0px)" })
-      );
-    }, D);
-  };
-
   const goNext = useCallback(() => {
-    if (page + 1 < totalPages) animateTo(page + 1, "next");
-    else if (loop) animateTo(0, "next");
+    if (page + 1 < totalPages) setPage(page + 1);
+    else if (loop) setPage(0);
   }, [page, totalPages, loop]);
 
   const goPrev = useCallback(() => {
-    if (page - 1 >= 0) animateTo(page - 1, "prev");
-    else if (loop) animateTo(totalPages - 1, "prev");
+    if (page - 1 >= 0) setPage(page - 1);
+    else if (loop) setPage(totalPages - 1);
   }, [page, totalPages, loop]);
 
   useEffect(() => {
@@ -132,10 +118,14 @@ export default function CategoriesShowcase({
     ${cols >= 5 ? "xl:grid-cols-5" : ""}
   `;
 
+  // انتقال بسيط عند تغيير الصفحة (خفيف)
+  const D = 180;
+  const anim = { opacity: 1, transform: "translateY(0)" };
+
   return (
-    // Section
     <section className="relative py-10 sm:py-14 md:py-16 px-6 sm:px-5 lg:px-8 bg-white">
       <div className="max-w-7xl mx-auto relative">
+        {/* Header */}
         <div className="mb-8 sm:mb-10 text-center">
           <h2 className="text-[rgb(2,128,144)] font-extrabold tracking-tight leading-tight text-2xl sm:text-3xl md:text-4xl">
             {title}
@@ -145,23 +135,30 @@ export default function CategoriesShowcase({
           </p>
         </div>
 
+        {/* Loading */}
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-[rgb(2,128,144)] border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-slate-600">Loading categories...</p>
+            <p className="mt-4 text-slate-600">Loading categories.</p>
           </div>
         )}
 
+        {/* Error */}
         {error && (
           <div className="text-center py-12">
             <p className="text-red-600">Failed to load categories: {error}</p>
           </div>
         )}
 
+        {/* Content */}
         {!loading && !error && cats.length > 0 && (
           <>
+            {/* موبايل: سحب أفقي */}
             <div className="md:hidden">
-              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]" style={{ scrollBehavior: "smooth" }}>
+              <div
+                className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]"
+                style={{ scrollBehavior: "smooth" }}
+              >
                 <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
                 {cats.map((cat) => (
                   <div key={cat.id} className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]">
@@ -171,13 +168,15 @@ export default function CategoriesShowcase({
               </div>
             </div>
 
+            {/* دِسك توب: شبكة */}
             <div className="hidden md:block">
               <div className="flex justify-center">
                 <div
-                  className={`${visible.length < cols
+                  className={`${
+                    visible.length < cols
                       ? "flex flex-wrap justify-center gap-4 sm:gap-5 items-stretch"
                       : grid + " items-stretch"
-                    }`}
+                  }`}
                   style={{ transition: `opacity ${D}ms ease, transform ${D}ms ease`, ...anim }}
                 >
                   {visible.map((cat) => (
@@ -188,6 +187,7 @@ export default function CategoriesShowcase({
                 </div>
               </div>
 
+              {/* تنقّل */}
               {totalPages > 1 && (
                 <>
                   <NavButtons
@@ -200,10 +200,9 @@ export default function CategoriesShowcase({
                     {Array.from({ length: totalPages }).map((_, i) => (
                       <span
                         key={i}
-                        className={`h-1.5 rounded-full transition-all ${i === page
-                          ? "w-6 bg-[rgb(2,128,144)]"
-                          : "w-2 bg-slate-300"
-                          }`}
+                        className={`h-1.5 rounded-full transition-all ${
+                          i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
+                        }`}
                       />
                     ))}
                   </div>
@@ -213,36 +212,40 @@ export default function CategoriesShowcase({
           </>
         )}
 
+        {/* لا يوجد بيانات */}
         {!loading && !error && cats.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-600">No categories available</p>
           </div>
         )}
       </div>
-
-      <style>{`
-        .card-spotlight::before {
-          content: "";
-          position: absolute; inset: 0; border-radius: 1.5rem;
-          background: radial-gradient(250px circle at var(--x) var(--y), rgba(255,255,255,.22), transparent 40%);
-          opacity: 0; pointer-events: none; transition: opacity .25s ease;
-        }
-        .card-spotlight:hover::before { opacity: 1; }
-      `}</style>
     </section>
   );
 }
 
-// Buttons
+/* أزرار السابق/التالي (كما هي تقريبًا لكن بدون ظل ثقيل) */
 function NavButtons({ onPrev, onNext, hasPrev, hasNext }) {
   const baseBtn =
-    "absolute top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-lg ring-1 ring-black/5 hover:shadow-xl transition disabled:opacity-40 disabled:cursor-not-allowed";
+    "absolute top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-full bg-white shadow ring-1 ring-black/5 transition disabled:opacity-40 disabled:cursor-not-allowed";
   return (
     <>
-      <button aria-label="Previous" className={`${baseBtn} left-[-8px] sm:left-[-12px] hidden md:inline-flex`} onClick={onPrev} disabled={!hasPrev}>
+      <button
+        aria-label="Previous"
+        className={`${baseBtn} left-[-8px] sm:left-[-12px] hidden md:inline-flex`}
+        onClick={onPrev}
+        disabled={!hasPrev}
+        title="Previous"
+      >
         <ChevronLeft />
       </button>
-      <button aria-label="Next" className={`${baseBtn} right-[-8px] sm:right-[-12px] hidden md:inline-flex`} onClick={onNext} disabled={!hasNext}>
+      <button
+        aria-label="Next"
+        className={`${baseBtn} right-[-8px] sm:right-[-12px] hidden md:inline-flex`}
+        onClick={onNext}
+        disabled={!hasNext}
+        title="Next"
+        style={{ color: primary }}
+      >
         <ChevronRight />
       </button>
     </>
@@ -253,34 +256,55 @@ function NavButtons({ onPrev, onNext, hasPrev, hasNext }) {
 function ChevronRight() {
   return (
     <svg viewBox="0 0 20 20" className="w-5 h-5 text-slate-600">
-      <path d="M7.5 4.5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M7.5 4.5l5 5-5 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 function ChevronLeft() {
   return (
     <svg viewBox="0 0 20 20" className="w-5 h-5 text-slate-600">
-      <path d="M12.5 4.5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12.5 4.5l-5 5 5 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-// Card
+/* الكارد: قريب من السابق لكن بدون spotlight/mousemove/scale كبير */
 function Card({ cat, onClick }) {
   return (
     <div
-      className="group relative rounded-2xl p-[1.5px] cursor-pointer transform-gpu transition-all duration-300 ease-[cubic-bezier(.22,.61,.36,1)] hover:-translate-y-1 hover:scale-[1.01] shadow-[0_4px_10px_rgba(2,128,144,0.15),0_2px_5px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_24px_rgba(2,128,144,0.28),0_6px_12px_rgba(0,0,0,0.18)] h-full"
-      style={{ background: `conic-gradient(from 150deg, ${primaryLight}, ${primary}, ${primaryDark}, ${primaryLight})` }}
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        e.currentTarget.style.setProperty("--x", `${e.clientX - r.left}px`);
-        e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
+      className="group relative rounded-2xl p-[1.5px] cursor-pointer transition-all duration-200 h-full"
+      // جراديانت هادئ وثابت بدل الـ conic + spotlight
+      style={{
+        background: `linear-gradient(160deg, ${primaryLight}, ${primary})`,
       }}
       onClick={onClick}
     >
-      <div className="relative rounded-[calc(1rem-2px)] bg-white/90 backdrop-blur-sm h-full card-spotlight flex flex-col">
-        <div className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden" style={{ background: `linear-gradient(160deg, rgb(0,70,80) 0%, rgb(2,128,144) 60%, rgb(0,100,110) 100%)` }}>
-          <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-20 blur-2xl" style={{ background: primaryLight }} />
+      <div className="relative rounded-[calc(1rem-2px)] bg-white h-full flex flex-col shadow-sm hover:shadow-md transition">
+        {/* ترويسة ملونة ثابتة بدون تأثيرات ثقيلة */}
+        <div
+          className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden"
+          style={{
+            background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)`,
+          }}
+        >
+          <div
+            className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-15 blur-2xl"
+            style={{ background: primaryLight }}
+          />
           <div className="relative z-10 grid grid-cols-[1fr_auto] items-start gap-3 h-[40px]">
             <h3 className="font-bold text-base leading-tight line-clamp-2 pr-1" title={cat.name}>
               {cat.name}
@@ -293,18 +317,29 @@ function Card({ cat, onClick }) {
           </div>
         </div>
 
+        {/* الصورة بدون تكبير على الهوفر */}
         <div className="relative -mt-10 px-3">
           <div className="aspect-[16/10] w-full rounded-xl overflow-hidden ring-1 ring-black/5 bg-slate-100">
-            <img src={cat.image} alt={cat.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" loading="lazy" />
+            <img
+              src={cat.image}
+              alt={cat.name}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
 
+        {/* النص والزر */}
         <div className="p-3 flex flex-col min-h-[140px]">
           <p className="text-sm text-slate-600 line-clamp-2">{cat.description}</p>
+
           {cat.tags?.length ? (
             <div className="mt-2 flex flex-wrap gap-1.5 min-h-[24px]">
               {cat.tags.map((t, i) => (
-                <span key={i} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600">
+                <span
+                  key={i}
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600"
+                >
                   {t}
                 </span>
               ))}
@@ -312,10 +347,12 @@ function Card({ cat, onClick }) {
           ) : (
             <div className="min-h-[24px]" />
           )}
+
           <div className="flex-1" />
+
           <div className="mt-2">
             <button
-              className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-white opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 text-sm"
+              className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-white text-sm"
               style={{ backgroundColor: primary }}
               onClick={onClick}
             >

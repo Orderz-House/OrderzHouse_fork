@@ -8,6 +8,7 @@ import {
   verifyFreelancer,
 } from "../controller/adminUser.js";
 import { authentication } from "../middleware/authentication.js"; 
+
 const AdminUser = express.Router();
 
 // Public or registration route

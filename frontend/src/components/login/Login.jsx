@@ -22,79 +22,111 @@ import GradientButton from "../buttons/GradientButton.jsx";
 
 const Login = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [twoFactorToken, setTwoFactorToken] = useState("");
-  const [show2FAInput, setShow2FAInput] = useState(false);
-  const [requires2FA, setRequires2FA] = useState(false);
-  const navigate = useNavigate();
+  const [requiresOtp, setRequiresOtp] = useState(false);
 
-  const login = (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
     axios
       .post("http://localhost:5000/users/login", {
-        email: email.toLowerCase(),
+        email: email.toLowerCase( ),
         password,
-        twoFactorToken: requires2FA ? twoFactorToken : undefined,
       })
       .then((res) => {
-        if (res.data.twoFactorRequired && !requires2FA) {
-          setRequires2FA(true);
-          setShow2FAInput(true);
-          setMessage("Please enter your 2FA verification code");
-          setIsLoading(false);
-          return;
+        setIsLoading(false);
+        // -- START: التصحيح الرئيسي هنا --
+        if (res.data.token) {
+          // الحالة 1: تسجيل دخول ناجح ومباشر
+          setStatus(true);
+          setMessage("Login successful! Redirecting...");
+          const decoded = jwtDecode(res.data.token);
+          dispatch(
+            setLogin({
+              token: res.data.token,
+              userId: decoded.userId,
+              roleId: decoded.role,
+              is_verified: decoded.is_verified,
+              userInfo: res.data.userInfo,
+            })
+          );
+          connectSocket(res.data.token, decoded.userId);
+          setTimeout(() => navigate("/"), 1500);
+        } else if (res.data.message === "OTP sent successfully") {
+          // الحالة 2: الخادم يطلب OTP
+          setStatus(true); // نعتبر هذه الخطوة ناجحة مبدئيًا
+          setMessage("Verification code sent. Please check your email and enter the code below.");
+          setRequiresOtp(true); // <-- هذا هو السطر الأهم لإظهار حقل OTP
         }
+        // -- END: التصحيح الرئيسي --
+      })
+      .catch((err) => {
+        setIsLoading(false);
+        setStatus(false);
+        const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
+        setMessage(errorMessage);
+        setRequiresOtp(false); // تأكد من إخفاء حقل OTP عند حدوث خطأ
+      });
+  };
 
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+
+    axios
+      .post("http://localhost:5000/users/verify-otp", {
+        email: email.toLowerCase( ),
+        otp,
+      })
+      .then((res) => {
+        setIsLoading(false);
+        setStatus(true);
+        setMessage("Login successful! Redirecting...");
+        const decoded = jwtDecode(res.data.token);
         dispatch(
           setLogin({
             token: res.data.token,
-            userId: res.data.userId,
-            roleId: res.data.role,
-            is_verified: res.data.is_verified,
+            userId: decoded.userId,
+            roleId: decoded.role,
+            is_verified: decoded.is_verified,
             userInfo: res.data.userInfo,
           })
         );
-
-        setStatus(true);
-        setMessage("Login successful! Redirecting...");
-        setIsLoading(false);
-
-        connectSocket(res.data.token, res.data.userId);
-
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
+        connectSocket(res.data.token, decoded.userId);
+        setTimeout(() => navigate("/"), 1500);
       })
       .catch((err) => {
-        setStatus(false);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Login failed. Please check your credentials.";
-
-        setMessage(errorMessage);
         setIsLoading(false);
-
-        if (requires2FA) {
-          setRequires2FA(false);
-          setShow2FAInput(false);
-          setTwoFactorToken("");
-        }
+        setStatus(false);
+        const errorMessage = err.response?.data?.message || "Invalid or expired OTP.";
+        setMessage(errorMessage);
+        setOtp("");
       });
+  };
+
+  const handleSubmit = (e) => {
+    if (requiresOtp) {
+      handleVerifyOtp(e);
+    } else {
+      handleLogin(e);
+    }
   };
 
   const handleGoogleSuccess = (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-
       dispatch(
         setLogin({
           token: credentialResponse.credential,
@@ -103,18 +135,13 @@ const Login = () => {
           is_verified: true,
         })
       );
-
       setStatus(true);
       setMessage("Google login successful! Redirecting...");
       connectSocket(credentialResponse.credential, decoded.sub);
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
+      setTimeout(() => navigate("/"), 1500);
     } catch (error) {
       setStatus(false);
       setMessage("Google login failed. Please try again.");
-      console.error("Google login error:", error);
     }
   };
 
@@ -123,19 +150,15 @@ const Login = () => {
     setMessage("Google login failed. Please try again.");
   };
 
-  const resetForm = () => {
-    setEmail("");
+  const resetToLogin = () => {
+    setRequiresOtp(false);
     setPassword("");
-    setTwoFactorToken("");
-    setShow2FAInput(false);
-    setRequires2FA(false);
+    setOtp("");
     setMessage("");
-    setShowPassword(false);
   };
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Soft background accents */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#028090]/10 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#028090]/5 blur-3xl" />
@@ -143,7 +166,6 @@ const Login = () => {
 
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8">
         <div className="w-full max-w-lg">
-          {/* Title */}
           <div className="text-center mb-6">
             <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
               Welcome back
@@ -154,108 +176,90 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Card */}
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
-            {/* Sub header */}
             <div className="mb-6 text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white">
-                <LogIn className="w-4 h-4" />
+                {requiresOtp ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
                 <span className="text-sm">
-                  {requires2FA ? "Two-Factor Authentication" : "Sign in"}
+                  {requiresOtp ? "Verify Your Identity" : "Sign in"}
                 </span>
               </div>
             </div>
 
-            <form onSubmit={login} className="space-y-5">
-              {!requires2FA && (
-                <div>
-                  <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="email"
-                      id="email"
-                      placeholder="you@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
-                    />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {!requiresOtp && (
+                <>
+                  <div>
+                    <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        id="email"
+                        placeholder="you@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#028090]"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
 
-              {!requires2FA && (
-                <div>
-                  <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      id="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#028090]"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {show2FAInput && (
+              {requiresOtp && (
                 <div className="animate-fadeIn">
-                  <label htmlFor="2fa" className="block text-sm text-slate-700 mb-1.5">
+                  <label htmlFor="otp" className="block text-sm text-slate-700 mb-1.5">
                     Verification Code
                   </label>
                   <div className="relative">
                     <Shield className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      id="2fa"
+                      id="otp"
                       placeholder="6-digit code"
-                      value={twoFactorToken}
-                      onChange={(e) =>
-                        setTwoFactorToken(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       maxLength="6"
                       required
+                      autoFocus
                       disabled={isLoading}
                       className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50 text-center tracking-widest"
                     />
                   </div>
                   <p className="text-xs text-slate-500 mt-2 text-center">
-                    Enter the code from your authenticator app
+                    Enter the 6-digit code sent to your email.
                   </p>
-                </div>
-              )}
-
-              {!requires2FA && (
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-[#028090] focus:ring-[#028090] border-slate-300 rounded"
-                    disabled={isLoading}
-                  />
-                  <label htmlFor="remember-me" className="ml-2 text-sm text-slate-700">
-                    Remember me
-                  </label>
                 </div>
               )}
 
@@ -280,32 +284,32 @@ const Login = () => {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        {requires2FA ? "Verifying..." : "Signing in..."}
+                        {requiresOtp ? "Verifying..." : "Signing in..."}
                       </>
-                    ) : (
+                     ) : (
                       <>
-                        {requires2FA ? <KeyRound className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
-                        {requires2FA ? "Verify & Sign In" : "Sign in"}
+                        {requiresOtp ? <KeyRound className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
+                        {requiresOtp ? "Verify & Sign In" : "Sign in"}
                       </>
                     )}
                   </div>
                 </GradientButton>
               </div>
 
-              {requires2FA && (
+              {requiresOtp && (
                 <div className="text-center">
                   <button
                     type="button"
-                    onClick={resetForm}
+                    onClick={resetToLogin}
                     disabled={isLoading}
                     className="text-[#028090] hover:underline font-medium text-sm"
                   >
-                    ← Back to email login
+                    ← Back to login
                   </button>
                 </div>
               )}
 
-              {!requires2FA && (
+              {!requiresOtp && (
                 <>
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center">
@@ -347,7 +351,7 @@ const Login = () => {
               </div>
             )}
 
-            {!requires2FA && (
+            {!requiresOtp && (
               <div className="mt-6 text-center pt-4 border-t border-slate-200">
                 <p className="text-sm text-slate-600">
                   Don't have an account?{" "}
