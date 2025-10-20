@@ -6,7 +6,7 @@ import {
   updateUser,
   deleteUser,
   verifyFreelancer,
-} from "../controller/users.js";
+} from "../controller/adminUser.js";
 import { requireVerified } from "../middleware/requireVerification.js";
 
 const AdminUser = express.Router();
