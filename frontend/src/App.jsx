@@ -88,11 +88,6 @@ function App() {
 
   return (
     <>
-        <GlobalLoadingProvider>
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
       {!shouldHideNavbar && <Navbar />}
 
       <Routes
@@ -201,7 +196,7 @@ function App() {
 
       {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
-            </GlobalLoadingProvider>
+            
 
     </>
   );
