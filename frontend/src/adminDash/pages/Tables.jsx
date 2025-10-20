@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
-import OutlineButton from "../../components/buttons/OutlineButton.jsx";
 
 export default function PeopleTable({
   title,
@@ -17,10 +16,12 @@ export default function PeopleTable({
   filters = [],
   renderActions,
   hideCrudActions = false,
+  token,
 }) {
   const [rows, setRows] = useState(initialRows);
   const [loading, setLoading] = useState(!!endpoint);
   const [error, setError] = useState("");
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -34,10 +35,15 @@ export default function PeopleTable({
 
   const primary = "#028090";
 
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "",
-    headers: { "Content-Type": "application/json" },
-  });
+  const api = useMemo(() => {
+    return axios.create({
+      baseURL: import.meta.env.VITE_API_URL || "",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+  }, [token]);
 
   const cols = columns?.length
     ? columns
@@ -82,6 +88,8 @@ export default function PeopleTable({
           ? data
           : Array.isArray(data?.items)
           ? data.items
+          : Array.isArray(data?.users)
+          ? data.users
           : [];
         setRows(list);
       } catch (e) {
@@ -98,7 +106,7 @@ export default function PeopleTable({
       ctrl.abort();
       clearTimeout(t);
     };
-  }, [endpoint, q, chip, filterValues, chipField, refreshKey]);
+  }, [endpoint, q, chip, filterValues, chipField, refreshKey, api]);
 
   const getId = (r) => r.id ?? r._id;
   const updateRow = (id, patch) => {
@@ -107,7 +115,6 @@ export default function PeopleTable({
     );
   };
 
-  // ---------- CRUD ----------
   const makeEmptyForm = () =>
     formFields.reduce((acc, f) => {
       acc[f.key] = f.defaultValue ?? "";
@@ -146,7 +153,7 @@ export default function PeopleTable({
   const onDelete = async (idx) => {
     const row = rows[idx];
     if (!row) return;
-    if (!confirm("do you want delete this line?")) return;
+    if (!confirm("Do you want to delete this record?")) return;
     try {
       if (endpoint && row?.id != null) {
         await api.delete(`${endpoint}/${row.id}`);
@@ -154,13 +161,13 @@ export default function PeopleTable({
       setRefreshKey((k) => k + 1);
     } catch (e) {
       console.error(e);
-      alert("failed delete this line");
+      alert("Failed to delete this record");
     }
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!String(form.name ?? "").trim()) return;
+    if (!String(form.first_name ?? form.name ?? "").trim()) return;
 
     try {
       if (!endpoint) {
@@ -183,7 +190,7 @@ export default function PeopleTable({
       setRefreshKey((k) => k + 1);
     } catch (e) {
       console.error(e);
-      alert("failed save the data");
+      alert("Failed to save the data");
     }
   };
 
@@ -191,6 +198,10 @@ export default function PeopleTable({
     setQ("");
     setChip("");
     setFilterValues({});
+  };
+
+  const toggleExpand = (idx) => {
+    setExpandedRow(expandedRow === idx ? null : idx);
   };
 
   const firstCol = cols[0];
@@ -207,21 +218,20 @@ export default function PeopleTable({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
-        <OutlineButton
+        <h1 className="text-2xl font-semibold text-slate-800">{title}</h1>
+        <button
           onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm text-white"
+          style={{ backgroundColor: primary }}
         >
           <FiPlus />
           <span className="hidden sm:inline">{addLabel}</span>
           <span className="sm:hidden">Add</span>
-        </OutlineButton>
+        </button>
       </div>
 
-      {/* Search + filters */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <input
           placeholder="Search by name…"
@@ -253,9 +263,8 @@ export default function PeopleTable({
         </div>
       </div>
 
-      {/* ===== Mobile (Compact list) ===== */}
-      <div className="lg:hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
-        <div className="px-4 py-2 bg-slate-50/70 text-slate-500 text-xs font-medium">
+      <div className="lg:hidden rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-4 py-2 bg-slate-50 text-slate-500 text-xs font-medium">
           {title}
         </div>
 
@@ -268,7 +277,7 @@ export default function PeopleTable({
           )}
           {!loading && !error && rows.length === 0 && (
             <li className="px-4 py-6 text-center text-slate-500">
-              no data yet
+              No data yet
             </li>
           )}
 
@@ -278,53 +287,48 @@ export default function PeopleTable({
               const id = row.id ?? idx;
               return (
                 <li key={id} className="px-4 py-3">
-                  {/* layout: left info + right actions */}
                   <div className="grid grid-cols-[1fr_auto] items-start gap-3">
-                    {/* Left: Title + meta */}
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-800 truncate">
                         {String(row[firstCol.key] ?? "-")}
                       </div>
 
                       <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
-                        {restCols.slice(0, 4).map((c) => (
+                        {restCols.slice(0, 6).map((c) => (
                           <div key={c.key} className="min-w-0">
                             <div className="text-[11px] text-slate-500 truncate">
                               {c.label}
                             </div>
                             <div className="text-xs text-slate-800 truncate">
-                              {row[c.key] ?? "-"}
+                              {String(row[c.key] ?? "-")}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Right: actions */}
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex items-center gap-1.5">
-                        {renderActions ? (
-                          renderActions({ row, idx, helpers })
-                        ) : !hideCrudActions ? (
-                          <>
-                            <button
-                              onClick={() => openEdit(idx)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white"
-                              style={{ backgroundColor: primary }}
-                              title="Edit"
-                            >
-                              <FiEdit2 />
-                            </button>
-                            <button
-                              onClick={() => onDelete(idx)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white bg-red-500 hover:bg-red-600"
-                              title="Delete"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </>
-                        ) : null}
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      {renderActions ? (
+                        renderActions({ row, idx, helpers })
+                      ) : !hideCrudActions ? (
+                        <>
+                          <button
+                            onClick={() => openEdit(idx)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white"
+                            style={{ backgroundColor: primary }}
+                            title="Edit"
+                          >
+                            <FiEdit2 />
+                          </button>
+                          <button
+                            onClick={() => onDelete(idx)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white bg-red-500 hover:bg-red-600"
+                            title="Delete"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                 </li>
@@ -333,30 +337,17 @@ export default function PeopleTable({
         </ul>
       </div>
 
-      {/* ===== Desktop / Tablet (Table) ===== */}
-      <div className="hidden lg:block rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
+      <div className="hidden lg:block rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="min-w-[840px] w-full table-fixed">
-            <colgroup>
-              <col style={{ width: "26%" }} />
-              {cols.slice(1).map((_, i) => (
-                <col
-                  key={i}
-                  style={{
-                    width: `${(66 / Math.max(1, cols.length - 1)).toFixed(2)}%`,
-                  }}
-                />
-              ))}
-              <col style={{ width: "8%" }} />
-            </colgroup>
-
-            <thead className="bg-slate-50/70 text-slate-500 text-sm">
+          <table className="w-full">
+            <thead className="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
               <tr>
+                <th className="w-10 px-4 py-3"></th>
                 {header.map((h, i) => (
                   <th
                     key={i}
-                    className={`text-left font-medium px-4 py-3 ${
-                      i === header.length - 1 ? "text-right" : ""
+                    className={`text-left font-semibold px-4 py-3 whitespace-nowrap ${
+                      i === header.length - 1 ? "text-right w-[120px]" : ""
                     }`}
                   >
                     {h}
@@ -369,10 +360,10 @@ export default function PeopleTable({
               {loading && (
                 <tr>
                   <td
-                    colSpan={header.length}
+                    colSpan={header.length + 1}
                     className="px-6 py-10 text-center text-slate-500"
                   >
-                    Loading
+                    Loading...
                   </td>
                 </tr>
               )}
@@ -380,7 +371,7 @@ export default function PeopleTable({
               {!loading && error && (
                 <tr>
                   <td
-                    colSpan={header.length}
+                    colSpan={header.length + 1}
                     className="px-6 py-10 text-center text-red-600"
                   >
                     {error}
@@ -390,54 +381,115 @@ export default function PeopleTable({
 
               {!loading &&
                 !error &&
-                rows.map((row, idx) => (
-                  <tr key={row.id ?? idx} className="hover:bg-slate-50">
-                    {cols.map((c, j) => (
-                      <td
-                        key={c.key}
-                        className={`px-4 py-4 ${j === 0 ? "font-medium" : ""} ${
-                          j === 0 ? "truncate" : "whitespace-nowrap truncate"
-                        }`}
-                        title={String(row[c.key] ?? "")}
-                      >
-                        {String(row[c.key] ?? "")}
-                      </td>
-                    ))}
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        {renderActions ? (
-                          renderActions({ row, idx, helpers })
-                        ) : !hideCrudActions ? (
-                          <>
-                            <button
-                              onClick={() => openEdit(idx)}
-                              className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
-                              style={{ backgroundColor: primary }}
-                              title="Edit"
-                            >
-                              <FiEdit2 />
-                            </button>
-                            <button
-                              onClick={() => onDelete(idx)}
-                              className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
-                              title="Delete"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                rows.map((row, idx) => {
+                  const isExpanded = expandedRow === idx;
+                  return (
+                    <>
+                      <tr key={row.id ?? idx} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleExpand(idx)}
+                            className="text-slate-600 hover:text-slate-800"
+                          >
+                            {isExpanded ? (
+                              <FiChevronDown size={18} />
+                            ) : (
+                              <FiChevronRight size={18} />
+                            )}
+                          </button>
+                        </td>
+                        {cols.map((c, j) => (
+                          <td
+                            key={c.key}
+                            className={`px-4 py-3 ${
+                              j === 0 ? "font-medium" : ""
+                            } whitespace-nowrap cursor-pointer`}
+                            onClick={() => toggleExpand(idx)}
+                            title={String(row[c.key] ?? "")}
+                          >
+                            <div className="max-w-[200px] truncate">
+                              {c.render ? c.render(row) : String(row[c.key] ?? "-")}
+                            </div>
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center gap-2 justify-end">
+                            {renderActions ? (
+                              renderActions({ row, idx, helpers })
+                            ) : !hideCrudActions ? (
+                              <>
+                                <button
+                                  onClick={() => openEdit(idx)}
+                                  className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
+                                  style={{ backgroundColor: primary }}
+                                  title="Edit"
+                                >
+                                  <FiEdit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => onDelete(idx)}
+                                  className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
+                                  title="Delete"
+                                >
+                                  <FiTrash2 size={16} />
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-slate-50">
+                          <td colSpan={header.length + 1} className="px-4 py-4">
+                            <div className="flex gap-6 min-h-[180px]">
+                              {row.profile_picture && (
+                                <div className="flex-shrink-0">
+                                  <img
+                                    src={row.profile_picture}
+                                    alt={row.first_name || "Profile"}
+                                    className="w-32 h-32 rounded-xl object-cover border-2 border-slate-200"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 content-start">
+                                {Object.entries(row).map(([key, value]) => {
+                                  const excludedFields = [
+                                    'profile_picture', 'id', '_id', 
+                                    'rating_count', 'rating_sum', 
+                                    'updated_at', 'created_at'
+                                  ];
+                                  if (excludedFields.includes(key)) return null;
+                                  return (
+                                    <div key={key} className="min-w-0">
+                                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-0.5">
+                                        {key.replace(/_/g, ' ')}
+                                      </div>
+                                      <div className="text-sm text-slate-800 break-words line-clamp-2">
+                                        {value === null || value === undefined || value === ''
+                                          ? '-'
+                                          : typeof value === 'boolean'
+                                          ? value ? 'Yes' : 'No'
+                                          : String(value)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
 
               {!loading && !error && rows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={header.length}
+                    colSpan={header.length + 1}
                     className="px-6 py-10 text-center text-slate-500"
                   >
-                    no data yet
+                    No data yet
                   </td>
                 </tr>
               )}
@@ -446,18 +498,17 @@ export default function PeopleTable({
         </div>
       </div>
 
-      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-800">
-                {editingId === null ? "Add" : "Edit"}
+              <h2 className="text-xl font-semibold text-slate-800">
+                {editingId === null ? "Add" : "Edit"} {title}
               </h2>
               <button
                 onClick={() => setIsOpen(false)}
                 className="h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-600"
-                title="close"
+                title="Close"
               >
                 <FiX />
               </button>
@@ -469,7 +520,11 @@ export default function PeopleTable({
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {formFields.map((f) => (
-                    <Field key={f.key} label={f.label}>
+                    <Field
+                      key={f.key}
+                      label={f.label}
+                      className={f.type === "textarea" ? "sm:col-span-2" : ""}
+                    >
                       {renderInput(f, form[f.key] ?? "", (val) =>
                         setForm((s) => ({ ...s, [f.key]: val }))
                       )}
@@ -477,17 +532,17 @@ export default function PeopleTable({
                   ))}
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="rounded-xl px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50"
+                    className="rounded-xl px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
                   >
-                    Cancle
+                    Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl px-4 py-2 text-white shadow-sm"
+                    className="rounded-xl px-5 py-2.5 text-white shadow-sm font-medium"
                     style={{ backgroundColor: primary }}
                   >
                     Save
@@ -502,11 +557,10 @@ export default function PeopleTable({
   );
 }
 
-/* ------- small helpers ------- */
-function Field({ label, children }) {
+function Field({ label, children, className = "" }) {
   return (
-    <label className="space-y-1">
-      <span className="text-xs font-medium text-slate-500">{label}</span>
+    <label className={`space-y-1.5 ${className}`}>
+      <span className="text-sm font-medium text-slate-700">{label}</span>
       {children}
     </label>
   );
@@ -514,7 +568,7 @@ function Field({ label, children }) {
 
 function renderInput(field, value, onChange) {
   const common =
-    "w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300";
+    "w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 text-slate-800";
   const { type = "text", placeholder, options = [], required } = field;
 
   if (type === "textarea")
@@ -569,7 +623,7 @@ function Select({ value, onChange, placeholder, options = [] }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2 focus:ring-slate-300"
+      className="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2 focus:ring-slate-300 text-sm"
     >
       <option value="">{placeholder}</option>
       {options.map((opt) =>
