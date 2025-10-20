@@ -7,19 +7,18 @@ import {
   deleteUser,
   verifyFreelancer,
 } from "../controller/adminUser.js";
-import { requireVerified } from "../middleware/requireVerification.js";
-
+import { authentication } from "../middleware/authentication.js"; 
 const AdminUser = express.Router();
 
 // Public or registration route
 AdminUser.post("/", createUser);
 
-// Admin only
-AdminUser.get("/", requireVerified, getUsers);
-AdminUser.patch("/verify/:id", requireVerified, verifyFreelancer);
+// Admin only 
+AdminUser.get("/", authentication, getUsers);
+AdminUser.patch("/verify/:id", authentication, verifyFreelancer);
 
-AdminUser.get("/:id", requireVerified, getUserById);
-AdminUser.put("/:id", requireVerified, updateUser);
-AdminUser.delete("/:id", requireVerified, deleteUser);
+AdminUser.get("/:id", authentication, getUserById);
+AdminUser.put("/:id", authentication, updateUser);
+AdminUser.delete("/:id", authentication, deleteUser);
 
 export default AdminUser;
