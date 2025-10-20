@@ -89,15 +89,19 @@ function App() {
   return (
     <>
         <GlobalLoadingProvider>
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
       {!shouldHideNavbar && <Navbar />}
 
       <Routes
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
-        }}
+        }}  
       >
+        
         {/* --- Blogs --- */}
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/blogs/:id" element={<BlogPost />} />
