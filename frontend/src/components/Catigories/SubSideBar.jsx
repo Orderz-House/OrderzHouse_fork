@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
-import { fetchAuthProjectsByCategory, fetchAuthProjectsBySubSubCategory } from "./api/projects";
+import {
+  fetchAuthProjectsByCategory,
+  fetchAuthProjectsBySubSubCategory,
+  fetchAuthProjectsBySubCategory,
+} from "./api/projects";
 import ProjectCard from "./ProjectCard";
 
-export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, theme = "#028090" }) {
+export default function SubSidebar({
+  categoryId,
+  activeSubSub,
+  onSelectSubSub,
+  theme = "#028090",
+  subCategoryId, // NEW
+}) {
   const [subSubs, setSubSubs] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loadingSubSubs, setLoadingSubSubs] = useState(false);
@@ -19,16 +29,35 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
       .finally(() => setLoadingSubSubs(false));
   }, [categoryId]);
 
-  // Load projects
+  // Load projects (priority: subSub > subCategory > category)
   useEffect(() => {
     if (!categoryId) return setProjects([]);
     setLoadingProjects(true);
-    const fetchFn = activeSubSub ? fetchAuthProjectsBySubSubCategory : fetchAuthProjectsByCategory;
-    fetchFn(activeSubSub ? Number(activeSubSub) : Number(categoryId))
-      .then((data) => setProjects(Array.isArray(data) ? data : []))
-      .catch((err) => { console.error(err); setProjects([]); })
-      .finally(() => setLoadingProjects(false));
-  }, [categoryId, activeSubSub]);
+
+    const run = async () => {
+      try {
+        if (activeSubSub) {
+          const data = await fetchAuthProjectsBySubSubCategory(Number(activeSubSub));
+          setProjects(Array.isArray(data) ? data : []);
+          return;
+        }
+        if (subCategoryId) {
+          const data = await fetchAuthProjectsBySubCategory(Number(subCategoryId));
+          setProjects(Array.isArray(data) ? data : []);
+          return;
+        }
+        const data = await fetchAuthProjectsByCategory(Number(categoryId));
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+        setProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    run();
+  }, [categoryId, activeSubSub, subCategoryId]);
 
   if (!categoryId) return null;
   const hasSidebar = subSubs.length > 0;
@@ -59,9 +88,7 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
                   <button
                     onClick={() => onSelectSubSub("")}
                     className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
-                      !activeSubSub
-                        ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4"
-                        : "hover:bg-slate-50"
+                      !activeSubSub ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
                     }`}
                     style={{ borderLeftColor: !activeSubSub ? theme : "transparent" }}
                   >
@@ -77,9 +104,7 @@ export default function SubSidebar({ categoryId, activeSubSub, onSelectSubSub, t
                       <button
                         onClick={() => onSelectSubSub(sub.id.toString())}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-all group ${
-                          isActive
-                            ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4"
-                            : "hover:bg-slate-50"
+                          isActive ? "bg-gradient-to-r from-emerald-50 to-transparent border-l-4" : "hover:bg-slate-50"
                         }`}
                         style={{ borderLeftColor: isActive ? theme : "transparent" }}
                       >
