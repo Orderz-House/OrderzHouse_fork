@@ -1,35 +1,23 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useSelector, useDispatch } from "react-redux";
 import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
 import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
+import PlansAPI from "../../api/plans";
+import {
+  setPlans,
+  addPlan,
+  removePlan,
+  updatePlan,
+  setLoading,
+  setError,
+  clearError,
+} from "../../../slice/planSlice.js";
 
 const primary = "#028090";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
-  headers: { "Content-Type": "application/json" },
-});
-
 export default function Plans() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-
-  // Fetch plans from backend
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setErr("");
-        const { data } = await api.get("/plans");
-        setItems(Array.isArray(data) ? data : data?.items ?? []);
-      } catch (e) {
-        setErr("Failed to load plans.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const dispatch = useDispatch();
+  const { plans: items, loading, error } = useSelector((state) => state.plan);
 
   // Modal state
   const [open, setOpen] = useState(false);
@@ -41,6 +29,22 @@ export default function Plans() {
     status: "Active",
     featuresText: "",
   });
+
+  // Fetch plans
+  useEffect(() => {
+    (async () => {
+      try {
+        dispatch(setLoading(true));
+        dispatch(clearError());
+        const data = await PlansAPI.getPlans();
+        dispatch(setPlans(Array.isArray(data) ? data : data?.plans ?? []));
+      } catch (e) {
+        dispatch(setError("Failed to load plans."));
+      } finally {
+        dispatch(setLoading(false));
+      }
+    })();
+  }, [dispatch]);
 
   const openAdd = () => {
     setEditId(null);
@@ -71,12 +75,12 @@ export default function Plans() {
   const onDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
     const prev = items;
-    setItems((arr) => arr.filter((x) => (x.id ?? x._id) !== id));
+    dispatch(removePlan(id));
     try {
-      await api.delete(`/plans/${id}`);
+      await PlansAPI.deletePlan(id);
     } catch {
       alert("Delete failed");
-      setItems(prev);
+      dispatch(setPlans(prev));
     }
   };
 
@@ -93,13 +97,11 @@ export default function Plans() {
 
     try {
       if (editId == null) {
-        const { data } = await api.post("/plans", payload);
-        setItems((arr) => [data, ...arr]);
+        const data = await PlansAPI.createPlan(payload);
+        dispatch(addPlan(data));
       } else {
-        const { data } = await api.put(`/plans/${editId}`, payload);
-        setItems((arr) =>
-          arr.map((x) => ((x.id ?? x._id) === editId ? data : x))
-        );
+        const data = await PlansAPI.editPlan(editId, payload);
+        dispatch(updatePlan(data));
       }
       setOpen(false);
     } catch {
@@ -124,10 +126,10 @@ export default function Plans() {
 
       {/* Loading / Error */}
       {loading && <div className="text-slate-500">Loading…</div>}
-      {!loading && err && <div className="text-red-600">{err}</div>}
+      {!loading && error && <div className="text-red-600">{error}</div>}
 
       {/* Cards */}
-      {!loading && !err && (
+      {!loading && !error && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => {
             const id = p.id ?? p._id;
@@ -137,9 +139,7 @@ export default function Plans() {
                 className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    {p.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{p.name}</h3>
                   <span
                     className="rounded-full px-2 py-1 text-xs text-white"
                     style={{ backgroundColor: primary }}
@@ -150,9 +150,7 @@ export default function Plans() {
 
                 <div className="mt-2 text-2xl font-bold text-slate-800">
                   ${p.price}
-                  <span className="text-base font-normal text-slate-500">
-                    {p.period}
-                  </span>
+                  <span className="text-base font-normal text-slate-500">{p.period}</span>
                 </div>
 
                 <ul className="mt-3 space-y-1 text-sm text-slate-700 list-disc list-inside">
@@ -186,10 +184,7 @@ export default function Plans() {
 
       {/* Modal */}
       {open && (
-        <Modal
-          title={editId == null ? "Add Plan" : "Edit"}
-          onClose={() => setOpen(false)}
-        >
+        <Modal title={editId == null ? "Add Plan" : "Edit"} onClose={() => setOpen(false)}>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Name" required>
@@ -235,9 +230,7 @@ export default function Plans() {
               <textarea
                 rows={5}
                 value={form.featuresText}
-                onChange={(e) =>
-                  setForm({ ...form, featuresText: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none"
               />
             </Field>
