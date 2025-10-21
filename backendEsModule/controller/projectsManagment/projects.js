@@ -667,7 +667,7 @@ export const assignFreelancer = async (req, res) => {
 
     // Send notification (best effort)
     try {
-      await NotificationCreators.freelancerInvited(freelancer_id, projectId, project.title);
+      await NotificationCreators.freelancerAssignmentChanged(projectId,freelancer_id, true);
     } catch (err) {
       console.error("Notification error:", err);
     }

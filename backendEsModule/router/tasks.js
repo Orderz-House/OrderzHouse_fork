@@ -1,47 +1,80 @@
-// router/tasks.js
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import { upload } from "../middleware/uploadMiddleware.js";
 import {
-  getFreelancerTasks,
-  getAssignedTasks,
-  getTaskPool,
+  // Admin Routes
+  getAllTasksForAdmin,
+  approveTaskByAdmin,
+  confirmPaymentByAdmin,
+
+  // Freelancer Routes
   createTask,
   updateTask,
   deleteTask,
-  requestTask,
+  getFreelancerCreatedTasks,
+  getAssignedTasks,
   getTaskRequests,
   updateTaskRequestStatus,
-  getCategories,
-  updateTaskStatus,
+  updateTaskKanbanStatus,
   submitWorkCompletion,
-  approveWorkCompletion,
   resubmitWorkCompletion,
+
+  // Client Routes
+  requestTask,
+  submitPaymentProof,
+  approveWorkCompletion,
+  createReview,
+
+  // Public & Shared Routes
+  getTaskPool,
+  getTaskById,
+  getCategories,
   addTaskFiles,
-  getAllTasksForAdmin
 } from "../controller/tasks.js";
 
 const router = express.Router();
 
-router.get("/my-tasks", authentication, getFreelancerTasks); // GET tasks created by freelancer
-router.get("/assigned-to-me", authentication, getAssignedTasks); // NEW: GET tasks assigned to freelancer
-router.post("/", authentication, createTask); // POST create task
-router.put("/:id", authentication, updateTask); // PUT update task (before approval)
-router.delete("/:id", authentication, deleteTask); // DELETE task (before approval)
-router.get("/requests", authentication, getTaskRequests); // GET requests for freelancer's tasks
-router.patch("/requests/:requestId/status", authentication, updateTaskRequestStatus); // PATCH update request status
-router.patch("/:id/status", authentication, updateTaskStatus); // NEW: PATCH update task status (kanban)
+/* =============================================
+   ADMIN ROUTES
+   ============================================= */
+router.get("/admin/all", authentication, getAllTasksForAdmin);
+router.patch("/admin/approve/:id", authentication, approveTaskByAdmin);
+router.patch("/admin/confirm-payment/:id", authentication, confirmPaymentByAdmin);
 
+
+/* =============================================
+   FREELANCER ROUTES
+   ============================================= */
+// Now accepts files via form-data
+router.post("/", authentication, upload.array('files'), createTask); 
+router.put("/:id", authentication, updateTask);
+router.delete("/:id", authentication, deleteTask);
+router.get("/my-created", authentication, getFreelancerCreatedTasks);
+router.get("/requests", authentication, getTaskRequests);
+router.patch("/requests/:requestId/status", authentication, updateTaskRequestStatus);
+router.get("/assigned-to-me", authentication, getAssignedTasks);
+router.patch("/:id/kanban-status", authentication, updateTaskKanbanStatus);
 router.post("/:id/submit-completion", authentication, upload.array('files'), submitWorkCompletion);
 router.post("/:id/resubmit-completion", authentication, upload.array('files'), resubmitWorkCompletion);
-router.post("/:id/files", authentication, upload.array('files'), addTaskFiles);
 
-router.get("/pool", authentication, getTaskPool); // GET task pool (excludes assigned)
-router.post("/request/:id", authentication, requestTask); // POST request a task
-router.get("/categories", getCategories); // GET categories (public)
 
+/* =============================================
+   CLIENT ROUTES
+   ============================================= */
+// Now accepts files via form-data
+router.post("/request/:id", authentication, upload.array('files'), requestTask); 
+// New route for payment proof
+router.post("/:id/submit-payment-proof", authentication, upload.single('paymentProof'), submitPaymentProof);
 router.post("/:id/approve-completion", authentication, upload.array('files', 5), approveWorkCompletion);
+router.post("/:id/review", authentication, createReview);
 
-router.get("/admin/tasks", authentication, getAllTasksForAdmin); // GET all tasks for admin
+
+/* =============================================
+   PUBLIC & SHARED ROUTES
+   ============================================= */
+router.get("/pool", authentication, getTaskPool);
+router.get("/categories", getCategories);
+router.get("/:id", getTaskById);
+router.post("/:id/files", authentication, upload.array('files'), addTaskFiles);
 
 export default router;
