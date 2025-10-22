@@ -5,7 +5,6 @@ import PeopleTable from "../Tables";
 export default function Clients() {
   const { roleId, token } = useSelector((state) => state.auth);
 
-  // Access control checks
   if (!token) {
     return (
       <div className="text-center mt-10 text-red-500">
