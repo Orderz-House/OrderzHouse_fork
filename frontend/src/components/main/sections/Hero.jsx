@@ -2,21 +2,24 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import axios from "axios";
 import GradientButton from "../../buttons/GradientButton.jsx";
 import { useNavigate } from "react-router-dom";
-import { fetchCategories, fetchSubCategoriesByCategoryId } from "../../Catigories/api/category"; // ✅ للاقـتراحات
+import {
+  fetchCategories,
+  fetchSubSubCategoriesByCategoryId,
+} from "../../Catigories/api/category";
 
 // Theme
 const THEME = "#028090";
 const THEME2 = "#02C39A";
 const DARK = "#05668D";
 
-// Config (خاصة بقسم الكروت المتحركة)
+// Config
 const USE_MOCK = true;
 const API_ENDPOINT = "/top-rated";
 
-// Axios (للكروت المتحركة فقط)
+// Axios
 const api = axios.create({ baseURL: "" });
 
-// Mock (للكروت المتحركة فقط)
+// Mock
 const MOCK_DATA = [
   { name: "Lina M.", role: "UI/UX Designer", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=60", rate: 45, badge: "Figma" },
   { name: "Omar K.", role: "Front-end Dev", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=60", rate: 55, badge: "React" },
@@ -39,7 +42,7 @@ const chunk = (arr, size) => {
   return out;
 };
 
-// Fetch (للكروت المتحركة فقط)
+// Fetch
 function useTopRated({ useMock }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,23 +82,29 @@ function useTopRated({ useMock }) {
 }
 
 /* =========================================================
-   ✅ Hero مع بحث بالاقتراحات + توجيه مفلتر
-   - لا تغيير على ستايل العناصر الموجودة
-   - أضفت قائمة اقتراحات خفيفة أسفل حقل البحث فقط
+   ✅ Hero (sub-sub-categories)
    ========================================================= */
 export default function HeroFreelancer({ onSearch }) {
   const typeRef = useRef(null);
+  const inputRef = useRef(null);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // بيانات العرض المتحرك
+  const [menuPos, setMenuPos] = useState({ left: 0, top: 0, width: 0 });
+  const [openList, setOpenList] = useState(false);
+  const updateMenuPos = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuPos({ left: r.left, top: r.bottom + 8, width: r.width });
+  };
+
   const { data: topRated, loading, error } = useTopRated({ useMock: USE_MOCK });
   const [row1, row2, row3] = useMemo(() => {
     const rows = chunk(topRated, 4);
     return [rows[0] || [], rows[1] || [], rows[2] || []];
   }, [topRated]);
 
-  // كتابة تلقائية للنص (كما هي)
   useEffect(() => {
     const el = typeRef.current;
     if (!el) return;
@@ -113,9 +122,8 @@ export default function HeroFreelancer({ onSearch }) {
     tick();
   }, []);
 
-  // ========= مصادر الاقتراحات (Categories + SubCategories) =========
-  const [cats, setCats] = useState([]); // [{id,name}]
-  const [subs, setSubs] = useState([]); // [{id,name,parentId,parentName}]
+  const [cats, setCats] = useState([]);  
+  const [subs, setSubs] = useState([]);
   const [loadingSug, setLoadingSug] = useState(false);
 
   useEffect(() => {
@@ -123,15 +131,13 @@ export default function HeroFreelancer({ onSearch }) {
     const loadAll = async () => {
       try {
         setLoadingSug(true);
-        const list = await fetchCategories(); // [{id,name}, ...]
+        const list = await fetchCategories();
         if (!mounted) return;
         setCats(list || []);
-
-        // اجلب الفرعيات لكل تصنيف
         const allSubs = [];
         for (const c of list || []) {
           try {
-            const s = await fetchSubCategoriesByCategoryId(Number(c.id));
+            const s = await fetchSubSubCategoriesByCategoryId(Number(c.id));
             (s || []).forEach((it) => {
               allSubs.push({
                 id: String(it.id),
@@ -154,11 +160,10 @@ export default function HeroFreelancer({ onSearch }) {
     return () => { mounted = false; };
   }, []);
 
-  // فلترة الاقتراحات حسب الكتابة
+  // filter
   const suggestions = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return [];
-    // تطابق يبدأ بالحرف أولاً، ثم يحتوي
     const starts = (s) => s.toLowerCase().startsWith(q);
     const has = (s) => s.toLowerCase().includes(q);
 
@@ -168,7 +173,7 @@ export default function HeroFreelancer({ onSearch }) {
 
     const subItems = subs
       .map((s) => ({
-        type: "subcat",
+        type: "subsub",
         id: s.id,
         parentId: s.parentId,
         label: s.name,
@@ -176,22 +181,37 @@ export default function HeroFreelancer({ onSearch }) {
       }))
       .filter((x) => starts(x.label) || has(x.label));
 
-    // أعطِ أولوية للفرعيات لأن المستخدم غالبًا يقصدها مباشرة
-    const result = [...subItems, ...catItems];
-    return result.slice(0, 12);
+    return [...subItems, ...catItems].slice(0, 12);
   }, [searchTerm, cats, subs]);
 
-  // إظهار/إخفاء القائمة
-  const [openList, setOpenList] = useState(false);
-  const inputRef = useRef(null);
-  useEffect(() => { setOpenList(suggestions.length > 0); }, [suggestions.length]);
 
-  // تنقّل
+  useEffect(() => {
+    if (!openList) return;
+    updateMenuPos();
+    const onWin = () => updateMenuPos();
+    window.addEventListener("resize", onWin);
+    window.addEventListener("scroll", onWin, true);
+    return () => {
+      window.removeEventListener("resize", onWin);
+      window.removeEventListener("scroll", onWin, true);
+    };
+  }, [openList]);
+
   const goByText = (valueFromEvent) => {
     const value = (valueFromEvent ?? searchTerm).trim();
     if (!value) return;
+    const term = value.toLowerCase();
+
+    const exactSub = subs.find((s) => (s.name || "").toLowerCase() === term);
+    if (exactSub) { navigate(`/projectsPage?cat=${encodeURIComponent(exactSub.parentId)}&sub=${encodeURIComponent(exactSub.id)}`); return; }
+    const hitSub = subs.find((s) => (s.name || "").toLowerCase().includes(term));
+    if (hitSub) { navigate(`/projectsPage?cat=${encodeURIComponent(hitSub.parentId)}&sub=${encodeURIComponent(hitSub.id)}`); return; }
+    const catExact = cats.find((c) => (c.name || "").toLowerCase() === term);
+    if (catExact) { navigate(`/projectsPage?cat=${encodeURIComponent(catExact.id)}`); return; }
+    const catHit = cats.find((c) => (c.name || "").toLowerCase().includes(term));
+    if (catHit) { navigate(`/projectsPage?cat=${encodeURIComponent(catHit.id)}`); return; }
+
     if (typeof onSearch === "function") { try { onSearch(value); } catch {} }
-    // fallback بالـ q ؛ صفحة /projectsPage ستحول q => cat/subcat تلقائيًا
     navigate(`/projectsPage?q=${encodeURIComponent(value)}`);
   };
 
@@ -199,38 +219,36 @@ export default function HeroFreelancer({ onSearch }) {
     if (!item) return;
     if (item.type === "cat") {
       navigate(`/projectsPage?cat=${encodeURIComponent(item.id)}`);
-    } else if (item.type === "subcat") {
-      navigate(
-        `/projectsPage?cat=${encodeURIComponent(item.parentId)}&subcat=${encodeURIComponent(item.id)}`
-      );
+    } else if (item.type === "subsub") {
+      navigate(`/projectsPage?cat=${encodeURIComponent(item.parentId)}&sub=${encodeURIComponent(item.id)}`);
     }
     setOpenList(false);
   };
 
-  // ========= واجهة البلوك (بدون تغيير على ستايلك الأساسي) =========
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-white">
-      {/* Grid الخلفية */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
-        <div
-          className="w-full h-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(0,0,0,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.12) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div
+            className="w-full h-full"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(0,0,0,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.12) 1px, transparent 1px)",
+              backgroundSize: "48px 48px",
+            }}
+          />
+        </div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div
+            className="absolute -top-24 -right-24 w-[38rem] h-[38rem] rounded-full blur-3xl opacity-30 animate-blob"
+            style={{ background: `radial-gradient(closest-side, ${THEME}55, transparent 70%)` }}
+          />
+          <div
+            className="absolute -bottom-24 -left-24 w-[34rem] h-[34rem] rounded-full blur-3xl opacity-30 animate-blob-slower"
+            style={{ background: `radial-gradient(closest-side, ${THEME2}55, transparent 70%)` }}
+          />
+        </div>
       </div>
-
-      {/* Blobs */}
-      <div
-        className="absolute -top-24 -right-24 w-[38rem] h-[38rem] rounded-full blur-3xl opacity-30 animate-blob"
-        style={{ background: `radial-gradient(closest-side, ${THEME}55, transparent 70%)` }}
-      />
-      <div
-        className="absolute -bottom-24 -left-24 w-[34rem] h-[34rem] rounded-full blur-3xl opacity-30 animate-blob-slower"
-        style={{ background: `radial-gradient(closest-side, ${THEME2}55, transparent 70%)` }}
-      />
 
       {/* Content */}
       <div className="relative z-10 max-w-screen-xl mx-auto px-6 py-10 sm:py-14 md:py-16 w-full grid lg:grid-cols-[1.1fr_.9fr] gap-10 items-center">
@@ -257,22 +275,21 @@ export default function HeroFreelancer({ onSearch }) {
             <span ref={typeRef} className="font-semibold text-[color:var(--t)]" style={{ ["--t"]: THEME }}>designers</span>.
           </p>
 
-          {/* Search + اقتراحات */}
+          {/* Search */}
           <div className="mt-7 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search categories or sub-categories…"
+                placeholder="Search categories or sub-sub-categories…"
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-12 outline-none ring-[3px] ring-transparent focus:border-[color:var(--t)] focus:ring-[color:var(--t)]/15 transition"
                 style={{ ["--t"]: THEME }}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setOpenList(suggestions.length > 0)}
+                onChange={(e) => { setSearchTerm(e.target.value); setOpenList(true); updateMenuPos(); }}
+                onFocus={() => { setOpenList(suggestions.length > 0); updateMenuPos(); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") goByText(e.currentTarget.value);
                   if (e.key === "ArrowDown") {
-                    // نقل التركيز لأول عنصر في القائمة
                     const first = document.querySelector('[data-sug="item-0"]');
                     first?.focus();
                     e.preventDefault();
@@ -282,67 +299,67 @@ export default function HeroFreelancer({ onSearch }) {
               <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none">
                 <path d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-
-              {/* قائمة الاقتراحات (خفيفة، بدون تغيير شكل الهيرو) */}
-              {openList && (
-                <div
-                  className="absolute z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(2,128,144,0.12)] overflow-hidden"
-                  onMouseDown={(e) => e.preventDefault()} // حتى لا يغلق الـblur قبل onClick
-                >
-                  {loadingSug ? (
-                    <div className="p-3 text-sm text-slate-500">Loading…</div>
-                  ) : suggestions.length === 0 ? (
-                    <div className="p-3 text-sm text-slate-500">No matches</div>
-                  ) : (
-                    <ul className="max-h-64 overflow-auto">
-                      {suggestions.map((sug, idx) => (
-                        <li key={`${sug.type}-${sug.id}`}>
-                          <button
-                            type="button"
-                            data-sug={`item-${idx}`}
-                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none flex items-center justify-between"
-                            onClick={() => goBySuggestion(sug)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") goBySuggestion(sug);
-                              if (e.key === "ArrowDown") {
-                                const next = document.querySelector(`[data-sug="item-${idx + 1}"]`);
-                                (next || inputRef.current)?.focus();
-                                e.preventDefault();
-                              }
-                              if (e.key === "ArrowUp") {
-                                if (idx === 0) { inputRef.current?.focus(); e.preventDefault(); return; }
-                                const prev = document.querySelector(`[data-sug="item-${idx - 1}"]`);
-                                prev?.focus();
-                                e.preventDefault();
-                              }
-                            }}
-                          >
-                            <span className="flex items-center gap-2">
-                              <span
-                                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-bold"
-                                style={{
-                                  background: sug.type === "subcat" ? `${THEME}14` : `${THEME2}14`,
-                                  color: sug.type === "subcat" ? THEME : THEME2,
-                                }}
-                              >
-                                {sug.type === "subcat" ? "S" : "C"}
-                              </span>
-                              <span className="text-slate-800">{sug.label}</span>
-                            </span>
-                            {sug.meta && <span className="text-[11px] text-slate-500">in {sug.meta}</span>}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
             </div>
 
             <GradientButton onClick={() => goByText()}>
               Explore talents
             </GradientButton>
           </div>
+
+          {openList && (
+            <div
+              className="fixed z-[1000] rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(2,128,144,0.12)] overflow-hidden"
+              style={{ left: menuPos.left, top: menuPos.top, width: menuPos.width }}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {loadingSug ? (
+                <div className="p-3 text-sm text-slate-500">Loading…</div>
+              ) : suggestions.length === 0 ? (
+                <div className="p-3 text-sm text-slate-500">No matches</div>
+              ) : (
+                <ul className="max-h-[60vh] overflow-auto">
+                  {suggestions.map((sug, idx) => (
+                    <li key={`${sug.type}-${sug.id}`}>
+                      <button
+                        type="button"
+                        data-sug={`item-${idx}`}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none flex items-center justify-between"
+                        onClick={() => goBySuggestion(sug)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") goBySuggestion(sug);
+                          if (e.key === "ArrowDown") {
+                            const next = document.querySelector(`[data-sug="item-${idx + 1}"]`);
+                            (next || inputRef.current)?.focus();
+                            e.preventDefault();
+                          }
+                          if (e.key === "ArrowUp") {
+                            if (idx === 0) { inputRef.current?.focus(); e.preventDefault(); return; }
+                            const prev = document.querySelector(`[data-sug="item-${idx - 1}"]`);
+                            prev?.focus();
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-bold"
+                            style={{
+                              background: sug.type === "subsub" ? `${THEME}14` : `${THEME2}14`,
+                              color: sug.type === "subsub" ? THEME : THEME2,
+                            }}
+                          >
+                            {sug.type === "subsub" ? "S" : "C"}
+                          </span>
+                          <span className="text-slate-800">{sug.label}</span>
+                        </span>
+                        {sug.meta && <span className="text-[11px] text-slate-500">in {sug.meta}</span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Stats */}
           <div className="mt-10 grid grid-cols-3 max-w-xl gap-6">
@@ -356,7 +373,7 @@ export default function HeroFreelancer({ onSearch }) {
           )}
         </div>
 
-        {/* Right (الكروت المتحركة كما هي) */}
+        {/* Right */}
         <div className="relative z-0 h-[240px] md:h-[560px] overflow-hidden pointer-events-none">
           <div className="absolute inset-0 -z-10 blur-3xl opacity-50" style={{ background: `radial-gradient(60% 60% at 50% 40%, ${THEME}22, transparent)` }} />
           <div className="block md:hidden h-full">

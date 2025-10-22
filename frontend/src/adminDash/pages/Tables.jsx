@@ -1,33 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiChevronDown, FiChevronRight, FiSave, FiXCircle } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
 
 // ============================================================================
-// Constants & Utilities
+// Constants
 // ============================================================================
 const PRIMARY_COLOR = "#028090";
 const DEBOUNCE_DELAY = 300;
-
-const STATUS_COLORS = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  expired: "bg-rose-50 text-rose-700 border-rose-200",
-  cancelled: "bg-slate-100 text-slate-600 border-slate-200",
-  default: "bg-slate-100 text-slate-600 border-slate-200"
-};
-
-const formatDate = (date) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-};
-
-const formatValue = (value) => {
-  if (value === null || value === undefined || value === "") return "-";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
-};
-
-const getStatusColor = (status) => STATUS_COLORS[status?.toLowerCase()] || STATUS_COLORS.default;
 
 // ============================================================================
 // Hooks
@@ -39,8 +19,8 @@ function useApi(token) {
         baseURL: import.meta.env.VITE_APP_API_URL || "",
         headers: {
           "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` })
-        }
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       }),
     [token]
   );
@@ -59,19 +39,37 @@ function useTableData({ endpoint, api, searchQuery, chipValue, chipField, filter
     setError("");
 
     const params = Object.fromEntries(
-      Object.entries({ q: searchQuery, [chipField]: chipValue, ...filterValues }).filter(
-        ([, v]) => v != null && String(v).trim() !== ""
-      )
+      Object.entries({
+        q: searchQuery,
+        [chipField]: chipValue,
+        ...filterValues,
+      }).filter(([, v]) => v != null && String(v).trim() !== "")
     );
 
     const timeoutId = setTimeout(async () => {
       try {
-        const { data } = await api.get(endpoint, { params, signal: controller.signal });
-        const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.users) ? data.users : [];
+        const { data } = await api.get(endpoint, {
+          params,
+          signal: controller.signal,
+        });
 
-        const processedList = list.map((row) => ({
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.users)
+          ? data.users
+          : [];
+
+        // Parse categories if they're JSON strings
+        const processedList = list.map(row => ({
           ...row,
-          categories: typeof row.categories === "string" ? (() => { try { return JSON.parse(row.categories); } catch { return []; } })() : row.categories
+          categories: typeof row.categories === 'string' 
+            ? (() => {
+                try { return JSON.parse(row.categories); }
+                catch { return []; }
+              })()
+            : row.categories
         }));
 
         setRows(processedList);
@@ -95,7 +93,7 @@ function useTableData({ endpoint, api, searchQuery, chipValue, chipField, filter
 }
 
 // ============================================================================
-// Basic UI Components
+// UI Components - Filters
 // ============================================================================
 const SearchBar = ({ value, onChange }) => (
   <input
@@ -140,7 +138,11 @@ const FilterBar = ({ filters, filterValues, onFilterChange, onReset }) => {
           options={filter.options}
         />
       ))}
-      <button onClick={onReset} className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50" title="Reset filters">
+      <button
+        onClick={onReset}
+        className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
+        title="Reset filters"
+      >
         <VscDebugRestart />
       </button>
     </div>
@@ -148,429 +150,419 @@ const FilterBar = ({ filters, filterValues, onFilterChange, onReset }) => {
 };
 
 // ============================================================================
-// Form Components
+// UI Components - Form
 // ============================================================================
-const EditableField = ({ label, value, onChange, type = "text", options = [] }) => {
-  const baseClassName = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+const FormField = ({ label, children, className = "" }) => (
+  <label className={`space-y-1.5 ${className}`}>
+    <span className="text-sm font-medium text-slate-700">{label}</span>
+    {children}
+  </label>
+);
+
+const FormInput = ({ field, value, onChange }) => {
+  const baseClassName = "w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 text-slate-800";
+  const { type = "text", placeholder, options = [], required } = field;
 
   if (type === "textarea") {
     return (
-      <div className="sm:col-span-2">
-        <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} className={baseClassName} rows={3} />
-      </div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={baseClassName}
+        rows={4}
+        required={required}
+      />
     );
   }
 
   if (type === "select") {
     return (
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={baseClassName}>
-          <option value="">Choose…</option>
-          {options.map((opt) =>
-            typeof opt === "object" ? (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ) : (
-              <option key={opt} value={opt}>{opt}</option>
-            )
-          )}
-        </select>
-      </div>
-    );
-  }
-
-  // Handle boolean fields with proper conversion
-  if (type === "boolean" || (options && options.length === 2 && options.every(o => typeof o === "object" && typeof o.value === "boolean"))) {
-    return (
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-        <select 
-          value={value === true || value === "true" ? "true" : "false"} 
-          onChange={(e) => onChange(e.target.value === "true")} 
-          className={baseClassName}
-        >
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-      </div>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={baseClassName} required={required}>
+        <option value="">{placeholder || "Choose…"}</option>
+        {options.map((opt) =>
+          typeof opt === "object" ? (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ) : (
+            <option key={opt} value={opt}>{opt}</option>
+          )
+        )}
+      </select>
     );
   }
 
   return (
-    <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className={baseClassName} />
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={baseClassName}
+      required={required}
+    />
+  );
+};
+
+const EditModal = ({ isOpen, onClose, title, formFields, formData, onChange, onSubmit, loading }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
+          <button
+            onClick={onClose}
+            className="h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-600"
+          >
+            <FiX />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="py-8 text-center text-slate-500">Loading…</div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {formFields.map((field) => (
+                <FormField
+                  key={field.key}
+                  label={field.label}
+                  className={field.type === "textarea" ? "sm:col-span-2" : ""}
+                >
+                  <FormInput
+                    field={field}
+                    value={formData[field.key] ?? ""}
+                    onChange={(val) => onChange(field.key, val)}
+                  />
+                </FormField>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl px-5 py-2.5 text-white shadow-sm font-medium"
+                style={{ backgroundColor: PRIMARY_COLOR }}
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 };
 
 // ============================================================================
-// Data Display Components
+// UI Components - Subscription
 // ============================================================================
-const Badge = ({ children, className }) => (
-  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${className}`}>
-    {children}
+const SubscriptionBadge = ({ subscription }) => {
+  if (!subscription || !subscription.id) {
+    return <span className="text-slate-400 text-xs italic">No plan</span>;
+  }
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-700 border-green-300';
+      case 'expired':
+        return 'bg-red-100 text-red-700 border-red-300';
+      case 'cancelled':
+        return 'bg-slate-100 text-slate-600 border-slate-300';
+      default:
+        return 'bg-slate-100 text-slate-600 border-slate-300';
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium text-slate-800">{subscription.name}</span>
+      <span className={`inline-flex items-center self-start px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(subscription.status)}`}>
+        {subscription.status || 'Unknown'}
+      </span>
+    </div>
+  );
+};
+
+const SubscriptionCard = ({ subscription }) => {
+  if (!subscription || !subscription.id) {
+    return (
+      <div className="bg-white rounded-lg px-4 py-3 border border-slate-200 text-center">
+        <span className="text-sm text-slate-500 italic">No active subscription</span>
+      </div>
+    );
+  }
+
+  const { name, price, duration, start_date, end_date, status } = subscription;
+  
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'expired':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'cancelled':
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-lg px-4 py-4 border border-slate-200 shadow-sm">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h5 className="font-semibold text-slate-800 text-base">{name}</h5>
+          <p className="text-xs text-slate-500 mt-0.5">{duration} days</p>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-slate-800">${price}</div>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border mt-1 ${getStatusColor(status)}`}>
+            {status || 'Unknown'}
+          </span>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+        <div>
+          <div className="text-xs text-slate-500 mb-0.5">Start Date</div>
+          <div className="text-sm font-medium text-slate-700">{formatDate(start_date)}</div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-500 mb-0.5">End Date</div>
+          <div className="text-sm font-medium text-slate-700">{formatDate(end_date)}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// UI Components - Category
+// ============================================================================
+const CategoryBadge = ({ name }) => (
+  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500 text-white shadow-sm">
+    {name}
   </span>
 );
 
-const CategoryBadge = ({ name }) => <Badge className="bg-blue-500 text-white shadow-sm">{name}</Badge>;
-
 const CategoryList = ({ categories, maxVisible = 2 }) => {
-  if (!categories?.length) return <span className="text-slate-400 text-xs italic">No categories</span>;
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    return <span className="text-slate-400 text-xs italic">No categories</span>;
+  }
 
   const visible = categories.slice(0, maxVisible);
   const remaining = categories.length - maxVisible;
 
   return (
     <div className="flex flex-wrap gap-1.5 items-center">
-      {visible.map((cat) => <CategoryBadge key={cat.id} name={cat.name} />)}
-      {remaining > 0 && <Badge className="bg-slate-100 text-slate-600">+{remaining}</Badge>}
+      {visible.map((cat) => (
+        <CategoryBadge key={cat.id} name={cat.name} />
+      ))}
+      {remaining > 0 && (
+        <span className="text-xs text-slate-600 font-medium bg-slate-100 px-2 py-1 rounded">
+          +{remaining}
+        </span>
+      )}
     </div>
   );
 };
 
 // ============================================================================
-// Row Details Components
+// UI Components - Row Details
 // ============================================================================
-const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
-    {children}
-  </div>
-);
-
-const SectionTitle = ({ children }) => (
-  <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4 pb-2 border-b-2 border-slate-200">
-    {children}
-  </h4>
-);
-
-const InfoItem = ({ label, value }) => (
-  <Card className="p-4">
-    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{label}</div>
-    <div className="text-sm font-semibold text-slate-800">{formatValue(value)}</div>
-  </Card>
-);
-
-const ProfileImage = ({ src, alt, isEditing, onImageChange }) => {
-  const [uploadMode, setUploadMode] = useState('url');
-  const [previewUrl, setPreviewUrl] = useState(src);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
-      }
-
-      // Create preview and convert to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setPreviewUrl(base64String);
-        onImageChange(base64String);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="space-y-3">
-        {previewUrl && (
-          <div className="w-32 h-32 mx-auto">
-            <img src={previewUrl} alt={alt} className="w-full h-full rounded-lg object-cover border-2 border-slate-300" />
-          </div>
-        )}
-        
-        {/* Toggle between URL and Upload */}
-        <div className="flex gap-2 justify-center">
-          <button
-            type="button"
-            onClick={() => setUploadMode('url')}
-            className={`px-3 py-1 text-xs rounded-lg ${uploadMode === 'url' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-700'}`}
-          >
-            URL
-          </button>
-          <button
-            type="button"
-            onClick={() => setUploadMode('upload')}
-            className={`px-3 py-1 text-xs rounded-lg ${uploadMode === 'upload' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-700'}`}
-          >
-            Upload
-          </button>
-        </div>
-
-        {uploadMode === 'url' ? (
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Profile Image URL</label>
-            <input
-              type="text"
-              value={src || ""}
-              onChange={(e) => {
-                onImageChange(e.target.value);
-                setPreviewUrl(e.target.value);
-              }}
-              placeholder="Enter image URL"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        ) : (
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Upload Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-            <p className="text-xs text-slate-500 mt-1">Max size: 5MB. Formats: JPG, PNG, GIF</p>
-          </div>
-        )}
-      </div>
-    );
-  }
+const InfoCard = ({ label, value }) => {
+  const displayValue =
+    value === null || value === undefined || value === ''
+      ? '-'
+      : typeof value === 'boolean'
+      ? (value ? 'Yes' : 'No')
+      : String(value);
 
   return (
-    <Card className="p-4">
-      <img src={src} alt={alt} className="w-full aspect-square rounded-lg object-cover" />
-    </Card>
+    <div className="bg-white rounded-lg px-4 py-3 border border-slate-200">
+      <div className="text-xs font-medium text-slate-500 mb-1">{label}</div>
+      <div className="text-sm font-semibold text-slate-800">{displayValue}</div>
+    </div>
   );
 };
 
-const RatingCard = ({ rating, count }) => (
-  <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 p-4 text-center">
-    <div className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">Rating</div>
-    <div className="flex items-center justify-center gap-1 mb-1">
-      <span className="text-3xl font-bold text-amber-600">{Number(rating).toFixed(1)}</span>
-      <span className="text-amber-500 text-xl">★</span>
-    </div>
-    <div className="text-xs text-amber-700">{count || 0} {count === 1 ? "review" : "reviews"}</div>
-  </Card>
-);
-
-const StatusCard = ({ label, isActive }) => (
-  <Card className={`p-4 text-center ${isActive ? "bg-emerald-50 border-emerald-200" : "bg-slate-50"}`}>
-    <div className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-2">{label}</div>
-    <div className={`text-sm font-semibold ${isActive ? "text-emerald-700" : "text-slate-600"}`}>
-      {isActive ? "Active" : "Inactive"}
-    </div>
-  </Card>
-);
-
-const SubscriptionCard = ({ subscription }) => {
-  if (!subscription?.id) {
-    return <Card className="p-6 text-center"><span className="text-sm text-slate-500 italic">No subscription</span></Card>;
-  }
-
-  const { name, price, duration, start_date, end_date, status } = subscription;
-
-  return (
-    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 p-5">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h5 className="font-bold text-slate-800 text-lg">{name}</h5>
-          <p className="text-xs text-slate-600 mt-1">{duration} days</p>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-blue-600">${price}</div>
-          <Badge className={`mt-2 border ${getStatusColor(status)}`}>{status || "Unknown"}</Badge>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-blue-200/50">
-        <div>
-          <div className="text-xs font-medium text-slate-600 mb-1">Start</div>
-          <div className="text-sm font-semibold text-slate-800">{formatDate(start_date)}</div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-slate-600 mb-1">End</div>
-          <div className="text-sm font-semibold text-slate-800">{formatDate(end_date)}</div>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-const RowDetails = ({ row, isEditing, editData, onEditChange, formFields }) => {
-  const isFreelancer = row.role_id === 3 || row.categories?.length;
+const RowDetails = ({ row }) => {
+  const isFreelancer = row.role_id === 3 || (row.categories && Array.isArray(row.categories));
   
-  const contactFields = ["first_name", "last_name", "username", "email", "phone_number", "country"];
-  const statusFields = ["is_locked", "is_deleted"];
-  
-  const excludeFromAdditional = new Set([
-    "profile_picture", "profile_pic_url", "id", "_id", "role_id", "updated_at", "created_at", "password",
-    "rating_count", "rating_sum", "rating", "is_verified", "is_online", "subscription", "categories", "bio",
-    "hourly_rate", ...contactFields, ...statusFields
+  const excludedFields = new Set([
+    'profile_picture', 'profile_pic_url', 'id', '_id', 'role_id', 
+    'updated_at', 'created_at', 'password', 'rating_count', 'rating_sum', 'subscription'
   ]);
 
-  const additionalFields = Object.entries(row).filter(([key]) => !excludeFromAdditional.has(key));
+  const displayedFields = new Set([
+    'first_name', 'last_name', 'username', 'email', 'phone_number', 
+    'country', 'bio', 'categories', 'rating', 'is_verified', 
+    'is_online', 'is_locked', 'is_deleted'
+  ]);
 
-  if (isEditing) {
-    return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-300">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-blue-700">
-            <FiEdit2 />
-            <span className="font-semibold">Edit Mode</span>
-          </div>
-          <span className="text-xs text-blue-600">Edit the fields below and click Save</span>
-        </div>
-        
-        <div className="space-y-6">
-          {/* Profile Image Section */}
-          {(row.profile_picture || row.profile_pic_url || isEditing) && (
-            <section>
-              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Profile Image</h5>
-              <ProfileImage 
-                src={editData.profile_pic_url || row.profile_pic_url || row.profile_picture} 
-                alt={editData.first_name || row.first_name || "Profile"}
-                isEditing={true}
-                onImageChange={(val) => onEditChange('profile_pic_url', val)}
-              />
-            </section>
-          )}
-
-          {/* Contact Information */}
-          <section>
-            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-blue-200">Contact Information</h5>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {formFields
-                .filter(f => ['first_name', 'last_name', 'username', 'phone_number', 'country'].includes(f.key))
-                .map((field) => (
-                  <EditableField
-                    key={field.key}
-                    label={field.label}
-                    value={editData[field.key] ?? ""}
-                    onChange={(val) => onEditChange(field.key, val)}
-                    type={field.type}
-                    options={field.options}
-                  />
-                ))}
-            </div>
-          </section>
-
-          {/* Bio Section */}
-          {formFields.find(f => f.key === 'bio') && (
-            <section>
-              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-blue-200">Biography</h5>
-              <EditableField
-                label="Bio"
-                value={editData.bio ?? ""}
-                onChange={(val) => onEditChange('bio', val)}
-                type="textarea"
-              />
-            </section>
-          )}
-
-          {/* Other Fields */}
-          {formFields.filter(f => !['first_name', 'last_name', 'username', 'phone_number', 'country', 'bio', 'profile_pic_url', 'hourly_rate'].includes(f.key)).length > 0 && (
-            <section>
-              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-blue-200">Additional Settings</h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formFields
-                  .filter(f => !['first_name', 'last_name', 'username', 'phone_number', 'country', 'bio', 'profile_pic_url', 'hourly_rate'].includes(f.key))
-                  .map((field) => (
-                    <EditableField
-                      key={field.key}
-                      label={field.label}
-                      value={editData[field.key] ?? ""}
-                      onChange={(val) => onEditChange(field.key, val)}
-                      type={field.type}
-                      options={field.options}
-                    />
-                  ))}
-              </div>
-            </section>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const additionalFields = Object.entries(row).filter(
+    ([key]) => !excludedFields.has(key) && !displayedFields.has(key)
+  );
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-6">
-      <div className="grid lg:grid-cols-[280px_1fr] gap-8">
-        {/* Sidebar */}
-        <div className="space-y-4">
+    <div className="bg-slate-50 rounded-xl p-6">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Profile Section */}
+        <div className="flex flex-col items-center lg:items-start gap-4 lg:w-48 flex-shrink-0">
           {(row.profile_picture || row.profile_pic_url) && (
-            <ProfileImage src={row.profile_picture || row.profile_pic_url} alt={row.first_name || "Profile"} isEditing={false} />
+            <img
+              src={row.profile_picture || row.profile_pic_url}
+              alt={row.first_name || "Profile"}
+              className="w-40 h-40 rounded-xl object-cover border border-slate-300 shadow-sm"
+            />
           )}
-          {isFreelancer && row.rating !== undefined && <RatingCard rating={row.rating} count={row.rating_count} />}
-          {isFreelancer && row.is_verified !== undefined && <StatusCard label="Verification" isActive={row.is_verified} />}
-          {!isFreelancer && row.is_online !== undefined && <StatusCard label="Status" isActive={row.is_online} />}
+          
+          {/* Quick Stats */}
+          <div className="flex flex-col gap-3 w-full">
+            {isFreelancer && row.rating !== undefined && (
+              <div className="bg-white border border-slate-200 rounded-lg px-4 py-3 text-center shadow-sm">
+                <div className="text-xs font-medium text-slate-500 mb-1">Rating</div>
+                <div className="text-2xl font-bold text-slate-800">
+                  {Number(row.rating).toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-600 mt-1">
+                  {row.rating_count || 0} {row.rating_count === 1 ? 'review' : 'reviews'}
+                </div>
+              </div>
+            )}
+            
+            {isFreelancer && row.is_verified !== undefined && (
+              <div className="bg-white border border-slate-200 rounded-lg px-4 py-3 text-center shadow-sm">
+                <div className="text-xs font-medium text-slate-500 mb-1">Verification</div>
+                <div className={`text-sm font-semibold ${row.is_verified ? 'text-green-600' : 'text-slate-600'}`}>
+                  {row.is_verified ? 'Verified' : 'Not Verified'}
+                </div>
+              </div>
+            )}
+
+            {!isFreelancer && row.is_online !== undefined && (
+              <div className="bg-white border border-slate-200 rounded-lg px-4 py-3 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className={`w-2 h-2 rounded-full ${row.is_online ? 'bg-green-500' : 'bg-slate-400'}`}></span>
+                  <span className="text-xs font-medium text-slate-500">Status</span>
+                </div>
+                <div className={`text-sm font-semibold ${row.is_online ? 'text-green-600' : 'text-slate-700'}`}>
+                  {row.is_online ? 'Online' : 'Offline'}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="space-y-6">
-          {/* Contact */}
+        {/* Information Section */}
+        <div className="flex-1 space-y-6">
+          {/* Contact & Identity */}
           <section>
-            <SectionTitle>Contact Information</SectionTitle>
-            <div className="grid md:grid-cols-2 gap-3">
-              {contactFields.map(field => row[field] && (
-                <InfoItem key={field} label={field.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} value={row[field]} />
-              ))}
+            <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+              Contact Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {row.first_name && <InfoCard label="First Name" value={row.first_name} />}
+              {row.last_name && <InfoCard label="Last Name" value={row.last_name} />}
+              {row.username && <InfoCard label="Username" value={row.username} />}
+              {row.email && <InfoCard label="Email" value={row.email} />}
+              {row.phone_number && <InfoCard label="Phone Number" value={row.phone_number} />}
+              {row.country && <InfoCard label="Country" value={row.country} />}
             </div>
           </section>
 
           {/* Bio */}
           {row.bio && (
             <section>
-              <SectionTitle>Biography</SectionTitle>
-              <Card className="p-5">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{row.bio}</p>
-              </Card>
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+                Biography
+              </h4>
+              <div className="bg-white rounded-lg px-4 py-3 border border-slate-200 shadow-sm">
+                <p className="text-sm text-slate-700 leading-relaxed">{row.bio}</p>
+              </div>
             </section>
           )}
 
-          {/* Subscription */}
+          {/* Subscription - Freelancers Only */}
           {isFreelancer && row.subscription && (
             <section>
-              <SectionTitle>Subscription</SectionTitle>
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+                Subscription Plan
+              </h4>
               <SubscriptionCard subscription={row.subscription} />
             </section>
           )}
 
-          {/* Categories */}
-          {isFreelancer && row.categories?.length > 0 && (
+          {/* Categories - Freelancers Only */}
+          {isFreelancer && row.categories && Array.isArray(row.categories) && row.categories.length > 0 && (
             <section>
-              <SectionTitle>Specializations</SectionTitle>
-              <Card className="p-5">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+                Specializations
+              </h4>
+              <div className="bg-white rounded-lg px-4 py-4 border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap gap-2">
-                  {row.categories.map((cat) => <CategoryBadge key={cat.id} name={cat.name} />)}
+                  {row.categories.map((cat) => (
+                    <CategoryBadge key={cat.id} name={cat.name} />
+                  ))}
                 </div>
-              </Card>
+              </div>
             </section>
           )}
 
           {/* Account Status */}
           <section>
-            <SectionTitle>Account Status</SectionTitle>
-            <div className="grid md:grid-cols-3 gap-3">
+            <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+              Account Status
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {isFreelancer && row.is_online !== undefined && (
-                <StatusCard label="Online" isActive={row.is_online} />
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`w-2 h-2 rounded-full ${row.is_online ? 'bg-green-500' : 'bg-slate-400'}`}></span>
+                    <span className="text-xs font-medium text-slate-500">Status</span>
+                  </div>
+                  <div className={`text-sm font-semibold ${row.is_online ? 'text-green-600' : 'text-slate-700'}`}>
+                    {row.is_online ? 'Online' : 'Offline'}
+                  </div>
+                </div>
               )}
-              {statusFields.map(field => row[field] !== undefined && (
-                <InfoItem key={field} label={field.replace(/_/g, " ").replace("is ", "").replace(/\b\w/g, l => l.toUpperCase())} value={row[field]} />
-              ))}
+              {row.is_locked !== undefined && <InfoCard label="Account Locked" value={row.is_locked} />}
+              {row.is_deleted !== undefined && <InfoCard label="Account Deleted" value={row.is_deleted} />}
             </div>
           </section>
 
-          {/* Additional */}
+          {/* Additional Fields */}
           {additionalFields.length > 0 && (
             <section>
-              <SectionTitle>Additional Information</SectionTitle>
-              <div className="grid md:grid-cols-2 gap-3">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3 pb-2 border-b border-slate-300">
+                Additional Information
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {additionalFields.map(([key, value]) => (
-                  <InfoItem key={key} label={key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} value={value} />
+                  <InfoCard 
+                    key={key} 
+                    label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} 
+                    value={value} 
+                  />
                 ))}
               </div>
             </section>
@@ -582,40 +574,37 @@ const RowDetails = ({ row, isEditing, editData, onEditChange, formFields }) => {
 };
 
 // ============================================================================
-// Table Components
+// UI Components - Table Actions
 // ============================================================================
-const ActionButtons = ({ onEdit, onDelete, onSave, onCancelEdit, isEditing, renderCustomActions, hideCrudActions }) => {
+const ActionButtons = ({ onEdit, onDelete, renderCustomActions, hideCrudActions }) => {
   if (renderCustomActions) return renderCustomActions;
   if (hideCrudActions) return null;
 
-  if (isEditing) {
-    return (
-      <>
-        <button onClick={onSave} className="inline-flex items-center gap-1 justify-center rounded-xl px-3 py-2 text-white bg-green-600 hover:bg-green-700 transition-colors" title="Save">
-          <FiSave size={16} />
-          <span className="text-xs">Save</span>
-        </button>
-        <button onClick={onCancelEdit} className="inline-flex items-center gap-1 justify-center rounded-xl px-3 py-2 text-white bg-slate-500 hover:bg-slate-600 transition-colors" title="Cancel">
-          <FiXCircle size={16} />
-          <span className="text-xs">Cancel</span>
-        </button>
-      </>
-    );
-  }
-
   return (
     <>
-      <button onClick={onEdit} className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white hover:opacity-90 transition-opacity" style={{ backgroundColor: PRIMARY_COLOR }} title="Edit">
+      <button
+        onClick={onEdit}
+        className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white"
+        style={{ backgroundColor: PRIMARY_COLOR }}
+        title="Edit"
+      >
         <FiEdit2 size={16} />
       </button>
-      <button onClick={onDelete} className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600 transition-colors" title="Delete">
+      <button
+        onClick={onDelete}
+        className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-white bg-red-500 hover:bg-red-600"
+        title="Delete"
+      >
         <FiTrash2 size={16} />
       </button>
     </>
   );
 };
 
-const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, editData, onToggleExpand, onEdit, onDelete, onSave, onCancelEdit, onEditChange, formFields }) => {
+// ============================================================================
+// UI Components - Desktop Table
+// ============================================================================
+const DesktopTable = ({ columns, rows, loading, error, expandedRow, onToggleExpand, renderActions, hideCrudActions, onEdit, onDelete, helpers }) => {
   const headers = [...columns.map((c) => c.label), ""];
 
   return (
@@ -626,7 +615,12 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
             <tr>
               <th className="w-10 px-4 py-3"></th>
               {headers.map((header, i) => (
-                <th key={i} className={`text-left font-semibold px-4 py-3 whitespace-nowrap ${i === headers.length - 1 ? "text-right w-[180px]" : ""}`}>
+                <th
+                  key={i}
+                  className={`text-left font-semibold px-4 py-3 whitespace-nowrap ${
+                    i === headers.length - 1 ? "text-right w-[120px]" : ""
+                  }`}
+                >
                   {header}
                 </th>
               ))}
@@ -636,19 +630,25 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
           <tbody className="divide-y divide-slate-200 text-slate-800">
             {loading && (
               <tr>
-                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-slate-500">Loading...</td>
+                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-slate-500">
+                  Loading...
+                </td>
               </tr>
             )}
 
             {!loading && error && (
               <tr>
-                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-red-600">{error}</td>
+                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-red-600">
+                  {error}
+                </td>
               </tr>
             )}
 
             {!loading && !error && rows.length === 0 && (
               <tr>
-                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-slate-500">No data yet</td>
+                <td colSpan={headers.length + 1} className="px-6 py-10 text-center text-slate-500">
+                  No data yet
+                </td>
               </tr>
             )}
 
@@ -656,14 +656,16 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
               !error &&
               rows.map((row, idx) => {
                 const isExpanded = expandedRow === idx;
-                const isEditing = editingRow === idx;
                 const rowId = row.id ?? idx;
 
                 return (
                   <>
-                    <tr key={rowId} className="hover:bg-slate-50 transition-colors">
+                    <tr key={rowId} className="hover:bg-slate-50">
                       <td className="px-4 py-3">
-                        <button onClick={() => onToggleExpand(idx)} className="text-slate-600 hover:text-slate-800 transition-colors">
+                        <button
+                          onClick={() => onToggleExpand(idx)}
+                          className="text-slate-600 hover:text-slate-800"
+                        >
                           {isExpanded ? <FiChevronDown size={18} /> : <FiChevronRight size={18} />}
                         </button>
                       </td>
@@ -673,10 +675,10 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
                           key={col.key}
                           className={`px-4 py-3 ${j === 0 ? "font-medium" : ""} whitespace-nowrap cursor-pointer`}
                           onClick={() => onToggleExpand(idx)}
-                          title={col.key === "categories" ? "" : String(row[col.key] ?? "")}
+                          title={col.key === 'categories' ? '' : String(row[col.key] ?? "")}
                         >
                           <div className="max-w-[200px] truncate">
-                            {col.render ? col.render(row) : formatValue(row[col.key])}
+                            {col.render ? col.render(row) : String(row[col.key] ?? "-")}
                           </div>
                         </td>
                       ))}
@@ -686,9 +688,8 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
                           <ActionButtons
                             onEdit={() => onEdit(idx)}
                             onDelete={() => onDelete(idx)}
-                            onSave={() => onSave(idx)}
-                            onCancelEdit={() => onCancelEdit()}
-                            isEditing={isEditing}
+                            renderCustomActions={renderActions?.({ row, idx, helpers })}
+                            hideCrudActions={hideCrudActions}
                           />
                         </div>
                       </td>
@@ -697,13 +698,7 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
                     {isExpanded && (
                       <tr className="bg-slate-50">
                         <td colSpan={headers.length + 1} className="px-4 py-4">
-                          <RowDetails 
-                            row={row} 
-                            isEditing={isEditing}
-                            editData={editData}
-                            onEditChange={onEditChange}
-                            formFields={formFields}
-                          />
+                          <RowDetails row={row} />
                         </td>
                       </tr>
                     )}
@@ -717,7 +712,10 @@ const DesktopTable = ({ columns, rows, loading, error, expandedRow, editingRow, 
   );
 };
 
-const MobileCards = ({ title, columns, rows, loading, error, onEdit, onDelete }) => {
+// ============================================================================
+// UI Components - Mobile Cards
+// ============================================================================
+const MobileCards = ({ title, columns, rows, loading, error, renderActions, hideCrudActions, onEdit, onDelete, helpers }) => {
   const [firstCol, ...restCols] = columns;
 
   return (
@@ -741,7 +739,7 @@ const MobileCards = ({ title, columns, rows, loading, error, onEdit, onDelete })
                 <div className="grid grid-cols-[1fr_auto] items-start gap-3">
                   <div className="min-w-0">
                     <div className="font-semibold text-slate-800 truncate">
-                      {formatValue(row[firstCol.key])}
+                      {String(row[firstCol.key] ?? "-")}
                     </div>
 
                     <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
@@ -749,10 +747,10 @@ const MobileCards = ({ title, columns, rows, loading, error, onEdit, onDelete })
                         <div key={col.key} className="min-w-0">
                           <div className="text-[11px] text-slate-500 truncate">{col.label}</div>
                           <div className="text-xs text-slate-800">
-                            {col.key === "categories" && col.render ? (
+                            {col.key === 'categories' && col.render ? (
                               col.render(row)
                             ) : (
-                              <span className="truncate block">{formatValue(row[col.key])}</span>
+                              <span className="truncate block">{String(row[col.key] ?? "-")}</span>
                             )}
                           </div>
                         </div>
@@ -761,12 +759,27 @@ const MobileCards = ({ title, columns, rows, loading, error, onEdit, onDelete })
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => onEdit(idx)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white hover:opacity-90 transition-opacity" style={{ backgroundColor: PRIMARY_COLOR }} title="Edit">
-                      <FiEdit2 />
-                    </button>
-                    <button onClick={() => onDelete(idx)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white bg-red-500 hover:bg-red-600 transition-colors" title="Delete">
-                      <FiTrash2 />
-                    </button>
+                    {renderActions ? (
+                      renderActions({ row, idx, helpers })
+                    ) : !hideCrudActions ? (
+                      <>
+                        <button
+                          onClick={() => onEdit(idx)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white"
+                          style={{ backgroundColor: PRIMARY_COLOR }}
+                          title="Edit"
+                        >
+                          <FiEdit2 />
+                        </button>
+                        <button
+                          onClick={() => onDelete(idx)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white bg-red-500 hover:bg-red-600"
+                          title="Delete"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </li>
@@ -791,23 +804,22 @@ export default function PeopleTable({
   filters = [],
   renderActions,
   hideCrudActions = false,
-  token
+  token,
 }) {
   const api = useApi(token);
 
-  // State Management
+  // State
   const [searchQuery, setSearchQuery] = useState("");
   const [chipValue, setChipValue] = useState("");
   const [filterValues, setFilterValues] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [expandedRow, setExpandedRow] = useState(null);
-  const [editingRow, setEditingRow] = useState(null);
-  const [editData, setEditData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [loadingEdit, setLoadingEdit] = useState(false);
 
-  // Fetch table data
+  // Fetch data
   const { rows, setRows, loading, error } = useTableData({
     endpoint,
     api,
@@ -815,183 +827,114 @@ export default function PeopleTable({
     chipValue,
     chipField,
     filterValues,
-    refreshKey
+    refreshKey,
   });
 
-  const tableColumns = columns?.length
-    ? columns
-    : [
-        { label: "Name", key: "name" },
-        { label: "Role", key: "role" },
-        { label: "Dept", key: "dept" },
-        { label: "City", key: "city" }
-      ];
+  const tableColumns = columns?.length ? columns : [
+    { label: "Name", key: "name" },
+    { label: "Role", key: "role" },
+    { label: "Dept", key: "dept" },
+    { label: "City", key: "city" },
+  ];
 
+  // Helper functions
   const getId = useCallback((row) => row.id ?? row._id, []);
-
+  
   const createEmptyForm = useCallback(
-    () =>
-      formFields.reduce((acc, field) => {
-        acc[field.key] = field.defaultValue ?? "";
-        return acc;
-      }, {}),
+    () => formFields.reduce((acc, field) => {
+      acc[field.key] = field.defaultValue ?? "";
+      return acc;
+    }, {}),
     [formFields]
   );
 
+  const updateRow = useCallback((id, patch) => {
+    setRows((prevRows) =>
+      prevRows.map((row) => (getId(row) === id ? { ...row, ...patch } : row))
+    );
+  }, [getId, setRows]);
+
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // Event Handlers
+  // Event handlers
   const handleAddNew = useCallback(() => {
+    setEditingId(null);
     setFormData(createEmptyForm());
     setIsModalOpen(true);
   }, [createEmptyForm]);
 
-  const handleEdit = useCallback((idx) => {
+  const handleEdit = useCallback(async (idx) => {
     const row = rows[idx];
     if (!row) return;
 
-    // Create a complete copy of the row data for editing
-    const editableData = {
-      first_name: row.first_name || '',
-      last_name: row.last_name || '',
-      username: row.username || '',
-      phone_number: row.phone_number || '',
-      country: row.country || '',
-      bio: row.bio || '',
-      profile_pic_url: row.profile_pic_url || row.profile_picture || '',
-      is_verified: row.is_verified || false,
-      is_locked: row.is_locked || false
-    };
+    setIsModalOpen(true);
+    setEditingId(row?.id ?? idx);
+    setLoadingEdit(true);
 
-    console.log('Starting edit with data:', editableData);
+    let baseForm = { ...createEmptyForm(), ...row };
 
-    setEditingRow(idx);
-    setEditData(editableData);
-    
-    // Auto-expand if not already expanded
-    if (expandedRow !== idx) {
-      setExpandedRow(idx);
+    try {
+      if (row?.id != null) {
+        const path = getOnePath ? getOnePath(row.id) : `${endpoint}/${row.id}`;
+        const { data } = await api.get(path);
+        baseForm = { ...baseForm, ...(data || {}) };
+      }
+    } catch (err) {
+      console.warn("Failed to fetch details. Using row data only.", err);
+    } finally {
+      setFormData(baseForm);
+      setLoadingEdit(false);
     }
-  }, [rows, expandedRow]);
+  }, [rows, createEmptyForm, getOnePath, endpoint, api]);
 
-  const handleCancelEdit = useCallback(() => {
-    setEditingRow(null);
-    setEditData({});
-  }, []);
-
-  const handleSave = useCallback(async (idx) => {
+  const handleDelete = useCallback(async (idx) => {
     const row = rows[idx];
-    if (!row) return;
+    if (!row || !window.confirm("Do you want to delete this record?")) return;
 
-    // Check if token exists
-    if (!token) {
-      alert("Authentication required. Please log in again.");
+    try {
+      if (endpoint && row?.id != null) {
+        await api.delete(`${endpoint}/${row.id}`);
+      }
+      refresh();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete this record");
+    }
+  }, [rows, endpoint, api, refresh]);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+
+    if (!String(formData.first_name ?? formData.name ?? "").trim()) {
       return;
     }
 
     try {
-      if (endpoint && row?.id != null) {
-        // Filter out readonly/sensitive fields
-        const fieldsToExclude = new Set([
-          'id', '_id', 'role_id', 'created_at', 'updated_at', 
-          'rating', 'rating_sum', 'rating_count', 
-          'categories', 'subscription', 'profile_picture', 'profile_pic_url'
-        ]);
-        
-        // Only send fields that are in formFields
-        const allowedFields = new Set(formFields.map(f => f.key));
-        
-        const cleanedData = Object.entries(editData).reduce((acc, [key, value]) => {
-          if (allowedFields.has(key) && !fieldsToExclude.has(key)) {
-            // Don't send empty password field
-            if (key === 'password' && !value) {
-              return acc;
-            }
-            acc[key] = value;
-          }
-          return acc;
-        }, {});
-
-        console.log('Sending update data:', cleanedData); // Debug log
-        console.log('Using token:', token ? 'Token exists' : 'No token'); // Debug token
-
-        const updatePath = getOnePath ? getOnePath(row.id) : `/admUser/${row.id}`;
-        
-        // Make sure we're using the API instance with the token
-        const response = await api.put(updatePath, cleanedData, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        console.log('Update successful:', response.data);
-      }
-      
-      setEditingRow(null);
-      setEditData({});
-      refresh();
-    } catch (err) {
-      console.error('Update error:', err);
-      console.error('Status:', err.response?.status);
-      console.error('Response data:', err.response?.data);
-      
-      const errorMsg = err.response?.data?.message || err.message;
-      
-      if (err.response?.status === 403) {
-        alert(`Access Denied: ${errorMsg}\n\nThis might be a permission issue. Make sure you're logged in as an admin.`);
-      } else {
-        alert(`Failed to save changes: ${errorMsg}`);
-      }
-    }
-  }, [rows, endpoint, api, editData, refresh, getOnePath, formFields, token]);
-
-  const handleEditChange = useCallback((key, value) => {
-    setEditData((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handleDelete = useCallback(
-    async (idx) => {
-      const row = rows[idx];
-      if (!row || !window.confirm("Are you sure you want to delete this record?")) return;
-
-      try {
-        if (endpoint && row?.id != null) {
-          await api.delete(`${endpoint}/${row.id}`);
+      if (!endpoint) {
+        if (editingId === null) {
+          setRows((prev) => [...prev, { id: crypto.randomUUID(), ...formData }]);
+        } else {
+          setRows((prev) =>
+            prev.map((row) => (row.id === editingId ? { ...row, ...formData } : row))
+          );
         }
-        refresh();
-      } catch (err) {
-        console.error(err);
-        alert("Failed to delete this record");
-      }
-    },
-    [rows, endpoint, api, refresh]
-  );
-
-  const handleModalSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-
-      if (!String(formData.first_name ?? formData.name ?? "").trim()) {
+        setIsModalOpen(false);
         return;
       }
 
-      try {
-        if (!endpoint) {
-          setRows((prev) => [...prev, { id: crypto.randomUUID(), ...formData }]);
-          setIsModalOpen(false);
-          return;
-        }
-
+      if (editingId === null) {
         await api.post(endpoint, formData);
-        setIsModalOpen(false);
-        refresh();
-      } catch (err) {
-        console.error(err);
-        alert("Failed to save the data");
+      } else {
+        await api.put(`${endpoint}/${editingId}`, formData);
       }
-    },
-    [formData, endpoint, api, refresh, setRows]
-  );
+
+      setIsModalOpen(false);
+      refresh();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save the data");
+    }
+  }, [formData, endpoint, editingId, api, refresh, setRows]);
 
   const handleFormChange = useCallback((key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -1008,13 +951,18 @@ export default function PeopleTable({
   }, []);
 
   const handleToggleExpand = useCallback((idx) => {
-    setExpandedRow((current) => (current === idx ? null : idx));
-    // Cancel editing if collapsing
-    if (expandedRow === idx) {
-      setEditingRow(null);
-      setEditData({});
-    }
-  }, [expandedRow]);
+    setExpandedRow((current) => current === idx ? null : idx);
+  }, []);
+
+  const helpers = useMemo(() => ({
+    updateRow,
+    openEdit: handleEdit,
+    deleteRow: handleDelete,
+    rows,
+    setRows,
+    getId,
+    refresh,
+  }), [updateRow, handleEdit, handleDelete, rows, setRows, getId, refresh]);
 
   return (
     <div className="space-y-4 p-6">
@@ -1023,7 +971,7 @@ export default function PeopleTable({
         <h1 className="text-2xl font-semibold text-slate-800">{title}</h1>
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm text-white hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm text-white"
           style={{ backgroundColor: PRIMARY_COLOR }}
         >
           <FiPlus />
@@ -1035,14 +983,12 @@ export default function PeopleTable({
       {/* Search and Filters */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
-        {filters.length > 0 && (
-          <FilterBar
-            filters={filters}
-            filterValues={filterValues}
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilters}
-          />
-        )}
+        <FilterBar
+          filters={filters}
+          filterValues={filterValues}
+          onFilterChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
       </div>
 
       {/* Mobile View */}
@@ -1052,8 +998,11 @@ export default function PeopleTable({
         rows={rows}
         loading={loading}
         error={error}
+        renderActions={renderActions}
+        hideCrudActions={hideCrudActions}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        helpers={helpers}
       />
 
       {/* Desktop View */}
@@ -1063,101 +1012,25 @@ export default function PeopleTable({
         loading={loading}
         error={error}
         expandedRow={expandedRow}
-        editingRow={editingRow}
-        editData={editData}
         onToggleExpand={handleToggleExpand}
+        renderActions={renderActions}
+        hideCrudActions={hideCrudActions}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onSave={handleSave}
-        onCancelEdit={handleCancelEdit}
-        onEditChange={handleEditChange}
-        formFields={formFields}
+        helpers={helpers}
       />
 
-      {/* Add Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-800">Add {title}</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-600"
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <form onSubmit={handleModalSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formFields.map((field) => (
-                  <div key={field.key} className={field.type === "textarea" ? "sm:col-span-2" : ""}>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      {field.label}
-                    </label>
-                    {field.type === "textarea" ? (
-                      <textarea
-                        value={formData[field.key] ?? ""}
-                        onChange={(e) => handleFormChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 text-slate-800"
-                        rows={4}
-                        required={field.required}
-                      />
-                    ) : field.type === "select" ? (
-                      <select
-                        value={formData[field.key] ?? ""}
-                        onChange={(e) => handleFormChange(field.key, e.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 text-slate-800"
-                        required={field.required}
-                      >
-                        <option value="">{field.placeholder || "Choose…"}</option>
-                        {field.options?.map((opt) =>
-                          typeof opt === "object" ? (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ) : (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type || "text"}
-                        value={formData[field.key] ?? ""}
-                        onChange={(e) => handleFormChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 text-slate-800"
-                        required={field.required}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl px-5 py-2.5 text-white shadow-sm font-medium"
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit Modal */}
+      <EditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`${editingId === null ? "Add" : "Edit"} ${title}`}
+        formFields={formFields}
+        formData={formData}
+        onChange={handleFormChange}
+        onSubmit={handleSubmit}
+        loading={loadingEdit}
+      />
     </div>
   );
 }

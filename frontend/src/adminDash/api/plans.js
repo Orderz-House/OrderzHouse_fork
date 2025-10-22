@@ -3,7 +3,6 @@ import API from "../api/axios";
 // ----------------------
 // PUBLIC ROUTES
 // ----------------------
-
 export const getPlans = async () => {
   const response = await API.get("/plans");
   return response.data;
@@ -17,7 +16,6 @@ export const getPlanSubscriptions = async (planId) => {
 // ----------------------
 // ADMIN ROUTES
 // ----------------------
-
 export const createPlan = async (planData) => {
   const response = await API.post("/plans/create", planData);
   return response.data;
@@ -33,10 +31,14 @@ export const deletePlan = async (id) => {
   return response.data;
 };
 
+export const getAllSubscriptions = async () => {
+  const response = await API.get("/plans/subscriptions/all");
+  return response.data;
+};
+
 // ----------------------
 // FREELANCER ROUTES
 // ----------------------
-
 export const getFreelancerSubscription = async () => {
   const response = await API.get("/plans/subscription/me");
   return response.data;
@@ -53,10 +55,25 @@ export const cancelSubscription = async () => {
 };
 
 // ----------------------
+// UTILITIES
+// ----------------------
+export const fetchSubscriptionCount = async (id) => {
+  try {
+    const response = await API.get(`/plans/${id}/subscriptions`);
+    return Number(response.data.plan.subscription_count || 0);
+  } catch (err) {
+    console.error("Failed to fetch subscription count", err);
+    return 0;
+  }
+};
+
+// ----------------------
 // EXPORT ALL
 // ----------------------
 export default {
+  fetchSubscriptionCount,
   getPlans,
+  getAllSubscriptions,
   getPlanSubscriptions,
   createPlan,
   editPlan,
