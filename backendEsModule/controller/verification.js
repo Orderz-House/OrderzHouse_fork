@@ -1,7 +1,6 @@
-import  pool  from "../models/db.js";
+import pool from "../models/db.js";
 
-
-// Create or update freelancer verification request
+// Freelancer submits verification data
 export const submitFreelancerVerification = async (req, res) => {
   try {
     const user_id = req.token?.userId;
@@ -14,218 +13,170 @@ export const submitFreelancerVerification = async (req, res) => {
       portfolio_url,
     } = req.body;
 
-    // Validate required fields
     if (!full_name || !country || !phone_number) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "الحقول المطلوبة: الاسم الكامل، البلد، رقم الهاتف" 
+      return res.status(400).json({
+        success: false,
+        message: "Full name, country, and phone number are required",
       });
     }
 
-    // Upsert query for freelancer verification
-    const upsertQuery = `
-      INSERT INTO freelancer_verifications
-        (user_id, full_name, country, phone_number, bio, skills, portfolio_url, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        full_name = EXCLUDED.full_name,
-        country = EXCLUDED.country,
-        phone_number = EXCLUDED.phone_number,
-        bio = EXCLUDED.bio,
-        skills = EXCLUDED.skills,
-        portfolio_url = EXCLUDED.portfolio_url,
-        status = 'pending',
-        reviewed_at = NULL
+    const { rows } = await pool.query(
+      `
+      UPDATE users 
+      SET 
+        first_name = $2,
+        country = $3,
+        phone_number = $4,
+        bio = $5,
+        skills = $6,
+        portfolio_url = $7,
+        is_verified = FALSE,
+        verification_status = 'pending',
+        verification_submitted_at = NOW(),
+        verification_reviewed_at = NULL
+      WHERE id = $1
       RETURNING *;
-    `;
-    
-    // Execute query
-    const { rows } = await pool.query(upsertQuery, [
-      user_id, 
-      full_name, 
-      country, 
-      phone_number, 
-      bio || null, 
-      skills || null, 
-      portfolio_url || null
-    ]);
+      `,
+      [
+        user_id,
+        full_name,
+        country,
+        phone_number,
+        bio || null,
+        skills || null,
+        portfolio_url || null,
+      ]
+    );
 
-    return res.status(201).json({ 
-      success: true, 
-      message: "تم تقديم طلب التحقق بنجاح",
-      verification: rows[0] 
+    return res.status(201).json({
+      success: true,
+      message: "Verification request submitted successfully",
+      user: rows[0],
     });
   } catch (err) {
     console.error("Error in submitFreelancerVerification:", err);
-    return res.status(500).json({ 
-      success: false, 
-      message: "خطأ في الخادم" 
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 };
 
-// Admin: Approve or reject verification requests
+// Admin approves or rejects verification
 export const reviewVerification = async (req, res) => {
   try {
-    const { user_id, status } = req.body; // status: approved or rejected
-    
-    // Validate required fields
+    const { user_id, status } = req.body; // status = approved | rejected
+
     if (!user_id || !status) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "معرف المستخدم والحالة مطلوبان" 
+      return res.status(400).json({
+        success: false,
+        message: "User ID and status are required",
       });
     }
 
-    // Get user role to determine which table to use
-    const userQuery = await pool.query('SELECT role_id FROM users WHERE id = $1', [user_id]);
-    
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "المستخدم غير موجود" 
+    const userRes = await pool.query(
+      `SELECT id, role_id FROM users WHERE id = $1`,
+      [user_id]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
-    const roleId = userQuery.rows[0].role_id;
-
-    // Only allow verification for freelancers
+    const roleId = userRes.rows[0].role_id;
     if (roleId !== 3) {
       return res.status(400).json({
         success: false,
-        message: "فقط المستقلين يحتاجون إلى التحقق"
+        message: "Only freelancers require verification",
       });
     }
 
-    const table = 'freelancer_verifications';
-
-    // Update verification status
+    const isApproved = status === "approved";
     const { rows } = await pool.query(
-      `UPDATE ${table} SET status = $1, reviewed_at = NOW() WHERE user_id = $2 RETURNING *`, 
-      [status, user_id]
+      `
+      UPDATE users 
+      SET 
+        is_verified = $2,
+        verification_status = $3,
+        verification_reviewed_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [user_id, isApproved, status]
     );
 
-    if (rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "طلب التحقق غير موجود" 
-      });
-    }
-
-    // Update is_verified in users table
-    if (status === 'approved') {
-      await pool.query(
-        `UPDATE users SET is_verified = TRUE WHERE id = $1`,
-        [user_id]
-      );
-    } else if (status === 'rejected') {
-      await pool.query(
-        `UPDATE users SET is_verified = FALSE WHERE id = $1`,
-        [user_id]
-      );
-    }
-
-    return res.json({ 
-      success: true, 
-      message: status === 'approved' ? 'تم الموافقة على طلب التحقق' : 'تم رفض طلب التحقق',
-      verification: rows[0] 
+    return res.json({
+      success: true,
+      message:
+        status === "approved"
+          ? "Verification approved"
+          : "Verification rejected",
+      user: rows[0],
     });
   } catch (err) {
     console.error("Error in reviewVerification:", err);
-    return res.status(500).json({ 
-      success: false, 
-      message: "خطأ في الخادم" 
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 };
 
-// Get current user's verification status
+// User checks their own verification status
 export const getMyVerificationStatus = async (req, res) => {
   try {
     const user_id = req.token?.userId;
     const role_id = req.token?.role;
-    
+
     if (!user_id || !role_id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "غير مصرح" 
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
       });
     }
 
-    // Only freelancers need verification
     if (Number(role_id) !== 3) {
       return res.json({
         success: true,
-        status: 'not_required', // Customers don't need verification
-        reviewed_at: null,
-        created_at: null
+        status: "not_required",
       });
     }
 
-    const table = 'freelancer_verifications';
     const { rows } = await pool.query(
-      `SELECT status, reviewed_at, created_at FROM ${table} WHERE user_id = $1 ORDER BY id DESC LIMIT 1`, 
+      `
+      SELECT 
+        is_verified,
+        verification_status,
+        verification_submitted_at,
+        verification_reviewed_at
+      FROM users
+      WHERE id = $1;
+      `,
       [user_id]
     );
 
-    const status = rows.length > 0 ? rows[0].status : 'none'; // none|pending|approved|rejected
-    
-    return res.json({ 
-      success: true, 
-      status,
-      reviewed_at: rows[0]?.reviewed_at || null,
-      created_at: rows[0]?.created_at || null
-    });
-  } catch (err) {
-    console.error('Error in getMyVerificationStatus:', err);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'خطأ في الخادم' 
-    });
-  }
-};
-
-// Get detailed verification information for current user
-export const getMyVerificationDetails = async (req, res) => {
-  try {
-    const user_id = req.token?.userId;
-    const role_id = req.token?.role;
-    
-    if (!user_id || !role_id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "غير مصرح" 
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
-    // Only freelancers need verification
-    if (Number(role_id) !== 3) {
-      return res.json({
-        success: true,
-        verification: null // Customers don't have verification records
-      });
-    }
-
-    const table = 'freelancer_verifications';
-    const { rows } = await pool.query(`SELECT * FROM ${table} WHERE user_id = $1`, [user_id]);
-
-    return res.json({ 
-      success: true, 
-      verification: rows[0] || null
+    return res.json({
+      success: true,
+      status: rows[0].verification_status || "none",
+      is_verified: rows[0].is_verified,
+      submitted_at: rows[0].verification_submitted_at,
+      reviewed_at: rows[0].verification_reviewed_at,
     });
   } catch (err) {
-    console.error('Error in getMyVerificationDetails:', err);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'خطأ في الخادم' 
+    console.error("Error in getMyVerificationStatus:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
-};
-
-export default {
-  submitFreelancerVerification,
-  reviewVerification,
-  getMyVerificationStatus,
-  getMyVerificationDetails
 };

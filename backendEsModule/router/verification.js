@@ -1,11 +1,10 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js";
+import adminOnly from "../middleware/adminOnly.js"; 
 import {
   submitFreelancerVerification,
   reviewVerification,
   getMyVerificationStatus,
-  getMyVerificationDetails,
 } from "../controller/verification.js";
 
 const verificationRouter = express.Router();
@@ -15,28 +14,26 @@ const verificationRouter = express.Router();
 // ----------------------------
 verificationRouter.post(
   "/freelancer",
-  authentication, 
+  authentication,
   submitFreelancerVerification
 );
 
 // ----------------------------
-// Current user verification info
+// Get current user's verification status
 // ----------------------------
 verificationRouter.get(
   "/status",
-  authentication, 
+  authentication,
   getMyVerificationStatus
 );
 
-verificationRouter.get("/details", authentication, getMyVerificationDetails);
-
 // ----------------------------
-// Admin reviews verification requests
+// Admin approves/rejects freelancer verification
 // ----------------------------
 verificationRouter.patch(
   "/review",
   authentication,
-  authorization("review_verification"), 
+  adminOnly,
   reviewVerification
 );
 

@@ -32,6 +32,7 @@ import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
 import Blogsrouter from "./router/blogs.js"
+import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
 
 
@@ -66,6 +67,7 @@ app.use(limiter);
 
 // Routers
 
+app.use("/freelancerCategories", freelancerCategoriesRouter);
 app.use("/blogs", Blogsrouter)
 app.use("/admUser" , AdminUser)
 app.use("/category" , categoriesRouter);
