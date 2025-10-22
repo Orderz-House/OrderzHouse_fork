@@ -88,16 +88,15 @@ function App() {
 
   return (
     <>
-        <GlobalLoadingProvider>
-
       {!shouldHideNavbar && <Navbar />}
 
       <Routes
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
-        }}
+        }}  
       >
+        
         {/* --- Blogs --- */}
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/blogs/:id" element={<BlogPost />} />
@@ -197,7 +196,7 @@ function App() {
 
       {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
-            </GlobalLoadingProvider>
+            <GlobalLoadingProvider />
 
     </>
   );

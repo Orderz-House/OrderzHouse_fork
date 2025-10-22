@@ -25,7 +25,6 @@ import newsRouter from "./router/news.js";
 import categoriesRouter from "./router/category.js";
 import subscriptionsRouter from "./router/subscriptions.js";
 import earningsRouter from "./router/earning.js";
-import uploadRouter from './router/upload.js'; 
 import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
@@ -33,6 +32,7 @@ import accessControlRouter from "./router/accessControl.js";
 import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
 import Blogsrouter from "./router/blogs.js"
+import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
 
 
@@ -67,12 +67,12 @@ app.use(limiter);
 
 // Routers
 
+app.use("/freelancerCategories", freelancerCategoriesRouter);
 app.use("/blogs", Blogsrouter)
 app.use("/admUser" , AdminUser)
 app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
-app.use("/uploads", uploadRouter);
 app.use("/earnings", earningsRouter);
 //app.use("/analytics", analyticsRoutes);
 app.use("/category", categoriesRouter);

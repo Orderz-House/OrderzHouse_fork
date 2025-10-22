@@ -14,6 +14,10 @@ const handleError = (res, err, message = "Server error") => {
   return res.status(500).json({ success: false, message, error: err.message });
 };
 
+/* -------------------------------
+   PLANS SECTION
+--------------------------------*/
+
 /**
  * Get all plans
  */
@@ -27,9 +31,12 @@ export const getPlans = async (req, res) => {
 };
 
 /**
- * Create a new plan
+ * Create a new plan (admin only)
  */
 export const createPlan = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
   const { name, price, duration, description, features, plan_type } = req.body;
 
   if (!name || !price || !duration) {
@@ -64,9 +71,12 @@ export const createPlan = async (req, res) => {
 };
 
 /**
- * Edit a plan
+ * Edit a plan (admin only)
  */
 export const editPlan = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
   const { id } = req.params;
   const { name, price, duration, description, features, plan_type } = req.body;
 
@@ -101,9 +111,12 @@ export const editPlan = async (req, res) => {
 };
 
 /**
- * Delete a plan
+ * Delete a plan (admin only)
  */
 export const deletePlan = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
   const { id } = req.params;
 
   try {
@@ -116,6 +129,10 @@ export const deletePlan = async (req, res) => {
     handleError(res, err, "Failed to delete plan");
   }
 };
+
+/* -------------------------------
+   SUBSCRIPTIONS SECTION
+--------------------------------*/
 
 /**
  * Get plan with subscription count
@@ -142,34 +159,7 @@ export const getPlanSubscriptions = async (req, res) => {
 };
 
 /**
- * Get freelancer's active subscription
- */
-export const getFreelancerSubscription = async (req, res) => {
-  const freelancerId = req.token?.userId;
-  try {
-    const query = `
-      SELECT s.*, p.name, p.price, p.duration, p.description, p.plan_type,
-        CASE WHEN s.start_date IS NULL THEN 'pending_start' ELSE s.status END AS current_status
-      FROM subscriptions s
-      JOIN plans p ON s.plan_id = p.id
-      WHERE s.freelancer_id = $1 AND s.status = 'active';
-    `;
-    const { rows } = await pool.query(query, [freelancerId]);
-    if (!rows.length)
-      return res.status(200).json({ success: true, subscribed: false });
-
-    res.status(200).json({
-      success: true,
-      subscribed: true,
-      subscription: rows[0],
-    });
-  } catch (err) {
-    handleError(res, err, "Failed to fetch freelancer subscription");
-  }
-};
-
-/**
- * Subscribe to a plan
+ * Subscribe to a plan (freelancer only)
  */
 export const subscribeToPlan = async (req, res) => {
   const freelancerId = req.token?.userId;
@@ -185,10 +175,9 @@ export const subscribeToPlan = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Already subscribed to an active plan." });
 
-    const planRes = await pool.query(
-      "SELECT duration FROM plans WHERE id = $1",
-      [plan_id]
-    );
+    const planRes = await pool.query("SELECT duration FROM plans WHERE id = $1", [
+      plan_id,
+    ]);
     if (!planRes.rows.length)
       return res.status(404).json({ success: false, message: "Plan not found" });
 
@@ -211,7 +200,7 @@ export const subscribeToPlan = async (req, res) => {
 };
 
 /**
- * Cancel subscription
+ * Cancel own subscription (freelancer)
  */
 export const cancelSubscription = async (req, res) => {
   const freelancerId = req.token?.userId;
@@ -219,7 +208,7 @@ export const cancelSubscription = async (req, res) => {
   try {
     const { rows } = await pool.query(
       `UPDATE subscriptions
-       SET status = 'cancelled'
+       SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
        WHERE freelancer_id = $1 AND status = 'active'
        RETURNING *;`,
       [freelancerId]
@@ -231,10 +220,93 @@ export const cancelSubscription = async (req, res) => {
         message: "No active subscription found.",
       });
 
-    res
-      .status(200)
-      .json({ success: true, message: "Subscription cancelled successfully." });
+    res.status(200).json({
+      success: true,
+      message: "Subscription cancelled successfully.",
+      subscription: rows[0],
+    });
   } catch (err) {
     handleError(res, err, "Failed to cancel subscription");
+  }
+};
+
+/**
+ * Admin: Cancel or update any subscription
+ */
+export const adminUpdateSubscription = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
+  const { subscription_id, status, end_date } = req.body;
+
+  try {
+    const query = `
+      UPDATE subscriptions
+      SET 
+        status = COALESCE($2, status),
+        end_date = COALESCE($3, end_date),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [
+      subscription_id,
+      status,
+      end_date,
+    ]);
+
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Subscription not found" });
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription updated successfully",
+      subscription: rows[0],
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to update subscription");
+  }
+};
+export const getFreelancerSubscription = async (req, res) => {
+  const freelancerId = req.token?.userId;
+
+  try {
+    const query = `
+      SELECT s.*, 
+             p.id AS plan_id,
+             p.name AS plan_name,
+             p.price AS plan_price,
+             p.duration AS plan_duration,
+             p.description AS plan_description,
+             p.features AS plan_features,
+             p.plan_type AS plan_type
+      FROM subscriptions s
+      JOIN plans p ON p.id = s.plan_id
+      WHERE s.freelancer_id = $1
+      ORDER BY s.end_date DESC
+      LIMIT 1;
+    `;
+
+    const { rows } = await pool.query(query, [freelancerId]);
+
+    if (!rows.length) {
+      return res.status(200).json({
+        success: true,
+        subscription: null,
+        message: "No subscription found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      subscription: rows[0],
+    });
+  } catch (err) {
+    console.error("getFreelancerSubscription error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription",
+      error: err.message,
+    });
   }
 };

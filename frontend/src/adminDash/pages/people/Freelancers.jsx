@@ -1,40 +1,11 @@
 // src/pages/Freelancers.jsx
-import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
-import {
-  getUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-} from "../../api/users";
 
 export default function Freelancers() {
   const { roleId, token } = useSelector((state) => state.auth);
 
-  const [freelancers, setFreelancers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!token || Number(roleId) !== 1) return;
-
-    const fetchFreelancers = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const data = await getUsers(3, token); // roleId 3 = freelancers
-        setFreelancers(data.users || []);
-      } catch (err) {
-        setError(err.message || "Failed to fetch freelancers");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFreelancers();
-  }, [token, roleId]);
-
+  // Access control checks
   if (!token) {
     return (
       <div className="text-center mt-10 text-red-500">
@@ -51,41 +22,13 @@ export default function Freelancers() {
     );
   }
 
-  if (loading) return <div className="text-center mt-10">Loading freelancers...</div>;
-  if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
-
   return (
     <PeopleTable
       title="Freelancers"
       addLabel="Add Freelancer"
-      initialRows={freelancers}
-      onAdd={async (formData) => {
-        try {
-          const newUser = await createUser(formData);
-          setFreelancers((prev) => [...prev, newUser]);
-        } catch (err) {
-          alert(err.message || "Failed to create freelancer");
-        }
-      }}
-      onEdit={async (id, formData) => {
-        try {
-          const updatedUser = await updateUser(id, formData, token);
-          setFreelancers((prev) =>
-            prev.map((f) => (f.id === updatedUser.id ? updatedUser : f))
-          );
-        } catch (err) {
-          alert(err.message || "Failed to update freelancer");
-        }
-      }}
-      onDelete={async (id) => {
-        if (!confirm("Do you want to delete this record?")) return;
-        try {
-          await deleteUser(id);
-          setFreelancers((prev) => prev.filter((f) => f.id !== id));
-        } catch (err) {
-          alert(err.message || "Failed to delete freelancer");
-        }
-      }}
+      endpoint="/admUser/role/3"
+      getOnePath={(id) => `/admUser/${id}`}
+      token={token}
       columns={[
         {
           label: "",
@@ -101,7 +44,7 @@ export default function Freelancers() {
               </div>
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-400">N/A</span>
+                <span className="text-gray-400 text-xs">N/A</span>
               </div>
             ),
         },
@@ -115,17 +58,32 @@ export default function Freelancers() {
           label: "Rating",
           key: "rating",
           render: (row) =>
-            row.rating_count ? (row.rating_sum / row.rating_count).toFixed(2) : "0",
+            row.rating_count && row.rating_sum
+              ? (row.rating_sum / row.rating_count).toFixed(2)
+              : "0.00",
         },
         {
           label: "Verified",
           key: "is_verified",
-          render: (row) => (row.is_verified ? "Yes" : "No"),
+          render: (row) => (row.is_verified ? "✓ Yes" : "✗ No"),
         },
         {
           label: "Online",
           key: "is_online",
-          render: (row) => (row.is_online ? "Yes" : "No"),
+          render: (row) => (
+            <span
+              className={`inline-flex items-center gap-1.5 ${
+                row.is_online ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  row.is_online ? "bg-green-600" : "bg-gray-400"
+                }`}
+              />
+              {row.is_online ? "Online" : "Offline"}
+            </span>
+          ),
         },
       ]}
       formFields={[
@@ -133,20 +91,22 @@ export default function Freelancers() {
         { key: "last_name", label: "Last Name", required: true },
         { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
+        { key: "password", label: "Password", type: "password", placeholder: "Leave blank to keep current" },
         { key: "country", label: "Country" },
         { key: "bio", label: "Bio", type: "textarea" },
-      ]}
-      filters={[
-        { key: "country", label: "Country" },
+        { key: "hourly_rate", label: "Hourly Rate", type: "number" },
         {
           key: "is_verified",
           label: "Verified",
+          type: "select",
           options: [
-            { value: "true", label: "Yes" },
-            { value: "false", label: "No" },
+            { value: true, label: "Yes" },
+            { value: false, label: "No" },
           ],
+          defaultValue: false,
         },
       ]}
+      filters={[]}
     />
   );
 }
