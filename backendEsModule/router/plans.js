@@ -4,8 +4,8 @@ import {
   createPlan,
   editPlan,
   deletePlan,
-  getPlanSubscriptions,
-  getPlanSubscribers, 
+  getPlanSubscribers,
+  getPlanSubscriptionCounts,
   getFreelancerSubscription,
   subscribeToPlan,
   cancelSubscription,
@@ -20,19 +20,14 @@ import { requireVerified } from "../middleware/requireVerification.js";
 
 const plansRouter = express.Router();
 
-/* ----------------------
-   PUBLIC ROUTES
----------------------- */
 plansRouter.get("/", getPlans);
 
-/* ----------------------
-   ADMIN ROUTES
----------------------- */
-// Get all subscriptions for a specific plan
-plansRouter.get("/:id/subscriptions", authentication, adminOnly, getPlanSubscriptions);
-
-//  Get all subscribers (freelancers) for a specific plan
-plansRouter.get("/:id/subscribers", authentication, adminOnly, getPlanSubscribers);
+plansRouter.get(
+  "/subscriptions/counts",
+  authentication,
+  adminOnly,
+  getPlanSubscriptionCounts
+);
 
 plansRouter.get(
   "/subscriptions/all",
@@ -40,11 +35,18 @@ plansRouter.get(
   adminOnly,
   getAllSubscriptions
 );
+
+plansRouter.get(
+  "/:id/subscribers",
+  authentication,
+  adminOnly,
+  getPlanSubscribers
+);
+
 plansRouter.post("/create", authentication, adminOnly, createPlan);
 plansRouter.put("/edit/:id", authentication, adminOnly, editPlan);
 plansRouter.delete("/delete/:id", authentication, adminOnly, deletePlan);
 
-// Admin can manage freelancer subscriptions manually
 plansRouter.patch(
   "/admin/subscription",
   authentication,
@@ -52,9 +54,6 @@ plansRouter.patch(
   adminUpdateSubscription
 );
 
-/* ----------------------
-   FREELANCER ROUTES
----------------------- */
 plansRouter.get(
   "/subscription/me",
   authentication,
@@ -76,12 +75,11 @@ plansRouter.patch(
   cancelSubscription
 );
 
-// Admin: cancel a user's subscription
 plansRouter.patch(
-  "/admin/cancel-subscription",
+  "/:planId/subscribers/:id",
   authentication,
   adminOnly,
   adminCancelSubscription
 );
-
+ 
 export default plansRouter;
