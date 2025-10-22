@@ -196,7 +196,7 @@ function App() {
 
       {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
-            
+            <GlobalLoadingProvider />
 
     </>
   );
