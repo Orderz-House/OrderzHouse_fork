@@ -310,3 +310,48 @@ export const getFreelancerSubscription = async (req, res) => {
     });
   }
 };
+
+
+export const getAllSubscriptions = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
+  try {
+    const query = `
+      SELECT 
+        s.id AS subscription_id,
+        s.start_date,
+        s.end_date,
+        s.status AS subscription_status,
+        f.id AS freelancer_id,
+        f.first_name,
+        f.last_name,
+        f.email,
+        p.id AS plan_id,
+        p.name AS plan_name,
+        p.price AS plan_price,
+        p.duration AS plan_duration,
+        p.description AS plan_description,
+        p.features AS plan_features,
+        p.plan_type
+      FROM subscriptions s
+      JOIN users f ON f.id = s.freelancer_id
+      JOIN plans p ON p.id = s.plan_id
+      ORDER BY s.start_date DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+
+    res.status(200).json({
+      success: true,
+      subscriptions: rows,
+    });
+  } catch (err) {
+    console.error("getAllSubscriptions error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscriptions",
+      error: err.message,
+    });
+  }
+};
