@@ -1,12 +1,10 @@
-// Categories.jsx
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
-// ألوان الثيم (نفس السابق)
-const primary = "rgb(2, 128, 144)";      // #028090
+const primary = "rgb(2, 128, 144)";   
 const primaryDark = "rgb(0, 90, 100)";
 const primaryLight = "rgb(0, 170, 180)";
 
-// نفس دالة الأعمدة
 function calcCols() {
   if (typeof window === "undefined") return 5;
   if (window.matchMedia("(min-width: 1280px)").matches) return 3;
@@ -23,7 +21,16 @@ export default function CategoriesShowcase({
   pageSize = 5,
   loop = false,
 }) {
-  // نفس منطق الجلب
+  const navigate = useNavigate();
+
+  const handleSelect = useCallback(
+    (cat) => {
+      try { onSelect?.(cat); } catch {}
+      navigate(`/projectsPage?cat=${encodeURIComponent(cat.id)}`);
+    },
+    [onSelect, navigate]
+  );
+
   const [fetchedCategories, setFetchedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -118,7 +125,6 @@ export default function CategoriesShowcase({
     ${cols >= 5 ? "xl:grid-cols-5" : ""}
   `;
 
-  // انتقال بسيط عند تغيير الصفحة (خفيف)
   const D = 180;
   const anim = { opacity: 1, transform: "translateY(0)" };
 
@@ -153,7 +159,6 @@ export default function CategoriesShowcase({
         {/* Content */}
         {!loading && !error && cats.length > 0 && (
           <>
-            {/* موبايل: سحب أفقي */}
             <div className="md:hidden">
               <div
                 className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -162,13 +167,12 @@ export default function CategoriesShowcase({
                 <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
                 {cats.map((cat) => (
                   <div key={cat.id} className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]">
-                    <Card cat={cat} onClick={() => onSelect?.(cat)} />
+                    <Card cat={cat} onClick={() => handleSelect(cat)} />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* دِسك توب: شبكة */}
             <div className="hidden md:block">
               <div className="flex justify-center">
                 <div
@@ -181,13 +185,12 @@ export default function CategoriesShowcase({
                 >
                   {visible.map((cat) => (
                     <div key={cat.id} className="w-[300px]">
-                      <Card cat={cat} onClick={() => onSelect?.(cat)} />
+                      <Card cat={cat} onClick={() => handleSelect(cat)} />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* تنقّل */}
               {totalPages > 1 && (
                 <>
                   <NavButtons
@@ -212,7 +215,6 @@ export default function CategoriesShowcase({
           </>
         )}
 
-        {/* لا يوجد بيانات */}
         {!loading && !error && cats.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-600">No categories available</p>
@@ -223,7 +225,6 @@ export default function CategoriesShowcase({
   );
 }
 
-/* أزرار السابق/التالي (كما هي تقريبًا لكن بدون ظل ثقيل) */
 function NavButtons({ onPrev, onNext, hasPrev, hasNext }) {
   const baseBtn =
     "absolute top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-full bg-white shadow ring-1 ring-black/5 transition disabled:opacity-40 disabled:cursor-not-allowed";
@@ -282,24 +283,18 @@ function ChevronLeft() {
   );
 }
 
-/* الكارد: قريب من السابق لكن بدون spotlight/mousemove/scale كبير */
+/* cards */
 function Card({ cat, onClick }) {
   return (
     <div
       className="group relative rounded-2xl p-[1.5px] cursor-pointer transition-all duration-200 h-full"
-      // جراديانت هادئ وثابت بدل الـ conic + spotlight
-      style={{
-        background: `linear-gradient(160deg, ${primaryLight}, ${primary})`,
-      }}
+      style={{ background: `linear-gradient(160deg, ${primaryLight}, ${primary})` }}
       onClick={onClick}
     >
       <div className="relative rounded-[calc(1rem-2px)] bg-white h-full flex flex-col shadow-sm hover:shadow-md transition">
-        {/* ترويسة ملونة ثابتة بدون تأثيرات ثقيلة */}
         <div
           className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden"
-          style={{
-            background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)`,
-          }}
+          style={{ background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)` }}
         >
           <div
             className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-15 blur-2xl"
@@ -317,19 +312,12 @@ function Card({ cat, onClick }) {
           </div>
         </div>
 
-        {/* الصورة بدون تكبير على الهوفر */}
         <div className="relative -mt-10 px-3">
           <div className="aspect-[16/10] w-full rounded-xl overflow-hidden ring-1 ring-black/5 bg-slate-100">
-            <img
-              src={cat.image}
-              alt={cat.name}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
+            <img src={cat.image} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
           </div>
         </div>
 
-        {/* النص والزر */}
         <div className="p-3 flex flex-col min-h-[140px]">
           <p className="text-sm text-slate-600 line-clamp-2">{cat.description}</p>
 

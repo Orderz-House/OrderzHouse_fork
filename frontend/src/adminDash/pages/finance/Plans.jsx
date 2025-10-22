@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiUsers } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiUsers, FiArrowLeft } from "react-icons/fi";
 import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
 import PeopleTable from "../Tables";
 import PlansAPI from "../../api/plans";
@@ -34,7 +34,7 @@ export default function Plans() {
 
   const [subscriptionCounts, setSubscriptionCounts] = useState({});
   const [viewSubsPlanId, setViewSubsPlanId] = useState(null);
-  const [viewAllSubscriptions, setViewAllSubscriptions] = useState(false);
+  const [selectedPlanName, setSelectedPlanName] = useState("");
 
   // Fetch plans + subscription counts
   useEffect(() => {
@@ -65,7 +65,6 @@ export default function Plans() {
     })();
   }, [dispatch]);
 
-  // Handlers
   const openAdd = () => {
     setEditId(null);
     setForm({
@@ -132,150 +131,232 @@ export default function Plans() {
     }
   };
 
-  const viewSubscribers = (id) => setViewSubsPlanId(id);
-  const closeSubs = () => setViewSubsPlanId(null);
-  const openAllSubscriptions = () => setViewAllSubscriptions(true);
-  const closeAllSubscriptions = () => setViewAllSubscriptions(false);
+  const viewSubscribers = (id) => {
+    const plan = items.find((p) => p.id === id);
+    setSelectedPlanName(plan?.name || "");
+    setViewSubsPlanId(id);
+  };
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">Plans</h1>
-        <div className="flex gap-2">
-          <OutlineButton onClick={openAdd} className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl shadow hover:shadow-md transition">
-            <FiPlus className="text-lg" />
-            <span className="hidden sm:inline">Add Plan</span>
-          </OutlineButton>
-          <OutlineButton onClick={openAllSubscriptions} className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl shadow hover:shadow-md transition bg-green-500 text-white">
-            <FiUsers className="text-lg" />
-            <span className="hidden sm:inline">All Subscribers</span>
-          </OutlineButton>
+  const closeSubs = () => {
+    setViewSubsPlanId(null);
+    setSelectedPlanName("");
+  };
+
+  const formatDuration = (duration, planType) => {
+    const num = Number(duration);
+    if (planType === "yearly") {
+      return `${num} ${num === 1 ? "year" : "years"}`;
+    }
+    if (planType === "monthly") {
+      return `${num} ${num === 1 ? "month" : "months"}`;
+    }
+    return `${num} ${num === 1 ? "day" : "days"}`;
+  };
+
+  // ✅ View plan subscribers (using new route)
+  if (viewSubsPlanId) {
+    return (
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={closeSubs}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition text-slate-700"
+          >
+            <FiArrowLeft />
+            <span>Back to Plans</span>
+          </button>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {selectedPlanName} - Subscribers
+          </h1>
         </div>
+
+        <PeopleTable
+          title=""
+          endpoint={`/plans/${viewSubsPlanId}/subscribers`}
+          token={token}
+          columns={[
+            { 
+              label: "#", 
+              key: "row_number",
+              render: (row, index) => index + 1
+            },
+            { label: "User ID", key: "user_id" },
+            { label: "Email", key: "email" },
+            { label: "Status", key: "status" },
+            { label: "Start Date", key: "start_date" },
+            { label: "End Date", key: "end_date" },
+          ]}
+          filters={[]}
+          formFields={[]}
+          crudConfig={{
+            showEdit: false,
+            showDelete: true,
+            showExpand: false
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Default view: Plan cards
+  return (
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-3xl font-bold text-slate-900">Plans</h1>
+        <OutlineButton
+          onClick={openAdd}
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl shadow hover:shadow-md transition"
+        >
+          <FiPlus className="text-lg" />
+          <span>Add Plan</span>
+        </OutlineButton>
       </div>
 
-      {/* Loading / Error */}
-      {loading && <div className="text-center py-5 text-slate-500">Loading…</div>}
-      {!loading && error && <div className="bg-red-100 text-red-700 py-3 px-4 rounded-lg text-center">{error}</div>}
+      {loading && <div className="text-center py-8 text-slate-500 text-lg">Loading…</div>}
+      {!loading && error && <div className="bg-red-100 text-red-700 py-4 px-5 rounded-lg text-center">{error}</div>}
 
-      {/* Plan Cards */}
       {!loading && !error && (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((p) => (
-            <article key={p.id} className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-md hover:shadow-xl transition p-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-slate-800">{p.name}</h3>
-                  <span className="rounded-full px-3 py-1 text-xs font-semibold text-white uppercase" style={{ backgroundColor: primary }}>
-                    {p.plan_type}
-                  </span>
-                </div>
+            <div
+              key={p.id}
+              className="relative flex flex-col bg-white shadow-sm border border-slate-200 rounded-lg hover:shadow-lg transition-shadow duration-300 w-full max-w-md mx-auto"
+            >
+              <div className="mx-4 mb-0 border-b border-slate-200 pt-4 pb-3 px-1">
+                <span className="text-sm font-medium text-slate-600 uppercase">
+                  {p.plan_type}
+                </span>
+              </div>
 
-                <div className="text-2xl font-bold text-slate-800">
+              <div className="p-5 flex-grow">
+                <h5 className="mb-3 text-slate-800 text-2xl font-semibold">{p.name}</h5>
+                <div className="text-3xl font-bold text-slate-800 mb-3">
                   ${p.price}
                   <span className="text-base font-normal text-slate-500">
-                    / {p.duration} {p.duration === 1 ? "day" : "days"}
+                    / {formatDuration(p.duration, p.plan_type)}
                   </span>
                 </div>
-
-                <p className="mt-2 text-sm text-slate-600">{p.description}</p>
-
-                <ul className="mt-3 space-y-1 text-sm text-slate-700 list-disc list-inside">
-                  {(p.features ?? []).map((f, i) => <li key={i}>{f}</li>)}
+                <p className="text-slate-600 leading-relaxed font-light mb-4">
+                  {p.description}
+                </p>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  {(p.features ?? []).map((f, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
                 </ul>
+              </div>
 
-                <div className="mt-2 text-sm text-slate-500">
-                  {subscriptionCounts[p.id] ?? 0} {subscriptionCounts[p.id] === 1 ? "subscriber" : "subscribers"}
+              <div className="p-5 pt-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => openEdit(p.id)}
+                    className="inline-flex items-center justify-center px-4 py-2.5 text-white rounded-xl hover:opacity-90 transition"
+                    style={{ backgroundColor: primary }}
+                    title="Edit"
+                  >
+                    <FiEdit2 />
+                  </button>
+                  <button
+                    onClick={() => onDelete(p.id)}
+                    className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-red-500 rounded-xl hover:bg-red-600 transition"
+                    title="Delete"
+                  >
+                    <FiTrash2 />
+                  </button>
+                  <button
+                    onClick={() => viewSubscribers(p.id)}
+                    className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-green-500 rounded-xl hover:bg-green-600 transition"
+                    title="View Subscribers"
+                  >
+                    <FiUsers />
+                  </button>
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <button onClick={() => openEdit(p.id)} className="inline-flex items-center justify-center px-3 py-2 text-white rounded-xl" style={{ backgroundColor: primary }} title="Edit">
-                  <FiEdit2 />
-                </button>
-                <button onClick={() => onDelete(p.id)} className="inline-flex items-center justify-center px-3 py-2 text-white bg-red-500 rounded-xl hover:bg-red-600 transition" title="Delete">
-                  <FiTrash2 />
-                </button>
-                <button onClick={() => viewSubscribers(p.id)} className="inline-flex items-center justify-center px-3 py-2 text-white bg-green-500 rounded-xl hover:bg-green-600 transition" title="View Subscribers">
-                  <FiUsers />
-                </button>
+              <div className="mx-4 border-t border-slate-200 pb-4 pt-3 px-1">
+                <span className="text-sm text-slate-600 font-medium">
+                  {subscriptionCounts[p.id] ?? 0}{" "}
+                  {subscriptionCounts[p.id] === 1 ? "subscriber" : "subscribers"}
+                </span>
               </div>
-            </article>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Modals */}
       {open && (
         <Modal title={editId == null ? "Add Plan" : "Edit Plan"} onClose={() => setOpen(false)}>
           <form onSubmit={onSubmit} className="space-y-4">
             <Field label="Name" required>
-              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border px-3 py-2" required />
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+                required
+              />
             </Field>
             <Field label="Price" required>
-              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full rounded-lg border px-3 py-2" required />
+              <input
+                type="number"
+                step="0.01"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+                required
+              />
             </Field>
             <Field label="Duration (days)" required>
-              <input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="w-full rounded-lg border px-3 py-2" required />
+              <input
+                type="number"
+                min="1"
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+                required
+              />
             </Field>
             <Field label="Description">
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border px-3 py-2" />
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+                rows="3"
+              />
             </Field>
             <Field label="Features (one per line)">
-              <textarea value={form.featuresText} onChange={(e) => setForm({ ...form, featuresText: e.target.value })} className="w-full rounded-lg border px-3 py-2" />
+              <textarea
+                value={form.featuresText}
+                onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+                rows="4"
+              />
             </Field>
             <Field label="Plan Type">
-              <select value={form.plan_type} onChange={(e) => setForm({ ...form, plan_type: e.target.value })} className="w-full rounded-lg border px-3 py-2">
+              <select
+                value={form.plan_type}
+                onChange={(e) => setForm({ ...form, plan_type: e.target.value })}
+                className="w-full rounded-lg border px-3 py-2"
+              >
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
               </select>
             </Field>
-            <div className="flex justify-end gap-2 mt-3">
-              <OutlineButton type="button" onClick={() => setOpen(false)}>Cancel</OutlineButton>
-              <button type="submit" className="px-5 py-2 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition">Save</button>
+            <div className="flex justify-end gap-3 mt-6">
+              <OutlineButton type="button" onClick={() => setOpen(false)}>
+                Cancel
+              </OutlineButton>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition"
+              >
+                Save
+              </button>
             </div>
           </form>
-        </Modal>
-      )}
-
-      {viewSubsPlanId && (
-        <Modal title="Plan Subscribers" onClose={closeSubs}>
-          <PeopleTable
-            title={`Subscribers for Plan ${viewSubsPlanId}`}
-            endpoint={`/plans/${viewSubsPlanId}/subscriptions`}
-            token={token}
-            columns={[
-              { label: "ID", key: "id" },
-              { label: "First Name", key: "first_name" },
-              { label: "Last Name", key: "last_name" },
-              { label: "Email", key: "email" },
-              { label: "Country", key: "country" },
-              { label: "Status", key: "status" },
-            ]}
-            filters={[]}
-            formFields={[]}
-          />
-        </Modal>
-      )}
-
-      {viewAllSubscriptions && (
-        <Modal title="All Subscribers" onClose={closeAllSubscriptions}>
-          <PeopleTable
-            title="All Subscribers"
-            endpoint="/plans/subscriptions/all"
-            token={token}
-            columns={[
-              { label: "ID", key: "id" },
-              { label: "First Name", key: "first_name" },
-              { label: "Last Name", key: "last_name" },
-              { label: "Email", key: "email" },
-              { label: "Country", key: "country" },
-              { label: "Status", key: "status" },
-              { label: "Plan Name", key: "plan_name" },
-            ]}
-            filters={[]}
-            formFields={[]}
-          />
         </Modal>
       )}
     </div>
@@ -284,8 +365,10 @@ export default function Plans() {
 
 function Field({ label, children, required }) {
   return (
-    <label className="space-y-1">
-      <span className="text-sm font-medium text-slate-500">{label} {required ? "*" : ""}</span>
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-slate-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </span>
       {children}
     </label>
   );
@@ -293,12 +376,16 @@ function Field({ label, children, required }) {
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 overflow-auto">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-        <div className="mb-5 flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
-          <button onClick={onClose} className="h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-600 transition" aria-label="Close">
-            <FiX />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-auto">
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl my-8">
+        <div className="mb-5 flex items-center justify-between border-b border-slate-200 pb-4">
+          <h2 className="text-2xl font-semibold text-slate-800">{title}</h2>
+          <button
+            onClick={onClose}
+            className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition"
+            aria-label="Close"
+          >
+            <FiX className="text-xl" />
           </button>
         </div>
         {children}

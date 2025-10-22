@@ -17,6 +17,7 @@ import {
   User,
   LogOut,
   ListChecks,
+  Star, 
 } from "lucide-react";
 
 function mapRole(roleId) {
@@ -54,7 +55,7 @@ function getActiveFromPath(pathname) {
   if (p.startsWith("/tasks")) return "tasks";
   if (p.startsWith("/courses")) return "courses";
   if (p.startsWith("/appointments")) return "appointments";
-
+  if (p.startsWith("/my-subscription")) return "my-subscription"; 
   if (p.startsWith("/profile")) return "profile";
   return "overview";
 }
@@ -104,6 +105,7 @@ function getNav(role, navigate, base) {
       { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
       { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/appointments`) },
+      { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) }, 
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
@@ -112,7 +114,6 @@ function getNav(role, navigate, base) {
     return { navigation, bottomNavigation };
   }
 
-  // fallback
   const navigation = [{ id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) }];
   const bottomNavigation = [
     { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },

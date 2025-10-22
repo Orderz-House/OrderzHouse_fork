@@ -36,6 +36,14 @@ export const getAllSubscriptions = async () => {
   return response.data;
 };
 
+// **Admin cancels subscription**
+export const adminCancelSubscription = async (subscriptionId) => {
+  const response = await API.patch("/plans/admin/cancel-subscription", {
+    subscription_id: subscriptionId,
+  });
+  return response.data;
+};
+
 // ----------------------
 // FREELANCER ROUTES
 // ----------------------
@@ -78,6 +86,7 @@ export default {
   createPlan,
   editPlan,
   deletePlan,
+  adminCancelSubscription,
   getFreelancerSubscription,
   subscribeToPlan,
   cancelSubscription,
