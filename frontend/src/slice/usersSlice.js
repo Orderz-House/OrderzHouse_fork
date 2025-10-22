@@ -3,24 +3,24 @@ import { createSlice } from "@reduxjs/toolkit";
 const usersSlice = createSlice({
   name: "users",
   initialState: {
-    freelancers: [],
-    clients: [],
+    users: [],
     loading: false,
     error: null,
+    editingRowId: null,
   },
   reducers: {
-    setFreelancers: (state, action) => {
-      state.freelancers = action.payload;
+    setUsers: (state, action) => {
+      state.users = action.payload;
     },
-    addFreelancer: (state, action) => {
-      state.freelancers.push(action.payload);
+    addUser: (state, action) => {
+      state.users.push(action.payload);
     },
-    updateFreelancer: (state, action) => {
-      const index = state.freelancers.findIndex(f => f.id === action.payload.id);
-      if (index !== -1) state.freelancers[index] = action.payload;
+    updateUser: (state, action) => {
+      const index = state.users.findIndex(u => u.id === action.payload.id);
+      if (index !== -1) state.users[index] = action.payload;
     },
-    removeFreelancer: (state, action) => {
-      state.freelancers = state.freelancers.filter(f => f.id !== action.payload);
+    removeUser: (state, action) => {
+      state.users = state.users.filter(u => u.id !== action.payload);
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
@@ -31,17 +31,21 @@ const usersSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setEditingRowId: (state, action) => {
+      state.editingRowId = action.payload;
+    },
   },
 });
 
 export const {
-  setFreelancers,
-  addFreelancer,
-  updateFreelancer,
-  removeFreelancer,
+  setUsers,
+  addUser,
+  updateUser,
+  removeUser,
   setLoading,
   setError,
   clearError,
+  setEditingRowId,
 } = usersSlice.actions;
 
 export default usersSlice.reducer;
