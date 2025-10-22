@@ -40,10 +40,10 @@ const ringStyle = { border: `1px solid ${T.ring}` };
 
 /* ---------- real endpoints ---------- */
 const endpoints = {
-  admin: { url: "/api/payments" },
-  client: { url: "/api/client/payments" },
-  freelancer: { url: "/api/freelancer/payments" },
-  user: { url: "/api/payments" },
+  admin: { url: "/payments" },
+  client: { url: "/client/payments" },
+  freelancer: { url: "/freelancer/payments" },
+  user: { url: "/payments" },
 };
 
 /* =========================================================
