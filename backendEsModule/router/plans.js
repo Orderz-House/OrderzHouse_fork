@@ -5,11 +5,13 @@ import {
   editPlan,
   deletePlan,
   getPlanSubscriptions,
+  getPlanSubscribers, 
   getFreelancerSubscription,
   subscribeToPlan,
   cancelSubscription,
   adminUpdateSubscription,
   getAllSubscriptions,
+  adminCancelSubscription
 } from "../controller/plans.js";
 
 import { authentication } from "../middleware/authentication.js";
@@ -28,6 +30,9 @@ plansRouter.get("/", getPlans);
 ---------------------- */
 // Get all subscriptions for a specific plan
 plansRouter.get("/:id/subscriptions", authentication, adminOnly, getPlanSubscriptions);
+
+//  Get all subscribers (freelancers) for a specific plan
+plansRouter.get("/:id/subscribers", authentication, adminOnly, getPlanSubscribers);
 
 plansRouter.get(
   "/subscriptions/all",
@@ -69,6 +74,14 @@ plansRouter.patch(
   authentication,
   requireVerified,
   cancelSubscription
+);
+
+// Admin: cancel a user's subscription
+plansRouter.patch(
+  "/admin/cancel-subscription",
+  authentication,
+  adminOnly,
+  adminCancelSubscription
 );
 
 export default plansRouter;
