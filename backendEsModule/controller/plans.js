@@ -355,3 +355,76 @@ export const getAllSubscriptions = async (req, res) => {
     });
   }
 };
+
+/**
+ * Admin: Get all subscribers (freelancers) for a specific plan
+ */
+export const getPlanSubscribers = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
+  const { id } = req.params; 
+
+  try {
+    const query = `
+      SELECT 
+        u.id AS user_id,
+        u.email,
+        u.phone_number,
+        s.start_date,
+        s.end_date,
+        s.status
+      FROM subscriptions s
+      JOIN users u ON u.id = s.freelancer_id
+      WHERE s.plan_id = $1
+      ORDER BY s.start_date DESC;
+    `;
+
+    const { rows } = await pool.query(query, [id]);
+
+    res.status(200).json({
+      success: true,
+      users: rows,
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to fetch plan subscribers");
+  }
+};
+
+/**
+ * Admin: Cancel a user's subscription
+ */
+export const adminCancelSubscription = async (req, res) => {
+  if (req.token.role !== 1)
+    return res.status(403).json({ success: false, message: "Admin only" });
+
+  const { subscription_id } = req.body;
+
+  if (!subscription_id)
+    return res.status(400).json({ success: false, message: "Subscription ID required" });
+
+  try {
+    const query = `
+      UPDATE subscriptions
+      SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [subscription_id]);
+
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Subscription not found" });
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription cancelled successfully",
+      subscription: rows[0],
+    });
+  } catch (err) {
+    handleError(res, err, "Failed to cancel subscription");
+  }
+};
+
+
+
+

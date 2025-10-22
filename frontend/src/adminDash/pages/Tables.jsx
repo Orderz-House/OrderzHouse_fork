@@ -1,18 +1,25 @@
-// src/components/Tables/PeopleTable.jsx
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { VscDebugRestart } from "react-icons/vsc";
 import { setUsers, updateUser, removeUser, setLoading, setError, setEditingRowId } from "../../slice/usersSlice";
+import React from "react";
+
 import ExpandedRow from "./expandedRow.jsx"
 
 const PRIMARY_COLOR = "#028090";
 const DEBOUNCE_DELAY = 300;
 
 // ============================================================================
-// Hooks
+// Default CRUD Configuration
 // ============================================================================
+const DEFAULT_CRUD_CONFIG = {
+  showEdit: true,
+  showDelete: true,
+  showExpand: true,
+};
+
 function useApi(token) {
   return useMemo(
     () =>
@@ -267,188 +274,203 @@ const AddModal = ({ isOpen, onClose, title, formFields, formData, onChange, onSu
   );
 };
 
-const MobileCards = ({ title, columns, rows, loading, error, renderActions, hideCrudActions, onEdit, onDelete, helpers }) => (
-  <div className="md:hidden">
-    {loading && <div className="py-8 text-center text-slate-500">Loading {title}…</div>}
-    {error && <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">{error}</div>}
-    {!loading && !error && rows.length === 0 && (
-      <div className="text-center text-slate-500 py-8">No {title.toLowerCase()} found</div>
-    )}
-    {!loading && !error && rows.length > 0 && (
-      <ul className="space-y-4">
-        {rows.map((row, idx) => {
-          const renderValue = (col) => {
-            const val = col.render ? col.render(row) : row[col.key];
-            return val ?? "—";
-          };
+// ============================================================================
+// Mobile Card Component
+// ============================================================================
+const MobileCards = ({ title, columns, rows, loading, error, renderActions, hideCrudActions, onEdit, onDelete, helpers, crudConfig }) => {
+  if (loading) {
+    return <div className="block md:hidden text-center text-slate-600 py-8">Loading {title}…</div>;
+  }
 
-          return (
-            <li key={row.id ?? idx} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="space-y-2.5">
-                {columns.map((col) => (
-                  <div key={col.key} className="flex items-start gap-3">
-                    <span className="text-xs font-medium text-slate-500 min-w-[80px]">
-                      {col.label}
-                    </span>
-                    <span className="text-sm text-slate-800 flex-1">{renderValue(col)}</span>
-                  </div>
-                ))}
+  if (error) {
+    return <div className="block md:hidden text-center text-red-600 py-8">{error}</div>;
+  }
 
-                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-200">
-                  {renderActions ? (
-                    renderActions(row, helpers)
-                  ) : !hideCrudActions ? (
-                    <>
-                      <button
-                        onClick={() => onEdit(idx)}
-                        className="rounded-lg px-3 py-2 text-white text-sm"
-                        style={{ backgroundColor: PRIMARY_COLOR }}
-                      >
-                        <FiEdit2 />
-                      </button>
-                      <button
-                        onClick={() => onDelete(idx)}
-                        className="rounded-lg px-3 py-2 bg-red-500 text-white text-sm"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </>
-                  ) : null}
-                </div>
+  if (!rows.length) {
+    return <div className="block md:hidden text-center text-slate-500 py-8">No {title} found</div>;
+  }
+
+  return (
+    <div className="block md:hidden space-y-3">
+      {rows.map((row, idx) => (
+        <div key={idx} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          {columns.map((col) => (
+            <div key={col.key} className="mb-2 last:mb-0">
+              <span className="text-xs font-medium text-slate-500">{col.label}</span>
+              <div className="text-sm text-slate-800">
+                {col.render ? col.render(row, idx) : row[col.key]}
               </div>
-            </li>
-          );
-        })}
-      </ul>
-    )}
-  </div>
-);
+            </div>
+          ))}
 
-const DesktopTable = ({ 
-  columns, 
-  rows, 
-  loading, 
-  error, 
-  expandedRow, 
-  onToggleExpand, 
-  renderActions, 
-  hideCrudActions, 
+          <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2">
+            {renderActions ? (
+              renderActions(row, helpers)
+            ) : !hideCrudActions ? (
+              <>
+                {crudConfig.showEdit && (
+                  <button
+                    onClick={() => onEdit(helpers.getId(row))}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <FiEdit2 />
+                    Edit
+                  </button>
+                )}
+                {crudConfig.showDelete && (
+                  <button
+                    onClick={() => onDelete(idx)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <FiTrash2 />
+                    Delete
+                  </button>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ============================================================================
+// Desktop Table Component
+// ============================================================================
+const DesktopTable = ({
+  columns,
+  rows,
+  loading,
+  error,
+  expandedRow,
+  onToggleExpand,
+  renderActions,
+  hideCrudActions,
   helpers,
   formFields,
   editingRowId,
   onSaveEdit,
   onCancelEdit,
-}) => (
-  <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-    <table className="w-full border-collapse">
-      <thead className="bg-slate-50 text-slate-700">
-        <tr>
-          <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-            #
-          </th>
-          {columns.map((col) => (
-            <th
-              key={col.key}
-              className="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
-            >
-              {col.label}
-            </th>
-          ))}
-          <th className="border-b border-slate-200 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100">
-        {loading && (
-          <tr>
-            <td colSpan={columns.length + 2} className="py-8 text-center text-slate-500">
-              Loading…
-            </td>
-          </tr>
-        )}
-        {error && (
-          <tr>
-            <td colSpan={columns.length + 2} className="p-4">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                {error}
-              </div>
-            </td>
-          </tr>
-        )}
-        {!loading && !error && rows.length === 0 && (
-          <tr>
-            <td colSpan={columns.length + 2} className="py-8 text-center text-slate-500">
-              No records found
-            </td>
-          </tr>
-        )}
-        {!loading && !error && rows.map((row, idx) => {
-          const isExpanded = expandedRow === idx;
-          const isEditing = editingRowId === row.id;
-          const renderValue = (col) => {
-            const val = col.render ? col.render(row) : row[col.key];
-            return val ?? "—";
-          };
+  crudConfig,
+}) => {
+  if (loading) {
+    return (
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="p-8 text-center text-slate-600">Loading data…</div>
+      </div>
+    );
+  }
 
-          return (
-            <>
-              <tr key={row.id ?? idx} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-sm text-slate-600">
-                  <button
-                    onClick={() => onToggleExpand(idx)}
-                    className="hover:text-slate-900"
-                  >
-                    {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
-                  </button>
-                </td>
-                {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-sm text-slate-800">
-                    {renderValue(col)}
-                  </td>
-                ))}
-                <td className="px-4 py-3 text-right">
-                  <div className="inline-flex items-center gap-2">
-                    {renderActions ? (
-                      renderActions(row, helpers)
-                    ) : !hideCrudActions ? (
-                      <>
+  if (error) {
+    return (
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="p-8 text-center text-red-600">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full border-collapse">
+        <thead className="border-b border-slate-200 bg-slate-50">
+          <tr>
+            {crudConfig.showExpand && <th className="w-12 px-4 py-3"></th>}
+            {columns.map((col) => (
+              <th key={col.key} className="whitespace-nowrap px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                {col.label}
+              </th>
+            ))}
+            <th className="w-32 px-4 py-3 text-center text-sm font-semibold text-slate-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200">
+          {!rows.length ? (
+            <tr>
+              <td colSpan={columns.length + (crudConfig.showExpand ? 2 : 1)} className="px-4 py-8 text-center text-slate-500">
+                No records found
+              </td>
+            </tr>
+          ) : (
+            rows.map((row, idx) => {
+              const isExpanded = expandedRow === idx;
+              const isEditing = editingRowId === helpers.getId(row);
+
+              return (
+                <React.Fragment key={idx}>
+                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
+                    {crudConfig.showExpand && (
+                      <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => helpers.handleDelete(idx)}
-                          className="rounded-lg p-2 hover:bg-red-50 text-red-500"
+                          onClick={() => onToggleExpand(idx)}
+                          className="h-8 w-8 grid place-items-center rounded hover:bg-slate-200 text-slate-600"
                         >
-                          <FiTrash2 />
+                          {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
                         </button>
-                      </>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-              {isExpanded && (
-                <tr>
-                  <td colSpan={columns.length + 2} className="px-4 py-0">
-                    <ExpandedRow
-                      row={row}
-                      columns={columns}
-                      formFields={formFields}
-                      isEditing={isEditing}
-                      onSave={onSaveEdit}
-                      onDelete={() => helpers.handleDelete(idx)}
-                      onCancel={onCancelEdit}
-                      renderActions={renderActions}
-                      hideCrudActions={hideCrudActions}
-                      helpers={helpers}
-                    />
-                  </td>
-                </tr>
-              )}
-            </>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
+                      </td>
+                    )}
+                    {columns.map((col) => (
+                      <td key={col.key} className="px-4 py-3 text-sm text-slate-800">
+                        {col.render ? col.render(row, idx) : row[col.key]}
+                      </td>
+                    ))}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        {renderActions ? (
+                          renderActions(row, helpers)
+                        ) : !hideCrudActions ? (
+                          <>
+                            {crudConfig.showEdit && (
+                              <button
+                                onClick={() => helpers.startEdit(helpers.getId(row))}
+                                className="h-8 w-8 grid place-items-center rounded hover:bg-blue-50 text-blue-600"
+                                title="Edit"
+                              >
+                                <FiEdit2 />
+                              </button>
+                            )}
+                            {crudConfig.showDelete && (
+                              <button
+                                onClick={() => helpers.handleDelete(idx)}
+                                className="h-8 w-8 grid place-items-center rounded hover:bg-red-50 text-red-600"
+                                title="Delete"
+                              >
+                                <FiTrash2 />
+                              </button>
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                  {isExpanded && crudConfig.showExpand && (
+                    <tr>
+                      <td colSpan={columns.length + 2} className="px-4 py-0">
+                        <ExpandedRow
+                          row={row}
+                          columns={columns}
+                          formFields={formFields}
+                          isEditing={isEditing}
+                          onSave={onSaveEdit}
+                          onDelete={() => helpers.handleDelete(idx)}
+                          onCancel={onCancelEdit}
+                          renderActions={renderActions}
+                          hideCrudActions={hideCrudActions}
+                          helpers={helpers}
+                          crudConfig={crudConfig}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 // ============================================================================
 // Main Component
@@ -465,11 +487,19 @@ export default function PeopleTable({
   renderActions,
   hideCrudActions = false,
   token,
+  // NEW: CRUD Configuration prop with defaults
+  crudConfig = {},
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
 
   const { editingRowId, error: reduxError } = useSelector((state) => state.users);
+
+  // Merge user-provided config with defaults
+  const mergedCrudConfig = useMemo(
+    () => ({ ...DEFAULT_CRUD_CONFIG, ...crudConfig }),
+    [crudConfig]
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [chipValue, setChipValue] = useState("");
@@ -644,6 +674,7 @@ export default function PeopleTable({
         onEdit={startEdit}
         onDelete={handleDelete}
         helpers={helpers}
+        crudConfig={mergedCrudConfig}
       />
 
       <DesktopTable
@@ -660,6 +691,7 @@ export default function PeopleTable({
         editingRowId={editingRowId}
         onSaveEdit={handleSaveEdit}
         onCancelEdit={handleCancelEdit}
+        crudConfig={mergedCrudConfig}
       />
 
       <AddModal

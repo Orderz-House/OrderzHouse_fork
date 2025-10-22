@@ -14,6 +14,8 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
+// import MySubscription from "../pages/freelancer/MySubscription.jsx";
+
 
 export default function AdminRouter() {
   return (
@@ -42,6 +44,10 @@ export default function AdminRouter() {
         <Route path="courses" element={<Courses />} />
         <Route path="appointments" element={<Appointments />} />
         <Route path="tasks" element={<Tasks />} />
+
+
+        {/* for freelancer My Subscription */}
+        {/* <Route path="my-subscription" element={<MySubscription />} /> */}
       </Route>
     </Routes>
   );
