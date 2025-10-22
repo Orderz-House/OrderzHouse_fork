@@ -1,21 +1,33 @@
-import API from "../api/axios"; 
+import API from "../api/axios";
 
-// ----------------------
-// PUBLIC ROUTES
-// ----------------------
-export const getPlans = async () => {
-  const response = await API.get("/plans");
+/* ----------------------
+   PUBLIC ROUTES
+---------------------- */
+
+export const getPlans = async (withCounts = false) => {
+  const response = await API.get(`/plans${withCounts ? "?withCounts=true" : ""}`);
   return response.data;
 };
 
-export const getPlanSubscriptions = async (planId) => {
-  const response = await API.get(`/plans/${planId}/subscriptions`);
+/* ----------------------
+   ADMIN ROUTES
+---------------------- */
+
+export const getPlanSubscriptionCounts = async () => {
+  const response = await API.get("/plans/subscriptions/counts");
   return response.data;
 };
 
-// ----------------------
-// ADMIN ROUTES
-// ----------------------
+export const getAllSubscriptions = async () => {
+  const response = await API.get("/plans/subscriptions/all");
+  return response.data;
+};
+
+export const getPlanSubscribers = async (planId) => {
+  const response = await API.get(`/plans/${planId}/subscribers`);
+  return response.data;
+};
+
 export const createPlan = async (planData) => {
   const response = await API.post("/plans/create", planData);
   return response.data;
@@ -31,22 +43,23 @@ export const deletePlan = async (id) => {
   return response.data;
 };
 
-export const getAllSubscriptions = async () => {
-  const response = await API.get("/plans/subscriptions/all");
+export const adminUpdateSubscription = async (data) => {
+  const response = await API.patch("/plans/admin/subscription", data);
   return response.data;
 };
 
-// **Admin cancels subscription**
 export const adminCancelSubscription = async (subscriptionId) => {
-  const response = await API.patch("/plans/admin/cancel-subscription", {
+  const response = await API.patch("/plans/:planId/subscribers/:id", {
     subscription_id: subscriptionId,
   });
   return response.data;
 };
 
-// ----------------------
-// FREELANCER ROUTES
-// ----------------------
+
+/* ----------------------
+   FREELANCER ROUTES
+---------------------- */
+
 export const getFreelancerSubscription = async () => {
   const response = await API.get("/plans/subscription/me");
   return response.data;
@@ -62,30 +75,18 @@ export const cancelSubscription = async () => {
   return response.data;
 };
 
-// ----------------------
-// UTILITIES
-// ----------------------
-export const fetchSubscriptionCount = async (id) => {
-  try {
-    const response = await API.get(`/plans/${id}/subscriptions`);
-    return Number(response.data.plan.subscription_count || 0);
-  } catch (err) {
-    console.error("Failed to fetch subscription count", err);
-    return 0;
-  }
-};
-
-// ----------------------
-// EXPORT ALL
-// ----------------------
+/* ----------------------
+   EXPORT DEFAULT
+---------------------- */
 export default {
-  fetchSubscriptionCount,
   getPlans,
+  getPlanSubscriptionCounts,
   getAllSubscriptions,
-  getPlanSubscriptions,
+  getPlanSubscribers,
   createPlan,
   editPlan,
   deletePlan,
+  adminUpdateSubscription,
   adminCancelSubscription,
   getFreelancerSubscription,
   subscribeToPlan,

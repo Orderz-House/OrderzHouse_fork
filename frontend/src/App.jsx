@@ -44,6 +44,9 @@ import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
+import TasksPage from "./components/Tasks/components/TasksPage.jsx";
+import TaskDetails from "./components/Tasks/components/TaskDetails.jsx";
+import CreateTaskForm from "./components/Tasks/components/CreateTaskForm.jsx";
 
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -125,6 +128,16 @@ function App() {
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
         
+        <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+        <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetails /></ProtectedRoute>} />
+        <Route 
+          path="/tasks/create" 
+          element={
+            <ProtectedRoute allowedRoles={[3]}>
+              <CreateTaskForm />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* --- Course Management --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
@@ -168,13 +181,13 @@ function App() {
           }
         />
         <Route
-  path="/projects/:id"
-  element={
-    <ProtectedRoute>
-      <ProjectDetails />
-    </ProtectedRoute>
-  }
-/>
+          path="/projects/:id"
+          element={
+            <ProtectedRoute>
+              <ProjectDetails />
+            </ProtectedRoute>
+          }
+        />
 
         {/* --- 404 Fallback --- */}
         <Route

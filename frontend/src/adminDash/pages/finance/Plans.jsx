@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiUsers, FiArrowLeft } from "react-icons/fi";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiX,
+  FiUsers,
+  FiArrowLeft,
+} from "react-icons/fi";
 import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
 import PeopleTable from "../Tables";
 import PlansAPI from "../../api/plans";
@@ -13,8 +20,9 @@ import {
   setError,
   clearError,
 } from "../../../slice/planSlice.js";
+import toast from "react-hot-toast";
 
-const primary = "#028090";
+const PRIMARY = "#028090";
 
 export default function Plans() {
   const dispatch = useDispatch();
@@ -36,36 +44,50 @@ export default function Plans() {
   const [viewSubsPlanId, setViewSubsPlanId] = useState(null);
   const [selectedPlanName, setSelectedPlanName] = useState("");
 
-  // Fetch plans + subscription counts
-  useEffect(() => {
-    (async () => {
-      try {
-        dispatch(setLoading(true));
-        dispatch(clearError());
+  // ---------------------------
+  // FETCH PLANS + COUNTS
+  // ---------------------------
+  const fetchPlans = useCallback(async () => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(clearError());
 
-        const data = await PlansAPI.getPlans();
-        const plansArray = Array.isArray(data) ? data : data?.plans ?? [];
-        dispatch(setPlans(plansArray));
+      const [plansRes, countsRes] = await Promise.all([
+        PlansAPI.getPlans(),
+        PlansAPI.getPlanSubscriptionCounts(),
+      ]);
 
-        const counts = {};
-        for (const plan of plansArray) {
-          try {
-            const { plan: planCount } = await PlansAPI.getPlanSubscriptions(plan.id);
-            counts[plan.id] = Number(planCount.subscription_count ?? 0);
-          } catch {
-            counts[plan.id] = 0;
-          }
-        }
-        setSubscriptionCounts(counts);
-      } catch (e) {
-        dispatch(setError("Failed to load plans."));
-      } finally {
-        dispatch(setLoading(false));
+      const plansArray = Array.isArray(plansRes?.plans)
+        ? plansRes.plans
+        : Array.isArray(plansRes)
+        ? plansRes
+        : [];
+
+      dispatch(setPlans(plansArray));
+
+      const countMap = {};
+      if (Array.isArray(countsRes?.counts)) {
+        countsRes.counts.forEach((c) => {
+          countMap[c.plan_id] = Number(c.subscription_count || 0);
+        });
       }
-    })();
+      setSubscriptionCounts(countMap);
+    } catch (err) {
+      dispatch(setError("Failed to load plans"));
+      console.error(err);
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [dispatch]);
 
-  const openAdd = () => {
+  useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
+
+  // ---------------------------
+  // HANDLERS
+  // ---------------------------
+  const openAdd = useCallback(() => {
     setEditId(null);
     setForm({
       name: "",
@@ -76,60 +98,83 @@ export default function Plans() {
       plan_type: "monthly",
     });
     setOpen(true);
-  };
+  }, []);
 
-  const openEdit = (id) => {
-    const plan = items.find((p) => p.id === id);
-    if (!plan) return;
-    setEditId(id);
-    setForm({
-      name: plan.name,
-      price: plan.price,
-      duration: plan.duration,
-      description: plan.description,
-      featuresText: (plan.features ?? []).join("\n"),
-      plan_type: plan.plan_type ?? "monthly",
-    });
-    setOpen(true);
-  };
+  const openEdit = useCallback(
+    (id) => {
+      const plan = items.find((p) => p.id === id);
+      if (!plan) return;
+      setEditId(id);
+      setForm({
+        name: plan.name,
+        price: plan.price,
+        duration: plan.duration,
+        description: plan.description,
+        featuresText: (plan.features ?? []).join("\n"),
+        plan_type: plan.plan_type ?? "monthly",
+      });
+      setOpen(true);
+    },
+    [items]
+  );
 
-  const onDelete = async (id) => {
-    if (!confirm("Delete this plan?")) return;
-    const prev = items;
-    dispatch(removePlan(id));
+  const onDelete = useCallback(
+  async (id) => {
+    if (!window.confirm("Are you sure you want to delete this plan?")) return;
+
     try {
       await PlansAPI.deletePlan(id);
-    } catch {
-      alert("Delete failed");
-      dispatch(setPlans(prev));
+      dispatch(removePlan(id));
+      await fetchPlans(); 
+    } catch (err) {
+      console.error("Failed to delete plan:", err);
+      dispatch(setError("Failed to delete plan"));
     }
-  };
+  },
+  [dispatch, fetchPlans]
+);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const payload = {
-      ...form,
-      price: Number(form.price),
-      duration: Number(form.duration),
-      features: form.featuresText
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    };
+  const onSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
 
-    try {
-      if (editId == null) {
-        const data = await PlansAPI.createPlan(payload);
-        dispatch(addPlan(data));
-      } else {
-        const data = await PlansAPI.editPlan(editId, payload);
-        dispatch(updatePlan(data));
-      }
-      setOpen(false);
-    } catch {
-      alert("Save failed");
-    }
-  };
+      const payload = {
+        ...form,
+        price: Number(form.price),
+        duration: Number(form.duration),
+        features: form.featuresText
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+
+      const isEditing = editId != null;
+
+      toast.promise(
+        isEditing
+          ? PlansAPI.editPlan(editId, payload)
+          : PlansAPI.createPlan(payload),
+        {
+          loading: isEditing ? "Updating plan..." : "Creating plan...",
+          success: async (res) => {
+            if (isEditing) {
+              dispatch(updatePlan(res.plan || res));
+            } else {
+              dispatch(addPlan(res.plan || res));
+            }
+            await fetchPlans(); // refresh data
+            setOpen(false);
+            return isEditing
+              ? "Plan updated successfully"
+              : "Plan created successfully";
+          },
+          error: "Failed to save plan",
+        },
+        { style: { borderRadius: "8px" } }
+      );
+    },
+    [editId, form, dispatch, fetchPlans]
+  );
 
   const viewSubscribers = (id) => {
     const plan = items.find((p) => p.id === id);
@@ -144,16 +189,18 @@ export default function Plans() {
 
   const formatDuration = (duration, planType) => {
     const num = Number(duration);
-    if (planType === "yearly") {
-      return `${num} ${num === 1 ? "year" : "years"}`;
-    }
-    if (planType === "monthly") {
-      return `${num} ${num === 1 ? "month" : "months"}`;
-    }
-    return `${num} ${num === 1 ? "day" : "days"}`;
+    const unit =
+      planType === "yearly"
+        ? "year"
+        : planType === "monthly"
+        ? "month"
+        : "day";
+    return `${num} ${num === 1 ? unit : `${unit}s`}`;
   };
 
-  // ✅ View plan subscribers (using new route)
+  // ---------------------------
+  // SUBSCRIBERS VIEW
+  // ---------------------------
   if (viewSubsPlanId) {
     return (
       <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
@@ -171,34 +218,44 @@ export default function Plans() {
         </div>
 
         <PeopleTable
-          title=""
-          endpoint={`/plans/${viewSubsPlanId}/subscribers`}
-          token={token}
-          columns={[
-            { 
-              label: "#", 
-              key: "row_number",
-              render: (row, index) => index + 1
-            },
-            { label: "User ID", key: "user_id" },
-            { label: "Email", key: "email" },
-            { label: "Status", key: "status" },
-            { label: "Start Date", key: "start_date" },
-            { label: "End Date", key: "end_date" },
-          ]}
-          filters={[]}
-          formFields={[]}
-          crudConfig={{
-            showEdit: false,
-            showDelete: true,
-            showExpand: false
-          }}
-        />
+  title=""
+  endpoint={`/plans/${viewSubsPlanId}/subscribers`}
+  token={token}
+  columns={[
+    { label: "#", key: "row_number", render: (_, index) => index + 1 },
+    { label: "User ID", key: "user_id" },
+    { label: "Email", key: "email" },
+    { label: "Status", key: "status" },
+    { label: "Start Date", key: "start_date" },
+    { label: "End Date", key: "end_date" },
+  ]}
+  filters={[]}
+  formFields={[]}
+  crudConfig={{
+    showEdit: false,
+    showDelete: true,  
+    showExpand: false,
+    customActions: [   
+      {
+        label: "Cancel",
+        icon: <FiX />,
+        onClick: async (row) => {
+          if (window.confirm("Cancel this subscription?")) {
+            await PlansAPI.adminCancelSubscription(row.id);
+          }
+        },
+        variant: "warning"
+      }
+    ]
+  }}
+/>
       </div>
     );
   }
 
-  // Default view: Plan cards
+  // ---------------------------
+  // MAIN PAGE
+  // ---------------------------
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -212,8 +269,15 @@ export default function Plans() {
         </OutlineButton>
       </div>
 
-      {loading && <div className="text-center py-8 text-slate-500 text-lg">Loading…</div>}
-      {!loading && error && <div className="bg-red-100 text-red-700 py-4 px-5 rounded-lg text-center">{error}</div>}
+      {loading && (
+        <div className="text-center py-8 text-slate-500 text-lg">Loading…</div>
+      )}
+
+      {!loading && error && (
+        <div className="bg-red-100 text-red-700 py-4 px-5 rounded-lg text-center">
+          {error}
+        </div>
+      )}
 
       {!loading && !error && (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -229,7 +293,9 @@ export default function Plans() {
               </div>
 
               <div className="p-5 flex-grow">
-                <h5 className="mb-3 text-slate-800 text-2xl font-semibold">{p.name}</h5>
+                <h5 className="mb-3 text-slate-800 text-2xl font-semibold">
+                  {p.name}
+                </h5>
                 <div className="text-3xl font-bold text-slate-800 mb-3">
                   ${p.price}
                   <span className="text-base font-normal text-slate-500">
@@ -249,37 +315,37 @@ export default function Plans() {
                 </ul>
               </div>
 
-              <div className="p-5 pt-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => openEdit(p.id)}
-                    className="inline-flex items-center justify-center px-4 py-2.5 text-white rounded-xl hover:opacity-90 transition"
-                    style={{ backgroundColor: primary }}
-                    title="Edit"
-                  >
-                    <FiEdit2 />
-                  </button>
-                  <button
-                    onClick={() => onDelete(p.id)}
-                    className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-red-500 rounded-xl hover:bg-red-600 transition"
-                    title="Delete"
-                  >
-                    <FiTrash2 />
-                  </button>
-                  <button
-                    onClick={() => viewSubscribers(p.id)}
-                    className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-green-500 rounded-xl hover:bg-green-600 transition"
-                    title="View Subscribers"
-                  >
-                    <FiUsers />
-                  </button>
-                </div>
+              <div className="p-5 pt-0 flex items-center gap-2">
+                <button
+                  onClick={() => openEdit(p.id)}
+                  className="inline-flex items-center justify-center px-4 py-2.5 text-white rounded-xl hover:opacity-90 transition"
+                  style={{ backgroundColor: PRIMARY }}
+                  title="Edit"
+                >
+                  <FiEdit2 />
+                </button>
+                <button
+                  onClick={() => onDelete(p.id)}
+                  className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-red-500 rounded-xl hover:bg-red-600 transition"
+                  title="Delete"
+                >
+                  <FiTrash2 />
+                </button>
+                <button
+                  onClick={() => viewSubscribers(p.id)}
+                  className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-green-500 rounded-xl hover:bg-green-600 transition"
+                  title="View Subscribers"
+                >
+                  <FiUsers />
+                </button>
               </div>
 
               <div className="mx-4 border-t border-slate-200 pb-4 pt-3 px-1">
                 <span className="text-sm text-slate-600 font-medium">
                   {subscriptionCounts[p.id] ?? 0}{" "}
-                  {subscriptionCounts[p.id] === 1 ? "subscriber" : "subscribers"}
+                  {subscriptionCounts[p.id] === 1
+                    ? "subscriber"
+                    : "subscribers"}
                 </span>
               </div>
             </div>
@@ -288,64 +354,82 @@ export default function Plans() {
       )}
 
       {open && (
-        <Modal title={editId == null ? "Add Plan" : "Edit Plan"} onClose={() => setOpen(false)}>
+        <Modal
+          title={editId == null ? "Add Plan" : "Edit Plan"}
+          onClose={() => setOpen(false)}
+        >
           <form onSubmit={onSubmit} className="space-y-4">
             <Field label="Name" required>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
                 required
               />
             </Field>
+
             <Field label="Price" required>
               <input
                 type="number"
                 step="0.01"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
                 required
               />
             </Field>
-            <Field label="Duration (days)" required>
+
+            <Field
+              label={`Duration (${form.plan_type === "yearly" ? "years" : "months"})`}
+              required
+            >
               <input
                 type="number"
                 min="1"
                 value={form.duration}
                 onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
                 required
               />
             </Field>
+
             <Field label="Description">
               <textarea
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
                 rows="3"
               />
             </Field>
+
             <Field label="Features (one per line)">
               <textarea
                 value={form.featuresText}
-                onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                onChange={(e) =>
+                  setForm({ ...form, featuresText: e.target.value })
+                }
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
                 rows="4"
               />
             </Field>
+
             <Field label="Plan Type">
               <select
                 value={form.plan_type}
-                onChange={(e) => setForm({ ...form, plan_type: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2"
+                onChange={(e) =>
+                  setForm({ ...form, plan_type: e.target.value })
+                }
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
               >
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
               </select>
             </Field>
-            <div className="flex justify-end gap-3 mt-6">
+
+            <div className="sticky bottom-0 bg-white pt-4 flex justify-end gap-3">
               <OutlineButton type="button" onClick={() => setOpen(false)}>
                 Cancel
               </OutlineButton>
@@ -376,19 +460,20 @@ function Field({ label, children, required }) {
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-auto">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl my-8">
-        <div className="mb-5 flex items-center justify-between border-b border-slate-200 pb-4">
-          <h2 className="text-2xl font-semibold text-slate-800">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6 overflow-auto">
+      <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xl my-6">
+        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
+          <h2 className="text-xl sm:text-2xl font-semibold text-slate-800">
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition"
-            aria-label="Close"
           >
             <FiX className="text-xl" />
           </button>
         </div>
-        {children}
+        <div className="max-h-[75vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   );

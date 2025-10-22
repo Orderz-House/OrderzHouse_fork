@@ -54,6 +54,7 @@ export default function EnhancedNavbar() {
     else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
     else if (p.startsWith("/contact")) setActiveLink("CONTACT");
     else if (p.startsWith("/plans")) setActiveLink("PLANS");
+    else if (p.startsWith("/tasks")) setActiveLink("TASKS");
     else if (
       p.startsWith("/projects") ||
       p.startsWith("/projectspage") ||
@@ -64,6 +65,7 @@ export default function EnhancedNavbar() {
       setActiveLink("VERIFICATION");
     else if (p.startsWith("/blogs/admin")) setActiveLink("BLOGS PENDING");
     else if (p.startsWith("/create-project")) setActiveLink("ADD PROJECT");
+    else if (p.startsWith("/tasks/create")) setActiveLink("ADD TASK");
     else setActiveLink(null);
   }, [location.pathname]);
 
@@ -75,7 +77,7 @@ export default function EnhancedNavbar() {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
         __silent: true,
-      });
+      } );
       if (data.success) setNotifications(data.notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -91,7 +93,7 @@ export default function EnhancedNavbar() {
           headers: { authorization: `Bearer ${token}` },
           params: { unreadOnly: true },
         }
-      );
+       );
       if (data.success) setUnreadCount(data.count);
     } catch (error) {
       console.error("Error fetching notification count:", error);
@@ -104,7 +106,7 @@ export default function EnhancedNavbar() {
         `http://localhost:5000/notifications/${notificationId}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
-      );
+       );
       setNotifications((list) =>
         list.map((n) =>
           n.id === notificationId ? { ...n, read_status: true } : n
@@ -122,7 +124,7 @@ export default function EnhancedNavbar() {
         "http://localhost:5000/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
-      );
+       );
       setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -160,7 +162,7 @@ export default function EnhancedNavbar() {
     axios
       .get(`http://localhost:5000/users/getUserdata`, {
         headers: { authorization: `Bearer ${token}` },
-      })
+      } )
       .then((res) => {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
@@ -214,6 +216,7 @@ export default function EnhancedNavbar() {
       path: "/projectsPage",
       condition: userData && (userData.role_id === 2 || userData.role_id === 3),
     },
+    { label: "TASKS", path: "/tasks", condition: true },
   ];
 
   // Items under Explore
@@ -335,10 +338,9 @@ export default function EnhancedNavbar() {
               </Link>
             )}
 
-            {/* NEW STYLE: Freelancer Add Task */}
             {userData?.role_id === 3 && (
               <Link
-                to="/freelancer/tasks/new"
+                to="/tasks/create"
                 onClick={() => setActiveLink("ADD TASK")}
                 className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white transition-all shadow-sm hover:shadow-md"
                 title="Create a new task"
@@ -609,11 +611,10 @@ export default function EnhancedNavbar() {
                 </button>
               )}
 
-              {/* Freelancer: Add task (mobile) */}
               {userData?.role_id === 3 && (
                 <button
                   onClick={() => {
-                    handleNavigation("/freelancer/tasks/new", "ADD TASK");
+                    handleNavigation("/tasks/create", "ADD TASK");
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full text-left px-4 py-3 text-base font-medium rounded-2xl transition-all duration-200 font-inter flex items-center space-x-2 ${
