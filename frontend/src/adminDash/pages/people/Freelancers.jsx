@@ -28,6 +28,7 @@ export default function Freelancers() {
       endpoint="/admUser/role/3"
       getOnePath={(id) => `/admUser/${id}`}
       token={token}
+      /* ===== أعمدة الجدول (بدون Phone وبدون Category) ===== */
       columns={[
         {
           label: "",
@@ -52,7 +53,9 @@ export default function Freelancers() {
         { label: "Last Name", key: "last_name" },
         { label: "Username", key: "username" },
         { label: "Email", key: "email" },
+        // ⛔ تمت إزالة "Phone" من الأعمدة
         { label: "Country", key: "country" },
+        // ⛔ تمت إزالة "Category" من الأعمدة
         {
           label: "Rating",
           key: "rating",
@@ -84,14 +87,22 @@ export default function Freelancers() {
             </span>
           ),
         },
+        {
+          label: "Deleted",
+          key: "is_deleted",
+          render: (row) => (row.is_deleted ? "True" : "False"),
+        },
       ]}
-      formFields={[
+       formFields={[
         { key: "first_name", label: "First Name", required: true },
         { key: "last_name", label: "Last Name", required: true },
         { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
         { key: "password", label: "Password", type: "password", placeholder: "Leave blank to keep current" },
+        { key: "phone", label: "Phone" },                        // يظهر في الـ Edit فقط
         { key: "country", label: "Country" },
+        { key: "category", label: "Category" },                  // يظهر في الـ Edit فقط
+        { key: "profile_pic_url", label: "Profile Image URL" },
         { key: "bio", label: "Bio", type: "textarea" },
         { key: "hourly_rate", label: "Hourly Rate", type: "number" },
         {
@@ -101,6 +112,16 @@ export default function Freelancers() {
           options: [
             { value: true, label: "Yes" },
             { value: false, label: "No" },
+          ],
+          defaultValue: false,
+        },
+        {
+          key: "is_deleted",
+          label: "Deleted",
+          type: "select",
+          options: [
+            { value: true, label: "True" },
+            { value: false, label: "False" },
           ],
           defaultValue: false,
         },
