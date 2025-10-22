@@ -1,4 +1,5 @@
 import pool from "../models/db.js";
+import bcrypt from "bcrypt";
 
 /**
  * Get users by role (admin only)
@@ -217,110 +218,68 @@ export const createUser = async (req, res) => {
  */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const requesterId = req.token?.userId;
-  const requesterRole = req.token?.role;
-
-  // Only admin or the user themselves can update
-  if (parseInt(id) !== requesterId && requesterRole !== 1) {
-    return res.status(403).json({ success: false, message: "Unauthorized" });
-  }
-
-  // Allow updating all relevant fields
-  const {
-    role_id,
-    first_name,
-    last_name,
-    email,
-    password,
-    phone_number,
-    country,
-    profile_pic_url,
-    username,
-    bio,
-    is_verified,
-    rating_sum,
-    rating_count,
-    is_online,
-    updated_at,
-    two_factor_secret,
-    is_two_factor_enabled,
-    failed_login_attempts,
-    last_failed_login,
-    otp_code,
-    otp_expires,
-    is_locked,
-  } = req.body;
+  const fields = [
+    "role_id",
+    "first_name",
+    "last_name",
+    "email",
+    "password",
+    "phone_number",
+    "country",
+    "profile_pic_url",
+    "username",
+    "is_verified",
+    "bio",
+    "is_two_factor_enabled",
+    "is_locked",
+  ];
 
   try {
-    const query = `
-      UPDATE users
-      SET
-        role_id = COALESCE($1, role_id),
-        first_name = COALESCE($2, first_name),
-        last_name = COALESCE($3, last_name),
-        email = COALESCE($4, email),
-        password = COALESCE($5, password),
-        phone_number = COALESCE($6, phone_number),
-        country = COALESCE($7, country),
-        profile_pic_url = COALESCE($8, profile_pic_url),
-        username = COALESCE($9, username),
-        bio = COALESCE($10, bio),
-        is_verified = COALESCE($11, is_verified),
-        rating_sum = COALESCE($12, rating_sum),
-        rating_count = COALESCE($13, rating_count),
-        is_online = COALESCE($14, is_online),
-        updated_at = CURRENT_TIMESTAMP,
-        two_factor_secret = COALESCE($15, two_factor_secret),
-        is_two_factor_enabled = COALESCE($16, is_two_factor_enabled),
-        failed_login_attempts = COALESCE($17, failed_login_attempts),
-        last_failed_login = COALESCE($18, last_failed_login),
-        otp_code = COALESCE($19, otp_code),
-        otp_expires = COALESCE($20, otp_expires),
-        is_locked = COALESCE($21, is_locked)
-      WHERE id = $22 AND is_deleted = false
-      RETURNING *;
-    `;
-
-    const result = await pool.query(query, [
-      role_id,
-      first_name,
-      last_name,
-      email,
-      password,
-      phone_number,
-      country,
-      profile_pic_url,
-      username,
-      bio,
-      is_verified,
-      rating_sum,
-      rating_count,
-      is_online,
-      two_factor_secret,
-      is_two_factor_enabled,
-      failed_login_attempts,
-      last_failed_login,
-      otp_code,
-      otp_expires,
-      is_locked,
-      id,
-    ]);
-
-    if (!result.rows.length) {
+    const { rows: existingRows } = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (existingRows.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "User updated successfully",
-      user: result.rows[0],
-    });
-  } catch (err) {
-    console.error("updateUser error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    const existingUser = existingRows[0];
+
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    for (const field of fields) {
+      if (req.body[field] !== undefined) {
+        if (field === "password") {
+          const salt = await bcrypt.genSalt(10);
+          updates.push(`${field} = $${idx}`);
+          values.push(await bcrypt.hash(req.body[field], salt));
+        } else {
+          updates.push(`${field} = $${idx}`);
+          values.push(req.body[field]);
+        }
+        idx++;
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: "No fields provided to update" });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+    const query = `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`;
+    values.push(id);
+
+    const { rows } = await pool.query(query, values);
+
+    return res.status(200).json({ success: true, data: rows[0] });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(400).json({ success: false, message: "Email, phone number, or username already exists" });
+    }
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 /**
  * Soft delete user (admin or self)
  */
