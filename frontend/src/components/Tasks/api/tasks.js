@@ -1,122 +1,65 @@
 import axios from "axios";
-import store from "../../../store/store";
 
-const API_BASE = "http://localhost:5000/tasks";
+const API = axios.create({ baseURL: `${import.meta.env.VITE_API_URL}/tasks` });
 
-const getAuthHeaders = (isFormData = false ) => {
-  const token = store?.getState()?.auth?.token || localStorage.getItem("token") || null;
-  if (!token) return {};
-  const headers = { Authorization: `Bearer ${token}` };
-  if (!isFormData) headers['Content-Type'] = 'application/json';
-  return { headers };
-};
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem("token");
+  if (token) req.headers.Authorization = `Bearer ${token}`;
+  return req;
+});
 
-export const getTaskPoolApi = async (filters = {}) => {
-  const { data } = await axios.get(`${API_BASE}/pool`, { ...getAuthHeaders(), params: filters });
-  return data;
-};
+/* ============================== ADMIN ============================== */
+export const getAllTasksForAdmin = () => API.get("/admin");
+export const approveTaskByAdmin = (id, status) => API.put(`/admin/${id}/status`, { status });
+export const confirmPaymentByAdmin = (id) => API.put(`/admin/payment/${id}/confirm`);
 
-export const getTaskByIdApi = async (taskId) => {
-  const { data } = await axios.get(`${API_BASE}/${taskId}`, getAuthHeaders());
-  return data;
-};
+/* ============================== FREELANCER ============================== */
+export const createTask = (data) =>
+  API.post("/freelancer", data, { headers: { "Content-Type": "multipart/form-data" } });
+export const updateTask = (id, data) => API.put(`/freelancer/${id}`, data);
+export const deleteTask = (id) => API.delete(`/freelancer/${id}`);
+export const updateTaskRequestStatus = (requestId, status) =>
+  API.put(`/freelancer/requests/${requestId}/status`, { status });
+export const submitWorkCompletion = (id, data) =>
+  API.post(`/freelancer/requests/${id}/submit`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+export const resubmitWorkCompletion = (id, data) =>
+  API.post(`/freelancer/requests/${id}/resubmit`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+export const updateTaskKanbanStatus = (id, status) => API.put(`/freelancer/${id}/kanban`, { status });
+export const getFreelancerCreatedTasks = () => API.get("/freelancer/my-tasks");
+export const getTaskRequests = () => API.get("/freelancer/requests");
+export const getAssignedTasks = () => API.get("/freelancer/assigned");
 
-export const createTaskApi = async (taskData) => {
-  const { data } = await axios.post(`${API_BASE}/`, taskData, getAuthHeaders(true));
-  return data;
-};
+/* ============================== CLIENT ============================== */
+export const requestTask = (id, data) =>
+  API.post(`/client/request/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+export const submitPaymentProof = (id, data) =>
+  API.post(`/client/payment/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+export const approveWorkCompletion = (id, data) =>
+  API.post(`/client/approve/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+export const createReview = (id, data) => API.post(`/client/review/${id}`, data);
 
-export const getMyCreatedTasksApi = async () => {
-  const { data } = await axios.get(`${API_BASE}/my-created`, getAuthHeaders());
-  return data;
-};
+/* ============================== PUBLIC & SHARED ============================== */
+export const getTaskPool = (category) =>
+  API.get(`/pool${category ? `?category=${category}` : ""}`);
+export const getTaskById = (id) => API.get(`/${id}`);
+export const addTaskFiles = (id, data) =>
+  API.post(`/files/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
 
-export const requestTaskApi = async (taskId, requestData) => {
-  const { data } = await axios.post(`${API_BASE}/request/${taskId}`, requestData, getAuthHeaders(true));
-  return data;
-};
+/* ============================== CATEGORY HIERARCHY ============================== */
+export const getCategories = () => API.get("/category");
 
-export const getTaskRequestsApi = async () => {
-  const { data } = await axios.get(`${API_BASE}/requests`, getAuthHeaders());
-  return data;
-};
+// ✅ Get sub-categories by main category ID
+export const getSubCategoriesByCategoryId = (categoryId) =>
+  API.get(`/categories/${categoryId}/sub-categories`);
 
-export const getAssignedTasksApi = async () => {
-  const { data } = await axios.get(`${API_BASE}/assigned-to-me`, getAuthHeaders());
-  return data;
-};
+// ✅ Get sub-sub-categories by main category ID
+export const getSubSubCategoriesByCategoryId = (categoryId) =>
+  API.get(`/categories/${categoryId}/sub-sub-categories`);
 
-export const getClientRequestsApi = async () => {
-  const { data } = await axios.get(`${API_BASE}/my-requests`, getAuthHeaders());
-  return data;
-};
-
-export const updateTaskRequestStatusApi = async (requestId, statusData) => {
-  const { data } = await axios.patch(`${API_BASE}/requests/${requestId}/status`, statusData, getAuthHeaders());
-  return data;
-};
-
-export const updateTaskKanbanStatusApi = async (requestId, statusData) => {
-  const { data } = await axios.patch(`${API_BASE}/requests/${requestId}/kanban-status`, statusData, getAuthHeaders());
-  return data;
-};
-
-export const submitPaymentProofApi = async (requestId, paymentData) => {
-  const { data } = await axios.post(`${API_BASE}/requests/${requestId}/submit-payment`, paymentData, getAuthHeaders(true));
-  return data;
-};
-
-export const submitWorkCompletionApi = async (requestId, workData) => {
-  const { data } = await axios.post(`${API_BASE}/requests/${requestId}/submit-completion`, workData, getAuthHeaders(true));
-  return data;
-};
-
-export const resubmitWorkCompletionApi = async (requestId, workData) => {
-    const { data } = await axios.post(`${API_BASE}/requests/${requestId}/resubmit-completion`, workData, getAuthHeaders(true));
-    return data;
-};
-
-export const approveWorkCompletionApi = async (requestId, approvalData) => {
-  const { data } = await axios.patch(`${API_BASE}/requests/${requestId}/approve-completion`, approvalData, getAuthHeaders(true));
-  return data;
-};
-
-export const createReviewApi = async (requestId, reviewData) => {
-  const { data } = await axios.post(`${API_BASE}/requests/${requestId}/review`, reviewData, getAuthHeaders());
-  return data;
-};
-
-export const getAllTasksForAdminApi = async () => {
-  const { data } = await axios.get(`${API_BASE}/admin/all`, getAuthHeaders());
-  return data;
-};
-
-export const approveTaskByAdminApi = async (taskId, statusData) => {
-  const { data } = await axios.patch(`${API_BASE}/admin/approve/${taskId}`, statusData, getAuthHeaders());
-  return data;
-};
-
-export const confirmPaymentByAdminApi = async (requestId) => {
-  const { data } = await axios.patch(`${API_BASE}/admin/confirm-payment/${requestId}`, {}, getAuthHeaders());
-  return data;
-};
-
-export const updateTaskApi = async (taskId, taskData) => {
-    const { data } = await axios.put(`${API_BASE}/${taskId}`, taskData, getAuthHeaders(true));
-    return data;
-};
-
-export const deleteTaskApi = async (taskId) => {
-    const { data } = await axios.delete(`${API_BASE}/${taskId}`, getAuthHeaders());
-    return data;
-};
-
-export const getCategoriesApi = async () => {
-    const { data } = await axios.get(`${API_BASE}/categories`, getAuthHeaders());
-    return data;
-};
-
-export const addTaskFilesApi = async (requestId, filesData) => {
-    const { data } = await axios.post(`${API_BASE}/requests/${requestId}/files`, filesData, getAuthHeaders(true));
-    return data;
-};
+// ✅ Get sub-sub-categories by sub-category ID
+export const getSubSubCategoriesBySubCategoryId = (subCategoryId) =>
+  API.get(`/categories/sub-category/${subCategoryId}/sub-sub-categories`);
