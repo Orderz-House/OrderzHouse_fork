@@ -1,4 +1,3 @@
-// src/components/BlogTopBar.jsx
 import { useEffect, useState, useRef } from "react";
 import {
   ArrowLeft,
@@ -21,7 +20,6 @@ export default function BlogTopBar({
   currentTitle,
   currentExcerpt,
 }) {
-  /* -------- Copy / Share -------- */
   const copyLink = async () => {
     try {
       await navigator.clipboard?.writeText(window.location.href);
@@ -85,7 +83,6 @@ export default function BlogTopBar({
   });
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Handle cover image
   const handleCoverFile = (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -96,7 +93,6 @@ export default function BlogTopBar({
     setCoverPreview(URL.createObjectURL(file));
   };
 
-  // Handle attachments
   const handleAttachments = (files) => {
     const validFiles = Array.from(files).filter(file => {
       const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/msword', 'application/vnd.openxmlformats-officedocument'];
@@ -107,7 +103,7 @@ export default function BlogTopBar({
       alert("Some files were skipped (unsupported format). Only images, PDFs, docs, and text files allowed.");
     }
     
-    setAttachments(prev => [...prev, ...validFiles.slice(0, 5 - prev.length)]); // Max 5 attachments
+    setAttachments(prev => [...prev, ...validFiles.slice(0, 5 - prev.length)]);
   };
 
   const removeAttachment = (index) => {
@@ -142,10 +138,8 @@ export default function BlogTopBar({
       formData.append('read_time', form.read.trim() || "5 min");
       formData.append('cover', coverFile);
       
-      // ✅ الخطوة 2: إضافة اسم المؤلف إلى البيانات المرسلة
       formData.append('author', authorName);
       
-      // Add tags as comma-separated string
       const tags = form.tags
         .split(",")
         .map(t => t.trim())
@@ -154,12 +148,10 @@ export default function BlogTopBar({
         formData.append('tags', tags.join(","));
       }
 
-      // Add attachments
       attachments.forEach(file => {
         formData.append('attachments', file);
       });
 
-      // Get token from localStorage
       const token = localStorage.getItem("token");
       const { data } = await axios.post("http://localhost:5000/blogs", formData, {
         headers: {
@@ -268,7 +260,6 @@ export default function BlogTopBar({
 
               <form onSubmit={submitNew} className="p-4 sm:p-6 grid gap-6 overflow-y-auto max-h-[calc(85vh-56px)]">
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Cover Image Upload */}
                   <div>
                     <label className="block text-sm text-slate-600 mb-2">Cover Image *</label>
                     <div 
@@ -399,7 +390,6 @@ export default function BlogTopBar({
                     onChange={(e) => handleAttachments(e.target.files)}
                   />
                   
-                  {/* Attachment previews */}
                   {attachments.length > 0 && (
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {attachments.map((file, index) => (

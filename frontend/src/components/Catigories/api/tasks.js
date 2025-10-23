@@ -3,7 +3,6 @@ import store from "../../../store/store";
 
 const API_BASE = "http://localhost:5000/tasks";
 
-// (projects.js)
 const getAuthToken = () =>
   store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 

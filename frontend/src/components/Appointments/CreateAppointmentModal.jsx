@@ -18,7 +18,6 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
 
   useEffect(() => {
     if (isAdmin) {
-      // Fetch freelancers for admin
       const fetchFreelancers = async () => {
         try {
           const response = await axios.get('http://localhost:5000/users/allfreelance', {
@@ -33,7 +32,6 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
     }
   }, [isAdmin, token]);
 
-  // Validate date in real-time
   const validateDateTime = (dateTime) => {
     if (!dateTime) return true;
     
@@ -56,20 +54,17 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
       appointment_date: newDate
     }));
     
-    // Validate immediately
     validateDateTime(newDate);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Final validation before submission
     if (!validateDateTime(formData.appointment_date)) {
       return;
     }
     
     if (isAdmin) {
-      // Admin creating appointment for freelancer
       if (!formData.freelancer_id) {
         alert('Please select a freelancer');
         return;
@@ -79,7 +74,6 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
         onSuccess();
       }
     } else {
-      // Freelancer creating their own appointment
       const result = await createAppointment(formData);
       if (result.success) {
         onSuccess();
@@ -94,10 +88,8 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
     }));
   };
 
-  // Set minimum datetime to current time
   const getMinDateTime = () => {
     const now = new Date();
-    // Add 1 minute to current time to avoid instant expiration
     now.setMinutes(now.getMinutes() + 1);
     return now.toISOString().slice(0, 16);
   };

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 export default function ProjectCard({
   project,
   theme = "#028090",
-  linkBase = "projects",      // "projects" | "tasks"
-  priceField = "price",       // "price" أو "budget"
+  linkBase = "projects",     
+  priceField = "price",
 }) {
   const { id, title, cover, image, offersVideo, tags = [] } = project;
 

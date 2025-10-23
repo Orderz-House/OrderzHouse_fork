@@ -100,7 +100,7 @@ export default function PaymentStep({
         </div>
       </div>
 
-      {/* Payment Proof Upload */}
+      {/* Payment  */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-slate-700 mb-2">
           Upload Payment Proof <span className="text-red-500">*</span>

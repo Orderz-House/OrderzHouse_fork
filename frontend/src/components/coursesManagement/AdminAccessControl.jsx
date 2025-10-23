@@ -1,4 +1,3 @@
-// src/components/coursesManagement/AdminAccessControl.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -9,7 +8,7 @@ const AdminAccessControl = () => {
   const { token } = useSelector((state) => state.auth);
   const [freelancers, setFreelancers] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [accessData, setAccessData] = useState({}); // { freelancerId: { courseId: boolean } }
+  const [accessData, setAccessData] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedFreelancerId, setSelectedFreelancerId] = useState('');
 
@@ -51,7 +50,6 @@ const AdminAccessControl = () => {
         { freelancer_id: freelancerId, course_id: courseId, can_access: !currentAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Optimistically update UI
       setAccessData(prev => ({
         ...prev,
         [freelancerId]: {

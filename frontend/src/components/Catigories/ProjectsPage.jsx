@@ -14,9 +14,8 @@ export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
 
-  // إن لم يُمرّر prop من الراوتر، استنتجه من المسار (/tasks => tasks)
   const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
-  const mode = propMode || inferredMode; // "projects" | "tasks"
+  const mode = propMode || inferredMode; 
 
   // ====== URL Params ======
   const q = (sp.get("q") || "").trim();
@@ -30,7 +29,7 @@ export default function ProjectsPage({ mode: propMode }) {
   const [nameToCatId, setNameToCatId] = useState({});
   const [nameToSubCat, setNameToSubCat] = useState({});
 
-  // ---------- Load all categories (for top rail titles) ----------
+  // ---------- Load all categories ----------
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -46,7 +45,7 @@ export default function ProjectsPage({ mode: propMode }) {
     loadCategories();
   }, []);
 
-  // ---------- Build search index for q (category + sub-category) ----------
+  // ----------  search (category + sub-category) ----------
   useEffect(() => {
     const buildIndex = async () => {
       try {
@@ -56,13 +55,11 @@ export default function ProjectsPage({ mode: propMode }) {
         const _nameToCatId = {};
         const _nameToSubCat = {};
 
-        // Index categories
         cats.forEach(([id, v]) => {
           const key = (v.title || "").toLowerCase();
           if (key) _nameToCatId[key] = id;
         });
 
-        // Index sub-categories when q exists
         if (q) {
           await Promise.all(
             cats.map(async ([id]) => {
@@ -91,7 +88,6 @@ export default function ProjectsPage({ mode: propMode }) {
     buildIndex();
   }, [catalog, q]);
 
-  // ---------- If no cat in URL, pick the first category automatically ----------
   useEffect(() => {
     if (!category && Object.keys(catalog).length > 0) {
       const firstId = Object.keys(catalog)[0];
@@ -103,10 +99,8 @@ export default function ProjectsPage({ mode: propMode }) {
       next.set("page", "1");
       setSp(next, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog, category]);
 
-  // ---------- Resolve free-text q to (cat/subcat) once index is ready ----------
   useEffect(() => {
     if (!q || !indexReady) return;
     if (category || subcat || sub) return;
@@ -217,7 +211,7 @@ export default function ProjectsPage({ mode: propMode }) {
         {/* Main Content */}
         <div className="flex gap-8">
           <SubSidebar
-            mode={mode}                 // 👈 الأهم
+            mode={mode}            
             categoryId={category}
             activeSubSub={sub}
             onSelectSubSub={chooseSub}

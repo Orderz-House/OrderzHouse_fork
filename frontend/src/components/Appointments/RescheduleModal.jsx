@@ -7,7 +7,6 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
   const [newDate, setNewDate] = useState('');
   const [dateError, setDateError] = useState('');
 
-  // Validate date in real-time
   const validateDateTime = (dateTime) => {
     if (!dateTime) return true;
     
@@ -32,7 +31,6 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Final validation before submission
     if (!validateDateTime(newDate)) {
       return;
     }
@@ -43,7 +41,6 @@ const RescheduleModal = ({ appointmentId, onClose, onSuccess, validateDate }) =>
     }
   };
 
-  // Set minimum datetime to current time
   const getMinDateTime = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() + 1);

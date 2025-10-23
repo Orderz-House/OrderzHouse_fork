@@ -1,4 +1,3 @@
-// src/pages/Clients.jsx
 import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
 

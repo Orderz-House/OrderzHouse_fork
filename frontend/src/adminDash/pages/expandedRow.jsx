@@ -84,7 +84,6 @@ export default function ExpandedRow({
   return (
     <div className="bg-slate-50 p-4 rounded-xl space-y-3 md:space-y-4">
       {isEditing && formFields?.length > 0 ? (
-        /* ===== Edit Mode (Grid مرتب لجميع الأحجام) ===== */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {formFields.map((field) => (
             <div
@@ -99,7 +98,6 @@ export default function ExpandedRow({
           ))}
         </div>
       ) : (
-        /* ===== View Mode (عرض مضغوط وجميل) ===== */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
           {columns.map((col) => {
             const onlyValue = !col.label || col.label.trim() === "";

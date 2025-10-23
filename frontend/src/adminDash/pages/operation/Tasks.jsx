@@ -37,7 +37,7 @@ const api = axios.create({
 });
 
 /* =========================
-   Admin View (uses PeopleTable)
+   Admin View
 ========================= */
 function AdminTasks() {
   const columns = [
@@ -243,7 +243,7 @@ function ClientTasks() {
 }
 
 /* =========================
-   Freelancer View (Kanban)
+   Freelancer View
 ========================= */
 function Column({ title, items, onMove, status }) {
   return (
