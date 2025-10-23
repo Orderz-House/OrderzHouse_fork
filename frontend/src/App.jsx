@@ -44,7 +44,6 @@ import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
-import CreateTaskForm from "./components/Tasks/components/CreateTaskForm.jsx";
 
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -129,14 +128,7 @@ function App() {
         
         <Route path="/tasks" element={<ProtectedRoute><ProjectsPage mode="tasks" /></ProtectedRoute>} />
         <Route path="/tasks/:id" element={<ProtectedRoute><ProjectDetails mode="tasks" /></ProtectedRoute>} />
-        <Route 
-          path="/tasks/create" 
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <CreateTaskForm />
-            </ProtectedRoute>
-          } 
-        />
+      
 
         {/* --- Course Management --- */}
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />

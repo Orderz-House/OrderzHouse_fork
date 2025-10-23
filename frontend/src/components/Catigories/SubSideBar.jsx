@@ -8,12 +8,12 @@ import {
   fetchAuthProjectsBySubCategory,
 } from "./api/projects";
 
-// Tasks API
-import {
-  fetchAuthTasksByCategory,
-  fetchAuthTasksBySubSubCategory,
-  fetchAuthTasksBySubCategory,
-} from "./api/tasks";
+// // Tasks API
+// import {
+//   fetchAuthTasksByCategory,
+//   fetchAuthTasksBySubSubCategory,
+//   fetchAuthTasksBySubCategory,
+// } from "./api/tasks";
 
 import ProjectCard from "./ProjectCard";
 

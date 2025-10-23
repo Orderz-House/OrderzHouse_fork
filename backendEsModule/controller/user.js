@@ -164,6 +164,7 @@ const login = async (req, res) => {
           userId: user.id,
           role: user.role_id,
           is_verified: user.is_verified,
+          username: user.username,
         };
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
         
@@ -206,7 +207,8 @@ const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      user_id: user.id, 
+      user_id: user.id,
+      username: user.username, 
     });
 
   } catch (err) {
