@@ -15,11 +15,11 @@ const buildStatusCondition = () => {
 };
 
 /* ===================================================
-   🔒 AUTHENTICATED ROUTES (Require Token)
+    AUTHENTICATED ROUTES (Require Token)
    =================================================== */
 
 /**
- * ✅ Get projects by main category (requires token)
+ *  Get projects by main category (requires token)
  */
 export const getProjectsByCategory = async (req, res) => {
   const { category_id } = req.params;
@@ -58,10 +58,9 @@ export const getProjectsByCategory = async (req, res) => {
 };
 
 /**
- * ✅ Get projects by sub-category (requires token)
+ * Get projects by sub-category (requires token)
  */
-/* ==============================================
-   Get projects by sub-category (requires token)
+/* 
    ============================================== */
 export const getProjectsBySubCategory = async (req, res) => {
   const { sub_category_id } = req.params;
@@ -138,18 +137,21 @@ export const getProjectsBySubSubCategory = async (req, res) => {
   }
 };
 
-
 /* ===================================================
    🌍 PUBLIC ROUTES (No Token Required)
    =================================================== */
 
+
 /**
- * ✅ Get public categories (active only)
+ * Get public categories (active only)
  */
 export const getPublicCategories = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name FROM categories WHERE is_active = true ORDER BY name`
+      `SELECT id, name 
+       FROM categories 
+       WHERE is_active = true 
+       ORDER BY name`
     );
     res.json({ success: true, categories: rows });
   } catch (error) {
@@ -159,7 +161,8 @@ export const getPublicCategories = async (req, res) => {
 };
 
 /**
- * ✅ Get projects by main category (public)
+ *  Get projects by main category (public)
+ * 
  */
 export const getProjectsByCategoryId = async (req, res) => {
   try {
@@ -180,7 +183,10 @@ export const getProjectsByCategoryId = async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.user_id
       JOIN categories c ON c.id = p.category_id
-      WHERE p.category_id = $1 AND p.is_deleted = false
+      WHERE 
+        p.category_id = $1 
+        AND p.is_deleted = false
+        AND p.status = 'bidding'
       ORDER BY p.created_at DESC
       `,
       [categoryId]
@@ -194,7 +200,8 @@ export const getProjectsByCategoryId = async (req, res) => {
 };
 
 /**
- * ✅ Get projects by sub-category (public)
+ * Get projects by sub-category (public)
+ *
  */
 export const getProjectsBySubCategoryId = async (req, res) => {
   try {
@@ -217,8 +224,10 @@ export const getProjectsBySubCategoryId = async (req, res) => {
       JOIN users u ON u.id = p.user_id
       JOIN categories c ON c.id = p.category_id
       LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
-      WHERE p.sub_category_id = $1 
+      WHERE 
+        p.sub_category_id = $1 
         AND p.is_deleted = false
+        AND p.status = 'bidding'
       ORDER BY p.created_at DESC;
       `,
       [subCategoryId]
@@ -232,7 +241,8 @@ export const getProjectsBySubCategoryId = async (req, res) => {
 };
 
 /**
- * ✅ Get projects by sub-sub-category (public)
+ * Get projects by sub-sub-category (public)
+
  */
 export const getProjectsBySubSubCategoryId = async (req, res) => {
   try {
@@ -257,7 +267,10 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
       LEFT JOIN categories c ON c.id = p.category_id
       LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
       LEFT JOIN sub_sub_categories ssc ON ssc.id = p.sub_sub_category_id
-      WHERE p.sub_sub_category_id = $1 AND p.is_deleted = false
+      WHERE 
+        p.sub_sub_category_id = $1 
+        AND p.is_deleted = false
+        AND p.status = 'bidding'
       ORDER BY p.created_at DESC;
       `,
       [subSubCategoryId]
@@ -269,6 +282,7 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 /**
  * -------------------------------
  * GET PROJECT BY ID
@@ -281,12 +295,10 @@ export const getProjectById = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    // Validate input
     if (!projectId) {
       return res.status(400).json({ success: false, message: "projectId is required" });
     }
 
-    // Fetch project
     const { rows: projectRows } = await pool.query(
       `SELECT 
          p.*,

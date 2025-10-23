@@ -6,7 +6,10 @@ import { Server } from "socket.io";
 import http from "http";
 import dotenv from "dotenv";
 import { Routes, Route, useLocation } from "react-router-dom";
-import "./cron/autoCancelAssignments.js"
+import "./cron/expireSubscriptions.js";
+import "./cron/autoCancelAssignments.js";
+import "./cron/autoExpireOldOffers.js";
+
 
 
 

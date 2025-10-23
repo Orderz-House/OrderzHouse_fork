@@ -30,7 +30,6 @@ import {
   
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
-import requireVerified from "../middleware/requireVerification.js";
 
 const usersRouter = express.Router();
 
@@ -85,7 +84,7 @@ usersRouter.get(
 );
 
 // Rating
-usersRouter.post("/rate", authentication, requireVerified, rateFreelancer);
+usersRouter.post("/rate", authentication, rateFreelancer);
 
 // Password & Account Management
 usersRouter.post("/verify-password", authentication, verifyPassword);
