@@ -27,7 +27,6 @@ export default function EnhancedNavbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // NEW: Explore dropdown (desktop + mobile)
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isExploreMobileOpen, setIsExploreMobileOpen] = useState(false);
 
@@ -175,7 +174,6 @@ export default function EnhancedNavbar() {
       });
   }, [dispatch, token]);
 
-  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -208,7 +206,6 @@ export default function EnhancedNavbar() {
     }
   };
 
-  // Top-level links kept minimal (we moved About/Blogs/Contact/Plans under Explore)
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
     {
@@ -228,7 +225,6 @@ export default function EnhancedNavbar() {
       label: "PLANS",
       path: "/plans",
       onClick: handlePlansClick,
-      // نفس شرط الظهور السابق للـ Plans
       condition: !userData || (userData.role_id !== 2 && userData.role_id == 3),
     },
   ];
@@ -273,7 +269,7 @@ export default function EnhancedNavbar() {
                   )
               )}
 
-              {/* NEW: Explore dropdown */}
+              {/* Explore dropdown */}
               <div className="relative" ref={exploreRef}>
                 <button
                   onClick={() => setIsExploreOpen((v) => !v)}
@@ -315,7 +311,7 @@ export default function EnhancedNavbar() {
                 )}
               </div>
 
-              {/* Existing Mega menu (unchanged) */}
+              {/* Existing Mega menu */}
               <CategoryMegaMenu
                 activeLink={activeLink}
                 onSetActiveLink={setActiveLink}
@@ -325,7 +321,7 @@ export default function EnhancedNavbar() {
 
           {/* Desktop Actions (right) */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* NEW STYLE: Client Add Project (outlined capsule like screenshot) */}
+            {/* Client Add Project */}
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"

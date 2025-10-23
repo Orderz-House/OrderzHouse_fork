@@ -1,4 +1,3 @@
-// src/components/LoadingScreen.jsx
 export default function LoadingScreen({ text = "Loading…" }) {
   return (
     <div style={overlayStyle}>

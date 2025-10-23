@@ -30,7 +30,6 @@ function mapRole(roleId) {
   return "client";
 }
 
-/* ================= ROOT (role switcher) ================= */
 export default function Courses() {
   const { userData } = useSelector((s) => s.auth);
   const role = mapRole(userData?.role_id);
@@ -79,7 +78,7 @@ function AdminCourses() {
     []
   );
 
-  // ---- fetch (API only)
+  // -fetch
   useEffect(() => {
     let cancel;
     (async () => {

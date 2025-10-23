@@ -31,7 +31,6 @@ function FileProject() {
   const [deletingFileId, setDeletingFileId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch files on component mount
   useEffect(() => {
     fetchFiles();
   }, [projectId, token]);
@@ -57,7 +56,6 @@ function FileProject() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return;
     }
@@ -95,7 +93,6 @@ function FileProject() {
       setFiles(prevFiles => [res.data.file, ...prevFiles]);
       setUploadProgress(100);
       
-      // Reset progress after successful upload
       setTimeout(() => {
         setUploadProgress(0);
         setIsUploading(false);
@@ -107,7 +104,7 @@ function FileProject() {
       setIsUploading(false);
       setUploadProgress(0);
     } finally {
-      e.target.value = ""; // Reset file input
+      e.target.value = "";
     }
   };
 
@@ -121,7 +118,6 @@ function FileProject() {
         }
       );
       
-      // Create blob link and download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;

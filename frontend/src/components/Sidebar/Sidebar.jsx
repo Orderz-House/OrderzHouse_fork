@@ -106,9 +106,6 @@ const Sidebar = ({
     );
   };
 
-  /* ==============================
-   * Mobile quick nav (first 4 items)
-   * ============================== */
   const mobileNav = useMemo(() => navigation.slice(0, 4), [navigation]);
 
   return (
@@ -127,7 +124,6 @@ const Sidebar = ({
                 isSidebarCollapsed ? "lg:px-0" : ""
               }`}
             >
-              {/* Collapse button (shown above avatar when collapsed) */}
               {isSidebarCollapsed && (
                 <div className="mb-2">
                   <button
@@ -161,7 +157,6 @@ const Sidebar = ({
                 {getUserInitial()}
               </div>
 
-              {/* Name + Role (hidden when collapsed) */}
               {!isSidebarCollapsed && (
                 <>
                   <h3 className="text-sm font-semibold text-white">{getUserDisplayName()}</h3>
@@ -170,7 +165,6 @@ const Sidebar = ({
               )}
             </div>
 
-            {/* Collapse button (top-right, when expanded) */}
             {!isSidebarCollapsed && (
               <button
                 onClick={() => setIsSidebarCollapsed(true)}
@@ -300,7 +294,6 @@ const Sidebar = ({
           </div>
         </div>
 
-        {/* ---------- Desktop-only scrollbar styling ---------- */}
         <style>{`
           .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #015e6d transparent; }
           .sidebar-scroll::-webkit-scrollbar { width: 8px; background: transparent; }
@@ -317,7 +310,6 @@ const Sidebar = ({
             {/* Bar background */}
             <div className="h-16 bg-white/95 backdrop-blur border-t border-slate-200 shadow-sm rounded-t-2xl"></div>
 
-            {/* Tabs + center menu button */}
             <div className="absolute inset-0 flex items-center justify-between px-6">
               {/* Left pair */}
               <div className="flex items-center gap-6">
@@ -345,7 +337,6 @@ const Sidebar = ({
                 })}
               </div>
 
-              {/* Center floating menu button (with soft halo) */}
               <div className="absolute left-1/2 -translate-x-1/2 -top-7 w-18 h-18">
                 <span className="absolute inset-0 rounded-full bg-slate-400/20 shadow-[0_4px_20px_rgba(0,0,0,0.06)] pointer-events-none" />
                 <button
@@ -456,7 +447,6 @@ const Sidebar = ({
           {/* Divider */}
           <div className="mt-4 pt-3 border-t border-slate-200" />
 
-          {/* Bottom actions (profile/logout) */}
           <div className="grid grid-cols-4 gap-3 mt-2">
             {bottomNavigation.map((item) => {
               const Icon = item.icon || defaultIcons[item.id] || User;

@@ -32,8 +32,8 @@ export const ReviewModal = ({ projectId, freelancerId, onClose, onReviewSubmit }
         }
        );
       
-      onReviewSubmit(response.data); // Notify parent component of success
-      onClose(); // Close the modal
+      onReviewSubmit(response.data);
+      onClose(); 
 
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred. Please try again.');

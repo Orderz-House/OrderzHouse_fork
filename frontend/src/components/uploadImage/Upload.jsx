@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { UploadCloud, Loader, Image as ImageIcon } from 'lucide-react';
-import { toastError, toastSuccess } from '../../services/toastService'; // Adjust path if needed
+import { toastError, toastSuccess } from '../../services/toastService'; 
 
 const Upload = ({ onUpload, currentImageUrl }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -25,9 +25,7 @@ const Upload = ({ onUpload, currentImageUrl }) => {
 
     setIsUploading(true);
     try {
-      // =================================================================
-      // THE FIX IS HERE: The URL must start with '/api' to trigger the proxy.
-      // =================================================================
+     
       const response = await axios.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -44,7 +42,7 @@ const Upload = ({ onUpload, currentImageUrl }) => {
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Upload failed. Please try again.';
       toastError(errorMessage);
-      setPreview(currentImageUrl); // Revert preview on error
+      setPreview(currentImageUrl);
     } finally {
       setIsUploading(false);
     }

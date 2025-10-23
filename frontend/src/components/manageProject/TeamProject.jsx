@@ -53,11 +53,9 @@ function TeamProject() {
   }, [projectId, token]);
 
   const handleMemberFire = async (freelancerId, status) => {
-    // Add to processing set to show loading state
     setProcessingMembers(prev => new Set(prev).add(freelancerId));
     
     try {
-      // Optimistically update the UI
       const updatedAssignments = assignments.map(assignment => 
         assignment.freelancer.id === freelancerId 
           ? { ...assignment, status } 
@@ -65,7 +63,6 @@ function TeamProject() {
       );
       setAssignments(updatedAssignments);
       
-      // Make API call
       await axios.put(
         `http://localhost:5000/projects/assigned/${projectId}`, 
         { freelancer_id: freelancerId, status },
@@ -78,13 +75,11 @@ function TeamProject() {
       );
     } catch (error) {
       console.error("Error updating member status:", error);
-      // Revert on error - refetch data
       const response = await axios.get(`http://localhost:5000/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssignments(response.data.project.rows[0].assignments || []);
     } finally {
-      // Remove from processing set
       setProcessingMembers(prev => {
         const newSet = new Set(prev);
         newSet.delete(freelancerId);

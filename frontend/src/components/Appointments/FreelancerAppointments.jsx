@@ -28,7 +28,7 @@ const FreelancerAppointments = () => {
     fetchMyAppointments,
     createAppointment,
     rescheduleAppointment,
-    markAppointmentCompleted // Make sure this is available in your hook
+    markAppointmentCompleted 
   } = useAppointments();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,15 +42,12 @@ const FreelancerAppointments = () => {
 
   const loadCompletedAppointments = async () => {
     try {
-      // Get completed appointments from the main appointments list
       const completedFromDB = appointments.filter(app => app.status === 'completed');
       setCompletedAppointments(completedFromDB);
       
-      // Save to localStorage as backup
       localStorage.setItem('freelancerCompletedAppointments', JSON.stringify(completedFromDB));
     } catch (error) {
       console.error('Error loading completed appointments:', error);
-      // Fallback to localStorage
       const savedCompleted = localStorage.getItem('freelancerCompletedAppointments');
       if (savedCompleted) {
         setCompletedAppointments(JSON.parse(savedCompleted));
@@ -58,7 +55,6 @@ const FreelancerAppointments = () => {
     }
   };
 
-  // Mark appointment as completed
   const markAsComplete = async (appointment) => {
     try {
       const result = await markAppointmentCompleted(appointment.id);
@@ -67,14 +63,13 @@ const FreelancerAppointments = () => {
         return;
       }
 
-      // Update local state
       const completedAppointment = {
         ...appointment,
         status: 'completed'
       };
 
       setCompletedAppointments(prev => [...prev, completedAppointment]);
-      fetchMyAppointments(); // Refresh active appointments
+      fetchMyAppointments();
       
       alert(`Appointment marked as completed!`);
     } catch (error) {
@@ -83,12 +78,10 @@ const FreelancerAppointments = () => {
     }
   };
 
-  // Separate active and completed appointments
   const activeAppointments = appointments.filter(app => app.status !== 'completed');
   const allAppointments = [...activeAppointments, ...completedAppointments];
 
   const canCreateAppointment = () => {
-    // Check if user has any active (pending/accepted) appointments
     const activeAppointments = appointments.filter(apt => 
       apt.status === 'pending' || apt.status === 'accepted'
     );
@@ -276,7 +269,6 @@ const FreelancerAppointments = () => {
                   {showActions && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        {/* Reschedule button for active appointments */}
                         {!isCompleted && appointment.status === 'pending' && (
                           <button
                             onClick={() => handleReschedule(appointment.id, prompt('Enter new date and time (YYYY-MM-DDTHH:MM):', appointment.appointment_date))}
@@ -287,7 +279,6 @@ const FreelancerAppointments = () => {
                           </button>
                         )}
 
-                        {/* Complete button - shown for accepted appointments */}
                         {showCompleteButton && appointment.status === 'accepted' && !isCompleted && (
                           <button
                             onClick={() => markAsComplete(appointment)}
@@ -437,9 +428,7 @@ const FreelancerAppointments = () => {
           </div>
         )}
 
-        {/* Content Based on Active Tab */}
         <div className="space-y-8">
-          {/* Active Appointments */}
           {activeTab === 'active' && (
             <MainAppointmentsTable 
               appointments={activeAppointments} 

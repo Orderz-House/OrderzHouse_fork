@@ -14,15 +14,12 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
-  // infer mode from pathname
   const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
   const mode = propMode || inferredMode;
 
-  // read-only flags (when opened from a read-only route)
   const readOnly = !!location.state?.readOnly;
   const role = location.state?.role || "guest";
 
-  // --- Role-based permissions ---
   const { userData } = useSelector((s) => s.auth) || {};
   const roleId = userData?.role_id;
   const isClient = roleId === 2;
@@ -30,14 +27,11 @@ export default function ProjectDetails({ mode: propMode }) {
 
   const isTasks = mode === "tasks";
 
-  // Who can accept / contact?
   let canAccept = true;
-  if (isTasks && isFreelancer) canAccept = false; // freelancers cannot accept tasks
-  if (!isTasks && isClient) canAccept = false;    // clients cannot accept projects
-
+  if (isTasks && isFreelancer) canAccept = false;
+  if (!isTasks && isClient) canAccept = false;
   let canContact = true;
-  if (!isTasks && isClient) canContact = false;   // clients cannot contact seller on projects
-
+  if (!isTasks && isClient) canContact = false;
   const acceptLabel  = isTasks ? "Get this task" : "Get this project";
   const contactLabel = isTasks ? "Contact freelancer" : "Contact seller";
 
@@ -52,7 +46,7 @@ export default function ProjectDetails({ mode: propMode }) {
     : "";
 
   useEffect(() => {
-    const stateObj = location.state?.project; // keep same key name used when navigating
+    const stateObj = location.state?.project;
     if (stateObj && String(stateObj.id) === String(id)) {
       setItem(stateObj);
       return;

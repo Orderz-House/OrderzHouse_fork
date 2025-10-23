@@ -18,17 +18,14 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
   const [processingOffers, setProcessingOffers] = useState(new Set());
 
   const handleAcceptOffer = async (offerId) => {
-    // Add to processing set to show loading state
     setProcessingOffers(prev => new Set(prev).add(offerId));
     
     try {
-      // Optimistically update the UI
       const updatedOffers = offers.map(offer => 
         offer.id === offerId ? { ...offer, status_offer: "approved" } : offer
       );
       setOffers(updatedOffers);
       
-      // Make API call
       await axios.post(
         `http://localhost:5000/projects/offer/action`,
         { action: "approve", offer_id: offerId },
@@ -40,16 +37,13 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
         }
       );
       
-      // Notify parent component if needed
       if (onOfferUpdate) {
         onOfferUpdate(updatedOffers);
       }
     } catch (err) {
       console.error(err);
-      // Revert on error
       setOffers(initialOffers);
     } finally {
-      // Remove from processing set
       setProcessingOffers(prev => {
         const newSet = new Set(prev);
         newSet.delete(offerId);
@@ -59,17 +53,14 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
   };
 
   const handleRejectOffer = async (offerId) => {
-    // Add to processing set to show loading state
     setProcessingOffers(prev => new Set(prev).add(offerId));
     
     try {
-      // Optimistically update the UI
       const updatedOffers = offers.map(offer => 
         offer.id === offerId ? { ...offer, status_offer: "rejected" } : offer
       );
       setOffers(updatedOffers);
       
-      // Make API call
       await axios.post(
         `http://localhost:5000/projects/offer/action`,
         { action: "reject", offer_id: offerId },
@@ -81,16 +72,13 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
         }
       );
       
-      // Notify parent component if needed
       if (onOfferUpdate) {
         onOfferUpdate(updatedOffers);
       }
     } catch (err) {
       console.error(err);
-      // Revert on error
       setOffers(initialOffers);
     } finally {
-      // Remove from processing set
       setProcessingOffers(prev => {
         const newSet = new Set(prev);
         newSet.delete(offerId);

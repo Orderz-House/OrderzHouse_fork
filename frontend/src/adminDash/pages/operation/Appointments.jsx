@@ -21,10 +21,10 @@ const ringStyle = { border: `1px solid ${ring}` };
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 3) return "freelancer";
-  return "client"; // no access here
+  return "client";
 }
 
-/* ===================== ACCESS GUARD (NON-ADMIN/NON-FREELANCER) ===================== */
+/* ===================== ACCESS GUARD ===================== */
 function AccessDenied() {
   return (
     <div className="min-h-[50vh] grid place-items-center">
@@ -47,7 +47,6 @@ function AdminHero() {
       className="rounded-2xl bg-white/80 backdrop-blur p-4 sm:p-5 shadow-sm relative overflow-hidden"
       style={ringStyle}
     >
-      {/* soft background blobs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div
           className="absolute -top-24 -right-24 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-25"
@@ -164,7 +163,6 @@ function FreelancerHero() {
   );
 }
 
-/* ===================== SMALL BADGE ===================== */
 function Badge({ icon, label }) {
   return (
     <div className="flex items-center gap-2 rounded-xl px-3 py-2 bg-white shadow-sm border border-slate-200/80" title={label}>
@@ -184,9 +182,9 @@ function canJoin(row) {
   if (row.channel !== "Online") return false;
   if (!row.meeting_url) return false;
   const start = new Date(row.date).getTime();
-  if (Number.isNaN(start)) return true; // if invalid date, allow temporarily
+  if (Number.isNaN(start)) return true; 
   const now = Date.now();
-  const openWindowMs = 10 * 60 * 1000; // opens 10 minutes before start
+  const openWindowMs = 10 * 60 * 1000;
   return now >= start - openWindowMs;
 }
 
@@ -195,12 +193,10 @@ export default function Appointments() {
   const { userData } = useSelector((s) => s.auth);
   const role = mapRole(userData?.role_id);
 
-  // Non-admin / non-freelancer: block the page
   if (role !== "admin" && role !== "freelancer") {
     return <AccessDenied />;
   }
 
-  // Shared enumerations used in forms/filters
   const statusOptions = ["Pending", "Approved", "Rejected", "Completed", "Canceled"];
   const channelOptions = ["Online", "Phone", "On-site"];
 
@@ -209,7 +205,6 @@ export default function Appointments() {
     title: "Appointments",
     addLabel: "Add Appointment",
     endpoint: "/api/admin/appointments",
-    // Notes: when channel is Online prefer filling meeting_url, when On-site prefer location
     columns: [
       { label: "Subject", key: "subject" },
       { label: "With", key: "with" },
@@ -219,7 +214,6 @@ export default function Appointments() {
       { label: "Location", key: "location" },
       { label: "Meeting URL", key: "meeting_url" },
     ],
-    // Admin creates/edits appointments and ensures correct fields are set
     formFields: [
       { key: "name", label: "Title (internal)", required: true },
       { key: "subject", label: "Subject", required: true },
@@ -241,19 +235,13 @@ export default function Appointments() {
     ],
     chipField: "status",
     filters: [{ key: "channel", label: "Channel", options: channelOptions }],
-    // Keep CRUD actions visible, and add quick Approve/Reject buttons
     hideCrudActions: false,
     renderActions: ({ row }) => {
       const id = row?.id ?? row?._id;
       const approve = async () => {
-        // TODO: integrate with your backend:
-        // PATCH /api/admin/appointments/:id { status: 'Approved' }
-        // then trigger a refetch in PeopleTable or force a refresh
         alert(`Approve appointment ${id}`);
       };
       const reject = async () => {
-        // TODO: integrate with your backend:
-        // PATCH /api/admin/appointments/:id { status: 'Rejected' }
         alert(`Reject appointment ${id}`);
       };
       return (
@@ -288,7 +276,6 @@ export default function Appointments() {
     title: "My meetings",
     addLabel: "Request Meeting",
     endpoint: "/api/freelancer/appointments",
-    // If appointment is On-site show Location, if Online expect Meeting URL (Join action below)
     columns: [
       { label: "Subject", key: "subject" },
       { label: "With", key: "with" },
@@ -297,7 +284,6 @@ export default function Appointments() {
       { label: "Status", key: "status" },
       { label: "Location", key: "location" },
     ],
-    // Freelancer submits request as Pending; admin later approves/rejects and sets link/place
     formFields: [
       { key: "name", label: "Title (internal)", required: true },
       { key: "subject", label: "Subject", required: true },
@@ -305,7 +291,6 @@ export default function Appointments() {
       { key: "date", label: "Preferred date & time", type: "datetime-local", required: true },
       { key: "channel", label: "Preferred channel", type: "select", options: channelOptions, defaultValue: "Online" },
       { key: "notes", label: "Notes", type: "textarea", placeholder: "Anything helpful for the meeting…" },
-      // No meeting_url/status fields here; admin handles these upon approval
     ],
     chips: [
       { label: "All", value: "" },
@@ -317,7 +302,7 @@ export default function Appointments() {
     ],
     chipField: "status",
     filters: [{ key: "channel", label: "Channel", options: channelOptions }],
-    hideCrudActions: true, // hide Edit/Delete for freelancer
+    hideCrudActions: true, 
     renderActions: ({ row }) => {
       const joinEnabled = canJoin(row);
       const joinUrl = row?.meeting_url || "#";
@@ -326,7 +311,6 @@ export default function Appointments() {
         window.open(joinUrl, "_blank", "noopener,noreferrer");
       };
       const onReschedule = () => {
-        // TODO: open a lightweight dialog to request a new date/time (PATCH)
         alert("We will open a reschedule dialog here.");
       };
       return (
@@ -357,7 +341,6 @@ export default function Appointments() {
 
   return (
     <div className="relative space-y-4 sm:space-y-6 px-3 sm:px-4 overflow-x-hidden">
-      {/* soft page background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div
           className="absolute -top-28 -right-16 w-[30rem] h-[30rem] rounded-full blur-3xl opacity-20"
@@ -371,7 +354,6 @@ export default function Appointments() {
 
       {role === "admin" ? <AdminHero /> : <FreelancerHero />}
 
-      {/* unified table component with role-specific config */}
       <PeopleTable
         title={cfg.title}
         addLabel={cfg.addLabel}

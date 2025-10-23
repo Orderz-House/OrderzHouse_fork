@@ -1,4 +1,3 @@
-// src/components/coursesManagement/CourseDetail.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -21,13 +20,11 @@ const CourseDetail = () => {
     const fetchData = async () => {
       if (!token || !id) return;
       try {
-        // 1. Check access first (important for freelancers)
         const accessRes = await axios.get(`http://localhost:5000/courses/check-access/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHasAccess(accessRes.data.hasAccess);
 
-        // 2. If has access or is admin, fetch course details
         if (accessRes.data.hasAccess || userData?.role_id === 1) {
             const [courseRes, materialsRes] = await Promise.all([
               axios.get(`http://localhost:5000/courses/view/${id}`, {
@@ -65,7 +62,6 @@ const CourseDetail = () => {
   }
 
   if (!hasAccess && userData?.role_id !== 1) {
-    // Redirect to AccessDenied page or show inline
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
@@ -82,7 +78,6 @@ const CourseDetail = () => {
           </div>
         </div>
     );
-    // Alternatively: navigate('/access-denied'); return null;
   }
 
   if (loading) {
@@ -149,7 +144,6 @@ const CourseDetail = () => {
                 <span className="flex items-center"><BookOpen className="w-5 h-5 mr-1" />{materials.length} materials</span>
               </div>
             </div>
-            {/* Optional: Enrollment/Access button for Admins to manage */}
           </div>
         </div>
       </header>
@@ -165,7 +159,7 @@ const CourseDetail = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                          <BookOpen className="w-4 h-4 text-blue-600" /> {/* Could be dynamic icon based on file_type */}
+                          <BookOpen className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
                           <h3 className="font-semibold">{material.title}</h3>
@@ -193,13 +187,11 @@ const CourseDetail = () => {
           </div>
 
           <div className="lg:col-span-1">
-            {/* Sidebar for additional info or actions */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <h3 className="font-bold mb-4">Course Information</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li><strong>ID:</strong> {course.id}</li>
                 <li><strong>Created:</strong> {new Date(course.created_at).toLocaleDateString()}</li>
-                {/* Add more details if available from backend */}
               </ul>
             </div>
           </div>

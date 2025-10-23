@@ -15,7 +15,6 @@ const AdminCourseManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Form state for creating/editing
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', category_id: '', title_ar: '', description_ar: ''
   });
@@ -211,7 +210,7 @@ const AdminCourseManagement = () => {
                   <Trash2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => navigate(`/admin/course-access`)} // Link to access control
+                  onClick={() => navigate(`/admin/course-access`)}
                   className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
                   title="Manage Access"
                 >

@@ -19,14 +19,12 @@ export default function Blogs() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // --- fetch from API (no mock) ---
+  // --- fetch ---
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       setErr(null);
-      const { data } = await axios.get("http://localhost:5000/blogs", {
-        // headers: { authorization: `Bearer ${token}` },
-      });
+      const { data } = await axios.get("http://localhost:5000/blogs", {});
       setPosts(Array.isArray(data) ? data : data?.items ?? []);
     } catch (e) {
       setErr(e?.message || "Failed to load blogs");
@@ -40,7 +38,6 @@ export default function Blogs() {
     fetchPosts();
   }, [fetchPosts]);
 
-  // --- derived data / filters ---
   const categories = useMemo(() => {
     const set = new Set(posts.map((p) => p.category).filter(Boolean));
     return ["All", ...Array.from(set)];
@@ -53,38 +50,49 @@ export default function Blogs() {
 
   const filtered = useMemo(() => {
     const t = q.toLowerCase().trim();
-    const byCat = posts.filter((p) => (cat === "All" ? true : p.category === cat));
+    const byCat = posts.filter((p) =>
+      cat === "All" ? true : p.category === cat
+    );
     if (!t) return byCat;
     return byCat.filter(
       (p) =>
         String(p.title).toLowerCase().includes(t) ||
         String(p.excerpt).toLowerCase().includes(t) ||
-        (Array.isArray(p.tags) && p.tags.some((x) => String(x).toLowerCase().includes(t)))
+        (Array.isArray(p.tags) &&
+          p.tags.some((x) => String(x).toLowerCase().includes(t)))
     );
   }, [posts, q, cat]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const onSearch = (val) => { setQ(val); setPage(1); };
-  const onCat = (val) => { setCat(val); setPage(1); };
+  const onSearch = (val) => {
+    setQ(val);
+    setPage(1);
+  };
+  const onCat = (val) => {
+    setCat(val);
+    setPage(1);
+  };
 
   const formatDate = (iso) =>
-    new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
 
   const featured = useMemo(
-    () => (posts.length ? [...posts].sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null),
+    () =>
+      posts.length
+        ? [...posts].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+        : null,
     [posts]
   );
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Top bar: keep same props; onCreated -> refetch */}
-      <BlogTopBar 
-  createUrl="/blogs" 
-  mock={false} 
-  onCreated={fetchPosts} 
-/>
+      <BlogTopBar createUrl="/blogs" mock={false} onCreated={fetchPosts} />
 
       {/* Header */}
       <header className="border-b border-slate-200/60 bg-white">
@@ -99,7 +107,11 @@ export default function Blogs() {
               ) : (
                 <>
                   <div className="relative">
-                    <img src={featured.cover} alt={featured.title} className="h-56 w-full object-cover" />
+                    <img
+                      src={featured.cover}
+                      alt={featured.title}
+                      className="h-56 w-full object-cover"
+                    />
                     <span className="absolute top-3 left-3 px-3 py-1 text-[12px] rounded-full bg-[#028090] text-white shadow">
                       Featured
                     </span>
@@ -119,7 +131,9 @@ export default function Blogs() {
                         {featured.read}
                       </span>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">{featured.title}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">
+                      {featured.title}
+                    </h1>
                     <p className="text-slate-600 mt-2">{featured.excerpt}</p>
 
                     <Link
@@ -159,7 +173,11 @@ export default function Blogs() {
                       key={c}
                       onClick={() => onCat(c)}
                       className={`px-3 py-1.5 rounded-full text-sm border transition
-                        ${active ? "bg-[#028090]/5 text-[#028090] border-[#028090]" : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"}`}
+                        ${
+                          active
+                            ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
+                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
+                        }`}
                     >
                       {c}
                     </button>
@@ -170,7 +188,11 @@ export default function Blogs() {
               {err && <div className="text-sm text-rose-600">Error: {err}</div>}
 
               <div className="text-slate-600 text-sm">
-                {loading ? "Loading…" : `${filtered.length} article${filtered.length !== 1 ? "s" : ""} found`}
+                {loading
+                  ? "Loading…"
+                  : `${filtered.length} article${
+                      filtered.length !== 1 ? "s" : ""
+                    } found`}
               </div>
             </div>
           </div>
@@ -180,7 +202,9 @@ export default function Blogs() {
       {/* GRID */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 py-10">
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-600">Loading…</div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-600">
+            Loading…
+          </div>
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-600">
             No results. Try a different search or category.
@@ -204,7 +228,8 @@ export default function Blogs() {
                   <ChevronLeft className="w-4 h-4" /> Prev
                 </button>
                 <div className="px-3 py-2 text-sm text-slate-600">
-                  Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+                  Page <span className="font-medium">{page}</span> of{" "}
+                  <span className="font-medium">{totalPages}</span>
                 </div>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

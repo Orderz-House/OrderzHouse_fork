@@ -1,10 +1,8 @@
 import React, { useState, createContext, useContext, useMemo } from 'react';
 import { Star } from 'lucide-react';
 
-// Create a context to share state between parent and children
 const RatingContext = createContext();
 
-// The Parent <Rating> component
 export const Rating = ({ children, value, onChange }) => {
   const [hover, setHover] = useState(null);
 
@@ -15,7 +13,6 @@ export const Rating = ({ children, value, onChange }) => {
     }
   };
 
-  // Use useMemo to avoid re-creating the context value on every render
   const contextValue = useMemo(() => ({
     value,
     hover,
@@ -32,7 +29,6 @@ export const Rating = ({ children, value, onChange }) => {
   );
 };
 
-// The Child <Rating.Star> component
 Rating.Star = ({ index }) => {
   const { value, hover, onHover, onClick } = useContext(RatingContext);
   const isFilled = (hover || value) >= index;
