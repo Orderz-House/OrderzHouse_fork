@@ -1,4 +1,4 @@
-import pool from "../models/db.js";
+import pool from "../../models/db.js";
 
 /**
  * error handler
@@ -318,7 +318,7 @@ export const adminUpdateSubscription = async (req, res) => {
 
 /**
  * Admin Delete a subscription by ID (for PeopleTable delete button)
- * DELETE /api/plans/:planId/subscribers/:id
+ * DELETE 
  */
 export const deleteSubscription = async (req, res) => {
   if (req.token.role !== 1)

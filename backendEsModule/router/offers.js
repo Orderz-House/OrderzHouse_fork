@@ -1,21 +1,31 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { requireVerified } from "../middleware/requireVerification.js";
-import { sendOffer, getMyOffersForProject, getOffersForMyProjects, approveOrRejectOffer } from "../controller/offers.js";
+import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
+import {
+  sendOffer,
+  getMyOffersForProject,
+  getOffersForMyProjects,
+  approveOrRejectOffer,
+  getAllProjectForOffer,
+  cancelOffer,
+  getAcceptedOffers,
+} from "../controller/offers.js";
 
 const offersRouter = express.Router();
 
-/**
- * -------------------------------
- * FREELANCER ROUTES
- * -------------------------------
- */
+// Get all open bidding projects 
+offersRouter.get(
+  "/projects/open",
+  authentication,
+  requireVerifiedWithSubscription,
+  getAllProjectForOffer
+);
 
 // Send an offer for a project
 offersRouter.post(
   "/:projectId/offers",
   authentication,
-  requireVerified,
+  requireVerifiedWithSubscription,
   sendOffer
 );
 
@@ -23,30 +33,38 @@ offersRouter.post(
 offersRouter.get(
   "/:projectId/my-offers",
   authentication,
-  requireVerified,
+  requireVerifiedWithSubscription,
   getMyOffersForProject
 );
-
-/**
- * -------------------------------
- * CLIENT ROUTES
- * -------------------------------
- */
 
 // Get all offers for all projects owned by the logged-in client
 offersRouter.get(
   "/my-projects/offers",
   authentication,
-  requireVerified,
   getOffersForMyProjects
 );
 
-// Approve or reject an offer
+// Approve or reject an offer (client)
 offersRouter.post(
   "/offers/approve-reject",
   authentication,
-  requireVerified,
   approveOrRejectOffer
+);
+
+
+// Cancel (withdraw) a pending offer 
+offersRouter.put(
+  "/offers/:offerId/cancel",
+  authentication,
+  requireVerifiedWithSubscription,
+  cancelOffer
+);
+
+//  Get accepted offers
+offersRouter.get(
+  "/offers/accepted",
+  authentication,
+  getAcceptedOffers
 );
 
 export default offersRouter;

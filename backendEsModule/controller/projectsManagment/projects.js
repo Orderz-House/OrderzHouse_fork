@@ -38,7 +38,6 @@ export const createProject = async (req, res) => {
       preferred_skills
     } = req.body;
 
-    // --- Validate required fields ---
     const missingFields = [];
     if (!category_id) missingFields.push("category_id");
     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
@@ -46,7 +45,6 @@ export const createProject = async (req, res) => {
     if (!description) missingFields.push("description");
     if (!duration_type) missingFields.push("duration_type");
 
-    // Project type specific checks
     if (project_type === "fixed" && (!budget || budget <= 0)) missingFields.push("budget");
     if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0)) missingFields.push("hourly_rate");
     if (project_type === "bidding") {
@@ -62,7 +60,6 @@ export const createProject = async (req, res) => {
       });
     }
 
-    // --- Determine project status ---
     let projectStatus = "pending";
     if (project_type === "bidding") projectStatus = "bidding";
     else if (["fixed", "hourly"].includes(project_type)) projectStatus = "pending_payment";
@@ -78,7 +75,7 @@ export const createProject = async (req, res) => {
         preferred_skills, status, completion_status, is_deleted
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, 'not_started', false
+        $10, $11, $12, $13, $14, $15, 'in_progress', false
       ) RETURNING *;
     `;
 
@@ -102,11 +99,9 @@ export const createProject = async (req, res) => {
 
     const project = rows[0];
 
-    // --- Calculate amount_to_pay ---
     let amountToPay = null;
     if (project.project_type === "fixed") amountToPay = project.budget;
     else if (project.project_type === "hourly") amountToPay = (project.hourly_rate || 0) * 3;
-    // bidding remains null
 
     if (amountToPay !== null) {
       const update = await pool.query(
@@ -214,7 +209,7 @@ export const assignProject = async (req, res) => {
       await pool.query(
         `UPDATE projects
          SET start_date = NOW(),
-             completion_status = 'not_started'
+             completion_status = 'in_progress'
          WHERE id = $1`,
         [projectId]
       );
@@ -429,8 +424,8 @@ export const getRelatedFreelancers = async (req, res) => {
           JOIN projects p ON pa.project_id = p.id
           WHERE 
             pa.freelancer_id = u.id
-            AND pa.status IN ('active', 'not_started')
-            AND p.completion_status IN ('not_started', 'in_progress', 'pending_review')
+            AND pa.status IN ('active', 'in_progress')
+            AND p.completion_status IN ('in_progress', 'in_progress', 'pending_review')
             AND p.is_deleted = false
         )
       ORDER BY u.id DESC;
@@ -597,7 +592,7 @@ export const addProjectFiles = async (req, res) => {
  */
 export const assignFreelancer = async (req, res) => {
   try {
-    const clientId = req.token?.userId; // ID of the client making the request
+    const clientId = req.token?.userId;
     const { projectId } = req.params;
     const { freelancer_id } = req.body;
 
@@ -707,7 +702,7 @@ export const acceptAssignment = async (req, res) => {
     // Update assignment and project
     await pool.query(`UPDATE project_assignments SET status = 'active' WHERE id = $1`, [assignmentId]);
     await pool.query(
-      `UPDATE projects SET status = 'active', completion_status = 'not_started', assigned_freelancer_id = $1 WHERE id = $2`,
+      `UPDATE projects SET status = 'active', completion_status = 'in_progress', assigned_freelancer_id = $1 WHERE id = $2`,
       [freelancerId, assignment.project_id]
     );
 

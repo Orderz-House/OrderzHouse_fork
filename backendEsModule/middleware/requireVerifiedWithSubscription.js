@@ -1,61 +1,55 @@
 import pool from "../models/db.js";
+import { hasActiveSubscription } from "../utils/subscriptionCheck.js";
 
-/**
- * Middleware to require verified freelancers with active subscription
- */
-export const requireVerifiedWithSubscription = async (req, res, next) => {
+const requireVerifiedWithSubscription = async (req, res, next) => {
   try {
-    const user_id = req.token?.userId;
-    const role_id = req.token?.role;
+    const userId = req.token?.userId;
+    const role = req.token?.role;
 
-    if (!user_id || !role_id) {
-      return res.status(401).json({ success: false, message: "غير مصرح" });
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    // Admins (1) and Clients (2) bypass this restriction
+    if (role === 1 || role === 2) return next();
+
+    if (role === 3) {
+      const { rows: userRows } = await pool.query(
+        `SELECT is_verified FROM users WHERE id = $1 AND is_deleted = false`,
+        [userId]
+      );
+
+      if (!userRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      const isVerified = userRows[0].is_verified;
+      if (!isVerified) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account must be verified to perform this action",
+        });
+      }
+
+      const hasPlan = await hasActiveSubscription(userId);
+      if (!hasPlan) {
+        return res.status(403).json({
+          success: false,
+          message: "You need an active subscription plan to perform this action",
+        });
+      }
     }
 
-    // Allow some exceptions, e.g., deleting portfolio for freelancers
-    if (
-      req.method === "DELETE" &&
-      req.path === "/users/freelancers/portfolio/delete" &&
-      role_id === 3
-    ) {
-      return next();
-    }
-
-    // ✅ Check if user is verified
-    const userQuery = await pool.query(
-      `SELECT is_verified FROM users WHERE id = $1 AND is_deleted = false`,
-      [user_id]
-    );
-
-    if (!userQuery.rows.length || !userQuery.rows[0].is_verified) {
-      return res.status(403).json({
-        success: false,
-        message: "يجب تفعيل الحساب للتحكم في المشاريع.",
-      });
-    }
-
-    // ✅ Check if freelancer has active subscription
-    const subscriptionQuery = await pool.query(
-      `SELECT id FROM subscriptions 
-       WHERE freelancer_id = $1 
-         AND status = 'active'
-         AND end_date >= NOW()
-       LIMIT 1`,
-      [user_id]
-    );
-
-    if (!subscriptionQuery.rows.length) {
-      return res.status(403).json({
-        success: false,
-        message: "يجب تفعيل الاشتراك لتتمكن من التقديم على المشاريع.",
-      });
-    }
-
-    // All checks passed
     next();
-  } catch (error) {
-    console.error("requireVerifiedWithSubscription error:", error);
-    res.status(500).json({ success: false, message: "خطأ في الخادم" });
+  } catch (err) {
+    console.error("requireVerifiedWithSubscription error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 

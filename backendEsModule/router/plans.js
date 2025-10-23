@@ -12,15 +12,17 @@ import {
   adminUpdateSubscription,
   getAllSubscriptions,
   adminCancelSubscription
-} from "../controller/plans.js";
+} from "../controller/plans-subscriptions/plans.js";
 
 import { authentication } from "../middleware/authentication.js";
 import adminOnly from "../middleware/adminOnly.js";
-import { requireVerified } from "../middleware/requireVerification.js";
+import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
 
 const plansRouter = express.Router();
 
+
 plansRouter.get("/", getPlans);
+
 
 plansRouter.get(
   "/subscriptions/counts",
@@ -54,32 +56,33 @@ plansRouter.patch(
   adminUpdateSubscription
 );
 
-plansRouter.get(
-  "/subscription/me",
-  authentication,
-  requireVerified,
-  getFreelancerSubscription
-);
-
-plansRouter.post(
-  "/subscribe",
-  authentication,
-  requireVerified,
-  subscribeToPlan
-);
-
-plansRouter.patch(
-  "/cancel",
-  authentication,
-  requireVerified,
-  cancelSubscription
-);
-
 plansRouter.patch(
   "/:planId/subscribers/:id",
   authentication,
   adminOnly,
   adminCancelSubscription
 );
- 
+
+
+plansRouter.get(
+  "/subscription/me",
+  authentication,
+  requireVerifiedWithSubscription, 
+  getFreelancerSubscription
+);
+
+plansRouter.post(
+  "/subscribe",
+  authentication,
+  requireVerifiedWithSubscription,
+  subscribeToPlan
+);
+
+plansRouter.patch(
+  "/cancel",
+  authentication,
+  requireVerifiedWithSubscription,
+  cancelSubscription
+);
+
 export default plansRouter;
