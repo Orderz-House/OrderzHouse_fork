@@ -1,6 +1,5 @@
 import pool from "../models/db.js";
-import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js";
+
 import {
   getLogs,
   getEntityLogs,
@@ -14,9 +13,8 @@ import {
 import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "../services/loggingService.js";
 
 /**
- * Get message logs (existing functionality)
- * @route GET /logs/messages
- * @access Private (view_logs permission)
+ * @route 
+ * @access 
  */
 export const getMessageLogs = async (req, res) => {
   try {
@@ -56,8 +54,7 @@ export const getSystemLogs = async (req, res) => {
       endDate
     } = req.query;
 
-    // Validate parameters
-    const parsedLimit = Math.min(parseInt(limit) || 100, 500); // Max 500
+    const parsedLimit = Math.min(parseInt(limit) || 100, 500); 
     const parsedOffset = Math.max(parseInt(offset) || 0, 0);
 
     const filters = {};

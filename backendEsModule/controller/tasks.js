@@ -4,9 +4,6 @@ import { NotificationCreators } from "../services/notificationService.js";
 import cloudinary from "../cloudinary/setupfile.js";
 import { Readable } from "stream";
 
-/* =================================================================
-   Helpers
-================================================================= */
 
 const uploadFilesToCloudinary = async (files, folder) => {
   const uploadedFiles = [];
@@ -42,7 +39,6 @@ const insertFileRecords = async (files, taskIdOrReqId, senderId) => {
    ADMIN CONTROLLERS
 ================================================================= */
 
-// Admin: list all tasks
 export const getAllTasksForAdmin = async (req, res) => {
   try {
     if (req.token?.role !== 1)
@@ -68,7 +64,7 @@ export const getAllTasksForAdmin = async (req, res) => {
   }
 };
 
-// Admin: approve or reject freelancer task -> tasks.status: active | rejected (from pending_approval)
+// Admin: approve or reject freelancer task 
 export const approveTaskByAdmin = async (req, res) => {
   try {
     if (req.token?.role !== 1)
@@ -99,13 +95,12 @@ export const approveTaskByAdmin = async (req, res) => {
   }
 };
 
-// Admin: confirm payment -> task_req.status: in_progress (from pending_payment, and must have payment_proof_url)
 export const confirmPaymentByAdmin = async (req, res) => {
   try {
     if (req.token?.role !== 1)
       return res.status(403).json({ success: false, message: "Access denied. Admins only." });
 
-    const { id } = req.params; // task_req id
+    const { id } = req.params; 
 
     const result = await pool.query(
       `UPDATE task_req
@@ -134,7 +129,7 @@ export const confirmPaymentByAdmin = async (req, res) => {
    FREELANCER CONTROLLERS
 ================================================================= */
 
-// Freelancer: create task -> tasks.status: pending_approval
+
 export const createTask = async (req, res) => {
   try {
     if (req.token?.role !== 3)
@@ -219,7 +214,7 @@ export const deleteTask = async (req, res) => {
   }
 };
 
-// Freelancer: accept or reject a client's request -> task_req.status: pending_payment | rejected (from pending_approval)
+// Freelancer: accept or reject a client's request
 export const updateTaskRequestStatus = async (req, res) => {
   try {
     if (req.token?.role !== 3)
@@ -253,7 +248,6 @@ export const updateTaskRequestStatus = async (req, res) => {
       [status, requestId]
     );
 
-    // optionally reserve the task for the client so it disappears from pool
     if (status === "pending_payment") {
       await pool.query(
         `UPDATE tasks SET assigned_client_id = $1 WHERE id = $2 AND assigned_client_id IS NULL`,
@@ -268,13 +262,13 @@ export const updateTaskRequestStatus = async (req, res) => {
   }
 };
 
-// Freelancer: submit delivery -> task_req.status: pending_review (from in_progress)
+// Freelancer: submit delivery 
 export const submitWorkCompletion = async (req, res) => {
   try {
     if (req.token?.role !== 3)
       return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
 
-    const { id: requestId } = req.params; // task_req id
+    const { id: requestId } = req.params; 
     const freelancerId = req.token.userId;
     const files = req.files || [];
 
@@ -307,13 +301,13 @@ export const submitWorkCompletion = async (req, res) => {
   }
 };
 
-// Freelancer: resubmit after client requested revisions -> task_req.status: pending_review (from reviewing)
+// Freelancer: resubmit after client requested revisions
 export const resubmitWorkCompletion = async (req, res) => {
   try {
     if (req.token?.role !== 3)
       return res.status(403).json({ success: false, message: "Access denied. Freelancers only." });
 
-    const { id: requestId } = req.params; // task_req id
+    const { id: requestId } = req.params; 
     const freelancerId = req.token.userId;
     const files = req.files || [];
 
@@ -345,7 +339,6 @@ export const resubmitWorkCompletion = async (req, res) => {
   }
 };
 
-// Freelancer: internal kanban (kept as-is on tasks table)
 export const updateTaskKanbanStatus = async (req, res) => {
   try {
     if (req.token?.role !== 3)
@@ -381,13 +374,13 @@ export const updateTaskKanbanStatus = async (req, res) => {
    CLIENT CONTROLLERS
 ================================================================= */
 
-// Client: request a task -> task_req.status: pending_approval
+// Client: request a task 
 export const requestTask = async (req, res) => {
   try {
     if (req.token?.role !== 2)
       return res.status(403).json({ success: false, message: "Access denied. Clients only." });
 
-    const { id: taskId } = req.params; // task id
+    const { id: taskId } = req.params; 
     const clientId = req.token.userId;
     const { message } = req.body;
     const files = req.files || [];
@@ -426,19 +419,18 @@ export const requestTask = async (req, res) => {
   }
 };
 
-// Client: submit payment proof -> store proof on task_req, require status pending_payment
+// Client: submit payment proof 
 export const submitPaymentProof = async (req, res) => {
   try {
     if (req.token?.role !== 2)
       return res.status(403).json({ success: false, message: "Access denied. Clients only." });
 
-    const { id: taskId } = req.params; // task id
+    const { id: taskId } = req.params; 
     const clientId = req.token.userId;
 
     if (!req.file)
       return res.status(400).json({ success: false, message: "Payment proof file is required." });
 
-    // find the active request for this task & client in pending_payment
     const request = await pool.query(
       `SELECT id FROM task_req
         WHERE task_id = $1 AND client_id = $2 AND status = 'pending_payment'
@@ -466,13 +458,13 @@ export const submitPaymentProof = async (req, res) => {
   }
 };
 
-// Client: approve or request revisions -> task_req.status: completed | reviewing (from pending_review)
+// Client: approve or request revisions 
 export const approveWorkCompletion = async (req, res) => {
   try {
     if (req.token?.role !== 2)
       return res.status(403).json({ success: false, message: "Access denied. Clients only." });
 
-    const { id: requestId } = req.params; // task_req id
+    const { id: requestId } = req.params; 
     const { action } = req.body;
     const clientId = req.token.userId;
     const files = req.files || [];
@@ -511,13 +503,13 @@ export const approveWorkCompletion = async (req, res) => {
   }
 };
 
-// Client: create review on completed request (kept similar but tied to completed request)
+// Client: create review on completed request 
 export const createReview = async (req, res) => {
   try {
     if (req.token?.role !== 2)
       return res.status(403).json({ success: false, message: "Access denied. Clients only." });
 
-    const { id: taskId } = req.params; // original signature kept (task id)
+    const { id: taskId } = req.params;
     const clientId = req.token.userId;
     const { rating, comment } = req.body;
 
@@ -525,7 +517,6 @@ export const createReview = async (req, res) => {
       return res.status(400).json({ success: false, message: "Rating must be a number between 1 and 5." });
     }
 
-    // ensure the client has a completed request for this task
     const check = await pool.query(
       `SELECT tr.id, t.freelancer_id
          FROM task_req tr
@@ -569,7 +560,7 @@ export const createReview = async (req, res) => {
    PUBLIC & SHARED CONTROLLERS
 ================================================================= */
 
-// Public: task pool -> only tasks.status = active and not reserved
+// Public: task pool
 export const getTaskPool = async (req, res) => {
   try {
     const { category } = req.query;
@@ -641,7 +632,7 @@ export const getCategories = async (req, res) => {
   }
 };
 
-// Shared: add files during lifecycle -> based on task_req lifecycle states
+// Shared: add files during lifecycle 
 export const addTaskFiles = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -686,7 +677,7 @@ export const addTaskFiles = async (req, res) => {
    LISTS FOR USERS
 ================================================================= */
 
-// Freelancer: tasks created by me (kept)
+// Freelancer: tasks created by me 
 export const getFreelancerCreatedTasks = async (req, res) => {
   try {
     if (req.token?.role !== 3) {
@@ -732,7 +723,7 @@ export const getTaskRequests = async (req, res) => {
   }
 };
 
-// Freelancer: assigned tasks to me (based on task_req lifecycle)
+// Freelancer: assigned tasks to me 
 export const getAssignedTasks = async (req, res) => {
   try {
     if (req.token?.role !== 3) {

@@ -27,7 +27,6 @@ export const updateFreelancerCategories = async (req, res) => {
   }
 
   try {
-    // Validate category IDs exist
     const { rows: validCategories } = await pool.query(
       `SELECT id FROM categories WHERE id = ANY($1) AND is_deleted = false`,
       [categories]
@@ -48,7 +47,6 @@ export const updateFreelancerCategories = async (req, res) => {
       [targetFreelancerId]
     );
 
-    // Insert new categories
     const insertPromises = validCategoryIds.map(catId =>
       pool.query(
         `INSERT INTO freelancer_categories (freelancer_id, category_id) VALUES ($1, $2)`,

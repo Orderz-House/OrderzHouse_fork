@@ -1,7 +1,6 @@
 // controller/accessControl.js
 import pool from "../models/db.js";
 
-// Admin: Grant/Revoke access to freelancer for specific course
 export const grantCourseAccess = async (req, res) => {
   try {
     const { freelancer_id, course_id, can_access } = req.body;
@@ -13,7 +12,6 @@ export const grantCourseAccess = async (req, res) => {
       });
     }
 
-    // Check if freelancer exists
     const freelancerCheck = await pool.query(
       "SELECT * FROM users WHERE id = $1 AND role = 'freelancer'",
       [freelancer_id]
@@ -25,7 +23,6 @@ export const grantCourseAccess = async (req, res) => {
       });
     }
 
-    // Check if course exists
     const courseCheck = await pool.query(
       "SELECT * FROM courses WHERE id = $1 AND is_deleted = FALSE",
       [course_id]
@@ -37,20 +34,17 @@ export const grantCourseAccess = async (req, res) => {
       });
     }
 
-    // Check if access record exists, if not create it
     const existingAccess = await pool.query(
       "SELECT * FROM course_access WHERE freelancer_id = $1 AND course_id = $2",
       [freelancer_id, course_id]
     );
 
     if (existingAccess.rows.length > 0) {
-      // Update existing access
       await pool.query(
         "UPDATE course_access SET can_access = $1, updated_at = CURRENT_TIMESTAMP WHERE freelancer_id = $2 AND course_id = $3",
         [can_access, freelancer_id, course_id]
       );
     } else {
-      // Create new access record
       await pool.query(
         "INSERT INTO course_access (freelancer_id, course_id, can_access, granted_by) VALUES ($1, $2, $3, $4)",
         [freelancer_id, course_id, can_access, req.token.userId]
@@ -75,7 +69,6 @@ export const grantCourseAccess = async (req, res) => {
   }
 };
 
-// Admin: Get all access control records
 export const getAllAccessControl = async (req, res) => {
   try {
     const query = `
@@ -98,7 +91,6 @@ export const getAllAccessControl = async (req, res) => {
     `;
     const { rows } = await pool.query(query);
     
-    // Group by freelancer for easier frontend handling
     const accessControl = {};
     rows.forEach(row => {
       if (!accessControl[row.freelancer_id]) {
@@ -121,7 +113,6 @@ export const getAllAccessControl = async (req, res) => {
   }
 };
 
-// Admin: Get access control for specific freelancer
 export const getFreelancerAccess = async (req, res) => {
   try {
     const { freelancerId } = req.params;
@@ -160,7 +151,6 @@ export const getFreelancerAccess = async (req, res) => {
   }
 };
 
-// Admin: Get all freelancers with their access status for specific course
 export const getCourseAccessList = async (req, res) => {
   try {
     const { courseId } = req.params;

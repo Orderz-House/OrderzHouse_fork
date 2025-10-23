@@ -76,7 +76,6 @@ export const getSubSubCategoriesByCategoryId = async (req, res) => {
   const { categoryId } = req.params;
 
   try {
-    // Validate categoryId
     if (!categoryId) {
       return res.status(400).json({ success: false, message: "categoryId is required" });
     }
@@ -92,7 +91,6 @@ export const getSubSubCategoriesByCategoryId = async (req, res) => {
       [categoryId]
     );
 
-    // Always return JSON, even if empty
     return res.status(200).json({
       success: true,
       data: result.rows || [],
@@ -100,7 +98,6 @@ export const getSubSubCategoriesByCategoryId = async (req, res) => {
   } catch (err) {
     console.error("getSubSubCategoriesByCategoryId error:", err);
 
-    // Return JSON error instead of HTML
     return res.status(500).json({
       success: false,
       message: "Server error",

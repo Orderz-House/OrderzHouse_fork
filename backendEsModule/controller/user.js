@@ -80,7 +80,6 @@ const register = async (req, res) => {
 
     // Handle freelancer categories
     if (role_id === 3 && categories && categories.length > 0) {
-      // Use unnest for safe dynamic insertion
       await pool.query(
         `INSERT INTO freelancer_categories (freelancer_id, category_id)
          SELECT $1, unnest($2::int[])`,
@@ -193,7 +192,7 @@ const login = async (req, res) => {
       }
     }
     const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // دقيقتان
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); 
 
     await pool.query("UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3", [
       otp,
