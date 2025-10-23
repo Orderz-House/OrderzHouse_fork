@@ -123,7 +123,7 @@ export const editPlan = async (req, res) => {
 
 /**
  * Delete plan (Admin only)
- * Prevents deletion if subscriptions exist
+ 
  */
 export const deletePlan = async (req, res) => {
   if (req.token.role !== 1)
@@ -317,14 +317,13 @@ export const adminUpdateSubscription = async (req, res) => {
 };
 
 /**
- * Admin Delete a subscription by ID (for PeopleTable delete button)
- * DELETE 
+ * Admin Delete a subscription by ID 
  */
 export const deleteSubscription = async (req, res) => {
   if (req.token.role !== 1)
     return res.status(403).json({ success: false, message: "Admin only" });
 
-  const { id } = req.params; // subscription_id from URL params
+  const { id } = req.params; 
 
   try {
     const { rowCount } = await pool.query(
@@ -414,7 +413,6 @@ export const getAllSubscriptions = async (req, res) => {
 
 /**
  * Admin Get all subscribers for a plan
- * GET /api/plans/:id/subscribers
  */
 export const getPlanSubscribers = async (req, res) => {
   if (req.token.role !== 1)

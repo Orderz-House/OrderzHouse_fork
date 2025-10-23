@@ -8,7 +8,6 @@ export const submitRating = async (req, res) => {
   const freelancer_id = req.body.freelancer_id 
   const { rating, comment } = req.body;
 
-  // --- Validation ---
   if (!project_id || !freelancer_id || !rating) {
     return res.status(400).json({
       success: false,
@@ -28,7 +27,6 @@ export const submitRating = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // ✅ 1. Verify project ownership + completion + freelancer assignment
     const projectCheck = await client.query(
       `
       SELECT p.id 
@@ -51,7 +49,6 @@ export const submitRating = async (req, res) => {
       });
     }
 
-    // ✅ 2. Insert rating (prevent duplicates)
     const ratingResult = await client.query(
       `
       INSERT INTO ratings (project_id, client_id, freelancer_id, rating, comment)
@@ -72,7 +69,6 @@ export const submitRating = async (req, res) => {
 
     const newRating = ratingResult.rows[0];
 
-    // ✅ 3. Update freelancer’s average rating
     const updateUserRating = await client.query(
       `
       UPDATE users
@@ -86,7 +82,6 @@ export const submitRating = async (req, res) => {
       [rating, freelancer_id]
     );
 
-    // ✅ 4. Notify freelancer (optional)
     try {
       const clientInfo = await client.query(
         "SELECT username FROM users WHERE id = $1",

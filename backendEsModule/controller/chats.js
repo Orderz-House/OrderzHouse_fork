@@ -40,7 +40,6 @@ const createMessage = async (req, res) => {
   }
 
   try {
-    // Insert the new message into the database
     const result = await pool.query(
       `INSERT INTO messages (sender_id, receiver_id, project_id, content)
        VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -49,7 +48,6 @@ const createMessage = async (req, res) => {
     const newMessage = result.rows[0];
 
     try {
-      // This creator function notifies the receiver_id that they got a message.
       await NotificationCreators.messageReceived(receiver_id, newMessage.id, content);
     } catch (notificationError) {
       console.error(`Failed to create message notification for receiver ${receiver_id}:`, notificationError);

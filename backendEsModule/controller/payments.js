@@ -510,7 +510,6 @@ export const autoReleasePaymentsCron = async () => {
         { freelancerId: r.freelancer_id, amount: r.amount }
       );
 
-      // ✨ NOTIFICATION INTEGRATION: This was already here.
       try {
         await NotificationCreators.paymentReleased(r.project_id, r.freelancer_id, r.client_id, r.amount);
       } catch (err) {

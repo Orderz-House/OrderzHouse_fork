@@ -24,8 +24,7 @@ const makeAppointment = (req, res) => {
       const newAppointment = result.rows[0];
 
       try {
-        // NOTE: This creator function needs to be added to your notificationService.
-        // It should get all admin IDs and send them a notification.
+        
         NotificationCreators.appointmentRequested(newAppointment.id, newAppointment.appointment_date, req.token.username);
       } catch(e) {
         console.error("Failed to create appointment request notification:", e);
@@ -253,7 +252,6 @@ const markAppointmentCompleted = (req, res) => {
       const completedAppointment = result.rows[0];
 
       try {
-        // NOTE: You may need to add an 'APPOINTMENT_COMPLETED' type and creator function.
         const details = `on ${new Date(completedAppointment.appointment_date).toLocaleString()}`;
         NotificationCreators.appointmentCompleted(completedAppointment.id, completedAppointment.freelancer_id, details);
       } catch(e) {

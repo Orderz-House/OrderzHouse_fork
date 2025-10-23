@@ -384,7 +384,7 @@ export const autoExpireOldOffers = async () => {
        RETURNING id`
     );
     if (rows.length > 0)
-      console.log(`✅Auto-expired ${rows.length} old offers`);
+      console.log(`Auto-expired ${rows.length} old offers`);
   } catch (err) {
     console.error("autoExpireOldOffers error:", err);
   }

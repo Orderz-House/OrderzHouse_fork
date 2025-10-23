@@ -111,7 +111,6 @@ export const createProject = async (req, res) => {
       Object.assign(project, update.rows[0]);
     }
 
-    // --- Log creation ---
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -120,7 +119,6 @@ export const createProject = async (req, res) => {
       { title: project.title, category_id: project.category_id }
     );
 
-    // --- Notification (non-blocking) ---
     try {
       await NotificationCreators.projectCreated(
         project.id,
@@ -204,7 +202,6 @@ export const assignProject = async (req, res) => {
       [projectId, freelancer_id, assignedAt, assignment_type, deadline]
     );
 
-    // Set start_date when freelancer is assigned
     if (assignment_type === "solo") {
       await pool.query(
         `UPDATE projects
@@ -239,7 +236,7 @@ export const assignProject = async (req, res) => {
 
 /**
  * -------------------------------
- * SUBMIT WORK COMPLETION (with optional files)
+ * SUBMIT WORK COMPLETION 
  * Statuses:
  *   pending_review     - freelancer submitted, waiting client approval
  * -------------------------------
@@ -498,7 +495,6 @@ export const resubmitWorkCompletion = async (req, res) => {
       [projectId]
     );
 
-    // Save uploaded files
     for (let fileData of uploadedFiles) {
       await pool.query(
         `INSERT INTO project_files (project_id, file_url, public_id, uploaded_by) VALUES ($1, $2, $3, $4)`,
@@ -506,7 +502,6 @@ export const resubmitWorkCompletion = async (req, res) => {
       );
     }
 
-    // Log event
     await pool.query(
       `INSERT INTO completion_history (project_id, event, timestamp, actor, notes)
        VALUES ($1, 'revision_resubmitted', NOW(), $2, $3)`,
@@ -529,9 +524,8 @@ export const resubmitWorkCompletion = async (req, res) => {
 };
 
 /**
- * Upload file buffer (from multer.memoryStorage) to Cloudinary
- * @param {Buffer} buffer - The file buffer
- * @param {String} folder - Optional Cloudinary folder (default: "project_files")
+ * @param {Buffer} buffer 
+ * @param {String} folder 
  * @returns {Promise<{secure_url: string, public_id: string}>}
  */
 export const uploadToCloudinary = (buffer, folder = "project_files") => {
@@ -561,7 +555,6 @@ export const addProjectFiles = async (req, res) => {
     const uploadedFiles = [];
 
     for (const file of req.files) {
-      // upload buffer instead of path
       const result = await uploadToCloudinary(file.buffer, `projects/${projectId}`);
 
       const { rows } = await pool.query(
@@ -587,7 +580,7 @@ export const addProjectFiles = async (req, res) => {
  * -------------------------------
  * INVITE FREELANCER TO PROJECT
  * -------------------------------
- * Client sends an invitation. Freelancer must accept.
+ * Client sends an invitation. 
  * -------------------------------
  */
 export const assignFreelancer = async (req, res) => {
@@ -600,7 +593,6 @@ export const assignFreelancer = async (req, res) => {
       return res.status(400).json({ success: false, message: "freelancer_id is required" });
     }
 
-    // Validate project exists and belongs to client
     const { rows: projectRows } = await pool.query(
       `SELECT id, title, user_id, status 
        FROM projects 
@@ -616,7 +608,6 @@ export const assignFreelancer = async (req, res) => {
       return res.status(403).json({ success: false, message: "You can only invite freelancers to your own projects" });
     }
 
-    // Validate freelancer exists and is verified
     const { rows: freelancerRows } = await pool.query(
       `SELECT id, role_id, is_verified 
        FROM users 
@@ -653,14 +644,14 @@ export const assignFreelancer = async (req, res) => {
     );
     const assignment = assignmentRows[0];
 
-    // Log operation (optional, depends on your system)
+    // Log operation 
     await LogCreators.projectOperation(clientId, ACTION_TYPES.ASSIGNMENT_CREATE, projectId, true, {
       freelancer_id,
       assignment_id: assignment.id,
       type: "solo",
     });
 
-    // Send notification (best effort)
+    // Send notification 
     try {
       await NotificationCreators.freelancerAssignmentChanged(projectId,freelancer_id, true);
     } catch (err) {
@@ -689,7 +680,6 @@ export const acceptAssignment = async (req, res) => {
     const freelancerId = req.token?.userId;
     const { assignmentId } = req.params;
 
-    // Verify assignment
     const { rows } = await pool.query(
       `SELECT * FROM project_assignments WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
       [assignmentId, freelancerId]
@@ -706,7 +696,6 @@ export const acceptAssignment = async (req, res) => {
       [freelancerId, assignment.project_id]
     );
 
-    // Log & notify
     await LogCreators.projectOperation(freelancerId, ACTION_TYPES.ASSIGNMENT_ACCEPT, assignment.project_id, true);
     try {
       await NotificationCreators.freelancerAcceptedAssignment(assignment.project_id, freelancerId);

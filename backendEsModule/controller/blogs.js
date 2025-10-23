@@ -69,10 +69,8 @@ const transformBlog = (row) => {
   };
 };
 
-// ===== SIMPLIFIED CLOUDINARY UPLOAD =====
 const uploadToCloudinary = async (fileBuffer, mimeType, folder = 'blogs') => {
   try {
-    // Create base64 string from buffer
     const fileBase64 = fileBuffer.toString('base64');
     const fileUri = `data:${mimeType};base64,${fileBase64}`;
     
@@ -90,9 +88,7 @@ const uploadToCloudinary = async (fileBuffer, mimeType, folder = 'blogs') => {
 };
 
 // ===== MIDDLEWARE FOR FILE UPLOADS =====
-// This should be in your routes file, but including here for clarity
 export const blogUpload = (req, res, next) => {
-  // Multer should be configured with memoryStorage in routes
   next();
 };
 
@@ -188,7 +184,6 @@ export const createBlog = async (req, res) => {
     let coverUrl = "/default-cover.jpg";
     let attachmentUrls = [];
 
-    // Handle cover image upload
     if (req.files?.cover?.[0]) {
       const coverBuffer = req.files.cover[0].buffer;
       coverUrl = await uploadToCloudinary(coverBuffer, 'blogs/covers');
@@ -198,7 +193,6 @@ export const createBlog = async (req, res) => {
       attachmentUrls.push(coverUrl);
     }
 
-    // Handle additional attachments
     if (req.files?.attachments) {
       for (const file of req.files.attachments) {
         const fileBuffer = file.buffer;

@@ -39,7 +39,6 @@ const messageHandler = (socket, io) => {
       const result = await pool.query(query, values);
       const savedMessage = result.rows[0];
 
-      // ✅ حفظ log
       await pool.query(
         `INSERT INTO message_logs (message_id, sender_id, project_id, receiver_id) 
          VALUES ($1,$2,$3, $3)`,

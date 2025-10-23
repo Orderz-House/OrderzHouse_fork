@@ -1,7 +1,6 @@
 import pool from "../../models/db.js";
 
 /**
- * Get financial overview for any user (client or freelancer)
  * @param {number} userId - User ID
  * @param {number} role - User role (2=client, 3=freelancer)
  * @returns {object} Financial overview
@@ -14,7 +13,6 @@ const getFinancialOverview = async (userId, role) => {
   let escrow = [];
   let balance = 0;
 
-  // 1️⃣ Wallet transactions
   const walletRes = await pool.query(
     `SELECT balance FROM wallets WHERE user_id = $1`,
     [userId]
@@ -29,7 +27,6 @@ const getFinancialOverview = async (userId, role) => {
     [userId]
   );
 
-  // 2️⃣ Role-specific data
   if (role === 2) {
     // CLIENT: payments + escrow
     const paymentsRes = await pool.query(

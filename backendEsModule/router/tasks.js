@@ -1,80 +1,60 @@
 import express from "express";
-import { authentication } from "../middleware/authentication.js";
-import { upload } from "../middleware/uploadMiddleware.js";
+import multer from "multer";
 import {
-  // Admin Routes
   getAllTasksForAdmin,
   approveTaskByAdmin,
   confirmPaymentByAdmin,
-
-  // Freelancer Routes
   createTask,
   updateTask,
   deleteTask,
-  getFreelancerCreatedTasks,
-  getAssignedTasks,
-  getTaskRequests,
   updateTaskRequestStatus,
-  updateTaskKanbanStatus,
   submitWorkCompletion,
   resubmitWorkCompletion,
-
-  // Client Routes
+  updateTaskKanbanStatus,
   requestTask,
   submitPaymentProof,
   approveWorkCompletion,
   createReview,
-
-  // Public & Shared Routes
   getTaskPool,
   getTaskById,
   getCategories,
   addTaskFiles,
+  getFreelancerCreatedTasks,
+  getTaskRequests,
+  getAssignedTasks
 } from "../controller/tasks.js";
+import authentication from "../middleware/authentication.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-/* =============================================
-   ADMIN ROUTES
-   ============================================= */
-router.get("/admin/all", authentication, getAllTasksForAdmin);
-router.patch("/admin/approve/:id", authentication, approveTaskByAdmin);
-router.patch("/admin/confirm-payment/:id", authentication, confirmPaymentByAdmin);
+/* ============================== ADMIN ============================== */
+router.get("/admin", authentication, getAllTasksForAdmin);
+router.put("/admin/:id/status", authentication, approveTaskByAdmin);
+router.put("/admin/payment/:id/confirm", authentication, confirmPaymentByAdmin);
 
+/* ============================== FREELANCER ============================== */
+router.post("/freelancer", authentication, upload.array("files"), createTask);
+router.put("/freelancer/:id", authentication, updateTask);
+router.delete("/freelancer/:id", authentication, deleteTask);
+router.put("/freelancer/requests/:requestId/status", authentication, updateTaskRequestStatus);
+router.post("/freelancer/requests/:id/submit", authentication, upload.array("files"), submitWorkCompletion);
+router.post("/freelancer/requests/:id/resubmit", authentication, upload.array("files"), resubmitWorkCompletion);
+router.put("/freelancer/:id/kanban", authentication, updateTaskKanbanStatus);
+router.get("/freelancer/my-tasks", authentication, getFreelancerCreatedTasks);
+router.get("/freelancer/requests", authentication, getTaskRequests);
+router.get("/freelancer/assigned", authentication, getAssignedTasks);
 
-/* =============================================
-   FREELANCER ROUTES
-   ============================================= */
-// Now accepts files via form-data
-router.post("/", authentication, upload.array('files'), createTask); 
-router.put("/:id", authentication, updateTask);
-router.delete("/:id", authentication, deleteTask);
-router.get("/my-created", authentication, getFreelancerCreatedTasks);
-router.get("/requests", authentication, getTaskRequests);
-router.patch("/requests/:requestId/status", authentication, updateTaskRequestStatus);
-router.get("/assigned-to-me", authentication, getAssignedTasks);
-router.patch("/:id/kanban-status", authentication, updateTaskKanbanStatus);
-router.post("/:id/submit-completion", authentication, upload.array('files'), submitWorkCompletion);
-router.post("/:id/resubmit-completion", authentication, upload.array('files'), resubmitWorkCompletion);
+/* ============================== CLIENT ============================== */
+router.post("/client/request/:id", authentication, upload.array("files"), requestTask);
+router.post("/client/payment/:id", authentication, upload.single("file"), submitPaymentProof);
+router.post("/client/approve/:id", authentication, upload.array("files"), approveWorkCompletion);
+router.post("/client/review/:id", authentication, createReview);
 
-
-/* =============================================
-   CLIENT ROUTES
-   ============================================= */
-// Now accepts files via form-data
-router.post("/request/:id", authentication, upload.array('files'), requestTask); 
-// New route for payment proof
-router.post("/:id/submit-payment-proof", authentication, upload.single('paymentProof'), submitPaymentProof);
-router.post("/:id/approve-completion", authentication, upload.array('files', 5), approveWorkCompletion);
-router.post("/:id/review", authentication, createReview);
-
-
-/* =============================================
-   PUBLIC & SHARED ROUTES
-   ============================================= */
-router.get("/pool", authentication, getTaskPool);
+/* ============================== PUBLIC & SHARED ============================== */
+router.get("/pool", getTaskPool);
 router.get("/categories", getCategories);
 router.get("/:id", getTaskById);
-router.post("/:id/files", authentication, upload.array('files'), addTaskFiles);
+router.post("/files/:id", authentication, upload.array("files"), addTaskFiles);
 
 export default router;

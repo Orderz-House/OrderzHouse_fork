@@ -1,7 +1,6 @@
 import pool from "../../models/db.js";
 
 /**
- * Helper to build the status condition dynamically
  * based on project_type and status logic
  */
 const buildStatusCondition = () => {
@@ -138,7 +137,7 @@ export const getProjectsBySubSubCategory = async (req, res) => {
 };
 
 /* ===================================================
-   🌍 PUBLIC ROUTES (No Token Required)
+   🌍 PUBLIC ROUTES 
    =================================================== */
 
 
@@ -161,7 +160,7 @@ export const getPublicCategories = async (req, res) => {
 };
 
 /**
- *  Get projects by main category (public)
+ *  Get projects by main category 
  * 
  */
 export const getProjectsByCategoryId = async (req, res) => {
@@ -200,7 +199,7 @@ export const getProjectsByCategoryId = async (req, res) => {
 };
 
 /**
- * Get projects by sub-category (public)
+ * Get projects by sub category (public)
  *
  */
 export const getProjectsBySubCategoryId = async (req, res) => {
@@ -241,7 +240,7 @@ export const getProjectsBySubCategoryId = async (req, res) => {
 };
 
 /**
- * Get projects by sub-sub-category (public)
+ * Get projects by sub-sub-category 
 
  */
 export const getProjectsBySubSubCategoryId = async (req, res) => {

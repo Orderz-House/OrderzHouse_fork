@@ -4,14 +4,13 @@ import qrcode from "qrcode";
 
 /**
  * @route   POST /auth/2fa/generate
- * @desc    Generate a new 2FA secret and QR code for the user.
- * @access  Private
+ * @desc    
+ * @access  
  */
 export const generateTwoFactorSecret = async (req, res) => {
   try {
-    const userId = req.token.userId; // From your middleware
+    const userId = req.token.userId; 
     
-    // ✅ FIX: Get user email from database using userId from token
     const userResult = await pool.query(
       "SELECT email FROM users WHERE id = $1 AND is_deleted = FALSE",
       [userId]
@@ -30,13 +29,11 @@ export const generateTwoFactorSecret = async (req, res) => {
       name: `OrderzHouse (${userEmail})`,
     });
 
-    // Temporarily store the secret in the database until the user verifies it
     await pool.query(
       `UPDATE users SET two_factor_secret = $1, is_two_factor_enabled = FALSE WHERE id = $2`,
       [secret.base32, userId]
     );
 
-    // Generate a QR code image from the secret's otpauth_url
     qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
       if (err) {
         console.error("QR Code Generation Error:", err);
@@ -49,7 +46,7 @@ export const generateTwoFactorSecret = async (req, res) => {
         success: true,
         message: "Scan this QR code with your authenticator app.",
         qrCodeUrl: data_url,
-        secret: secret.base32, // Optional: for manual entry
+        secret: secret.base32, 
       });
     });
   } catch (error) {
@@ -62,13 +59,13 @@ export const generateTwoFactorSecret = async (req, res) => {
 };
 
 /**
- * @route   POST /auth/2fa/verify
- * @desc    Verify the user's TOTP token and permanently enable 2FA.
- * @access  Private
+ * @route 
+ * @desc    
+ * @access  
  */
 export const verifyTwoFactorToken = async (req, res) => {
   try {
-    const userId = req.token.userId; // From your middleware
+    const userId = req.token.userId; 
     const { token } = req.body;
 
     if (!token) {
@@ -92,12 +89,11 @@ export const verifyTwoFactorToken = async (req, res) => {
 
     const secret = userResult.rows[0].two_factor_secret;
 
-    // Verify the token provided by the user
     const verified = speakeasy.totp.verify({
       secret: secret,
       encoding: 'base32',
       token: token,
-      window: 1 // Allows for a 30-second window on either side to account for clock drift
+      window: 1 
     });
 
     if (verified) {
@@ -133,7 +129,7 @@ export const verifyTwoFactorToken = async (req, res) => {
  */
 export const disableTwoFactor = async (req, res) => {
     try {
-        const userId = req.token.userId; // From your middleware
+        const userId = req.token.userId; 
       
         await pool.query(
             `UPDATE users SET is_two_factor_enabled = FALSE, two_factor_secret = NULL WHERE id = $1`,

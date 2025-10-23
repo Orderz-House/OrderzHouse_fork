@@ -17,11 +17,10 @@ import {
 
 const Blogsrouter = express.Router();
 
-// Configure multer for memory storage (required for Cloudinary)
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'cover') {
       if (file.mimetype.startsWith('image/')) {
@@ -48,11 +47,9 @@ const upload = multer({
   { name: 'attachments', maxCount: 5 }
 ]);
 
-// Public routes
 Blogsrouter.get("/", getBlogs);
 Blogsrouter.get("/:id", getBlogById);
 
-// Protected routes with upload middleware
 Blogsrouter.post("/", authentication, upload, createBlog);
 Blogsrouter.put("/:id", authentication, upload, updateBlog);
 Blogsrouter.delete("/:id", authentication, deleteBlog);

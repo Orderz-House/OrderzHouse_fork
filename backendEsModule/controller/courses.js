@@ -3,7 +3,6 @@ import { NotificationCreators } from "../services/notificationService.js";
 
 
 /* -------------------- Courses -------------------- */
-// Get all active courses (admin or general use)
 export const getCourses = async (req, res) => {
   try {
     const query = `
@@ -56,7 +55,7 @@ export const getCourseById = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid course ID" });
     }
 
-    // Check if user is admin (bypass access check)
+    // Check if user is admin (bypass access check) //we should use middleware for that .. admOnly
     if (userRole === 1) {
       const query = `SELECT id, title, description, price FROM courses WHERE id = $1 AND is_deleted = FALSE`;
       const { rows } = await pool.query(query, [courseId]);
@@ -66,7 +65,7 @@ export const getCourseById = async (req, res) => {
       return res.status(200).json({ success: true, course: rows[0] });
     }
 
-    // For freelancers: check access permission
+    // For freelancers: check access permission // we should use middleware for that .. requireVERandSubscription
     const query = `
       SELECT c.id, c.title, c.description, c.price
       FROM courses c
@@ -86,7 +85,6 @@ export const getCourseById = async (req, res) => {
   }
 };
 
-// Create course (Admin)
 export const createCourse = async (req, res) => {
   try {
     const { title, description, price, category_id, title_ar, description_ar } = req.body;
@@ -248,7 +246,6 @@ export const adminEnrollFreelancer = async (req, res) => {
     );
     const newEnrollment = result.rows[0];
 
-    // ✨ NOTIFICATION INTEGRATION: Notify the freelancer that an admin has enrolled them in a course.
     try {
       await NotificationCreators.courseEnrolled(freelancer_id, course_id, courseTitle);
     } catch (notificationError) {
@@ -266,7 +263,6 @@ export const adminEnrollFreelancer = async (req, res) => {
   }
 };
 
-/* -------------------- Freelancer: Get My Courses (RESTRICTED) -------------------- */
 export const getFreelancerAccessibleCourses = async (req, res) => {
   try {
     const freelancer_id = req.token.userId;
@@ -302,7 +298,6 @@ export const checkCourseAccess = async (req, res) => {
     const { id: course_id } = req.params;
     const freelancer_id = req.token.userId;
 
-    // Check if course exists and is not deleted
     const courseQuery = `
       SELECT id FROM courses WHERE id = $1 AND is_deleted = FALSE
     `;
@@ -312,7 +307,6 @@ export const checkCourseAccess = async (req, res) => {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
-    // Check if freelancer has access
     const accessQuery = `
       SELECT can_access 
       FROM course_access 
@@ -337,7 +331,6 @@ export const getMyCourses = async (req, res) => {
   try {
     const freelancer_id = req.token.userId;
 
-    // Get courses that freelancer has ACCESS to AND is enrolled in
     const query = `
       SELECT 
         c.id, c.title, c.description, c.price, c.created_at,
@@ -367,7 +360,6 @@ export const getCourseMaterials = async (req, res) => {
     const freelancer_id = req.token.userId;
     const userRole = req.token.roleId;
 
-    // Admin can view any materials
     if (userRole === 1) {
       const query = `SELECT id, title, file_url, file_type, created_at FROM course_materials WHERE course_id = $1 ORDER BY created_at DESC`;
       const { rows } = await pool.query(query, [course_id]);

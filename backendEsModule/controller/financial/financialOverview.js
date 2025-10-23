@@ -2,7 +2,7 @@ import { getFinancialOverview } from "./financialService.js";
 
 export const getMyFinancialOverview = async (req, res) => {
   const userId = req.token?.userId;
-  const role = req.token?.role; // 2 = client, 3 = freelancer
+  const role = req.token?.role;
 
   if (!userId || !role) {
     return res.status(401).json({ success: false, message: "Unauthorized" });

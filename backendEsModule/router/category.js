@@ -15,7 +15,6 @@ import {
 const categoryRouter = express.Router();
 
 // ========== Public routes ==========
-// Get all categories
 categoryRouter.get("/", getCategories);
 
 

@@ -133,9 +133,7 @@ export const getUsersByRole = async (req, res) => {
   }
 };
 
-/**
- * Get user by ID (admin or self)
- */
+
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   const requesterId = req.token?.userId;
@@ -214,7 +212,7 @@ export const createUser = async (req, res) => {
 
 
 /**
- * Update user info (self or admin)
+ * Update user info 
  */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
@@ -281,7 +279,7 @@ export const updateUser = async (req, res) => {
   }
 };
 /**
- * Soft delete user (admin or self)
+ * Soft delete user
  */
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
