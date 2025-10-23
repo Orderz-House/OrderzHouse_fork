@@ -1,6 +1,6 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { requireVerified } from "../middleware/requireVerification.js";
+import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
 import {
   updateFreelancerCategories,
   getFreelancerCategories
@@ -8,21 +8,17 @@ import {
 
 const freelancerCategoriesRouter = express.Router();
 
-// ------------------------
-// Get categories for a freelancer (self or admin)
 freelancerCategoriesRouter.get(
   "/",
   authentication,
-  requireVerified,
+  requireVerifiedWithSubscription,
   getFreelancerCategories
 );
 
-// ------------------------
-// Update categories (self or admin)
 freelancerCategoriesRouter.put(
   "/",
   authentication,
-  requireVerified,
+  requireVerifiedWithSubscription,
   updateFreelancerCategories
 );
 
