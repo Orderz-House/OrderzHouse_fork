@@ -44,8 +44,6 @@ import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
-import TasksPage from "./components/Tasks/components/TasksPage.jsx";
-import TaskDetails from "./components/Tasks/components/TaskDetails.jsx";
 import CreateTaskForm from "./components/Tasks/components/CreateTaskForm.jsx";
 
 
@@ -91,6 +89,7 @@ function App() {
 
   return (
     <>
+    <GlobalLoadingProvider>
       {!shouldHideNavbar && <Navbar />}
 
       <Routes
@@ -128,8 +127,8 @@ function App() {
         <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
         <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
         
-        <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-        <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetails /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><ProjectsPage mode="tasks" /></ProtectedRoute>} />
+        <Route path="/tasks/:id" element={<ProtectedRoute><ProjectDetails mode="tasks" /></ProtectedRoute>} />
         <Route 
           path="/tasks/create" 
           element={
@@ -209,8 +208,7 @@ function App() {
 
       {!shouldHideNavbar && <EnhancedFooter />}
       <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
-            <GlobalLoadingProvider />
-
+     </GlobalLoadingProvider>
     </>
   );
 }
