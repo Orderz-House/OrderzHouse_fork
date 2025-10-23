@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { CategoriesRail } from "./TopbarCategories.jsx";
 import SubSidebar from "./SubSideBar.jsx";
 import {
@@ -10,22 +10,25 @@ import {
 const THEME = "#028090";
 const THEME_DARK = "#05668D";
 
-export default function ProjectsPage() {
+export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
+  const location = useLocation();
 
-  // ====== URL Params we support ======
-  const q = (sp.get("q") || "").trim();            // NEW: free-text search (name of cat/subcat)
-  const category = sp.get("cat") || "";            // category id
-  const sub = sp.get("sub") || "";                 // sub-sub id
-  const subcat = sp.get("subcat") || "";           // sub-category id
+  // إن لم يُمرّر prop من الراوتر، استنتجه من المسار (/tasks => tasks)
+  const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
+  const mode = propMode || inferredMode; // "projects" | "tasks"
+
+  // ====== URL Params ======
+  const q = (sp.get("q") || "").trim();
+  const category = sp.get("cat") || "";
+  const sub = sp.get("sub") || "";
+  const subcat = sp.get("subcat") || "";
 
   // ====== Local catalog state ======
-  const [catalog, setCatalog] = useState({});      // { [catId]: { title } }
+  const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
-
-  // Local search index
-  const [nameToCatId, setNameToCatId] = useState({});     // { "design": "3" }
-  const [nameToSubCat, setNameToSubCat] = useState({});   // { "academic posters": { id: "9", parentId: "3" } }
+  const [nameToCatId, setNameToCatId] = useState({});
+  const [nameToSubCat, setNameToSubCat] = useState({});
 
   // ---------- Load all categories (for top rail titles) ----------
   useEffect(() => {
@@ -47,7 +50,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     const buildIndex = async () => {
       try {
-        const cats = Object.entries(catalog); // [ [id, {title}], ... ]
+        const cats = Object.entries(catalog);
         if (cats.length === 0) return;
 
         const _nameToCatId = {};
@@ -59,7 +62,7 @@ export default function ProjectsPage() {
           if (key) _nameToCatId[key] = id;
         });
 
-        // Index sub-categories when q exists (or in general if you prefer)
+        // Index sub-categories when q exists
         if (q) {
           await Promise.all(
             cats.map(async ([id]) => {
@@ -82,7 +85,7 @@ export default function ProjectsPage() {
         setIndexReady(true);
       } catch (e) {
         console.error("buildIndex error", e);
-        setIndexReady(true); // avoid blocking
+        setIndexReady(true);
       }
     };
     buildIndex();
@@ -96,7 +99,7 @@ export default function ProjectsPage() {
       next.set("cat", firstId);
       next.delete("sub");
       next.delete("subcat");
-      next.delete("q"); // clear q if any
+      next.delete("q");
       next.set("page", "1");
       setSp(next, { replace: true });
     }
@@ -106,19 +109,17 @@ export default function ProjectsPage() {
   // ---------- Resolve free-text q to (cat/subcat) once index is ready ----------
   useEffect(() => {
     if (!q || !indexReady) return;
-    // If URL already has explicit ids, do nothing
     if (category || subcat || sub) return;
 
     const term = q.toLowerCase().trim();
 
-    // Priority 1: exact match sub-category, then category
     const exactSub = nameToSubCat[term];
     if (exactSub) {
       const next = new URLSearchParams(sp);
       next.set("cat", exactSub.parentId);
       next.set("subcat", exactSub.id);
-      next.delete("sub");       // clear sub-sub
-      next.delete("q");         // resolved
+      next.delete("sub");
+      next.delete("q");
       next.set("page", "1");
       setSp(next, { replace: true });
       return;
@@ -136,7 +137,6 @@ export default function ProjectsPage() {
       return;
     }
 
-    // Priority 2: partial includes sub-category, then category
     const subHit = Object.entries(nameToSubCat).find(([k]) => k.includes(term));
     if (subHit) {
       const [, val] = subHit;
@@ -163,19 +163,17 @@ export default function ProjectsPage() {
       return;
     }
 
-    // If no match → clear q silently
     const next = new URLSearchParams(sp);
     next.delete("q");
     setSp(next, { replace: true });
   }, [q, indexReady, nameToCatId, nameToSubCat, category, subcat, sub, sp, setSp]);
 
-  // ---------- Handlers for category / sub-sub selection ----------
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
     next.set("cat", id.toString());
-    next.delete("sub");      // clear sub-sub
-    next.delete("subcat");   // clear sub-category
-    next.delete("q");        // clear query term if any
+    next.delete("sub");
+    next.delete("subcat");
+    next.delete("q");
     next.set("page", "1");
     setSp(next, { replace: false });
   };
@@ -184,21 +182,21 @@ export default function ProjectsPage() {
     const next = new URLSearchParams(sp);
     if (subId) next.set("sub", subId.toString());
     else next.delete("sub");
-    next.delete("subcat"); // if user picked a sub-sub, drop subcat filter
+    next.delete("subcat");
     next.delete("q");
     next.set("page", "1");
     setSp(next, { replace: false });
   };
 
   const meta = useMemo(
-    () => catalog[category] || { title: "Projects", subtitle: "" },
-    [catalog, category]
+    () => catalog[category] || { title: mode === "tasks" ? "Tasks" : "Projects", subtitle: "" },
+    [catalog, category, mode]
   );
 
   return (
     <section className="relative min-h-[70vh] py-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Topbar Categories */}
+        {/* Categories rail */}
         <div className="mb-6">
           <CategoriesRail
             active={category}
@@ -211,17 +209,15 @@ export default function ProjectsPage() {
 
         {/* Header */}
         <header className="mb-6">
-          <h1
-            className="text-3xl font-black tracking-tight"
-            style={{ color: THEME_DARK }}
-          >
-            {meta.title || "Projects"}
+          <h1 className="text-3xl font-black tracking-tight" style={{ color: THEME_DARK }}>
+            {meta.title}
           </h1>
         </header>
 
         {/* Main Content */}
         <div className="flex gap-8">
           <SubSidebar
+            mode={mode}                 // 👈 الأهم
             categoryId={category}
             activeSubSub={sub}
             onSelectSubSub={chooseSub}

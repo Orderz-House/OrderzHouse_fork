@@ -1,23 +1,36 @@
 import React, { useEffect, useState } from "react";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
+
+// Projects API
 import {
   fetchAuthProjectsByCategory,
   fetchAuthProjectsBySubSubCategory,
   fetchAuthProjectsBySubCategory,
 } from "./api/projects";
+
+// Tasks API
+import {
+  fetchAuthTasksByCategory,
+  fetchAuthTasksBySubSubCategory,
+  fetchAuthTasksBySubCategory,
+} from "./api/tasks";
+
 import ProjectCard from "./ProjectCard";
 
 export default function SubSidebar({
+  mode = "projects",          // "projects" | "tasks"
   categoryId,
   activeSubSub,
   onSelectSubSub,
   theme = "#028090",
-  subCategoryId, // موجود مسبقاً
+  subCategoryId,
 }) {
   const [subSubs, setSubSubs] = useState([]);
-  const [projects, setProjects] = useState([]);
+  const [items, setItems] = useState([]);
   const [loadingSubSubs, setLoadingSubSubs] = useState(false);
-  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  const isTasks = mode === "tasks";
 
   // اجلب sub-sub-categories للكـاتيجوري المختار
   useEffect(() => {
@@ -25,47 +38,49 @@ export default function SubSidebar({
     setLoadingSubSubs(true);
     fetchSubSubCategoriesByCategoryId(Number(categoryId))
       .then((data) => setSubSubs(Array.isArray(data) ? data : []))
-      .catch((err) => {
-        console.error(err);
-        setSubSubs([]);
-      })
+      .catch(() => setSubSubs([]))
       .finally(() => setLoadingSubSubs(false));
   }, [categoryId]);
 
-  // اجلب المشاريع (أولوية: subSub > subCategory > category)
+  // اجلب العناصر (أولوية: subSub > subCategory > category)
   useEffect(() => {
-    if (!categoryId) return setProjects([]);
-    setLoadingProjects(true);
+    if (!categoryId) return setItems([]);
+    setLoadingItems(true);
 
     const run = async () => {
       try {
         if (activeSubSub) {
-          const data = await fetchAuthProjectsBySubSubCategory(Number(activeSubSub));
-          setProjects(Array.isArray(data) ? data : []);
+          const data = isTasks
+            ? await fetchAuthTasksBySubSubCategory(Number(activeSubSub))
+            : await fetchAuthProjectsBySubSubCategory(Number(activeSubSub));
+          setItems(Array.isArray(data) ? data : []);
           return;
         }
         if (subCategoryId) {
-          const data = await fetchAuthProjectsBySubCategory(Number(subCategoryId));
-          setProjects(Array.isArray(data) ? data : []);
+          const data = isTasks
+            ? await fetchAuthTasksBySubCategory(Number(subCategoryId))
+            : await fetchAuthProjectsBySubCategory(Number(subCategoryId));
+          setItems(Array.isArray(data) ? data : []);
           return;
         }
-        const data = await fetchAuthProjectsByCategory(Number(categoryId));
-        setProjects(Array.isArray(data) ? data : []);
+        const data = isTasks
+          ? await fetchAuthTasksByCategory(Number(categoryId))
+          : await fetchAuthProjectsByCategory(Number(categoryId));
+        setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error(err);
-        setProjects([]);
+        setItems([]);
       } finally {
-        setLoadingProjects(false);
+        setLoadingItems(false);
       }
     };
 
     run();
-  }, [categoryId, activeSubSub, subCategoryId]);
+  }, [categoryId, activeSubSub, subCategoryId, isTasks]);
 
   if (!categoryId) return null;
   const hasSidebar = subSubs.length > 0;
 
-  // سكيليتون للشبكة
   const SkeletonGrid = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {[...Array(8)].map((_, i) => (
@@ -78,19 +93,16 @@ export default function SubSidebar({
     </div>
   );
 
-  // زر/شيب (chip) – يُستخدم في الموبايل
   const Chip = ({ active, children, onClick }) => (
     <button
       onClick={onClick}
       type="button"
       className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all ${
-        active
-          ? "text-slate-900"
-          : "text-slate-700 hover:text-slate-900 bg-white"
+        active ? "text-slate-900" : "text-slate-700 hover:text-slate-900 bg-white"
       }`}
       style={{
         background: active ? `${theme}14` : undefined,
-        borderColor: active ? theme : "rgb(226 232 240)", // slate-200
+        borderColor: active ? theme : "rgb(226 232 240)",
       }}
     >
       {children}
@@ -99,14 +111,13 @@ export default function SubSidebar({
 
   return (
     <div className="w-full">
-      {/* ✅ موبايل/تابلت: شِيبس أفقية للفلاتر */}
+      {/* موبايل: فلاتر أفقية */}
       {hasSidebar && (
         <div className="lg:hidden -mx-1 mb-4">
           <div
             className="subchips flex items-center gap-2 overflow-x-auto pb-1 px-1 [-ms-overflow-style:none] [scrollbar-width:none]"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            {/* إخفاء سكرول كروم/سفاري */}
             <style>{`.subchips::-webkit-scrollbar{display:none}`}</style>
 
             <Chip active={!activeSubSub} onClick={() => onSelectSubSub("")}>
@@ -127,7 +138,7 @@ export default function SubSidebar({
       )}
 
       <div className="flex w-full gap-6 lg:gap-8">
-        {/* ✅ دِسك توب: سايدبار ثابتة كما هي لكن ظاهرة فقط من lg+ */}
+        {/* دِسك توب: سايدبار ثابت */}
         {hasSidebar && (
           <aside className="hidden lg:block w-72 flex-shrink-0">
             <div className="sticky top-24 rounded-2xl border border-slate-200/70 bg-white shadow-sm">
@@ -147,11 +158,7 @@ export default function SubSidebar({
                       }`}
                       style={{ borderLeftColor: !activeSubSub ? theme : "transparent" }}
                     >
-                      <span
-                        className={`text-sm font-semibold ${
-                          !activeSubSub ? "text-slate-900" : "text-slate-700"
-                        }`}
-                      >
+                      <span className={`text-sm font-semibold ${!activeSubSub ? "text-slate-900" : "text-slate-700"}`}>
                         All
                       </span>
                     </button>
@@ -189,17 +196,25 @@ export default function SubSidebar({
 
         {/* الشبكة */}
         <div className="flex-1 min-w-0">
-          {loadingProjects ? (
+          {loadingItems ? (
             <SkeletonGrid />
-          ) : projects.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <h3 className="text-lg font-semibold text-slate-700 mb-1">No projects found</h3>
+              <h3 className="text-lg font-semibold text-slate-700 mb-1">
+                {isTasks ? "No tasks found" : "No projects found"}
+              </h3>
               <p className="text-sm text-slate-500">Try selecting a different category</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} theme={theme} />
+              {items.map((it) => (
+                <ProjectCard
+                  key={it.id}
+                  project={it}            // نفس الشكل
+                  theme={theme}
+                  linkBase={isTasks ? "tasks" : "projects"} // 👈 يغير الرابط فقط
+                  priceField={isTasks ? "budget" : "price"} // 👈 يعرض budget للـtasks
+                />
               ))}
             </div>
           )}
