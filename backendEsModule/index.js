@@ -32,6 +32,7 @@ import ratingsRouter from "./router/rating.js";
 import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
+import emailVerificationRoutes from "./router/emailVerification.js";
 
 
 // DB connection
@@ -85,6 +86,7 @@ app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
+app.use("/email", emailVerificationRoutes);
 
 
 let server, io;
