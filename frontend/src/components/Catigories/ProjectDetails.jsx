@@ -2,7 +2,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getProjectByIdApi } from "./api/projects";
-// import { getTaskByIdApi } from "./api/tasks"; // ✅ إعادة تفعيل الاستيراد
+import { getTaskByIdApi } from "./api/tasks";
 import { useSelector } from "react-redux";
 
 const THEME = "#028090";
@@ -14,38 +14,44 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
-  // استنتاج المود من المسار إن لم يُمرّر
-  const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
+  // infer mode based on URL (/tasks or /projects)
+  const inferredMode = location.pathname.startsWith("/tasks")
+    ? "tasks"
+    : "projects";
   const mode = propMode || inferredMode;
 
-  // read-only
+  // read-only & role info
   const readOnly = !!location.state?.readOnly;
   const roleLabel = location.state?.role || "guest";
 
-  // قراءة الرول من Redux مع fallback للـ localStorage
   const { userData } = useSelector((s) => s?.auth || {}) || {};
   const roleIdFromRedux =
     userData?.role_id ?? userData?.roleId ?? userData?.role ?? null;
   const roleId =
     (typeof roleIdFromRedux === "number" ? roleIdFromRedux : null) ??
-    (typeof window !== "undefined" && /^\d+$/.test(localStorage.getItem("role") || "")
+    (typeof window !== "undefined" &&
+    /^\d+$/.test(localStorage.getItem("role") || "")
       ? Number(localStorage.getItem("role"))
       : null);
 
   const isClient = roleId === 2;
   const isFreelancer = roleId === 3;
 
-  // تحميل الداتا
   useEffect(() => {
-    const stateObj = location.state?.project; // نحافظ على نفس الاسم الممرَّر من البطاقة
+    const stateObj = location.state?.project;
     if (stateObj && String(stateObj.id) === String(id)) {
       setItem(stateObj);
       return;
     }
+
+    // choose correct loader: task or project
     const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
-    loader(id).then(setItem).catch(console.error);
+    loader(id)
+      .then((res) => setItem(res.task || res.project || res))
+      .catch(console.error);
   }, [id, location.state, mode]);
 
+  // Loading placeholder
   if (!item) {
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -68,21 +74,20 @@ export default function ProjectDetails({ mode: propMode }) {
     );
   }
 
-  // بيانات مشتقة
   const title = item.title;
   const cover = item.cover;
   const price = item?.budget ?? item?.price;
   const duration = item.duration_days ?? "—";
   const projectType = item?.type;
-  const isTasks = mode === "tasks"; // ✅ تعريف مرّة واحدة فقط
+  const isTasks = mode === "tasks";
 
-  // حالات الأزرار (✅ تعريف مرّة واحدة فقط)
+  // permission logic
   let canAccept = true;
-  if (isTasks && isFreelancer) canAccept = false; // فريلانسر لا يقبل Tasks
-  if (!isTasks && isClient) canAccept = false;   // كلاينت لا يقبل Projects
+  if (isTasks && isFreelancer) canAccept = false;
+  if (!isTasks && isClient) canAccept = false;
 
   let canContact = true;
-  if (!isTasks && isClient) canContact = false;  // كلاينت لا يتواصل على Projects
+  if (!isTasks && isClient) canContact = false;
 
   let acceptLabel = isTasks ? "Get this task" : "Get this project";
   if (!isTasks && isFreelancer && projectType === "bidding") {
@@ -91,22 +96,25 @@ export default function ProjectDetails({ mode: propMode }) {
   const contactLabel = isTasks ? "Contact freelancer" : "Contact seller";
 
   const acceptTitle = !canAccept
-    ? (isTasks
-        ? "Freelancers can't accept tasks. Only clients can accept tasks."
-        : "Clients can't accept projects. You can accept tasks.")
+    ? isTasks
+      ? "Freelancers can't accept tasks. Only clients can accept tasks."
+      : "Clients can't accept projects. You can accept tasks."
     : "";
 
   const contactTitle = !canContact
     ? "Clients can't contact sellers on projects."
     : "";
 
-  // ستايلات باهتة عند التعطيل
   const acceptClasses =
     "w-full h-11 rounded-xl text-white font-semibold transition " +
-    (canAccept ? "hover:shadow-lg" : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
+    (canAccept
+      ? "hover:shadow-lg"
+      : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
   const contactClasses =
     "w-full h-11 rounded-xl border text-slate-700 font-semibold transition " +
-    (canContact ? "hover:bg-slate-50" : "opacity-40 grayscale cursor-not-allowed hover:bg-white");
+    (canContact
+      ? "hover:bg-slate-50"
+      : "opacity-40 grayscale cursor-not-allowed hover:bg-white");
 
   return (
     <section className="relative bg-white">
@@ -114,7 +122,10 @@ export default function ProjectDetails({ mode: propMode }) {
         {/* Header */}
         <header className="mb-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight" style={{ color: THEME_DARK }}>
+            <h1
+              className="text-3xl md:text-4xl font-black tracking-tight"
+              style={{ color: THEME_DARK }}
+            >
               {title}
             </h1>
 
@@ -126,13 +137,18 @@ export default function ProjectDetails({ mode: propMode }) {
           </div>
         </header>
 
+        {/* Main layout */}
         <div className="grid lg:grid-cols-[1fr,380px] gap-10">
-          {/* Left */}
+          {/* Left content */}
           <div>
             {cover && (
               <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mb-4">
                 <div className="aspect-[16/9] bg-slate-50">
-                  <img src={cover} alt={title} className="w-full h-full object-cover" />
+                  <img
+                    src={cover}
+                    alt={title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             )}
@@ -147,64 +163,72 @@ export default function ProjectDetails({ mode: propMode }) {
             </div>
           </div>
 
-          {/* Right */}
+          {/* Right sidebar */}
           <aside className="lg:sticky lg:top-24">
             <div className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
               <div className="p-6 border-b border-slate-100">
+                {/* Budget & duration */}
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 text-sm">Budget</span>
-                    <span className="text-2xl font-black" style={{ color: THEME_DARK }}>
+                    <span
+                      className="text-2xl font-black"
+                      style={{ color: THEME_DARK }}
+                    >
                       ${price ?? "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">Duration</span>
-                    <span className="font-semibold text-slate-700">{duration} day(s)</span>
+                    <span className="font-semibold text-slate-700">
+                      {duration} day(s)
+                    </span>
                   </div>
                 </div>
               </div>
 
+              {/* Action buttons */}
               <div className="p-6 space-y-3">
-                <>
-                  {/* Accept */}
-                  <div title={acceptTitle || undefined}>
-                    <button
-                      className={acceptClasses}
-                      style={{ backgroundColor: THEME }}
-                      disabled={!canAccept}
-                      aria-disabled={!canAccept}
-                    >
-                      {acceptLabel}
-                    </button>
-                  </div>
+                <div title={acceptTitle || undefined}>
+                  <button
+                    className={acceptClasses}
+                    style={{ backgroundColor: THEME }}
+                    disabled={!canAccept}
+                    aria-disabled={!canAccept}
+                  >
+                    {acceptLabel}
+                  </button>
+                </div>
 
-                  {/* Contact */}
-                  <div title={contactTitle || undefined}>
-                    <button
-                      className={contactClasses}
-                      disabled={!canContact}
-                      aria-disabled={!canContact}
-                    >
-                      {contactLabel}
-                    </button>
-                  </div>
-                </>
+                <div title={contactTitle || undefined}>
+                  <button
+                    className={contactClasses}
+                    disabled={!canContact}
+                    aria-disabled={!canContact}
+                  >
+                    {contactLabel}
+                  </button>
+                </div>
 
+                {/* Extra details */}
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure checkout
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure
+                    checkout
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Money-back guarantee
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />{" "}
+                    Money-back guarantee
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7 support
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7
+                    support
                   </li>
                 </ul>
               </div>
             </div>
 
+            {/* back button */}
             <button
               onClick={() => navigate(-1)}
               className="mt-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-800"
