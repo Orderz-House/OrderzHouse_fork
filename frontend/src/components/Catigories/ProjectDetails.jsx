@@ -2,7 +2,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getProjectByIdApi } from "./api/projects";
-import { getTaskByIdApi } from "./api/tasks";
+// import { getTaskByIdApi } from "./api/tasks";
 import { useSelector } from "react-redux";
 
 const THEME = "#028090";
