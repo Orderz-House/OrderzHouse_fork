@@ -1,8 +1,35 @@
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
+import PlansAPI from "../../api/plans";
 
 export default function Freelancers() {
   const { roleId, token } = useSelector((state) => state.auth);
+
+  const [planOptions, setPlanOptions] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await PlansAPI.getPlans();
+        const plans = Array.isArray(res?.plans) ? res.plans : Array.isArray(res) ? res : [];
+        if (mounted) {
+          setPlanOptions(
+            plans.map((p) => ({
+              value: p.id,    
+              label: p.name,
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("Failed to load plans for filter", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (!token) {
     return (
@@ -46,28 +73,17 @@ export default function Freelancers() {
               </div>
             ),
         },
-        { label: "ID", key: "id" },
-        { label: "First Name", key: "first_name" },
-        { label: "Last Name", key: "last_name" },
-        { label: "Username", key: "username" },
+        {
+          label: "Name",
+          key: "full_name",
+          render: (row) =>
+            `${row.first_name ?? ""} ${row.last_name ?? ""}`.trim() || "—",
+        },
         { label: "Email", key: "email" },
         { label: "Country", key: "country" },
         {
-          label: "Rating",
-          key: "rating",
-          render: (row) =>
-            row.rating_count && row.rating_sum
-              ? (row.rating_sum / row.rating_count).toFixed(2)
-              : "0.00",
-        },
-        {
-          label: "Verified",
-          key: "is_verified",
-          render: (row) => (row.is_verified ? "✓ Yes" : "✗ No"),
-        },
-        {
-          label: "Online",
-          key: "is_online",
+          label: "Status",
+          key: "status",
           render: (row) => (
             <span
               className={`inline-flex items-center gap-1.5 ${
@@ -84,18 +100,26 @@ export default function Freelancers() {
           ),
         },
         {
-          label: "Deleted",
-          key: "is_deleted",
-          render: (row) => (row.is_deleted ? "True" : "False"),
+          label: "Rating",
+          key: "rating",
+          render: (row) =>
+            row.rating_count && row.rating_sum
+              ? (row.rating_sum / row.rating_count).toFixed(2)
+              : "0.00",
+        },
+        {
+          label: "Verified",
+          key: "is_verified",
+          render: (row) => (row.is_verified ? "✓ Yes" : "✗ No"),
         },
       ]}
-       formFields={[
+      formFields={[
         { key: "first_name", label: "First Name", required: true },
         { key: "last_name", label: "Last Name", required: true },
         { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
         { key: "password", label: "Password", type: "password", placeholder: "Leave blank to keep current" },
-        { key: "phone", label: "Phone" },                     
+        { key: "phone", label: "Phone" },
         { key: "country", label: "Country" },
         { key: "category", label: "Category" },
         { key: "profile_pic_url", label: "Profile Image URL" },
@@ -122,7 +146,14 @@ export default function Freelancers() {
           defaultValue: false,
         },
       ]}
-      filters={[]}
+      filters={[
+        {
+          key: "plan_id",    
+          label: "Plan",
+          options: planOptions,
+        },
+      ]}
+      crudConfig={{ showExpand: false, showEdit: true, showDelete: true }}
     />
   );
 }

@@ -14,6 +14,7 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
+
   // infer mode based on URL (/tasks or /projects)
   const inferredMode = location.pathname.startsWith("/tasks")
     ? "tasks"

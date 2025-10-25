@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import AdminLayout from "../layout/AdminLayout.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 
+import Admins from "../pages/people/Admins.jsx";
 import Clients from "../pages/people/Clients.jsx";
 import Freelancers from "../pages/people/Freelancers.jsx";
 import Courses from "../pages/learning/Courses.jsx";
@@ -24,6 +25,7 @@ export default function AdminRouter() {
         <Route index element={<Dashboard />} />
 
         {/* admin-only sections */}
+        <Route path="people/admins" element={<Admins />} />
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
         <Route path="learning/courses" element={<Courses />} />
