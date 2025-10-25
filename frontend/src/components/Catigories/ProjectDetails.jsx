@@ -14,12 +14,14 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
+
+  // infer mode based on URL (/tasks or /projects)
   const inferredMode = location.pathname.startsWith("/tasks")
     ? "tasks"
     : "projects";
   const mode = propMode || inferredMode;
 
-  // read-only
+  // read-only & role info
   const readOnly = !!location.state?.readOnly;
   const roleLabel = location.state?.role || "guest";
 
@@ -42,10 +44,15 @@ export default function ProjectDetails({ mode: propMode }) {
       setItem(stateObj);
       return;
     }
+
+    // choose correct loader: task or project
     const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
-    loader(id).then(setItem).catch(console.error);
+    loader(id)
+      .then((res) => setItem(res.task || res.project || res))
+      .catch(console.error);
   }, [id, location.state, mode]);
 
+  // Loading placeholder
   if (!item) {
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -75,6 +82,7 @@ export default function ProjectDetails({ mode: propMode }) {
   const projectType = item?.type;
   const isTasks = mode === "tasks";
 
+  // permission logic
   let canAccept = true;
   if (isTasks && isFreelancer) canAccept = false;
   if (!isTasks && isClient) canAccept = false;
@@ -130,8 +138,9 @@ export default function ProjectDetails({ mode: propMode }) {
           </div>
         </header>
 
+        {/* Main layout */}
         <div className="grid lg:grid-cols-[1fr,380px] gap-10">
-          {/* Left */}
+          {/* Left content */}
           <div>
             {cover && (
               <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mb-4">
@@ -155,10 +164,11 @@ export default function ProjectDetails({ mode: propMode }) {
             </div>
           </div>
 
-          {/* Right */}
+          {/* Right sidebar */}
           <aside className="lg:sticky lg:top-24">
             <div className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
               <div className="p-6 border-b border-slate-100">
+                {/* Budget & duration */}
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 text-sm">Budget</span>
@@ -178,32 +188,30 @@ export default function ProjectDetails({ mode: propMode }) {
                 </div>
               </div>
 
+              {/* Action buttons */}
               <div className="p-6 space-y-3">
-                <>
-                  {/* Accept */}
-                  <div title={acceptTitle || undefined}>
-                    <button
-                      className={acceptClasses}
-                      style={{ backgroundColor: THEME }}
-                      disabled={!canAccept}
-                      aria-disabled={!canAccept}
-                    >
-                      {acceptLabel}
-                    </button>
-                  </div>
+                <div title={acceptTitle || undefined}>
+                  <button
+                    className={acceptClasses}
+                    style={{ backgroundColor: THEME }}
+                    disabled={!canAccept}
+                    aria-disabled={!canAccept}
+                  >
+                    {acceptLabel}
+                  </button>
+                </div>
 
-                  {/* Contact */}
-                  <div title={contactTitle || undefined}>
-                    <button
-                      className={contactClasses}
-                      disabled={!canContact}
-                      aria-disabled={!canContact}
-                    >
-                      {contactLabel}
-                    </button>
-                  </div>
-                </>
+                <div title={contactTitle || undefined}>
+                  <button
+                    className={contactClasses}
+                    disabled={!canContact}
+                    aria-disabled={!canContact}
+                  >
+                    {contactLabel}
+                  </button>
+                </div>
 
+                {/* Extra details */}
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure
@@ -221,6 +229,7 @@ export default function ProjectDetails({ mode: propMode }) {
               </div>
             </div>
 
+            {/* back button */}
             <button
               onClick={() => navigate(-1)}
               className="mt-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-800"
