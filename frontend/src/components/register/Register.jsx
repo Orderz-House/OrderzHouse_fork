@@ -86,7 +86,7 @@ const Register = () => {
 
   useEffect(() => {
     axios
-      .get("api/category")
+      .get("http://localhost:5000/category")
       .then((response) => {
         setCategories(response.data.categories || []);
       })
@@ -123,13 +123,13 @@ const Register = () => {
     }
 
     axios
-      .post("/api/users/register", userData)
+      .post("http://localhost:5000/users/register", userData)
       .then((result) => {
         setStatus(true);
         setMessage(result.data.message || "Registration successful");
 
         axios
-          .post("/api/users/login", { email, password })
+          .post("http://localhost:5000/users/login", { email, password })
           .then((res) => {
             dispatch(
               setLogin({
@@ -445,7 +445,7 @@ const Register = () => {
                         placeholder="Your phone"
                         value={phone_number}
                         onChange={(e) => setPhone_number(e.target.value)}
-                        pattern="^[0-9+\-\s()]*$"
+                        // pattern="^[0-9+\-\s()]*$"
                         required
                         className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
                       />

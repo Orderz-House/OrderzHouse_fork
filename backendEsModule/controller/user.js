@@ -20,7 +20,7 @@ const register = async (req, res) => {
     categories,
   } = req.body;
 
-  // Validation
+  // ✅ التحقق من القيم
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
@@ -34,11 +34,15 @@ const register = async (req, res) => {
     !country ||
     !username
   ) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
 
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid email format" });
   }
 
   if (!passwordRegex.test(password)) {
@@ -49,7 +53,7 @@ const register = async (req, res) => {
     });
   }
 
-  if (role_id === 3 && (!categories || !Array.isArray(categories) || categories.length === 0)) {
+  if (role_id === 3 && (!categories || categories.length === 0)) {
     return res.status(400).json({
       success: false,
       message: "Freelancer must have at least one category",
@@ -60,26 +64,69 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const emailLower = email.toLowerCase();
 
+    // ✅ خطوة 1: التحقق من البريد عبر EmailVerify.io
+    try {
+      const verifyResponse = await axios.get(
+        `https://api.emailverify.io/v1/verify?apiKey=${process.env.EMAIL_API_KEY}&email=${emailLower}`
+      );
+
+      const verification = verifyResponse.data;
+      console.log("📧 EmailVerify Response:", verification);
+
+      if (!verification || !verification.status) {
+        return res.status(400).json({
+          success: false,
+          message: "Email verification failed — no status received",
+        });
+      }
+
+      if (verification.status !== "deliverable") {
+        return res.status(400).json({
+          success: false,
+          message: `Email is not deliverable (status: ${verification.status})`,
+        });
+      }
+    } catch (error) {
+      console.error("❌ EmailVerify API Error:", error.response?.data || error.message);
+      return res.status(400).json({
+        success: false,
+        message: "Error verifying email with EmailVerify.io",
+      });
+    }
+
+    // ✅ خطوة 2: التحقق من وجود المستخدم مسبقًا
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1 OR username = $2",
       [emailLower, username]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({ success: false, message: "Email or username already exists" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Email or username already exists" });
     }
 
-    // Insert user
+    // ✅ خطوة 3: إدخال المستخدم
     const { rows: userRows } = await pool.query(
       `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [role_id, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        role_id,
+        first_name,
+        last_name,
+        emailLower,
+        hashedPassword,
+        phone_number,
+        country,
+        username,
+      ]
     );
 
     const user = userRows[0];
 
-    // Handle freelancer categories
-    if (role_id === 3 && categories && categories.length > 0) {
+    // ✅ خطوة 4: الفريلانسر والفئات
+    if (role_id === 3 && categories.length > 0) {
       await pool.query(
         `INSERT INTO freelancer_categories (freelancer_id, category_id)
          SELECT $1, unnest($2::int[])`,
@@ -87,11 +134,15 @@ const register = async (req, res) => {
       );
     }
 
-    const positionRole = role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
+    // ✅ خطوة 5: إنشاء سجل وتسجيل إشعار
+    const positionRole =
+      role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
     const actionUser = `${first_name} ${last_name}, a ${positionRole} from ${country}, has registered successfully.`;
 
-    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [user.id, actionUser]);
-
+    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [
+      user.id,
+      actionUser,
+    ]);
     await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, {
       role_id,
       country,
@@ -109,14 +160,19 @@ const register = async (req, res) => {
       console.error("Error creating welcome notification:", notificationError);
     }
 
+    // ✅ النجاح النهائي
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: "User registered successfully and email verified ✅",
       user,
     });
   } catch (err) {
     console.error("Register Error:", err);
-    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 // ===================== HELPER FUNCTIONS =====================
