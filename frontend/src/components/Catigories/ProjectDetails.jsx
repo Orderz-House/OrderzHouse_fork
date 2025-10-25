@@ -14,12 +14,15 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
+  // Infer mode from pathname
   const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
   const mode = propMode || inferredMode;
 
+  // Read-only state
   const readOnly = !!location.state?.readOnly;
   const role = location.state?.role || "guest";
 
+  // Redux: user info
   const { userData } = useSelector((s) => s.auth) || {};
   const roleId = userData?.role_id;
   const isClient = roleId === 2;
@@ -45,12 +48,14 @@ export default function ProjectDetails({ mode: propMode }) {
     ? "Clients cannot contact sellers on projects."
     : "";
 
+  // Load data
   useEffect(() => {
     const stateObj = location.state?.project;
     if (stateObj && String(stateObj.id) === String(id)) {
       setItem(stateObj);
       return;
     }
+
     const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
     loader(id).then(setItem).catch(console.error);
   }, [id, location.state, mode]);
@@ -77,17 +82,51 @@ export default function ProjectDetails({ mode: propMode }) {
     );
   }
 
+  // Derived data
   const title = item.title;
   const cover = item.cover;
   const price = item?.budget ?? item?.price;
   const duration = item.duration_days ?? "—";
+  const projectType = item?.type;
+
+  // Determine button states
+  const isTasks = mode === "tasks";
+  let canAccept = true;
+  if (isTasks && isFreelancer) canAccept = false;
+  if (!isTasks && isClient) canAccept = false;
+
+  let canContact = true;
+  if (!isTasks && isClient) canContact = false;
+
+  // Default button labels
+  let acceptLabel = isTasks ? "Get this task" : "Get this project";
+  const contactLabel = isTasks ? "Contact freelancer" : "Contact seller";
+
+  // Override for bidding projects
+  if (!isTasks && isFreelancer && projectType === "bidding") {
+    acceptLabel = "Send Offer";
+  }
+
+  const acceptTitle = !canAccept
+    ? isTasks
+      ? "Freelancers cannot accept tasks. Only clients can accept tasks."
+      : "Clients cannot accept projects. You can accept tasks."
+    : "";
+
+  const contactTitle = !canContact
+    ? "Clients cannot contact sellers on projects."
+    : "";
 
   return (
     <section className="relative bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <header className="mb-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight" style={{ color: THEME_DARK }}>
+            <h1
+              className="text-3xl md:text-4xl font-black tracking-tight"
+              style={{ color: THEME_DARK }}
+            >
               {title}
             </h1>
 
@@ -100,7 +139,7 @@ export default function ProjectDetails({ mode: propMode }) {
         </header>
 
         <div className="grid lg:grid-cols-[1fr,380px] gap-10">
-          {/* Left: Content */}
+          {/* Left: Details */}
           <div>
             {cover && (
               <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mb-4">
@@ -112,9 +151,11 @@ export default function ProjectDetails({ mode: propMode }) {
 
             <div className="mt-8">
               <h2 className="text-xl font-bold text-slate-800 mb-3">
-                {mode === "tasks" ? "About this task" : "About this project"}
+                {isTasks ? "About this task" : "About this project"}
               </h2>
-              <p className="leading-7 text-slate-700">{item.description || "No description provided."}</p>
+              <p className="leading-7 text-slate-700">
+                {item.description || "No description provided."}
+              </p>
             </div>
           </div>
 
@@ -139,7 +180,7 @@ export default function ProjectDetails({ mode: propMode }) {
               <div className="p-6 space-y-3">
                 {!readOnly ? (
                   <>
-                    {/* Accept button */}
+                    {/* Accept / Send Offer */}
                     <div title={acceptTitle || undefined}>
                       <button
                         className={
@@ -154,7 +195,7 @@ export default function ProjectDetails({ mode: propMode }) {
                       </button>
                     </div>
 
-                    {/* Contact button */}
+                    {/* Contact */}
                     <div title={contactTitle || undefined}>
                       <button
                         className={
@@ -170,23 +211,27 @@ export default function ProjectDetails({ mode: propMode }) {
                   </>
                 ) : (
                   <div className="text-sm text-slate-600">
-                    {mode === "tasks"
-                      ? "This is a read-only view. You can review scope, budget and timeline as provided by the freelancer."
-                      : "This is a read-only view. You can review scope, budget and timeline as provided by the client."}
+                    {isTasks
+                      ? "This is a read-only view. You can review scope, budget, and timeline as provided by the freelancer."
+                      : "This is a read-only view. You can review scope, budget, and timeline as provided by the client."}
                   </div>
                 )}
 
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Scope locked
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure checkout
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Details only
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Money-back guarantee
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7 support
                   </li>
                 </ul>
               </div>
             </div>
 
+            {/* Back */}
             <button
               onClick={() => navigate(-1)}
               className="mt-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-800"

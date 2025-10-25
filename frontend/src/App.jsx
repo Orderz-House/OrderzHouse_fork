@@ -23,8 +23,6 @@ import TopRatedFreelancers from "./components/topRated/TopRate";
 import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import NotificationsPage from "./components/notifications/NotificationsPage";
-// ⛔️ Removed: ProfileView (file missing)
-// import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/Plans.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
@@ -40,8 +38,7 @@ import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
-// ⛔️ Removed: CreateTaskForm (file missing)
-// import CreateTaskForm from "./components/Tasks/components/CreateTaskForm.jsx";
+
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -87,9 +84,47 @@ function App() {
 
   return (
     <>
-      <GlobalLoadingProvider>
-        {!shouldHideNavbar && <Navbar />}
+    <GlobalLoadingProvider>
+      {!shouldHideNavbar && <Navbar />}
 
+      <Routes
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}  
+      >
+        
+        {/* --- Blogs --- */}
+        <Route path="/blogs" element={<Blogs />} />
+        <Route path="/blogs/:id" element={<BlogPost />} />
+
+        {/* --- Account Suspended --- */}
+        <Route path="/account/suspended" element={<AccountSuspended />} />
+
+        {/* --- Public Pages --- */}
+        <Route path="/test" element={<Counter />} />
+        <Route path="/" element={<OrderzHousePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/about" element={<ModernAboutPage />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/contact" element={<ContactUsPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin-verification" element={<AdminVerificationPage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+        <Route path="/verify-profile" element={<VerifyProfile />} />
+        <Route path="/terms" element={<Terms />} />
+
+        {/* --- Protected Pages --- */}
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
+        <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
+        <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
+        <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
+        
+        <Route path="/tasks" element={<ProtectedRoute><ProjectsPage mode="tasks" /></ProtectedRoute>} />
+        <Route path="/tasks/:id" element={<ProtectedRoute><ProjectDetails mode="tasks" /></ProtectedRoute>} />
+      
         <Routes
           future={{
             v7_startTransition: true,
@@ -161,9 +196,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* ⛔️ Removed: /tasks/create (file missing) */}
-          {/* <Route path="/tasks/create" element={<ProtectedRoute allowedRoles={[3]}><CreateTaskForm /></ProtectedRoute>} /> */}
-
           {/* --- Course Management --- */}
           <Route
             path="/courses/:id"
