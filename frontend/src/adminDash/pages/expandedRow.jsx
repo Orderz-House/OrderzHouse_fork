@@ -1,7 +1,8 @@
+// src/components/expandedRow.jsx
 import { useState } from "react";
 import { FiEdit2, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 
-const PRIMARY_COLOR = "#028090";
+const PRIMARY = "#028090";
 
 export default function ExpandedRow({
   row,
@@ -21,9 +22,7 @@ export default function ExpandedRow({
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    onSave(formData);
-  };
+  const handleSave = () => onSave(formData);
 
   const renderValue = (col) => {
     const val = col.render ? col.render(row) : row[col.key];
@@ -32,7 +31,7 @@ export default function ExpandedRow({
 
   const renderFormInput = (field) => {
     const baseClassName =
-      "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300";
+      "w-full rounded-lg border border-slate-300 px-3 py-1.5 text-[13px] outline-none focus:ring-2 focus:ring-slate-300";
     const value = formData[field.key] ?? "";
 
     if (field.type === "textarea") {
@@ -82,7 +81,7 @@ export default function ExpandedRow({
   };
 
   return (
-    <div className="bg-slate-50 p-4 rounded-xl space-y-3 md:space-y-4">
+    <div className="bg-slate-50 p-3 md:p-4 rounded-xl space-y-3 md:space-y-4 text-[13.5px] sm:text-[14px]">
       {isEditing && formFields?.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {formFields.map((field) => (
@@ -90,7 +89,7 @@ export default function ExpandedRow({
               key={field.key}
               className={field.type === "textarea" ? "sm:col-span-2 lg:col-span-3" : ""}
             >
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              <label className="block text-[11px] font-medium text-slate-600 mb-1.5">
                 {field.label}
               </label>
               {renderFormInput(field)}
@@ -108,11 +107,13 @@ export default function ExpandedRow({
               >
                 <div className="flex items-start gap-2.5">
                   {!onlyValue && (
-                    <span className="text-[12px] font-medium text-slate-500 min-w-[90px]">
+                    <span className="text-[11px] font-medium text-slate-500 min-w-[90px]">
                       {col.label}:
                     </span>
                   )}
-                  <span className="text-sm text-slate-800 flex-1">{renderValue(col)}</span>
+                  <span className="text-[13px] text-slate-800 flex-1 break-words whitespace-normal">
+                    {renderValue(col)}
+                  </span>
                 </div>
               </div>
             );
@@ -123,17 +124,22 @@ export default function ExpandedRow({
       <div className="flex items-center gap-2 pt-3 border-t border-slate-200">
         {isEditing ? (
           <>
+            {/* Save: Primary outline مثل New Blog */}
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-white text-sm font-medium"
-              style={{ backgroundColor: PRIMARY_COLOR }}
+              className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+              style={{ borderColor: PRIMARY, color: PRIMARY }}
+              title="Save"
             >
               <FiCheck />
               Save
             </button>
+
+            {/* Cancel: نفس Copy/Share */}
             <button
               onClick={onCancel}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 bg-slate-500 text-white text-sm font-medium hover:bg-slate-600"
+              className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2 text-sm text-slate-700"
+              title="Cancel"
             >
               <FiX />
               Cancel
@@ -145,17 +151,24 @@ export default function ExpandedRow({
               renderActions(row, helpers)
             ) : !hideCrudActions ? (
               <>
+                {/* Edit: Primary outline */}
                 <button
-                  onClick={() => helpers.startEdit(row.id)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-white text-sm font-medium"
-                  style={{ backgroundColor: PRIMARY_COLOR }}
+                  onClick={() =>
+                    helpers ? helpers.startEdit(row.id ?? row._id) : null
+                  }
+                  className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+                  style={{ borderColor: PRIMARY, color: PRIMARY }}
+                  title="Edit"
                 >
                   <FiEdit2 />
                   Edit
                 </button>
+
+                {/* Delete: outline لطيف */}
                 <button
                   onClick={onDelete}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 bg-red-500 text-white text-sm font-medium hover:bg-red-600"
+                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-2 text-sm text-red-600"
+                  title="Delete"
                 >
                   <FiTrash2 />
                   Delete
