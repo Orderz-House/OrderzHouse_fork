@@ -32,10 +32,10 @@ import {
   Undo2,
 } from "lucide-react";
 
-/* ===================== MOCK TOGGLE ===================== */
+/* ===================== MOCK  ===================== */
 const USE_MOCK = true;
 
-/* ===================== Theme tokens (soft) ===================== */
+/* ===================== Theme ===================== */
 const T = {
   primary: "#028090",
   dark: "#05668D",
@@ -44,7 +44,7 @@ const T = {
 };
 const ringStyle = { border: `1px solid ${T.ring}` };
 
-/* ===================== Role map ===================== */
+/* ===================== Role ===================== */
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
@@ -218,7 +218,6 @@ const MOCK_PROJECTS = [
   },
 ];
 
-/* Mock delivery timeline (per project) */
 const MOCK_DELIVERIES = {
   "P-1001": [
     {
@@ -250,7 +249,6 @@ const MOCK_DELIVERIES = {
   ],
 };
 
-/* For clarity we reuse same shape for all roles */
 const MOCK_ADMIN = MOCK_PROJECTS;
 const MOCK_CLIENT = MOCK_PROJECTS;
 const MOCK_FREELANCER = MOCK_PROJECTS;
@@ -262,11 +260,10 @@ export default function Projects() {
 
   if (role === "admin") return <AdminProjects />;
   if (role === "freelancer") return <FreelancerProjects />;
-  // default → client
   return <ClientProjects />;
 }
 
-/* ===================== Admin (PeopleTable API or Mock) ===================== */
+/* ===================== Admin ===================== */
 function AdminProjects() {
   const columns = [
     { label: "Title", key: "title" },
@@ -322,7 +319,7 @@ function AdminProjects() {
   );
 }
 
-/* ===================== Client (Cards + Review Drawer) ===================== */
+/* ===================== Client ===================== */
 function ClientProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
@@ -334,7 +331,6 @@ function ClientProjects() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Review drawer state
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState(null);
 
@@ -364,7 +360,6 @@ function ClientProjects() {
     return () => (alive = false);
   }, [token]);
 
-  // filter/sort
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     let arr = items.filter((p) => {
@@ -400,7 +395,6 @@ function ClientProjects() {
   };
 
   const approveLatest = async (projectId, versionId) => {
-    // Mock: mark as done locally
     if (USE_MOCK) {
       setItems((prev) =>
         prev.map((it) => (it.id === projectId ? { ...it, status: "Done", progress: 100 } : it))
@@ -413,7 +407,6 @@ function ClientProjects() {
   };
 
   const requestChanges = async (projectId, versionId, message) => {
-    // Mock: mark as Active locally
     if (USE_MOCK) {
       setItems((prev) =>
         prev.map((it) => (it.id === projectId ? { ...it, status: "Active" } : it))
@@ -503,7 +496,6 @@ function ClientProjects() {
         </section>
       )}
 
-      {/* Review Drawer */}
       {reviewOpen && reviewFor && (
         <ClientReviewDrawer
           project={reviewFor}
@@ -516,7 +508,6 @@ function ClientProjects() {
   );
 }
 
-/* Client Card with image + actions */
 function ClientCard({ p, onDetails, onChat, onReceive }) {
   return (
     <div className="rounded-2xl bg-white/80 backdrop-blur shadow-sm hover:shadow transition overflow-hidden" style={ringStyle}>
@@ -586,14 +577,12 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
   const [requestText, setRequestText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // اغلاق سكرول الصفحة وقت المودال
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // fetch deliveries (mock / api)
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -604,10 +593,7 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
           setVersions(MOCK_DELIVERIES[project.id] || []);
           return;
         }
-        // مثال API:
-        // const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`);
-        // if (!alive) return;
-        // setVersions(data?.items || []);
+       
       } finally {
         if (alive) setLoading(false);
       }
@@ -615,7 +601,7 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
     return () => (alive = false);
   }, [project?.id]);
 
-  const latest = versions[0]; // newest-first في الـmock
+  const latest = versions[0];
 
   const approve = async () => {
     if (!latest) return;
@@ -637,7 +623,6 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
     <div className="fixed inset-0 z-[9999]">
       {/* Overlay */}
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      {/* Centered panel */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
           {/* Header */}
@@ -650,7 +635,6 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
 
           {/* Body */}
           <div className="p-5 space-y-5">
-            {/* Latest */}
             <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="flex items-center justify-between">
                 <div className="font-medium text-slate-800">Latest delivery</div>
@@ -788,7 +772,6 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
 }
 
 
-/* Project image / placeholder */
 function ProjectImage({ p }) {
   const [ok, setOk] = useState(!!p.image);
   return ok ? (
@@ -813,7 +796,7 @@ function emojiFor(cat) {
   return "🧑‍💻";
 }
 
-/* ===================== Freelancer (Cards + Actions + DeliverModal) ===================== */
+/* ===================== Freelancer ===================== */
 function FreelancerProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
@@ -823,7 +806,6 @@ function FreelancerProjects() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // deliver modal state
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [deliverFor, setDeliverFor] = useState(null);
   const [deliverSubmitting, setDeliverSubmitting] = useState(false);
@@ -906,12 +888,10 @@ function FreelancerProjects() {
   };
 
   const submitDelivery = async (payload) => {
-    // payload = { id, category, notes, links: { primary, secondary }, checklist: { confirmed }, files: [...] }
     if (!deliverFor) return;
     setDeliverSubmitting(true);
     try {
       if (USE_MOCK) {
-        // update local status
         setItems((prev) =>
           prev.map((it) =>
             (it.id ?? it._id) === (deliverFor.id ?? deliverFor._id)
@@ -935,7 +915,6 @@ function FreelancerProjects() {
             },
           }
         );
-        // optimistically update
         setItems((prev) =>
           prev.map((it) =>
             (it.id ?? it._id) === (deliverFor.id ?? deliverFor._id)
@@ -947,7 +926,6 @@ function FreelancerProjects() {
       setDeliverOpen(false);
       setDeliverFor(null);
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert("Failed to deliver. Please try again.");
     } finally {
       setDeliverSubmitting(false);
@@ -1009,7 +987,7 @@ function FreelancerProjects() {
 
         {/* KPIs */}
         <div className="mt-4 grid gap-3 sm:gap-4 grid-cols-3">
-          <MiniKpi icon={<Timer />} title="Due in 7d" value={/* dueSoon */ items.filter((p) => {
+          <MiniKpi icon={<Timer />} title="Due in 7d" value={ items.filter((p) => {
             const d = new Date(p.due); const now = new Date(); const diff = (d - now)/(1000*60*60*24);
             return diff >= 0 && diff <= 7 && p.status !== "Done";
           }).length} />
@@ -1139,7 +1117,6 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
 
   const handleFile = (e) => setFiles(Array.from(e.target.files || []));
 
-  // lock body scroll while modal open
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -1193,7 +1170,6 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
           <form onSubmit={submit} className="p-5 space-y-5">
             {/* Category */}
             <div className="grid sm:grid-cols-2 gap-3">
-              {/* Category */}
               <div>
                 <label className="text-sm text-slate-600">Category</label>
                 {readOnlyCategory ? (
@@ -1229,7 +1205,6 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
 
             {/* Links */}
             <div className="grid sm:grid-cols-2 gap-4">
-              {/* Primary */}
               <div>
                 <label className="text-sm text-slate-600">
                   Primary delivery link <span className="text-rose-500">*</span>
@@ -1416,11 +1391,10 @@ function Select({ label, value, onChange, options, icon }) {
   );
 }
 
-/* ===================== Admin Mock Table (temporary) ===================== */
+/* ===================== Admin Mock Table  ===================== */
 function AdminMockTable({ items, columns, chips }) {
   const [q, setQ] = useState("");
-  const [chip, setChip] = useState(""); // ''=All
-
+  const [chip, setChip] = useState("");
   const data = useMemo(() => {
     const t = q.trim().toLowerCase();
     return items.filter((p) => {

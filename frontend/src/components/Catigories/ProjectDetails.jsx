@@ -2,6 +2,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getProjectByIdApi } from "./api/projects";
+// import { getTaskByIdApi } from "./api/tasks";
 import { useSelector } from "react-redux";
 
 const THEME = "#028090";
@@ -26,6 +27,26 @@ export default function ProjectDetails({ mode: propMode }) {
   const roleId = userData?.role_id;
   const isClient = roleId === 2;
   const isFreelancer = roleId === 3;
+
+  const isTasks = mode === "tasks";
+
+  let canAccept = true;
+  if (isTasks && isFreelancer) canAccept = false;
+  if (!isTasks && isClient) canAccept = false;
+  let canContact = true;
+  if (!isTasks && isClient) canContact = false;
+  const acceptLabel  = isTasks ? "Get this task" : "Get this project";
+  const contactLabel = isTasks ? "Contact freelancer" : "Contact seller";
+
+  const acceptTitle = !canAccept
+    ? (isTasks
+        ? "Freelancers cannot accept tasks. Only clients can accept tasks."
+        : "Clients cannot accept projects. You can accept tasks.")
+    : "";
+
+  const contactTitle = !canContact
+    ? "Clients cannot contact sellers on projects."
+    : "";
 
   // Load data
   useEffect(() => {

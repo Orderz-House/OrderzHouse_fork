@@ -162,7 +162,7 @@ export default function Plans() {
             } else {
               dispatch(addPlan(res.plan || res));
             }
-            await fetchPlans(); // refresh data
+            await fetchPlans();
             setOpen(false);
             return isEditing
               ? "Plan updated successfully"

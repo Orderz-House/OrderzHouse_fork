@@ -278,33 +278,6 @@ export default function Policy() {
           })}
         </section>
 
-        {/* CONTACT CALLOUT */}
-        {/* <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
-          <div className="bg-gradient-to-r from-[#028090] to-[#02a7ab] text-white px-6 py-4">
-            <h2 className="text-lg font-semibold">Questions or requests?</h2>
-            <p className="text-white/80 text-sm">
-              Reach out and we’ll help with access, deletion, or clarification.
-            </p>
-          </div>
-          <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="text-slate-700">
-              Prefer email? We respond within a reasonable timeframe based on applicable laws.
-            </div>
-            <div className="flex gap-2">
-              <a
-                href="mailto:info@orderzhouse.com"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#028090] text-white hover:brightness-110"
-              >
-                <Mail className="w-4 h-4" />
-                Email us
-              </a>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50">
-                <Download className="w-4 h-4" />
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </section> */}
       </main>
 
       {/* FOOTER NOTE */}

@@ -5,16 +5,15 @@ export function CategoriesRail({ active, onSelect, catalog = {}, theme, themeDar
   const list = useMemo(() => Object.entries(catalog).map(([id, v]) => ({ id, name: v.title })), [catalog]);
   const railRef = useRef(null);
 
-  // Icon components for different categories
   const CategoryIcons = {
-    // Design icon - Pen
+    // Design icon
     design: () => (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 3L21 7L8 20L3 21L4 16L17 3Z" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M15 5L19 9" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
-    // Content icon - Document/File
+    // Content icon
     content: () => (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" strokeLinecap="round" strokeLinejoin="round"/>

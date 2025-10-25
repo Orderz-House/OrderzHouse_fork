@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 export default function CleanFooter() {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  // roles: 1 admin, 2 client, 3 freelancer
   const { userData } = useSelector((s) => s.auth);
   const roleId = userData?.role_id;
   const isAdmin = roleId === 1;

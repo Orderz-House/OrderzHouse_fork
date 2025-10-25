@@ -1,8 +1,6 @@
-// slices/freelanceSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Async thunk for fetching all freelancers
 export const fetchAllFreelancers = createAsyncThunk(
   'freelance/fetchAllFreelancers',
   async (_, { rejectWithValue }) => {

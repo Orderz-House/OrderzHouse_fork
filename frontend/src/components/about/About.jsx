@@ -20,7 +20,6 @@ export default function ModernAboutPageRedesign() {
   const [activeValue, setActiveValue] = useState(0);
   const [isVisible, setIsVisible] = useState({});
 
-  // Intersection Observer for animations
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -91,7 +90,6 @@ export default function ModernAboutPageRedesign() {
         </div>
       </section>
 
-      {/* Mission & Vision Section */}
       <section className="py-20 sm:py-32 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -138,7 +136,6 @@ export default function ModernAboutPageRedesign() {
         </div>
       </section>
 
-      {/* Core Values Section */}
       <section className="py-20 sm:py-32 relative bg-gradient-to-br from-[#F0F3BD]/5 to-[#02C39A]/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -173,7 +170,6 @@ export default function ModernAboutPageRedesign() {
         </div>
       </section>
 
-      {/* How We Work Section - Animated Timeline */}
       <section className="py-20 sm:py-32 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -224,7 +220,6 @@ export default function ModernAboutPageRedesign() {
               ].map((item, index) => (
                 <div key={index} data-animate id={`work-${index}`} className={`relative transform transition-all duration-1000 ${isVisible[`work-${index}`] ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}`} style={{ transitionDelay: `${index * 300}ms` }}>
                   <div className={`flex items-center ${index % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'}`}>
-                    {/* Enhanced Timeline dot with step number */}
                     <div className="absolute left-0 sm:left-1/2 transform sm:-translate-x-1/2 flex items-center justify-center">
                       <div className={`w-12 h-12 bg-gradient-to-br ${item.color} rounded-full shadow-xl flex items-center justify-center border-4 border-white`}>
                         <span className="text-white font-bold text-sm" style={{ fontFamily: "'Merriweather', serif" }}>
@@ -235,7 +230,6 @@ export default function ModernAboutPageRedesign() {
                     
                     <div className={`w-full sm:w-5/12 ${index % 2 === 0 ? 'sm:text-right sm:pr-10' : 'sm:pl-10'} ml-20 sm:ml-0`}>
                       <div className="group bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#F0F3BD]/30 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden">
-                        {/* Animated background effect */}
                         <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-5 group-hover:opacity-10 transition-opacity duration-500`}></div>
                         
                         <div className="relative z-10">
@@ -252,7 +246,6 @@ export default function ModernAboutPageRedesign() {
                           </p>
                         </div>
                         
-                        {/* Animated pulse effect */}
                         <div className={`absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br ${item.color} rounded-full animate-pulse`}></div>
                       </div>
                     </div>

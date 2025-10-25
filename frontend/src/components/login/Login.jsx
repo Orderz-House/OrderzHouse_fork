@@ -46,9 +46,7 @@ const Login = () => {
       })
       .then((res) => {
         setIsLoading(false);
-        // -- START: التصحيح الرئيسي هنا --
         if (res.data.token) {
-          // الحالة 1: تسجيل دخول ناجح ومباشر
           setStatus(true);
           setMessage("Login successful! Redirecting...");
           const decoded = jwtDecode(res.data.token);
@@ -64,19 +62,17 @@ const Login = () => {
           connectSocket(res.data.token, decoded.userId);
           setTimeout(() => navigate("/"), 1500);
         } else if (res.data.message === "OTP sent successfully") {
-          // الحالة 2: الخادم يطلب OTP
-          setStatus(true); // نعتبر هذه الخطوة ناجحة مبدئيًا
+          setStatus(true); 
           setMessage("Verification code sent. Please check your email and enter the code below.");
-          setRequiresOtp(true); // <-- هذا هو السطر الأهم لإظهار حقل OTP
+          setRequiresOtp(true); 
         }
-        // -- END: التصحيح الرئيسي --
       })
       .catch((err) => {
         setIsLoading(false);
         setStatus(false);
         const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
         setMessage(errorMessage);
-        setRequiresOtp(false); // تأكد من إخفاء حقل OTP عند حدوث خطأ
+        setRequiresOtp(false); 
       });
   };
 

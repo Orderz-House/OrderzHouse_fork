@@ -1,4 +1,3 @@
-// src/pages/Freelancers.jsx
 import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
 
@@ -28,7 +27,6 @@ export default function Freelancers() {
       endpoint="/admUser/role/3"
       getOnePath={(id) => `/admUser/${id}`}
       token={token}
-      /* ===== أعمدة الجدول (بدون Phone وبدون Category) ===== */
       columns={[
         {
           label: "",
@@ -53,9 +51,7 @@ export default function Freelancers() {
         { label: "Last Name", key: "last_name" },
         { label: "Username", key: "username" },
         { label: "Email", key: "email" },
-        // ⛔ تمت إزالة "Phone" من الأعمدة
         { label: "Country", key: "country" },
-        // ⛔ تمت إزالة "Category" من الأعمدة
         {
           label: "Rating",
           key: "rating",
@@ -99,9 +95,9 @@ export default function Freelancers() {
         { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
         { key: "password", label: "Password", type: "password", placeholder: "Leave blank to keep current" },
-        { key: "phone", label: "Phone" },                        // يظهر في الـ Edit فقط
+        { key: "phone", label: "Phone" },                     
         { key: "country", label: "Country" },
-        { key: "category", label: "Category" },                  // يظهر في الـ Edit فقط
+        { key: "category", label: "Category" },
         { key: "profile_pic_url", label: "Profile Image URL" },
         { key: "bio", label: "Bio", type: "textarea" },
         { key: "hourly_rate", label: "Hourly Rate", type: "number" },

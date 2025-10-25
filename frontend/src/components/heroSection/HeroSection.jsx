@@ -772,7 +772,6 @@ const Ballpit = ({ className = "", followCursor = true, ...props }) => {
         spheresInstanceRef.current.dispose();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <canvas className={`${className} w-full h-full`} ref={canvasRef} />;

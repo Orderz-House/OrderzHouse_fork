@@ -49,7 +49,6 @@ function CompletionProject({ project }) {
     fetchCompletion();
   }, []);
 
-  // Handle work completion submission
   const handleWorkCompletion = async () => {
     try {
       setIsSubmitting(true);
@@ -81,7 +80,6 @@ function CompletionProject({ project }) {
     }
   };
 
-  // Handle quitting project
   const handleQuitProject = async () => {
     try {
       setIsQuitting(true);
@@ -104,8 +102,7 @@ function CompletionProject({ project }) {
           },
         ]);
         setShowQuitModal(false);
-        // Redirect or update UI as needed
-        navigate(-1) // Or update state to reflect the change`
+        navigate(-1) 
       }
     } catch (error) {
       console.error("Error quitting project:", error);
@@ -114,11 +111,9 @@ function CompletionProject({ project }) {
     }
   };
 
-  // Handle payment release
   const handleReleasePayment = async (freelancerId) => {
     try {
       setIsReleasingPayment(true);
-      // Optimistically update UI
       const updatedAssignments = project.assignments.map(assignment => {
         if (assignment.freelancer.id === freelancerId) {
           return {
@@ -129,7 +124,6 @@ function CompletionProject({ project }) {
         return assignment;
       });
       
-      // Update project state immediately
       project.assignments = updatedAssignments;
       
       await axios.post(
@@ -138,7 +132,6 @@ function CompletionProject({ project }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Show success feedback
       setCompletionHistory((prev) => [
         ...prev,
         {
@@ -151,17 +144,14 @@ function CompletionProject({ project }) {
       ]);
     } catch (error) {
       console.error("Error releasing payment:", error);
-      // Revert optimistic update on error
       fetchCompletion();
     } finally {
       setIsReleasingPayment(false);
     }
   };
 
-  // Handle request changes
   const handleRequestChanges = async (freelancerId) => {
     try {
-      // Optimistically update UI
       const updatedAssignments = project.assignments.map(assignment => {
         if (assignment.freelancer.id === freelancerId) {
           return {
@@ -172,7 +162,6 @@ function CompletionProject({ project }) {
         return assignment;
       });
       
-      // Update project state immediately
       project.assignments = updatedAssignments;
       
       await axios.post(
@@ -181,7 +170,6 @@ function CompletionProject({ project }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Show success feedback
       setCompletionHistory((prev) => [
         ...prev,
         {
@@ -198,7 +186,6 @@ function CompletionProject({ project }) {
       setChangesRequest("");
     } catch (error) {
       console.error("Error requesting changes:", error);
-      // Revert optimistic update on error
       fetchCompletion();
     }
   };
@@ -267,7 +254,7 @@ function CompletionProject({ project }) {
         </div>
       )}
 
-      {/* For Freelancers - Work Completion Section */}
+      {/* For Freelancers */}
       {isAssignedFreelancer && project.status === 'available' && completionStatus !== "completed" && (
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -346,7 +333,7 @@ function CompletionProject({ project }) {
         </div>
       )}
 
-      {/* For Clients - Payment Release Section */}
+      {/* For Clients */}
       {isProjectOwner && project.status === 'available' && (
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -451,7 +438,6 @@ function CompletionProject({ project }) {
         </div>
       )}
 
-      {/* Completion Confirmation Modal */}
       {showCompletionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">

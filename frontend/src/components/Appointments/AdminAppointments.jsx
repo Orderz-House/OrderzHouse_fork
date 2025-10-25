@@ -38,27 +38,24 @@ const AdminAppointments = () => {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [rescheduleAppointmentId, setRescheduleAppointmentId] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'today', 'completed'
+  const [activeTab, setActiveTab] = useState('all'); 
   const [completedAppointments, setCompletedAppointments] = useState([]);
 
-  // Website color scheme
   const colors = {
-    primary: '#028090',    // Teal
-    secondary: '#01535e',  // Dark Teal
-    accent: '#026a77',     // Medium Teal
-    warning: '#0296a9',    // Light Teal
-    danger: '#03adc2',     // Lighter Teal
-    dark: '#03c3db',       // Lightest Teal
-    light: '#e6f7fa'       // Very Light Teal
+    primary: '#028090',    
+    secondary: '#01535e',
+    accent: '#026a77',
+    warning: '#0296a9', 
+    danger: '#03adc2',   
+    dark: '#03c3db',     
+    light: '#e6f7fa'     
   };
 
   useEffect(() => {
     fetchAllAppointments();
-    // Load completed appointments from database
     loadCompletedAppointments();
   }, []);
 
-  // Load completed appointments from database
   const loadCompletedAppointments = async () => {
     try {
       const completedFromDB = appointments.filter(app => app.status === 'completed');
@@ -67,7 +64,6 @@ const AdminAppointments = () => {
       localStorage.setItem('completedAppointments', JSON.stringify(completedFromDB));
     } catch (error) {
       console.error('Error loading completed appointments:', error);
-      // Fallback to localStorage
       const savedCompleted = localStorage.getItem('completedAppointments');
       if (savedCompleted) {
         setCompletedAppointments(JSON.parse(savedCompleted));
@@ -75,18 +71,15 @@ const AdminAppointments = () => {
     }
   };
 
-  // Save completed appointments to localStorage
   const saveCompletedAppointments = (completed) => {
     setCompletedAppointments(completed);
     localStorage.setItem('completedAppointments', JSON.stringify(completed));
   };
 
-  // Mark appointment as complete - UPDATED VERSION
   const markAsComplete = async (appointment) => {
     try {
       const now = new Date();
       
-      // Update appointment in database first
       const result = await markAppointmentCompleted(appointment.id);
       
       if (!result.success) {
@@ -94,19 +87,16 @@ const AdminAppointments = () => {
         return;
       }
 
-      // Update appointment with completion time
       const completedAppointment = {
         ...appointment,
         completed_at: now.toISOString(),
         completed_by: userData?.id,
-        status: 'completed' // Override status to completed
+        status: 'completed'
       };
 
-      // Add to completed list
       const updatedCompleted = [...completedAppointments, completedAppointment];
       saveCompletedAppointments(updatedCompleted);
 
-      // Refresh active appointments from database
       await fetchAllAppointments();
       
       alert(`Appointment marked as completed!`);
@@ -116,13 +106,11 @@ const AdminAppointments = () => {
     }
   };
 
-  // Categorize appointments - UPDATED VERSION
   const categorizeAppointments = () => {
     const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Filter appointments based on database status
     const activeAppointments = appointments.filter(appointment => {
       return appointment.status !== 'completed';
     });
@@ -146,7 +134,6 @@ const AdminAppointments = () => {
 
   const { today, upcoming, past } = categorizeAppointments();
   
-  // All active appointments (excluding completed from database)
   const allActiveAppointments = [...today, ...upcoming, ...past];
 
   const handleAccept = async (appointmentId) => {
@@ -173,7 +160,6 @@ const AdminAppointments = () => {
     }
   };
 
-  // Validate date is not in past
   const isDateValid = (dateTime) => {
     const selectedDate = new Date(dateTime);
     const now = new Date();
@@ -183,7 +169,6 @@ const AdminAppointments = () => {
   const getStatusColor = (status, appointmentDate) => {
     const isPast = new Date(appointmentDate) < new Date();
     
-    // Check if appointment is completed in database
     const isCompleted = status === 'completed';
     
     if (isCompleted) {
@@ -249,7 +234,6 @@ const AdminAppointments = () => {
       <Building className="w-4 h-4" style={{ color: colors.secondary }} />;
   };
 
-  // Professional Main Table Component
   const MainAppointmentsTable = ({ appointments, title, showActions = true, showCompleteButton = true }) => (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
@@ -354,7 +338,6 @@ const AdminAppointments = () => {
                   {showActions && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        {/* Accept/Reject for pending appointments */}
                         {appointment.status === 'pending' && !isCompleted && (
                           <>
                             <button
@@ -374,7 +357,6 @@ const AdminAppointments = () => {
                           </>
                         )}
 
-                        {/* Reschedule button for active appointments */}
                         {!isCompleted && (
                           <button
                             onClick={() => setRescheduleAppointmentId(appointment.id)}
@@ -385,7 +367,6 @@ const AdminAppointments = () => {
                           </button>
                         )}
 
-                        {/* Complete button - shown for all non-completed appointments */}
                         {showCompleteButton && !isCompleted && (
                           <button
                             onClick={() => markAsComplete(appointment)}
@@ -407,7 +388,6 @@ const AdminAppointments = () => {
     </div>
   );
 
-  // Quick Statistics
   const stats = [
     { 
       label: 'Active Appointments', 
@@ -637,7 +617,6 @@ const AdminAppointments = () => {
           )}
         </div>
 
-        {/* Add Appointment Modal with Date Validation */}
         {showAddModal && (
           <CreateAppointmentModal 
             onClose={() => setShowAddModal(false)}

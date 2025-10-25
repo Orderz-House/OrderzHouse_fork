@@ -19,7 +19,6 @@ function ChatProject() {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch team members for mentioning
   useEffect(() => {
     if (!projectId || !token) return;
 
@@ -50,14 +49,12 @@ function ChatProject() {
     fetchTeamMembers();
   }, [projectId, token]);
 
-  // Handle message sending with mentions
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !socket) return;
 
     setIsSubmitting(true);
     
-    // Extract mentions from message
     const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
     let match;
     const mentions = [];
@@ -80,12 +77,10 @@ function ChatProject() {
     setShowMentionList(false);
   };
 
-  // Handle @ keypress for mentions
   const handleInputChange = (e) => {
     const value = e.target.value;
     setNewMessage(value);
     
-    // Check if user is typing @mention
     const lastAtPos = value.lastIndexOf('@');
     if (lastAtPos !== -1) {
       const query = value.substring(lastAtPos + 1);
@@ -107,11 +102,9 @@ function ChatProject() {
     }
   };
 
-  // Insert mention into message
   const handleMentionSelect = (member) => {
     const mentionText = `@[${member.name}](${member.id})`;
     
-    // Find the last @ position and replace the query with the mention
     const lastAtPos = newMessage.lastIndexOf('@');
     if (lastAtPos !== -1) {
       const beforeAt = newMessage.substring(0, lastAtPos);
@@ -195,7 +188,6 @@ function ChatProject() {
           }
         );
         
-        // Enhance messages with sender names if not already included
         const enhancedMessages = response.data.messages.rows.map(msg => ({
           ...msg,
           sender_name: msg.sender_name || `User ${msg.sender_id}`,
@@ -211,7 +203,6 @@ function ChatProject() {
     fetchMessages();
   }, [projectId, token]);
 
-  // Format message text with highlighted mentions
   const formatMessage = (text) => {
     if (!text) return '';
     
@@ -220,19 +211,11 @@ function ChatProject() {
     });
   };
 
-  // Get user initials for avatar fallback
   const getUserInitials = (name) => {
     console.log(name);
-    /*
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);*/
+   
   };
 
-  // Get random color for avatar based on user ID
   const getAvatarColor = (userId) => {
     const colors = [
       'bg-blue-500', 'bg-green-500', 'bg-purple-500', 

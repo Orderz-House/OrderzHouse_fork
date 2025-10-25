@@ -97,19 +97,15 @@ const AppointmentList = ({
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              {/* Header Row */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  {/* Type Icon */}
                   {getTypeIcon(appointment.appointment_type)}
                   
-                  {/* Status Badge */}
                   <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>
                     {getStatusIcon(appointment.status)}
                     <span className="capitalize">{appointment.status}</span>
                   </span>
 
-                  {/* Upcoming Badge */}
                   {appointment.status === 'accepted' && isUpcoming(appointment.appointment_date) && (
                     <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                       <Clock className="w-4 h-4" />
@@ -118,9 +114,7 @@ const AppointmentList = ({
                   )}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  {/* Admin Actions */}
                   {isAdmin && appointment.status === 'pending' && (
                     <>
                       <button
@@ -142,7 +136,6 @@ const AppointmentList = ({
                     </>
                   )}
 
-                  {/* Reschedule Button */}
                   {(isAdmin || (isFreelancer && appointment.status === 'pending')) && (
                     <button
                       onClick={() => setRescheduleAppointmentId(appointment.id)}
@@ -156,7 +149,6 @@ const AppointmentList = ({
                 </div>
               </div>
 
-              {/* Freelancer Info (for admin view) */}
               {isAdmin && activeView === 'all' && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
                   <div className="flex items-center space-x-4">

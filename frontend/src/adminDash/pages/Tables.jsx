@@ -487,7 +487,6 @@ export default function PeopleTable({
   renderActions,
   hideCrudActions = false,
   token,
-  // NEW: CRUD Configuration prop with defaults
   crudConfig = {},
 }) {
   const dispatch = useDispatch();
@@ -495,7 +494,6 @@ export default function PeopleTable({
 
   const { editingRowId, error: reduxError } = useSelector((state) => state.users);
 
-  // Merge user-provided config with defaults
   const mergedCrudConfig = useMemo(
     () => ({ ...DEFAULT_CRUD_CONFIG, ...crudConfig }),
     [crudConfig]

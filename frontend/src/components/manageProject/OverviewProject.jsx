@@ -29,7 +29,6 @@ function OverviewProject({ project }) {
     }
   }, [project]);
 
-  // Category icons mapping
   const categoryIcons = {
     design: <PaintBucket className="w-5 h-5" />,
     development: <Code className="w-5 h-5" />,
@@ -39,7 +38,6 @@ function OverviewProject({ project }) {
     default: <Target className="w-5 h-5" />
   };
 
-  // Status configuration
   const statusConfig = {
     active: { color: "bg-green-500", text: "text-green-700", label: "Active" },
     in_progress: { color: "bg-blue-500", text: "text-blue-700", label: "In Progress" },

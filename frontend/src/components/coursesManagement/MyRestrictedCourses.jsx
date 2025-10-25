@@ -1,4 +1,3 @@
-// src/components/coursesManagement/MyRestrictedCourses.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -18,10 +17,7 @@ const MyRestrictedCourses = () => {
       if (!token) return;
       try {
         setLoading(true);
-        // Assuming your backend has an endpoint that returns courses the freelancer has ACCESS TO
-        const res = await axios.get('http://localhost:5000/courses/accessible', { // Or /courses/my-courses
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get('http://localhost:5000/courses/accessible');
         setCourses(res.data.courses || []);
       } catch (err) {
         console.error('Error fetching my courses:', err);
@@ -92,7 +88,6 @@ const MyRestrictedCourses = () => {
                   <DollarSign className="w-4 h-4 mr-1" />
                   ${course.price}
                 </span>
-                {/* Add other relevant info if provided by backend */}
               </div>
               <Link
                 to={`/course/${course.id}`}
@@ -112,7 +107,6 @@ const MyRestrictedCourses = () => {
             <p className="text-gray-600 mb-6">
               You don't have access to any courses yet. Contact your administrator.
             </p>
-            {/* Optionally, add a contact admin button or link */}
           </div>
         )}
       </div>

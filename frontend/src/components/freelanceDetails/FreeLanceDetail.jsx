@@ -41,7 +41,6 @@ export default function FreelancerPage() {
 
         let portfolioData = [];
         try {
-          // ✅ fixed endpoint typo
           const portfolioRes = await axios.get(
             `http://localhost:5000/users/freelancers/${id}/portfolio`,
             { headers: { Authorization: `Bearer ${token}` } }

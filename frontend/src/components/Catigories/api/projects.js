@@ -3,7 +3,6 @@ import store from "../../../store/store";
 
 const API_BASE = "http://localhost:5000/projects";
 
-// ✅ FIXED: Centralized token retrieval
 const getAuthToken = () => {
   return store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 };
@@ -89,10 +88,6 @@ export const fetchProjectsBySubSubCategory = async (subSubCategoryId) => {
   }
 };
 
-/* ==============================
-   🧠 Auto Selector
-   Chooses Auth or Public Automatically
-   ============================== */
 
 export const fetchProjectsByCategoryAuto = async (categoryId) => {
   const token = getAuthToken();
@@ -121,7 +116,6 @@ export const fetchProjectsBySubSubCategoryAuto = async (subSubCategoryId) => {
 export const getProjectByIdApi = async (projectId, token) => {
   if (!projectId) throw new Error("Missing projectId");
   
-  // ✅ FIXED: Use the centralized getAuthToken function
   const authToken = token || getAuthToken();
 
   try {
