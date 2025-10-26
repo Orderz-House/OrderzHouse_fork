@@ -8,9 +8,8 @@ import {
   FiX,
   FiChevronDown,
   FiChevronRight,
-  FiEye,
 } from "react-icons/fi";
-import { VscDebugRestart } from "react-icons/vsc";
+import { AiOutlineEdit } from "react-icons/ai";
 import {
   setUsers,
   updateUser,
@@ -21,6 +20,7 @@ import {
 } from "../../slice/usersSlice";
 import React from "react";
 import ExpandedRow from "./expandedRow.jsx";
+import Pagination from "../../components/Catigories/Pagination.jsx";
 
 const PRIMARY = "#028090";
 const DEBOUNCE_DELAY = 300;
@@ -140,35 +140,58 @@ function useTableData({
 
 /* ====================== UI Bits ====================== */
 const SearchBar = ({ value, onChange }) => (
-  <input
-    placeholder="Search by name…"
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full md:max-w-sm rounded-xl border border-slate-300 bg-white px-3 py-1.5 outline-none text-[13px] focus:ring-2 focus:ring-slate-300"
-  />
+  <div className="relative">
+    {/* icon */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+
+    {/* input */}
+    <input
+      placeholder="Search doctors, patients…"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-10 w-full md:w-72 rounded-xl bg-white pl-9 pr-3 text-[13px] outline-none
+                 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300"
+    />
+  </div>
 );
 
+// Select
 const FilterSelect = ({ value, onChange, placeholder, options = [] }) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 outline-none text-[13px] text-slate-700 focus:ring-2 focus:ring-slate-300"
-  >
-    <option value="">{placeholder}</option>
-    {options.map((opt) =>
-      typeof opt === "object" ? (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ) : (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      )
-    )}
-  </select>
+  <div className="relative">
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-10 appearance-none rounded-xl bg-white pl-3 pr-8 text-[13px] text-slate-700 outline-none
+                 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300"
+    >
+      <option value="">{placeholder}</option>
+      {options.map((opt) =>
+        typeof opt === "object" ? (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ) : (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        )
+      )}
+    </select>
+    <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+  </div>
 );
 
+// Filters
 const FilterBar = ({ filters, filterValues, onFilterChange, onReset }) => {
   const filterOptions = useMemo(
     () =>
@@ -190,12 +213,14 @@ const FilterBar = ({ filters, filterValues, onFilterChange, onReset }) => {
           options={filter.options}
         />
       ))}
+
       <button
         onClick={onReset}
-        className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+        className="h-10 rounded-xl bg-white px-3 text-[13px] text-slate-700 outline-none
+                   ring-1 ring-slate-200 transition hover:bg-slate-50"
         title="Reset filters"
       >
-        <VscDebugRestart />
+        Reset
       </button>
     </div>
   );
@@ -334,6 +359,51 @@ const AddModal = ({
 };
 
 /* ====================== Helpers ====================== */
+// PrettyCell
+function renderPrettyCell(col, row, idx) {
+  const raw = col.render ? col.render(row, idx) : row[col.key];
+  const label = String(col.label || col.key || "").toLowerCase();
+
+  if (raw == null || raw === "")
+    return <span className="text-slate-400">—</span>;
+  const val = String(raw);
+  const key = val.toLowerCase();
+
+  // badge
+  if (label.includes("appointment status") || label.includes("status")) {
+    const chipMap = {
+      confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+      rescheduled: "bg-amber-50 text-amber-700 ring-amber-200",
+      cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
+      unknown: "bg-slate-100 text-slate-600 ring-slate-200",
+    };
+    const cls = chipMap[key] || "bg-slate-100 text-slate-600 ring-slate-200";
+    return (
+      <span
+        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}
+      >
+        {val}
+      </span>
+    );
+  }
+
+  if (label.includes("call status") || label.includes("state")) {
+    const color = {
+      active: "text-emerald-600",
+      escalated: "text-orange-500",
+      resolved: "text-violet-600",
+      dropped: "text-amber-600",
+      scheduled: "text-sky-600",
+      missed: "text-rose-600",
+    }[key];
+    return (
+      <span className={`font-medium ${color || "text-slate-700"}`}>{val}</span>
+    );
+  }
+
+  return val;
+}
+
 function pickColumn(columns, keywords = []) {
   const lower = (s) => String(s || "").toLowerCase();
   const byLabel = (kw) =>
@@ -442,7 +512,8 @@ const MobileCards = ({
         const isVerified = truthyYes(verifiedVal);
 
         const secondary =
-          email ?? (country ? String(country) : role ? String(role) : undefined);
+          email ??
+          (country ? String(country) : role ? String(role) : undefined);
 
         return (
           <div
@@ -484,7 +555,9 @@ const MobileCards = ({
                   )}
 
                   {isVerified && (
-                    <span className="text-[11px] text-emerald-600">✓ Verified</span>
+                    <span className="text-[11px] text-emerald-600">
+                      ✓ Verified
+                    </span>
                   )}
                 </div>
 
@@ -502,7 +575,7 @@ const MobileCards = ({
                   className="w-8 h-8 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
                   title="View"
                 >
-                  <FiEye />
+                  <AiOutlineEdit size={18} />
                 </button>
 
                 {crudConfig.showRowEdit && (
@@ -649,7 +722,7 @@ const DesktopTable = ({
                           className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
                           title="View"
                         >
-                          <FiEye />
+                          <AiOutlineEdit size={18} />
                         </button>
 
                         {renderActions ? (
@@ -690,7 +763,7 @@ const DesktopTable = ({
                         colSpan={
                           columns.length + (crudConfig.showExpand ? 2 : 1)
                         }
-                        className="px-3 py-0"
+                        className="px-0 py-0"
                       >
                         <ExpandedRow
                           row={row}
@@ -715,6 +788,188 @@ const DesktopTable = ({
   );
 };
 
+/* ====================== Desktop Cards ====================== */
+const DesktopCards = ({
+  title,
+  columns,
+  rows,
+  loading,
+  error,
+  renderActions,
+  hideCrudActions,
+  helpers,
+  crudConfig,
+  expandedRow,
+  onToggleExpand,
+  formFields,
+  editingRowId,
+  onSaveEdit,
+  onCancelEdit,
+}) => {
+  if (loading) {
+    return (
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-600">
+        Loading {title}…
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-red-600">
+        {error}
+      </div>
+    );
+  }
+  if (!rows.length) {
+    return (
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-500">
+        No {title} found
+      </div>
+    );
+  }
+
+  const nameCol =
+    pickColumn(columns, ["title", "name", "full name", "username"]) ||
+    columns[0];
+  const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
+  const statusCol = pickColumn(columns, ["status"]);
+  const dueCol = pickColumn(columns, ["due", "date"]);
+  const budgetCol = pickColumn(columns, ["budget", "price", "amount"]);
+
+  return (
+    <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {rows.map((row, idx) => {
+        const isExpanded = expandedRow === idx;
+        const isEditing = editingRowId === helpers.getId(row);
+
+        const titleVal = getCellValue(nameCol, row, idx) ?? "—";
+        const subVal = getCellValue(subCol, row, idx);
+        const status = getCellValue(statusCol, row, idx);
+        const due = getCellValue(dueCol, row, idx);
+        const budget = getCellValue(budgetCol, row, idx);
+
+        const avatarUrl = pickAvatar(row);
+
+        return (
+          <div
+            key={idx}
+            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+          >
+            {/* صورة / أفاتار بسيطة */}
+            <div className="h-36 bg-slate-100 grid place-items-center overflow-hidden">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
+                  {initialsFrom(String(titleVal))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-800 truncate">
+                    {titleVal}
+                  </div>
+                  {subVal && (
+                    <div className="text-xs text-slate-500 truncate">
+                      {String(subVal)}
+                    </div>
+                  )}
+                </div>
+                {status && (
+                  <div className="shrink-0">
+                    {renderPrettyCell(
+                      { label: "Status", key: "status" },
+                      { status },
+                      idx
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                {due && (
+                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
+                    <span className="text-slate-500">Due:</span> {String(due)}
+                  </div>
+                )}
+                {budget != null && budget !== "" && (
+                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
+                    <span className="text-slate-500">Budget:</span>{" "}
+                    {String(budget)}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-1.5">
+                <button
+                  onClick={() => onToggleExpand(idx)}
+                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
+                  title="View / Edit"
+                >
+                  Details
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  {renderActions
+                    ? renderActions(row, helpers)
+                    : !hideCrudActions && (
+                        <>
+                          {crudConfig.showRowEdit && (
+                            <button
+                              onClick={() =>
+                                helpers.startEdit(helpers.getId(row))
+                              }
+                              className="h-9 px-3 rounded-full border text-sm"
+                              style={{ borderColor: PRIMARY, color: PRIMARY }}
+                              title="Edit"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {crudConfig.showDelete && (
+                            <button
+                              onClick={() => helpers.handleDelete(idx)}
+                              className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
+                              title="Delete"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </>
+                      )}
+                </div>
+              </div>
+
+              {/* Expanded (نفس ExpandedRow الحالي) */}
+              {isExpanded && (
+                <div className="mt-2">
+                  <ExpandedRow
+                    row={row}
+                    columns={columns}
+                    formFields={formFields}
+                    isEditing={isEditing}
+                    onSave={onSaveEdit}
+                    onDelete={() => helpers.handleDelete(idx)}
+                    onCancel={onCancelEdit}
+                    helpers={helpers}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",
@@ -729,6 +984,7 @@ export default function PeopleTable({
   hideCrudActions = false,
   token,
   crudConfig = {},
+  desktopAsCards = false,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -756,6 +1012,19 @@ export default function PeopleTable({
     filterValues,
     refreshKey,
   });
+
+  // Pagination
+  const [page, setPage] = useState(1); // page
+  const [pageSize, setPageSize] = useState(15); // size
+
+  const pagedRows = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return rows.slice(start, start + pageSize);
+  }, [rows, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, chipValue, filterValues, refreshKey]);
 
   const tableColumns = columns?.length
     ? columns
@@ -889,68 +1158,105 @@ export default function PeopleTable({
 
   return (
     <div className="space-y-3 px-3 sm:px-4 py-3 w-full max-w-[100vw] overflow-x-hidden text-[13.5px] sm:text-[14px]">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg sm:text-xl font-semibold text-slate-800">
-          {title}
-        </h1>
+      {/* Header */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold text-slate-800">
+              {title}
+            </h1>
+            <p className="text-slate-500 text-[12.5px]">
+              You can find all of your records here
+            </p>
+          </div>
 
-        <button
-          onClick={handleAddNew}
-          className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
-          style={{ borderColor: PRIMARY, color: PRIMARY }}
-          title={addLabel}
-        >
-          <FiPlus />
-          <span className="hidden sm:inline">{addLabel}</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAddNew}
+              className="h-9 rounded-full border px-3 text-sm"
+              style={{ borderColor: PRIMARY, color: PRIMARY }}
+              title={addLabel}
+            >
+              {addLabel}
+            </button>
+          </div>
+        </div>
 
-      <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
-        <FilterBar
-          filters={filters}
-          filterValues={filterValues}
-          onFilterChange={handleFilterChange}
-          onReset={handleResetFilters}
-        />
+        {/* Toolbar */}
+        <div className="mt-3 flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
+          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterBar
+              filters={filters}
+              filterValues={filterValues}
+              onFilterChange={handleFilterChange}
+              onReset={handleResetFilters}
+            />
+          </div>
+        </div>
       </div>
 
       <MobileCards
         title={title}
-        columns={tableColumns}
-        rows={rows}
+        columns={columns}
+        rows={pagedRows}
         loading={loading}
         error={error}
         renderActions={renderActions}
         hideCrudActions={hideCrudActions}
         helpers={helpers}
-        crudConfig={mergedCrudConfig}
+        crudConfig={crudConfig}
         expandedRow={expandedRow}
-        onToggleExpand={handleToggleExpand}
+        onToggleExpand={setExpandedRow}
         formFields={formFields}
         editingRowId={editingRowId}
         onSaveEdit={handleSaveEdit}
         onCancelEdit={handleCancelEdit}
       />
 
-      <DesktopTable
-        columns={tableColumns}
-        rows={rows}
-        loading={loading}
-        error={error}
-        expandedRow={expandedRow}
-        onToggleExpand={handleToggleExpand}
-        renderActions={renderActions}
-        hideCrudActions={hideCrudActions}
-        helpers={helpers}
-        formFields={formFields}
-        editingRowId={editingRowId}
-        onSaveEdit={handleSaveEdit}
-        onCancelEdit={handleCancelEdit}
-        crudConfig={mergedCrudConfig}
-      />
+      {desktopAsCards ? (
+        <DesktopCards
+          title={title}
+          columns={columns}
+          rows={pagedRows}
+          loading={loading}
+          error={error}
+          renderActions={renderActions}
+          hideCrudActions={hideCrudActions}
+          helpers={helpers}
+          crudConfig={crudConfig}
+          expandedRow={expandedRow}
+          onToggleExpand={setExpandedRow}
+          formFields={formFields}
+          editingRowId={editingRowId}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+        />
+      ) : (
+        <DesktopTable
+          columns={columns}
+          rows={pagedRows}
+          loading={loading}
+          error={error}
+          expandedRow={expandedRow}
+          onToggleExpand={setExpandedRow}
+          renderActions={renderActions}
+          hideCrudActions={hideCrudActions}
+          helpers={helpers}
+          formFields={formFields}
+          editingRowId={editingRowId}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+          crudConfig={crudConfig}
+        />
+      )}
 
+      <Pagination
+        page={page}
+        total={rows.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      />
       <AddModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

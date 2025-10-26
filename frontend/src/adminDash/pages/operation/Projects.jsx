@@ -32,10 +32,7 @@ import {
   Undo2,
 } from "lucide-react";
 
-/* ===================== MOCK  ===================== */
-const USE_MOCK = true;
-
-/* ===================== Theme ===================== */
+// Theme
 const T = {
   primary: "#028090",
   dark: "#05668D",
@@ -44,7 +41,7 @@ const T = {
 };
 const ringStyle = { border: `1px solid ${T.ring}` };
 
-/* ===================== Role ===================== */
+// Role
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
@@ -52,208 +49,13 @@ function mapRole(roleId) {
   return "user";
 }
 
-/* ===================== AXIOS Instance ===================== */
+// Axios
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
 
-/* ===================== MOCK DATA ===================== */
-const MOCK_PROJECTS = [
-  {
-    id: "P-1001",
-    title: "E-commerce UI Overhaul",
-    client: "Suzy Store",
-    owner: "Hazber Team",
-    due: "2025-11-10",
-    budget: 12000,
-    progress: 70,
-    status: "Active",
-    category: "programming",
-    description: "Revamp product grid, checkout, and account pages.",
-    image: "https://picsum.photos/seed/p1001/800/500",
-  },
-  {
-    id: "P-1002",
-    title: "OrderzHouse Tasks Module",
-    client: "OrderzHouse",
-    owner: "Backend Squad",
-    due: "2025-12-01",
-    budget: 8000,
-    progress: 35,
-    status: "Planning",
-    category: "programming",
-    description: "Tasks CRUD with role-based views.",
-    image: "https://picsum.photos/seed/p1002/800/500",
-  },
-  {
-    id: "P-1003",
-    title: "Brand Identity — Zayt Aurum",
-    client: "Zayt Aurum",
-    owner: "Branding Cell",
-    due: "2025-11-28",
-    budget: 4500,
-    progress: 55,
-    status: "Active",
-    category: "design",
-    description: "Logo, packaging, dieline, and mockups.",
-    image: "https://picsum.photos/seed/p1003/800/500",
-  },
-  {
-    id: "P-1004",
-    title: "Casa Landing Page",
-    client: "Casa",
-    owner: "Frontend Team",
-    due: "2025-11-05",
-    budget: 3000,
-    progress: 90,
-    status: "Done",
-    category: "programming",
-    description: "Responsive landing with Tailwind & animations.",
-    image: "https://picsum.photos/seed/p1004/800/500",
-  },
-  {
-    id: "P-1005",
-    title: "Freelancer Payouts",
-    client: "OrderzHouse",
-    owner: "Finance Ops",
-    due: "2025-11-22",
-    budget: 6000,
-    progress: 10,
-    status: "On hold",
-    category: "programming",
-    description: "Stripe & bank transfer flow.",
-    image: "https://picsum.photos/seed/p1005/800/500",
-  },
-  {
-    id: "P-1006",
-    title: "InvestFarm Pitch Deck",
-    client: "InvestFarm",
-    owner: "Design Guild",
-    due: "2025-11-18",
-    budget: 2000,
-    progress: 80,
-    status: "Active",
-    category: "content",
-    description: "12 slides, growth plan, TAM/SAM/SOM.",
-    image: "https://picsum.photos/seed/p1006/800/500",
-  },
-  {
-    id: "P-1007",
-    title: "Hero Search (Projects)",
-    client: "Hazber",
-    owner: "Web Apps",
-    due: "2025-11-08",
-    budget: 1500,
-    progress: 60,
-    status: "Active",
-    category: "programming",
-    description: "Categories & subcategories with routing filters.",
-    image: "https://picsum.photos/seed/p1007/800/500",
-  },
-  {
-    id: "P-1008",
-    title: "Megamenu Redesign",
-    client: "Hazber",
-    owner: "UX Core",
-    due: "2025-11-30",
-    budget: 1800,
-    progress: 25,
-    status: "Planning",
-    category: "design",
-    description: "Centering, hover intent, and mobile sheet.",
-    image: "https://picsum.photos/seed/p1008/800/500",
-  },
-  {
-    id: "P-1009",
-    title: "Loader & Silent Nav",
-    client: "OrderzHouse",
-    owner: "Frontend Team",
-    due: "2025-11-06",
-    budget: 900,
-    progress: 100,
-    status: "Done",
-    category: "programming",
-    description: "Silent dropdown actions without page reload.",
-    image: "https://picsum.photos/seed/p1009/800/500",
-  },
-  {
-    id: "P-1010",
-    title: "Freelancer Dashboard KPIs",
-    client: "OrderzHouse",
-    owner: "Data Team",
-    due: "2025-11-15",
-    budget: 2500,
-    progress: 45,
-    status: "Active",
-    category: "programming",
-    description: "Due soon, active, done counters.",
-    image: "https://picsum.photos/seed/p1010/800/500",
-  },
-  {
-    id: "P-1011",
-    title: "Client Kanban Columns",
-    client: "Hazber",
-    owner: "UX Core",
-    due: "2025-12-05",
-    budget: 1100,
-    progress: 5,
-    status: "Planning",
-    category: "content",
-    description: "Tuning the four status lanes.",
-    image: "https://picsum.photos/seed/p1011/800/500",
-  },
-  {
-    id: "P-1012",
-    title: "Gmail-like Feature Study",
-    client: "Research",
-    owner: "Product",
-    due: "2025-11-25",
-    budget: 1300,
-    progress: 20,
-    status: "On hold",
-    category: "content",
-    description: "Benchmarking search-in-DMs feature parity.",
-    image: "https://picsum.photos/seed/p1012/800/500",
-  },
-];
-
-const MOCK_DELIVERIES = {
-  "P-1001": [
-    {
-      id: "v2",
-      at: "2025-11-07T10:10:00Z",
-      notes: "Hotfix checkout total, added unit tests.",
-      links: { primary: "https://github.com/acme/shop/tree/v1.0.1", secondary: "https://shop.example.com" },
-      attachments: ["build_101.zip"],
-      status: "submitted",
-    },
-    {
-      id: "v1",
-      at: "2025-11-05T16:00:00Z",
-      notes: "Initial delivery.",
-      links: { primary: "https://github.com/acme/shop/tree/v1.0.0" },
-      attachments: [],
-      status: "submitted",
-    },
-  ],
-  "P-1006": [
-    {
-      id: "v1",
-      at: "2025-11-16T09:00:00Z",
-      notes: "Slides + speaker notes.",
-      links: { primary: "https://docs.google.com/presentation/d/xyz" },
-      attachments: ["deck.pdf"],
-      status: "submitted",
-    },
-  ],
-};
-
-const MOCK_ADMIN = MOCK_PROJECTS;
-const MOCK_CLIENT = MOCK_PROJECTS;
-const MOCK_FREELANCER = MOCK_PROJECTS;
-
-/* ===================== Entry ===================== */
+// Entry
 export default function Projects() {
   const { userData } = useSelector((s) => s.auth);
   const role = mapRole(userData?.role_id);
@@ -263,7 +65,7 @@ export default function Projects() {
   return <ClientProjects />;
 }
 
-/* ===================== Admin ===================== */
+// Admin
 function AdminProjects() {
   const columns = [
     { label: "Title", key: "title" },
@@ -301,10 +103,6 @@ function AdminProjects() {
     { key: "status", label: "Status", options: ["Planning", "Active", "On hold", "Done"] },
   ];
 
-  if (USE_MOCK) {
-    return <AdminMockTable items={MOCK_ADMIN} columns={columns} chips={chips} />;
-  }
-
   return (
     <PeopleTable
       title="Projects"
@@ -319,7 +117,7 @@ function AdminProjects() {
   );
 }
 
-/* ===================== Client ===================== */
+// Client
 function ClientProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
@@ -339,11 +137,6 @@ function ClientProjects() {
     (async () => {
       try {
         setLoading(true);
-        if (USE_MOCK) {
-          if (!alive) return;
-          setItems(MOCK_CLIENT);
-          return;
-        }
         const { data } = await api.get("/api/client/projects", {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
@@ -381,7 +174,7 @@ function ClientProjects() {
     return arr;
   }, [q, status, sort, items]);
 
-  // actions
+  // Actions
   const openChat = (p) => {
     const withUser = p.assignee || "Freelancer";
     navigate(`/chat?projectId=${encodeURIComponent(p.id)}&with=${encodeURIComponent(withUser)}`);
@@ -395,27 +188,23 @@ function ClientProjects() {
   };
 
   const approveLatest = async (projectId, versionId) => {
-    if (USE_MOCK) {
-      setItems((prev) =>
-        prev.map((it) => (it.id === projectId ? { ...it, status: "Done", progress: 100 } : it))
-      );
-      return;
-    }
-    await api.post(`/api/client/projects/${projectId}/approve`, { versionId }, {
-      headers: token ? { authorization: `Bearer ${token}` } : undefined,
-    });
+    await api.post(
+      `/api/client/projects/${projectId}/approve`,
+      { versionId },
+      { headers: token ? { authorization: `Bearer ${token}` } : undefined }
+    );
+    // Optional: optimistic UI
+    setItems((prev) =>
+      prev.map((it) => (it.id === projectId ? { ...it, status: "Done", progress: 100 } : it))
+    );
   };
 
   const requestChanges = async (projectId, versionId, message) => {
-    if (USE_MOCK) {
-      setItems((prev) =>
-        prev.map((it) => (it.id === projectId ? { ...it, status: "Active" } : it))
-      );
-      return;
-    }
-    await api.post(`/api/client/projects/${projectId}/request-changes`, { versionId, message }, {
-      headers: token ? { authorization: `Bearer ${token}` } : undefined,
-    });
+    await api.post(
+      `/api/client/projects/${projectId}/request-changes`,
+      { versionId, message },
+      { headers: token ? { authorization: `Bearer ${token}` } : undefined }
+    );
   };
 
   return (
@@ -499,7 +288,10 @@ function ClientProjects() {
       {reviewOpen && reviewFor && (
         <ClientReviewDrawer
           project={reviewFor}
-          onClose={() => { setReviewOpen(false); setReviewFor(null); }}
+          onClose={() => {
+            setReviewOpen(false);
+            setReviewFor(null);
+          }}
           onApprove={approveLatest}
           onRequestChanges={requestChanges}
         />
@@ -508,6 +300,7 @@ function ClientProjects() {
   );
 }
 
+// Card
 function ClientCard({ p, onDetails, onChat, onReceive }) {
   return (
     <div className="rounded-2xl bg-white/80 backdrop-blur shadow-sm hover:shadow transition overflow-hidden" style={ringStyle}>
@@ -569,8 +362,9 @@ function ClientCard({ p, onDetails, onChat, onReceive }) {
   );
 }
 
-/* =============== Review Drawer (Client) =============== */
+// Drawer
 function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
+  const { token } = useSelector((s) => s.auth);
   const [loading, setLoading] = useState(true);
   const [versions, setVersions] = useState([]);
   const [requesting, setRequesting] = useState(false);
@@ -580,7 +374,9 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   useEffect(() => {
@@ -588,18 +384,23 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
     (async () => {
       try {
         setLoading(true);
-        if (USE_MOCK) {
-          if (!alive) return;
-          setVersions(MOCK_DELIVERIES[project.id] || []);
-          return;
-        }
-       
+        const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`, {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!alive) return;
+        const list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        // Ensure newest first
+        list.sort((a, b) => new Date(b.at) - new Date(a.at));
+        setVersions(list);
+      } catch {
+        if (!alive) return;
+        setVersions([]);
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => (alive = false);
-  }, [project?.id]);
+  }, [project?.id, token]);
 
   const latest = versions[0];
 
@@ -641,7 +442,11 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
                 <button
                   className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
                   style={ringStyle}
-                  onClick={() => { setLoading(true); setTimeout(() => setLoading(false), 400); }}
+                  onClick={() => {
+                    // trigger refetch
+                    setLoading(true);
+                    setTimeout(() => setLoading(false), 400);
+                  }}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                   Refresh
@@ -658,13 +463,23 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Primary">
-                      <a className="text-sky-700 hover:underline break-all" href={latest.links?.primary} target="_blank" rel="noreferrer">
+                      <a
+                        className="text-sky-700 hover:underline break-all"
+                        href={latest.links?.primary}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {latest.links?.primary}
                       </a>
                     </Field>
                     {latest.links?.secondary && (
                       <Field label="Secondary">
-                        <a className="text-sky-700 hover:underline break-all" href={latest.links?.secondary} target="_blank" rel="noreferrer">
+                        <a
+                          className="text-sky-700 hover:underline break-all"
+                          href={latest.links?.secondary}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           {latest.links?.secondary}
                         </a>
                       </Field>
@@ -680,7 +495,9 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
                   <Field label="Attachments">
                     {latest.attachments?.length ? (
                       <ul className="list-disc ml-4 text-sm text-slate-700">
-                        {latest.attachments.map((f) => <li key={f}>{f}</li>)}
+                        {latest.attachments.map((f) => (
+                          <li key={f}>{f}</li>
+                        ))}
                       </ul>
                     ) : (
                       <span className="text-slate-500 text-sm">—</span>
@@ -771,7 +588,7 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges }) {
   );
 }
 
-
+// Image
 function ProjectImage({ p }) {
   const [ok, setOk] = useState(!!p.image);
   return ok ? (
@@ -796,7 +613,7 @@ function emojiFor(cat) {
   return "🧑‍💻";
 }
 
-/* ===================== Freelancer ===================== */
+// Freelancer
 function FreelancerProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
@@ -815,13 +632,6 @@ function FreelancerProjects() {
     (async () => {
       try {
         setLoading(true);
-
-        if (USE_MOCK) {
-          if (!alive) return;
-          setItems(MOCK_FREELANCER);
-          return;
-        }
-
         const { data } = await api.get("/api/freelancer/projects", {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
@@ -871,7 +681,7 @@ function FreelancerProjects() {
     return { active, dueSoon, done };
   }, [items]);
 
-  // === actions ===
+  // Actions
   const openDetails = (p) => {
     navigate(`/project/${p.id}`, {
       state: { project: p, readOnly: true, role: "freelancer" },
@@ -891,38 +701,22 @@ function FreelancerProjects() {
     if (!deliverFor) return;
     setDeliverSubmitting(true);
     try {
-      if (USE_MOCK) {
-        setItems((prev) =>
-          prev.map((it) =>
-            (it.id ?? it._id) === (deliverFor.id ?? deliverFor._id)
-              ? { ...it, status: "Done", progress: 100 }
-              : it
-          )
-        );
-      } else {
-        const fd = new FormData();
-        fd.append("category", payload.category);
-        fd.append("notes", payload.notes || "");
-        fd.append("links", JSON.stringify(payload.links || {}));
-        fd.append("checklist", JSON.stringify(payload.checklist || {}));
-        (payload.files || []).forEach((f) => fd.append("files", f));
-        await api.post(
-          `/api/freelancer/projects/${deliverFor.id}/deliver`,
-          fd,
-          {
-            headers: {
-              ...(token ? { authorization: `Bearer ${token}` } : {}),
-            },
-          }
-        );
-        setItems((prev) =>
-          prev.map((it) =>
-            (it.id ?? it._id) === (deliverFor.id ?? deliverFor._id)
-              ? { ...it, status: "Done", progress: 100 }
-              : it
-          )
-        );
-      }
+      const fd = new FormData();
+      fd.append("category", payload.category);
+      fd.append("notes", payload.notes || "");
+      fd.append("links", JSON.stringify(payload.links || {}));
+      fd.append("checklist", JSON.stringify(payload.checklist || {}));
+      (payload.files || []).forEach((f) => fd.append("files", f));
+      await api.post(`/api/freelancer/projects/${deliverFor.id}/deliver`, fd, {
+        headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      });
+      setItems((prev) =>
+        prev.map((it) =>
+          (it.id ?? it._id) === (deliverFor.id ?? deliverFor._id)
+            ? { ...it, status: "Done", progress: 100 }
+            : it
+        )
+      );
       setDeliverOpen(false);
       setDeliverFor(null);
     } catch (e) {
@@ -987,10 +781,16 @@ function FreelancerProjects() {
 
         {/* KPIs */}
         <div className="mt-4 grid gap-3 sm:gap-4 grid-cols-3">
-          <MiniKpi icon={<Timer />} title="Due in 7d" value={ items.filter((p) => {
-            const d = new Date(p.due); const now = new Date(); const diff = (d - now)/(1000*60*60*24);
-            return diff >= 0 && diff <= 7 && p.status !== "Done";
-          }).length} />
+          <MiniKpi
+            icon={<Timer />}
+            title="Due in 7d"
+            value={items.filter((p) => {
+              const d = new Date(p.due);
+              const now = new Date();
+              const diff = (d - now) / (1000 * 60 * 60 * 24);
+              return diff >= 0 && diff <= 7 && p.status !== "Done";
+            }).length}
+          />
           <MiniKpi icon={<PauseCircle />} title="Active" value={items.filter((p) => p.status === "Active").length} />
           <MiniKpi icon={<CheckCircle2 />} title="Done" value={items.filter((p) => p.status === "Done").length} />
         </div>
@@ -1015,10 +815,17 @@ function FreelancerProjects() {
               <FreelancerCard
                 key={p.id ?? p._id}
                 p={p}
-                onDetails={() => navigate(`/project/${p.id}`, { state: { project: p, readOnly: true, role: "freelancer" } })}
-                onChat={() => navigate(`/chat?projectId=${encodeURIComponent(p.id)}&with=${encodeURIComponent(p.client)}`)}
-                onDeliver={() => { setDeliverFor(p); setDeliverOpen(true); }}
-                isDelivering={deliverOpen && deliverFor && (deliverFor.id === p.id)}
+                onDetails={() =>
+                  navigate(`/project/${p.id}`, { state: { project: p, readOnly: true, role: "freelancer" } })
+                }
+                onChat={() =>
+                  navigate(`/chat?projectId=${encodeURIComponent(p.id)}&with=${encodeURIComponent(p.client)}`)
+                }
+                onDeliver={() => {
+                  setDeliverFor(p);
+                  setDeliverOpen(true);
+                }}
+                isDelivering={deliverOpen && deliverFor && deliverFor.id === p.id}
               />
             ))
           )}
@@ -1029,15 +836,19 @@ function FreelancerProjects() {
       {deliverOpen && deliverFor && (
         <DeliverModal
           project={deliverFor}
-          onClose={() => { setDeliverOpen(false); setDeliverFor(null); }}
-          onSubmit={() => { setDeliverOpen(false); setDeliverFor(null); }}
-          submitting={false}
+          onClose={() => {
+            setDeliverOpen(false);
+            setDeliverFor(null);
+          }}
+          onSubmit={submitDelivery}
+          submitting={deliverSubmitting}
         />
       )}
     </div>
   );
 }
 
+// Card
 function FreelancerCard({ p, onDetails, onChat, onDeliver, isDelivering }) {
   const isDone = (p.status ?? "").toLowerCase() === "done";
   return (
@@ -1089,7 +900,9 @@ function FreelancerCard({ p, onDetails, onChat, onDeliver, isDelivering }) {
           <button
             onClick={onDeliver}
             disabled={isDone || isDelivering}
-            className={`inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs ${isDone ? "opacity-60 cursor-not-allowed" : "hover:shadow"}`}
+            className={`inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs ${
+              isDone ? "opacity-60 cursor-not-allowed" : "hover:shadow"
+            }`}
             style={{ backgroundColor: T.primary }}
             title={isDone ? "Already delivered" : "Deliver this project"}
           >
@@ -1102,8 +915,7 @@ function FreelancerCard({ p, onDetails, onChat, onDeliver, isDelivering }) {
   );
 }
 
-
-/* ===================== Deliver Modal (Freelancer) ===================== */
+// Modal
 function DeliverModal({ project, onClose, onSubmit, submitting }) {
   const [category, setCategory] = useState(project.category || "programming");
   const [primaryLink, setPrimaryLink] = useState("");
@@ -1120,7 +932,9 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   const submit = (e) => {
@@ -1157,9 +971,7 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <HeaderIcon />
-              <div className="font-semibold text-slate-800">
-                Deliver Project — {project.title}
-              </div>
+              <div className="font-semibold text-slate-800">Deliver Project — {project.title}</div>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
               <X className="w-5 h-5 text-slate-500" />
@@ -1248,10 +1060,7 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
             <div>
               <label className="text-sm text-slate-600">Attachments (optional)</label>
               <div className="mt-1.5 flex items-center gap-3">
-                <label
-                  className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm"
-                  style={ringStyle}
-                >
+                <label className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm" style={ringStyle}>
                   <UploadCloud className="w-4 h-4" />
                   Upload files
                   <input type="file" multiple className="hidden" onChange={handleFile} />
@@ -1265,26 +1074,19 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
             </div>
 
             {/* Confirm */}
-            <label
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white cursor-pointer"
-              style={ringStyle}
-            >
+            <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white cursor-pointer" style={ringStyle}>
               <input
                 type="checkbox"
                 className="accent-emerald-600"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
-              <span className="text-sm text-slate-700">
-                I confirm this delivery matches the project requirements.
-              </span>
+              <span className="text-sm text-slate-700">I confirm this delivery matches the project requirements.</span>
             </label>
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-              <div className="text-xs text-slate-500">
-                Trusted links are preferred over large uploads.
-              </div>
+              <div className="text-xs text-slate-500">Trusted links are preferred over large uploads.</div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1314,12 +1116,12 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
   );
 }
 
-/* ===================== SIMPLE VALIDATION ===================== */
+// Validation
 function validateRequired(primaryLink, confirmed) {
   return !!(primaryLink && primaryLink.trim()) && !!confirmed;
 }
 
-/* ===================== UI Bits ===================== */
+// UI
 function StatusIcon({ status }) {
   if (status === "Active") return <PauseCircle className="w-4 h-4" style={{ color: T.primary }} />;
   if (status === "Planning") return <AlertCircle className="w-4 h-4 text-amber-500" />;
@@ -1391,113 +1193,5 @@ function Select({ label, value, onChange, options, icon }) {
   );
 }
 
-/* ===================== Admin Mock Table  ===================== */
-function AdminMockTable({ items, columns, chips }) {
-  const [q, setQ] = useState("");
-  const [chip, setChip] = useState("");
-  const data = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    return items.filter((p) => {
-      const okChip = !chip || (p.status ?? "") === chip;
-      const okQ =
-        !t ||
-        (p.title ?? "").toLowerCase().includes(t) ||
-        (p.client ?? "").toLowerCase().includes(t) ||
-        (p.owner ?? "").toLowerCase().includes(t);
-      return okChip && okQ;
-    });
-  }, [q, chip, items]);
-
-  return (
-    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-      <header className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5" style={ringStyle}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold" style={{ color: T.dark }}>
-              Projects (Admin • Mock)
-            </h1>
-            <p className="text-slate-500 text-sm">Temporary table powered by local mock data.</p>
-          </div>
-
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50"
-            style={ringStyle}
-            disabled
-            title="Mock mode"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm">Add Project</span>
-          </button>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="relative max-w-md w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search title, client, or owner…"
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white outline-none"
-              style={ringStyle}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {chips.map((c) => (
-              <button
-                key={c.label}
-                onClick={() => setChip(c.value)}
-                className={`text-sm px-3 py-1.5 rounded-xl ${chip === c.value ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
-                style={chip === c.value ? undefined : ringStyle}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <section className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-3 sm:p-4" style={ringStyle}>
-        <div className="hidden md:grid md:grid-cols-12 text-xs font-semibold text-slate-500 px-2 pb-2">
-          <div className="col-span-3">Title</div>
-          <div className="col-span-2">Client</div>
-          <div className="col-span-2">Owner</div>
-          <div className="col-span-2">Due</div>
-          <div className="col-span-1">Budget</div>
-          <div className="col-span-1">Progress</div>
-          <div className="col-span-1">Status</div>
-        </div>
-
-        <div className="space-y-3">
-          {data.map((p) => (
-            <div
-              key={p.id}
-              className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center rounded-xl bg-white p-3 hover:shadow transition"
-              style={ringStyle}
-            >
-              <div className="md:col-span-4 font-medium text-slate-800">{p.title}</div>
-              <div className="md:col-span-2 text-sm text-slate-600">{p.client}</div>
-              <div className="md:col-span-2 text-sm text-slate-600">{p.owner}</div>
-              <div className="md:col-span-2 text-xs text-slate-500 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {p.due}
-              </div>
-              <div className="md:col-span-1 text-sm font-semibold text-slate-700">
-                {typeof p.budget === "number" ? `$${p.budget.toLocaleString()}` : "—"}
-              </div>
-              <div className="md:col-span-1">
-                <ProgressBar value={p.progress ?? 0} />
-              </div>
-              <div className="md:col-span-1">
-                <StatusBadge status={p.status} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-/* ===================== helpers ===================== */
+// Helpers
 function capitalize(s) { return (s || "").charAt(0).toUpperCase() + (s || "").slice(1); }

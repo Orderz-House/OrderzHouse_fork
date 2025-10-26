@@ -1,3 +1,4 @@
+// Pagination
 export default function Pagination({
   page,
   total,
@@ -6,10 +7,9 @@ export default function Pagination({
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  // Range
   const makeRange = () => {
-    if (totalPages <= 7)
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
     const pages = [];
     const add = (p) => pages.push(p);
 
@@ -29,62 +29,94 @@ export default function Pagination({
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
-  const Btn = ({ children, disabled, onClick, className = "" }) => (
+  // Button
+  const EdgeBtn = ({ disabled, onClick, children }) => (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={
-        "h-10 min-w-10 px-3 rounded-full grid place-items-center select-none transition " +
-        (disabled
-          ? "text-slate-300 bg-white ring-1 ring-slate-200 cursor-not-allowed "
-          : "text-slate-700 bg-white ring-1 ring-slate-200 hover:shadow ") +
-        className
+        "h-10 px-4 rounded-full ring-1 ring-slate-200 bg-white text-slate-700 " +
+        "inline-flex items-center gap-2 select-none transition " +
+        (disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow")
       }
-      aria-disabled={disabled}
-      type="button"
     >
       {children}
     </button>
   );
 
-  return (
-    <nav
-      className="mt-8 flex items-center justify-center gap-3"
-      aria-label="Pagination"
+  // Icon
+  const IconBtn = ({ label, disabled, onClick }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className={
+        "h-8 w-8 rounded-full ring-1 ring-slate-200 bg-white text-slate-700 " +
+        "grid place-items-center select-none transition " +
+        (disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow")
+      }
     >
-      <Btn disabled={!canPrev} onClick={() => onPageChange(page - 1)}>
-        ←
-      </Btn>
+      {label}
+    </button>
+  );
 
-      <ul className="flex items-center gap-5">
-        {pages.map((p, i) =>
-          p === "…" ? (
-            <li key={`e${i}`} className="text-slate-400 select-none">
-              …
-            </li>
-          ) : (
-            <li key={p}>
-              <button
-                type="button"
-                aria-current={p === page ? "page" : undefined}
-                onClick={() => onPageChange(p)}
-                className={
-                  "text-base transition " +
-                  (p === page
-                    ? "text-slate-900 font-semibold relative after:block after:h-[2px] after:bg-slate-900 after:mt-1"
-                    : "text-slate-500 hover:text-slate-700")
-                }
-              >
-                {p}
-              </button>
-            </li>
-          )
-        )}
-      </ul>
+  // Pill
+  const PagePill = ({ p }) => {
+    const active = p === page;
+    if (p === "…") {
+      return (
+        <li className="text-slate-400 select-none px-1">…</li>
+      );
+    }
+    return (
+      <li>
+        <button
+          type="button"
+          aria-current={active ? "page" : undefined}
+          onClick={() => onPageChange(p)}
+          className={
+            "h-8 min-w-8 px-3 rounded-full ring-1 ring-slate-200 transition " +
+            (active
+              ? "bg-slate-900 text-white font-medium shadow-sm"
+              : "bg-white text-slate-700 hover:shadow")
+          }
+        >
+          {p}
+        </button>
+      </li>
+    );
+  };
 
-      <Btn disabled={!canNext} onClick={() => onPageChange(page + 1)}>
-        →
-      </Btn>
+  return (
+    <nav className="mt-6 flex items-center justify-between gap-3" aria-label="Pagination">
+      {/* Left */}
+      <EdgeBtn disabled={!canPrev} onClick={() => canPrev && onPageChange(page - 1)}>
+        <span>←</span>
+        <span className="hidden sm:inline">Previous</span>
+      </EdgeBtn>
+
+      {/* Center */}
+      <div className="flex items-center gap-2">
+        <IconBtn label="«" disabled={!canPrev} onClick={() => onPageChange(1)} />
+        <IconBtn label="‹" disabled={!canPrev} onClick={() => onPageChange(page - 1)} />
+
+        <ul className="flex items-center gap-2">
+          {pages.map((p, i) => (
+            <PagePill key={`${p}-${i}`} p={p} />
+          ))}
+        </ul>
+
+        <IconBtn label="›" disabled={!canNext} onClick={() => onPageChange(page + 1)} />
+        <IconBtn label="»" disabled={!canNext} onClick={() => onPageChange(totalPages)} />
+      </div>
+
+      {/* Right */}
+      <EdgeBtn disabled={!canNext} onClick={() => canNext && onPageChange(page + 1)}>
+        <span className="hidden sm:inline">Next</span>
+        <span>→</span>
+      </EdgeBtn>
     </nav>
   );
 }

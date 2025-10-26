@@ -7,6 +7,8 @@ import Clients from "../pages/people/Clients.jsx";
 import Freelancers from "../pages/people/Freelancers.jsx";
 import Courses from "../pages/learning/Courses.jsx";
 import Categories from "../pages/learning/Categories.jsx";
+import SubCategories from "../pages/learning/SubCategories.jsx";
+import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
 import Appointments from "../pages/operation/Appointments.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
 import Projects from "../pages/operation/Projects.jsx";
@@ -15,7 +17,6 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
-
 
 export default function AdminRouter() {
   return (
@@ -30,6 +31,8 @@ export default function AdminRouter() {
         <Route path="people/freelancers" element={<Freelancers />} />
         <Route path="learning/courses" element={<Courses />} />
         <Route path="learning/categories" element={<Categories />} />
+        <Route path="learning/categories/:categoryId" element={<SubCategories />} />
+        <Route path="learning/categories/:categoryId/sub/:subCategoryId"element={<SubSubCategories />}/>
         <Route path="operation/appointments" element={<Appointments />} />
         <Route path="operation/verifications" element={<Verifications />} />
         <Route path="operation/projects" element={<Projects />} />
