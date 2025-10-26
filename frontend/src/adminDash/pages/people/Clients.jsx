@@ -27,6 +27,7 @@ export default function Clients() {
       endpoint="/admUser/role/2"
       getOnePath={(id) => `/admUser/${id}`}
       token={token}
+      
       columns={[
         {
           label: "",
@@ -43,16 +44,20 @@ export default function Clients() {
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                 <span className="text-gray-400 text-xs font-semibold">
-                  {(row.first_name || row.name)?.charAt(0)?.toUpperCase() || "?"}
+                  {(row.first_name || row.name)?.charAt(0)?.toUpperCase() ||
+                    "?"}
                 </span>
               </div>
             ),
         },
         { label: "ID", key: "id" },
-        { 
-          label: "Name", 
+        {
+          label: "Name",
           key: "name",
-          render: (row) => `${row.first_name || ""} ${row.last_name || ""}`.trim() || row.name || "-"
+          render: (row) =>
+            `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
+            row.name ||
+            "-",
         },
         { label: "Username", key: "username" },
         { label: "Email", key: "email" },
@@ -64,7 +69,12 @@ export default function Clients() {
         { key: "last_name", label: "Last Name", required: true },
         { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
-        { key: "password", label: "Password", type: "password", placeholder: "Leave blank to keep current" },
+        {
+          key: "password",
+          label: "Password",
+          type: "password",
+          placeholder: "Leave blank to keep current",
+        },
         {
           key: "phone_number",
           label: "Phone Number",
@@ -75,6 +85,7 @@ export default function Clients() {
         { key: "bio", label: "Bio/Notes", type: "textarea" },
       ]}
       filters={[]}
+      crudConfig={{ showExpand: false, showEdit: true, showDelete: true }}
     />
   );
 }
