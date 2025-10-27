@@ -141,98 +141,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-/**
- * -------------------------------
- * ASSIGN PROJECT
- * Statuses:
- *   active          - project currently being worked on
- *   not_started     - assigned but freelancer hasn't started
- * -------------------------------
- */
-export const assignProject = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-    const { freelancer_id, assignment_type = "solo" } = req.body;
-
-    if (!freelancer_id) return res.status(400).json({ success: false, message: "freelancer_id required" });
-
-    const { rows: projectRows } = await pool.query(
-      `SELECT id, duration_days, duration_hours, status, title 
-       FROM projects 
-       WHERE id = $1 AND is_deleted = false`,
-      [projectId]
-    );
-    if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
-
-    const project = projectRows[0];
-
-    const { rows: userRows } = await pool.query(
-      `SELECT role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
-      [freelancer_id]
-    );
-    if (!userRows.length || userRows[0].role_id !== 3) 
-      return res.status(403).json({ success: false, message: "Only verified freelancers can be assigned" });
-    if (!userRows[0].is_verified) 
-      return res.status(403).json({ success: false, message: "Freelancer must be verified" });
-
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
-      [projectId, freelancer_id]
-    );
-    if (existing.length) return res.status(400).json({ success: false, message: "Freelancer already assigned" });
-
-    if (assignment_type === "solo") {
-      const { rows: soloCheck } = await pool.query(
-        `SELECT id FROM project_assignments WHERE project_id = $1 AND assignment_type = 'solo'`,
-        [projectId]
-      );
-      if (soloCheck.length) return res.status(400).json({ success: false, message: "Solo assignment exists" });
-    }
-
-    const assignedAt = new Date();
-    let deadline = null;
-    if (project.duration_days) 
-      deadline = new Date(assignedAt.getTime() + project.duration_days * 24 * 60 * 60 * 1000);
-    else if (project.duration_hours) 
-      deadline = new Date(assignedAt.getTime() + project.duration_hours * 60 * 60 * 1000);
-
-    const { rows: inserted } = await pool.query(
-      `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type, deadline)
-       VALUES ($1, $2, $3, 'active', $4, $5) RETURNING *`,
-      [projectId, freelancer_id, assignedAt, assignment_type, deadline]
-    );
-
-    if (assignment_type === "solo") {
-      await pool.query(
-        `UPDATE projects
-         SET start_date = NOW(),
-             completion_status = 'in_progress'
-         WHERE id = $1`,
-        [projectId]
-      );
-    }
-
-    await LogCreators.projectOperation(
-      req.token?.userId || 0,
-      ACTION_TYPES.ASSIGNMENT_CREATE,
-      projectId,
-      true,
-      { freelancer_id, assignment_id: inserted[0].id, assignment_type }
-    );
-
-    try {
-      await NotificationCreators.freelancerAssigned(freelancer_id, projectId, project.title);
-      await NotificationCreators.projectAssignedToClient(req.token?.userId || 0, projectId, project.title);
-    } catch (notifErr) {
-      console.error("Notification error:", notifErr);
-    }
-
-    return res.status(201).json({ success: true, assignment: inserted[0] });
-  } catch (error) {
-    console.error("assignProject error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
 
 /**
  * -------------------------------
@@ -583,6 +491,14 @@ export const addProjectFiles = async (req, res) => {
  * Client sends an invitation. 
  * -------------------------------
  */
+/**
+ * -------------------------------
+ * INVITE FREELANCER TO PROJECT
+ * -------------------------------
+ * Client sends an invitation → Project gets linked to freelancer,
+ * but stays pending until freelancer accepts.
+ * -------------------------------
+ */
 export const assignFreelancer = async (req, res) => {
   try {
     const clientId = req.token?.userId;
@@ -593,67 +509,88 @@ export const assignFreelancer = async (req, res) => {
       return res.status(400).json({ success: false, message: "freelancer_id is required" });
     }
 
+    // Get project info
     const { rows: projectRows } = await pool.query(
       `SELECT id, title, user_id, status 
        FROM projects 
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
+
     if (!projectRows.length) {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
-    const project = projectRows[0];
 
+    const project = projectRows[0];
     if (project.user_id !== clientId) {
       return res.status(403).json({ success: false, message: "You can only invite freelancers to your own projects" });
     }
 
+    // Validate freelancer
     const { rows: freelancerRows } = await pool.query(
       `SELECT id, role_id, is_verified 
        FROM users 
        WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
+
     if (!freelancerRows.length) {
       return res.status(404).json({ success: false, message: "Freelancer not found" });
     }
-    const freelancer = freelancerRows[0];
 
+    const freelancer = freelancerRows[0];
     if (freelancer.role_id !== 3 || !freelancer.is_verified) {
       return res.status(400).json({ success: false, message: "Invalid freelancer" });
     }
 
-    // Check if freelancer already invited or assigned
+    // Check existing invitation or assignment
     const { rows: existing } = await pool.query(
-      `SELECT id, status 
-       FROM project_assignments 
-       WHERE project_id = $1 AND freelancer_id = $2`,
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
     );
     if (existing.length) {
       return res.status(400).json({ success: false, message: "Freelancer already invited or assigned" });
     }
 
-    // Create a pending invitation
+    // Create a pending invitation record
     const assignedAt = new Date();
     const { rows: assignmentRows } = await pool.query(
-      `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type)
-       VALUES ($1, $2, $3, 'pending_acceptance', 'solo')
+      `INSERT INTO project_assignments 
+        (project_id, freelancer_id, assigned_at, status, assignment_type)
+       VALUES ($1, $2, $3, 'pending_acceptance', 'by_client')
        RETURNING *`,
       [projectId, freelancer_id, assignedAt]
     );
+
     const assignment = assignmentRows[0];
 
-    // Log operation 
-    await LogCreators.projectOperation(clientId, ACTION_TYPES.ASSIGNMENT_CREATE, projectId, true, {
-      freelancer_id,
-      assignment_id: assignment.id,
-      type: "solo",
-    });
+    // 🔹 Update the project to link freelancer & mark as invitation sent
+    await pool.query(
+      `UPDATE projects
+       SET assigned_freelancer_id = $1,
+           status = 'pending_acceptance',
+           completion_status = 'invitation_sent'
+       WHERE id = $2`,
+      [freelancer_id, projectId]
+    );
 
-    // Send notification 
+    // Log this operation
+    await LogCreators.projectOperation(
+      clientId,
+      ACTION_TYPES.ASSIGNMENT_CREATE,
+      projectId,
+      true,
+      {
+        freelancer_id,
+        assignment_id: assignment.id,
+        type: "by_client",
+        action: "invitation_sent"
+      }
+    );
+
+    // Send notification to freelancer
     try {
-      await NotificationCreators.freelancerAssignmentChanged(projectId,freelancer_id, true);
+      await NotificationCreators.freelancerAssignmentChanged(projectId, freelancer_id, true);
     } catch (err) {
       console.error("Notification error:", err);
     }
@@ -670,6 +607,7 @@ export const assignFreelancer = async (req, res) => {
   }
 };
 
+
 /**
  * -------------------------------
  * FREELANCER ACCEPT ASSIGNMENT
@@ -681,34 +619,54 @@ export const acceptAssignment = async (req, res) => {
     const { assignmentId } = req.params;
 
     const { rows } = await pool.query(
-      `SELECT * FROM project_assignments WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
+      `SELECT * FROM project_assignments 
+       WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
       [assignmentId, freelancerId]
     );
+
     if (!rows.length)
       return res.status(404).json({ success: false, message: "No pending invitation found" });
 
     const assignment = rows[0];
 
-    // Update assignment and project
-    await pool.query(`UPDATE project_assignments SET status = 'active' WHERE id = $1`, [assignmentId]);
+    // ✅ Update assignment and mark project as in progress
     await pool.query(
-      `UPDATE projects SET status = 'active', completion_status = 'in_progress', assigned_freelancer_id = $1 WHERE id = $2`,
+      `UPDATE project_assignments SET status = 'active' WHERE id = $1`,
+      [assignmentId]
+    );
+
+    await pool.query(
+      `UPDATE projects 
+       SET status = 'in_progress', 
+           completion_status = 'in_progress', 
+           assigned_freelancer_id = $1 
+       WHERE id = $2`,
       [freelancerId, assignment.project_id]
     );
 
-    await LogCreators.projectOperation(freelancerId, ACTION_TYPES.ASSIGNMENT_ACCEPT, assignment.project_id, true);
+    await LogCreators.projectOperation(
+      freelancerId,
+      ACTION_TYPES.ASSIGNMENT_ACCEPT,
+      assignment.project_id,
+      true
+    );
+
     try {
-      await NotificationCreators.freelancerAcceptedAssignment(assignment.project_id, freelancerId);
+      await NotificationCreators.freelancerAcceptedAssignment(
+        assignment.project_id,
+        freelancerId
+      );
     } catch (err) {
       console.error("Notification error:", err);
     }
 
-    res.json({ success: true, message: "Assignment accepted successfully" });
+    res.json({ success: true, message: "Assignment accepted successfully, project now in progress" });
   } catch (error) {
     console.error("acceptAssignment error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 /**
  * -------------------------------
@@ -742,6 +700,356 @@ export const rejectAssignment = async (req, res) => {
     res.json({ success: true, message: "Assignment rejected successfully" });
   } catch (error) {
     console.error("rejectAssignment error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * FREELANCER APPLY FOR ACTIVE PROJECT
+ * -------------------------------
+ * Freelancers can apply only for "fixed" or "hourly" projects 
+ * that are already active.
+ * The project remains active — client must later accept one freelancer.
+ * -------------------------------
+ */
+export const applyForProject = async (req, res) => {
+  try {
+    const freelancerId = req.token?.userId;
+    const { projectId } = req.params;
+
+    const { rows: freelancerRows } = await pool.query(
+      `SELECT role_id, is_verified 
+       FROM users 
+       WHERE id = $1 AND is_deleted = false`,
+      [freelancerId]
+    );
+
+    if (!freelancerRows.length || freelancerRows[0].role_id !== 3)
+      return res.status(403).json({ success: false, message: "Only freelancers can apply" });
+
+    if (!freelancerRows[0].is_verified)
+      return res.status(403).json({ success: false, message: "Freelancer must be verified to apply" });
+
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, user_id, title, project_type, status 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length)
+      return res.status(404).json({ success: false, message: "Project not found" });
+
+    const project = projectRows[0];
+
+    if (!["fixed", "hourly"].includes(project.project_type)) {
+      return res.status(400).json({
+        success: false,
+        message: "You can only apply for fixed or hourly projects",
+      });
+    }
+
+    if (project.status !== "active") {
+      return res.status(400).json({
+        success: false,
+        message: "You can only apply to projects that are active",
+      });
+    }
+
+    const { rows: existing } = await pool.query(
+      `SELECT id 
+       FROM project_assignments 
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
+    );
+
+    if (existing.length) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already applied or are assigned to this project",
+      });
+    }
+
+    const assignedAt = new Date();
+
+    const { rows: inserted } = await pool.query(
+      `INSERT INTO project_assignments 
+        (project_id, freelancer_id, assigned_at, status, assignment_type)
+       VALUES ($1, $2, $3, 'pending_client_approval', 'by_freelancer')
+       RETURNING *`,
+      [projectId, freelancerId, assignedAt]
+    );
+
+    const assignment = inserted[0];
+
+    await LogCreators.projectOperation(
+      freelancerId,
+      ACTION_TYPES.ASSIGNMENT_CREATE,
+      projectId,
+      true,
+      { freelancer_id: freelancerId, assignment_id: assignment.id, assignment_type: "by_freelancer" }
+    );
+
+    try {
+      await NotificationCreators.freelancerAppliedForProject(
+        project.user_id,
+        freelancerId,
+        projectId,
+        project.title
+      );
+    } catch (notifErr) {
+      console.error("Notification error:", notifErr);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Application sent successfully. Waiting for client approval.",
+      assignment,
+    });
+
+  } catch (error) {
+    console.error("applyForProject error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * CLIENT APPROVE OR REJECT FREELANCER APPLICATION
+ * -------------------------------
+ */
+export const approveOrRejectApplication = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const clientId = req.token?.userId;
+    const { assignmentId, action } = req.body;
+
+    if (!clientId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!["accept", "reject"].includes(action))
+      return res.status(400).json({ success: false, message: "Invalid action" });
+
+    const { rows: assignmentRows } = await client.query(
+      `SELECT pa.*, p.user_id AS client_id, p.title AS project_title 
+       FROM project_assignments pa
+       JOIN projects p ON pa.project_id = p.id
+       WHERE pa.id = $1`,
+      [assignmentId]
+    );
+
+    if (!assignmentRows.length)
+      return res.status(404).json({ success: false, message: "Application not found" });
+
+    const assignment = assignmentRows[0];
+    if (assignment.client_id !== clientId)
+      return res.status(403).json({ success: false, message: "Not authorized" });
+
+    await client.query("BEGIN");
+
+    // Reject case
+    if (action === "reject") {
+      await client.query(`UPDATE project_assignments SET status = 'rejected' WHERE id = $1`, [assignmentId]);
+      await client.query("COMMIT");
+      try {
+        await NotificationCreators.freelancerApplicationStatusChanged(
+          assignment.project_id,
+          assignment.freelancer_id,
+          assignment.project_title,
+          false
+        );
+      } catch (e) {
+        console.error(e);
+      }
+      return res.json({ success: true, message: "Application rejected" });
+    }
+
+    const existingAccepted = await client.query(
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND status = 'active'`,
+      [assignment.project_id]
+    );
+    if (existingAccepted.rows.length > 0)
+      return res.status(400).json({ success: false, message: "Only one freelancer can be accepted per project" });
+
+    await client.query(`UPDATE project_assignments SET status = 'active' WHERE id = $1`, [assignmentId]);
+
+    await client.query(
+      `UPDATE project_assignments SET status = 'not_chosen' 
+       WHERE project_id = $1 AND id <> $2 AND status = 'pending_client_approval'`,
+      [assignment.project_id, assignmentId]
+    );
+
+    // project now moves to 'in_progress'
+    await client.query(
+      `UPDATE projects 
+       SET assigned_freelancer_id = $1, status = 'in_progress', completion_status = 'in_progress'
+       WHERE id = $2`,
+      [assignment.freelancer_id, assignment.project_id]
+    );
+
+    await client.query("COMMIT");
+
+    try {
+      await NotificationCreators.freelancerApplicationStatusChanged(
+        assignment.project_id,
+        assignment.freelancer_id,
+        assignment.project_title,
+        true
+      );
+      await NotificationCreators.freelancerAssigned(
+        assignment.freelancer_id,
+        assignment.project_id,
+        assignment.project_title
+      );
+    } catch (e) {
+      console.error(e);
+    }
+
+    return res.json({ success: true, message: "Freelancer accepted and project activated" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("approveOrRejectApplication error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
+
+export const getApplicationsForMyProjects = async (req, res) => {
+  try {
+    const ownerId = req.token?.userId;
+    if (!ownerId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const { rows } = await pool.query(
+      `SELECT pa.id AS assignment_id, pa.freelancer_id, u.username AS freelancer_name,
+              u.email AS freelancer_email, pa.status, pa.assigned_at,
+              p.id AS project_id, p.title AS project_title
+       FROM project_assignments pa
+       JOIN projects p ON pa.project_id = p.id
+       JOIN users u ON pa.freelancer_id = u.id
+       WHERE p.user_id = $1
+       ORDER BY pa.assigned_at DESC`,
+      [ownerId]
+    );
+
+    res.json({ success: true, applications: rows });
+  } catch (err) {
+    console.error("getApplicationsForMyProjects error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * GET PROJECT STATUS TIMELINE
+ * -------------------------------
+ * Combines project, assignment, and completion info
+ * to build a timeline of the project’s current lifecycle.
+ * -------------------------------
+ */
+export const getProjectTimeline = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.token?.userId;
+
+    const { rows: projectRows } = await pool.query(
+      `SELECT 
+         p.id, p.title, p.status, p.completion_status, 
+         p.created_at, p.assigned_freelancer_id, 
+         u.username AS client_name, 
+         f.username AS freelancer_name
+       FROM projects p
+       LEFT JOIN users u ON u.id = p.user_id
+       LEFT JOIN users f ON f.id = p.assigned_freelancer_id
+       WHERE p.id = $1 AND p.is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length)
+      return res.status(404).json({ success: false, message: "Project not found" });
+
+    const project = projectRows[0];
+
+    // Pull completion history (for timestamps)
+    const { rows: history } = await pool.query(
+      `SELECT event, timestamp FROM completion_history WHERE project_id = $1 ORDER BY timestamp ASC`,
+      [projectId]
+    );
+
+    const getEventTime = (eventName) =>
+      history.find((h) => h.event === eventName)?.timestamp || null;
+
+    // Timeline logic
+    const timeline = [
+      {
+        step: "Project Created",
+        status: "done",
+        timestamp: project.created_at
+      },
+      {
+        step: "Freelancer Invited / Application Sent",
+        status: ["pending_acceptance", "pending_client_approval"].includes(project.status)
+          ? "active"
+          : ["in_progress", "pending_review", "completed", "revision_requested"].includes(project.status)
+          ? "done"
+          : "pending",
+        timestamp: getEventTime("invitation_sent")
+      },
+      {
+        step: "Freelancer Accepted",
+        status: project.status === "in_progress" || 
+                 ["pending_review", "completed", "revision_requested"].includes(project.completion_status)
+          ? "done"
+          : "pending",
+        timestamp: getEventTime("freelancer_accepted")
+      },
+      {
+        step: "Work in Progress",
+        status: project.status === "in_progress" && project.completion_status === "in_progress"
+          ? "active"
+          : ["pending_review", "revision_requested", "completed"].includes(project.completion_status)
+          ? "done"
+          : "pending",
+        timestamp: getEventTime("work_started")
+      },
+      {
+        step: "Work Submitted for Review",
+        status: project.completion_status === "pending_review"
+          ? "active"
+          : ["revision_requested", "completed"].includes(project.completion_status)
+          ? "done"
+          : "pending",
+        timestamp: getEventTime("completion_requested")
+      },
+      {
+        step: "Client Review / Revision",
+        status: project.completion_status === "revision_requested"
+          ? "active"
+          : project.completion_status === "completed"
+          ? "done"
+          : "pending",
+        timestamp: getEventTime("revision_requested")
+      },
+      {
+        step: "Project Completed",
+        status: project.completion_status === "completed" ? "done" : "pending",
+        timestamp: getEventTime("completed")
+      }
+    ];
+
+    return res.json({
+      success: true,
+      project_id: project.id,
+      title: project.title,
+      client: project.client_name,
+      freelancer: project.freelancer_name,
+      status: project.status,
+      completion_status: project.completion_status,
+      timeline
+    });
+  } catch (error) {
+    console.error("getProjectTimeline error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

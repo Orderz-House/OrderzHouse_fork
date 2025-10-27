@@ -16,10 +16,10 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   const navigate = useNavigate(); 
 
-  // refs
   const menuRef = useRef(null);
   const anchorRef = useRef(null); 
   const [menuTop, setMenuTop] = useState(0);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -84,7 +84,6 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     }
   };
 
-  // UI handlers
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
     if (onSetActiveLink) onSetActiveLink("CATEGORIES");
@@ -101,7 +100,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     if (!selectedCategory || !subSub) return;
     navigate(
       `/projectsPage?cat=${encodeURIComponent(selectedCategory.id)}&sub=${encodeURIComponent(
-        subSub.sub_sub_category_id
+        subSub.id
       )}`
     );
     setIsOpen(false);
@@ -187,7 +186,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                         <div className="flex flex-wrap gap-3">
                           {selectedSubCategory.subSubCategories?.map((s) => (
                             <a
-                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`}
+                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.id}`}
                               href="#"
                               className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                               onClick={(e) => {
@@ -195,7 +194,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                                 goToProjects(s); 
                               }}
                             >
-                              {s.sub_sub_category_name}
+                              {s.name}
                             </a>
                           ))}
                         </div>
