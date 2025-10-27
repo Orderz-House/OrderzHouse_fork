@@ -139,7 +139,50 @@ export const NotificationCreators = {
   projectStatusChanged: async (projectId, projectTitle, userId, oldStatus, newStatus) => {
     const message = `The status of your project "${projectTitle}" has been updated from ${oldStatus} to ${newStatus}.`;
     await createNotification(userId, NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED, message, projectId, "project");
+
   },
+    projectOverdue: async (clientId, freelancerId, projectId, projectTitle) => {
+    const message = `Project "${projectTitle}" has passed its deadline and is now marked as overdue.`;
+
+    // Notify client
+    await createNotification(
+      clientId,
+      NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED,
+      message,
+      projectId,
+      "project"
+    );
+
+    // Notify freelancer
+    await createNotification(
+      freelancerId,
+      NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED,
+      message,
+      projectId,
+      "project"
+    );
+
+    if (global.io) {
+      global.io.emit("projectOverdue", {
+        projectId,
+        title: projectTitle,
+        clientId,
+        freelancerId,
+        message,
+      });
+    }
+  },
+freelancerAppliedForProject: async (clientId, freelancerId, projectId, projectTitle) => {
+  const message = `A freelancer applied for your project "${projectTitle}".`;
+  await createNotification(
+    clientId,
+    NOTIFICATION_TYPES.PROJECT_STATUS_CHANGED,
+    message,
+    projectId,
+    "project"
+  );
+},
+
 
   // --- Work & Payment Lifecycle ---
   workSubmitted: async (projectId, projectTitle, freelancerName) => {

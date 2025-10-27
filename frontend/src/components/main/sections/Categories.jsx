@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-const primary = "rgb(2, 128, 144)";   
+const primary = "rgb(2, 128, 144)";
 const primaryDark = "rgb(0, 90, 100)";
 const primaryLight = "rgb(0, 170, 180)";
 
@@ -25,7 +26,9 @@ export default function CategoriesShowcase({
 
   const handleSelect = useCallback(
     (cat) => {
-      try { onSelect?.(cat); } catch {}
+      try {
+        onSelect?.(cat);
+      } catch {}
       navigate(`/projectsPage?cat=${encodeURIComponent(cat.id)}`);
     },
     [onSelect, navigate]
@@ -39,16 +42,10 @@ export default function CategoriesShowcase({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/category");
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const { data } = await axios.get("http://localhost:5000/category");
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType?.includes("application/json"))
-          throw new Error(`Expected JSON, got ${contentType}`);
-
-        const data = await response.json();
-        if (data.success && data.categories) {
-          const mappedCategories = data.categories.map((cat) => ({
+        if (data.success && data.data) {
+          const mappedCategories = data.data.map((cat) => ({
             id: cat.id,
             name: cat.name,
             description: cat.description,
@@ -59,7 +56,9 @@ export default function CategoriesShowcase({
             count: null,
           }));
           setFetchedCategories(mappedCategories);
-        } else throw new Error("Invalid response format from API");
+        } else {
+          throw new Error("Invalid response format from API");
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -253,7 +252,6 @@ function NavButtons({ onPrev, onNext, hasPrev, hasNext }) {
   );
 }
 
-// Icons
 function ChevronRight() {
   return (
     <svg viewBox="0 0 20 20" className="w-5 h-5 text-slate-600">
@@ -283,7 +281,6 @@ function ChevronLeft() {
   );
 }
 
-/* cards */
 function Card({ cat, onClick }) {
   return (
     <div

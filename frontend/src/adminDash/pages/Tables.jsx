@@ -84,12 +84,15 @@ function useTableData({
         });
 
         const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data?.users)
-          ? data.users
-          : [];
+  ? data
+  : Array.isArray(data?.appointments)
+  ? data.appointments
+  : Array.isArray(data?.items)
+  ? data.items
+  : Array.isArray(data?.users)
+  ? data.users
+  : [];
+
 
         const processedList = list.map((row) => ({
           ...row,

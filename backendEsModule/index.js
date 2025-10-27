@@ -6,10 +6,11 @@ import cors from "cors";
 import http from "http";
 import dotenv from "dotenv";
 import "./cron/expireSubscriptions.js";
-import "./cron/autoCancelAssignments.js";
 import "./cron/autoExpireOldOffers.js";
+import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 
 
+startDeadlineWatcher();
 
 
 // Routers

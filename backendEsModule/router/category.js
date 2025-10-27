@@ -1,46 +1,96 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import authorization from "../middleware/authorization.js";
-import { 
-  createCategory, 
-  getCategories, 
+import adminOnly from "../middleware/adminOnly.js";
+import {
+  // ===== MAIN CATEGORIES =====
+  getCategories,
   getCategoryById,
-  getSubCategories,
-  getSubSubCategoriesByCategoryId,
-  getSubSubCategoriesBySubId,
+  createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+
+  // ===== SUB-CATEGORIES =====
+  getSubCategories,
+  createSubCategory,
+  updateSubCategory,
+  deleteSubCategory,
+
+  // ===== SUB-SUB-CATEGORIES =====
+  getSubSubCategoriesBySubId,
+  createSubSubCategory,
+  updateSubSubCategory,
+  deleteSubSubCategory,
 } from "../controller/category.js";
 
 const categoryRouter = express.Router();
 
-// ========== Public routes ==========
+/* =====================================================
+   PUBLIC ROUTES
+===================================================== */
+
 categoryRouter.get("/", getCategories);
 
-
-//create new category
-categoryRouter.post("/", createCategory);
-// Get sub-categories
 categoryRouter.get("/:categoryId/sub-categories", getSubCategories);
 
-// Get sub-sub-categories by main category ID
-categoryRouter.get("/:categoryId/sub-sub-categories", getSubSubCategoriesByCategoryId);
-
-
-// Get sub-sub-categories by sub-category ID
-categoryRouter.get("/sub-category/:subCategoryId/sub-sub-categories", getSubSubCategoriesBySubId);
-
-// Get single category by ID (must be last)
+categoryRouter.get(
+  "/sub-category/:subCategoryId/sub-sub-categories",
+  getSubSubCategoriesBySubId
+);
 categoryRouter.get("/:id", getCategoryById);
 
-// ========== Admin-only routes ==========
-// Create new category
-categoryRouter.post("/", authentication, authorization(["1"]), createCategory);
+/* =====================================================
+   ADMIN-ONLY ROUTES (Protected)
+===================================================== */
 
-// Update category
-categoryRouter.put("/:id", authentication, authorization(["1"]), updateCategory);
+// --------------------
+// MAIN CATEGORIES
+// --------------------
+categoryRouter.post("/", authentication, adminOnly, createCategory);
+categoryRouter.put("/:id", authentication, adminOnly, updateCategory);
+categoryRouter.delete("/:id", authentication, adminOnly, deleteCategory);
 
-// Soft delete category
-categoryRouter.delete("/:id", authentication, authorization(["1"]), deleteCategory);
+// --------------------
+// SUB-CATEGORIES
+// --------------------
+categoryRouter.post(
+  "/:categoryId/sub-categories",
+  authentication,
+  adminOnly,
+  createSubCategory
+);
+categoryRouter.put(
+  "/:categoryId/sub-categories/:id",
+  authentication,
+  adminOnly,
+  updateSubCategory
+);
+categoryRouter.delete(
+  "/:categoryId/sub-categories/:id",
+  authentication,
+  adminOnly,
+  deleteSubCategory
+);
+
+// --------------------
+// SUB-SUB-CATEGORIES
+// --------------------
+categoryRouter.post(
+  "/sub-category/:subCategoryId/sub-sub-categories",
+  authentication,
+  adminOnly,
+  createSubSubCategory
+);
+categoryRouter.put(
+  "/sub-category/:subCategoryId/sub-sub-categories/:id",
+  authentication,
+  adminOnly,
+  updateSubSubCategory
+);
+categoryRouter.delete(
+  "/sub-category/:subCategoryId/sub-sub-categories/:id",
+  authentication,
+  adminOnly,
+  deleteSubSubCategory
+);
 
 export default categoryRouter;
