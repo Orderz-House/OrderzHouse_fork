@@ -1,6 +1,11 @@
+import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
 
 export default function News() {
+  const { userData, user } = useSelector((s) => s.auth);
+  const roleId = userData?.role_id ?? user?.role_id;
+  const isAdmin = roleId === 1;
+
   return (
     <PeopleTable
       title="News"
@@ -15,21 +20,10 @@ export default function News() {
       ]}
       formFields={[
         { key: "title", label: "Title", required: true },
-        {
-          key: "category",
-          label: "Category",
-          type: "select",
-          options: ["Product", "Company", "Status"],
-        },
+        { key: "category", label: "Category", type: "select", options: ["Product", "Company", "Status"] },
         { key: "author", label: "Author" },
         { key: "date", label: "Date", type: "date" },
-        {
-          key: "status",
-          label: "Status",
-          type: "select",
-          options: ["Draft", "Published", "Archived"],
-          defaultValue: "Draft",
-        },
+        { key: "status", label: "Status", type: "select", options: ["Draft", "Published", "Archived"], defaultValue: "Draft" },
         { key: "content", label: "Content", type: "textarea" },
       ]}
       chips={[
@@ -40,16 +34,8 @@ export default function News() {
       ]}
       chipField="status"
       filters={[
-        {
-          key: "category",
-          label: "Category",
-          options: ["Product", "Company", "Status"],
-        },
-        {
-          key: "status",
-          label: "Status",
-          options: ["Draft", "Published", "Archived"],
-        },
+        { key: "category", label: "Category", options: ["Product", "Company", "Status"] },
+        { key: "status", label: "Status", options: ["Draft", "Published", "Archived"] },
       ]}
     />
   );
