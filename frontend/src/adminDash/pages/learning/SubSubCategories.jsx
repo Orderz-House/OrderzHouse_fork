@@ -9,13 +9,11 @@ export default function SubSubCategories() {
 
   const columns = [
     { label: "Name", key: "name" },
-    { label: "Slug", key: "slug" },
     { label: "Description", key: "description" },
   ];
 
   const formFields = [
     { key: "name", label: "Name", required: true },
-    { key: "slug", label: "Slug" },
     { key: "description", label: "Description", type: "textarea" },
   ];
 
@@ -27,7 +25,6 @@ export default function SubSubCategories() {
       columns={columns}
       formFields={formFields}
       token={token}
-      desktopAsCards
       crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
     />
   );
