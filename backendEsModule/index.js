@@ -6,10 +6,11 @@ import cors from "cors";
 import http from "http";
 import dotenv from "dotenv";
 import "./cron/expireSubscriptions.js";
-import "./cron/autoCancelAssignments.js";
 import "./cron/autoExpireOldOffers.js";
+import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 
 
+startDeadlineWatcher();
 
 
 // Routers
@@ -32,6 +33,7 @@ import ratingsRouter from "./router/rating.js";
 import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
+import emailVerificationRoutes from "./router/emailVerification.js";
 
 
 // DB connection
@@ -85,6 +87,7 @@ app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
+app.use("/email", emailVerificationRoutes);
 
 
 let server, io;

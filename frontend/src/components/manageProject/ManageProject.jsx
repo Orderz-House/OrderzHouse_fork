@@ -30,7 +30,6 @@ const ManageProject = () => {
   const [assignments, setAssignments] = useState([]);
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  // Backend integration state (for chat/files integration)
   const [messages, setMessages] = useState([]);
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -221,7 +220,6 @@ const ManageProject = () => {
     );
   }
   const isProjectOwner = userData.id === project.user_id;
-  // Check if current user is a freelancer assigned to this project
   const isAssignedFreelancer = assignments.some(
     assignment => assignment.freelancer_id === userData.id && assignment.status === "active"
   );
@@ -316,7 +314,6 @@ const ManageProject = () => {
                 </button>
               )}
 
-              {/* Only show Offers tab to project owner */}
               {isProjectOwner && (
                 <button
                   onClick={() => setActiveTab("offers")}

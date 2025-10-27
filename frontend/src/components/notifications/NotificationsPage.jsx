@@ -23,7 +23,7 @@ export default function NotificationsPage() {
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("all"); // all, unread, read
+  const [filter, setFilter] = useState("all"); 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNotifications, setSelectedNotifications] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
@@ -172,18 +172,15 @@ export default function NotificationsPage() {
     setSelectAll(!selectAll);
   };
 
-  // Filter notifications based on current filter and search query
   useEffect(() => {
     let filtered = notifications;
 
-    // Apply read/unread filter
     if (filter === "unread") {
       filtered = filtered.filter(notif => !notif.read_status);
     } else if (filter === "read") {
       filtered = filtered.filter(notif => notif.read_status);
     }
 
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(notif =>
@@ -195,12 +192,10 @@ export default function NotificationsPage() {
     setFilteredNotifications(filtered);
   }, [notifications, filter, searchQuery]);
 
-  // Fetch notifications on component mount
   useEffect(() => {
     fetchNotifications();
   }, [token]);
 
-  // Get notification icon based on type
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'message_received':

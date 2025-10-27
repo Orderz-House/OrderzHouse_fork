@@ -7,7 +7,6 @@ import img4 from "../../../assets/Fazaat.png";
 const LogoGrid = () => {
   return (
     <footer className="relative bg-gradient-to-r from-[#05668D] via-[#028090] to-[#00A896] text-white py-8 sm:py-12">
-      {/* Wave SVG Divider */}
       <div className="absolute top-0 left-0 w-full overflow-hidden leading-none">
         <svg
           className="relative block w-full h-16 sm:h-20"

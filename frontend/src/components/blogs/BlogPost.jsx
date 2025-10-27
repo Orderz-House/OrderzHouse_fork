@@ -9,12 +9,10 @@ export default function BlogPost() {
   const { id } = useParams();
   const { state } = useLocation();
 
-  // If we navigated from the list with state, use it as a warm cache
   const [post, setPost] = useState(() => (state && state.id === id ? state : null));
   const [loading, setLoading] = useState(!post);
   const [err, setErr] = useState(null);
 
-  // Fetch post from API (no mock)
   useEffect(() => {
     let mounted = true;
 
@@ -23,12 +21,9 @@ export default function BlogPost() {
         setLoading(true);
         setErr(null);
         const { data } = await axios.get(`http://localhost:5000/blogs/${encodeURIComponent(id)}`, {
-          // If you need auth:
-          // headers: { authorization: `Bearer ${token}` },
         });
         if (!mounted) return;
 
-        // Accept either a single object or { item: {...} }
         const item = data?.item ?? data ?? null;
         setPost(item);
       } catch (e) {
@@ -40,10 +35,7 @@ export default function BlogPost() {
       }
     }
 
-    // Load when:
-    // - there's no post, or
-    // - the post doesn't match the current id (direct link), or
-    // - the post is missing sections (want full details)
+   
     if (!post || (post?.id ?? post?._id) !== id || !post?.sections) {
       load();
     }
@@ -51,9 +43,7 @@ export default function BlogPost() {
     return () => {
       mounted = false;
     };
-  }, [id]); // eslint-disable-line react-hooks-exhaustive-deps
-
-  // reading progress
+  }, [id]); 
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -74,7 +64,6 @@ export default function BlogPost() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // active section (for future TOC)
   const [activeId, setActiveId] = useState(null);
   useEffect(() => {
     if (!post?.sections) return;
@@ -102,7 +91,6 @@ export default function BlogPost() {
       year: "numeric",
     });
 
-  // Helper to get file icon based on type
   const getFileIcon = (url) => {
     if (!url) return <File className="w-5 h-5" />;
     
@@ -117,7 +105,6 @@ export default function BlogPost() {
     return <File className="w-5 h-5 text-slate-600" />;
   };
 
-  // Helper to get file name from URL
   const getFileName = (url) => {
     try {
       const urlObj = new URL(url);
@@ -129,13 +116,11 @@ export default function BlogPost() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Reading progress */}
       <div
         className="fixed top-0 left-0 h-1 bg-[#028090] z-40 transition-[width] duration-150"
         style={{ width: `${progress}%` }}
       />
 
-      {/* Top bar (no mock) */}
       <BlogTopBar
         showBack
         onBack={() => navigate(-1)}
@@ -236,7 +221,6 @@ export default function BlogPost() {
               </div>
             )}
 
-            {/* Attachments Section - Compact Icons */}
             {post.attachments && (
               <div className="pt-6 border-t border-slate-200">
                 <div className="flex items-center gap-2 mb-4">
@@ -287,7 +271,7 @@ export default function BlogPost() {
           </article>
         )}
 
-        {/* Prev/Next (placeholder) */}
+        {/* Prev/Next */}
         <div className="mt-12 grid sm:grid-cols-2 gap-4">
           <button
             disabled

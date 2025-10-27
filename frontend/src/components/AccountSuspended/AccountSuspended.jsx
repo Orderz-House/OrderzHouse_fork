@@ -32,7 +32,6 @@ const AccountSuspended = () => {
 
   
 
-  // If no user data or account isn't deleted, show active account message
   if (!userData || !userData.is_deleted) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4 py-12">
@@ -152,8 +151,6 @@ const AccountSuspended = () => {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
         
       </div>
     </div>

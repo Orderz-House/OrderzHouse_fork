@@ -71,13 +71,11 @@ export default function Payments() {
         const { url } = endpoints[role] ?? endpoints.user;
 
         const { data } = await axios.get(url, {
-          // ⬇️ إن احتجت توكن، أضِفه هنا
           // headers: { authorization: `Bearer ${token}` },
         });
 
         if (!alive) return;
 
-        // نتوقع هيكلة مثل: { items: [...], totals: {...} }
         const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
         const totalsObj = data?.totals ?? {};
 
@@ -119,7 +117,7 @@ export default function Payments() {
         tableProps={{
           title: "Payments",
           addLabel: "Add Payment",
-          initialRows: rows, // يُستخدم فقط إن لم يُمرر endpoint داخل PeopleTable
+          initialRows: rows,
           endpoint: endpoints.admin.url,
           columns: [
             { label: "User", key: "user" },
@@ -153,9 +151,6 @@ export default function Payments() {
       />
     );
   }
-
-  // ❌ تمت إزالة السطر الذي يسبب الخطأ:
-  // const { endpoint, columns } = configs[role] ?? configs.user;
 
   return (
     <ClientBilling
@@ -214,7 +209,7 @@ function AdminFinance({ totals, loading, tableProps }) {
 }
 
 /* =========================================================
-   Client — Billing (clean timeline)
+   Client — Billing
    ========================================================= */
 function ClientBilling({ loading, rows, totals, q, setQ, status, method }) {
   return (
@@ -305,7 +300,7 @@ function ClientBilling({ loading, rows, totals, q, setQ, status, method }) {
 }
 
 /* =========================================================
-   Freelancer — Earnings (wallet-style)
+   Freelancer — Earnings
    ========================================================= */
 function FreelancerEarnings({ loading, rows, totals, q, setQ, status, method }) {
   return (

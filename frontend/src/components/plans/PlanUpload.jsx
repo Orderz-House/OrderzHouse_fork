@@ -20,10 +20,8 @@ const PlanUpload = ({ plan, onClose }) => {
       };
 
       if (plan) {
-        // Edit plan
         await axios.put(`/http://localhost:5000/plans/edit/${plan.id}`, payload);
       } else {
-        // Create new plan
         await axios.post("/http://localhost:5000/plans/create", payload);
       }
 

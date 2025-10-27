@@ -8,17 +8,10 @@ import {
   fetchAuthProjectsBySubCategory,
 } from "./api/projects";
 
-// Tasks API
-import {
-  fetchAuthTasksByCategory,
-  fetchAuthTasksBySubSubCategory,
-  fetchAuthTasksBySubCategory,
-} from "./api/tasks";
-
 import ProjectCard from "./ProjectCard";
 
 export default function SubSidebar({
-  mode = "projects",          // "projects" | "tasks"
+  mode = "projects",       
   categoryId,
   activeSubSub,
   onSelectSubSub,
@@ -32,7 +25,6 @@ export default function SubSidebar({
 
   const isTasks = mode === "tasks";
 
-  // اجلب sub-sub-categories للكـاتيجوري المختار
   useEffect(() => {
     if (!categoryId) return setSubSubs([]);
     setLoadingSubSubs(true);
@@ -42,7 +34,6 @@ export default function SubSidebar({
       .finally(() => setLoadingSubSubs(false));
   }, [categoryId]);
 
-  // اجلب العناصر (أولوية: subSub > subCategory > category)
   useEffect(() => {
     if (!categoryId) return setItems([]);
     setLoadingItems(true);
@@ -111,7 +102,6 @@ export default function SubSidebar({
 
   return (
     <div className="w-full">
-      {/* موبايل: فلاتر أفقية */}
       {hasSidebar && (
         <div className="lg:hidden -mx-1 mb-4">
           <div
@@ -138,7 +128,6 @@ export default function SubSidebar({
       )}
 
       <div className="flex w-full gap-6 lg:gap-8">
-        {/* دِسك توب: سايدبار ثابت */}
         {hasSidebar && (
           <aside className="hidden lg:block w-72 flex-shrink-0">
             <div className="sticky top-24 rounded-2xl border border-slate-200/70 bg-white shadow-sm">
@@ -194,7 +183,6 @@ export default function SubSidebar({
           </aside>
         )}
 
-        {/* الشبكة */}
         <div className="flex-1 min-w-0">
           {loadingItems ? (
             <SkeletonGrid />
@@ -210,10 +198,10 @@ export default function SubSidebar({
               {items.map((it) => (
                 <ProjectCard
                   key={it.id}
-                  project={it}            // نفس الشكل
+                  project={it}           
                   theme={theme}
-                  linkBase={isTasks ? "tasks" : "projects"} // 👈 يغير الرابط فقط
-                  priceField={isTasks ? "budget" : "price"} // 👈 يعرض budget للـtasks
+                  linkBase={isTasks ? "tasks" : "projects"}
+                  priceField={isTasks ? "budget" : "price"} 
                 />
               ))}
             </div>

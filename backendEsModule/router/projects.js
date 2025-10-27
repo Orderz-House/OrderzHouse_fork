@@ -15,6 +15,10 @@ import {
   assignFreelancer,
   acceptAssignment,
   rejectAssignment,
+  applyForProject,
+  approveOrRejectApplication,
+  getApplicationsForMyProjects,
+  getProjectTimeline
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -30,8 +34,6 @@ import {
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-
-
 projectsRouter.post("/", authentication, createProject);
 
 projectsRouter.get("/:projectId", authentication, getProjectById);
@@ -40,12 +42,10 @@ projectsRouter.put("/hourly/:projectId", authentication, completeHourlyProject);
 
 projectsRouter.post("/:projectId/assign", authentication, assignFreelancer);
 
-
-
 projectsRouter.post(
   "/:projectId/submit",
   authentication,
-  requireVerifiedWithSubscription, 
+  requireVerifiedWithSubscription,
   upload.array("files"),
   submitWorkCompletion
 );
@@ -53,7 +53,7 @@ projectsRouter.post(
 projectsRouter.post(
   "/:projectId/resubmit",
   authentication,
-  requireVerifiedWithSubscription, 
+  requireVerifiedWithSubscription,
   upload.array("files"),
   resubmitWorkCompletion
 );
@@ -61,31 +61,28 @@ projectsRouter.post(
 projectsRouter.post(
   "/assignments/:assignmentId/accept",
   authentication,
-  requireVerifiedWithSubscription, 
+  requireVerifiedWithSubscription,
   acceptAssignment
 );
 
 projectsRouter.post(
   "/assignments/:assignmentId/reject",
   authentication,
-  requireVerifiedWithSubscription, 
+  requireVerifiedWithSubscription,
   rejectAssignment
 );
-
 
 projectsRouter.put(
   "/:projectId/approve",
   authentication,
-  approveWorkCompletion 
+  approveWorkCompletion
 );
-
 
 projectsRouter.get(
   "/categories/:categoryId/related-freelancers",
   authentication,
   getRelatedFreelancers
 );
-
 
 projectsRouter.post(
   "/:projectId/files",
@@ -94,7 +91,42 @@ projectsRouter.post(
   addProjectFiles
 );
 
+/* -------------------------------
+   NEW ROUTES ADDED
+-------------------------------- */
 
+// Freelancer applies for active fixed/hourly project
+projectsRouter.post(
+  "/:projectId/apply",
+  authentication,
+  requireVerifiedWithSubscription,
+  applyForProject
+);
+
+// Client approves or rejects freelancer application
+projectsRouter.post(
+  "/applications/decision",
+  authentication,
+  approveOrRejectApplication
+);
+
+// Client fetches all applications for their projects
+projectsRouter.get(
+  "/applications/my-projects",
+  authentication,
+  getApplicationsForMyProjects
+);
+
+// Get full project timeline
+projectsRouter.get(
+  "/:projectId/timeline",
+  authentication,
+  getProjectTimeline
+);
+
+/* -------------------------------
+   EXISTING CATEGORY FILTER ROUTES
+-------------------------------- */
 projectsRouter.get("/category/:category_id", authentication, getProjectsByCategory);
 projectsRouter.get("/sub-category/:sub_category_id", authentication, getProjectsBySubCategory);
 projectsRouter.get("/sub-sub-category/:sub_sub_category_id", authentication, getProjectsBySubSubCategory);

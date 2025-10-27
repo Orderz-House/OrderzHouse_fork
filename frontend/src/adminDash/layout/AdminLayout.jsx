@@ -38,6 +38,7 @@ function getActiveFromPath(pathname) {
   const p = pathname.replace(base, "") || "/";
 
   if (p === "/" || p === "") return "overview";
+  if (p.startsWith("/people/admins")) return "admins";
   if (p.startsWith("/people/clients")) return "clients";
   if (p.startsWith("/people/freelancers")) return "freelancers";
   if (p.startsWith("/learning/courses")) return "courses";
@@ -64,6 +65,7 @@ function getNav(role, navigate, base) {
   if (role === "admin") {
     const navigation = [
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
+      { id: "admins", name: "Admins", icon: Users, onClick: () => navigate(`${base}/people/admins`) },
       { id: "clients", name: "Clients", icon: Users, onClick: () => navigate(`${base}/people/clients`) },
       { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate(`${base}/people/freelancers`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
@@ -156,7 +158,7 @@ export default function AdminLayout() {
         onLogout={() => console.log("Logout clicked")}
       />
 
-      <main className="flex-1 px-4 md:px-6 pt-[104px] md:pt-6">
+      <main className="flex-1 px-3 md:px-6 py-[104px] md:py-6">
         <Outlet />
       </main>
     </div>

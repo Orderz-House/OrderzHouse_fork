@@ -42,6 +42,9 @@ export const sendOffer = async (req, res) => {
     const { projectId } = req.params;
     const { bid_amount, proposal } = req.body;
 
+    if (!freelancerId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
     if (!projectId || bid_amount == null || !proposal) {
       return res
         .status(400)
@@ -133,6 +136,9 @@ export const approveOrRejectOffer = async (req, res) => {
   try {
     const clientId = req.token?.userId;
     const { offerId, action } = req.body;
+
+    if (!clientId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
 
     if (!["accept", "reject"].includes(action))
       return res
@@ -275,7 +281,6 @@ export const approveOrRejectOffer = async (req, res) => {
   }
 };
 
-
 /**
  * -------------------------------
  * GET MY OFFERS (FREELANCER)
@@ -338,7 +343,6 @@ export const getOffersForMyProjects = async (req, res) => {
   }
 };
 
-
 /**
  * Allows a freelancer to withdraw their pending offer
  */
@@ -357,7 +361,9 @@ export const cancelOffer = async (req, res) => {
 
     const offer = rows[0];
     if (offer.offer_status !== "pending")
-      return res.status(400).json({ success: false, message: "Only pending offers can be cancelled" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Only pending offers can be cancelled" });
 
     await pool.query(
       `UPDATE offers SET offer_status = 'withdrawn', updated_at = NOW() WHERE id = $1`,
@@ -371,6 +377,9 @@ export const cancelOffer = async (req, res) => {
   }
 };
 
+/**
+ * Auto-expire old offers (runs on schedule)
+ */
 export const autoExpireOldOffers = async () => {
   try {
     const { rows } = await pool.query(

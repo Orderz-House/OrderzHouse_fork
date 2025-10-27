@@ -115,7 +115,6 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* ===== ≥ sm: scrollable when needed ===== */}
         <div className="hidden sm:block overflow-x-auto w-full max-w-full [-webkit-overflow-scrolling:touch]">
           <div className="min-w-[560px] pr-2">
             <div className="flex items-end gap-2 h-48 select-none">

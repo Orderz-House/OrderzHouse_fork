@@ -1,26 +1,27 @@
 import axios from "axios";
-import store from "../../store/store"; 
-import { setLogout } from "../../slice/auth/authSlice"
+import store from "../../store/store";
+import { setLogout } from "../../slice/auth/authSlice";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL: import.meta.env.VITE_APP_API_URL || "http://localhost:5000",
   withCredentials: true,
+  headers: { "Content-Type": "application/json" },
 });
 
-// Automatically attach token from Redux state
 API.interceptors.request.use((config) => {
-  const state = store.getState();
-  const token = state.auth.token;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const { auth } = store.getState();
+  if (auth?.token) {
+    config.headers.Authorization = `Bearer ${auth.token}`;
+  }
   return config;
 });
 
-// Optional: logout on 401 Unauthorized
 API.interceptors.response.use(
-  (res) => res,
+  (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       store.dispatch(setLogout());
+      console.warn("Token expired or invalid. User logged out automatically.");
     }
     return Promise.reject(error);
   }

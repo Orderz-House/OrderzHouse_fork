@@ -1,13 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import speakeasy from "speakeasy";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { NotificationCreators } from "../services/notificationService.js";
+import nodemailer from "nodemailer";
 import pool from "../models/db.js";
 
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
-const register = async (req, res) => {
+ const register = async (req, res) => {
   const {
     role_id,
     first_name,
@@ -20,7 +20,6 @@ const register = async (req, res) => {
     categories,
   } = req.body;
 
-  // Validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
@@ -44,81 +43,107 @@ const register = async (req, res) => {
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message:
-        "Password must be at least 8 characters long, include 1 uppercase letter, 1 lowercase letter, and 1 number",
-    });
-  }
-
-  if (role_id === 3 && (!categories || !Array.isArray(categories) || categories.length === 0)) {
-    return res.status(400).json({
-      success: false,
-      message: "Freelancer must have at least one category",
+      message: "Password must include at least 8 characters, 1 uppercase, 1 lowercase, and 1 number",
     });
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
     const emailLower = email.toLowerCase();
 
+    // Step 1: Verify email existence (optional, using emailverify.io)
+    try {
+      const verifyResponse = await axios.get(
+        `https://api.emailverify.io/v1/verify?apiKey=${process.env.EMAIL_API_KEY}&email=${emailLower}`
+      );
+
+      if (verifyResponse.data.status !== "deliverable") {
+        return res.status(400).json({
+          success: false,
+          message: `Email is not deliverable (status: ${verifyResponse.data.status})`,
+        });
+      }
+    } catch (verifyErr) {
+      console.error("Email verification API error:", verifyErr.message);
+    }
+
+    // Step 2: Check existing user
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1 OR username = $2",
       [emailLower, username]
     );
-
     if (existingUser.rows.length > 0) {
       return res.status(409).json({ success: false, message: "Email or username already exists" });
     }
 
-    // Insert user
-    const { rows: userRows } = await pool.query(
-      `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    // Step 3: Hash password & insert user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { rows } = await pool.query(
+      `INSERT INTO users 
+        (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,FALSE)
+       RETURNING *`,
       [role_id, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
     );
+    const user = rows[0];
 
-    const user = userRows[0];
+    // Step 4: Generate & store OTP
+    const otp = generateOtp();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // Handle freelancer categories
-    if (role_id === 3 && categories && categories.length > 0) {
-      await pool.query(
-        `INSERT INTO freelancer_categories (freelancer_id, category_id)
-         SELECT $1, unnest($2::int[])`,
-        [user.id, categories]
-      );
-    }
+    await pool.query("UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3", [
+      otp,
+      otpExpiry,
+      user.id,
+    ]);
 
-    const positionRole = role_id === 1 ? "Admin" : role_id === 2 ? "Client" : "Freelancer";
-    const actionUser = `${first_name} ${last_name}, a ${positionRole} from ${country}, has registered successfully.`;
+    // Step 5: Send OTP via email
+    const mailOptions = {
+      from: `"OrderzHouse" <${process.env.EMAIL_FROM}>`,
+      to: user.email,
+      subject: "Verify your email address",
+      html: `
+        <h2>Hello ${user.first_name},</h2>
+        <p>Use the following One-Time Password (OTP) to verify your email:</p>
+        <h1 style="color:#007bff;">${otp}</h1>
+        <p>This code expires in <b>5 minutes</b>.</p>
+        <br/>
+        <p>Thanks,<br/>OrderzHouse Team</p>
+      `,
+    };
 
-    await pool.query("INSERT INTO logs (user_id, action) VALUES ($1, $2)", [user.id, actionUser]);
+    await transporter.sendMail(mailOptions);
 
-    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, {
-      role_id,
-      country,
-    });
+    // Step 6: Create notification and log
+    await NotificationCreators.createNotification(
+      user.id,
+      "user_registered",
+      `Welcome ${user.first_name}! Please verify your email.`,
+      user.id,
+      "user"
+    );
 
-    try {
-      await NotificationCreators.createNotification(
-        user.id,
-        "user_registered",
-        `Welcome to the platform, ${first_name}! Your account has been created successfully.`,
-        user.id,
-        "user"
-      );
-    } catch (notificationError) {
-      console.error("Error creating welcome notification:", notificationError);
-    }
+    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, { email });
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      user,
+      message: "User registered successfully. OTP sent to email for verification ✅",
+      user_id: user.id,
     });
   } catch (err) {
     console.error("Register Error:", err);
-    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+    return res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
+// ------------------ EMAIL TRANSPORTER ------------------
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_SECURE === "true",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 // ===================== HELPER FUNCTIONS =====================
 
 const generateOtp = () => {
@@ -152,7 +177,12 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
+    if (!user.email_verified) {
+      return res.status(403).json({
+    success: false,
+    message: "Please verify your email before logging in",
+    });
+    }
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (validPassword) {
@@ -164,6 +194,7 @@ const login = async (req, res) => {
           userId: user.id,
           role: user.role_id,
           is_verified: user.is_verified,
+          username: user.username,
         };
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
         
@@ -206,7 +237,8 @@ const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      user_id: user.id, 
+      user_id: user.id,
+      username: user.username, 
     });
 
   } catch (err) {

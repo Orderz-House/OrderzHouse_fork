@@ -8,7 +8,6 @@ import {
   FiUsers,
   FiArrowLeft,
 } from "react-icons/fi";
-import OutlineButton from "../../../components/buttons/OutlineButton.jsx";
 import PeopleTable from "../Tables";
 import PlansAPI from "../../api/plans";
 import {
@@ -119,20 +118,20 @@ export default function Plans() {
   );
 
   const onDelete = useCallback(
-  async (id) => {
-    if (!window.confirm("Are you sure you want to delete this plan?")) return;
+    async (id) => {
+      if (!window.confirm("Are you sure you want to delete this plan?")) return;
 
-    try {
-      await PlansAPI.deletePlan(id);
-      dispatch(removePlan(id));
-      await fetchPlans(); 
-    } catch (err) {
-      console.error("Failed to delete plan:", err);
-      dispatch(setError("Failed to delete plan"));
-    }
-  },
-  [dispatch, fetchPlans]
-);
+      try {
+        await PlansAPI.deletePlan(id);
+        dispatch(removePlan(id));
+        await fetchPlans();
+      } catch (err) {
+        console.error("Failed to delete plan:", err);
+        dispatch(setError("Failed to delete plan"));
+      }
+    },
+    [dispatch, fetchPlans]
+  );
 
   const onSubmit = useCallback(
     async (e) => {
@@ -162,7 +161,7 @@ export default function Plans() {
             } else {
               dispatch(addPlan(res.plan || res));
             }
-            await fetchPlans(); // refresh data
+            await fetchPlans();
             setOpen(false);
             return isEditing
               ? "Plan updated successfully"
@@ -190,11 +189,7 @@ export default function Plans() {
   const formatDuration = (duration, planType) => {
     const num = Number(duration);
     const unit =
-      planType === "yearly"
-        ? "year"
-        : planType === "monthly"
-        ? "month"
-        : "day";
+      planType === "yearly" ? "year" : planType === "monthly" ? "month" : "day";
     return `${num} ${num === 1 ? unit : `${unit}s`}`;
   };
 
@@ -204,51 +199,52 @@ export default function Plans() {
   if (viewSubsPlanId) {
     return (
       <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          {/* Back */}
           <button
             onClick={closeSubs}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition text-slate-700"
+            className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+            title="Back"
           >
             <FiArrowLeft />
-            <span>Back to Plans</span>
           </button>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {selectedPlanName} - Subscribers
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
+            {selectedPlanName} – Subscribers
           </h1>
         </div>
 
         <PeopleTable
-  title=""
-  endpoint={`/plans/${viewSubsPlanId}/subscribers`}
-  token={token}
-  columns={[
-    { label: "#", key: "row_number", render: (_, index) => index + 1 },
-    { label: "User ID", key: "user_id" },
-    { label: "Email", key: "email" },
-    { label: "Status", key: "status" },
-    { label: "Start Date", key: "start_date" },
-    { label: "End Date", key: "end_date" },
-  ]}
-  filters={[]}
-  formFields={[]}
-  crudConfig={{
-    showEdit: false,
-    showDelete: true,  
-    showExpand: false,
-    customActions: [   
-      {
-        label: "Cancel",
-        icon: <FiX />,
-        onClick: async (row) => {
-          if (window.confirm("Cancel this subscription?")) {
-            await PlansAPI.adminCancelSubscription(row.id);
-          }
-        },
-        variant: "warning"
-      }
-    ]
-  }}
-/>
+          title=""
+          endpoint={`/plans/${viewSubsPlanId}/subscribers`}
+          token={token}
+          columns={[
+            { label: "#", key: "row_number", render: (_, index) => index + 1 },
+            { label: "User ID", key: "user_id" },
+            { label: "Email", key: "email" },
+            { label: "Status", key: "status" },
+            { label: "Start Date", key: "start_date" },
+            { label: "End Date", key: "end_date" },
+          ]}
+          filters={[]}
+          formFields={[]}
+          crudConfig={{
+            showEdit: false,
+            showDelete: true,
+            showExpand: false,
+            customActions: [
+              {
+                label: "Cancel",
+                icon: <FiX />,
+                onClick: async (row) => {
+                  if (window.confirm("Cancel this subscription?")) {
+                    await PlansAPI.adminCancelSubscription(row.id);
+                  }
+                },
+                variant: "warning",
+              },
+            ],
+          }}
+        />
       </div>
     );
   }
@@ -258,23 +254,32 @@ export default function Plans() {
   // ---------------------------
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-slate-900">Plans</h1>
-        <OutlineButton
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
+          Plans
+        </h1>
+        {/* New Blog */}
+        <button
           onClick={openAdd}
-          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl shadow hover:shadow-md transition"
+          className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+          style={{ borderColor: PRIMARY, color: PRIMARY }}
+          title="Add Plan"
         >
-          <FiPlus className="text-lg" />
-          <span>Add Plan</span>
-        </OutlineButton>
+          <FiPlus />
+          <span className="hidden sm:inline">Add Plan</span>
+          <span className="sm:hidden">Add</span>
+        </button>
       </div>
 
       {loading && (
-        <div className="text-center py-8 text-slate-500 text-lg">Loading…</div>
+        <div className="text-center py-8 text-slate-500 text-base">
+          Loading…
+        </div>
       )}
 
       {!loading && error && (
-        <div className="bg-red-100 text-red-700 py-4 px-5 rounded-lg text-center">
+        <div className="bg-red-50 text-red-700 py-3 px-4 rounded-xl border border-red-200 text-sm text-center">
           {error}
         </div>
       )}
@@ -284,62 +289,72 @@ export default function Plans() {
           {items.map((p) => (
             <div
               key={p.id}
-              className="relative flex flex-col bg-white shadow-sm border border-slate-200 rounded-lg hover:shadow-lg transition-shadow duration-300 w-full max-w-md mx-auto"
+              className="relative flex flex-col bg-white shadow-sm border border-slate-200 rounded-xl hover:shadow-md transition-shadow duration-300 w-full max-w-md mx-auto"
             >
+              {/* Header strip */}
               <div className="mx-4 mb-0 border-b border-slate-200 pt-4 pb-3 px-1">
-                <span className="text-sm font-medium text-slate-600 uppercase">
+                <span className="text-xs font-medium text-slate-600 uppercase">
                   {p.plan_type}
                 </span>
               </div>
 
+              {/* Body */}
               <div className="p-5 flex-grow">
-                <h5 className="mb-3 text-slate-800 text-2xl font-semibold">
+                <h5 className="mb-2 text-slate-800 text-xl font-semibold">
                   {p.name}
                 </h5>
-                <div className="text-3xl font-bold text-slate-800 mb-3">
+                <div className="text-2xl font-bold text-slate-800 mb-3">
                   ${p.price}
-                  <span className="text-base font-normal text-slate-500">
+                  <span className="text-sm font-normal text-slate-500">
+                    {" "}
                     / {formatDuration(p.duration, p.plan_type)}
                   </span>
                 </div>
-                <p className="text-slate-600 leading-relaxed font-light mb-4">
+                <p className="text-slate-600 leading-relaxed font-light mb-4 text-sm">
                   {p.description}
                 </p>
                 <ul className="space-y-2 text-sm text-slate-700">
                   {(p.features ?? []).map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span className="text-emerald-500 mt-0.5">✓</span>
                       <span>{f}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="p-5 pt-0 flex items-center gap-2">
+              {/* Actions — Blog Top Bar */}
+              <div className="p-5 pt-0 flex items-center gap-1.5">
+                {/* Edit: Primary outline */}
                 <button
                   onClick={() => openEdit(p.id)}
-                  className="inline-flex items-center justify-center px-4 py-2.5 text-white rounded-xl hover:opacity-90 transition"
-                  style={{ backgroundColor: PRIMARY }}
+                  className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+                  style={{ borderColor: PRIMARY, color: PRIMARY }}
                   title="Edit"
                 >
                   <FiEdit2 />
                 </button>
+
+                {/* Delete: Outline */}
                 <button
                   onClick={() => onDelete(p.id)}
-                  className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-red-500 rounded-xl hover:bg-red-600 transition"
+                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-2 text-sm text-red-600"
                   title="Delete"
                 >
                   <FiTrash2 />
                 </button>
+
+                {/* View Subscribers: Outline  */}
                 <button
                   onClick={() => viewSubscribers(p.id)}
-                  className="inline-flex items-center justify-center px-4 py-2.5 text-white bg-green-500 rounded-xl hover:bg-green-600 transition"
+                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2 text-sm text-slate-700"
                   title="View Subscribers"
                 >
                   <FiUsers />
                 </button>
               </div>
 
+              {/* Footer counts */}
               <div className="mx-4 border-t border-slate-200 pb-4 pt-3 px-1">
                 <span className="text-sm text-slate-600 font-medium">
                   {subscriptionCounts[p.id] ?? 0}{" "}
@@ -364,7 +379,7 @@ export default function Plans() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
                 required
               />
             </Field>
@@ -375,13 +390,15 @@ export default function Plans() {
                 step="0.01"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
                 required
               />
             </Field>
 
             <Field
-              label={`Duration (${form.plan_type === "yearly" ? "years" : "months"})`}
+              label={`Duration (${
+                form.plan_type === "yearly" ? "years" : "months"
+              })`}
               required
             >
               <input
@@ -389,7 +406,7 @@ export default function Plans() {
                 min="1"
                 value={form.duration}
                 onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
                 required
               />
             </Field>
@@ -400,7 +417,7 @@ export default function Plans() {
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
                 rows="3"
               />
             </Field>
@@ -411,7 +428,7 @@ export default function Plans() {
                 onChange={(e) =>
                   setForm({ ...form, featuresText: e.target.value })
                 }
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
                 rows="4"
               />
             </Field>
@@ -422,20 +439,25 @@ export default function Plans() {
                 onChange={(e) =>
                   setForm({ ...form, plan_type: e.target.value })
                 }
-                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-400 px-3 py-2"
+                className="w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-300 px-3 py-2 text-sm"
               >
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
               </select>
             </Field>
 
-            <div className="sticky bottom-0 bg-white pt-4 flex justify-end gap-3">
-              <OutlineButton type="button" onClick={() => setOpen(false)}>
+            <div className="sticky bottom-0 bg-white pt-4 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2 text-sm text-slate-700"
+              >
                 Cancel
-              </OutlineButton>
+              </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition"
+                className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+                style={{ borderColor: PRIMARY, color: PRIMARY }}
               >
                 Save
               </button>
@@ -463,14 +485,15 @@ function Modal({ title, onClose, children }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6 overflow-auto">
       <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xl my-6">
         <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-slate-800">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition"
+            className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600"
+            title="Close"
           >
-            <FiX className="text-xl" />
+            <FiX />
           </button>
         </div>
         <div className="max-h-[75vh] overflow-y-auto">{children}</div>

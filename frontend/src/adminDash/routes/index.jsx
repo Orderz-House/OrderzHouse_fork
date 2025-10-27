@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import AdminLayout from "../layout/AdminLayout.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 
+import Admins from "../pages/people/Admins.jsx";
 import Clients from "../pages/people/Clients.jsx";
 import Freelancers from "../pages/people/Freelancers.jsx";
 import Courses from "../pages/learning/Courses.jsx";
@@ -14,7 +15,6 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
-// import MySubscription from "../pages/freelancer/MySubscription.jsx";
 
 
 export default function AdminRouter() {
@@ -25,6 +25,7 @@ export default function AdminRouter() {
         <Route index element={<Dashboard />} />
 
         {/* admin-only sections */}
+        <Route path="people/admins" element={<Admins />} />
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
         <Route path="learning/courses" element={<Courses />} />
@@ -38,16 +39,12 @@ export default function AdminRouter() {
         <Route path="finance/plans" element={<Plans />} />
         <Route path="analytics" element={<Analytics />} />
 
-        {/* generic sections — تُستخدم تحت /admin و /client و /freelancer */}
+        {/* generic sections —   /admin  /client  /freelancer */}
         <Route path="projects" element={<Projects />} />
         <Route path="payments" element={<Payments />} />
         <Route path="courses" element={<Courses />} />
         <Route path="appointments" element={<Appointments />} />
         <Route path="tasks" element={<Tasks />} />
-
-
-        {/* for freelancer My Subscription */}
-        {/* <Route path="my-subscription" element={<MySubscription />} /> */}
       </Route>
     </Routes>
   );
