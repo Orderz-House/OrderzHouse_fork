@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
+import { MOCK_ENABLED, mockFetch } from "./mockData.js";
 import {
   FiPlus,
   FiEdit2,
@@ -31,6 +32,7 @@ const DEFAULT_CRUD_CONFIG = {
   showDelete: true,
   showExpand: false,
   showRowEdit: false,
+  showDetails: true,
 };
 
 function useApi(token) {
@@ -75,6 +77,32 @@ function useTableData({
         ...filterValues,
       }).filter(([, v]) => v != null && String(v).trim() !== "")
     );
+
+    // ===== Mock short-circuit =====
+    if (MOCK_ENABLED) {
+      const mockList = mockFetch(endpoint, params);
+      if (Array.isArray(mockList)) {
+        const processedList = mockList.map((row) => ({
+          ...row,
+          categories:
+            typeof row.categories === "string"
+              ? (() => {
+                  try {
+                    return JSON.parse(row.categories);
+                  } catch {
+                    return [];
+                  }
+                })()
+              : row.categories,
+        }));
+        setLocalRows(processedList);
+        dispatch(setUsers(processedList));
+        setLoadingLocal(false);
+        dispatch(setLoading(false));
+        return;
+      }
+    }
+    // ==============================
 
     const timeoutId = setTimeout(async () => {
       try {
@@ -573,13 +601,15 @@ const MobileCards = ({
 
               {/* Actions */}
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => onToggleExpand(idx)}
-                  className="w-8 h-8 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  title="View"
-                >
-                  <AiOutlineEdit size={18} />
-                </button>
+                {crudConfig.showDetails && (
+                  <button
+                    onClick={() => onToggleExpand(idx)}
+                    className="w-8 h-8 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    title="View"
+                  >
+                    <AiOutlineEdit size={18} />
+                  </button>
+                )}
 
                 {crudConfig.showRowEdit && (
                   <button
@@ -808,6 +838,8 @@ const DesktopCards = ({
   editingRowId,
   onSaveEdit,
   onCancelEdit,
+  onCardClick,
+  renderCardSubtitle,
 }) => {
   if (loading) {
     return (
@@ -859,7 +891,16 @@ const DesktopCards = ({
             className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
           >
             {/* صورة / أفاتار بسيطة */}
-            <div className="h-36 bg-slate-100 grid place-items-center overflow-hidden">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onCardClick?.(row, helpers)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && onCardClick?.(row, helpers)
+              }
+              className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
+              title="Open"
+            >
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -879,6 +920,12 @@ const DesktopCards = ({
                   <div className="font-semibold text-slate-800 truncate">
                     {titleVal}
                   </div>
+                  {typeof renderCardSubtitle === "function" && (
+                    <div className="mt-1">
+                      {renderCardSubtitle(row, helpers)}
+                    </div>
+                  )}
+
                   {subVal && (
                     <div className="text-xs text-slate-500 truncate">
                       {String(subVal)}
@@ -911,46 +958,48 @@ const DesktopCards = ({
               </div>
 
               <div className="pt-2 flex items-center justify-between gap-1.5">
-                <button
-                  onClick={() => onToggleExpand(idx)}
-                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
-                  title="View / Edit"
-                >
-                  Details
-                </button>
+                {crudConfig.showDetails && (
+                  <button
+                    onClick={() => onToggleExpand(idx)}
+                    className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
+                    title="View / Edit"
+                  >
+                    Details
+                  </button>
+                )}
 
                 <div className="flex items-center gap-1.5">
-                  {renderActions
-                    ? renderActions(row, helpers)
-                    : !hideCrudActions && (
-                        <>
-                          {crudConfig.showRowEdit && (
-                            <button
-                              onClick={() =>
-                                helpers.startEdit(helpers.getId(row))
-                              }
-                              className="h-9 px-3 rounded-full border text-sm"
-                              style={{ borderColor: PRIMARY, color: PRIMARY }}
-                              title="Edit"
-                            >
-                              Edit
-                            </button>
-                          )}
-                          {crudConfig.showDelete && (
-                            <button
-                              onClick={() => helpers.handleDelete(idx)}
-                              className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
-                              title="Delete"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </>
+                  {typeof renderActions === "function" &&
+                    renderActions(row, helpers)}
+
+                  {!hideCrudActions && (
+                    <>
+                      {crudConfig?.showRowEdit && (
+                        <button
+                          onClick={() => helpers.startEdit(helpers.getId(row))}
+                          className="h-9 px-3 rounded-full border text-sm"
+                          style={{ borderColor: PRIMARY, color: PRIMARY }}
+                          title="Edit"
+                        >
+                          Edit
+                        </button>
                       )}
+
+                      {crudConfig?.showDelete && (
+                        <button
+                          onClick={() => helpers.handleDelete(idx)}
+                          className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
+                          title="Delete"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Expanded (نفس ExpandedRow الحالي) */}
+              {/* Expanded */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -988,6 +1037,8 @@ export default function PeopleTable({
   token,
   crudConfig = {},
   desktopAsCards = false,
+  onCardClick,
+  renderCardSubtitle,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -1234,6 +1285,8 @@ export default function PeopleTable({
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
+          onCardClick={onCardClick}
+          renderCardSubtitle={renderCardSubtitle}
         />
       ) : (
         <DesktopTable
