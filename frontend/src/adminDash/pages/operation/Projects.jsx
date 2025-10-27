@@ -67,6 +67,8 @@ export default function Projects() {
 
 // Admin
 function AdminProjects() {
+  const navigate = useNavigate();
+
   const columns = [
     { label: "Title", key: "title" },
     { label: "Client", key: "client" },
@@ -76,6 +78,7 @@ function AdminProjects() {
     { label: "Progress", key: "progress" },
     { label: "Status", key: "status" },
   ];
+
   const formFields = [
     { key: "title", label: "Title", required: true },
     { key: "client", label: "Client" },
@@ -92,15 +95,13 @@ function AdminProjects() {
     { key: "due", label: "Due", type: "date" },
     { key: "description", label: "Description", type: "textarea" },
   ];
+
   const chips = [
     { label: "All", value: "" },
     { label: "Planning", value: "Planning" },
     { label: "Active", value: "Active" },
     { label: "On hold", value: "On hold" },
     { label: "Done", value: "Done" },
-  ];
-  const filters = [
-    { key: "status", label: "Status", options: ["Planning", "Active", "On hold", "Done"] },
   ];
 
   return (
@@ -112,10 +113,17 @@ function AdminProjects() {
       formFields={formFields}
       chips={chips}
       chipField="status"
-      filters={filters}
+      filters={[
+        { key: "status", label: "Status", options: chips.slice(1).map(c => c.value) },
+      ]}
+      /* ✨ إعدادات الأدمن فقط */
+      desktopAsCards
+      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
     />
   );
 }
+
 
 // Client
 function ClientProjects() {

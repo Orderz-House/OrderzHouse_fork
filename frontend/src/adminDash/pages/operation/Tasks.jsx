@@ -40,60 +40,50 @@ const api = axios.create({
    Admin View
 ========================= */
 function AdminTasks() {
-  const columns = [
-    { label: "Task", key: "title" },
-    { label: "Assignee", key: "assignee_name" },
-    { label: "Project", key: "project_name" },
-    { label: "Priority", key: "priority" },
-    { label: "Status", key: "status" },
-    { label: "Due", key: "due_date" },
-    { label: "Created", key: "created_at" },
-  ];
-
-  const formFields = [
-    { label: "Title", key: "title", required: true },
-    { label: "Project", key: "project_id", type: "text", placeholder: "Project ID" },
-    {
-      label: "Assignee (user id)", key: "assignee_id", type: "text", placeholder: "User ID",
-    },
-    {
-      label: "Priority",
-      key: "priority",
-      type: "select",
-      options: ["Low", "Medium", "High", "Urgent"],
-      placeholder: "Choose…",
-      required: true,
-    },
-    {
-      label: "Status",
-      key: "status",
-      type: "select",
-      options: ["todo", "in_progress", "review", "done"],
-      placeholder: "Choose…",
-      required: true,
-    },
-    { label: "Due date", key: "due_date", type: "date" },
-    { label: "Notes", key: "notes", type: "textarea", placeholder: "Extra details…" },
-  ];
-
-  const filters = [
-    { key: "status", label: "Status", options: ["todo", "in_progress", "review", "done"] },
-    { key: "priority", label: "Priority", options: ["Low", "Medium", "High", "Urgent"] },
-  ];
+  const navigate = useNavigate();
 
   return (
-    <div className="space-y-4">
-      <PeopleTable
-        title="Tasks"
-        addLabel="Add task"
-        endpoint="/api/admin/tasks"
-        columns={columns}
-        formFields={formFields}
-        filters={filters}
-      />
-    </div>
+    <PeopleTable
+      title="Tasks"
+      addLabel="Add Task"
+      endpoint="/tasks"
+      columns={[
+        { label: "Title", key: "title" },
+        { label: "Assignee", key: "assignee" },
+        { label: "Project", key: "project" },
+        { label: "Due", key: "due" },
+        { label: "Status", key: "status" },
+        { label: "Priority", key: "priority" },
+      ]}
+      formFields={[
+        { key: "title", label: "Title", required: true },
+        { key: "assignee", label: "Assignee" },
+        { key: "project", label: "Project" },
+        { key: "due", label: "Due", type: "date" },
+        {
+          key: "status",
+          label: "Status",
+          type: "select",
+          options: ["Open", "In Progress", "Blocked", "Done"],
+          defaultValue: "Open",
+        },
+        {
+          key: "priority",
+          label: "Priority",
+          type: "select",
+          options: ["Low", "Medium", "High", "Urgent"],
+          defaultValue: "Medium",
+        },
+        { key: "notes", label: "Notes", type: "textarea" },
+      ]}
+      /* ✨ إعدادات الأدمن فقط */
+      desktopAsCards
+      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+    />
   );
 }
+
 
 /* =========================
    Client View (Clean list)
