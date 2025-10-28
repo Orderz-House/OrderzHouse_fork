@@ -30,6 +30,12 @@ export default function EnhancedNavbar() {
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isExploreMobileOpen, setIsExploreMobileOpen] = useState(false);
 
+  // 👇 جديد: تحكم الميجا منيو على الهوفر (لمشروعيْن/مهام)
+  const [megaOpen, setMegaOpen] = useState(false);
+  const tasksRef = useRef(null);
+  const projectsRef = useRef(null);
+  const [megaAnchor, setMegaAnchor] = useState(null);
+
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
   const exploreRef = useRef(null);
@@ -76,7 +82,7 @@ export default function EnhancedNavbar() {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
         __silent: true,
-      } );
+      });
       if (data.success) setNotifications(data.notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -92,7 +98,7 @@ export default function EnhancedNavbar() {
           headers: { authorization: `Bearer ${token}` },
           params: { unreadOnly: true },
         }
-       );
+      );
       if (data.success) setUnreadCount(data.count);
     } catch (error) {
       console.error("Error fetching notification count:", error);
@@ -105,7 +111,7 @@ export default function EnhancedNavbar() {
         `http://localhost:5000/notifications/${notificationId}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications((list) =>
         list.map((n) =>
           n.id === notificationId ? { ...n, read_status: true } : n
@@ -123,7 +129,7 @@ export default function EnhancedNavbar() {
         "http://localhost:5000/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -144,12 +150,14 @@ export default function EnhancedNavbar() {
     setActiveLink(label);
     navigate(path);
     setIsExploreOpen(false);
+    setMegaOpen(false); // اغلق الميجا عند الانتقال
   };
 
   const handlePlansClick = () => {
     setActiveLink("PLANS");
     navigate("/plans");
     setIsExploreOpen(false);
+    setMegaOpen(false);
   };
 
   const handleLogin = () => navigate("/login");
@@ -161,7 +169,7 @@ export default function EnhancedNavbar() {
     axios
       .get(`http://localhost:5000/users/getUserdata`, {
         headers: { authorization: `Bearer ${token}` },
-      } )
+      })
       .then((res) => {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));
@@ -251,6 +259,24 @@ export default function EnhancedNavbar() {
                   item.condition && (
                     <button
                       key={item.label}
+                      ref={
+                        item.label === "TASKS"
+                          ? tasksRef
+                          : item.label === "PROJECTS"
+                          ? projectsRef
+                          : undefined
+                      }
+                      onMouseEnter={() => {
+                        if (item.label === "TASKS") {
+                          setMegaAnchor(tasksRef);
+                          setMegaOpen(true);
+                        } else if (item.label === "PROJECTS") {
+                          setMegaAnchor(projectsRef);
+                          setMegaOpen(true);
+                        } else {
+                          setMegaOpen(false);
+                        }
+                      }}
                       onClick={() => handleNavigation(item.path, item.label)}
                       className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
                         activeLink === item.label ? "text-[#028090]" : "text-gray-700"
@@ -272,7 +298,10 @@ export default function EnhancedNavbar() {
               {/* Explore dropdown */}
               <div className="relative" ref={exploreRef}>
                 <button
-                  onClick={() => setIsExploreOpen((v) => !v)}
+                  onClick={() => {
+                    setIsExploreOpen((v) => !v);
+                    setMegaOpen(false);
+                  }}
                   className={`group inline-flex items-center gap-1 px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
                     ["ABOUT US", "BLOGS", "CONTACT", "PLANS"].includes(activeLink)
                       ? "text-[#028090]"
@@ -291,7 +320,7 @@ export default function EnhancedNavbar() {
                   <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-[fadeIn_.15s_ease-out]">
                     <ul className="py-2">
                       {exploreItems
-                        .filter((it) => it.condition === undefined ? true : it.condition)
+                        .filter((it) => (it.condition === undefined ? true : it.condition))
                         .map((it) => (
                           <li key={it.label}>
                             <button
@@ -311,10 +340,15 @@ export default function EnhancedNavbar() {
                 )}
               </div>
 
-              {/* Existing Mega menu */}
+              {/* ✅ MegaMenu مُدمج على الهوفر (لا زر مستقل) */}
               <CategoryMegaMenu
                 activeLink={activeLink}
                 onSetActiveLink={setActiveLink}
+                open={megaOpen}
+                anchorRef={megaAnchor /* ref object (tasksRef/projectsRef) */}
+                onRequestClose={() => setMegaOpen(false)}
+                hideTrigger
+                hoverClosable
               />
             </div>
           </div>
@@ -325,7 +359,10 @@ export default function EnhancedNavbar() {
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"
-                onClick={() => setActiveLink("ADD PROJECT")}
+                onClick={() => {
+                  setActiveLink("ADD PROJECT");
+                  setMegaOpen(false);
+                }}
                 className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white transition-all shadow-sm hover:shadow-md"
                 title="Create a new project"
               >
@@ -337,7 +374,10 @@ export default function EnhancedNavbar() {
             {userData?.role_id === 3 && (
               <Link
                 to="/tasks/create"
-                onClick={() => setActiveLink("ADD TASK")}
+                onClick={() => {
+                  setActiveLink("ADD TASK");
+                  setMegaOpen(false);
+                }}
                 className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white text-[#028090] border-2 border-[#028090] hover:bg-[#028090] hover:text-white transition-all shadow-sm hover:shadow-md"
                 title="Create a new task"
               >
@@ -351,6 +391,7 @@ export default function EnhancedNavbar() {
                 <button
                   onClick={() => {
                     setIsNotificationsOpen(!isNotificationsOpen);
+                    setMegaOpen(false);
                     if (!isNotificationsOpen) fetchNotifications();
                   }}
                   className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
@@ -432,7 +473,10 @@ export default function EnhancedNavbar() {
             {IsAuthenticated && userData ? (
               <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  onClick={() => {
+                    setIsUserMenuOpen(!isUserMenuOpen);
+                    setMegaOpen(false);
+                  }}
                   className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
                   aria-label="User menu"
                 >
@@ -508,7 +552,10 @@ export default function EnhancedNavbar() {
           <div className="lg:hidden flex items-center space-x-2">
             {IsAuthenticated && (
               <button
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                  setMegaOpen(false);
+                }}
                 className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
                 aria-label="Notifications"
               >
@@ -519,7 +566,10 @@ export default function EnhancedNavbar() {
               </button>
             )}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+                setMegaOpen(false);
+              }}
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
