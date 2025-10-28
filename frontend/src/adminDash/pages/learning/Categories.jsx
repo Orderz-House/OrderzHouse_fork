@@ -22,7 +22,7 @@ export default function Categories() {
     <PeopleTable
       title="Categories"
       addLabel="Add Category"
-      endpoint="/category"                    
+      endpoint="/categories"
       columns={columns}
       formFields={formFields}
       token={token}

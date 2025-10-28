@@ -79,7 +79,7 @@ function getNav(role, navigate, base) {
       { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => navigate(`${base}/analytics`) },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
       { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
     ];
     return { navigation, bottomNavigation };
@@ -93,7 +93,7 @@ function getNav(role, navigate, base) {
       { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
       { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
     ];
     return { navigation, bottomNavigation };
@@ -110,7 +110,7 @@ function getNav(role, navigate, base) {
       { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) }, 
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
       { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
     ];
     return { navigation, bottomNavigation };
