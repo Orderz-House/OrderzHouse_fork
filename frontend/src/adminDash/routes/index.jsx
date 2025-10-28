@@ -17,6 +17,7 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
+import Profile from "../pages/profile.jsx";
 
 export default function AdminRouter() {
   return (
@@ -41,6 +42,7 @@ export default function AdminRouter() {
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="profile" element={<Profile />} />
 
         {/* generic sections —   /admin  /client  /freelancer */}
         <Route path="projects" element={<Projects />} />

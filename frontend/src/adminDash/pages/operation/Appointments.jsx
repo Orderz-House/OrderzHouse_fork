@@ -38,70 +38,7 @@ function AccessDenied() {
   );
 }
 
-function AdminHero() {
-  return (
-    <div
-      className="rounded-2xl bg-white/80 backdrop-blur p-4 sm:p-5 shadow-sm relative overflow-hidden"
-      style={ringStyle}
-    >
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div
-          className="absolute -top-24 -right-24 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-25"
-          style={{
-            background: `radial-gradient(closest-side, ${primary}22, transparent 70%)`,
-          }}
-        />
-        <div
-          className="absolute -bottom-24 -left-24 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-20"
-          style={{
-            background: `radial-gradient(closest-side, ${themeDark}22, transparent 70%)`,
-          }}
-        />
-      </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
-        <div>
-          <h1
-            className="text-lg sm:text-xl font-semibold"
-            style={{ color: themeDark }}
-          >
-            Appointments
-          </h1>
-          <p className="text-slate-500 text-sm">
-            Review, approve, or edit meeting requests
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-white shadow-sm"
-            style={{ backgroundColor: primary }}
-          >
-            <Plus className="w-4 h-4" /> New
-          </button>
-          <button
-            className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
-            style={ringStyle}
-          >
-            <Download className="w-4 h-4" />
-          </button>
-          <button
-            className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
-            style={ringStyle}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-        <Badge icon={<Video className="w-4 h-4" />} label="Online" />
-        <Badge icon={<Phone className="w-4 h-4" />} label="Phone" />
-        <Badge icon={<MapPin className="w-4 h-4" />} label="On-site" />
-        <Badge icon={<CalIcon className="w-4 h-4" />} label="Calendar sync" />
-      </div>
-    </div>
-  );
-}
 
 function FreelancerHero() {
   return (
@@ -390,23 +327,7 @@ export default function Appointments() {
 
   return (
     <div className="relative space-y-4 sm:space-y-6 px-3 sm:px-4 overflow-x-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div
-          className="absolute -top-28 -right-16 w-[30rem] h-[30rem] rounded-full blur-3xl opacity-20"
-          style={{
-            background: `radial-gradient(closest-side, ${primary}22, transparent 70%)`,
-          }}
-        />
-        <div
-          className="absolute -bottom-28 -left-16 w-[30rem] h-[30rem] rounded-full blur-3xl opacity-20"
-          style={{
-            background: `radial-gradient(closest-side, ${themeDark}22, transparent 70%)`,
-          }}
-        />
-      </div>
-
-      {role === "admin" ? <AdminHero /> : <FreelancerHero />}
-
+     
       <PeopleTable
         title={cfg.title}
         addLabel={cfg.addLabel}
