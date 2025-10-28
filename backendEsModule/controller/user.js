@@ -4,9 +4,28 @@ import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 import nodemailer from "nodemailer";
 import pool from "../models/db.js";
+import axios from "axios";
+import dotenv from "dotenv";
 
-// ==================== AUTHENTICATION FUNCTIONS ====================
+dotenv.config();
 
+// ------------------ EMAIL TRANSPORTER ------------------
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_SECURE === "true",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// ------------------ OTP GENERATOR ------------------
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// ======================================================
+// REGISTER FUNCTION
+// ======================================================
  const register = async (req, res) => {
   const {
     role_id,
@@ -43,30 +62,15 @@ import pool from "../models/db.js";
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message: "Password must include at least 8 characters, 1 uppercase, 1 lowercase, and 1 number",
+      message:
+        "Password must include at least 8 characters, 1 uppercase, 1 lowercase, and 1 number",
     });
   }
 
   try {
     const emailLower = email.toLowerCase();
 
-    // Step 1: Verify email existence (optional, using emailverify.io)
-    try {
-      const verifyResponse = await axios.get(
-        `https://api.emailverify.io/v1/verify?apiKey=${process.env.EMAIL_API_KEY}&email=${emailLower}`
-      );
-
-      if (verifyResponse.data.status !== "deliverable") {
-        return res.status(400).json({
-          success: false,
-          message: `Email is not deliverable (status: ${verifyResponse.data.status})`,
-        });
-      }
-    } catch (verifyErr) {
-      console.error("Email verification API error:", verifyErr.message);
-    }
-
-    // Step 2: Check existing user
+    // ✅ Step 1: Check if user already exists
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1 OR username = $2",
       [emailLower, username]
@@ -75,7 +79,7 @@ import pool from "../models/db.js";
       return res.status(409).json({ success: false, message: "Email or username already exists" });
     }
 
-    // Step 3: Hash password & insert user
+    // ✅ Step 2: Hash password & insert user
     const hashedPassword = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
       `INSERT INTO users 
@@ -86,7 +90,7 @@ import pool from "../models/db.js";
     );
     const user = rows[0];
 
-    // Step 4: Generate & store OTP
+    // ✅ Step 3: Generate & store OTP
     const otp = generateOtp();
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
@@ -96,7 +100,7 @@ import pool from "../models/db.js";
       user.id,
     ]);
 
-    // Step 5: Send OTP via email
+    // ✅ Step 4: Send OTP via email
     const mailOptions = {
       from: `"OrderzHouse" <${process.env.EMAIL_FROM}>`,
       to: user.email,
@@ -104,7 +108,7 @@ import pool from "../models/db.js";
       html: `
         <h2>Hello ${user.first_name},</h2>
         <p>Use the following One-Time Password (OTP) to verify your email:</p>
-        <h1 style="color:#007bff;">${otp}</h1>
+        <h1 style="color:#007bff; font-size: 28px;">${otp}</h1>
         <p>This code expires in <b>5 minutes</b>.</p>
         <br/>
         <p>Thanks,<br/>OrderzHouse Team</p>
@@ -113,17 +117,7 @@ import pool from "../models/db.js";
 
     await transporter.sendMail(mailOptions);
 
-    // Step 6: Create notification and log
-    await NotificationCreators.createNotification(
-      user.id,
-      "user_registered",
-      `Welcome ${user.first_name}! Please verify your email.`,
-      user.id,
-      "user"
-    );
-
-    await LogCreators.userAuth(user.id, ACTION_TYPES.USER_REGISTER, true, { email });
-
+    // ✅ Step 5: Respond success
     return res.status(201).json({
       success: true,
       message: "User registered successfully. OTP sent to email for verification ✅",
@@ -134,36 +128,51 @@ import pool from "../models/db.js";
     return res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
-// ------------------ EMAIL TRANSPORTER ------------------
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_SECURE === "true",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-// ===================== HELPER FUNCTIONS =====================
 
-const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-const deliverOtp = async (destination, method, otp) => {
+// ======================================================
+// ✅ VERIFY EMAIL OTP FUNCTION
+// ======================================================
+ const verifyEmailOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ success: false, message: "Email and OTP are required" });
+  }
+
   try {
-    if (method === "email") {
-      console.log(` Sending OTP ${otp} to email: ${destination}`);
-    } else if (method === "sms") {
-      console.log(` Sending OTP ${otp} to phone: ${destination}`);
-    } else {
-      throw new Error("Invalid OTP method");
+    const { rows } = await pool.query(
+      "SELECT id, email_otp, email_otp_expires FROM users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
-  } catch (error) {
-    console.error("Error delivering OTP:", error.message);
-    throw error;
+
+    const user = rows[0];
+
+    if (user.email_otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    if (new Date() > new Date(user.email_otp_expires)) {
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    await pool.query(
+      "UPDATE users SET email_verified = TRUE, email_otp = NULL, email_otp_expires = NULL WHERE id = $1",
+      [user.id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully ✅",
+    });
+  } catch (err) {
+    console.error("Verify Email OTP Error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 // ===================== LOGIN + OTP =====================
 const login = async (req, res) => {
   try {
@@ -1055,4 +1064,5 @@ export {
   verifyPassword,
   updatePassword,
   deactivateAccount,
+  verifyEmailOtp,
 };

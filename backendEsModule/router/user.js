@@ -26,8 +26,8 @@ import {
   updatePassword,
   deactivateAccount,
   getUserById,
-  sendOtpController
-  
+  sendOtpController,
+  verifyEmailOtp,
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
 
@@ -35,6 +35,7 @@ const usersRouter = express.Router();
 
 // ==================== PUBLIC ROUTES ====================
 usersRouter.post("/register", register);
+usersRouter.post("/verify-email", verifyEmailOtp); 
 usersRouter.post("/login", login);
 usersRouter.post("/verify-otp", verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);
@@ -49,44 +50,24 @@ usersRouter.get("/getUserdata", authentication, getUserById);
 usersRouter.get("/freelancers/:id", authentication, getFreelanceById);
 usersRouter.get("/freelancers", authentication, getFreelance);
 
-// Portfolio routes
+// ==================== FREELANCER PORTFOLIO ROUTES ====================
 usersRouter.get("/me/portfolio", authentication, getPortfolioByUserId);
 usersRouter.post("/portfolio", authentication, createPortfolio);
 usersRouter.put("/portfolio/:portfolioId", authentication, editPortfolioFreelancer);
 usersRouter.delete("/portfolio", authentication, deletePortfolioFreelancer);
 
-// Admin or authorized routes
-usersRouter.post(
-  "/view",
-  authentication,
-  viewUsers
-);
-usersRouter.delete(
-  "/delete/:userId",
-  authentication,
-  deleteUser
-);
+// ==================== USER MANAGEMENT ROUTES ====================
+usersRouter.post("/view", authentication, viewUsers);
+usersRouter.delete("/delete/:userId", authentication, deleteUser);
 usersRouter.put("/edit/:userId", authentication, editUser);
-usersRouter.get(
-  "/freelancers/all",
-  authentication,
-  getAllFreelancers
-);
-usersRouter.delete(
-  "/freelancers/delete/:freelancerid",
-  authentication,
-  deleteFreelancerById
-);
-usersRouter.get(
-  "/list/online",
-  authentication,
-  listOnlineUsers
-);
+usersRouter.get("/freelancers/all", authentication, getAllFreelancers);
+usersRouter.delete("/freelancers/delete/:freelancerid", authentication, deleteFreelancerById);
+usersRouter.get("/list/online", authentication, listOnlineUsers);
 
-// Rating
+// ==================== RATING ROUTES ====================
 usersRouter.post("/rate", authentication, rateFreelancer);
 
-// Password & Account Management
+// ==================== PASSWORD AND ACCOUNT ROUTES ====================
 usersRouter.post("/verify-password", authentication, verifyPassword);
 usersRouter.put("/update-password", authentication, updatePassword);
 usersRouter.put("/deactivate", authentication, deactivateAccount);

@@ -5,7 +5,6 @@ import multer from "multer";
 
 import {
   createProject,
-  assignProject,
   getRelatedFreelancers,
   completeHourlyProject,
   submitWorkCompletion,
