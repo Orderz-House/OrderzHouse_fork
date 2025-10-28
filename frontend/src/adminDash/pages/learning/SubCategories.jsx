@@ -10,34 +10,36 @@ export default function SubCategories() {
 
   const columns = [
     { label: "Name", key: "name" },
-    { label: "Slug", key: "slug" },
     { label: "Description", key: "description" },
+    { label: "Sub-Sub Count", key: "subsub_count" },
   ];
 
   const formFields = [
     { key: "name", label: "Name", required: true },
-    { key: "slug", label: "Slug" },
     { key: "description", label: "Description", type: "textarea" },
   ];
 
   return (
     <PeopleTable
       title="Sub-Categories"
-      addLabel="Add Sub-Categories"
-      endpoint={`/category/${categoryId}/sub-categories`}  
+      addLabel="Add Sub-Category"
+      endpoint={`/category/${categoryId}/sub-categories`}
       columns={columns}
       formFields={formFields}
       token={token}
       desktopAsCards
-      onCardClick={(row, helpers) => navigate(`sub/${helpers.getId(row)}`)} 
+      mobileAsCards
+      onCardClick={(row, helpers) =>
+        navigate(`/category/sub-category/${helpers.getId(row)}`)
+      }
       crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
-      renderCardSubtitle={(row) => {
-        const count =
-          row.childrenCount ??
-          (Array.isArray(row.children) ? row.children.length : 0) ??
-          row.subSubCount ??
-          0;
-        return <span className="text-xs text-slate-500">{count} sub-sub categories</span>;
+      renderSubtitle={(row) => {
+        const count = Number(row.subsub_count) || 0;
+        return (
+          <span className="text-xs font-medium text-emerald-600">
+            {count} sub-sub {count === 1 ? "category" : "categories"}
+          </span>
+        );
       }}
     />
   );

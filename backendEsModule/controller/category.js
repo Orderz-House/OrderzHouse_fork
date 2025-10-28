@@ -29,7 +29,10 @@ export const getCategoryById = async (req, res) => {
        FROM categories WHERE id = $1 AND is_deleted = false`,
       [id]
     );
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    if (!rows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Not found" });
     res.json({ success: true, data: rows[0] });
   } catch (error) {
     console.error("getCategoryById error:", error);
@@ -41,7 +44,10 @@ export const getCategoryById = async (req, res) => {
 export const createCategory = async (req, res) => {
   try {
     const { name, description, image_url, related_words } = req.body;
-    if (!name?.trim()) return res.status(400).json({ success: false, message: "Name required" });
+    if (!name?.trim())
+      return res
+        .status(400)
+        .json({ success: false, message: "Name required" });
 
     const { rows } = await pool.query(
       `INSERT INTO categories (name, description, image_url, related_words, level)
@@ -49,7 +55,9 @@ export const createCategory = async (req, res) => {
        RETURNING *`,
       [name.trim(), description || null, image_url || null, related_words || []]
     );
-    res.status(201).json({ success: true, message: "Category created", data: rows[0] });
+    res
+      .status(201)
+      .json({ success: true, message: "Category created", data: rows[0] });
   } catch (error) {
     console.error("createCategory error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -73,8 +81,15 @@ export const updateCategory = async (req, res) => {
       [name, description, image_url, id]
     );
 
-    if (!rows.length) return res.status(404).json({ success: false, message: "Category not found" });
-    res.json({ success: true, message: "Updated successfully", data: rows[0] });
+    if (!rows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    res.json({
+      success: true,
+      message: "Updated successfully",
+      data: rows[0],
+    });
   } catch (error) {
     console.error("updateCategory error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -89,7 +104,10 @@ export const deleteCategory = async (req, res) => {
       `UPDATE categories SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
       [id]
     );
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    if (!rows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Not found" });
     res.json({ success: true, message: "Deleted", data: rows[0] });
   } catch (error) {
     console.error("deleteCategory error:", error);
@@ -105,28 +123,45 @@ export const getSubCategories = async (req, res) => {
   try {
     const { categoryId } = req.params;
     const { rows } = await pool.query(
-      `SELECT * FROM sub_categories WHERE category_id = $1 ORDER BY id ASC`,
+      `SELECT 
+         sc.id, 
+         sc.name, 
+         sc.description,
+         sc.category_id,
+         COALESCE(
+           (SELECT COUNT(*)::int 
+            FROM sub_sub_categories ssc 
+            WHERE ssc.sub_category_id = sc.id), 0
+         ) AS subsub_count
+       FROM sub_categories sc
+       WHERE sc.category_id = $1
+       ORDER BY sc.id ASC`,
       [categoryId]
     );
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error("getSubCategories error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 export const createSubCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
     const { name, description } = req.body;
-    if (!name?.trim()) return res.status(400).json({ success: false, message: "Name required" });
+    if (!name?.trim())
+      return res
+        .status(400)
+        .json({ success: false, message: "Name required" });
 
     const { rows } = await pool.query(
       `INSERT INTO sub_categories (category_id, name, description)
        VALUES ($1, $2, $3) RETURNING *`,
       [categoryId, name.trim(), description || null]
     );
-    res.status(201).json({ success: true, message: "Created", data: rows[0] });
+    res
+      .status(201)
+      .json({ success: true, message: "Created", data: rows[0] });
   } catch (error) {
     console.error("createSubCategory error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -147,7 +182,8 @@ export const updateSubCategory = async (req, res) => {
       [name, description, id]
     );
 
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, message: "Updated", data: rows[0] });
   } catch (error) {
     console.error("updateSubCategory error:", error);
@@ -158,8 +194,12 @@ export const updateSubCategory = async (req, res) => {
 export const deleteSubCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query(`DELETE FROM sub_categories WHERE id = $1 RETURNING *`, [id]);
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    const { rows } = await pool.query(
+      `DELETE FROM sub_categories WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, message: "Deleted", data: rows[0] });
   } catch (error) {
     console.error("deleteSubCategory error:", error);
@@ -175,13 +215,21 @@ export const getSubSubCategoriesBySubId = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
     const { rows } = await pool.query(
-      `SELECT * FROM sub_sub_categories WHERE sub_category_id = $1 ORDER BY id ASC`,
+      `SELECT ssc.*,
+              (SELECT COUNT(*) 
+               FROM projects p 
+               WHERE p.sub_sub_category_id = ssc.id) AS projects_count
+       FROM sub_sub_categories ssc
+       WHERE ssc.sub_category_id = $1
+       ORDER BY ssc.id ASC`,
       [subCategoryId]
     );
     res.json({ success: true, data: rows });
   } catch (error) {
     console.error("getSubSubCategoriesBySubId error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
 
@@ -189,14 +237,19 @@ export const createSubSubCategory = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
     const { name, description } = req.body;
-    if (!name?.trim()) return res.status(400).json({ success: false, message: "Name required" });
+    if (!name?.trim())
+      return res
+        .status(400)
+        .json({ success: false, message: "Name required" });
 
     const { rows } = await pool.query(
       `INSERT INTO sub_sub_categories (sub_category_id, name, description)
        VALUES ($1, $2, $3) RETURNING *`,
       [subCategoryId, name.trim(), description || null]
     );
-    res.status(201).json({ success: true, message: "Created", data: rows[0] });
+    res
+      .status(201)
+      .json({ success: true, message: "Created", data: rows[0] });
   } catch (error) {
     console.error("createSubSubCategory error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -217,7 +270,8 @@ export const updateSubSubCategory = async (req, res) => {
       [name, description, id]
     );
 
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, message: "Updated", data: rows[0] });
   } catch (error) {
     console.error("updateSubSubCategory error:", error);
@@ -228,8 +282,12 @@ export const updateSubSubCategory = async (req, res) => {
 export const deleteSubSubCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query(`DELETE FROM sub_sub_categories WHERE id = $1 RETURNING *`, [id]);
-    if (!rows.length) return res.status(404).json({ success: false, message: "Not found" });
+    const { rows } = await pool.query(
+      `DELETE FROM sub_sub_categories WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (!rows.length)
+      return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, message: "Deleted", data: rows[0] });
   } catch (error) {
     console.error("deleteSubSubCategory error:", error);

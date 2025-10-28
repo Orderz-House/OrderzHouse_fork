@@ -119,7 +119,10 @@ function useTableData({
   ? data.items
   : Array.isArray(data?.users)
   ? data.users
+  : Array.isArray(data?.data)
+  ? data.data
   : [];
+
 
 
         const processedList = list.map((row) => ({
@@ -839,7 +842,7 @@ const DesktopCards = ({
   onSaveEdit,
   onCancelEdit,
   onCardClick,
-  renderCardSubtitle,
+  renderSubtitle ,
 }) => {
   if (loading) {
     return (
@@ -920,9 +923,9 @@ const DesktopCards = ({
                   <div className="font-semibold text-slate-800 truncate">
                     {titleVal}
                   </div>
-                  {typeof renderCardSubtitle === "function" && (
+                  {typeof renderSubtitle  === "function" && (
                     <div className="mt-1">
-                      {renderCardSubtitle(row, helpers)}
+                      {renderSubtitle (row, helpers)}
                     </div>
                   )}
 
@@ -1038,7 +1041,7 @@ export default function PeopleTable({
   crudConfig = {},
   desktopAsCards = false,
   onCardClick,
-  renderCardSubtitle,
+  renderSubtitle ,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -1286,7 +1289,7 @@ export default function PeopleTable({
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
           onCardClick={onCardClick}
-          renderCardSubtitle={renderCardSubtitle}
+          renderSubtitle ={renderSubtitle }
         />
       ) : (
         <DesktopTable
