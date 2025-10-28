@@ -1,27 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; 
 import {
   fetchCategories,
   fetchSubCategoriesByCategoryId,
   fetchSubSubCategoriesBySubId,
 } from "./api/category";
 
-/**
- * تعديل مهم:
- * - إضافة نمط "مُتحكَّم" عبر props: open, anchorRef, onRequestClose, hideTrigger, hoverClosable.
- * - إن مرّرت anchorRef + open => لن يُعرض زر CATEGORIES وسيظهر الميجا منيو تحت العنصر الممرّر.
- * - إن لم تمرّرها، يعمل الكومبوننت كما كان (زر مستقل).
- */
-const CategoryMegaMenu = ({
-  activeLink,
-  onSetActiveLink,
-  open,                 // تحكم خارجي اختياري
-  anchorRef: extAnchor, // مرجع زر خارجي (مثلاً زر TASKS/PROJECTS)
-  onRequestClose,       // يُستدعى عند إغلاق خارجي مطلوب
-  hideTrigger = false,  // إخفاء زر CATEGORIES الداخلي
-  hoverClosable = false // يغلق عند مغادرة الماوس للمنيو
-}) => {
+const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -61,65 +47,67 @@ const CategoryMegaMenu = ({
   // إغلاق بالضغط خارج
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        // إن كان لدينا anchor خارجي، تحقق أيضًا أنه ليس داخل الـ anchor
-        if (anchorRef?.current && anchorRef.current.contains(e.target)) return;
-        closeMenu();
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        anchorRef.current && !anchorRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
       }
     };
-    if (openState) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openState]);
+  }, []);
 
-  // تحميل البيانات + حساب الموضع عند الفتح
+
   useEffect(() => {
-    if (!openState) return;
+    if (isOpen) {
+      updateMenuTop();
+      if (categories.length === 0) loadCategories();
 
-    updateMenuTop();
-    if (categories.length === 0) {
-      (async () => {
-        setLoading(true);
-        try {
-          const cats = await fetchCategories();
+      window.addEventListener("scroll", updateMenuTop, { passive: true });
+      window.addEventListener("resize", updateMenuTop);
+      return () => {
+        window.removeEventListener("scroll", updateMenuTop);
+        window.removeEventListener("resize", updateMenuTop);
+      };
+    }
+  }, [isOpen]);
 
-          const categoriesWithSubs = await Promise.all(
-            cats.map(async (category) => {
-              const subCats = await fetchSubCategoriesByCategoryId(category.id);
-              const subCategoriesWithSubs = await Promise.all(
-                (subCats || []).map(async (sub) => {
-                  const subSubs = await fetchSubSubCategoriesBySubId(sub.id);
-                  return { ...sub, subSubCategories: subSubs || [] };
-                })
-              );
-              return { ...category, subCategories: subCategoriesWithSubs };
+  const loadCategories = async () => {
+    setLoading(true);
+    try {
+      const cats = await fetchCategories();
+
+      const categoriesWithSubs = await Promise.all(
+        cats.map(async (category) => {
+          const subCats = await fetchSubCategoriesByCategoryId(category.id);
+
+          const subCategoriesWithSubs = await Promise.all(
+            (subCats || []).map(async (sub) => {
+              const subSubs = await fetchSubSubCategoriesBySubId(sub.id);
+              return { ...sub, subSubCategories: subSubs || [] };
             })
           );
 
-          setCategories(categoriesWithSubs);
-          const firstCat = categoriesWithSubs[0] || null;
-          setSelectedCategory(firstCat);
-          setSelectedSubCategory(firstCat?.subCategories?.[0] || null);
-        } catch (err) {
-          console.error("Error loading categories:", err);
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }
+          return { ...category, subCategories: subCategoriesWithSubs };
+        })
+      );
 
-    window.addEventListener("scroll", updateMenuTop, { passive: true });
-    window.addEventListener("resize", updateMenuTop);
-    return () => {
-      window.removeEventListener("scroll", updateMenuTop);
-      window.removeEventListener("resize", updateMenuTop);
-    };
-  }, [openState]);
+      setCategories(categoriesWithSubs);
+      const firstCat = categoriesWithSubs[0] || null;
+      setSelectedCategory(firstCat);
+      setSelectedSubCategory(firstCat?.subCategories?.[0] || null);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // أزرار واجهة قديمة (زر CATEGORIES الداخلي) — يظهر فقط إن لم نكن في وضع الدمج
   const handleToggle = () => {
-    if (controlled) return; // في النمط المتحكّم لا نغيّر من هنا
     setIsOpen((prev) => !prev);
-    onSetActiveLink && onSetActiveLink("CATEGORIES");
+    if (onSetActiveLink) onSetActiveLink("CATEGORIES");
   };
 
   const handleSelectCategory = (cat) => {
@@ -136,45 +124,36 @@ const CategoryMegaMenu = ({
         subSub.sub_sub_category_id
       )}`
     );
-    closeMenu();
+    setIsOpen(false);
   };
 
   return (
     <div className="relative">
-      {/* زر CATEGORIES الداخلي — يُخفى عند الدمج */}
-      {!hideTrigger && (
-        <button
-          ref={anchorRef}
-          onClick={handleToggle}
-          className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-            activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700"
-          }`}
-        >
-          <span className="flex items-center gap-1">
-            CATEGORIES
-            <ChevronDown
-              className={`h-4 w-4 transition-transform duration-200 ${openState ? "rotate-180" : ""}`}
-            />
-          </span>
-          <span
-            className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-              activeLink === "CATEGORIES" ? "w-full" : "w-0 group-hover:w-full"
-            }`}
+      <button
+        ref={anchorRef}
+        onClick={handleToggle}
+        className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
+          activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700"
+        }`}
+      >
+        <span className="flex items-center gap-1">
+          CATEGORIES
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           />
-        </button>
-      )}
+        </span>
+        <span
+          className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
+            activeLink === "CATEGORIES" ? "w-full" : "w-0 group-hover:w-full"
+          }`}
+        />
+      </button>
 
-      {openState && (
+      {isOpen && (
         <div
           ref={menuRef}
           style={{ top: menuTop }}
           className="fixed left-1/2 -translate-x-1/2 z-50 mt-0 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
-          onMouseLeave={() => {
-            if (hoverClosable) {
-              // مهلة صغيرة لتجنّب الوميض عند التحرك السريع
-              setTimeout(() => closeMenu(), 120);
-            }
-          }}
         >
           {loading ? (
             <div className="p-8 text-center text-gray-500 font-inter">Loading...</div>
@@ -233,7 +212,7 @@ const CategoryMegaMenu = ({
                               className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                               onClick={(e) => {
                                 e.preventDefault();
-                                goToProjects(s);
+                                goToProjects(s); 
                               }}
                             >
                               {s.sub_sub_category_name}
