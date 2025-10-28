@@ -12,11 +12,12 @@ import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
 import Appointments from "../pages/operation/Appointments.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
 import Projects from "../pages/operation/Projects.jsx";
-import News from "../pages/community/News.jsx";
+import Blogs from "../pages/community/Blogs.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
+import Profile from "../pages/profile.jsx";
 
 export default function AdminRouter() {
   return (
@@ -37,10 +38,11 @@ export default function AdminRouter() {
         <Route path="operation/verifications" element={<Verifications />} />
         <Route path="operation/projects" element={<Projects />} />
         <Route path="operation/tasks" element={<Tasks />} />
-        <Route path="community/news" element={<News />} />
+        <Route path="community/blogs" element={<Blogs />} />
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="profile" element={<Profile />} />
 
         {/* generic sections —   /admin  /client  /freelancer */}
         <Route path="projects" element={<Projects />} />
