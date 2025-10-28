@@ -23,6 +23,7 @@ const CategoryMegaMenu = ({
   hoverClosable = false // يغلق عند مغادرة الماوس للمنيو
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   // إن وُجد open => تحكّم خارجي
   const controlled = typeof open === "boolean";
@@ -38,11 +39,26 @@ const CategoryMegaMenu = ({
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); 
-
-  // refs
+  // refs والعناصر المساعدة
   const menuRef = useRef(null);
   const [menuTop, setMenuTop] = useState(0);
+
+  const closeMenu = () => {
+    if (controlled) {
+      onRequestClose && onRequestClose();
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const updateMenuTop = () => {
+    const el = anchorRef?.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setMenuTop(rect.bottom + window.scrollY + 8);
+  };
+
+  // إغلاق بالضغط خارج
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -99,7 +115,7 @@ const CategoryMegaMenu = ({
     };
   }, [openState]);
 
-  // UI handlers
+  // أزرار واجهة قديمة (زر CATEGORIES الداخلي) — يظهر فقط إن لم نكن في وضع الدمج
   const handleToggle = () => {
     if (controlled) return; // في النمط المتحكّم لا نغيّر من هنا
     setIsOpen((prev) => !prev);
@@ -117,7 +133,7 @@ const CategoryMegaMenu = ({
     if (!selectedCategory || !subSub) return;
     navigate(
       `/projectsPage?cat=${encodeURIComponent(selectedCategory.id)}&sub=${encodeURIComponent(
-        subSub.id
+        subSub.sub_sub_category_id
       )}`
     );
     closeMenu();
@@ -212,7 +228,7 @@ const CategoryMegaMenu = ({
                         <div className="flex flex-wrap gap-3">
                           {selectedSubCategory.subSubCategories?.map((s) => (
                             <a
-                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.id}`}
+                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`}
                               href="#"
                               className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                               onClick={(e) => {
@@ -220,7 +236,7 @@ const CategoryMegaMenu = ({
                                 goToProjects(s);
                               }}
                             >
-                              {s.name}
+                              {s.sub_sub_category_name}
                             </a>
                           ))}
                         </div>
