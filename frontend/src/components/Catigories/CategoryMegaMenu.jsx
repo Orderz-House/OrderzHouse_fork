@@ -9,42 +9,17 @@ import {
 
 const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
-
-  // إن وُجد open => تحكّم خارجي
-  const controlled = typeof open === "boolean";
-  const openState = controlled ? open : isOpen;
-
-  // anchor: داخلي أو خارجي
-  const internalAnchorRef = useRef(null);
-  const anchorRef = extAnchor || internalAnchorRef;
-
-  // البيانات
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // refs والعناصر المساعدة
+  const navigate = useNavigate(); 
+
+  // refs
   const menuRef = useRef(null);
+  const anchorRef = useRef(null); 
   const [menuTop, setMenuTop] = useState(0);
-
-  const closeMenu = () => {
-    if (controlled) {
-      onRequestClose && onRequestClose();
-    } else {
-      setIsOpen(false);
-    }
-  };
-
-  const updateMenuTop = () => {
-    const el = anchorRef?.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setMenuTop(rect.bottom + window.scrollY + 8);
-  };
-
-  // إغلاق بالضغط خارج
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -58,6 +33,11 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const updateMenuTop = () => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setMenuTop(rect.bottom + window.scrollY + 8); 
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -104,7 +84,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     }
   };
 
-  // أزرار واجهة قديمة (زر CATEGORIES الداخلي) — يظهر فقط إن لم نكن في وضع الدمج
+  // UI handlers
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
     if (onSetActiveLink) onSetActiveLink("CATEGORIES");
