@@ -112,18 +112,16 @@ function useTableData({
         });
 
         const list = Array.isArray(data)
-  ? data
-  : Array.isArray(data?.appointments)
-  ? data.appointments
-  : Array.isArray(data?.items)
-  ? data.items
-  : Array.isArray(data?.users)
-  ? data.users
-  : Array.isArray(data?.data)
-  ? data.data
-  : [];
-
-
+          ? data
+          : Array.isArray(data?.appointments)
+          ? data.appointments
+          : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.users)
+          ? data.users
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
 
         const processedList = list.map((row) => ({
           ...row,
@@ -753,13 +751,15 @@ const DesktopTable = ({
 
                     <td className="px-3 py-2">
                       <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => onToggleExpand(idx)}
-                          className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
-                          title="View"
-                        >
-                          <AiOutlineEdit size={18} />
-                        </button>
+                        {crudConfig.showDetails && (
+                          <button
+                            onClick={() => onToggleExpand(idx)}
+                            className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+                            title="View"
+                          >
+                            <AiOutlineEdit size={18} />
+                          </button>
+                        )}
 
                         {renderActions ? (
                           renderActions(row, helpers)
@@ -842,7 +842,7 @@ const DesktopCards = ({
   onSaveEdit,
   onCancelEdit,
   onCardClick,
-  renderSubtitle ,
+  renderSubtitle,
 }) => {
   if (loading) {
     return (
@@ -923,10 +923,8 @@ const DesktopCards = ({
                   <div className="font-semibold text-slate-800 truncate">
                     {titleVal}
                   </div>
-                  {typeof renderSubtitle  === "function" && (
-                    <div className="mt-1">
-                      {renderSubtitle (row, helpers)}
-                    </div>
+                  {typeof renderSubtitle === "function" && (
+                    <div className="mt-1">{renderSubtitle(row, helpers)}</div>
                   )}
 
                   {subVal && (
@@ -1028,7 +1026,7 @@ const DesktopCards = ({
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",
-  addLabel = "Add Person",
+  addLabel,
   endpoint,
   getOnePath,
   columns,
@@ -1041,7 +1039,7 @@ export default function PeopleTable({
   crudConfig = {},
   desktopAsCards = false,
   onCardClick,
-  renderSubtitle ,
+  renderSubtitle,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -1228,14 +1226,18 @@ export default function PeopleTable({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleAddNew}
-              className="h-9 rounded-full border px-3 text-sm"
-              style={{ borderColor: PRIMARY, color: PRIMARY }}
-              title={addLabel}
-            >
-              {addLabel}
-            </button>
+            {Boolean(
+              typeof addLabel === "string" ? addLabel.trim() : addLabel
+            ) && (
+              <button
+                onClick={handleAddNew}
+                className="h-9 rounded-full border px-3 text-sm"
+                style={{ borderColor: PRIMARY, color: PRIMARY }}
+                title={String(addLabel)}
+              >
+                {String(addLabel)}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1289,7 +1291,7 @@ export default function PeopleTable({
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
           onCardClick={onCardClick}
-          renderSubtitle ={renderSubtitle }
+          renderSubtitle={renderSubtitle}
         />
       ) : (
         <DesktopTable
