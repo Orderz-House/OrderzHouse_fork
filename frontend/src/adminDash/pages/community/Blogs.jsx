@@ -1,16 +1,17 @@
 import { useSelector } from "react-redux";
 import PeopleTable from "../Tables";
 
-export default function News() {
+export default function Blogs() {
   const { userData, user } = useSelector((s) => s.auth);
   const roleId = userData?.role_id ?? user?.role_id;
   const isAdmin = roleId === 1;
 
   return (
     <PeopleTable
-      title="News"
+      title="Blogs"
       addLabel="Add Post"
-      endpoint="/news"
+      endpoint="/blogs"
+      
       columns={[
         { label: "Title", key: "title" },
         { label: "Category", key: "category" },

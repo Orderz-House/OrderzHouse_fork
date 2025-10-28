@@ -47,7 +47,7 @@ function getActiveFromPath(pathname) {
   if (p.startsWith("/operation/verifications")) return "verifications";
   if (p.startsWith("/operation/projects")) return "projects";
   if (p.startsWith("/operation/tasks")) return "tasks";
-  if (p.startsWith("/community/news")) return "news";
+  if (p.startsWith("/community/blogs")) return "blogs";
   if (p.startsWith("/finance/payments")) return "payments";
   if (p.startsWith("/finance/plans")) return "plans";
   if (p.startsWith("/analytics")) return "analytics";
@@ -73,7 +73,8 @@ function getNav(role, navigate, base) {
       { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/operation/appointments`) },
       { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate(`${base}/operation/verifications`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/operation/projects`) },
-      { id: "news", name: "News", icon: FileText, onClick: () => navigate(`${base}/community/news`) },
+      { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
+      { id: "blogs", name: "Blogs", icon: FileText, onClick: () => navigate(`${base}/community/blogs`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/finance/payments`) },
       { id: "plans", name: "Plans", icon: DollarSign, onClick: () => navigate(`${base}/finance/plans`) },
       { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => navigate(`${base}/analytics`) },
