@@ -8,7 +8,6 @@ export default function Verifications() {
   return (
     <PeopleTable
       title="Verifications"
-      addLabel="Add"
       endpoint="/api/admin/verifications"
       initialRows={initialRows}
 
