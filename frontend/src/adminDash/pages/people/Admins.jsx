@@ -29,7 +29,7 @@ export default function Admins() {
       token={token}
       columns={[
         {
-          label: "",
+          label: "Profile",
           key: "profile_pic_url",
           render: (row) =>
             row.profile_pic_url ? (

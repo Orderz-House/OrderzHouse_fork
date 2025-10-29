@@ -339,9 +339,9 @@ const deleteUser = async (req, res) => {
   }
 };
 
-const editUser = async (req, res) => {
-  const { userId } = req.params;
-  const { first_name, last_name, phone_number, country, username, profile_pic_url } = req.body;
+export const editUserSelf = async (req, res) => {
+  const userId = req.token.userId;
+  const { first_name, last_name, username, phone_number, country, profile_pic_url } = req.body;
 
   try {
     const result = await pool.query(
@@ -353,14 +353,14 @@ const editUser = async (req, res) => {
          phone_number = COALESCE($4, phone_number),
          country = COALESCE($5, country),
          profile_pic_url = COALESCE($6, profile_pic_url),
-         updated_at = CURRENT_TIMESTAMP
+         updated_at = NOW()
        WHERE id = $7 AND is_deleted = FALSE
-       RETURNING *`,
+       RETURNING id, first_name, last_name, username, email, phone_number, country, profile_pic_url`,
       [first_name, last_name, username, phone_number, country, profile_pic_url, userId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found or deleted" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     return res.status(200).json({
@@ -369,10 +369,11 @@ const editUser = async (req, res) => {
       user: result.rows[0],
     });
   } catch (err) {
-    console.error("❌ updateMyProfile error:", err);
-    return res.status(500).json({ success: false, message: "Error updating profile", error: err.message });
+    console.error("editUserSelf Error:", err.message);
+    return res.status(500).json({ success: false, message: "Error updating profile" });
   }
 };
+
 
 const getUserById = async (req, res) => {
   const { userId } = req.token;
@@ -1044,7 +1045,6 @@ export {
   login,
   viewUsers,
   deleteUser,
-  editUser,
   getPortfolioByUserId,
   createPortfolio,
   editPortfolioFreelancer,

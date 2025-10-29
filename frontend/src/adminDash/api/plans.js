@@ -1,4 +1,4 @@
-import API from "../api/axios";
+import API from "./axios";
 
 /* ----------------------
    PUBLIC ROUTES

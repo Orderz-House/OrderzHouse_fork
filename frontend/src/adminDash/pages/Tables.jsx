@@ -552,7 +552,7 @@ const MobileCards = ({
             key={idx}
             className="w-full rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
           >
-            <div className="flex items-center gap-3 min-h-[56px]">
+            <div className="flex items-center gap-3 min-h[56px]">
               {/* Avatar */}
               <div className="shrink-0 w-10 h-10 rounded-full bg-slate-100 overflow-hidden grid place-items-center text-[12px] text-slate-600">
                 {avatarUrl ? (
@@ -1023,6 +1023,203 @@ const DesktopCards = ({
   );
 };
 
+/* ====================== Mobile Cards Grid (جديد) ====================== */
+const CardsGrid = ({
+  title,
+  columns,
+  rows,
+  loading,
+  error,
+  renderActions,
+  hideCrudActions,
+  helpers,
+  crudConfig,
+  expandedRow,
+  onToggleExpand,
+  formFields,
+  editingRowId,
+  onSaveEdit,
+  onCancelEdit,
+  onCardClick,
+  renderSubtitle,
+}) => {
+  if (loading) {
+    return (
+      <div className="block md:hidden rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-600">
+        Loading {title}…
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="block md:hidden rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-red-600">
+        {error}
+      </div>
+    );
+  }
+  if (!rows.length) {
+    return (
+      <div className="block md:hidden rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-500">
+        No {title} found
+      </div>
+    );
+  }
+
+  const nameCol =
+    pickColumn(columns, ["title", "name", "full name", "username"]) ||
+    columns[0];
+  const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
+  const statusCol = pickColumn(columns, ["status"]);
+  const dueCol = pickColumn(columns, ["due", "date"]);
+  const budgetCol = pickColumn(columns, ["budget", "price", "amount"]);
+
+  return (
+    <div className="grid md:hidden grid-cols-1 gap-3">
+      {rows.map((row, idx) => {
+        const isExpanded = expandedRow === idx;
+        const isEditing = editingRowId === helpers.getId(row);
+
+        const titleVal = getCellValue(nameCol, row, idx) ?? "—";
+        const subVal = getCellValue(subCol, row, idx);
+        const status = getCellValue(statusCol, row, idx);
+        const due = getCellValue(dueCol, row, idx);
+        const budget = getCellValue(budgetCol, row, idx);
+
+        const avatarUrl = pickAvatar(row);
+
+        return (
+          <div
+            key={idx}
+            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+          >
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onCardClick?.(row, helpers)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && onCardClick?.(row, helpers)
+              }
+              className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
+              title="Open"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
+                  {initialsFrom(String(titleVal))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-800 truncate">
+                    {titleVal}
+                  </div>
+                  {typeof renderSubtitle === "function" && (
+                    <div className="mt-1">{renderSubtitle(row, helpers)}</div>
+                  )}
+
+                  {subVal && (
+                    <div className="text-xs text-slate-500 truncate">
+                      {String(subVal)}
+                    </div>
+                  )}
+                </div>
+                {status && (
+                  <div className="shrink-0">
+                    {renderPrettyCell(
+                      { label: "Status", key: "status" },
+                      { status },
+                      idx
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                {due && (
+                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
+                    <span className="text-slate-500">Due:</span> {String(due)}
+                  </div>
+                )}
+                {budget != null && budget !== "" && (
+                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
+                    <span className="text-slate-500">Budget:</span>{" "}
+                    {String(budget)}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-1.5">
+                {crudConfig.showDetails && (
+                  <button
+                    onClick={() => onToggleExpand(idx)}
+                    className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
+                    title="View / Edit"
+                  >
+                    Details
+                  </button>
+                )}
+
+                <div className="flex items-center gap-1.5">
+                  {typeof renderActions === "function" &&
+                    renderActions(row, helpers)}
+
+                  {!hideCrudActions && (
+                    <>
+                      {crudConfig?.showRowEdit && (
+                        <button
+                          onClick={() => helpers.startEdit(helpers.getId(row))}
+                          className="h-9 px-3 rounded-full border text-sm"
+                          style={{ borderColor: PRIMARY, color: PRIMARY }}
+                          title="Edit"
+                        >
+                          Edit
+                        </button>
+                      )}
+
+                      {crudConfig?.showDelete && (
+                        <button
+                          onClick={() => helpers.handleDelete(idx)}
+                          className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
+                          title="Delete"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="mt-2">
+                  <ExpandedRow
+                    row={row}
+                    columns={columns}
+                    formFields={formFields}
+                    isEditing={isEditing}
+                    onSave={onSaveEdit}
+                    onDelete={() => helpers.handleDelete(idx)}
+                    onCancel={onCancelEdit}
+                    helpers={helpers}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",
@@ -1040,6 +1237,7 @@ export default function PeopleTable({
   desktopAsCards = false,
   onCardClick,
   renderSubtitle,
+  /* NEW */ mobileAsCards = false,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -1255,35 +1453,58 @@ export default function PeopleTable({
         </div>
       </div>
 
-      <MobileCards
-        title={title}
-        columns={columns}
-        rows={pagedRows}
-        loading={loading}
-        error={error}
-        renderActions={renderActions}
-        hideCrudActions={hideCrudActions}
-        helpers={helpers}
-        crudConfig={crudConfig}
-        expandedRow={expandedRow}
-        onToggleExpand={setExpandedRow}
-        formFields={formFields}
-        editingRowId={editingRowId}
-        onSaveEdit={handleSaveEdit}
-        onCancelEdit={handleCancelEdit}
-      />
-
-      {desktopAsCards ? (
-        <DesktopCards
+      {/* ===== Mobile View ===== */}
+      {mobileAsCards ? (
+        <CardsGrid
           title={title}
-          columns={columns}
+          columns={tableColumns}
           rows={pagedRows}
           loading={loading}
           error={error}
           renderActions={renderActions}
           hideCrudActions={hideCrudActions}
           helpers={helpers}
-          crudConfig={crudConfig}
+          crudConfig={mergedCrudConfig}
+          expandedRow={expandedRow}
+          onToggleExpand={setExpandedRow}
+          formFields={formFields}
+          editingRowId={editingRowId}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+          onCardClick={onCardClick}
+          renderSubtitle={renderSubtitle}
+        />
+      ) : (
+        <MobileCards
+          title={title}
+          columns={tableColumns}
+          rows={pagedRows}
+          loading={loading}
+          error={error}
+          renderActions={renderActions}
+          hideCrudActions={hideCrudActions}
+          helpers={helpers}
+          crudConfig={mergedCrudConfig}
+          expandedRow={expandedRow}
+          onToggleExpand={setExpandedRow}
+          formFields={formFields}
+          editingRowId={editingRowId}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+        />
+      )}
+
+      {desktopAsCards ? (
+        <DesktopCards
+          title={title}
+          columns={tableColumns}
+          rows={pagedRows}
+          loading={loading}
+          error={error}
+          renderActions={renderActions}
+          hideCrudActions={hideCrudActions}
+          helpers={helpers}
+          crudConfig={mergedCrudConfig}
           expandedRow={expandedRow}
           onToggleExpand={setExpandedRow}
           formFields={formFields}
@@ -1295,7 +1516,7 @@ export default function PeopleTable({
         />
       ) : (
         <DesktopTable
-          columns={columns}
+          columns={tableColumns}
           rows={pagedRows}
           loading={loading}
           error={error}
@@ -1308,7 +1529,7 @@ export default function PeopleTable({
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
-          crudConfig={crudConfig}
+          crudConfig={mergedCrudConfig}
         />
       )}
 
