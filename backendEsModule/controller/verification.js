@@ -3,18 +3,19 @@ import pool from "../models/db.js";
 /* =========================================
    GET PENDING VERIFICATIONS
 ========================================= */
+
 export const getPendingVerifications = async (req, res) => {
   try {
     const search = req.query.q ? `%${req.query.q.toLowerCase()}%` : null;
-    const fromDate = req.query.from || null;
-    const toDate = req.query.to || null;
+    const dateRange = req.query.dateRange || null;
 
     let query = `
       SELECT 
         id,
         username,
         email,
-        created_at AS "AcountCreatedAt",
+        profile_pic_url,
+        created_at AS "AccountCreatedAt"
       FROM users
       WHERE role_id = 3
         AND is_verified = false
@@ -23,19 +24,16 @@ export const getPendingVerifications = async (req, res) => {
     const params = [];
 
     if (search) {
-      query += ` AND (LOWER(username) LIKE $${params.length + 1} OR LOWER(email) LIKE $${params.length + 1})`;
       params.push(search);
+      query += ` AND (LOWER(username) LIKE $${params.length} OR LOWER(email) LIKE $${params.length})`;
     }
 
-    if (fromDate && toDate) {
-      query += ` AND created_at::date BETWEEN $${params.length + 1} AND $${params.length + 2}`;
-      params.push(fromDate, toDate);
-    } else if (fromDate) {
-      query += ` AND created_at::date >= $${params.length + 1}`;
-      params.push(fromDate);
-    } else if (toDate) {
-      query += ` AND created_at::date <= $${params.length + 1}`;
-      params.push(toDate);
+    if (dateRange === "today") {
+      query += ` AND created_at::date = CURRENT_DATE`;
+    } else if (dateRange === "week") {
+      query += ` AND created_at >= NOW() - INTERVAL '7 days'`;
+    } else if (dateRange === "month") {
+      query += ` AND created_at >= NOW() - INTERVAL '30 days'`;
     }
 
     query += " ORDER BY created_at DESC";

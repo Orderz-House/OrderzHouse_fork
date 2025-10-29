@@ -9,8 +9,25 @@ import { authentication } from "../middleware/authentication.js";
 
 const VerificationRouter = express.Router();
 
-VerificationRouter.get("/verifications", authentication, adminOnly, getPendingVerifications);
-VerificationRouter.put("/verifications/:id/approve", authentication, adminOnly, approveVerification);
-VerificationRouter.put("/verifications/:id/reject", authentication, adminOnly, rejectVerification);
+VerificationRouter.get(
+  "/verifications",
+  authentication,
+  adminOnly,
+  getPendingVerifications
+);
+
+VerificationRouter.put(
+  "/verifications/:id/approve",
+  authentication,
+  adminOnly,
+  approveVerification
+);
+
+VerificationRouter.put(
+  "/verifications/:id/reject",
+  authentication,
+  adminOnly,
+  rejectVerification
+);
 
 export default VerificationRouter;
