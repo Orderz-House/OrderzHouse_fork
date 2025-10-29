@@ -1,15 +1,20 @@
-import express from 'express';
-import {getMessagesByProjectId} from '../controller/chats.js';
+import express from "express";
+import {
+  getMessagesByProjectId,
+  getMessagesByTaskId,
+  createMessage,
+} from "../controller/chats.js";
 import { authentication } from "../middleware/authentication.js";
 
 const chatsRouter = express.Router();
-/*
-chatsRouter.get('/conversation/', authentication, getConversationId);
-chatsRouter.get('/one-to-one/:otherUserId', authentication, getChatOneToOne);
-chatsRouter.post('/create', authentication, createConversation)
-*/
 
-chatsRouter.get(`/project/:projectId/messages`, authentication, getMessagesByProjectId)
+// Get all messages by project
+chatsRouter.get("/project/:projectId/messages", authentication, getMessagesByProjectId);
 
+// Get all messages by task
+chatsRouter.get("/task/:taskId/messages", authentication, getMessagesByTaskId);
+
+// Create a new message
+chatsRouter.post("/messages", authentication, createMessage);
 
 export default chatsRouter;

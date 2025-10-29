@@ -5,7 +5,7 @@ import {
   verifyOTP,
   viewUsers,
   deleteUser,
-  editUser,
+  editUserSelf,
   createPortfolio,
   editPortfolioFreelancer,
   getAllFreelancers,
@@ -59,7 +59,7 @@ usersRouter.delete("/portfolio", authentication, deletePortfolioFreelancer);
 // ==================== USER MANAGEMENT ROUTES ====================
 usersRouter.post("/view", authentication, viewUsers);
 usersRouter.delete("/delete/:userId", authentication, deleteUser);
-usersRouter.put("/edit/:userId", authentication, editUser);
+usersRouter.put("/edit", authentication, editUserSelf);
 usersRouter.get("/freelancers/all", authentication, getAllFreelancers);
 usersRouter.delete("/freelancers/delete/:freelancerid", authentication, deleteFreelancerById);
 usersRouter.get("/list/online", authentication, listOnlineUsers);
