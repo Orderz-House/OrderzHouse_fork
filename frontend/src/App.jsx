@@ -44,7 +44,7 @@ import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
-
+import ChatPage from "./components/Chat/ChatPage";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -55,7 +55,9 @@ const RoleBasedAppointments = ({ userData }) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-4">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Access Denied
+          </h2>
           <p className="text-gray-600">
             Appointments are only available for admins and freelancers.
           </p>
@@ -88,119 +90,264 @@ function App() {
 
   return (
     <>
-    <GlobalLoadingProvider>
-      {!shouldHideNavbar && <Navbar />}
+      <GlobalLoadingProvider>
+        {!shouldHideNavbar && <Navbar />}
 
-      <Routes
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}  
-      >
-        
-        {/* --- Blogs --- */}
-        <Route path="/blogs" element={<Blogs />} />
-        <Route path="/blogs/:id" element={<BlogPost />} />
+        <Routes
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          {/* --- Blogs --- */}
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blogs/:id" element={<BlogPost />} />
 
-        {/* --- Account Suspended --- */}
-        <Route path="/account/suspended" element={<AccountSuspended />} />
+          {/* --- Account Suspended --- */}
+          <Route path="/account/suspended" element={<AccountSuspended />} />
 
-        {/* --- Public Pages --- */}
-        <Route path="/test" element={<Counter />} />
-        <Route path="/" element={<OrderzHousePage />} />
-        <Route path="/privacy" element={<PrivacyPolicyPage />} />
-        <Route path="/about" element={<ModernAboutPage />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/contact" element={<ContactUsPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin-verification" element={<AdminVerificationPage />} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
-        <Route path="/verify-profile" element={<VerifyProfile />} />
-        <Route path="/terms" element={<Terms />} />
+          {/* --- Public Pages --- */}
+          <Route path="/test" element={<Counter />} />
+          <Route path="/" element={<OrderzHousePage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/about" element={<ModernAboutPage />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/admin-verification" element={<AdminVerificationPage />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileView />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/verify-profile" element={<VerifyProfile />} />
+          <Route path="/terms" element={<Terms />} />
 
-        {/* --- Protected Pages --- */}
-        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-        <Route path="/manage-project/:projectId" element={<ProtectedRoute><ManageProject /></ProtectedRoute>} />
-        <Route path="/rate" element={<ProtectedRoute><TopRatedFreelancers /></ProtectedRoute>} />
-        <Route path="/freelancer/profile/:id" element={<ProtectedRoute><FreeLanceDetail /></ProtectedRoute>} />
-        
-        <Route path="/tasks" element={<ProtectedRoute><ProjectsPage mode="tasks" /></ProtectedRoute>} />
-        <Route path="/tasks/:id" element={<ProtectedRoute><ProjectDetails mode="tasks" /></ProtectedRoute>} />
-      
+          {/* --- Protected Pages --- */}
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-project"
+            element={
+              <ProtectedRoute>
+                <CreateProjectPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manage-project/:projectId"
+            element={
+              <ProtectedRoute>
+                <ManageProject />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rate"
+            element={
+              <ProtectedRoute>
+                <TopRatedFreelancers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/freelancer/profile/:id"
+            element={
+              <ProtectedRoute>
+                <FreeLanceDetail />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- Course Management --- */}
-        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-        <Route path="/my-courses" element={<ProtectedRoute><MyRestrictedCourses /></ProtectedRoute>} />
-        <Route path="/access-denied" element={<AccessDenied />} />
-        <Route path="/admin/courses" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseManagement /></ProtectedRoute>} />
-        <Route path="/admin/course-access" element={<ProtectedRoute allowedRoles={[1]}><AdminCourseAccessControl /></ProtectedRoute>} />
+          {/* --- Tasks --- */}
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <ProjectsPage mode="tasks" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tasks/:id"
+            element={
+              <ProtectedRoute>
+                <ProjectDetails mode="tasks" />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- Notifications & Projects --- */}
-        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-        <Route path="/projectsPage" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+          {/* --- Course Management --- */}
+          <Route
+            path="/courses/:id"
+            element={
+              <ProtectedRoute>
+                <CourseDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-courses"
+            element={
+              <ProtectedRoute>
+                <MyRestrictedCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/access-denied" element={<AccessDenied />} />
+          <Route
+            path="/admin/courses"
+            element={
+              <ProtectedRoute allowedRoles={[1]}>
+                <AdminCourseManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/course-access"
+            element={
+              <ProtectedRoute allowedRoles={[1]}>
+                <AdminCourseAccessControl />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- Appointments --- */}
-        <Route path="/appointments" element={<ProtectedRoute><RoleBasedAppointments userData={userData} /></ProtectedRoute>} />
-        <Route path="/admin/appointments" element={<ProtectedRoute><AdminAppointments /></ProtectedRoute>} />
-        <Route path="/my-appointments" element={<ProtectedRoute><FreelancerAppointments /></ProtectedRoute>} />
+          {/* --- Notifications & Projects --- */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projectsPage"
+            element={
+              <ProtectedRoute>
+                <ProjectsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- Admin / Client / Freelancer Routes --- */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute allowedRoles={[1]}>
-              <AdminRouter />
-            </ProtectedRoute>
-          }
+          {/* --- Appointments --- */}
+          <Route
+            path="/appointments"
+            element={
+              <ProtectedRoute>
+                <RoleBasedAppointments userData={userData} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/appointments"
+            element={
+              <ProtectedRoute>
+                <AdminAppointments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-appointments"
+            element={
+              <ProtectedRoute>
+                <FreelancerAppointments />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- Chat --- */}
+          <Route
+            path="/chat/project/:projectId"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/task/:taskId"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- Admin / Client / Freelancer --- */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute allowedRoles={[1]}>
+                <AdminRouter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/*"
+            element={
+              <ProtectedRoute allowedRoles={[2]}>
+                <AdminRouter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/freelancer/*"
+            element={
+              <ProtectedRoute allowedRoles={[3]}>
+                <AdminRouter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <ProjectDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- 404 Fallback --- */}
+          <Route
+            path="*"
+            element={
+              <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                  404 - Page Not Found
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  The page you are looking for does not exist.
+                </p>
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Go Back
+                </button>
+              </div>
+            }
+          />
+        </Routes>
+
+        {!shouldHideNavbar && <EnhancedFooter />}
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          draggable
+          pauseOnHover
         />
-        <Route
-          path="/client/*"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <AdminRouter />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/freelancer/*"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <AdminRouter />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/projects/:id"
-          element={
-            <ProtectedRoute>
-              <ProjectDetails />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* --- 404 Fallback --- */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">404 - Page Not Found</h2>
-              <p className="text-gray-600 mb-4">The page you are looking for does not exist.</p>
-              <button
-                onClick={() => window.history.back()}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Go Back
-              </button>
-            </div>
-          }
-        />
-      </Routes>
-
-      {!shouldHideNavbar && <EnhancedFooter />}
-      <ToastContainer position="top-right" autoClose={5000} draggable pauseOnHover />
-     </GlobalLoadingProvider>
+      </GlobalLoadingProvider>
     </>
   );
 }
