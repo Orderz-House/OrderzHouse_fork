@@ -1,3 +1,4 @@
+// pages/operation/Projects/ClientsProjects.jsx
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
@@ -88,6 +89,7 @@ export default function Projects() {
         desktopAsCards
         crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
         renderActions={renderActions}
+        // ⬇️ النقرة على صورة الكارد تفتح صفحة التفاصيل
         onCardClick={(row, h) =>
           navigate(`/project/${h.getId(row)}`, {
             state: { project: row, readOnly: true, role: "client" },

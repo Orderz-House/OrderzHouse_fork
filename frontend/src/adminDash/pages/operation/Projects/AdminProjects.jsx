@@ -101,8 +101,7 @@ function AdminProjects() {
       desktopAsCards
       /* Admin wants default CRUD inside cards */
       crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-      /* open details (admin route غالباً نسبي) */
-      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+      
     />
   );
 }
