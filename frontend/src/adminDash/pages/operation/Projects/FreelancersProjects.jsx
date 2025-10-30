@@ -20,49 +20,49 @@
 //   Link2,
 // } from "lucide-react";
 
-// /* ---------- Theme ---------- */
-// const T = { primary: "#028090", dark: "#05668D", ring: "rgba(15,23,42,.10)" };
-// const ringStyle = { border: `1px solid ${T.ring}` };
+// // /* ---------- Theme ---------- */
+// // const T = { primary: "#028090", dark: "#05668D", ring: "rgba(15,23,42,.10)" };
+// // const ringStyle = { border: `1px solid ${T.ring}` };
 
-// /* ---------- Role map ---------- */
-// function mapRole(roleId) {
-//   if (roleId === 1) return "admin";
-//   if (roleId === 2) return "client";
-//   if (roleId === 3) return "freelancer";
-//   return "user";
-// }
+// // /* ---------- Role map ---------- */
+// // function mapRole(roleId) {
+// //   if (roleId === 1) return "admin";
+// //   if (roleId === 2) return "client";
+// //   if (roleId === 3) return "freelancer";
+// //   return "user";
+// // }
 
-// /* ---------- Axios base ---------- */
-// const api = axios.create({
-//   baseURL: import.meta.env.VITE_API_URL || "",
-//   headers: { "Content-Type": "application/json" },
-// });
+// // /* ---------- Axios base ---------- */
+// // const api = axios.create({
+// //   baseURL: import.meta.env.VITE_API_URL || "",
+// //   headers: { "Content-Type": "application/json" },
+// // });
 
-// /* ===================== Entry ===================== */
-// export default function Projects() {
-//   const { userData } = useSelector((s) => s.auth);
-//   const role = mapRole(userData?.role_id);
+// // /* ===================== Entry ===================== */
+// // export default function Projects() {
+// //   const { userData } = useSelector((s) => s.auth);
+// //   const role = mapRole(userData?.role_id);
 
-//   if (role === "admin") return <AdminProjects />;
-//   if (role === "freelancer") return <FreelancerProjects />;
-//   return <ClientProjects />;
-// }
+// //   if (role === "admin") return <AdminProjects />;
+// //   if (role === "freelancer") return <FreelancerProjects />;
+// //   return <ClientProjects />;
+// // }
 
 // /* ===================== Admin ===================== */
 // function AdminProjects() {
 //   const navigate = useNavigate();
 //   const { token } = useSelector((s) => s.auth);
 
-//   // columns
-//   const columns = [
-//     { label: "Title", key: "title" },
-//     { label: "Client", key: "client" },
-//     { label: "Owner", key: "owner" },
-//     { label: "Due", key: "due" },
-//     { label: "Budget", key: "budget" },
-//     { label: "Progress", key: "progress" },
-//     { label: "Status", key: "status" },
-//   ];
+// //   // columns
+// //   const columns = [
+// //     { label: "Title", key: "title" },
+// //     { label: "Client", key: "client" },
+// //     { label: "Owner", key: "owner" },
+// //     { label: "Due", key: "due" },
+// //     { label: "Budget", key: "budget" },
+// //     { label: "Progress", key: "progress" },
+// //     { label: "Status", key: "status" },
+// //   ];
 
 //   // form fields
 //   const formFields = [
@@ -112,36 +112,36 @@
 //   const navigate = useNavigate();
 //   const { token } = useSelector((s) => s.auth);
 
-//   // لوحات العميل
-//   const [reviewOpen, setReviewOpen] = useState(false);
-//   const [reviewFor, setReviewFor] = useState(null);
+// //   // لوحات العميل
+// //   const [reviewOpen, setReviewOpen] = useState(false);
+// //   const [reviewFor, setReviewFor] = useState(null);
 
-//   // أزرار العميل داخل الكارد
-//   const renderActions = (row, helpers) => {
-//     const id = helpers.getId(row);
-//     return (
-//       <div className="flex gap-2 w-full">
-//         <button
-//           onClick={() => navigate(`/chat?projectId=${encodeURIComponent(id)}&with=${encodeURIComponent(row.assignee || "Freelancer")}`)}
-//           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm px-2"
-//           style={ringStyle}
-//           title="Open chat"
-//         >
-//           <MessageSquare className="w-3 h-3" />
-//           Chat
-//         </button>
-//         <button
-//           onClick={() => { setReviewFor(row); setReviewOpen(true); }}
-//           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
-//           style={{ backgroundColor: T.primary }}
-//           title="Review & receive delivery"
-//         >
-//           <SendHorizontal className="w-3 h-3" />
-//           Receive
-//         </button>
-//       </div>
-//     );
-//   };
+// //   // أزرار العميل داخل الكارد
+// //   const renderActions = (row, helpers) => {
+// //     const id = helpers.getId(row);
+// //     return (
+// //       <div className="flex gap-2 w-full">
+// //         <button
+// //           onClick={() => navigate(`/chat?projectId=${encodeURIComponent(id)}&with=${encodeURIComponent(row.assignee || "Freelancer")}`)}
+// //           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm px-2"
+// //           style={ringStyle}
+// //           title="Open chat"
+// //         >
+// //           <MessageSquare className="w-3 h-3" />
+// //           Chat
+// //         </button>
+// //         <button
+// //           onClick={() => { setReviewFor(row); setReviewOpen(true); }}
+// //           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
+// //           style={{ backgroundColor: T.primary }}
+// //           title="Review & receive delivery"
+// //         >
+// //           <SendHorizontal className="w-3 h-3" />
+// //           Receive
+// //         </button>
+// //       </div>
+// //     );
+// //   };
 
 //   return (
 //     <>
@@ -267,17 +267,17 @@
 //         onCardClick={(row, h) => navigate(`/project/${h.getId(row)}`, { state: { project: row, readOnly: true, role: "freelancer" } })}
 //       />
 
-//       {deliverOpen && deliverFor && (
-//         <DeliverModal
-//           project={deliverFor}
-//           onClose={() => { setDeliverOpen(false); setDeliverFor(null); }}
-//           onSubmit={(payload) => submitDelivery({ project: deliverFor, payload, token })}
-//           submitting={deliverSubmitting}
-//         />
-//       )}
-//     </>
-//   );
-// }
+// //       {deliverOpen && deliverFor && (
+// //         <DeliverModal
+// //           project={deliverFor}
+// //           onClose={() => { setDeliverOpen(false); setDeliverFor(null); }}
+// //           onSubmit={(payload) => submitDelivery({ project: deliverFor, payload, token })}
+// //           submitting={deliverSubmitting}
+// //         />
+// //       )}
+// //     </>
+// //   );
+// // }
 
 // /* ===================== Client Drawer ===================== */
 // function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges, token }) {

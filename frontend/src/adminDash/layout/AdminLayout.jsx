@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import {
   Home,
@@ -17,8 +17,12 @@ import {
   User,
   LogOut,
   ListChecks,
-  Star, 
+  Star,
 } from "lucide-react";
+
+import Cookies from "js-cookie";
+import { setLogout } from "../../slice/auth/authSlice";
+import { disconnectSocket } from "../../services/socketService";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
@@ -56,12 +60,12 @@ function getActiveFromPath(pathname) {
   if (p.startsWith("/tasks")) return "tasks";
   if (p.startsWith("/courses")) return "courses";
   if (p.startsWith("/appointments")) return "appointments";
-  if (p.startsWith("/my-subscription")) return "my-subscription"; 
+  if (p.startsWith("/my-subscription")) return "my-subscription";
   if (p.startsWith("/profile")) return "profile";
   return "overview";
 }
 
-function getNav(role, navigate, base) {
+function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
     const navigation = [
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
@@ -81,7 +85,7 @@ function getNav(role, navigate, base) {
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }
@@ -95,7 +99,7 @@ function getNav(role, navigate, base) {
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }
@@ -108,11 +112,11 @@ function getNav(role, navigate, base) {
       { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
       { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/appointments`) },
-      { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) }, 
+      { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }
@@ -120,7 +124,7 @@ function getNav(role, navigate, base) {
   const navigation = [{ id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) }];
   const bottomNavigation = [
     { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
-    { id: "logout", name: "Logout", icon: LogOut, onClick: () => console.log("User logged out") },
+    { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
   ];
   return { navigation, bottomNavigation };
 }
@@ -128,13 +132,27 @@ function getNav(role, navigate, base) {
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const { userData } = useSelector((s) => s.auth);
 
   const roleId = userData?.role_id ?? Number(localStorage.getItem("roled"));
   const role = mapRole(roleId);
 
+  const handleLogout = () => {
+    try {
+      disconnectSocket();
+    } catch (_) {}
+    Cookies.remove("userData");
+    dispatch(setLogout());
+    try {
+      localStorage.removeItem("roled");
+    } catch (_) {}
+    navigate("/");
+    window.location.reload();
+  };
+
   const base = getBasePrefix(location.pathname);
-  const { navigation, bottomNavigation } = getNav(role, navigate, base);
+  const { navigation, bottomNavigation } = getNav(role, navigate, base, handleLogout);
 
   const [activePage, setActivePage] = useState(() => getActiveFromPath(location.pathname));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -156,7 +174,7 @@ export default function AdminLayout() {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         navigation={navigation}
         bottomNavigation={bottomNavigation}
-        onLogout={() => console.log("Logout clicked")}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1 px-3 md:px-6 py-[104px] md:py-6">

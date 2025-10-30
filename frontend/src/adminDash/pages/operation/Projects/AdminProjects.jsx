@@ -84,28 +84,28 @@
 //     { label: "Done", value: "Done" },
 //   ];
 
-//   return (
-//     <PeopleTable
-//       /* header */
-//       title="Projects"
-//       addLabel="Add Project"
-//       /* data */
-//       endpoint="/api/admin/projects"
-//       token={token}
-//       columns={columns}
-//       formFields={formFields}
-//       chips={chips}
-//       chipField="status"
-//       filters={[{ key: "status", label: "Status", options: chips.slice(1).map(c => c.value) }]}
-//       /* UI */
-//       desktopAsCards
-//       /* Admin wants default CRUD inside cards */
-//       crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-//       /* open details (admin route غالباً نسبي) */
-//       onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
-//     />
-//   );
-// }
+  return (
+    <PeopleTable
+      /* header */
+      title="Projects"
+      addLabel="Add Project"
+      /* data */
+      endpoint="/api/admin/projects"
+      token={token}
+      columns={columns}
+      formFields={formFields}
+      chips={chips}
+      chipField="status"
+      filters={[{ key: "status", label: "Status", options: chips.slice(1).map(c => c.value) }]}
+      /* UI */
+      desktopAsCards
+      /* Admin wants default CRUD inside cards */
+      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+      /* open details (admin route غالباً نسبي) */
+      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+    />
+  );
+}
 
 // /* ===================== Client ===================== */
 // function ClientProjects() {
