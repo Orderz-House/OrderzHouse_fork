@@ -23,7 +23,7 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
-import Profile from "../pages/profile.jsx";
+import Profile from "../pages/Profile.jsx";
 
 function ProjectsSwitch() {
   const { pathname } = useLocation();
