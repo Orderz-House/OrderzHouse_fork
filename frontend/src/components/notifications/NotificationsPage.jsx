@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import { io } from "socket.io-client";
+import toast, { Toaster } from "react-hot-toast";
 import {
   Bell,
   CheckCircle,
@@ -11,11 +13,11 @@ import {
   Trash2,
   Clock,
   AlertCircle,
-  Info,
   Mail,
   Star,
-  Calendar,
-  ArrowLeft
+  ArrowLeft,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 
 export default function NotificationsPage() {
@@ -28,6 +30,7 @@ export default function NotificationsPage() {
   const [selectedNotifications, setSelectedNotifications] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [mute, setMute] = useState(false);
 
   const { token } = useSelector((state) => ({
     token: state.auth.token,
@@ -35,6 +38,30 @@ export default function NotificationsPage() {
 
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  // Socket setup for live notifications
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(API_BASE, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socket.on("notification:new", (data) => {
+      setNotifications((prev) => [data, ...prev]);
+      setFilteredNotifications((prev) => [data, ...prev]);
+      if (!mute) {
+        const audio = new Audio("/sounds/notification.mp3");
+        audio.play();
+        toast.success(data.message, {
+          icon: "🔔",
+          duration: 4000,
+        });
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [token, mute]);
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -106,7 +133,7 @@ export default function NotificationsPage() {
     }
   };
 
-  // Delete selected
+  // Delete selected notifications
   const deleteSelectedNotifications = async () => {
     try {
       await Promise.all(
@@ -127,7 +154,7 @@ export default function NotificationsPage() {
     }
   };
 
-  // Filters
+  // Filter and search logic
   useEffect(() => {
     let filtered = notifications;
     if (filter === "unread") filtered = filtered.filter((n) => !n.read_status);
@@ -193,6 +220,16 @@ export default function NotificationsPage() {
     return date.toLocaleDateString();
   };
 
+  // Group by date
+  const groupedNotifications = useMemo(() => {
+    return filteredNotifications.reduce((groups, n) => {
+      const date = new Date(n.created_at).toDateString();
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(n);
+      return groups;
+    }, {});
+  }, [filteredNotifications]);
+
   if (!token) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -213,6 +250,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
@@ -232,6 +270,14 @@ export default function NotificationsPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMute(!mute)}
+              className={`p-2 rounded-lg transition ${mute ? "bg-gray-100" : "bg-[#028090] text-white"}`}
+              title={mute ? "Unmute" : "Mute notifications"}
+            >
+              {mute ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+
             {selectedNotifications.size > 0 && (
               <>
                 <button
@@ -308,80 +354,80 @@ export default function NotificationsPage() {
                 Try Again
               </button>
             </div>
-          ) : filteredNotifications.length === 0 ? (
+          ) : Object.keys(groupedNotifications).length === 0 ? (
             <div className="p-12 text-center">
               <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchQuery || filter !== "all" ? "No matching notifications" : "No notifications yet"}
-              </h3>
-              <p className="text-gray-600">
-                {searchQuery || filter !== "all"
-                  ? "Try adjusting your search or filter criteria"
-                  : "You'll see important updates here when they arrive"}
-              </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications yet</h3>
+              <p className="text-gray-600">You’ll see updates here when they arrive</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
-              <div className="px-6 py-3 bg-gray-50 flex items-center">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={toggleSelectAll}
-                  className="h-4 w-4 text-[#028090] border-gray-300 focus:ring-[#028090]"
-                />
-                <span className="ml-3 text-sm text-gray-600">Select all</span>
-              </div>
+            Object.entries(groupedNotifications).map(([date, group]) => (
+              <div key={date}>
+                <h3 className="text-sm font-semibold text-gray-500 bg-gray-50 px-6 py-3">
+                  {date}
+                </h3>
+                {group.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      if (n.entity_type === "message")
+                        navigate(`/chat/${n.related_entity_id}`);
+                      else if (n.entity_type === "task")
+                        navigate(`/tasks/${n.related_entity_id}`);
+                      else if (n.entity_type === "project")
+                        navigate(`/projects/${n.related_entity_id}`);
+                    }}
+                    className={`p-6 transition-colors cursor-pointer ${
+                      !n.read_status ? "bg-[#E0F7FA]" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedNotifications.has(n.id)}
+                        onChange={() => toggleSelection(n.id)}
+                        className="h-4 w-4 text-[#028090] border-gray-300 focus:ring-[#028090] mt-1"
+                      />
 
-              {filteredNotifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`p-6 transition-colors ${!n.read_status ? "bg-[#E0F7FA]" : "hover:bg-gray-50"}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedNotifications.has(n.id)}
-                      onChange={() => toggleSelection(n.id)}
-                      className="h-4 w-4 text-[#028090] border-gray-300 focus:ring-[#028090] mt-1"
-                    />
+                      <div className="flex-shrink-0">{getNotificationIcon(n.type)}</div>
 
-                    <div className="flex-shrink-0">{getNotificationIcon(n.type)}</div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 line-clamp-2">{n.message}</p>
+                        <div className="flex items-center text-sm text-gray-500 mt-2">
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span>{formatDate(n.created_at)}</span>
+                        </div>
+                      </div>
 
-                    <div className="flex-1">
-                      <p className="text-gray-700">{n.message}</p>
-                      <div className="flex items-center text-sm text-gray-500 mt-2">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>{formatDate(n.created_at)}</span>
-                        {n.type && (
-                          <span className="ml-3 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                            {n.type}
-                          </span>
+                      <div className="flex gap-2 ml-4">
+                        {!n.read_status && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(n.id);
+                            }}
+                            className="p-1 text-[#028090] hover:text-[#05668D] transition"
+                            title="Mark as read"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(n.id);
+                          }}
+                          className="p-1 text-red-500 hover:text-red-700 transition"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="flex gap-2 ml-4">
-                      {!n.read_status && (
-                        <button
-                          onClick={() => markAsRead(n.id)}
-                          className="p-1 text-[#028090] hover:text-[#05668D] transition"
-                          title="Mark as read"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteNotification(n.id)}
-                        className="p-1 text-red-500 hover:text-red-700 transition"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ))
           )}
         </div>
       </div>

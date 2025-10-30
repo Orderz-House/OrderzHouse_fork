@@ -81,7 +81,9 @@ const ROLE_NOTIFICATIONS = {
 };
 
 const getAdmins = async () => {
-  const { rows } = await pool.query(`SELECT id FROM users WHERE role_id = 1 AND is_deleted = false`);
+  const { rows } = await pool.query(
+    `SELECT id FROM users WHERE role_id = 1 AND is_deleted = false`
+  );
   return rows.map((r) => r.id);
 };
 
@@ -98,36 +100,78 @@ const getUserName = async (userId) => {
     : username || "Unknown User";
 };
 
-export const createNotification = async (userId, type, message, relatedEntityId = null, entityType = null) => {
+
+export const createNotification = async (
+  userId,
+  type,
+  message,
+  relatedEntityId = null,
+  entityType = null
+) => {
   try {
-    const { rows: userRows } = await pool.query(`SELECT role_id FROM users WHERE id = $1`, [userId]);
+    const { rows: userRows } = await pool.query(
+      `SELECT role_id FROM users WHERE id = $1`,
+      [userId]
+    );
     if (!userRows.length) return null;
     const roleId = userRows[0].role_id;
     if (!(ROLE_NOTIFICATIONS[roleId] || []).includes(type)) return null;
+
     const { rows } = await pool.query(
       `INSERT INTO notifications (user_id, type, message, related_entity_id, entity_type)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [userId, type, message, relatedEntityId, entityType]
     );
-    return rows[0];
+
+    const notification = rows[0];
+
+    
+    if (global.io) {
+      global.io.to(`user:${userId}`).emit("notification:new", {
+        id: notification.id,
+        type: notification.type,
+        message: notification.message,
+        relatedEntityId: notification.related_entity_id,
+        entityType: notification.entity_type,
+        created_at: notification.created_at,
+      });
+    }
+
+    return notification;
   } catch (err) {
-    console.error("Error creating notification:", err);
+    console.error("[NotificationError]", err);
   }
 };
 
-export const createBulkNotifications = async (userIds, type, message, relatedEntityId = null, entityType = null) => {
+export const createBulkNotifications = async (
+  userIds,
+  type,
+  message,
+  relatedEntityId = null,
+  entityType = null
+) => {
   if (!Array.isArray(userIds) || !userIds.length) return [];
-  const promises = userIds.map((id) => createNotification(id, type, message, relatedEntityId, entityType));
+  const promises = userIds.map((id) =>
+    createNotification(id, type, message, relatedEntityId, entityType)
+  );
   return (await Promise.all(promises)).filter(Boolean);
 };
 
 export const NotificationCreators = {
   messageReceived: async (senderId, recipientId, messageId, content) => {
     const senderName = await getUserName(senderId);
-    const preview = content?.trim()?.length ? content.substring(0, 70) : "📎 Sent an attachment";
+    const preview = content?.trim()?.length
+      ? content.substring(0, 70)
+      : "📎 Sent an attachment";
     const message = `You have a new message from ${senderName}: "${preview}"`;
-    await createNotification(recipientId, NOTIFICATION_TYPES.MESSAGE_RECEIVED, message, messageId, "message");
+    await createNotification(
+      recipientId,
+      NOTIFICATION_TYPES.MESSAGE_RECEIVED,
+      message,
+      messageId,
+      "message"
+    );
     await NotificationCreators.chatsAdmin(senderId, recipientId, messageId, preview);
   },
 
@@ -135,8 +179,14 @@ export const NotificationCreators = {
     const senderName = await getUserName(senderId);
     const receiverName = receiverId ? await getUserName(receiverId) : "System";
     const adminIds = await getAdmins();
-    const message = `${senderName} has sent a message to ${receiverName}: "${contentPreview}"`;
-    await createBulkNotifications(adminIds, NOTIFICATION_TYPES.CHATS_ADMIN, message, messageId, "message");
+    const message = `${senderName} sent a message to ${receiverName}: "${contentPreview}"`;
+    await createBulkNotifications(
+      adminIds,
+      NOTIFICATION_TYPES.CHATS_ADMIN,
+      message,
+      messageId,
+      "message"
+    );
   },
 
   systemAnnouncement: async (adminId, messageText, userIds = []) => {
@@ -144,13 +194,26 @@ export const NotificationCreators = {
     const message = `📢 ${adminName} announced: ${messageText}`;
     let recipients = userIds;
     if (!recipients.length) {
-      recipients = (await pool.query(`SELECT id FROM users WHERE is_deleted = false`)).rows.map((r) => r.id);
+      recipients = (
+        await pool.query(`SELECT id FROM users WHERE is_deleted = false`)
+      ).rows.map((r) => r.id);
     }
-    await createBulkNotifications(recipients, NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT, message, null, "system");
+    await createBulkNotifications(
+      recipients,
+      NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
+      message,
+      null,
+      "system"
+    );
   },
 };
 
-export const getUserNotifications = async (userId, limit = 50, offset = 0, unreadOnly = false) => {
+export const getUserNotifications = async (
+  userId,
+  limit = 50,
+  offset = 0,
+  unreadOnly = false
+) => {
   const query = `
     SELECT * FROM notifications
     WHERE user_id = $1 ${unreadOnly ? "AND read_status = false" : ""}

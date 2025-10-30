@@ -68,35 +68,38 @@ export const createProject = async (req, res) => {
     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
     const insertQuery = `
-      INSERT INTO projects (
-        user_id, category_id, sub_category_id, sub_sub_category_id,
-        title, description, budget, duration_days, duration_hours,
-        project_type, budget_min, budget_max, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, 'in_progress', false
-      ) RETURNING *;
-    `;
+  INSERT INTO projects (
+    user_id, category_id, sub_category_id, sub_sub_category_id,
+    title, description, budget, duration_days, duration_hours,
+    project_type, budget_min, budget_max, hourly_rate,
+    preferred_skills, status, completion_status, is_deleted, cover_pic
+  )
+  VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+    $10, $11, $12, $13, $14, $15, 'in_progress', false, $16
+  )
+  RETURNING *;
+`;
 
-    const { rows } = await pool.query(insertQuery, [
-      userId,
-      category_id,
-      sub_category_id,
-      sub_sub_category_id,
-      title,
-      description,
-      budget || null,
-      durationDaysValue,
-      durationHoursValue,
-      project_type,
-      budget_min || null,
-      budget_max || null,
-      hourly_rate || null,
-      preferred_skills || [],
-      projectStatus
-    ]);
-
+const { rows } = await pool.query(insertQuery, [
+  userId,
+  category_id,
+  sub_category_id,
+  sub_sub_category_id,
+  title,
+  description,
+  budget || null,
+  durationDaysValue,
+  durationHoursValue,
+  project_type,
+  budget_min || null,
+  budget_max || null,
+  hourly_rate || null,
+  preferred_skills || [],
+  projectStatus,
+  cover_pic ||
+    "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.istockphoto.com%2Fstock-photos%2Fnature-and-landscapes&psig=AOvVaw03HjB__mFixz4LeBruhuQC&ust=1761918529809000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCNDCvIiIzJADFQAAAAAdAAAAABAE"
+]);
     const project = rows[0];
 
     let amountToPay = null;

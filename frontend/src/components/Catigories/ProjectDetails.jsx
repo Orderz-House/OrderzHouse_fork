@@ -1,8 +1,16 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getProjectByIdApi } from "./api/projects";
-import { getTaskByIdApi } from "./api/tasks";
+import {
+  getTaskByIdApi,
+  requestTaskApi,
+  submitPaymentProofApi,
+  submitWorkCompletionApi,
+  resubmitWorkCompletionApi,
+  approveWorkCompletionApi,
+  addTaskFilesApi,
+} from "./api/tasks";
 import { useSelector } from "react-redux";
 
 const THEME = "#028090";
@@ -14,11 +22,8 @@ export default function ProjectDetails({ mode: propMode }) {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
 
-
   // infer mode based on URL (/tasks or /projects)
-  const inferredMode = location.pathname.startsWith("/tasks")
-    ? "tasks"
-    : "projects";
+  const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
   const mode = propMode || inferredMode;
 
   // read-only & role info
@@ -26,17 +31,24 @@ export default function ProjectDetails({ mode: propMode }) {
   const roleLabel = location.state?.role || "guest";
 
   const { userData } = useSelector((s) => s?.auth || {}) || {};
-  const roleIdFromRedux =
-    userData?.role_id ?? userData?.roleId ?? userData?.role ?? null;
+  const roleIdFromRedux = userData?.role_id ?? userData?.roleId ?? userData?.role ?? null;
   const roleId =
     (typeof roleIdFromRedux === "number" ? roleIdFromRedux : null) ??
-    (typeof window !== "undefined" &&
-    /^\d+$/.test(localStorage.getItem("role") || "")
+    (typeof window !== "undefined" && /^\d+$/.test(localStorage.getItem("role") || "")
       ? Number(localStorage.getItem("role"))
       : null);
 
   const isClient = roleId === 2;
   const isFreelancer = roleId === 3;
+
+  // loading flags
+  const [busy, setBusy] = useState(false);
+
+  // file inputs refs (لا نغيّر الواجهة—نضيف inputs مخفية)
+  const paymentInputRef = useRef(null);
+  const submitWorkInputRef = useRef(null);
+  const resubmitWorkInputRef = useRef(null);
+  const addFilesInputRef = useRef(null);
 
   useEffect(() => {
     const stateObj = location.state?.project;
@@ -49,7 +61,10 @@ export default function ProjectDetails({ mode: propMode }) {
     const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
     loader(id)
       .then((res) => setItem(res.task || res.project || res))
-      .catch(console.error);
+      .catch((e) => {
+        console.error(e);
+        alert("Failed to load details.");
+      });
   }, [id, location.state, mode]);
 
   // Loading placeholder
@@ -82,7 +97,7 @@ export default function ProjectDetails({ mode: propMode }) {
   const projectType = item?.type;
   const isTasks = mode === "tasks";
 
-  // permission logic
+  // permission logic (نفس منطقك الأصلي)
   let canAccept = true;
   if (isTasks && isFreelancer) canAccept = false;
   if (!isTasks && isClient) canAccept = false;
@@ -102,20 +117,203 @@ export default function ProjectDetails({ mode: propMode }) {
       : "Clients can't accept projects. You can accept tasks."
     : "";
 
-  const contactTitle = !canContact
-    ? "Clients can't contact sellers on projects."
-    : "";
+  const contactTitle = !canContact ? "Clients can't contact sellers on projects." : "";
 
   const acceptClasses =
     "w-full h-11 rounded-xl text-white font-semibold transition " +
-    (canAccept
-      ? "hover:shadow-lg"
-      : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
+    (canAccept ? "hover:shadow-lg" : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
   const contactClasses =
     "w-full h-11 rounded-xl border text-slate-700 font-semibold transition " +
-    (canContact
-      ? "hover:bg-slate-50"
-      : "opacity-40 grayscale cursor-not-allowed hover:bg-white");
+    (canContact ? "hover:bg-slate-50" : "opacity-40 grayscale cursor-not-allowed hover:bg-white");
+
+  /* =========================
+     Handlers — real API calls
+  ==========================*/
+
+  // 1) Client requests a task
+  const onRequestTask = async () => {
+    if (!isTasks) {
+      alert("Requesting is only for tasks.");
+      return;
+    }
+    if (!isClient) {
+      alert("Only clients can request tasks.");
+      return;
+    }
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      // رسالة اختيارية من المستخدم (بسيطة بدون UI إضافي)
+      const msg = window.prompt("Add a note to the freelancer (optional):", "") || "";
+      const fd = new FormData();
+      fd.append("message", msg);
+      const res = await requestTaskApi(id, fd);
+      alert(res?.message || "Task requested successfully.");
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || e?.data?.message || "Failed to request task.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 2) Contact — go to chat route
+  const onContact = () => {
+    // نوجّه لمسار الشات الخاص بالتاسك
+    // عندك ChatPage يقرأ projectId | taskId من useParams
+    // فبنروح على /chat/task/:taskId
+    if (isTasks) navigate(`/chat/task/${id}`);
+    else navigate(`/chat/project/${id}`);
+  };
+
+  // 3) Client: submit payment proof
+  const triggerPaymentUpload = () => paymentInputRef.current?.click();
+  const onPaymentSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isClient) return alert("Only clients can upload payment proofs.");
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await submitPaymentProofApi(id, fd); // id هنا taskId (حسب باك إندك)
+      alert(res?.message || "Payment proof submitted. Awaiting admin confirmation.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to submit payment proof.");
+    } finally {
+      setBusy(false);
+      e.target.value = ""; // reset
+    }
+  };
+
+  // 4) Freelancer: submit work
+  const triggerSubmitWork = () => submitWorkInputRef.current?.click();
+  const onSubmitWorkSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (!isFreelancer) return alert("Only freelancers can submit work.");
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+
+      // انت تحتاج requestId، عندك هنا فقط taskId
+      // غالبًا عندك واجهة تعرض طلبات (request list) وتستخرج منها requestId
+      // كحل مؤقت: اطلب من المستخدم إدخال requestId
+      const reqId = window.prompt("Enter requestId to submit work for:", "");
+      if (!reqId) throw new Error("requestId is required.");
+      const res = await submitWorkCompletionApi(reqId, fd);
+      alert(res?.message || "Work submitted for review.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to submit work.");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  // 5) Freelancer: resubmit (after revisions)
+  const triggerResubmit = () => resubmitWorkInputRef.current?.click();
+  const onResubmitSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (!isFreelancer) return alert("Only freelancers can resubmit.");
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      const reqId = window.prompt("Enter requestId to resubmit for:", "");
+      if (!reqId) throw new Error("requestId is required.");
+      const res = await resubmitWorkCompletionApi(reqId, fd);
+      alert(res?.message || "Work resubmitted for review.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to resubmit.");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  // 6) Client: approve or ask for review
+  const onClientApprove = async () => {
+    if (!isClient) return alert("Only clients can approve.");
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const reqId = window.prompt("Enter requestId to approve:", "");
+      if (!reqId) throw new Error("requestId is required.");
+      const fd = new FormData(); // بدون ملفات
+      const res = await approveWorkCompletionApi(reqId, "completed", fd);
+      alert(res?.message || "Work marked completed.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to approve.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onClientRequestReview = async () => {
+    if (!isClient) return alert("Only clients can request revisions.");
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const reqId = window.prompt("Enter requestId to request review for:", "");
+      if (!reqId) throw new Error("requestId is required.");
+
+      // يمكن العميل يرفق ملفات توضيحية للمراجعة
+      // عشان ما نغيّر الواجهة، بس نسأل لو بده يرفع الآن
+      const withFiles = window.confirm("Attach reference files for review?");
+      const fd = new FormData();
+      if (withFiles) {
+        // إن احتجت رفع ملفات فعليًا، استخدم addTaskFiles تحت
+        alert("Use 'Add lifecycle files' button to upload review references.");
+      }
+      const res = await approveWorkCompletionApi(reqId, "reviewing", fd);
+      alert(res?.message || "Sent back for reviewing.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to send for review.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 7) Shared: add files during lifecycle (in_progress / reviewing)
+  const triggerAddFiles = () => addFilesInputRef.current?.click();
+  const onAddFilesSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (busy) return;
+
+    try {
+      setBusy(true);
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      const reqId = window.prompt("Enter requestId to attach files to:", "");
+      if (!reqId) throw new Error("requestId is required.");
+      const res = await addTaskFilesApi(reqId, fd);
+      alert(res?.message || "Files added successfully.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || err?.data?.message || "Failed to add files.");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  };
 
   return (
     <section className="relative bg-white">
@@ -145,11 +343,7 @@ export default function ProjectDetails({ mode: propMode }) {
             {cover && (
               <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mb-4">
                 <div className="aspect-[16/9] bg-slate-50">
-                  <img
-                    src={cover}
-                    alt={title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={cover} alt={title} className="w-full h-full object-cover" />
                 </div>
               </div>
             )}
@@ -172,18 +366,13 @@ export default function ProjectDetails({ mode: propMode }) {
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 text-sm">Budget</span>
-                    <span
-                      className="text-2xl font-black"
-                      style={{ color: THEME_DARK }}
-                    >
+                    <span className="text-2xl font-black" style={{ color: THEME_DARK }}>
                       ${price ?? "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">Duration</span>
-                    <span className="font-semibold text-slate-700">
-                      {duration} day(s)
-                    </span>
+                    <span className="font-semibold text-slate-700">{duration} day(s)</span>
                   </div>
                 </div>
               </div>
@@ -194,18 +383,20 @@ export default function ProjectDetails({ mode: propMode }) {
                   <button
                     className={acceptClasses}
                     style={{ backgroundColor: THEME }}
-                    disabled={!canAccept}
-                    aria-disabled={!canAccept}
+                    disabled={!canAccept || busy}
+                    aria-disabled={!canAccept || busy}
+                    onClick={isTasks ? onRequestTask : undefined}
                   >
-                    {acceptLabel}
+                    {busy ? "Please wait..." : acceptLabel}
                   </button>
                 </div>
 
                 <div title={contactTitle || undefined}>
                   <button
                     className={contactClasses}
-                    disabled={!canContact}
-                    aria-disabled={!canContact}
+                    disabled={!canContact || busy}
+                    aria-disabled={!canContact || busy}
+                    onClick={onContact}
                   >
                     {contactLabel}
                   </button>
@@ -214,18 +405,112 @@ export default function ProjectDetails({ mode: propMode }) {
                 {/* Extra details */}
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure
-                    checkout
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure checkout
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />{" "}
-                    Money-back guarantee
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Money-back guarantee
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7
-                    support
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7 support
                   </li>
                 </ul>
+
+                {/* ====== Lifecycle quick actions (اختياريّة) ====== */}
+                <div className="mt-6 border-t pt-4 space-y-2">
+                  {/* Client only: payment proof */}
+                  {isClient && isTasks && (
+                    <>
+                      <button
+                        className="w-full h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={triggerPaymentUpload}
+                        disabled={busy}
+                      >
+                        Upload payment proof
+                      </button>
+                      <input
+                        ref={paymentInputRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        hidden
+                        onChange={onPaymentSelected}
+                      />
+                    </>
+                  )}
+
+                  {/* Freelancer only: submit / resubmit */}
+                  {isFreelancer && isTasks && (
+                    <>
+                      <button
+                        className="w-full h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={triggerSubmitWork}
+                        disabled={busy}
+                      >
+                        Submit work
+                      </button>
+                      <input
+                        ref={submitWorkInputRef}
+                        type="file"
+                        multiple
+                        hidden
+                        onChange={onSubmitWorkSelected}
+                      />
+                      <button
+                        className="w-full h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={triggerResubmit}
+                        disabled={busy}
+                      >
+                        Resubmit after review
+                      </button>
+                      <input
+                        ref={resubmitWorkInputRef}
+                        type="file"
+                        multiple
+                        hidden
+                        onChange={onResubmitSelected}
+                      />
+                    </>
+                  )}
+
+                  {/* Client only: approve / request review */}
+                  {isClient && isTasks && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        className="h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={onClientApprove}
+                        disabled={busy}
+                      >
+                        Approve completion
+                      </button>
+                      <button
+                        className="h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={onClientRequestReview}
+                        disabled={busy}
+                      >
+                        Ask for review
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Shared: add lifecycle files */}
+                  {isTasks && (
+                    <>
+                      <button
+                        className="w-full h-10 rounded-lg border text-sm hover:bg-slate-50"
+                        onClick={triggerAddFiles}
+                        disabled={busy}
+                      >
+                        Add lifecycle files
+                      </button>
+                      <input
+                        ref={addFilesInputRef}
+                        type="file"
+                        multiple
+                        hidden
+                        onChange={onAddFilesSelected}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
