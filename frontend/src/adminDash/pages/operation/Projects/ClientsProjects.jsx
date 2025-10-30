@@ -88,6 +88,7 @@ export default function Projects() {
         desktopAsCards
         crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
         renderActions={renderActions}
+        // ⬇️ النقرة على صورة الكارد تفتح صفحة التفاصيل مع بادئة الدور
         onCardClick={(row, h) =>
           navigate(`${base}/project/${h.getId(row)}`, {
             state: { project: row, readOnly: true, role: "client" },
