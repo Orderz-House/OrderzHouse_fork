@@ -1,10 +1,22 @@
-// pages/operation/Projects/ClientsProjects.jsx
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import PeopleTable from "../../Tables";
-import { MessageSquare, SendHorizontal } from "lucide-react";
+import {
+  MessageSquare,
+  SendHorizontal,
+  X,
+  RefreshCw,
+  Check,
+  Undo2,
+  Loader2,
+  FileText,
+  Code,
+  Palette,
+  Link2,
+} from "lucide-react";
 
 /* ---------- Theme ---------- */
 const T = { primary: "#028090", dark: "#05668D", ring: "rgba(15,23,42,.10)" };
@@ -20,32 +32,14 @@ const api = axios.create({
 export default function Projects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
+  const location = useLocation();
+  const pathname = location.pathname || "";
+  const base = pathname.startsWith("/client") ? "/client" : pathname.startsWith("/freelancer") ? "/freelancer" : "/admin";
 
-  // 🔹 Filters Setup
-  const filters = [
-    {
-      key: "status",
-      label: "Status",
-      options: [
-        { label: "All", value: "" },
-        { label: "Pending", value: "pending" },
-        { label: "Bidding", value: "bidding" },
-        { label: "Active", value: "active" },
-        { label: "Completed", value: "completed" },
-        { label: "Cancelled", value: "cancelled" },
-      ],
-    },
-    {
-      key: "created_at",
-      label: "Sort by Date",
-      options: [
-        { label: "Newest First", value: "desc" },
-        { label: "Oldest First", value: "asc" },
-      ],
-    },
-  ];
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewFor, setReviewFor] = useState(null);
 
-  // 🔹 Card Actions
+  // Actions inside project cards
   const renderActions = (row, helpers) => {
     const id = helpers.getId(row);
     return (
@@ -65,16 +59,12 @@ export default function Projects() {
           Chat
         </button>
         <button
-          onClick={() =>
-            navigate(`/project/${id}`, {
-              state: { project: row, readOnly: true },
-            })
-          }
+          onClick={() => { setReviewFor(row); setReviewOpen(true); }}
           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
           style={{ backgroundColor: T.primary }}
         >
           <SendHorizontal className="w-3 h-3" />
-          View
+          Receive
         </button>
       </div>
     );
@@ -99,280 +89,101 @@ export default function Projects() {
         crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
         renderActions={renderActions}
         onCardClick={(row, h) =>
-          navigate(`/project/${h.getId(row)}`, {
+          navigate(`${base}/project/${h.getId(row)}`, {
             state: { project: row, readOnly: true, role: "client" },
           })
         }
       />
 
       {reviewOpen && reviewFor && (
-        <ClientReviewDrawer
+        <ReviewModal
           project={reviewFor}
-          onClose={() => {
-            setReviewOpen(false);
-            setReviewFor(null);
-          }}
-          onApprove={async (projectId, versionId) => {
-            await api.post(
-              `/api/client/projects/${projectId}/approve`,
-              { versionId },
-              { headers: token ? { authorization: `Bearer ${token}` } : undefined }
-            );
-          }}
-          onRequestChanges={async (projectId, versionId, message) => {
-            await api.post(
-              `/api/client/projects/${projectId}/request-changes`,
-              { versionId, message },
-              { headers: token ? { authorization: `Bearer ${token}` } : undefined }
-            );
-          }}
-          token={token}
+          onClose={() => { setReviewOpen(false); setReviewFor(null); }}
+          onSubmit={(payload) => submitClientReview({ project: reviewFor, payload, token })}
         />
       )}
     </>
   );
 }
 
-/* ===================== Client Review Drawer ===================== */
-function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges, token }) {
-  const [loading, setLoading] = useState(true);
-  const [versions, setVersions] = useState([]);
-  const [requesting, setRequesting] = useState(false);
-  const [requestText, setRequestText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+/* ===================== Review Modal ===================== */
+function ReviewModal({ project, onClose, onSubmit }) {
+  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(5);
+  const [loading, setLoading] = useState(false);
 
-  // Lock scroll while drawer open
-  useState(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  // Fetch delivery versions
-  useState(() => {
-    let alive = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`, {
-          headers: token ? { authorization: `Bearer ${token}` } : undefined,
-        });
-        if (!alive) return;
-        const list = Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data)
-          ? data
-          : [];
-        list.sort((a, b) => new Date(b.at) - new Date(a.at));
-        setVersions(list);
-      } catch {
-        if (!alive) return;
-        setVersions([]);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => (alive = false);
-  }, [project?.id, token]);
-
-  const latest = versions[0];
-
-  const approve = async () => {
-    if (!latest) return;
-    setSubmitting(true);
-    await onApprove(project.id, latest.id);
-    setSubmitting(false);
-    onClose();
-  };
-
-  const request = async () => {
-    if (!latest) return;
-    setSubmitting(true);
-    await onRequestChanges(project.id, latest.id, requestText.trim());
-    setSubmitting(false);
-    onClose();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onSubmit({ comment, rating });
+      onClose();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999]">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-slate-800">
-              Receive Project — {project.title}
-            </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
-              <X className="w-5 h-5 text-slate-500" />
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-x-4 top-8 bottom-8 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Review Delivery</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-lg">
+              <X className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Body */}
-          <div className="p-5 space-y-5">
-            {/* Latest delivery */}
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="flex items-center justify-between">
-                <div className="font-medium text-slate-800">Latest delivery</div>
-                <button
-                  className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
-                  style={ringStyle}
-                  onClick={() => {
-                    setLoading(true);
-                    setTimeout(() => setLoading(false), 400);
-                  }}
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
-              </div>
-
-              {!latest ? (
-                <div className="text-sm text-slate-500 mt-3">No deliveries yet.</div>
-              ) : (
-                <div className="mt-3 space-y-3">
-                  <div className="text-xs text-slate-500">
-                    Delivered on {new Date(latest.at).toLocaleString()}
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <Field label="Primary">
-                      <a
-                        className="text-sky-700 hover:underline break-all"
-                        href={latest.links?.primary}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {latest.links?.primary}
-                      </a>
-                    </Field>
-                    {latest.links?.secondary && (
-                      <Field label="Secondary">
-                        <a
-                          className="text-sky-700 hover:underline break-all"
-                          href={latest.links?.secondary}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {latest.links?.secondary}
-                        </a>
-                      </Field>
-                    )}
-                  </div>
-
-                  {latest.notes && (
-                    <Field label="Notes">
-                      <div className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {latest.notes}
-                      </div>
-                    </Field>
-                  )}
-
-                  <Field label="Attachments">
-                    {latest.attachments?.length ? (
-                      <ul className="list-disc ml-4 text-sm text-slate-700">
-                        {latest.attachments.map((f) => (
-                          <li key={f}>{f}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="text-slate-500 text-sm">—</span>
-                    )}
-                  </Field>
-                </div>
-              )}
-            </section>
-
-            {/* Approve / Request changes */}
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={!latest || submitting}
-                  onClick={approve}
-                  className="h-11 px-4 rounded-xl text-white text-sm inline-flex items-center gap-2"
-                  style={{
-                    backgroundColor: T.primary,
-                    opacity: !latest || submitting ? 0.75 : 1,
-                  }}
-                >
-                  <Check className="w-4 h-4" /> Approve
-                </button>
-                <button
-                  type="button"
-                  disabled={!latest || submitting}
-                  onClick={() => setRequesting((v) => !v)}
-                  className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm inline-flex items-center gap-2"
-                  style={ringStyle}
-                >
-                  <Undo2 className="w-4 h-4" /> Request changes
-                </button>
-              </div>
-
-              {requesting && (
-                <div className="mt-3">
-                  <textarea
-                    value={requestText}
-                    onChange={(e) => setRequestText(e.target.value)}
-                    placeholder="Briefly describe what needs to be changed..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none min-h-[80px]"
-                    style={ringStyle}
-                  />
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      disabled={!requestText.trim() || submitting}
-                      onClick={request}
-                      className="h-10 px-3 rounded-xl text-white text-sm"
-                      style={{
-                        backgroundColor: T.dark,
-                        opacity: !requestText.trim() || submitting ? 0.75 : 1,
-                      }}
-                    >
-                      Send request
-                    </button>
-                    <button
-                      type="button"
-                      className="h-10 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
-                      style={ringStyle}
-                      onClick={() => setRequesting(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* Delivery history */}
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="font-medium text-slate-800">History</div>
-              {versions.length === 0 ? (
-                <div className="text-sm text-slate-500 mt-2">No history yet.</div>
-              ) : (
-                <ol className="mt-3 space-y-3">
-                  {versions.map((v) => (
-                    <li key={v.id} className="rounded-xl bg-white p-3" style={ringStyle}>
-                      <div className="text-xs text-slate-500">
-                        {new Date(v.at).toLocaleString()} — {v.id}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-700">
-                        {v.notes || "—"}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-          </div>
         </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col h-[calc(100%-57px)]">
+          <div className="flex-1 p-5 space-y-4 overflow-auto">
+            <Field label="Rating">
+              <div className="inline-flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`w-9 h-9 rounded-full ring-1 ${r <= rating ? "bg-yellow-400/90 ring-yellow-400" : "bg-white ring-slate-200"}`}
+                    onClick={() => setRating(r)}
+                    title={`Set rating ${r}`}
+                  />
+                ))}
+              </div>
+            </Field>
+            <Field label="Comment">
+              <textarea
+                className="w-full h-32 resize-none rounded-xl ring-1 ring-slate-200 p-3 focus:outline-none focus:ring-slate-300"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Write your feedback..."
+              />
+            </Field>
+          </div>
+
+          <div className="p-5 border-t border-slate-100 flex items-center gap-3">
+            <button type="button" onClick={onClose} className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 ring-1 ring-slate-200 text-slate-700 text-sm">
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="h-11 px-4 rounded-xl text-white text-sm hover:shadow" style={{ backgroundColor: T.primary, opacity: loading ? 0.75 : 1 }}>
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Submit Review
+            </button>
+          </div>
+        </form>
       </div>
     </div>,
     document.body
   );
 }
 
-/* ---------- Helper ---------- */
+/* ---------- helpers ---------- */
+async function submitClientReview({ project, payload, token }) {
+  await api.post(`/api/client/projects/${project.id}/reviews`, payload, {
+    headers: token ? { authorization: `Bearer ${token}` } : undefined,
+  });
+}
+
 function Field({ label, children }) {
   return (
     <div>

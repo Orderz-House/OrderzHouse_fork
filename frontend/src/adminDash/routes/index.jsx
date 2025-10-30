@@ -13,9 +13,9 @@ import Appointments from "../pages/operation/Appointments.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
 import Projects from "../pages/operation/Projects/ClientsProjects.jsx";
 
-import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
+// import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
 import ClientsProjects from "../pages/operation/Projects/ClientsProjects.jsx";
-import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
+// import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
 import ProjectDetails from "../pages/operation/Projects/ProjectDetails.jsx";
 
 import Blogs from "../pages/community/Blogs.jsx";
@@ -28,7 +28,7 @@ import Profile from "../pages/profile.jsx";
 function ProjectsSwitch() {
   const { pathname } = useLocation();
   if (pathname.startsWith("/client")) return <ClientsProjects />;
-  if (pathname.startsWith("/freelancer")) return <FreelancersProjects />;
+  // if (pathname.startsWith("/freelancer")) return <FreelancersProjects />;
   return <Navigate to="/admin/operation/projects" replace />;
 }
 
@@ -53,7 +53,7 @@ export default function AdminRouter() {
         <Route path="operation/appointments" element={<Appointments />} />
         <Route path="operation/verifications" element={<Verifications />} />
 
-        <Route path="operation/projects" element={<AdminProjects />} />
+        {/* <Route path="operation/projects" element={<AdminProjects />} /> */}
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
 
