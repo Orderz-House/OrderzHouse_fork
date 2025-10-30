@@ -28,6 +28,7 @@ import {
   getProjectsBySubCategoryId,
   getProjectsBySubSubCategoryId,
   getProjectById,
+  getProjectsByUserRole
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 const projectsRouter = express.Router();
@@ -35,11 +36,15 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 projectsRouter.post("/", authentication, createProject);
 
+projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
+
+
 projectsRouter.get("/:projectId", authentication, getProjectById);
 
 projectsRouter.put("/hourly/:projectId", authentication, completeHourlyProject);
 
 projectsRouter.post("/:projectId/assign", authentication, assignFreelancer);
+
 
 projectsRouter.post(
   "/:projectId/submit",
