@@ -220,7 +220,7 @@ export const createBlog = async (req, res) => {
       ...transformed,
     });
   } catch (error) {
-    console.error("🔥 CREATE BLOG ERROR:", error);
+    console.error("CREATE BLOG ERROR:", error);
     res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 };

@@ -99,6 +99,7 @@ const mockTasks = [
   },
 ];
 
+
 /* ============= NEW: Courses mock ============= */
 const mockCourses = [
   {
@@ -111,7 +112,10 @@ const mockCourses = [
     status: "Published",
     price: 49,
     description: "Learn fundamentals of layout, color, and typography.",
-    progress: 40, // for freelancer view
+    image: "https://picsum.photos/seed/ui/960/540",
+    progress: 40,             
+    assignedTo: "f-1",  
+    assignedToName: "Ali Hassan",
   },
   {
     id: "course-2",
@@ -123,7 +127,9 @@ const mockCourses = [
     status: "Draft",
     price: 99,
     description: "Build SPAs with React, hooks, and routing.",
+    image: "https://picsum.photos/seed/react/960/540",
     progress: 0,
+    assignedTo: null,
   },
   {
     id: "course-3",
@@ -135,7 +141,10 @@ const mockCourses = [
     status: "Published",
     price: 39,
     description: "Essential marketing strategies for small teams.",
+    image: "https://picsum.photos/seed/marketing/960/540",
     progress: 75,
+    assignedTo: "f-2",
+    assignedToName: "Sara Noor",
   },
 ];
 
@@ -207,12 +216,36 @@ export function mockFetch(endpoint = "", params = {}) {
   if (/tasks(\/.*)?$/.test(endpoint))   return applyFilters(mockTasks, params);
 
   // courses listing + single by id
-  if (endpoint === "/courses")          return applyFilters(mockCourses, params);
-  if (/^\/courses\/[^/]+$/.test(endpoint)) {
-    const id = endpoint.split("/")[2];
-    const one = mockCourses.find(x => (x.id ?? x._id) === id);
+  /* ============= Courses (admin / freelancer / generic) ============= */
+if (/courses(\/.*)?$/.test(endpoint)) {
+  // تفاصيل كورس واحد: /courses/:id أو /api/.../courses/:id
+  if (/\/courses\/[^/]+$/.test(endpoint)) {
+    const id = endpoint.split("/").pop();
+    const one = mockCourses.find((x) => (x.id ?? x._id) === id);
     return one ?? null;
   }
+
+  // قائمة الكورسات
+  let list = applyFilters(mockCourses, params);
+
+  // حالة الفريلانسر: نعرض فقط المنشورة + (اختياريًا) المخصصة له
+  if (/\/freelancer\/courses$/.test(endpoint)) {
+    const currentFreelancerId = params.userId || "f-1"; // لأغراض الموك
+    list = list.filter(
+      (c) => c.status === "Published" && (!c.assignedTo || c.assignedTo === currentFreelancerId)
+    );
+    return list;
+  }
+
+  // حالة الأدمن: كل شيء
+  if (/\/admin\/courses$/.test(endpoint)) {
+    return list;
+  }
+
+  // مسار عام: /courses
+  return list;
+}
+
 
   // payments (return shape {items, totals} لأن الصفحة تتوقّعه)
   if (/^\/payments$/.test(endpoint)) {

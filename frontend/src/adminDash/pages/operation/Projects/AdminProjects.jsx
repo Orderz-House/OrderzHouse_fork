@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import PeopleTable from "../Tables";
+import PeopleTable from "../../Tables";
 import {
   Eye,
   MessageSquare,
@@ -618,3 +618,4 @@ function Field({ label, children }) {
   );
 }
 function capitalize(s) { return (s || "").charAt(0).toUpperCase() + (s || "").slice(1); }
+
