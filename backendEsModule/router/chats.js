@@ -3,18 +3,22 @@ import {
   getMessagesByProjectId,
   getMessagesByTaskId,
   createMessage,
+  getAllChatsForAdmin,
 } from "../controller/chats.js";
 import { authentication } from "../middleware/authentication.js";
 
 const chatsRouter = express.Router();
 
-// Get all messages by project
+// Project chat
 chatsRouter.get("/project/:projectId/messages", authentication, getMessagesByProjectId);
 
-// Get all messages by task
+// Task chat
 chatsRouter.get("/task/:taskId/messages", authentication, getMessagesByTaskId);
 
-// Create a new message
+// Create message (project OR task)
 chatsRouter.post("/messages", authentication, createMessage);
+
+// Admin — all chats
+chatsRouter.get("/admin/all-chats", authentication, getAllChatsForAdmin);
 
 export default chatsRouter;

@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   register,
   login,
@@ -28,8 +29,12 @@ import {
   getUserById,
   sendOtpController,
   verifyEmailOtp,
+  uploadProfilePic,
+
 } from "../controller/user.js";
 import { authentication } from "../middleware/authentication.js";
+const upload = multer({ storage: multer.memoryStorage() });
+
 
 const usersRouter = express.Router();
 
@@ -47,6 +52,7 @@ usersRouter.get("/allfreelance", getFreelance);
 
 // ==================== AUTHENTICATED ROUTES ====================
 usersRouter.get("/getUserdata", authentication, getUserById);
+usersRouter.post("/uploadProfilePic", authentication, upload.single("file"), uploadProfilePic);
 usersRouter.get("/freelancers/:id", authentication, getFreelanceById);
 usersRouter.get("/freelancers", authentication, getFreelance);
 
@@ -59,7 +65,7 @@ usersRouter.delete("/portfolio", authentication, deletePortfolioFreelancer);
 // ==================== USER MANAGEMENT ROUTES ====================
 usersRouter.post("/view", authentication, viewUsers);
 usersRouter.delete("/delete/:userId", authentication, deleteUser);
-usersRouter.put("/edit", authentication, editUserSelf);
+usersRouter.put("/edit", authentication, upload.array("files"), editUserSelf);
 usersRouter.get("/freelancers/all", authentication, getAllFreelancers);
 usersRouter.delete("/freelancers/delete/:freelancerid", authentication, deleteFreelancerById);
 usersRouter.get("/list/online", authentication, listOnlineUsers);

@@ -201,7 +201,6 @@ export default function Payments() {
 
     
 
-      <section className={`${card}`} style={ringStyle}>
         <PeopleTable
           title={tableTitle}
           addLabel="Add Payment"
@@ -212,7 +211,6 @@ export default function Payments() {
           crudConfig={crudConfig}
           // token={token}
         />
-      </section>
     </div>
   );
 }

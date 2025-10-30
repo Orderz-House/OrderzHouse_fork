@@ -1,28 +1,24 @@
-import  pool  from "../models/db.js";
+import pool from "../models/db.js";
 import {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   getNotificationCount,
   createNotification,
-  cleanupOldNotifications
+  cleanupOldNotifications,
+  NOTIFICATION_TYPES,
 } from "../services/notificationService.js";
-import { LogCreators, ACTION_TYPES, ENTITY_TYPES } from "../services/loggingService.js";
+import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 
-/**
- * Get notifications for the authenticated user
- * @route GET /notifications
- * @access Private
- */
+/** GET /notifications */
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { limit = 50, offset = 0, unreadOnly = false } = req.query;
 
-    // Validate parameters
-    const parsedLimit = Math.min(parseInt(limit) || 50, 100); // Max 100
+    const parsedLimit = Math.min(parseInt(limit) || 50, 100);
     const parsedOffset = Math.max(parseInt(offset) || 0, 0);
-    const parsedUnreadOnly = unreadOnly === 'true';
+    const parsedUnreadOnly = unreadOnly === "true";
 
     const notifications = await getUserNotifications(
       userId,
@@ -31,13 +27,12 @@ export const getNotifications = async (req, res) => {
       parsedUnreadOnly
     );
 
-    // Log the action
     await LogCreators.projectOperation(
       userId,
-      ACTION_TYPES.USER_UPDATE,
+      ACTION_TYPES.USER_READ,
       null,
       true,
-      { action: 'get_notifications', count: notifications.length }
+      { action: "get_notifications", count: notifications.length }
     );
 
     res.json({
@@ -46,34 +41,28 @@ export const getNotifications = async (req, res) => {
       pagination: {
         limit: parsedLimit,
         offset: parsedOffset,
-        count: notifications.length
-      }
+        count: notifications.length,
+      },
     });
-
   } catch (error) {
-    console.error('Error getting notifications:', error);
-    
-    // Log the error
+    console.error("Error getting notifications:", error);
+
     await LogCreators.projectOperation(
       req.token?.userId,
-      ACTION_TYPES.USER_UPDATE,
+      ACTION_TYPES.USER_READ,
       null,
       false,
-      { action: 'get_notifications', error: error.message }
+      { action: "get_notifications", error: error.message }
     );
 
     res.status(500).json({
       success: false,
-      message: 'Failed to get notifications'
+      message: "Failed to get notifications",
     });
   }
 };
 
-/**
- * Mark a specific notification as read
- * @route PUT /notifications/:id/read
- * @access Private
- */
+/** PUT /notifications/:id/read */
 export const markAsRead = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -82,242 +71,131 @@ export const markAsRead = async (req, res) => {
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid notification ID'
+        message: "Invalid notification ID",
       });
     }
 
     const success = await markNotificationAsRead(parseInt(id), userId);
-
     if (!success) {
       return res.status(404).json({
         success: false,
-        message: 'Notification not found or access denied'
+        message: "Notification not found or access denied",
       });
     }
 
-    // Log the action
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.USER_UPDATE,
       null,
       true,
-      { action: 'mark_notification_read', notificationId: id }
+      { action: "mark_notification_read", notificationId: id }
     );
 
-    res.json({
-      success: true,
-      message: 'Notification marked as read'
-    });
-
+    res.json({ success: true, message: "Notification marked as read" });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      false,
-      { action: 'mark_notification_read', error: error.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to mark notification as read'
-    });
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({ success: false, message: "Failed to mark notification as read" });
   }
 };
 
-/**
- * Mark all notifications as read for the authenticated user
- * @route PUT /notifications/read-all
- * @access Private
- */
+/** PUT /notifications/read-all */
 export const markAllAsRead = async (req, res) => {
   try {
     const userId = req.token?.userId;
-
     const updatedCount = await markAllNotificationsAsRead(userId);
 
-    // Log the action
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.USER_UPDATE,
       null,
       true,
-      { action: 'mark_all_notifications_read', count: updatedCount }
+      { action: "mark_all_notifications_read", count: updatedCount }
     );
 
     res.json({
       success: true,
-      message: `Marked ${updatedCount} notifications as read`
+      message: `Marked ${updatedCount} notifications as read`,
     });
-
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      false,
-      { action: 'mark_all_notifications_read', error: error.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to mark notifications as read'
-    });
+    console.error("Error marking all notifications as read:", error);
+    res.status(500).json({ success: false, message: "Failed to mark notifications as read" });
   }
 };
 
-/**
- * Get notification count for the authenticated user
- * @route GET /notifications/count
- * @access Private
- */
+/** GET /notifications/count */
 export const getCount = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { unreadOnly = false } = req.query;
+    const parsedUnreadOnly = unreadOnly === "true";
 
-    const parsedUnreadOnly = unreadOnly === 'true';
     const count = await getNotificationCount(userId, parsedUnreadOnly);
 
-    res.json({
-      success: true,
-      count,
-      unreadOnly: parsedUnreadOnly
-    });
-
+    res.json({ success: true, count, unreadOnly: parsedUnreadOnly });
   } catch (error) {
-    console.error('Error getting notification count:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get notification count'
-    });
+    console.error("Error getting notification count:", error);
+    res.status(500).json({ success: false, message: "Failed to get notification count" });
   }
 };
 
-/**
- * Create a test notification (for testing purposes)
- * @route POST /notifications/test
- * @access Private
- */
+/** POST /notifications/test */
 export const createTestNotification = async (req, res) => {
   try {
     const userId = req.token?.userId;
-    const { message = 'Test notification' } = req.body;
+    const { message = "Test notification" } = req.body;
 
     const notification = await createNotification(
       userId,
-      'test',
+      NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
       message,
       null,
-      'test'
-    );
-
-    // Log the action
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      true,
-      { action: 'create_test_notification', notificationId: notification.id }
+      "test"
     );
 
     res.json({
       success: true,
-      message: 'Test notification created',
-      notification
+      message: "Test notification created",
+      notification,
     });
-
   } catch (error) {
-    console.error('Error creating test notification:', error);
-    
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      false,
-      { action: 'create_test_notification', error: error.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create test notification'
-    });
+    console.error("Error creating test notification:", error);
+    res.status(500).json({ success: false, message: "Failed to create test notification" });
   }
 };
 
-/**
- * Clean up old notifications (admin only)
- * @route DELETE /notifications/cleanup
- * @access Private (Admin)
- */
+/** DELETE /notifications/cleanup */
 export const cleanupNotifications = async (req, res) => {
   try {
     const userId = req.token?.userId;
     const { daysOld = 90 } = req.query;
 
-    // Check if user is admin (role_id = 1)
-    const { rows: userRows } = await pool.query(
+    const { rows } = await pool.query(
       `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
-
-    if (!userRows.length || userRows[0].role_id !== 1) {
+    if (!rows.length || rows[0].role_id !== 1) {
       return res.status(403).json({
         success: false,
-        message: 'Admin access required'
+        message: "Admin access required",
       });
     }
 
-    const parsedDaysOld = Math.max(parseInt(daysOld) || 90, 30); // Minimum 30 days
-    const deletedCount = await cleanupOldNotifications(parsedDaysOld);
-
-    // Log the action
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.SYSTEM_MAINTENANCE,
-      null,
-      true,
-      { action: 'cleanup_notifications', daysOld: parsedDaysOld, deletedCount }
-    );
+    const parsedDaysOld = Math.max(parseInt(daysOld) || 90, 30);
+    const rowCount = await cleanupOldNotifications(parsedDaysOld);
 
     res.json({
       success: true,
-      message: `Cleaned up ${deletedCount} old notifications`,
-      deletedCount,
-      daysOld: parsedDaysOld
+      message: `Cleaned up ${rowCount} old notifications`,
+      deletedCount: rowCount,
+      daysOld: parsedDaysOld,
     });
-
   } catch (error) {
-    console.error('Error cleaning up notifications:', error);
-    
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.SYSTEM_MAINTENANCE,
-      null,
-      false,
-      { action: 'cleanup_notifications', error: error.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cleanup notifications'
-    });
+    console.error("Error cleaning up notifications:", error);
+    res.status(500).json({ success: false, message: "Failed to cleanup notifications" });
   }
 };
 
-/**
- * Delete a specific notification
- * @route DELETE /notifications/:id
- * @access Private
- */
+/** DELETE /notifications/:id */
 export const deleteNotification = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -326,53 +204,26 @@ export const deleteNotification = async (req, res) => {
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid notification ID'
+        message: "Invalid notification ID",
       });
     }
 
-    // Delete the notification (only if it belongs to the user)
     const { rows } = await pool.query(
       `DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id`,
       [parseInt(id), userId]
     );
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       return res.status(404).json({
         success: false,
-        message: 'Notification not found or access denied'
+        message: "Notification not found or access denied",
       });
     }
 
-    // Log the action
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      true,
-      { action: 'delete_notification', notificationId: id }
-    );
-
-    res.json({
-      success: true,
-      message: 'Notification deleted successfully'
-    });
-
+    res.json({ success: true, message: "Notification deleted successfully" });
   } catch (error) {
-    console.error('Error deleting notification:', error);
-    
-    // Log the error
-    await LogCreators.projectOperation(
-      req.token?.userId,
-      ACTION_TYPES.USER_UPDATE,
-      null,
-      false,
-      { action: 'delete_notification', error: error.message }
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete notification'
-    });
+    console.error("Error deleting notification:", error);
+    res.status(500).json({ success: false, message: "Failed to delete notification" });
   }
 };
 
@@ -383,5 +234,5 @@ export default {
   getCount,
   createTestNotification,
   cleanupNotifications,
-  deleteNotification
+  deleteNotification,
 };

@@ -4,10 +4,38 @@ import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { NotificationCreators } from "../services/notificationService.js";
 import nodemailer from "nodemailer";
 import pool from "../models/db.js";
-import axios from "axios";
+import cloudinary from "../cloudinary/setupfile.js";
+import { Readable } from "stream";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+
+/* =========================================
+   CLOUDINARY UPLOAD HELPER
+========================================= */
+const uploadFilesToCloudinary = async (files, folder) => {
+  const uploadedFiles = [];
+
+  for (const file of files) {
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: "auto", folder },
+        (error, result) => (error ? reject(error) : resolve(result))
+      );
+      Readable.from(file.buffer).pipe(uploadStream);
+    });
+
+    uploadedFiles.push({
+      url: result.secure_url,
+      public_id: result.public_id,
+      name: file.originalname,
+      size: file.size,
+    });
+  }
+
+  return uploadedFiles;
+};
 
 // ------------------ EMAIL TRANSPORTER ------------------
 const transporter = nodemailer.createTransport({
@@ -26,7 +54,7 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 // ======================================================
 // REGISTER FUNCTION
 // ======================================================
- const register = async (req, res) => {
+const register = async (req, res) => {
   const {
     role_id,
     first_name,
@@ -36,7 +64,8 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
     phone_number,
     country,
     username,
-    categories,
+    categories = [],         
+    sub_sub_categories = [], 
   } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,7 +99,6 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
   try {
     const emailLower = email.toLowerCase();
 
-    // ✅ Step 1: Check if user already exists
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1 OR username = $2",
       [emailLower, username]
@@ -79,7 +107,6 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
       return res.status(409).json({ success: false, message: "Email or username already exists" });
     }
 
-    // ✅ Step 2: Hash password & insert user
     const hashedPassword = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
       `INSERT INTO users 
@@ -90,9 +117,33 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
     );
     const user = rows[0];
 
-    // ✅ Step 3: Generate & store OTP
+    if (parseInt(role_id) === 3) {
+      if (Array.isArray(categories) && categories.length > 0) {
+        for (const catId of categories) {
+          await pool.query(
+            `INSERT INTO freelancer_categories (freelancer_id, category_id)
+             VALUES ($1, $2)
+             ON CONFLICT (freelancer_id, category_id) DO NOTHING`,
+            [user.id, catId]
+          );
+        }
+      }
+
+      if (Array.isArray(sub_sub_categories) && sub_sub_categories.length > 0) {
+        for (const subSubId of sub_sub_categories) {
+          await pool.query(
+            `INSERT INTO freelancer_sub_sub_categories (freelancer_id, sub_sub_category_id)
+             VALUES ($1, $2)
+             ON CONFLICT (freelancer_id, sub_sub_category_id) DO NOTHING`,
+            [user.id, subSubId]
+          );
+        }
+      }
+    }
+
+    // ✅ Step 4: Generate & store OTP
     const otp = generateOtp();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); 
 
     await pool.query("UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3", [
       otp,
@@ -100,7 +151,7 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
       user.id,
     ]);
 
-    // ✅ Step 4: Send OTP via email
+    // ✅ Step 5: Send OTP via email
     const mailOptions = {
       from: `"OrderzHouse" <${process.env.EMAIL_FROM}>`,
       to: user.email,
@@ -117,7 +168,7 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 
     await transporter.sendMail(mailOptions);
 
-    // ✅ Step 5: Respond success
+    // ✅ Step 6: Respond success
     return res.status(201).json({
       success: true,
       message: "User registered successfully. OTP sent to email for verification ✅",
@@ -339,11 +390,30 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+
+/* =========================================
+   EDIT USER PROFILE 
+========================================= */
 export const editUserSelf = async (req, res) => {
   const userId = req.token.userId;
-  const { first_name, last_name, username, phone_number, country, profile_pic_url } = req.body;
+  const {
+    first_name,
+    last_name,
+    username,
+    phone_number,
+    country,
+    profile_pic_url,
+  } = req.body;
 
   try {
+    let finalProfileUrl = profile_pic_url;
+
+    if (req.files && req.files.length > 0) {
+      const uploaded = await uploadFilesToCloudinary(req.files, "users/profile_pics");
+      finalProfileUrl = uploaded[0].url;
+    }
+
     const result = await pool.query(
       `UPDATE users
        SET
@@ -356,11 +426,14 @@ export const editUserSelf = async (req, res) => {
          updated_at = NOW()
        WHERE id = $7 AND is_deleted = FALSE
        RETURNING id, first_name, last_name, username, email, phone_number, country, profile_pic_url`,
-      [first_name, last_name, username, phone_number, country, profile_pic_url, userId]
+      [first_name, last_name, username, phone_number, country, finalProfileUrl, userId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     return res.status(200).json({
@@ -370,7 +443,9 @@ export const editUserSelf = async (req, res) => {
     });
   } catch (err) {
     console.error("editUserSelf Error:", err.message);
-    return res.status(500).json({ success: false, message: "Error updating profile" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error updating profile" });
   }
 };
 
@@ -388,6 +463,47 @@ const getUserById = async (req, res) => {
     return res.status(200).json({ success: true, user: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+//profile pic to cloudanary
+
+export const uploadProfilePic = async (req, res) => {
+  const userId = req.token.userId;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "users/profile_pics", resource_type: "image" },
+      async (error, result) => {
+        if (error) {
+          console.error("Cloudinary Upload Error:", error);
+          return res.status(500).json({ success: false, message: "Error uploading image" });
+        }
+
+        const { rows } = await pool.query(
+          `UPDATE users
+           SET profile_pic_url = $1, updated_at = NOW()
+           WHERE id = $2 AND is_deleted = FALSE
+           RETURNING profile_pic_url`,
+          [result.secure_url, userId]
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "Profile picture uploaded successfully",
+          url: rows[0].profile_pic_url,
+        });
+      }
+    );
+
+    Readable.from(req.file.buffer).pipe(uploadStream);
+  } catch (err) {
+    console.error("uploadProfilePic Error:", err.message);
+    return res.status(500).json({ success: false, message: "Server error uploading profile picture" });
   }
 };
 
