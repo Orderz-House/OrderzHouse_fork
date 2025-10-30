@@ -499,6 +499,9 @@ export const addProjectFiles = async (req, res) => {
  * but stays pending until freelancer accepts.
  * -------------------------------
  */
+// -------------------------------
+// INVITE FREELANCER TO PROJECT
+// -------------------------------
 export const assignFreelancer = async (req, res) => {
   try {
     const clientId = req.token?.userId;
@@ -509,72 +512,58 @@ export const assignFreelancer = async (req, res) => {
       return res.status(400).json({ success: false, message: "freelancer_id is required" });
     }
 
-    // Get project info
     const { rows: projectRows } = await pool.query(
-      `SELECT id, title, user_id, status 
+      `SELECT id, title, user_id, status, project_type 
        FROM projects 
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
 
-    if (!projectRows.length) {
+    if (!projectRows.length)
       return res.status(404).json({ success: false, message: "Project not found" });
-    }
 
     const project = projectRows[0];
-    if (project.user_id !== clientId) {
+    if (project.user_id !== clientId)
       return res.status(403).json({ success: false, message: "You can only invite freelancers to your own projects" });
-    }
 
-    // Validate freelancer
     const { rows: freelancerRows } = await pool.query(
-      `SELECT id, role_id, is_verified 
-       FROM users 
-       WHERE id = $1 AND is_deleted = false`,
+      `SELECT id, role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
 
-    if (!freelancerRows.length) {
+    if (!freelancerRows.length)
       return res.status(404).json({ success: false, message: "Freelancer not found" });
-    }
 
     const freelancer = freelancerRows[0];
-    if (freelancer.role_id !== 3 || !freelancer.is_verified) {
+    if (freelancer.role_id !== 3 || !freelancer.is_verified)
       return res.status(400).json({ success: false, message: "Invalid freelancer" });
-    }
 
-    // Check existing invitation or assignment
     const { rows: existing } = await pool.query(
       `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
     );
-    if (existing.length) {
+    if (existing.length)
       return res.status(400).json({ success: false, message: "Freelancer already invited or assigned" });
-    }
 
-    // Create a pending invitation record
-    const assignedAt = new Date();
     const { rows: assignmentRows } = await pool.query(
       `INSERT INTO project_assignments 
-        (project_id, freelancer_id, assigned_at, status, assignment_type)
-       VALUES ($1, $2, $3, 'pending_acceptance', 'by_client')
+        (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
+       VALUES ($1, $2, NOW(), 'pending_acceptance', 'by_client', true)
        RETURNING *`,
-      [projectId, freelancer_id, assignedAt]
+      [projectId, freelancer_id]
     );
 
     const assignment = assignmentRows[0];
 
-    // 🔹 Update the project to link freelancer & mark as invitation sent
     await pool.query(
       `UPDATE projects
        SET assigned_freelancer_id = $1,
-           status = 'pending_acceptance',
            completion_status = 'invitation_sent'
        WHERE id = $2`,
       [freelancer_id, projectId]
     );
 
-    // Log this operation
+    // Log operation
     await LogCreators.projectOperation(
       clientId,
       ACTION_TYPES.ASSIGNMENT_CREATE,
@@ -588,7 +577,6 @@ export const assignFreelancer = async (req, res) => {
       }
     );
 
-    // Send notification to freelancer
     try {
       await NotificationCreators.freelancerAssignmentChanged(projectId, freelancer_id, true);
     } catch (err) {
@@ -597,7 +585,7 @@ export const assignFreelancer = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Invitation sent successfully. Waiting for freelancer response.",
+      message: "Invitation sent successfully. Project remains public until freelancer accepts.",
       assignment,
     });
 

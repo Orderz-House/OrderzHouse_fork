@@ -348,20 +348,26 @@ export const getProjectById = async (req, res) => {
  * - If freelancer (role_id = 3): get assigned projects
  * =========================================================
  */
+
 export const getProjectsByUserRole = async (req, res) => {
   try {
     const userId = req.token?.userId;
-    const roleId = req.token?.role; 
+    const roleId = req.token?.role;
 
     if (!userId || !roleId) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Unauthorized or invalid token" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized or invalid token",
+      });
     }
 
-    let query;
-    let params = [userId];
+    // 🔹 Query parameters for filtering/sorting/search
+    const { q, status, created_at } = req.query;
+
     let roleLabel = "";
+    let query = "";
+    const params = [userId];
+    let idx = 2; 
 
     if (roleId === 2) {
       roleLabel = "client";
@@ -379,7 +385,6 @@ export const getProjectsByUserRole = async (req, res) => {
         LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
         WHERE p.user_id = $1
           AND p.is_deleted = false
-        ORDER BY p.created_at DESC
       `;
     } else if (roleId === 3) {
       roleLabel = "freelancer";
@@ -401,13 +406,31 @@ export const getProjectsByUserRole = async (req, res) => {
         LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
         WHERE pa.freelancer_id = $1
           AND p.is_deleted = false
-        ORDER BY p.created_at DESC
       `;
     } else {
       return res
         .status(403)
         .json({ success: false, message: "Role not allowed" });
     }
+
+    // 🔹 Apply search (title / description)
+    if (q && q.trim()) {
+      query += ` AND (p.title ILIKE $${idx} OR p.description ILIKE $${idx})`;
+      params.push(`%${q.trim()}%`);
+      idx++;
+    }
+
+    // 🔹 Apply status filter
+    if (status && status.trim()) {
+      query += ` AND p.status = $${idx}`;
+      params.push(status.trim());
+      idx++;
+    }
+
+    // 🔹 Sorting by date (default DESC)
+    const sortDirection =
+      created_at && created_at.toLowerCase() === "asc" ? "ASC" : "DESC";
+    query += ` ORDER BY p.created_at ${sortDirection}`;
 
     const { rows } = await pool.query(query, params);
 
@@ -416,9 +439,14 @@ export const getProjectsByUserRole = async (req, res) => {
       role: roleLabel,
       total: rows.length,
       projects: rows,
+      filters: {
+        q: q || null,
+        status: status || "all",
+        created_at: sortDirection,
+      },
       note:
         rows.length === 0
-          ? `No projects found for this ${roleLabel}.`
+          ? `No projects found for this ${roleLabel} with given filters.`
           : undefined,
     });
   } catch (error) {
@@ -426,3 +454,4 @@ export const getProjectsByUserRole = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
