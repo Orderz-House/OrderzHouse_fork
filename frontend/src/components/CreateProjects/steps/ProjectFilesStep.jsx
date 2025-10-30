@@ -40,7 +40,7 @@ export default function ProjectFilesStep({ files, setFiles, onNext, onBack }) {
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8">
       <div className="mb-6">
         <h2 className="text-2xl font-black tracking-tight text-slate-900">Upload Project Files</h2>
-        <p className="text-slate-600">Drag & drop files or click to select (max 5)</p>
+        <p className="text-slate-600">Drag & drop files or click to select (max 5) - Optional</p>
       </div>
 
       <div
@@ -58,6 +58,7 @@ export default function ProjectFilesStep({ files, setFiles, onNext, onBack }) {
             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <p className="text-slate-600 text-lg">Drop files here or click to browse</p>
+          <p className="text-slate-400 text-sm mt-1">You can skip this step if you don't have files yet</p>
         </label>
       </div>
 
@@ -97,13 +98,10 @@ export default function ProjectFilesStep({ files, setFiles, onNext, onBack }) {
         </button>
         <button
           onClick={onNext}
-          disabled={files.length === 0}
-          className={`flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${
-            files.length === 0 ? "opacity-60 cursor-not-allowed" : ""
-          }`}
+          className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
           style={{ background: THEME }}
         >
-          Continue
+          {files.length === 0 ? "Skip" : "Continue"}
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>

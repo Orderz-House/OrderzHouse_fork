@@ -15,6 +15,7 @@ startDeadlineWatcher();
 
 // Routers
 import VerificationRouter from "./router/verification.js";
+import paymentsRouter from "./router/payments.js";
 import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
@@ -90,6 +91,7 @@ app.use("/auth", authRouter);
 app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
+app.use("/payments", paymentsRouter);
 
 
 let server, io;

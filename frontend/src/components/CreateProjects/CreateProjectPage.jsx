@@ -31,36 +31,80 @@ export default function CreateProjectPage() {
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleFinalSubmit = async () => {
-    if (!token) return alert("You must be logged in to create a project");
+    if (!token) {
+      alert("You must be logged in to create a project");
+      return;
+    }
+
+    if (!proofFile) {
+      alert("Please upload payment proof to continue");
+      return;
+    }
 
     setIsSubmitting(true);
+    
     try {
-      const createdProject = await createProjectApi(
-        { ...projectData, freelancer_id: selectedFreelancer?.id }, token
-      );
+      // Step 1: Create project
+      console.log("Creating project...");
+      const createdProject = await createProjectApi(projectData, token);
       const projectId = createdProject.id;
+      console.log("Project created:", projectId);
 
-      if (files.length > 0) await uploadProjectFilesApi(projectId, files, token);
-      if (selectedFreelancer) await assignFreelancerApi(projectId, selectedFreelancer.id, token);
-
-      if (proofFile) {
-        let amount = 0;
-        if (projectData.project_type === "fixed") amount = Number(projectData.budget);
-        else if (projectData.project_type === "hourly") amount = Number(projectData.hourly_rate);
-        else if (projectData.project_type === "bidding") amount = Number(projectData.budget_max);
-
-        if (!isNaN(amount) && amount > 0) {
-          await recordOfflinePaymentApi(projectId, proofFile, token, amount);
-        } else {
-          alert("Invalid payment amount. Cannot submit payment proof.");
+      // Step 2: Upload files (if any)
+      if (files.length > 0) {
+        console.log("Uploading project files...");
+        try {
+          await uploadProjectFilesApi(projectId, files, token);
+          console.log("Files uploaded successfully");
+        } catch (fileError) {
+          console.error("File upload failed:", fileError);
+          // Don't fail the entire process if file upload fails
+          alert("Project created but file upload failed. You can upload files later.");
         }
+      }
+
+      // Step 3: Assign freelancer (if selected)
+      if (selectedFreelancer) {
+        console.log("Assigning freelancer...");
+        try {
+          await assignFreelancerApi(projectId, selectedFreelancer.id, token);
+          console.log("Freelancer invited successfully");
+        } catch (assignError) {
+          console.error("Freelancer assignment failed:", assignError);
+          alert("Project created but freelancer invitation failed. You can invite them later.");
+        }
+      }
+
+      // Step 4: Record payment proof
+      console.log("Recording payment proof...");
+      let amount = 0;
+      if (projectData.project_type === "fixed") {
+        amount = Number(projectData.budget);
+      } else if (projectData.project_type === "hourly") {
+        amount = Number(projectData.hourly_rate) * 3; // 3 hours prepaid
+      } else if (projectData.project_type === "bidding") {
+        amount = Number(projectData.budget_max);
+      }
+
+      if (!isNaN(amount) && amount > 0) {
+        try {
+          await recordOfflinePaymentApi(projectId, proofFile, token, amount);
+          console.log("Payment proof recorded successfully");
+        } catch (paymentError) {
+          console.error("Payment proof upload failed:", paymentError);
+          alert("Project created but payment proof upload failed. Please contact support.");
+        }
+      } else {
+        alert("Invalid payment amount. Cannot submit payment proof.");
       }
 
       alert("Project created successfully!");
       navigate("/");
+      
     } catch (err) {
-      alert(err.message || "Failed to create project");
-      console.error(err);
+      console.error("Project creation error:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Failed to create project";
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

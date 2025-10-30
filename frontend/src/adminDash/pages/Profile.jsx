@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { User } from "lucide-react";
-import { useToast } from "../../components/toast/ToastProvider"; 
+import { useToast } from "../../components/toast/ToastProvider";
 
 const PRIMARY = "#028090";
 
@@ -21,12 +21,14 @@ export default function EditProfile() {
 
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
+  /* ===================== Fetch User Profile ===================== */
   const fetchUserProfile = async () => {
     try {
       setFetchLoading(true);
@@ -50,12 +52,14 @@ export default function EditProfile() {
     }
   };
 
+  /* ===================== Validate Inputs ===================== */
   const validate = () => {
     const errors = {};
     if (!formData.first_name?.trim()) errors.first_name = "Required";
     if (!formData.last_name?.trim()) errors.last_name = "Required";
     if (!formData.username?.trim()) errors.username = "Required";
-    if (!/^\d{10}$/.test(formData.phone_number)) errors.phone_number = "10 digits required";
+    if (!/^\d{10}$/.test(formData.phone_number))
+      errors.phone_number = "10 digits required";
     if (!formData.country?.trim()) errors.country = "Required";
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -66,6 +70,59 @@ export default function EditProfile() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /* ===================== Upload Profile Image to Cloudinary ===================== */
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formDataCloud = new FormData();
+      formDataCloud.append("file", file);
+      formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+      formDataCloud.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+      formDataCloud.append("folder", "users/profile_pics");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        { method: "POST", body: formDataCloud }
+      );
+
+      const data = await res.json();
+      if (data.secure_url) {
+        // Update profile locally
+        setFormData((prev) => ({ ...prev, profile_pic_url: data.secure_url }));
+        showToast("Profile picture uploaded!", "success");
+
+        // Save to backend
+        const token = localStorage.getItem("token");
+        const updateRes = await fetch("http://localhost:5000/users/edit", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ profile_pic_url: data.secure_url }),
+        });
+
+        const updateData = await updateRes.json();
+        if (updateData.success) {
+          showToast("Profile picture updated successfully!", "success");
+        } else {
+          showToast(updateData.message || "Error updating profile picture", "error");
+        }
+      } else {
+        showToast("Cloudinary upload failed", "error");
+      }
+    } catch (err) {
+      console.error("Image upload error:", err);
+      showToast("Error uploading image", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /* ===================== Save Other Profile Edits ===================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
@@ -99,6 +156,7 @@ export default function EditProfile() {
     }
   };
 
+  /* ===================== Loader ===================== */
   if (fetchLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-slate-600">
@@ -107,6 +165,7 @@ export default function EditProfile() {
     );
   }
 
+  /* ===================== UI ===================== */
   return (
     <div className="space-y-4 px-4 sm:px-6 py-6 text-[14px]">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -122,22 +181,41 @@ export default function EditProfile() {
               ) : (
                 <User className="w-14 h-14 text-slate-400" />
               )}
+              {uploading && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-slate-600 text-xs">
+                  Uploading…
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-[var(--primary)] text-white grid place-items-center shadow-md"
+
+            {/* Upload Button */}
+            <label
+              htmlFor="profile-pic"
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full text-white grid place-items-center shadow-md cursor-pointer"
               style={{ background: PRIMARY }}
             >
               +
-            </button>
+              <input
+                id="profile-pic"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+            </label>
           </div>
+
           <h1 className="mt-3 font-semibold text-slate-800 text-lg">
             Edit Profile
           </h1>
           <p className="text-slate-500 text-sm">Update your personal details</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Form Fields */}
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           {[
             { label: "First Name", key: "first_name" },
             { label: "Last Name", key: "last_name" },

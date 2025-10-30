@@ -27,14 +27,22 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    fetchCategories().then(setCategories).catch(console.error);
+    fetchCategories()
+      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .catch(err => {
+        console.error("Failed to fetch categories:", err);
+        setCategories([]);
+      });
   }, []);
 
   useEffect(() => {
     if (!form.category_id) return;
     fetchSubSubCategoriesByCategoryId(form.category_id)
-      .then(setSubSubCategories)
-      .catch(console.error);
+      .then(data => setSubSubCategories(Array.isArray(data) ? data : []))
+      .catch(err => {
+        console.error("Failed to fetch sub-sub-categories:", err);
+        setSubSubCategories([]);
+      });
     setForm(prev => ({ ...prev, sub_sub_category_id: "" }));
   }, [form.category_id]);
 
@@ -186,7 +194,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               className={`${inputBase} ${errors.category_id ? "ring-red-400 border-red-300" : ""}`}
             >
               <option value="">Select Category</option>
-              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              {Array.isArray(categories) && categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
             </select>
             {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
           </div>
@@ -203,7 +213,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.sub_sub_category_id ? "ring-red-400 border-red-300" : ""}`}
             >
               <option value="">Select Sub-category</option>
-              {subSubCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+              {Array.isArray(subSubCategories) && subSubCategories.map(sub => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
+              ))}
             </select>
             {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
           </div>
