@@ -1,4 +1,3 @@
-// controller/accessControl.js
 import pool from "../models/db.js";
 
 export const grantCourseAccess = async (req, res) => {

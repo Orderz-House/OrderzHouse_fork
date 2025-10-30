@@ -8,24 +8,6 @@ export default function Verifications() {
   return (
     <PeopleTable
       title="Verifications"
-      endpoint="/api/admin/verifications"
-      initialRows={initialRows}
-
-      columns={[
-        { label: "Name",           key: "name" },
-        { label: "Email",          key: "email" },
-        { label: "Phone",          key: "phone" },
-        { label: "Specialization", key: "specialization" },
-        { label: "Submitted",      key: "submittedAt" },
-        { label: "Status",         key: "status" },
-      ]}
-
-      formFields={[
-        { key: "name",           label: "Name", required: true },
-        { key: "email",          label: "Email", type: "email" },
-        { key: "phone",          label: "Phone", type: "tel" },
-        { key: "specialization", label: "Specialization" },
-        { key: "submittedAt",    label: "Submitted", type: "date" },
       endpoint="/verification/verifications"
       token={token}
       addLabel={null}

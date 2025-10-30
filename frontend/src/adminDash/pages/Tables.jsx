@@ -157,16 +157,18 @@ function useTableData({
         });
 
         const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.appointments)
-          ? data.appointments
-          : Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data?.users)
-          ? data.users
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+  ? data
+  : Array.isArray(data?.appointments)
+  ? data.appointments
+  : Array.isArray(data?.items)
+  ? data.items
+  : Array.isArray(data?.users)
+  ? data.users
+  : Array.isArray(data?.data)
+  ? data.data
+  : Array.isArray(data?.projects) 
+  ? data.projects
+  : [];
 
         const processedList = list.map((row) => ({
           ...row,

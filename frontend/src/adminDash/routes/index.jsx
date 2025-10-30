@@ -11,7 +11,7 @@ import SubCategories from "../pages/learning/SubCategories.jsx";
 import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
 import Appointments from "../pages/operation/Appointments.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
-import Projects from "../pages/operation/Projects.jsx";
+import Projects from "../pages/operation/Projects/FreelancersProjects.jsx";
 import Blogs from "../pages/community/Blogs.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";

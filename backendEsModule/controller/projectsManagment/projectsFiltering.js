@@ -338,3 +338,91 @@ export const getProjectById = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+/**
+ * =========================================================
+ * Get Projects by Authenticated User Role
+ * =========================================================
+ * - If client (role_id = 2): get own created projects
+ * - If freelancer (role_id = 3): get assigned projects
+ * =========================================================
+ */
+export const getProjectsByUserRole = async (req, res) => {
+  try {
+    const userId = req.token?.userId;
+    const roleId = req.token?.role; 
+
+    if (!userId || !roleId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized or invalid token" });
+    }
+
+    let query;
+    let params = [userId];
+    let roleLabel = "";
+
+    if (roleId === 2) {
+      roleLabel = "client";
+      query = `
+        SELECT 
+          p.*,
+          u.username AS client_username,
+          c.name AS category_name,
+          sc.name AS sub_category_name,
+          ssc.name AS sub_sub_category_name
+        FROM projects p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+        WHERE p.user_id = $1
+          AND p.is_deleted = false
+        ORDER BY p.created_at DESC
+      `;
+    } else if (roleId === 3) {
+      roleLabel = "freelancer";
+      query = `
+        SELECT 
+          p.*,
+          u.username AS client_username,
+          c.name AS category_name,
+          sc.name AS sub_category_name,
+          ssc.name AS sub_sub_category_name,
+          pa.status AS assignment_status,
+          pa.assignment_type,
+          pa.deadline
+        FROM projects p
+        JOIN project_assignments pa ON pa.project_id = p.id
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+        WHERE pa.freelancer_id = $1
+          AND p.is_deleted = false
+        ORDER BY p.created_at DESC
+      `;
+    } else {
+      return res
+        .status(403)
+        .json({ success: false, message: "Role not allowed" });
+    }
+
+    const { rows } = await pool.query(query, params);
+
+    return res.status(200).json({
+      success: true,
+      role: roleLabel,
+      total: rows.length,
+      projects: rows,
+      note:
+        rows.length === 0
+          ? `No projects found for this ${roleLabel}.`
+          : undefined,
+    });
+  } catch (error) {
+    console.error("getProjectsByUserRole error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
