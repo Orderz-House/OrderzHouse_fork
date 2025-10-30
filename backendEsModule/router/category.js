@@ -20,6 +20,9 @@ import {
   createSubSubCategory,
   updateSubSubCategory,
   deleteSubSubCategory,
+
+  //  NEWLY ADDED CONTROLLER
+  getSubSubCategoriesByCategoryId,
 } from "../controller/category.js";
 
 const categoryRouter = express.Router();
@@ -29,13 +32,18 @@ const categoryRouter = express.Router();
 ===================================================== */
 
 categoryRouter.get("/", getCategories);
-
 categoryRouter.get("/:categoryId/sub-categories", getSubCategories);
-
 categoryRouter.get(
   "/sub-category/:subCategoryId/sub-sub-categories",
   getSubSubCategoriesBySubId
 );
+
+//  GET ALL SUB-SUB-CATEGORIES BY CATEGORY
+categoryRouter.get(
+  "/:categoryId/sub-sub-categories",
+  getSubSubCategoriesByCategoryId
+);
+
 categoryRouter.get("/:id", getCategoryById);
 
 /* =====================================================
@@ -74,6 +82,8 @@ categoryRouter.delete(
 // --------------------
 // SUB-SUB-CATEGORIES
 // --------------------
+categoryRouter.get("/:categoryId/sub-sub-categories", getSubSubCategoriesByCategoryId);
+
 categoryRouter.post(
   "/sub-category/:subCategoryId/sub-sub-categories",
   authentication,

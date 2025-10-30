@@ -3,7 +3,7 @@
  */
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
-import { requireVerified } from "../middleware/requireVerification.js";
+
 import {
   recordOfflinePayment,
   approveOfflinePayment,
@@ -31,7 +31,6 @@ paymentsRouter.post(
 paymentsRouter.post(
   "/offline/approve",
   authentication,
-  requireVerified,
   approveOfflinePayment
 );
 
@@ -39,7 +38,6 @@ paymentsRouter.post(
 paymentsRouter.post(
   "/projects/:projectId/release-payment/:freelancerId",
   authentication,
-  requireVerified,
   releasePayment
 );
 

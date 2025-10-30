@@ -294,3 +294,26 @@ export const deleteSubSubCategory = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const getSubSubCategoriesByCategoryId = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { rows } = await pool.query(
+      `SELECT ssc.*,
+              sc.id AS sub_category_id,
+              sc.name AS sub_category_name,
+              c.id AS category_id,
+              c.name AS category_name
+       FROM sub_sub_categories ssc
+       JOIN sub_categories sc ON ssc.sub_category_id = sc.id
+       JOIN categories c ON sc.category_id = c.id
+       WHERE c.id = $1
+       ORDER BY ssc.id ASC`,
+      [categoryId]
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error("getSubSubCategoriesByCategoryId error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
