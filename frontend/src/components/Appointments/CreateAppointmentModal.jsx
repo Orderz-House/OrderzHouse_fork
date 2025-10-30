@@ -20,7 +20,7 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
     if (isAdmin) {
       const fetchFreelancers = async () => {
         try {
-          const response = await axios.get('http://localhost:5000/users/allfreelance', {
+          const response = await axios.get('https://backend.thi8ah.com/users/allfreelance', {
             headers: { Authorization: `Bearer ${token}` },
           });
           setFreelancers(response.data.freelancers || []);

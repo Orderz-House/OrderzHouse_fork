@@ -35,14 +35,14 @@ export default function FreelancerPage() {
         setData((prev) => ({ ...prev, loading: true }));
 
         const userRes = await axios.get(
-          `http://localhost:5000/users/freelancers/${id}`,
+          `https://backend.thi8ah.com/users/freelancers/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         let portfolioData = [];
         try {
           const portfolioRes = await axios.get(
-            `http://localhost:5000/users/freelancers/${id}/portfolio`,
+            `https://backend.thi8ah.com/users/freelancers/${id}/portfolio`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           portfolioData = portfolioRes.data.portfolios || [];
@@ -83,14 +83,14 @@ export default function FreelancerPage() {
         return;
       }
       await axios.post(
-        "http://localhost:5000/users/rate",
+        "https://backend.thi8ah.com/users/rate",
         { userId: id, rating },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSubmitMessage("Rating submitted successfully!");
 
       const userRes = await axios.get(
-        `http://localhost:5000/users/freelancers/${id}`,
+        `https://backend.thi8ah.com/users/freelancers/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setData((prev) => ({ ...prev, freelancer: userRes.data.freelancer }));

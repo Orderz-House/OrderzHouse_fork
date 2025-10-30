@@ -72,7 +72,7 @@ export default function EnhancedNavbar() {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get("http://localhost:5000/notifications", {
+      const { data } = await axios.get("https://backend.thi8ah.com/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
         __silent: true,
@@ -87,7 +87,7 @@ export default function EnhancedNavbar() {
     if (!token) return;
     try {
       const { data } = await axios.get(
-        "http://localhost:5000/notifications/count",
+        "https://backend.thi8ah.com/notifications/count",
         {
           headers: { authorization: `Bearer ${token}` },
           params: { unreadOnly: true },
@@ -102,7 +102,7 @@ export default function EnhancedNavbar() {
   const markAsRead = async (notificationId) => {
     try {
       await axios.put(
-        `http://localhost:5000/notifications/${notificationId}/read`,
+        `https://backend.thi8ah.com/notifications/${notificationId}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
        );
@@ -120,7 +120,7 @@ export default function EnhancedNavbar() {
   const markAllAsRead = async () => {
     try {
       await axios.put(
-        "http://localhost:5000/notifications/read-all",
+        "https://backend.thi8ah.com/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
        );
@@ -159,7 +159,7 @@ export default function EnhancedNavbar() {
   useEffect(() => {
     if (!token) return;
     axios
-      .get(`http://localhost:5000/users/getUserdata`, {
+      .get(`https://backend.thi8ah.com/users/getUserdata`, {
         headers: { authorization: `Bearer ${token}` },
       } )
       .then((res) => {

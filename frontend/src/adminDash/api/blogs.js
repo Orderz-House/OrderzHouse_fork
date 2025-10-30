@@ -4,7 +4,7 @@ import axios from "axios";
 // Axios instance
 // ----------------------
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL: import.meta.env.VITE_API_URL || "https://backend.thi8ah.com",
   withCredentials: true,
 });
 

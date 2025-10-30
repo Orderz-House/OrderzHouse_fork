@@ -40,7 +40,7 @@ const Login = () => {
     setMessage("");
 
     axios
-      .post("http://localhost:5000/users/login", {
+      .post("https://backend.thi8ah.com/users/login", {
         email: email.toLowerCase( ),
         password,
       })
@@ -82,7 +82,7 @@ const Login = () => {
     setMessage("");
 
     axios
-      .post("http://localhost:5000/users/verify-otp", {
+      .post("https://backend.thi8ah.com/users/verify-otp", {
         email: email.toLowerCase( ),
         otp,
       })

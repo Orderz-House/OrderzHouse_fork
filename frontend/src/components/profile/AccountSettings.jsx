@@ -109,7 +109,7 @@ const AccountSettings = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await axios.post('http://localhost:5000/auth/2fa/generate', {}, {
+      const response = await axios.post('https://backend.thi8ah.com/auth/2fa/generate', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setQrCodeUrl(response.data.qrCodeUrl);
@@ -129,7 +129,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/auth/2fa/verify', { token: verificationCode }, {
+      const response = await axios.post('https://backend.thi8ah.com/auth/2fa/verify', { token: verificationCode }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccess(response.data.message);
@@ -164,7 +164,7 @@ const AccountSettings = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/auth/2fa/disable', {}, {
+      await axios.post('https://backend.thi8ah.com/auth/2fa/disable', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

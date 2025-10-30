@@ -20,7 +20,7 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`http://localhost:5000/blogs/${encodeURIComponent(id)}`, {
+        const { data } = await axios.get(`https://backend.thi8ah.com/blogs/${encodeURIComponent(id)}`, {
         });
         if (!mounted) return;
 
@@ -125,7 +125,7 @@ export default function BlogPost() {
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl="http://localhost:5000/blogs"
+        createUrl="https://backend.thi8ah.com/blogs"
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);

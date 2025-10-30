@@ -42,7 +42,7 @@ export default function CategoriesShowcase({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get("http://localhost:5000/category");
+        const { data } = await axios.get("https://backend.thi8ah.com/category");
 
         if (data.success && data.data) {
           const mappedCategories = data.data.map((cat) => ({

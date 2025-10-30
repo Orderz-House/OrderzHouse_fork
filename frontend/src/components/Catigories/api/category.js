@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/category";
+const API_BASE = "https://backend.thi8ah.com/category";
 
 export const fetchCategories = async () => {
   const { data } = await axios.get(`${API_BASE}/`);

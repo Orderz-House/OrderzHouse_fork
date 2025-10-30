@@ -1,7 +1,7 @@
 import axios from "axios";
 import store from "../../../store/store";
 
-const API_BASE = "http://localhost:5000/projects";
+const API_BASE = "https://backend.thi8ah.com/projects";
 
 const getAuthToken = () => {
   return store?.getState()?.auth?.token || localStorage.getItem("token") || null;

@@ -34,7 +34,7 @@ export default function EditProfile() {
       setFetchLoading(true);
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/users/getUserdata", {
+      const res = await fetch("https://backend.thi8ah.com/users/getUserdata", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -96,7 +96,7 @@ export default function EditProfile() {
 
         // Save to backend
         const token = localStorage.getItem("token");
-        const updateRes = await fetch("http://localhost:5000/users/edit", {
+        const updateRes = await fetch("https://backend.thi8ah.com/users/edit", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -133,7 +133,7 @@ export default function EditProfile() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/users/edit", {
+      const res = await fetch("https://backend.thi8ah.com/users/edit", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

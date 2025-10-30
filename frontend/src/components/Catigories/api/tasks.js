@@ -2,7 +2,7 @@ import axios from "axios";
 import store from "../../../store/store";
 
 // Base API URL (use VITE_APP_API_URL if available)
-const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000/tasks";
+const API_BASE = import.meta.env.VITE_APP_API_URL || "https://backend.thi8ah.com/tasks";
 
 // Get auth token from Redux or localStorage
 const getAuthToken = () =>

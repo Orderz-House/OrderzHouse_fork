@@ -43,7 +43,7 @@ export const AdminVerificationPage = () => {
       setLoading(true);
       setError("");
       const response = await axios.get(
-        "http://localhost:5000/users/freelancers",
+        "https://backend.thi8ah.com/users/freelancers",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -107,7 +107,7 @@ export const AdminVerificationPage = () => {
     try {
       setActionLoading(id);
       await axios.put(
-        `http://localhost:5000/users/freelancers/${id}/verify`,
+        `https://backend.thi8ah.com/users/freelancers/${id}/verify`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -133,7 +133,7 @@ export const AdminVerificationPage = () => {
     try {
       setActionLoading(id);
       await axios.put(
-        `http://localhost:5000/users/freelancers/${id}/reject`,
+        `https://backend.thi8ah.com/users/freelancers/${id}/reject`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },

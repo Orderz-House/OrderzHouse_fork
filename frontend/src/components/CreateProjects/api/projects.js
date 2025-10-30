@@ -1,7 +1,7 @@
 import axios from "axios";
 import { store } from "../../../store/store";
 
-const API_BASE = "http://localhost:5000/projects";
+const API_BASE = "https://backend.thi8ah.com/projects";
 
 // -------------------- UTILITY --------------------
 /**
@@ -106,7 +106,7 @@ export const recordOfflinePaymentApi = async (projectId, file, token, amount) =>
   formData.append("amount", amount);
 
   const { data } = await axios.post(
-    `http://localhost:5000/payments/offline/record/${projectId}`,
+    `https://backend.thi8ah.com/payments/offline/record/${projectId}`,
     formData,
     {
       headers: {

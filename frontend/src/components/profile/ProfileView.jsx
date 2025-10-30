@@ -45,7 +45,7 @@ const ProfileView = () => {
       try {
         setIsLoading(true);
         // This endpoint should fetch a user's public profile data by their ID.
-        const profileUrl = `http://localhost:5000/users/freelancers/${userId}`;
+        const profileUrl = `https://backend.thi8ah.com/users/freelancers/${userId}`;
         const response = await axios.get(profileUrl, {
             headers: { Authorization: `Bearer ${token}` },
         } );
@@ -55,7 +55,7 @@ const ProfileView = () => {
           setIsOwnProfile(currentUser?.id === parseInt(userId));
 
           if (response.data.freelancer.role_id === 3) {
-            const responsePortfolio = await axios.get(`http://localhost:5000/users/freelancers/${userId}/portfolio`, {
+            const responsePortfolio = await axios.get(`https://backend.thi8ah.com/users/freelancers/${userId}/portfolio`, {
               headers: { Authorization: `Bearer ${token}` },
             } );
             setPortfolio(responsePortfolio.data.portfolios);
@@ -72,7 +72,7 @@ const ProfileView = () => {
     const fetchReviews = async () => {
         if (!userId) return;
         try {
-            const response = await axios.get(`http://localhost:5000/api/ratings/freelancer/${userId}` );
+            const response = await axios.get(`https://backend.thi8ah.com/api/ratings/freelancer/${userId}` );
             if (response.data.success) {
                 setReviews(response.data.reviews);
             }

@@ -27,10 +27,10 @@ const AdminCourseManagement = () => {
       try {
         setLoading(true);
         const [coursesRes, categoriesRes] = await Promise.all([
-          axios.get('http://localhost:5000/courses/view', {
+          axios.get('https://backend.thi8ah.com/courses/view', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get('http://localhost:5000/category', {
+          axios.get('https://backend.thi8ah.com/category', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -63,13 +63,13 @@ const AdminCourseManagement = () => {
     try {
       let res;
       if (isEditing) {
-        res = await axios.put(`http://localhost:5000/courses/update/${editingCourseId}`, formData, {
+        res = await axios.put(`https://backend.thi8ah.com/courses/update/${editingCourseId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => prev.map(c => c.id === editingCourseId ? res.data.course : c));
         toast.success('Course updated successfully!');
       } else {
-        res = await axios.post('http://localhost:5000/courses/create', formData, {
+        res = await axios.post('https://backend.thi8ah.com/courses/create', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => [res.data.course, ...prev]);
@@ -87,7 +87,7 @@ const AdminCourseManagement = () => {
   const handleDelete = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
     try {
-      await axios.delete(`http://localhost:5000/courses/delete/${courseId}`, {
+      await axios.delete(`https://backend.thi8ah.com/courses/delete/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCourses(prev => prev.filter(c => c.id !== courseId));

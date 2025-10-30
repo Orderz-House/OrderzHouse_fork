@@ -20,7 +20,7 @@ export const ReviewModal = ({ projectId, freelancerId, onClose, onReviewSubmit }
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/ratings',
+        'https://backend.thi8ah.com/api/ratings',
         {
           projectId,
           freelancerId,

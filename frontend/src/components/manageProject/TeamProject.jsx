@@ -33,7 +33,7 @@ function TeamProject() {
     const fetchProjectData = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`http://localhost:5000/projects/${projectId}`, {
+        const response = await axios.get(`https://backend.thi8ah.com/projects/${projectId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
@@ -64,7 +64,7 @@ function TeamProject() {
       setAssignments(updatedAssignments);
       
       await axios.put(
-        `http://localhost:5000/projects/assigned/${projectId}`, 
+        `https://backend.thi8ah.com/projects/assigned/${projectId}`, 
         { freelancer_id: freelancerId, status },
         {
           headers: {
@@ -75,7 +75,7 @@ function TeamProject() {
       );
     } catch (error) {
       console.error("Error updating member status:", error);
-      const response = await axios.get(`http://localhost:5000/projects/${projectId}`, {
+      const response = await axios.get(`https://backend.thi8ah.com/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssignments(response.data.project.rows[0].assignments || []);

@@ -27,7 +27,7 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
       setOffers(updatedOffers);
       
       await axios.post(
-        `http://localhost:5000/projects/offer/action`,
+        `https://backend.thi8ah.com/projects/offer/action`,
         { action: "approve", offer_id: offerId },
         {
           headers: {
@@ -62,7 +62,7 @@ function OffersProject({ offers: initialOffers, onOfferUpdate }) {
       setOffers(updatedOffers);
       
       await axios.post(
-        `http://localhost:5000/projects/offer/action`,
+        `https://backend.thi8ah.com/projects/offer/action`,
         { action: "reject", offer_id: offerId },
         {
           headers: {

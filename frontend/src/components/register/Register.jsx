@@ -90,7 +90,7 @@ useEffect(() => {
   // ========= freelancer categories =========//
   useEffect(() => {
     axios
-      .get("http://localhost:5000/category")
+      .get("https://backend.thi8ah.com/category")
       .then((response) => setCategories(response.data.categories || []))
       .catch((error) => console.error("Error fetching categories:", error));
   }, []);
@@ -119,7 +119,7 @@ useEffect(() => {
     if (!isExpanded && !subCategories[categoryId]) {
       try {
         const res = await axios.get(
-          `http://localhost:5000/category/${categoryId}/sub-categories`
+          `https://backend.thi8ah.com/category/${categoryId}/sub-categories`
         );
         setSubCategories((prev) => ({
           ...prev,
@@ -214,7 +214,7 @@ useEffect(() => {
     }
 
     axios
-      .post("http://localhost:5000/users/register", userData)
+      .post("https://backend.thi8ah.com/users/register", userData)
       .then((result) => {
         setStatus(true);
         setMessage(
@@ -240,7 +240,7 @@ useEffect(() => {
     }
     setIsVerifying(true);
     axios
-      .post("http://localhost:5000/users/verify-email", { email, otp })
+      .post("https://backend.thi8ah.com/users/verify-email", { email, otp })
       .then(() => {
         setStatus(true);
         setMessage("Email verified successfully ✅ Redirecting...");

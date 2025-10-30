@@ -8,7 +8,7 @@ export const useAppointments = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'https://backend.thi8ah.com';
 
   const getConfig = () => ({
     headers: { 
