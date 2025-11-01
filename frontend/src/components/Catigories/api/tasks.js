@@ -3,6 +3,7 @@ import store from "../../../store/store";
 
 const API_BASE = `${import.meta.env.VITE_APP_API_URL}/tasks`;
 
+// Base API URL (use VITE_APP_API_URL if available)
 const getAuthToken = () =>
   store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 
@@ -12,181 +13,82 @@ const getAuthHeaders = () => {
 };
 
 /* ============================================================================
-   🔒 AUTH APIs
+    FREELANCER APIs
 ============================================================================ */
-export const fetchAuthTasksByCategory = async (categoryId) => {
-  try {
-    const { data } = await axios.get(`${API_BASE}/category/${categoryId}`, getAuthHeaders());
-    if (data.success) return data.tasks;
-    throw new Error(data.message || "Failed to fetch tasks");
-  } catch (err) {
-    console.error("fetchAuthTasksByCategory error:", err);
-    return [];
-  }
-};
 
-export const fetchAuthTasksBySubCategory = async (subCategoryId) => {
-  try {
-    const { data } = await axios.get(`${API_BASE}/sub-category/${subCategoryId}`, getAuthHeaders());
-    if (data.success) return data.tasks;
-    throw new Error(data.message || "Failed to fetch tasks");
-  } catch (err) {
-    console.error("fetchAuthTasksBySubCategory error:", err);
-    return [];
-  }
-};
-
-export const fetchAuthTasksBySubSubCategory = async (subSubCategoryId) => {
-  try {
-    const { data } = await axios.get(`${API_BASE}/sub-sub-category/${subSubCategoryId}`, getAuthHeaders());
-    if (data.success) return data.tasks;
-    throw new Error(data.message || "Failed to fetch tasks");
-  } catch (err) {
-    console.error("fetchAuthTasksBySubSubCategory error:", err);
-    return [];
-  }
-};
-
-/* ============================================================================
-    PUBLIC APIs
-============================================================================ */
-export const fetchTasksByCategory = async (categoryId) => {
-  const { data } = await axios.get(`${API_BASE}/public/category/${categoryId}`);
-  if (data.success) return data.tasks;
-  throw new Error(data.message || "Failed to fetch tasks");
-};
-
-export const fetchTasksBySubCategory = async (subCategoryId) => {
-  const { data } = await axios.get(`${API_BASE}/public/subcategory/${subCategoryId}`);
-  if (data.success) return data.tasks;
-  throw new Error(data.message || "Failed to fetch tasks");
-};
-
-export const fetchTasksBySubSubCategory = async (subSubCategoryId) => {
-  try {
-    const { data } = await axios.get(`${API_BASE}/public/subsubcategory/${subSubCategoryId}`);
-    if (data.success) return data.tasks;
-    throw new Error(data.message || "Failed to fetch tasks");
-  } catch (err) {
-    console.error("fetchTasksBySubSubCategory error:", err);
-    return [];
-  }
-};
-
-/* ============================================================================
-   GET BY ID
-============================================================================ */
-export const getTaskByIdApi = async (taskId, token) => {
-  if (!taskId) throw new Error("Missing taskId");
-  const authToken = token || getAuthToken();
-
-  try {
-    const config = authToken ? { headers: { Authorization: `Bearer ${authToken}` } } : {};
-    const { data } = await axios.get(`${API_BASE}/${taskId}`, config);
-    if (!data.success) throw new Error(data.message || "Failed to fetch task");
-    return data.task;
-  } catch (err) {
-    console.error("Get task by ID error:", err.response?.data || err.message);
-    throw err.response?.data || err;
-  }
-};
-
-/* ============================================================================
-   🧠 ADMIN APIs
-============================================================================ */
-export const getAllTasksForAdminApi = async () => {
-  const res = await axios.get(`${API_BASE}/admin`, getAuthHeaders());
-  return res.data;
-};
-
-export const approveTaskByAdminApi = async (id, status) => {
-  const res = await axios.put(`${API_BASE}/admin/${id}/status`, { status }, getAuthHeaders());
-  return res.data;
-};
-
-export const confirmPaymentByAdminApi = async (id) => {
-  const res = await axios.put(`${API_BASE}/admin/payment/${id}/confirm`, {}, getAuthHeaders());
-  return res.data;
-};
-
-/* ============================================================================
-   💼 FREELANCER APIs
-============================================================================ */
 export const createTaskApi = async (formData) => {
-  const res = await axios.post(`${API_BASE}/freelancer`, formData, {
+  const res = await axios.post(`${API_BASE}/tasks`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const updateTaskApi = async (id, data) => {
-  const res = await axios.put(`${API_BASE}/freelancer/${id}`, data, getAuthHeaders());
+  const res = await axios.put(`${API_BASE}/tasks/${id}`, data, getAuthHeaders());
   return res.data;
 };
 
 export const deleteTaskApi = async (id) => {
-  const res = await axios.delete(`${API_BASE}/freelancer/${id}`, getAuthHeaders());
+  const res = await axios.delete(`${API_BASE}/tasks/${id}`, getAuthHeaders());
   return res.data;
 };
 
 export const updateTaskRequestStatusApi = async (requestId, status) => {
-  const res = await axios.put(`${API_BASE}/freelancer/requests/${requestId}/status`, { status }, getAuthHeaders());
+  const res = await axios.put(
+    `${API_BASE}/tasks/requests/${requestId}/status`,
+    { status },
+    getAuthHeaders()
+  );
   return res.data;
 };
 
 export const submitWorkCompletionApi = async (requestId, formData) => {
-  const res = await axios.post(`${API_BASE}/freelancer/requests/${requestId}/submit`, formData, {
-    headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
-  });
+  const res = await axios.post(
+    `${API_BASE}/tasks/requests/${requestId}/submit`,
+    formData,
+    {
+      headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
+    }
+  );
   return res.data;
 };
 
 export const resubmitWorkCompletionApi = async (requestId, formData) => {
-  const res = await axios.post(`${API_BASE}/freelancer/requests/${requestId}/resubmit`, formData, {
-    headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
-  });
+  const res = await axios.post(
+    `${API_BASE}/tasks/requests/${requestId}/resubmit`,
+    formData,
+    {
+      headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
+    }
+  );
   return res.data;
 };
 
 export const updateTaskKanbanStatusApi = async (id, status) => {
-  const res = await axios.put(`${API_BASE}/freelancer/${id}/kanban`, { status }, getAuthHeaders());
-  return res.data;
-};
-
-export const getFreelancerCreatedTasksApi = async () => {
-  const res = await axios.get(`${API_BASE}/freelancer/my-tasks`, getAuthHeaders());
-  return res.data;
-};
-
-export const getTaskRequestsApi = async () => {
-  const res = await axios.get(`${API_BASE}/freelancer/requests`, getAuthHeaders());
-  return res.data;
-};
-
-export const getAssignedTasksApi = async () => {
-  const res = await axios.get(`${API_BASE}/freelancer/assigned`, getAuthHeaders());
+  const res = await axios.put(`${API_BASE}/tasks/${id}/kanban`, { status }, getAuthHeaders());
   return res.data;
 };
 
 /* ============================================================================
    👥 CLIENT APIs
 ============================================================================ */
+
 export const requestTaskApi = async (taskId, formData) => {
-  const res = await axios.post(`${API_BASE}/client/request/${taskId}`, formData, {
+  const res = await axios.post(`${API_BASE}/tasks/${taskId}/request`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const submitPaymentProofApi = async (taskId, formData) => {
-  const res = await axios.post(`${API_BASE}/client/payment/${taskId}`, formData, {
+  const res = await axios.post(`${API_BASE}/tasks/${taskId}/payment-proof`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const approveWorkCompletionApi = async (requestId, action, formData) => {
-  const res = await axios.post(`${API_BASE}/client/approve/${requestId}`, formData, {
+  const res = await axios.put(`${API_BASE}/tasks/requests/${requestId}/approve`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
     params: { action },
   });
@@ -194,26 +96,119 @@ export const approveWorkCompletionApi = async (requestId, action, formData) => {
 };
 
 export const createReviewApi = async (taskId, data) => {
-  const res = await axios.post(`${API_BASE}/client/review/${taskId}`, data, getAuthHeaders());
+  const res = await axios.post(`${API_BASE}/tasks/${taskId}/review`, data, getAuthHeaders());
   return res.data;
 };
 
 /* ============================================================================
-   📁 SHARED / PUBLIC APIs
+    ADMIN APIs
 ============================================================================ */
-export const getTaskPoolApi = async (categoryId) => {
-  const res = await axios.get(`${API_BASE}/pool`, { params: categoryId ? { category: categoryId } : {} });
+
+export const getAllTasksForAdminApi = async () => {
+  const res = await axios.get(`${API_BASE}/tasks/admin/all`, getAuthHeaders());
   return res.data;
 };
 
-export const getCategoriesApi = async () => {
-  const res = await axios.get(`${API_BASE}/categories`);
+export const approveTaskByAdminApi = async (id, status) => {
+  const res = await axios.put(`${API_BASE}/tasks/${id}/approve`, { status }, getAuthHeaders());
+  return res.data;
+};
+
+export const confirmPaymentByAdminApi = async (requestId) => {
+  const res = await axios.put(
+    `${API_BASE}/tasks/requests/${requestId}/confirm-payment`,
+    {},
+    getAuthHeaders()
+  );
+  return res.data;
+};
+
+/* ============================================================================
+    PUBLIC / SHARED APIs
+============================================================================ */
+
+export const getTaskPoolApi = async (categoryId) => {
+  const res = await axios.get(`${API_BASE}/tasks/pool`, {
+    params: categoryId ? { category: categoryId } : {},
+  });
+  return res.data;
+};
+
+export const getTaskByIdApi = async (taskId) => {
+  const res = await axios.get(`${API_BASE}/tasks/${taskId}`, getAuthHeaders());
   return res.data;
 };
 
 export const addTaskFilesApi = async (requestId, formData) => {
-  const res = await axios.post(`${API_BASE}/files/${requestId}`, formData, {
+  const res = await axios.post(`${API_BASE}/tasks/files/${requestId}`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
+};
+
+export const getCategoriesApi = async () => {
+  const res = await axios.get(`${API_BASE}/tasks/categories`);
+  return res.data;
+};
+
+/* ============================================================================
+    NOTIFICATIONS (using WebSocket)
+============================================================================ */
+let notificationSocket = null;
+
+export const connectNotifications = (userId, onMessage) => {
+  if (notificationSocket) return;
+  notificationSocket = new WebSocket(`ws://localhost:5000/ws/notifications?user=${userId}`);
+
+  notificationSocket.onopen = () => console.log("🔔 Notifications connected");
+  notificationSocket.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (onMessage) onMessage(data);
+  };
+  notificationSocket.onclose = () => {
+    console.log("⚠️ Notifications disconnected, retrying...");
+    setTimeout(() => connectNotifications(userId, onMessage), 5000);
+  };
+};
+
+export const disconnectNotifications = () => {
+  if (notificationSocket) {
+    notificationSocket.close();
+    notificationSocket = null;
+  }
+};
+
+/* ============================================================================
+    CHAT SOCKET (Realtime Messaging)
+============================================================================ */
+let chatSocket = null;
+
+export const connectChat = (projectOrTaskId, userId, onMessage) => {
+  if (chatSocket) return;
+  chatSocket = new WebSocket(
+    `ws://localhost:5000/ws/chat?room=${projectOrTaskId}&user=${userId}`
+  );
+
+  chatSocket.onopen = () => console.log("💬 Chat connected");
+  chatSocket.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (onMessage) onMessage(data);
+  };
+  chatSocket.onclose = () => {
+    console.log("⚠️ Chat disconnected, retrying...");
+    setTimeout(() => connectChat(projectOrTaskId, userId, onMessage), 5000);
+  };
+};
+
+export const sendChatMessage = (message) => {
+  if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+    chatSocket.send(JSON.stringify(message));
+  }
+};
+
+export const disconnectChat = () => {
+  if (chatSocket) {
+    chatSocket.close();
+    chatSocket = null;
+  }
 };

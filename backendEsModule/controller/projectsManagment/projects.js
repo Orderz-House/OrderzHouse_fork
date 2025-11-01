@@ -9,19 +9,12 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
-
 /**
- * -------------------------------
- * CREATE PROJECT
- * -------------------------------
- * Statuses:
- *   pending          - newly created project
- *   pending_payment  - fixed/hourly projects waiting for payment
- *   bidding          - open for bids
- * Completion statuses:
- *   not_started → in_progress → pending_review → completed
- * -------------------------------
- */
+
+
+/* ======================================================================
+   CREATE PROJECT (cover_pic REQUIRED)
+====================================================================== */
 export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -42,6 +35,7 @@ export const createProject = async (req, res) => {
       preferred_skills,
     } = req.body;
 
+    // 🧩 Validate required fields
     const missingFields = [];
     if (!category_id) missingFields.push("category_id");
     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
@@ -67,6 +61,9 @@ export const createProject = async (req, res) => {
         missingFields.push("budget_max < budget_min");
     }
 
+    // 🧩 Require cover_pic file
+    if (!req.files?.cover_pic?.[0]) missingFields.push("cover_pic");
+
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
@@ -74,6 +71,7 @@ export const createProject = async (req, res) => {
       });
     }
 
+    // 🧩 Determine status
     let projectStatus = "pending";
     if (project_type === "bidding") projectStatus = "bidding";
     else if (["fixed", "hourly"].includes(project_type))
@@ -82,6 +80,7 @@ export const createProject = async (req, res) => {
     const durationDaysValue = duration_type === "days" ? duration_days : null;
     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
+    // 🧩 Step 1: Insert project (temporary, no cover_pic yet)
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, sub_category_id, sub_sub_category_id,
@@ -114,26 +113,22 @@ export const createProject = async (req, res) => {
 
     let project = rows[0];
 
-    let coverPicUrl = null;
-    if (req.files?.cover_pic?.[0]) {
-      try {
-        const result = await uploadToCloudinary(
-          req.files.cover_pic[0].buffer,
-          `projects/${project.id}/cover`
-        );
-        coverPicUrl = result.secure_url;
+    // 🧩 Step 2: Upload cover_pic (required)
+    const coverPicFile = req.files.cover_pic[0];
+    const coverPicResult = await uploadToCloudinary(
+      coverPicFile.buffer,
+      `projects/${project.id}/cover`
+    );
+    const coverPicUrl = coverPicResult.secure_url;
 
-        await pool.query(
-          `UPDATE projects SET cover_pic = $1 WHERE id = $2`,
-          [coverPicUrl, project.id]
-        );
-        project.cover_pic = coverPicUrl;
-      } catch (err) {
-        console.error("Cover pic upload failed:", err);
-      }
-    }
+    // Save the cover_pic to DB
+    const { rows: updatedProject } = await pool.query(
+      `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
+      [coverPicUrl, project.id]
+    );
+    project = updatedProject[0];
 
-    //  Step 3: Calculate amount_to_pay
+    // 🧩 Step 3: Set amount_to_pay
     let amountToPay = null;
     if (project.project_type === "fixed") amountToPay = project.budget;
     else if (project.project_type === "hourly")
@@ -147,6 +142,7 @@ export const createProject = async (req, res) => {
       project = updated[0];
     }
 
+    // 🧩 Step 4: Log & notify
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -173,8 +169,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-
-
 /**
  * -------------------------------
  * SUBMIT WORK COMPLETION 
@@ -198,17 +192,14 @@ export const submitWorkCompletion = async (req, res) => {
 
     let uploadedFiles = [];
     for (let file of files) {
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto", folder: `projects/${projectId}` },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        uploadStream.end(file.buffer);
-      });
-      uploadedFiles.push({ url: result.secure_url, public_id: result.public_id });
+      const result = await cloudinary.uploader.upload_stream(
+        { resource_type: "auto", folder: `projects/${projectId}` },
+        (error, result) => {
+          if (error) throw error;
+          uploadedFiles.push({ url: result.secure_url, public_id: result.public_id });
+        }
+      );
+      result.end(file.buffer);
     }
 
     await pool.query(
@@ -341,13 +332,9 @@ export const completeHourlyProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 /**
  * -------------------------------
- * GET AVAILABLE FREELANCERS
- * -------------------------------
- * Returns only verified, not-deleted freelancers in this category
- * who are NOT assigned to ongoing projects.
+ * GET AVAILABLE FREELANCERS (Not currently working)
  * -------------------------------
  */
 export const getRelatedFreelancers = async (req, res) => {
@@ -356,9 +343,7 @@ export const getRelatedFreelancers = async (req, res) => {
   try {
     const { rows: freelancers } = await pool.query(
       `
-      SELECT DISTINCT 
-        u.id, u.username, u.email, u.country, u.profile_pic_url, u.created_at,
-        u.first_name, u.last_name, u.title
+      SELECT DISTINCT u.*
       FROM users u
       JOIN freelancer_categories fc ON u.id = fc.freelancer_id
       WHERE 
@@ -367,13 +352,12 @@ export const getRelatedFreelancers = async (req, res) => {
         AND u.is_deleted = false
         AND u.is_verified = true
         AND NOT EXISTS (
-          SELECT 1 
-          FROM project_assignments pa
+          SELECT 1 FROM project_assignments pa
           JOIN projects p ON pa.project_id = p.id
           WHERE 
             pa.freelancer_id = u.id
-            AND pa.status IN ('accepted', 'active')
-            AND p.completion_status IN ('in_progress', 'pending_review')
+            AND pa.status IN ('active', 'in_progress')
+            AND p.completion_status IN ('in_progress', 'in_progress', 'pending_review')
             AND p.is_deleted = false
         )
       ORDER BY u.id DESC;
@@ -381,16 +365,16 @@ export const getRelatedFreelancers = async (req, res) => {
       [categoryId]
     );
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       count: freelancers.length,
-      freelancers
+      freelancers,
     });
   } catch (error) {
     console.error("Error fetching available freelancers:", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Server error while fetching available freelancers"
+      message: "Server error while fetching available freelancers",
     });
   }
 };
@@ -482,7 +466,7 @@ export const resubmitWorkCompletion = async (req, res) => {
 export const uploadToCloudinary = (buffer, folder = "project_files") => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "auto" },
+      { folder },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -494,59 +478,35 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
   });
 };
 
-/**
- * Helper function to upload multiple files to Cloudinary
- */
-const uploadFilesToCloudinary = async (files, folder) => {
-  const uploadPromises = files.map(file => 
-    uploadToCloudinary(file.buffer, folder).then(result => ({
-      name: file.originalname,
-      url: result.secure_url,
-      size: file.size,
-      public_id: result.public_id
-    }))
-  );
-  return await Promise.all(uploadPromises);
-};
-
-/**
- * -------------------------------
- * ADD PROJECT FILES
- * -------------------------------
- */
 export const addProjectFiles = async (req, res) => {
   const { projectId } = req.params;
   const userId = req.token?.userId;
 
-  if (!userId)
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-
+  if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
   if (!req.files || req.files.length === 0)
     return res.status(400).json({ success: false, message: "No files uploaded" });
 
   try {
     const uploadedFiles = [];
-    const uploaded = await uploadFilesToCloudinary(req.files, `projects/${projectId}`);
 
-    for (const file of uploaded) {
+    for (const file of req.files) {
+      const result = await uploadToCloudinary(file.buffer, `projects/${projectId}`);
+
       const { rows } = await pool.query(
         `INSERT INTO project_files 
           (project_id, sender_id, file_name, file_url, file_size, public_id) 
          VALUES ($1, $2, $3, $4, $5, $6) 
          RETURNING *`,
-        [projectId, userId, file.name, file.url, file.size, file.public_id]
+        [projectId, userId, file.originalname, result.secure_url, file.size, result.public_id]
       );
+
       uploadedFiles.push(rows[0]);
     }
 
-    return res.json({ success: true, files: uploadedFiles });
+    res.json({ success: true, files: uploadedFiles });
   } catch (err) {
-    console.error("File upload failed:", err);
-    return res.status(500).json({
-      success: false,
-      message: "File upload failed",
-      error: err.message
-    });
+    console.error(err);
+    res.status(500).json({ success: false, message: "File upload failed", error: err.message });
   }
 };
 
@@ -555,75 +515,107 @@ export const addProjectFiles = async (req, res) => {
  * -------------------------------
  * INVITE FREELANCER TO PROJECT
  * -------------------------------
+ * Client sends an invitation. 
+ * -------------------------------
+ */
+/**
+ * -------------------------------
+ * INVITE FREELANCER TO PROJECT
+ * -------------------------------
  * Client sends an invitation → Project gets linked to freelancer,
  * but stays pending until freelancer accepts.
  * -------------------------------
  */
-
 export const assignFreelancer = async (req, res) => {
   try {
     const clientId = req.token?.userId;
     const { projectId } = req.params;
     const { freelancer_id } = req.body;
 
-    if (!freelancer_id)
+    if (!freelancer_id) {
       return res.status(400).json({ success: false, message: "freelancer_id is required" });
+    }
 
-    // Validate project
+    // Get project info
     const { rows: projectRows } = await pool.query(
-      `SELECT id, title, user_id, status, project_type 
+      `SELECT id, title, user_id, status 
        FROM projects 
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
-    if (!projectRows.length)
+
+    if (!projectRows.length) {
       return res.status(404).json({ success: false, message: "Project not found" });
+    }
 
     const project = projectRows[0];
-    if (project.user_id !== clientId)
+    if (project.user_id !== clientId) {
       return res.status(403).json({ success: false, message: "You can only invite freelancers to your own projects" });
+    }
 
     // Validate freelancer
     const { rows: freelancerRows } = await pool.query(
       `SELECT id, role_id, is_verified 
-       FROM users WHERE id = $1 AND is_deleted = false`,
+       FROM users 
+       WHERE id = $1 AND is_deleted = false`,
       [freelancer_id]
     );
-    if (!freelancerRows.length)
+
+    if (!freelancerRows.length) {
       return res.status(404).json({ success: false, message: "Freelancer not found" });
+    }
 
     const freelancer = freelancerRows[0];
-    if (freelancer.role_id !== 3 || !freelancer.is_verified)
+    if (freelancer.role_id !== 3 || !freelancer.is_verified) {
       return res.status(400).json({ success: false, message: "Invalid freelancer" });
+    }
 
-    // Prevent duplicate invites
+    // Check existing invitation or assignment
     const { rows: existing } = await pool.query(
-      `SELECT id FROM project_assignments 
-       WHERE project_id = $1 AND freelancer_id = $2`,
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
       [projectId, freelancer_id]
     );
-    if (existing.length)
+    if (existing.length) {
       return res.status(400).json({ success: false, message: "Freelancer already invited or assigned" });
+    }
 
-    // Insert assignment
+    // Create a pending invitation record
+    const assignedAt = new Date();
     const { rows: assignmentRows } = await pool.query(
       `INSERT INTO project_assignments 
-        (project_id, freelancer_id, assigned_at, status, assignment_type) 
-       VALUES ($1, $2, NOW(), 'pending_acceptance', 'by_client')
+        (project_id, freelancer_id, assigned_at, status, assignment_type)
+       VALUES ($1, $2, $3, 'pending_acceptance', 'by_client')
        RETURNING *`,
-      [projectId, freelancer_id]
+      [projectId, freelancer_id, assignedAt]
     );
+
     const assignment = assignmentRows[0];
 
-    // Log operation
+    // 🔹 Update the project to link freelancer & mark as invitation sent
+    await pool.query(
+      `UPDATE projects
+       SET assigned_freelancer_id = $1,
+           status = 'pending_acceptance',
+           completion_status = 'invitation_sent'
+       WHERE id = $2`,
+      [freelancer_id, projectId]
+    );
+
+    // Log this operation
     await LogCreators.projectOperation(
       clientId,
       ACTION_TYPES.ASSIGNMENT_CREATE,
       projectId,
       true,
-      { freelancer_id, assignment_id: assignment.id, action: "invitation_sent" }
+      {
+        freelancer_id,
+        assignment_id: assignment.id,
+        type: "by_client",
+        action: "invitation_sent"
+      }
     );
 
+    // Send notification to freelancer
     try {
       await NotificationCreators.freelancerAssignmentChanged(projectId, freelancer_id, true);
     } catch (err) {
@@ -632,9 +624,10 @@ export const assignFreelancer = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Invitation sent successfully. Freelancer must accept before assignment becomes active.",
-      assignment
+      message: "Invitation sent successfully. Waiting for freelancer response.",
+      assignment,
     });
+
   } catch (error) {
     console.error("assignFreelancer error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -979,7 +972,7 @@ export const getApplicationsForMyProjects = async (req, res) => {
  * GET PROJECT STATUS TIMELINE
  * -------------------------------
  * Combines project, assignment, and completion info
- * to build a timeline of the project's current lifecycle.
+ * to build a timeline of the project’s current lifecycle.
  * -------------------------------
  */
 export const getProjectTimeline = async (req, res) => {

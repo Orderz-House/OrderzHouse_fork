@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/navbar/Nav";
 import EnhancedFooter from "./components/footer/Footer";
@@ -64,6 +65,7 @@ function App() {
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
   const userData = useSelector((state) => state.auth.userData);
+  
 
   const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
@@ -301,6 +303,7 @@ function App() {
           draggable
           pauseOnHover
         />
+        <Toaster position="bottom-right" />
       </GlobalLoadingProvider>
     </>
   );

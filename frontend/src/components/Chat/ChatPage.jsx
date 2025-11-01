@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { io } from "socket.io-client";
+import toast from "react-hot-toast";
 import { fetchMessages, sendMessage } from "./api/chatApi";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
@@ -15,9 +17,74 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [sending, setSending] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
-  // Fetch chat messages
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io(import.meta.env.VITE_API_URL, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+    socketRef.current = socket;
+
+    const roomData = projectId ? { project_id: projectId } : { task_id: taskId };
+    socket.emit("join_room", roomData);
+
+    socket.on("room_joined", () => console.log("Joined room successfully"));
+    socket.on("join_error", (err) => console.error("Join error:", err));
+
+    socket.on("chat:new_message", ({ message }) => {
+      setMessages((prev) => [...prev, message]);
+
+      if (message.sender_id !== user.id) {
+        toast.custom(
+          <div className="bg-white border border-gray-200 shadow-lg rounded-xl p-3 flex items-center gap-3 max-w-sm">
+            <MessageSquare className="text-[#028090] w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-gray-800 text-sm">New Message</p>
+              <p className="text-xs text-gray-600 truncate max-w-[200px]">
+                {message.content}
+              </p>
+            </div>
+          </div>,
+          { duration: 4000 }
+        );
+
+        // Optional: play notification sound
+        // new Audio("/sounds/message-tone.mp3").play();
+      }
+    });
+
+    socket.on("chat:system_message", ({ message }) => {
+      setLocked(true);
+      toast.error("⚠️ Chat locked due to system rules", {
+        style: {
+          background: "#ffecec",
+          color: "#b91c1c",
+          border: "1px solid #fecaca",
+        },
+      });
+    });
+
+    socket.on("chat:typing", ({ userId }) => {
+      if (userId !== user.id) {
+        setTypingUser(true);
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 2000);
+      }
+    });
+
+    return () => {
+      socket.emit("leave_room", roomData);
+      socket.disconnect();
+    };
+  }, [projectId, taskId, token, user.id]);
+
+  // 📥 Load messages
   useEffect(() => {
     if (token) loadMessages();
   }, [token, projectId, taskId]);
@@ -34,9 +101,9 @@ export default function ChatPage() {
     }
   };
 
-  // Handle sending a message
+  // ✉️ Send message
   const handleSend = async (content) => {
-    if (!content.trim() || sending) return;
+    if (!content.trim() || sending || locked) return;
     setSending(true);
     try {
       const data = {
@@ -50,26 +117,29 @@ export default function ChatPage() {
 
       if (res.success && res.sentMessage) {
         setMessages((prev) => [...prev, res.sentMessage]);
+        socketRef.current?.emit("chat:new_message", { message: res.sentMessage });
       } else if (res.message?.toLowerCase().includes("locked")) {
         setLocked(true);
       }
     } catch (err) {
-      if (err.response?.status === 403) {
-        setLocked(true);
-      } else {
-        console.error("Error sending message:", err);
-      }
+      if (err.response?.status === 403) setLocked(true);
+      else console.error("Error sending message:", err);
     } finally {
       setSending(false);
     }
   };
 
-  // Auto-scroll to last message
+  // ✍️ Typing indicator
+  const handleTyping = () => {
+    socketRef.current?.emit("chat:typing", { userId: user.id });
+  };
+
+  // ⏬ Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Locked chat screen
+  // 🚫 Locked chat screen
   if (locked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -117,13 +187,18 @@ export default function ChatPage() {
             {messages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} currentUser={user} />
             ))}
+            {typingUser && (
+              <p className="text-sm text-gray-400 italic ml-4 mb-3 animate-pulse">
+                Typing...
+              </p>
+            )}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
 
       {/* Input */}
-      <ChatInput onSend={handleSend} disabled={locked || sending} />
+      <ChatInput onSend={handleSend} onTyping={handleTyping} disabled={locked || sending} />
     </div>
   );
 }
