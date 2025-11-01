@@ -23,7 +23,7 @@ const themeDark = "#05668D";
 const themeLight = "#02C39A";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL: import.meta.env.VITE_APP_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
 

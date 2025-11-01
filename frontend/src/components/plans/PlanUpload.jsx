@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 
 const PlanUpload = ({ plan, onClose }) => {
@@ -7,6 +7,8 @@ const PlanUpload = ({ plan, onClose }) => {
   const [duration, setDuration] = useState(plan?.duration || 30);
   const [description, setDescription] = useState(plan?.description || "");
   const [features, setFeatures] = useState(plan?.features?.join(", ") || "");
+
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,9 +22,9 @@ const PlanUpload = ({ plan, onClose }) => {
       };
 
       if (plan) {
-        await axios.put(`/https://backend.thi8ah.com/plans/edit/${plan.id}`, payload);
+        await axios.put(`${API_BASE}/plans/edit/${plan.id}`, payload);
       } else {
-        await axios.post("/https://backend.thi8ah.com/plans/create", payload);
+        await axios.post(`${API_BASE}/plans/create`, payload);
       }
 
       onClose();

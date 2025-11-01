@@ -39,26 +39,23 @@ export const createProject = async (req, res) => {
       budget_min,
       budget_max,
       hourly_rate,
-      preferred_skills
+      preferred_skills,
     } = req.body;
 
-    // 🔹 Validate required fields
     const missingFields = [];
     if (!category_id) missingFields.push("category_id");
     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
     if (!title) missingFields.push("title");
     if (!description) missingFields.push("description");
     if (!duration_type) missingFields.push("duration_type");
-    if (!['fixed', 'hourly', 'bidding'].includes(project_type))
+    if (!["fixed", "hourly", "bidding"].includes(project_type))
       missingFields.push("project_type");
 
-    // 🔹 Validate duration
     if (duration_type === "days" && (!duration_days || duration_days <= 0))
       missingFields.push("duration_days");
     if (duration_type === "hours" && (!duration_hours || duration_hours <= 0))
       missingFields.push("duration_hours");
 
-    // 🔹 Validate budget/rates based on type
     if (project_type === "fixed" && (!budget || budget <= 0))
       missingFields.push("budget");
     if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0))
@@ -73,11 +70,10 @@ export const createProject = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: `Missing or invalid required fields: ${missingFields.join(", ")}`
+        message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
       });
     }
 
-    // 🔹 Determine project status
     let projectStatus = "pending";
     if (project_type === "bidding") projectStatus = "bidding";
     else if (["fixed", "hourly"].includes(project_type))
@@ -86,7 +82,6 @@ export const createProject = async (req, res) => {
     const durationDaysValue = duration_type === "days" ? duration_days : null;
     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
-    // 🔹 Insert new project
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, sub_category_id, sub_sub_category_id,
@@ -94,8 +89,8 @@ export const createProject = async (req, res) => {
         project_type, budget_min, budget_max, hourly_rate,
         preferred_skills, status, completion_status, is_deleted
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, 'not_started', false
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,
+        $10,$11,$12,$13,$14,$15,'not_started',false
       ) RETURNING *;
     `;
 
@@ -114,15 +109,35 @@ export const createProject = async (req, res) => {
       budget_max || null,
       hourly_rate || null,
       preferred_skills || [],
-      projectStatus
+      projectStatus,
     ]);
 
     let project = rows[0];
 
-    // 🔹 Set amount_to_pay
+    let coverPicUrl = null;
+    if (req.files?.cover_pic?.[0]) {
+      try {
+        const result = await uploadToCloudinary(
+          req.files.cover_pic[0].buffer,
+          `projects/${project.id}/cover`
+        );
+        coverPicUrl = result.secure_url;
+
+        await pool.query(
+          `UPDATE projects SET cover_pic = $1 WHERE id = $2`,
+          [coverPicUrl, project.id]
+        );
+        project.cover_pic = coverPicUrl;
+      } catch (err) {
+        console.error("Cover pic upload failed:", err);
+      }
+    }
+
+    //  Step 3: Calculate amount_to_pay
     let amountToPay = null;
     if (project.project_type === "fixed") amountToPay = project.budget;
-    else if (project.project_type === "hourly") amountToPay = (project.hourly_rate || 0) * 3; // prepay 3h
+    else if (project.project_type === "hourly")
+      amountToPay = (project.hourly_rate || 0) * 3;
 
     if (amountToPay !== null) {
       const { rows: updated } = await pool.query(
@@ -132,7 +147,6 @@ export const createProject = async (req, res) => {
       project = updated[0];
     }
 
-    // 🔹 Log & notify
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -148,19 +162,17 @@ export const createProject = async (req, res) => {
         userId,
         project.category_id
       );
-    } catch (notificationError) {
-      console.error("Error creating project notifications:", notificationError);
+    } catch (err) {
+      console.error("Error creating project notifications:", err);
     }
 
-    return res.status(201).json({
-      success: true,
-      project
-    });
+    return res.status(201).json({ success: true, project });
   } catch (error) {
     console.error("createProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 /**

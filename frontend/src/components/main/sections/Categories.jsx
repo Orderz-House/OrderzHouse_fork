@@ -23,6 +23,7 @@ export default function CategoriesShowcase({
   loop = false,
 }) {
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_APP_API_URL; 
 
   const handleSelect = useCallback(
     (cat) => {
@@ -42,7 +43,7 @@ export default function CategoriesShowcase({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get("https://backend.thi8ah.com/category");
+        const { data } = await axios.get(`${API_BASE}/category`); 
 
         if (data.success && data.data) {
           const mappedCategories = data.data.map((cat) => ({
@@ -67,7 +68,7 @@ export default function CategoriesShowcase({
     };
 
     fetchCategories();
-  }, []);
+  }, [API_BASE]);
 
   const allCategories = fetchedCategories.length ? fetchedCategories : categories;
   const cats = useMemo(() => allCategories.slice(0, 10), [allCategories]);

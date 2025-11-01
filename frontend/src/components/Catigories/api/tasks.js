@@ -1,14 +1,11 @@
 import axios from "axios";
 import store from "../../../store/store";
 
-// Base API URL (use VITE_APP_API_URL if available)
-const API_BASE = import.meta.env.VITE_APP_API_URL || "https://backend.thi8ah.com/tasks";
+const API_BASE = `${import.meta.env.VITE_APP_API_URL}/tasks`;
 
-// Get auth token from Redux or localStorage
 const getAuthToken = () =>
   store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 
-// Get headers with authorization
 const getAuthHeaders = () => {
   const token = getAuthToken();
   return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
@@ -51,7 +48,7 @@ export const fetchAuthTasksBySubSubCategory = async (subSubCategoryId) => {
 };
 
 /* ============================================================================
-   🌍 PUBLIC APIs
+    PUBLIC APIs
 ============================================================================ */
 export const fetchTasksByCategory = async (categoryId) => {
   const { data } = await axios.get(`${API_BASE}/public/category/${categoryId}`);
@@ -77,7 +74,7 @@ export const fetchTasksBySubSubCategory = async (subSubCategoryId) => {
 };
 
 /* ============================================================================
-   🧩 GET BY ID
+   GET BY ID
 ============================================================================ */
 export const getTaskByIdApi = async (taskId, token) => {
   if (!taskId) throw new Error("Missing taskId");

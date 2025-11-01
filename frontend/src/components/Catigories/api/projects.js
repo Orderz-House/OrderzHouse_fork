@@ -1,7 +1,7 @@
 import axios from "axios";
 import store from "../../../store/store";
 
-const API_BASE = "https://backend.thi8ah.com/projects";
+const API_BASE = `${import.meta.env.VITE_APP_API_URL}/projects`;
 
 const getAuthToken = () => {
   return store?.getState()?.auth?.token || localStorage.getItem("token") || null;

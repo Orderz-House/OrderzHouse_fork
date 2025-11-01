@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { User } from "lucide-react";
 import { useToast } from "../../components/toast/ToastProvider";
+import API from "../api/axios"
 
 const PRIMARY = "#028090";
 
@@ -32,13 +33,9 @@ export default function EditProfile() {
   const fetchUserProfile = async () => {
     try {
       setFetchLoading(true);
-      const token = localStorage.getItem("token");
+      const res = await API.get("/users/getUserdata");
+      const data = res.data;
 
-      const res = await fetch("https://backend.thi8ah.com/users/getUserdata", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
       if (data.success && data.user) {
         setFormData(data.user);
       } else {
@@ -79,37 +76,39 @@ export default function EditProfile() {
     try {
       const formDataCloud = new FormData();
       formDataCloud.append("file", file);
-      formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-      formDataCloud.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+      formDataCloud.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+      );
+      formDataCloud.append(
+        "cloud_name",
+        import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+      );
       formDataCloud.append("folder", "users/profile_pics");
 
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+        }/auto/upload`,
         { method: "POST", body: formDataCloud }
       );
+      const data = await uploadRes.json();
 
-      const data = await res.json();
       if (data.secure_url) {
-        // Update profile locally
         setFormData((prev) => ({ ...prev, profile_pic_url: data.secure_url }));
         showToast("Profile picture uploaded!", "success");
 
-        // Save to backend
-        const token = localStorage.getItem("token");
-        const updateRes = await fetch("https://backend.thi8ah.com/users/edit", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ profile_pic_url: data.secure_url }),
+        const updateRes = await API.put("/users/edit", {
+          profile_pic_url: data.secure_url,
         });
 
-        const updateData = await updateRes.json();
-        if (updateData.success) {
+        if (updateRes.data.success) {
           showToast("Profile picture updated successfully!", "success");
         } else {
-          showToast(updateData.message || "Error updating profile picture", "error");
+          showToast(
+            updateRes.data.message || "Error updating profile picture",
+            "error"
+          );
         }
       } else {
         showToast("Cloudinary upload failed", "error");
@@ -132,17 +131,9 @@ export default function EditProfile() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("https://backend.thi8ah.com/users/edit", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = await API.put("/users/edit", formData);
+      const data = res.data;
 
-      const data = await res.json();
       if (data.success) {
         showToast("Profile updated successfully!", "success");
       } else {

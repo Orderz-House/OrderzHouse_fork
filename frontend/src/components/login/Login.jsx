@@ -34,14 +34,16 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [requiresOtp, setRequiresOtp] = useState(false);
 
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
+
   const handleLogin = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
     axios
-      .post("https://backend.thi8ah.com/users/login", {
-        email: email.toLowerCase( ),
+      .post(`${API_BASE}/users/login`, {
+        email: email.toLowerCase(),
         password,
       })
       .then((res) => {
@@ -62,9 +64,9 @@ const Login = () => {
           connectSocket(res.data.token, decoded.userId);
           setTimeout(() => navigate("/"), 1500);
         } else if (res.data.message === "OTP sent successfully") {
-          setStatus(true); 
+          setStatus(true);
           setMessage("Verification code sent. Please check your email and enter the code below.");
-          setRequiresOtp(true); 
+          setRequiresOtp(true);
         }
       })
       .catch((err) => {
@@ -72,7 +74,7 @@ const Login = () => {
         setStatus(false);
         const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
         setMessage(errorMessage);
-        setRequiresOtp(false); 
+        setRequiresOtp(false);
       });
   };
 
@@ -82,8 +84,8 @@ const Login = () => {
     setMessage("");
 
     axios
-      .post("https://backend.thi8ah.com/users/verify-otp", {
-        email: email.toLowerCase( ),
+      .post(`${API_BASE}/users/verify-otp`, {
+        email: email.toLowerCase(),
         otp,
       })
       .then((res) => {

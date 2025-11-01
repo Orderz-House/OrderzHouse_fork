@@ -1,7 +1,7 @@
 // src/components/CreateProjects/api/category.js
 import axios from "axios";
 
-const API_BASE = "https://backend.thi8ah.com/category";
+const API_BASE = `${import.meta.env.VITE_APP_API_URL}/category`;
 
 /* ================================
    MAIN CATEGORIES
