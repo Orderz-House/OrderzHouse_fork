@@ -20,17 +20,17 @@ const CourseDetail = () => {
     const fetchData = async () => {
       if (!token || !id) return;
       try {
-        const accessRes = await axios.get(`http://localhost:5000/courses/check-access/${id}`, {
+        const accessRes = await axios.get(`https://backend.thi8ah.com/courses/check-access/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHasAccess(accessRes.data.hasAccess);
 
         if (accessRes.data.hasAccess || userData?.role_id === 1) {
             const [courseRes, materialsRes] = await Promise.all([
-              axios.get(`http://localhost:5000/courses/view/${id}`, {
+              axios.get(`https://backend.thi8ah.com/courses/view/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
               }),
-              axios.get(`http://localhost:5000/courses/${id}/materials`, {
+              axios.get(`https://backend.thi8ah.com/courses/${id}/materials`, {
                 headers: { Authorization: `Bearer ${token}` },
               }),
             ]);

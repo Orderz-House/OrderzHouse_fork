@@ -45,7 +45,7 @@ const fetchPortfolioItems = async () => {
     setIsLoading(true);
 
     const response = await axios.get(
-      `http://localhost:5000/users/freelancer/${userId}/portfolio`,
+      `https://backend.thi8ah.com/users/freelancer/${userId}/portfolio`,
       {
         headers: {
           authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ const fetchPortfolioItems = async () => {
             if (editingItem) {
                 // Update existing item
                 console.log("formData =>", formData);
-                axios.put(`http://localhost:5000/users/freelancers/portfolio/edit/${editingItem.id}`, {...formData}, {
+                axios.put(`https://backend.thi8ah.com/users/freelancers/portfolio/edit/${editingItem.id}`, {...formData}, {
                   headers: {
                     authorization: `Bearer ${token}`,
                   },
@@ -122,7 +122,7 @@ const fetchPortfolioItems = async () => {
                     console.log("Update error", err);
                 });
             } else {
-                axios.post("http://localhost:5000/users/freelancers/portfolio/create", {...formData, freelancer_id: userId}, {
+                axios.post("https://backend.thi8ah.com/users/freelancers/portfolio/create", {...formData, freelancer_id: userId}, {
                     headers:{
                         authorization : `Bearer  ${token}`
                     }
@@ -174,7 +174,7 @@ const fetchPortfolioItems = async () => {
         console.log(token);
         
         try {
-            axios.delete("http://localhost:5000/users/freelancer/portfolio/delete",  {
+            axios.delete("https://backend.thi8ah.com/users/freelancer/portfolio/delete",  {
                 headers:{
                         authorization : `Bearer  ${token}`
                     },

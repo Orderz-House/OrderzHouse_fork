@@ -1,8 +1,8 @@
 import axios from "axios";
 import store from "../../../store/store";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
-
+// Base API URL (use VITE_APP_API_URL if available)
+const API_BASE = import.meta.env.VITE_APP_API_URL || "https://backend.thi8ah.com/tasks";
 const getAuthToken = () =>
   store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 

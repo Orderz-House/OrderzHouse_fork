@@ -24,7 +24,7 @@ export default function Blogs() {
     try {
       setLoading(true);
       setErr(null);
-      const { data } = await axios.get("http://localhost:5000/blogs", {});
+      const { data } = await axios.get("https://backend.thi8ah.com/blogs", {});
       setPosts(Array.isArray(data) ? data : data?.items ?? []);
     } catch (e) {
       setErr(e?.message || "Failed to load blogs");

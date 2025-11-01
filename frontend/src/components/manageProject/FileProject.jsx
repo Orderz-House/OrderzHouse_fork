@@ -39,7 +39,7 @@ function FileProject() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:5000/projects/${projectId}/files`,
+        `https://backend.thi8ah.com/projects/${projectId}/files`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -74,7 +74,7 @@ function FileProject() {
       setUploadProgress(0);
       
       const res = await axios.post(
-        `http://localhost:5000/projects/${projectId}/files`,
+        `https://backend.thi8ah.com/projects/${projectId}/files`,
         formData,
         {
           headers: {
@@ -111,7 +111,7 @@ function FileProject() {
   const handleDownload = async (file) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/projects/${projectId}/files/${file.id}/download`,
+        `https://backend.thi8ah.com/projects/${projectId}/files/${file.id}/download`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -139,7 +139,7 @@ function FileProject() {
     try {
       setDeletingFileId(fileId);
       await axios.delete(
-        `http://localhost:5000/projects/${projectId}/files/${fileId}`,
+        `https://backend.thi8ah.com/projects/${projectId}/files/${fileId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

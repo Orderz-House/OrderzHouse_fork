@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/tasks";
+const API_BASE = "https://backend.thi8ah.com/tasks";
 
 //Create a new Task
 export const createTaskApi = async (taskData, token) => {

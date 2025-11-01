@@ -35,7 +35,7 @@ function CompletionProject({ project }) {
   const fetchCompletion = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/projects/${projectId}/completion`,
+        `https://backend.thi8ah.com/projects/${projectId}/completion`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setFreelancers(response.data.freelancers || []);
@@ -53,7 +53,7 @@ function CompletionProject({ project }) {
     try {
       setIsSubmitting(true);
       const response = await axios.post(
-        `http://localhost:5000/projects/${projectId}/complete`,
+        `https://backend.thi8ah.com/projects/${projectId}/complete`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -84,7 +84,7 @@ function CompletionProject({ project }) {
     try {
       setIsQuitting(true);
       const response = await axios.post(
-        `http://localhost:5000/projects/${projectId}/quit`,
+        `https://backend.thi8ah.com/projects/${projectId}/quit`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -127,7 +127,7 @@ function CompletionProject({ project }) {
       project.assignments = updatedAssignments;
       
       await axios.post(
-        `http://localhost:5000/projects/${projectId}/release-payment/${freelancerId}`,
+        `https://backend.thi8ah.com/projects/${projectId}/release-payment/${freelancerId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -165,7 +165,7 @@ function CompletionProject({ project }) {
       project.assignments = updatedAssignments;
       
       await axios.post(
-        `http://localhost:5000/projects/${projectId}/request-changes/${freelancerId}`,
+        `https://backend.thi8ah.com/projects/${projectId}/request-changes/${freelancerId}`,
         { changes_request: changesRequest },
         { headers: { Authorization: `Bearer ${token}` } }
       );

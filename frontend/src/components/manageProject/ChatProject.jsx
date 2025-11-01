@@ -25,7 +25,7 @@ function ChatProject() {
     const fetchTeamMembers = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/projects/${projectId}`,
+          `https://backend.thi8ah.com/projects/${projectId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -182,7 +182,7 @@ function ChatProject() {
     const fetchMessages = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/chats/project/${projectId}/messages/`,
+          `https://backend.thi8ah.com/chats/project/${projectId}/messages/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

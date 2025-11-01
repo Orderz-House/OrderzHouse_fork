@@ -17,7 +17,7 @@ const MyRestrictedCourses = () => {
       if (!token) return;
       try {
         setLoading(true);
-        const res = await axios.get('http://localhost:5000/courses/accessible');
+        const res = await axios.get('https://backend.thi8ah.com/courses/accessible');
         setCourses(res.data.courses || []);
       } catch (err) {
         console.error('Error fetching my courses:', err);

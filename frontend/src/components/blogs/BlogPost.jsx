@@ -20,7 +20,7 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`http://localhost:5000/blogs/${encodeURIComponent(id)}`, {
+        const { data } = await axios.get(`https://backend.thi8ah.com/blogs/${encodeURIComponent(id)}`, {
         });
         if (!mounted) return;
 
@@ -125,7 +125,7 @@ export default function BlogPost() {
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl="http://localhost:5000/blogs"
+        createUrl="https://backend.thi8ah.com/blogs"
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);
@@ -190,15 +190,15 @@ export default function BlogPost() {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {!post ? null : (
-          <article ref={contentRef} className="space-y-8">
+          <article ref={contentRef} className="space-y-8 overflow-x-hidden">
             {(post.sections || []).map((s) => (
               <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
                 <h2 className="text-xl font-bold text-slate-900 mb-3">
                   {s.h}
                 </h2>
-                <div className="space-y-4 text-slate-700 leading-relaxed">
+                <div className="space-y-4 text-slate-700 leading-relaxed break-words">
                   {(s.p || []).map((para, i) => (
-                    <p key={i} className="text-base">
+                    <p key={i} className="text-base whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {para}
                     </p>
                   ))}

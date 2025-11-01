@@ -16,7 +16,7 @@ export default function ProjectsPool({ categoryId, onBack }) {
       try {
         setLoading(true);
         
-        const projectsResponse = await fetch(`http://localhost:5000/projects/category/${categoryId}`);
+        const projectsResponse = await fetch(`https://backend.thi8ah.com/projects/category/${categoryId}`);
         
         if (!projectsResponse.ok) {
           throw new Error(`HTTP error! status: ${projectsResponse.status}`);
@@ -34,7 +34,7 @@ export default function ProjectsPool({ categoryId, onBack }) {
             });
           }
         } else {
-          const categoryResponse = await fetch(`http://localhost:5000/category/${categoryId}`);
+          const categoryResponse = await fetch(`https://backend.thi8ah.com/category/${categoryId}`);
           if (categoryResponse.ok) {
             const categoryData = await categoryResponse.json();
             if (categoryData.success && categoryData.category) {

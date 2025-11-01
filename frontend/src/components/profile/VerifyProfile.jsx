@@ -89,7 +89,7 @@ function VerifyProfile() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const profileRes = await axios.get(
-        "http://localhost:5000/users/getUserdata",
+        "https://backend.thi8ah.com/users/getUserdata",
         config
       );
       const userData = profileRes.data.user;
@@ -110,7 +110,7 @@ function VerifyProfile() {
 
       try {
         const portfolioRes = await axios.get(
-          `http://localhost:5000/users/freelances/${userId}/port`,
+          `https://backend.thi8ah.com/users/freelances/${userId}/port`,
           config
         );
         if (portfolioRes.data.success && portfolioRes.data.portfolios) {
@@ -205,7 +205,7 @@ function VerifyProfile() {
       setUploadingImage(true);
       const form = new FormData();
       form.append("image", file);
-      const res = await axios.post(`http://localhost:5000/upload`, form, {
+      const res = await axios.post(`https://backend.thi8ah.com/upload`, form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = res.data?.url;
@@ -310,7 +310,7 @@ function VerifyProfile() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       await axios.put(
-        `http://localhost:5000/users/edit/${profile.id}`,
+        `https://backend.thi8ah.com/users/edit/${profile.id}`,
         updateData,
         config
       );
@@ -337,8 +337,8 @@ function VerifyProfile() {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const endpoint = editingPortfolioId
-        ? `http://localhost:5000/users/freelancers/portfolio/edit/${editingPortfolioId}`
-        : "http://localhost:5000/users/freelancers/portfolio/create";
+        ? `https://backend.thi8ah.com/users/freelancers/portfolio/edit/${editingPortfolioId}`
+        : "https://backend.thi8ah.com/users/freelancers/portfolio/create";
       const method = editingPortfolioId ? "put" : "post";
       const res = await axios[method](
         endpoint,
@@ -402,7 +402,7 @@ function VerifyProfile() {
       return;
     try {
       const res = await axios.delete(
-        "http://localhost:5000/users/freelancers/portfolio/delete",
+        "https://backend.thi8ah.com/users/freelancers/portfolio/delete",
         {
           headers: { Authorization: `Bearer ${token}` },
           data: { freelancerId: userId, portfolioId },

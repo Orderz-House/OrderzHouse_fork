@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
 import { useNavigate } from "react-router";
+  import arabCountries from "../../data/arabCountries.json";
 import {
   Mail,
   Lock,
@@ -19,6 +20,8 @@ import {
   Shield,
   Check,
   KeyRound,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 
@@ -26,6 +29,8 @@ const roles = [
   { id: 2, label: "Customer" },
   { id: 3, label: "Freelancer" },
 ];
+
+const PRIMARY = "#028090";
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -52,6 +57,13 @@ const Register = () => {
     hasLowerCase: false,
     hasNumber: false,
   });
+  const [profile_pic_url, setProfile_pic_url] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // ===== States for sub-categories =====
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [subCategories, setSubCategories] = useState({});
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
 
   // ===== OTP states =====
   const [showOtpField, setShowOtpField] = useState(false);
@@ -59,24 +71,11 @@ const Register = () => {
   const [isVerifying, setIsVerifying] = useState(false);
 
   //========= countries api =========//
-  useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const res = await axios.get(
-          "https://api.allorigins.win/raw?url=https://www.apicountries.com/countries"
-        );
-        const countryList = res.data?.countries || res.data || [];
-        const sorted = countryList
-          .map((c) => c.name?.common || c.name || c.country_name)
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b));
-        setCountries(sorted);
-      } catch (error) {
-        console.error("Error fetching countries:", error);
-      }
-    };
-    fetchCountries();
-  }, []);
+
+useEffect(() => {
+  setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
+}, []);
+
 
   // ========= password strength checker =========//
   useEffect(() => {
@@ -88,10 +87,10 @@ const Register = () => {
     });
   }, [password]);
 
-  // ========= freelancercategories =========//
+  // ========= freelancer categories =========//
   useEffect(() => {
     axios
-      .get("http://localhost:5000/category")
+      .get("https://backend.thi8ah.com/category")
       .then((response) => setCategories(response.data.categories || []))
       .catch((error) => console.error("Error fetching categories:", error));
   }, []);
@@ -108,6 +107,90 @@ const Register = () => {
     setSelectedCategories((prev) => prev.filter((id) => id !== categoryId));
   };
 
+  // ========= Fetch sub-categories when category is expanded =========//
+  const toggleCategoryExpand = async (categoryId) => {
+    const isExpanded = expandedCategories[categoryId];
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [categoryId]: !isExpanded,
+    }));
+
+    // Fetch sub-categories if not already fetched
+    if (!isExpanded && !subCategories[categoryId]) {
+      try {
+        const res = await axios.get(
+          `https://backend.thi8ah.com/category/${categoryId}/sub-categories`
+        );
+        setSubCategories((prev) => ({
+          ...prev,
+          [categoryId]: res.data.subCategories || [],
+        }));
+      } catch (error) {
+        console.error("Error fetching sub-categories:", error);
+      }
+    }
+  };
+
+  // ========= Handle sub-category selection =========//
+  const handleSubCategoryToggle = (subCategoryId) => {
+    setSelectedSubCategories((prev) =>
+      prev.includes(subCategoryId)
+        ? prev.filter((id) => id !== subCategoryId)
+        : [...prev, subCategoryId]
+    );
+  };
+
+  const removeSubCategory = (subCategoryId) => {
+    setSelectedSubCategories((prev) =>
+      prev.filter((id) => id !== subCategoryId)
+    );
+  };
+
+  // Helper function to get sub-category name by ID
+  const getSubCategoryName = (subCategoryId) => {
+    for (const catId in subCategories) {
+      const subCat = subCategories[catId]?.find((sc) => sc.id === subCategoryId);
+      if (subCat) return subCat.name;
+    }
+    return "";
+  };
+
+  /* ===================== Upload Profile Image to Cloudinary ===================== */
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formDataCloud = new FormData();
+      formDataCloud.append("file", file);
+      formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+      formDataCloud.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+      formDataCloud.append("folder", "users/profile_pics");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        { method: "POST", body: formDataCloud }
+      );
+
+      const data = await res.json();
+      if (data.secure_url) {
+        setProfile_pic_url(data.secure_url);
+        setMessage("Profile picture uploaded!");
+        setStatus(true);
+      } else {
+        setMessage("Cloudinary upload failed");
+        setStatus(false);
+      }
+    } catch (err) {
+      console.error("Image upload error:", err);
+      setMessage("Error uploading image");
+      setStatus(false);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // =============== REGISTER =============== //
   const register = (e) => {
     e.preventDefault();
@@ -122,13 +205,16 @@ const Register = () => {
       phone_number,
       country,
       username,
+      profile_pic_url,
     };
+
     if (role_id === "3") {
       userData.categories = selectedCategories;
+      userData.sub_categories = selectedSubCategories;
     }
 
     axios
-      .post("http://localhost:5000/users/register", userData)
+      .post("https://backend.thi8ah.com/users/register", userData)
       .then((result) => {
         setStatus(true);
         setMessage(
@@ -154,7 +240,7 @@ const Register = () => {
     }
     setIsVerifying(true);
     axios
-      .post("http://localhost:5000/users/verify-email", { email, otp })
+      .post("https://backend.thi8ah.com/users/verify-email", { email, otp })
       .then(() => {
         setStatus(true);
         setMessage("Email verified successfully ✅ Redirecting...");
@@ -202,6 +288,45 @@ const Register = () => {
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
             {!showOtpField ? (
               <form onSubmit={register} className="space-y-6">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative">
+                    <div className="w-28 h-28 bg-slate-100 border border-slate-200 rounded-full overflow-hidden grid place-items-center">
+                      {profile_pic_url ? (
+                        <img
+                          src={profile_pic_url}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-14 h-14 text-slate-400" />
+                      )}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-slate-600 text-xs">
+                          Uploading…
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Upload Button */}
+                    <label
+                      htmlFor="profile-pic"
+                      className="absolute bottom-0 right-0 w-9 h-9 rounded-full text-white grid place-items-center shadow-md cursor-pointer"
+                      style={{ background: PRIMARY }}
+                    >
+                      +
+                      <input
+                        id="profile-pic"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-slate-500 text-sm mt-2">Upload profile picture (optional)</p>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* LEFT SIDE */}
                   <div className="space-y-5">
@@ -226,16 +351,18 @@ const Register = () => {
                         </select>
                       </div>
                     </div>
-                    {/* Freelancer Categories */}
+
+                    {/* Freelancer Categories with Sub-Categories */}
                     {role_id === "3" && (
                       <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60">
                         <label className="block text-sm text-slate-700 mb-2">
                           What category would you like to work in?
                           <span className="block text-xs text-slate-500">
-                            Choose your areas of expertise (select multiple)
+                            Choose your areas of expertise (categories and sub-categories)
                           </span>
                         </label>
 
+                        {/* Selected Categories Display */}
                         {selectedCategories.length > 0 && (
                           <div className="mb-3 max-h-20 overflow-y-auto">
                             <div className="flex flex-wrap gap-2">
@@ -265,26 +392,102 @@ const Register = () => {
                           </div>
                         )}
 
-                        <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
-                          <div className="grid grid-cols-1 gap-2 p-3">
+                        {/* Selected Sub-Categories Display */}
+                        {selectedSubCategories.length > 0 && (
+                          <div className="mb-3 max-h-20 overflow-y-auto">
+                            <div className="flex flex-wrap gap-2">
+                              {selectedSubCategories.map((subCategoryId) => {
+                                const name = getSubCategoryName(subCategoryId);
+                                return name ? (
+                                  <div
+                                    key={subCategoryId}
+                                    className="inline-flex items-center bg-emerald-600 text-white px-3 py-1 rounded-full text-xs"
+                                  >
+                                    <span className="truncate max-w-24">{name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSubCategory(subCategoryId)}
+                                      className="ml-2 hover:bg-white/20 rounded-full p-0.5"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Categories List with Expandable Sub-Categories */}
+                        <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-200">
+                          <div className="p-3 space-y-2">
                             {categories.map((category) => (
-                              <button
-                                key={category.id}
-                                type="button"
-                                onClick={() => handleCategoryToggle(category.id)}
-                                className={`p-3 rounded-lg border text-left transition ${
-                                  selectedCategories.includes(category.id)
-                                    ? "border-[#028090] bg-[#028090]/5 text-[#028090]"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                }`}
-                              >
-                                <div className="flex items-center">
-                                  {selectedCategories.includes(category.id) && (
-                                    <Check className="w-4 h-4 text-[#028090] mr-2" />
-                                  )}
-                                  <span className="truncate">{category.name}</span>
+                              <div key={category.id} className="space-y-1">
+                                {/* Main Category */}
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCategoryToggle(category.id)}
+                                    className={`flex-1 p-3 rounded-lg border text-left transition ${
+                                      selectedCategories.includes(category.id)
+                                        ? "border-[#028090] bg-[#028090]/5 text-[#028090]"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    <div className="flex items-center">
+                                      {selectedCategories.includes(category.id) && (
+                                        <Check className="w-4 h-4 text-[#028090] mr-2" />
+                                      )}
+                                      <span className="truncate">{category.name}</span>
+                                    </div>
+                                  </button>
+
+                                  {/* Expand/Collapse Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCategoryExpand(category.id)}
+                                    className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
+                                  >
+                                    {expandedCategories[category.id] ? (
+                                      <ChevronUp className="w-4 h-4 text-slate-600" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4 text-slate-600" />
+                                    )}
+                                  </button>
                                 </div>
-                              </button>
+
+                                {/* Sub-Categories (shown when expanded) */}
+                                {expandedCategories[category.id] &&
+                                  subCategories[category.id] && (
+                                    <div className="ml-6 space-y-1">
+                                      {subCategories[category.id].map((subCategory) => (
+                                        <button
+                                          key={subCategory.id}
+                                          type="button"
+                                          onClick={() =>
+                                            handleSubCategoryToggle(subCategory.id)
+                                          }
+                                          className={`w-full p-2 rounded-lg border text-left text-sm transition ${
+                                            selectedSubCategories.includes(subCategory.id)
+                                              ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                          }`}
+                                        >
+                                          <div className="flex items-center">
+                                            {selectedSubCategories.includes(
+                                              subCategory.id
+                                            ) && (
+                                              <Check className="w-4 h-4 text-emerald-600 mr-2" />
+                                            )}
+                                            <span className="truncate">
+                                              {subCategory.name}
+                                            </span>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -520,7 +723,7 @@ const Register = () => {
                   Verify your email
                 </h2>
                 <p className="text-slate-500 text-sm">
-                  We’ve sent a 6-digit code to{" "}
+                  We've sent a 6-digit code to{" "}
                   <span className="font-medium text-[#028090]">{email}</span>.
                 </p>
 

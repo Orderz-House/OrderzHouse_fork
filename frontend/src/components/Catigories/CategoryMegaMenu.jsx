@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import {
   fetchCategories,
   fetchSubCategoriesByCategoryId,
@@ -14,17 +14,20 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   // refs
   const menuRef = useRef(null);
-  const anchorRef = useRef(null); 
+  const anchorRef = useRef(null);
   const [menuTop, setMenuTop] = useState(0);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
-        menuRef.current && !menuRef.current.contains(e.target) &&
-        anchorRef.current && !anchorRef.current.contains(e.target)
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        anchorRef.current &&
+        !anchorRef.current.contains(e.target)
       ) {
         setIsOpen(false);
       }
@@ -36,7 +39,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const updateMenuTop = () => {
     if (!anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
-    setMenuTop(rect.bottom + window.scrollY + 8); 
+    setMenuTop(rect.bottom + window.scrollY + 8);
   };
 
   useEffect(() => {
@@ -53,22 +56,31 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     }
   }, [isOpen]);
 
+  // 👇 توحيد البيانات القادمة من الـAPI إلى {id, name}
+  const normalizeItem = (obj) => ({
+    id:
+      obj?.id ??
+      obj?.sub_sub_category_id ??
+      obj?.subCategoryId ??
+      obj?._id ??
+      obj?.sub_id,
+    name: obj?.name ?? obj?.sub_sub_category_name ?? obj?.title ?? "Unnamed",
+  });
+
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const cats = await fetchCategories();
-
+      const cats = await fetchCategories(); // {id, name, ...}
       const categoriesWithSubs = await Promise.all(
-        cats.map(async (category) => {
-          const subCats = await fetchSubCategoriesByCategoryId(category.id);
-
+        (cats || []).map(async (category) => {
+          const subCats = await fetchSubCategoriesByCategoryId(category.id); // {id, name, ...} غالباً
           const subCategoriesWithSubs = await Promise.all(
             (subCats || []).map(async (sub) => {
-              const subSubs = await fetchSubSubCategoriesBySubId(sub.id);
-              return { ...sub, subSubCategories: subSubs || [] };
+              const subSubsRaw = await fetchSubSubCategoriesBySubId(sub.id);
+              const subSubs = (subSubsRaw || []).map(normalizeItem); // ← هنا التطبيع
+              return { ...sub, subSubCategories: subSubs };
             })
           );
-
           return { ...category, subCategories: subCategoriesWithSubs };
         })
       );
@@ -87,7 +99,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   // UI handlers
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
-    if (onSetActiveLink) onSetActiveLink("CATEGORIES");
+    onSetActiveLink?.("CATEGORIES");
   };
 
   const handleSelectCategory = (cat) => {
@@ -97,11 +109,12 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   const handleSelectSubCategory = (sub) => setSelectedSubCategory(sub);
 
+  // ← استخدمنا s.id الموحّد بدل sub_sub_category_id
   const goToProjects = (subSub) => {
     if (!selectedCategory || !subSub) return;
     navigate(
       `/projectsPage?cat=${encodeURIComponent(selectedCategory.id)}&sub=${encodeURIComponent(
-        subSub.sub_sub_category_id
+        subSub.id
       )}`
     );
     setIsOpen(false);
@@ -139,6 +152,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             <div className="p-8 text-center text-gray-500 font-inter">Loading...</div>
           ) : (
             <div className="p-6 space-y-6">
+              {/* Tabs (categories) */}
               <div className="flex gap-6 overflow-x-auto pb-3 border-b border-gray-200">
                 {categories.map((cat) => (
                   <button
@@ -157,6 +171,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
               {selectedCategory && (
                 <div className="flex gap-6">
+                  {/* Left list (subcategories) */}
                   <div className="w-1/4 border-r border-gray-200 pr-4 min-w-[220px]">
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">
                       {selectedCategory.name} Types
@@ -178,27 +193,40 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     </div>
                   </div>
 
+                  {/* Right grid (sub-sub-categories) */}
                   <div className="flex-1">
                     {selectedSubCategory ? (
                       <>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">
                           {selectedSubCategory.name} Sub-categories
                         </h4>
-                        <div className="flex flex-wrap gap-3">
-                          {selectedSubCategory.subSubCategories?.map((s) => (
-                            <a
-                              key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.sub_sub_category_id}`}
-                              href="#"
-                              className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                goToProjects(s); 
-                              }}
-                            >
-                              {s.sub_sub_category_name}
-                            </a>
-                          ))}
-                        </div>
+
+                        {selectedSubCategory.subSubCategories?.length ? (
+                          <div className="flex flex-wrap gap-3">
+                            {selectedSubCategory.subSubCategories.map((s) => (
+                              <a
+                                key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.id}`}
+                                href="#"
+                                className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  goToProjects(s);
+                                }}
+                              >
+                                {s.name}
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            {Array.from({ length: 12 }).map((_, i) => (
+                              <span
+                                key={i}
+                                className="inline-block h-6 w-14 rounded-md bg-gray-100 animate-pulse"
+                              />
+                            ))}
+                          </div>
+                        )}
                       </>
                     ) : (
                       <p className="text-gray-500 text-sm mt-3">

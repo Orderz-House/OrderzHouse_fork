@@ -20,9 +20,9 @@ const PlanUpload = ({ plan, onClose }) => {
       };
 
       if (plan) {
-        await axios.put(`/http://localhost:5000/plans/edit/${plan.id}`, payload);
+        await axios.put(`/https://backend.thi8ah.com/plans/edit/${plan.id}`, payload);
       } else {
-        await axios.post("/http://localhost:5000/plans/create", payload);
+        await axios.post("/https://backend.thi8ah.com/plans/create", payload);
       }
 
       onClose();

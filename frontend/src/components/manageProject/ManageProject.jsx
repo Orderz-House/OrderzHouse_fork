@@ -43,7 +43,7 @@ const ManageProject = () => {
       try {
         setIsLoading(true);
         await axios
-          .get(`http://localhost:5000/projects/${projectId}`, {
+          .get(`https://backend.thi8ah.com/projects/${projectId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           .then((projectRes) => {
@@ -118,7 +118,7 @@ const ManageProject = () => {
     const fetchMessages = async () => {
       try {
         await axios.get(
-          `http://localhost:5000/chats/project/${projectId}/messages/`,
+          `https://backend.thi8ah.com/chats/project/${projectId}/messages/`,
           { headers: { Authorization: `Bearer ${token}` } }
         ).then((result) => {
           setMessages(result.data.messages.rows);
@@ -146,7 +146,7 @@ const ManageProject = () => {
     try {
       setIsSubmitting(true);
       const res = await axios.post(
-        `http://localhost:5000/projects/${projectId}/files`,
+        `https://backend.thi8ah.com/projects/${projectId}/files`,
         formData,
         {
           headers: {

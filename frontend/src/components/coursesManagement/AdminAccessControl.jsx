@@ -16,13 +16,13 @@ const AdminAccessControl = () => {
     const fetchData = async () => {
       try {
         const [freelancersRes, coursesRes, accessRes] = await Promise.all([
-          axios.get('http://localhost:5000/users/freelancers/all', {
+          axios.get('https://backend.thi8ah.com/users/freelancers/all', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get('http://localhost:5000/courses/view', {
+          axios.get('https://backend.thi8ah.com/courses/view', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get('http://localhost:5000/access-control/all', {
+          axios.get('https://backend.thi8ah.com/access-control/all', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -46,7 +46,7 @@ const AdminAccessControl = () => {
     const currentAccess = accessData[freelancerId]?.[courseId] || false;
     try {
       await axios.post(
-        'http://localhost:5000/access-control/grant-access',
+        'https://backend.thi8ah.com/access-control/grant-access',
         { freelancer_id: freelancerId, course_id: courseId, can_access: !currentAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
