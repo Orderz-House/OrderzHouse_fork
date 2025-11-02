@@ -37,7 +37,7 @@ export default function NotificationsPage() {
   }));
 
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_URL || "https://backend.thi8ah.com";
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   // Socket setup for live notifications
   useEffect(() => {

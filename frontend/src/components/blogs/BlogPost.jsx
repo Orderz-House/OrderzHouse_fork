@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Calendar, User, Clock, ChevronRight, Tag, Paperclip, FileText, Image, File } from "lucide-react";
+import {
+  Calendar,
+  User,
+  Clock,
+  ChevronRight,
+  Tag,
+  Paperclip,
+  FileText,
+  Image,
+  File,
+} from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import BlogTopBar from "./components/BlogTopBar.jsx";
@@ -9,9 +19,13 @@ export default function BlogPost() {
   const { id } = useParams();
   const { state } = useLocation();
 
-  const [post, setPost] = useState(() => (state && state.id === id ? state : null));
+  const [post, setPost] = useState(() =>
+    state && state.id === id ? state : null
+  );
   const [loading, setLoading] = useState(!post);
   const [err, setErr] = useState(null);
+
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   useEffect(() => {
     let mounted = true;
@@ -20,8 +34,9 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`https://backend.thi8ah.com/blogs/${encodeURIComponent(id)}`, {
-        });
+        const { data } = await axios.get(
+          `${API_BASE}/blogs/${encodeURIComponent(id)}`
+        );
         if (!mounted) return;
 
         const item = data?.item ?? data ?? null;
@@ -35,7 +50,6 @@ export default function BlogPost() {
       }
     }
 
-   
     if (!post || (post?.id ?? post?._id) !== id || !post?.sections) {
       load();
     }
@@ -43,9 +57,11 @@ export default function BlogPost() {
     return () => {
       mounted = false;
     };
-  }, [id]); 
+  }, [id, API_BASE]);
+
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
+
   useEffect(() => {
     const onScroll = () => {
       const el = contentRef.current;
@@ -93,7 +109,7 @@ export default function BlogPost() {
 
   const getFileIcon = (url) => {
     if (!url) return <File className="w-5 h-5" />;
-    
+
     const lowerUrl = url.toLowerCase();
     if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
       return <Image className="w-5 h-5 text-emerald-600" />;
@@ -108,9 +124,9 @@ export default function BlogPost() {
   const getFileName = (url) => {
     try {
       const urlObj = new URL(url);
-      return urlObj.pathname.split('/').pop() || 'attachment';
+      return urlObj.pathname.split("/").pop() || "attachment";
     } catch {
-      return url.split('/').pop() || 'attachment';
+      return url.split("/").pop() || "attachment";
     }
   };
 
@@ -125,7 +141,7 @@ export default function BlogPost() {
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl="https://backend.thi8ah.com/blogs"
+        createUrl={`${API_BASE}/blogs`}
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);
@@ -134,7 +150,7 @@ export default function BlogPost() {
         currentTitle={post?.title}
         currentExcerpt={post?.excerpt}
       />
-     
+
       {/* Header */}
       <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
         {loading && !post ? (
@@ -192,13 +208,18 @@ export default function BlogPost() {
         {!post ? null : (
           <article ref={contentRef} className="space-y-8 overflow-x-hidden">
             {(post.sections || []).map((s) => (
-              <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
-                <h2 className="text-xl font-bold text-slate-900 mb-3">
-                  {s.h}
-                </h2>
+              <section
+                key={s.id ?? s._id}
+                id={s.id ?? s._id}
+                data-article-section
+              >
+                <h2 className="text-xl font-bold text-slate-900 mb-3">{s.h}</h2>
                 <div className="space-y-4 text-slate-700 leading-relaxed break-words">
                   {(s.p || []).map((para, i) => (
-                    <p key={i} className="text-base whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    <p
+                      key={i}
+                      className="text-base whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                    >
                       {para}
                     </p>
                   ))}
@@ -225,15 +246,17 @@ export default function BlogPost() {
               <div className="pt-6 border-t border-slate-200">
                 <div className="flex items-center gap-2 mb-4">
                   <Paperclip className="w-5 h-5 text-slate-600" />
-                  <h3 className="text-lg font-semibold text-slate-900">Attachments</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Attachments
+                  </h3>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-3">
                   {(() => {
                     let attachments = [];
                     if (Array.isArray(post.attachments)) {
                       attachments = post.attachments;
-                    } else if (typeof post.attachments === 'string') {
+                    } else if (typeof post.attachments === "string") {
                       try {
                         const parsed = JSON.parse(post.attachments);
                         if (Array.isArray(parsed)) {
@@ -245,7 +268,7 @@ export default function BlogPost() {
                         attachments = [post.attachments];
                       }
                     }
-                    
+
                     return attachments.map((url, index) => (
                       <a
                         key={index}
@@ -260,7 +283,7 @@ export default function BlogPost() {
                         </div>
                         <span className="text-xs text-slate-600 text-center truncate w-full">
                           {getFileName(url).substring(0, 12)}
-                          {getFileName(url).length > 12 ? '...' : ''}
+                          {getFileName(url).length > 12 ? "..." : ""}
                         </span>
                       </a>
                     ));

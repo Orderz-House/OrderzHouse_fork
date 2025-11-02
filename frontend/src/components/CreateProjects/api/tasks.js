@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "https://backend.thi8ah.com/tasks";
+const API_BASE = `${import.meta.env.VITE_APP_API_URL}/tasks`;
 
 //Create a new Task
 export const createTaskApi = async (taskData, token) => {
@@ -8,7 +8,7 @@ export const createTaskApi = async (taskData, token) => {
     const res = await axios.post(`${API_BASE}/tasks`, taskData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data", // for file uploads if needed
+        "Content-Type": "multipart/form-data",
       },
     });
     return res.data.task;

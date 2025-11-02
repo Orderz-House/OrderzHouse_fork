@@ -50,7 +50,7 @@ export default function CreateProjectPage() {
       const projectId = createdProject.id;
       console.log("Project created:", projectId);
 
-      // Step 2: Upload files (if any)
+      // Step 2: Upload files 
       if (files.length > 0) {
         console.log("Uploading project files...");
         try {

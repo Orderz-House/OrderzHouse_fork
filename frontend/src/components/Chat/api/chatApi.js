@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL 
-
+const API_BASE = import.meta.env.VITE_API_URL || "https://backend.thi8ah.com/api";
 
 export const fetchMessages = async (token, { projectId, taskId }) => {
   const endpoint = projectId

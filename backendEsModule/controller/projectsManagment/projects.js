@@ -10,14 +10,11 @@ const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
 /**
- * -------------------------------
- * CREATE PROJECT
- * Statuses:
- *   pending         - newly created project
- *   pending_payment - fixed/hourly projects waiting for payment
- *   bidding         - project open for bids
- * -------------------------------
- */
+
+
+/* ======================================================================
+   CREATE PROJECT (cover_pic REQUIRED)
+====================================================================== */
 export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -35,85 +32,117 @@ export const createProject = async (req, res) => {
       budget_min,
       budget_max,
       hourly_rate,
-      preferred_skills
+      preferred_skills,
     } = req.body;
 
+    // 🧩 Validate required fields
     const missingFields = [];
     if (!category_id) missingFields.push("category_id");
     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
     if (!title) missingFields.push("title");
     if (!description) missingFields.push("description");
     if (!duration_type) missingFields.push("duration_type");
+    if (!["fixed", "hourly", "bidding"].includes(project_type))
+      missingFields.push("project_type");
 
-    if (project_type === "fixed" && (!budget || budget <= 0)) missingFields.push("budget");
-    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0)) missingFields.push("hourly_rate");
+    if (duration_type === "days" && (!duration_days || duration_days <= 0))
+      missingFields.push("duration_days");
+    if (duration_type === "hours" && (!duration_hours || duration_hours <= 0))
+      missingFields.push("duration_hours");
+
+    if (project_type === "fixed" && (!budget || budget <= 0))
+      missingFields.push("budget");
+    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0))
+      missingFields.push("hourly_rate");
     if (project_type === "bidding") {
       if (!budget_min || budget_min <= 0) missingFields.push("budget_min");
       if (!budget_max || budget_max <= 0) missingFields.push("budget_max");
-      if (budget_max < budget_min) missingFields.push("budget_max < budget_min");
+      if (budget_max < budget_min)
+        missingFields.push("budget_max < budget_min");
     }
 
+    // 🧩 Require cover_pic file
+    if (!req.files?.cover_pic?.[0]) missingFields.push("cover_pic");
+
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Missing or invalid required fields: ${missingFields.join(", ")}` 
+      return res.status(400).json({
+        success: false,
+        message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
       });
     }
 
+    // 🧩 Determine status
     let projectStatus = "pending";
     if (project_type === "bidding") projectStatus = "bidding";
-    else if (["fixed", "hourly"].includes(project_type)) projectStatus = "pending_payment";
+    else if (["fixed", "hourly"].includes(project_type))
+      projectStatus = "pending_payment";
 
     const durationDaysValue = duration_type === "days" ? duration_days : null;
     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
+    // 🧩 Step 1: Insert project (temporary, no cover_pic yet)
     const insertQuery = `
-  INSERT INTO projects (
-    user_id, category_id, sub_category_id, sub_sub_category_id,
-    title, description, budget, duration_days, duration_hours,
-    project_type, budget_min, budget_max, hourly_rate,
-    preferred_skills, status, completion_status, is_deleted, cover_pic
-  )
-  VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9,
-    $10, $11, $12, $13, $14, $15, 'in_progress', false, $16
-  )
-  RETURNING *;
-`;
+      INSERT INTO projects (
+        user_id, category_id, sub_category_id, sub_sub_category_id,
+        title, description, budget, duration_days, duration_hours,
+        project_type, budget_min, budget_max, hourly_rate,
+        preferred_skills, status, completion_status, is_deleted
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,
+        $10,$11,$12,$13,$14,$15,'not_started',false
+      ) RETURNING *;
+    `;
 
-const { rows } = await pool.query(insertQuery, [
-  userId,
-  category_id,
-  sub_category_id,
-  sub_sub_category_id,
-  title,
-  description,
-  budget || null,
-  durationDaysValue,
-  durationHoursValue,
-  project_type,
-  budget_min || null,
-  budget_max || null,
-  hourly_rate || null,
-  preferred_skills || [],
-  projectStatus,
-  cover_pic ||
-    "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.istockphoto.com%2Fstock-photos%2Fnature-and-landscapes&psig=AOvVaw03HjB__mFixz4LeBruhuQC&ust=1761918529809000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCNDCvIiIzJADFQAAAAAdAAAAABAE"
-]);
-    const project = rows[0];
+    const { rows } = await pool.query(insertQuery, [
+      userId,
+      category_id,
+      sub_category_id,
+      sub_sub_category_id,
+      title,
+      description,
+      budget || null,
+      durationDaysValue,
+      durationHoursValue,
+      project_type,
+      budget_min || null,
+      budget_max || null,
+      hourly_rate || null,
+      preferred_skills || [],
+      projectStatus,
+    ]);
 
+    let project = rows[0];
+
+    // 🧩 Step 2: Upload cover_pic (required)
+    const coverPicFile = req.files.cover_pic[0];
+    const coverPicResult = await uploadToCloudinary(
+      coverPicFile.buffer,
+      `projects/${project.id}/cover`
+    );
+    const coverPicUrl = coverPicResult.secure_url;
+
+    // Save the cover_pic to DB
+    const { rows: updatedProject } = await pool.query(
+      `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
+      [coverPicUrl, project.id]
+    );
+    project = updatedProject[0];
+
+    // 🧩 Step 3: Set amount_to_pay
     let amountToPay = null;
     if (project.project_type === "fixed") amountToPay = project.budget;
-    else if (project.project_type === "hourly") amountToPay = (project.hourly_rate || 0) * 3;
+    else if (project.project_type === "hourly")
+      amountToPay = (project.hourly_rate || 0) * 3;
 
     if (amountToPay !== null) {
-      const update = await pool.query(
+      const { rows: updated } = await pool.query(
         `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
         [amountToPay, project.id]
       );
-      Object.assign(project, update.rows[0]);
+      project = updated[0];
     }
 
+    // 🧩 Step 4: Log & notify
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -129,21 +158,16 @@ const { rows } = await pool.query(insertQuery, [
         userId,
         project.category_id
       );
-    } catch (notificationError) {
-      console.error("Error creating project notifications:", notificationError);
+    } catch (err) {
+      console.error("Error creating project notifications:", err);
     }
 
-    return res.status(201).json({
-      success: true,
-      project,
-    });
-
+    return res.status(201).json({ success: true, project });
   } catch (error) {
     console.error("createProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 /**
  * -------------------------------
