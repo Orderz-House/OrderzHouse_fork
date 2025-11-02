@@ -36,6 +36,7 @@ import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
+import ChatRouter from "./router/chats.js";
 
 
 // DB connection
@@ -51,7 +52,8 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin:["http://localhost:5173",     
+          "https://thi8ah.com"], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -92,6 +94,7 @@ app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
+app.use("/chat", ChatRouter);
 
 
 let server, io;
