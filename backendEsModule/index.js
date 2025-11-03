@@ -14,6 +14,7 @@ startDeadlineWatcher();
 
 
 // Routers
+import assignmentsRouter from "./router/assignments.js";
 import VerificationRouter from "./router/verification.js";
 import paymentsRouter from "./router/payments.js";
 import AdminUser from "./router/adminUser.js"
@@ -68,7 +69,7 @@ app.use(limiter);
 */
 
 // Routers
-
+app.use("/assignments", assignmentsRouter);
 app.use("/verification", VerificationRouter);
 app.use("/freelancerCategories", freelancerCategoriesRouter);
 app.use("/blogs", Blogsrouter)

@@ -14,19 +14,29 @@ const getAuthToken = () => {
 };
 
 // -------------------- CREATE PROJECT --------------------
-export const createProjectApi = async (formData, token) => {
+export const createProjectApi = async (projectData, token, coverPic) => {
   const authToken = token || getAuthToken();
-  try {
-    const { data } = await axios.post(`${API_BASE}/`, formData, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    });
+  const formData = new FormData();
 
-    if (!data.success) throw new Error(data.message || "Failed to create project");
-    return data.project;
-  } catch (err) {
-    console.error("Create project error:", err.response?.data || err.message);
-    throw err.response?.data || err;
+  for (const [key, value] of Object.entries(projectData)) {
+    if (Array.isArray(value)) {
+      value.forEach((v) => formData.append(`${key}[]`, v));
+    } else {
+      formData.append(key, value);
+    }
   }
+
+  if (coverPic) formData.append("cover_pic", coverPic);
+
+  const { data } = await axios.post(`${API_BASE}/`, formData, {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  if (!data.success) throw new Error(data.message || "Failed to create project");
+  return data.project;
 };
 
 // -------------------- UPLOAD PROJECT FILES --------------------
