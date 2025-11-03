@@ -31,11 +31,15 @@ export const getProjectsByCategory = async (req, res) => {
         p.*, 
         c.name AS category_name,
         sc.name AS sub_category_name,
-        ssc.name AS sub_sub_category_name
+        ssc.name AS sub_sub_category_name,
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url
       FROM projects p
       JOIN categories c ON p.category_id = c.id
       LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+      LEFT JOIN users u ON u.id = p.user_id
       WHERE p.category_id = $1
         AND p.status = 'active'
         AND p.is_deleted = false
@@ -59,8 +63,6 @@ export const getProjectsByCategory = async (req, res) => {
 /**
  * Get projects by sub-category (requires token)
  */
-/* 
-   ============================================== */
 export const getProjectsBySubCategory = async (req, res) => {
   const { sub_category_id } = req.params;
   const userId = req.token?.userId;
@@ -72,11 +74,15 @@ export const getProjectsBySubCategory = async (req, res) => {
         p.*, 
         sc.name AS sub_category_name,
         c.name AS category_name,
-        ssc.name AS sub_sub_category_name
+        ssc.name AS sub_sub_category_name,
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url
       FROM projects p
       JOIN sub_categories sc ON p.sub_category_id = sc.id
       JOIN categories c ON sc.category_id = c.id
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+      LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_category_id = $1
         AND p.status = 'active'
         AND p.is_deleted = false
@@ -111,11 +117,15 @@ export const getProjectsBySubSubCategory = async (req, res) => {
         p.*, 
         ssc.name AS sub_sub_category_name,
         sc.name AS sub_category_name,
-        c.name AS category_name
+        c.name AS category_name,
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url
       FROM projects p
       JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       JOIN sub_categories sc ON ssc.sub_category_id = sc.id
       JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_sub_category_id = $1
         AND p.status = 'active'
         AND p.is_deleted = false
@@ -140,10 +150,6 @@ export const getProjectsBySubSubCategory = async (req, res) => {
    🌍 PUBLIC ROUTES 
    =================================================== */
 
-
-/**
- * Get public categories (active only)
- */
 export const getPublicCategories = async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -160,17 +166,14 @@ export const getPublicCategories = async (req, res) => {
 };
 
 /**
- *  Get projects by main category 
- * 
+ *  Get projects by main category (public)
  */
 export const getProjectsByCategoryId = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
     if (!categoryId || isNaN(categoryId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid category ID" });
+      return res.status(400).json({ success: false, message: "Invalid category ID" });
     }
 
     const result = await pool.query(
@@ -178,6 +181,9 @@ export const getProjectsByCategoryId = async (req, res) => {
       SELECT 
         p.*, 
         u.username AS client_username, 
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url,
         c.name AS category_name
       FROM projects p
       JOIN users u ON u.id = p.user_id
@@ -198,18 +204,12 @@ export const getProjectsByCategoryId = async (req, res) => {
   }
 };
 
-/**
- * Get projects by sub category (public)
- *
- */
 export const getProjectsBySubCategoryId = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
 
     if (!subCategoryId || isNaN(subCategoryId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid subcategory ID" });
+      return res.status(400).json({ success: false, message: "Invalid subcategory ID" });
     }
 
     const result = await pool.query(
@@ -217,6 +217,9 @@ export const getProjectsBySubCategoryId = async (req, res) => {
       SELECT 
         p.*, 
         u.username AS client_username, 
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url,
         c.name AS category_name,
         sc.name AS sub_category_name
       FROM projects p
@@ -239,18 +242,12 @@ export const getProjectsBySubCategoryId = async (req, res) => {
   }
 };
 
-/**
- * Get projects by sub-sub-category 
-
- */
 export const getProjectsBySubSubCategoryId = async (req, res) => {
   try {
     const { subSubCategoryId } = req.params;
 
     if (!subSubCategoryId || isNaN(subSubCategoryId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid sub-subcategory ID" });
+      return res.status(400).json({ success: false, message: "Invalid sub-subcategory ID" });
     }
 
     const { rows } = await pool.query(
@@ -258,6 +255,9 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
       SELECT 
         p.*,
         u.username AS client_username,
+        u.first_name,
+        u.last_name,
+        u.profile_pic_url,
         c.name AS category_name,
         sc.name AS sub_category_name,
         ssc.name AS sub_sub_category_name
@@ -286,9 +286,6 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
  * -------------------------------
  * GET PROJECT BY ID
  * -------------------------------
- * Fetch a project and its details by project ID.
- * Returns project data if found and not deleted.
- * -------------------------------
  */
 export const getProjectById = async (req, res) => {
   try {
@@ -303,6 +300,14 @@ export const getProjectById = async (req, res) => {
          p.*,
          u.username AS client_username,
          u.email AS client_email,
+         u.first_name,
+         u.last_name,
+         u.profile_pic_url,
+         COALESCE(
+           NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''),
+           u.username,
+           'Anonymous'
+         ) AS client_fullname,
          c.name AS category_name,
          sc.name AS sub_category_name,
          ssc.name AS sub_sub_category_name
@@ -311,7 +316,8 @@ export const getProjectById = async (req, res) => {
        LEFT JOIN categories c ON p.category_id = c.id
        LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
        LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
-       WHERE p.id = $1 AND p.is_deleted = false`,
+       WHERE p.id = $1 
+         AND p.is_deleted = false`,
       [projectId]
     );
 
@@ -321,23 +327,13 @@ export const getProjectById = async (req, res) => {
 
     const project = projectRows[0];
 
-    const { rows: assignments } = await pool.query(
-      `SELECT pa.id, pa.status, u.id AS freelancer_id, u.username, u.email
-       FROM project_assignments pa
-       JOIN users u ON pa.freelancer_id = u.id
-       WHERE pa.project_id = $1`,
-      [projectId]
-    );
-
-    project.assignments = assignments;
-
     return res.status(200).json({ success: true, project });
-
   } catch (err) {
     console.error("getProjectById error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 /**
@@ -455,3 +451,62 @@ export const getProjectsByUserRole = async (req, res) => {
   }
 };
 
+/**
+ * ================================
+ *  Get Project Files by Project ID
+ * ================================
+ * @route   GET /project-files/:projectId
+ * @access  Authenticated (client, freelancer, or admin)
+ */
+export const getProjectFilesByProjectId = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    if (!projectId || isNaN(projectId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or missing project ID.",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `
+      SELECT 
+        pf.id,
+        pf.project_id,
+        pf.sender_id,
+        CONCAT(u.first_name, ' ', u.last_name) AS sender_name,
+        u.role_id AS sender_role,
+        pf.file_name,
+        pf.file_url,
+        pf.file_size,
+        pf.public_id,
+        pf.sent_at
+      FROM project_files pf
+      JOIN users u ON u.id = pf.sender_id
+      WHERE pf.project_id = $1
+      ORDER BY pf.sent_at DESC;
+      `,
+      [projectId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No files found for this project.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      files: rows,
+    });
+  } catch (error) {
+    console.error("getProjectFilesByProjectId error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching project files.",
+    });
+  }
+};

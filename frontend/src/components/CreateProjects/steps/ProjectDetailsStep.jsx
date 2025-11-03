@@ -79,8 +79,27 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
 
   const validateForm = (showErrors = true) => {
     const newErrors = {};
-    if (!form.title.trim()) newErrors.title = "Title is required";
-    if (!form.description.trim()) newErrors.description = "Description is required";
+    const titleLength = form.title.trim().length;
+    const descLength = form.description.trim().length;
+
+    // Title validation with min/max limits
+    if (!form.title.trim()) {
+      newErrors.title = "Title is required";
+    } else if (titleLength < 10) {
+      newErrors.title = "Title must be at least 10 characters";
+    } else if (titleLength > 100) {
+      newErrors.title = "Title must not exceed 100 characters";
+    }
+
+    // Description validation with min/max limits
+    if (!form.description.trim()) {
+      newErrors.description = "Description is required";
+    } else if (descLength < 100) {
+      newErrors.description = "Description must be at least 100 characters";
+    } else if (descLength > 2000) {
+      newErrors.description = "Description must not exceed 2000 characters";
+    }
+
     if (!form.category_id) newErrors.category_id = "Category is required";
     if (!form.sub_sub_category_id) newErrors.sub_sub_category_id = "Sub-category is required";
     if (form.project_type === "fixed" && form.budget <= 0) newErrors.budget = "Budget must be greater than 0";
@@ -103,6 +122,12 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
 
   const inputBase = "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent transition";
 
+  // Character count helpers
+  const titleLength = form.title.trim().length;
+  const descLength = form.description.trim().length;
+  const titleProgress = Math.min((titleLength / 10) * 100, 100);
+  const descProgress = Math.min((descLength / 100) * 100, 100);
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="p-6 bg-gradient-to-r from-[#02C39A]/10 via-[#028090]/10 to-[#05668D]/10 border-b border-slate-100">
@@ -121,8 +146,22 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
             placeholder="e.g., Build a responsive website"
             value={form.title}
             onChange={handleChange}
+            maxLength={100}
             className={`${inputBase} ${errors.title ? "ring-red-400 border-red-300" : ""}`}
           />
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className={`font-medium ${titleLength < 10 ? "text-amber-600" : titleLength > 100 ? "text-red-600" : "text-emerald-600"}`}>
+              {titleLength < 10 ? `${10 - titleLength} more characters needed` : `${titleLength}/100 characters`}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all ${titleLength >= 10 ? "bg-emerald-500" : "bg-amber-500"}`}
+                  style={{ width: `${titleProgress}%` }}
+                />
+              </div>
+            </div>
+          </div>
           {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
         </div>
 
@@ -137,8 +176,22 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
             placeholder="Describe your project in detail..."
             value={form.description}
             onChange={handleChange}
+            maxLength={2000}
             className={`${inputBase} resize-y ${errors.description ? "ring-red-400 border-red-300" : ""}`}
           />
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className={`font-medium ${descLength < 100 ? "text-amber-600" : descLength > 2000 ? "text-red-600" : "text-emerald-600"}`}>
+              {descLength < 100 ? `${100 - descLength} more characters needed` : `${descLength}/2000 characters`}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all ${descLength >= 100 ? "bg-emerald-500" : "bg-amber-500"}`}
+                  style={{ width: `${descProgress}%` }}
+                />
+              </div>
+            </div>
+          </div>
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
         </div>
 
@@ -365,7 +418,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         <button
           type="submit"
           disabled={!isFormValid}
-          className={`w-full h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 disabled:opacity-60`}
+          className={`w-full h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${!isFormValid ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg"}`}
           style={{ background: THEME }}
         >
           Continue to Files
