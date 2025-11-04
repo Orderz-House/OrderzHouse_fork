@@ -1,0 +1,1745 @@
+{
+  "contentWriting": {
+    "Business Writing Services": [
+      {
+        "title": "Company Profile Writing",
+        "desc": "Professionally crafting your company's story and vision to reflect its identity and attract clients and partners.",
+        "title_ar": "كتابة الملف التعريفي للشركة",
+        "desc_ar": "صياغة قصة الشركة ورؤيتها باحتراف لتعكس هويتها وتستقطب العملاء والشركاء.",
+        "image": "/services/business-writing-services/company-profile-writing.jpg"
+      },
+      {
+        "title": "Job Description Writing",
+        "desc": "Creating precise descriptions of tasks, responsibilities, and required qualifications for each role to attract top talent.",
+        "title_ar": "كتابة الوصف الوظيفي",
+        "desc_ar": "إعداد أوصاف دقيقة للمهام والمسؤوليات والمؤهلات المطلوبة لكل وظيفة لاستقطاب المواهب.",
+        "image": "/services/business-writing-services/job-description-writing.jpg"
+      },
+      {
+        "title": "Policies and Procedures Writing",
+        "desc": "Clearly documenting work rules and procedures to ensure employee compliance and consistent performance.",
+        "title_ar": "كتابة السياسات والإجراءات",
+        "desc_ar": "توثيق القواعد والإجراءات بوضوح لضمان التزام الموظفين وثبات الأداء.",
+        "image": "/services/business-writing-services/policies-and-procedures-writing.jpg"
+      },
+      {
+        "title": "Employee Handbooks Writing",
+        "desc": "Designing a comprehensive guide that outlines employee rights, duties, and company culture to foster an organized work environment.",
+        "title_ar": "إعداد أدلة الموظفين",
+        "desc_ar": "تصميم دليل شامل يوضّح حقوق الموظف وواجباته وثقافة الشركة لبيئة عمل منظمة.",
+        "image": "/services/business-writing-services/employee-handbooks-writing.jpg"
+      },
+      {
+        "title": "Official Correspondence Writing",
+        "desc": "Drafting professional and persuasive letters and emails for effective communication with external parties.",
+        "title_ar": "كتابة المراسلات الرسمية",
+        "desc_ar": "صياغة رسائل وخطابات رسمية مقنعة للتواصل الفعّال مع الجهات الخارجية.",
+        "image": "/services/business-writing-services/official-correspondence-writing.jpg"
+      },
+      {
+        "title": "Ad Copywriting",
+        "desc": "Crafting innovative and compelling ad copy that motivates the audience to take action and boosts your sales.",
+        "title_ar": "كتابة نصوص الإعلانات",
+        "desc_ar": "صياغة نصوص إعلانية مبتكرة وجذّابة تحفّز الجمهور على التفاعل وتزيد المبيعات.",
+        "image": "/services/business-writing-services/ad-copywriting.jpg"
+      },
+      {
+        "title": "Website Content Writing",
+        "desc": "Creating engaging and informative content for your website pages that enhances user experience and improves search engine ranking.",
+        "title_ar": "كتابة محتوى المواقع",
+        "desc_ar": "إعداد محتوى جذّاب وقيّم لصفحات الموقع يعزّز تجربة المستخدم ويحسّن الظهور في محركات البحث.",
+        "image": "/services/business-writing-services/website-content-writing.jpg"
+      },
+      {
+        "title": "Blogs and Articles Writing",
+        "desc": "Delivering specialized and useful articles that build your brand's authority and attract readers interested in your field.",
+        "title_ar": "كتابة المدوّنات والمقالات",
+        "desc_ar": "إنتاج مقالات متخصّصة ونافعة تعزّز موثوقية العلامة وتستقطب القرّاء المهتمّين.",
+        "image": "/services/business-writing-services/blogs-and-articles-writing.jpg"
+      },
+      {
+        "title": "Social Media Content Writing",
+        "desc": "Preparing creative and interactive posts that increase audience engagement and strengthen your digital presence.",
+        "title_ar": "كتابة محتوى السوشيال ميديا",
+        "desc_ar": "إعداد منشورات إبداعية وتفاعلية ترفع التفاعل وتقوّي حضورك الرقمي.",
+        "image": "/services/business-writing-services/social-media-content-writing.jpg"
+      },
+      {
+        "title": "Newsletters Writing",
+        "desc": "Crafting periodic newsletters to keep your customers updated on the latest news and exclusive offers.",
+        "title_ar": "كتابة النشرات البريدية",
+        "desc_ar": "صياغة نشرات دورية تُطلع العملاء على أحدث الأخبار والعروض الحصرية.",
+        "image": "/services/business-writing-services/newsletters-writing.jpg"
+      },
+      {
+        "title": "Business Reports Writing",
+        "desc": "Transforming complex data and numbers into clear, organized reports that support decision-making.",
+        "title_ar": "كتابة التقارير الإدارية",
+        "desc_ar": "تحويل البيانات المعقّدة إلى تقارير واضحة ومنظّمة تدعم اتخاذ القرار.",
+        "image": "/services/business-writing-services/business-reports-writing.jpg"
+      },
+      {
+        "title": "Business Plans Writing",
+        "desc": "Developing integrated business plans that define your company's goals and strategies to attract investors.",
+        "title_ar": "كتابة خطط الأعمال",
+        "desc_ar": "بناء خطط عمل متكاملة تحدّد الأهداف والاستراتيجيات وتجذب المستثمرين.",
+        "image": "/services/business-writing-services/business-plans-writing.jpg"
+      },
+      {
+        "title": "Feasibility Studies Writing",
+        "desc": "Analyzing and evaluating new projects to assess their viability and identify risks and opportunities.",
+        "title_ar": "إعداد دراسات الجدوى",
+        "desc_ar": "تحليل المشاريع وتقييم جدواها وتحديد المخاطر والفرص.",
+        "image": "/services/business-writing-services/feasibility-studies-writing.jpg"
+      },
+      {
+        "title": "Market Analysis Writing",
+        "desc": "Providing in-depth analysis of the market and competitors to help you understand industry trends and make strategic decisions.",
+        "title_ar": "تحليل السوق والمنافسين",
+        "desc_ar": "تقديم تحليلات معمّقة للسوق والمنافسين لفهم الاتجاهات واتخاذ قرارات استراتيجية.",
+        "image": "/services/business-writing-services/market-analysis-writing.jpg"
+      },
+      {
+        "title": "Presentations Writing",
+        "desc": "Designing and writing persuasive presentations that clearly and effectively convey your ideas to investors or clients.",
+        "title_ar": "كتابة العروض التقديمية",
+        "desc_ar": "تصميم وكتابة عروض مقنعة تنقل أفكارك بوضوح للمستثمرين أو العملاء.",
+        "image": "/services/business-writing-services/presentations-writing.jpg"
+      },
+      {
+        "title": "Project Proposals Writing",
+        "desc": "Drafting professional proposals that outline project goals and implementation steps to convince funding bodies.",
+        "title_ar": "إعداد مقترحات المشاريع",
+        "desc_ar": "صياغة مقترحات احترافية توضّح الأهداف وخطوات التنفيذ لإقناع الجهات المموّلة.",
+        "image": "/services/business-writing-services/project-proposals-writing.jpg"
+      },
+      {
+        "title": "Requests for Proposals (RFPs) Writing",
+        "desc": "Preparing accurate and organized RFP documents to get the best offers from suppliers.",
+        "title_ar": "إعداد طلبات العروض (RFP)",
+        "desc_ar": "تحضير وثائق RFP دقيقة ومنظّمة للحصول على أفضل عروض المورّدين.",
+        "image": "/services/business-writing-services/requests-for-proposals-rfps-writing.jpg"
+      },
+      {
+        "title": "User Manuals Writing",
+        "desc": "Creating easy-to-understand user guides that help users get the most out of your products.",
+        "title_ar": "كتابة أدلة الاستخدام",
+        "desc_ar": "إعداد أدلة سهلة الفهم تساعد المستخدمين على الاستفادة القصوى من منتجاتك.",
+        "image": "/services/business-writing-services/user-manuals-writing.jpg"
+      },
+      {
+        "title": "Training Materials Writing",
+        "desc": "Developing effective and simplified training content that helps enhance your team's skills and efficiency.",
+        "title_ar": "إعداد مواد تدريبية",
+        "desc_ar": "تطوير محتوى تدريبي مبسّط وفعّال يعزّز مهارات وكفاءة الفريق.",
+        "image": "/services/business-writing-services/training-materials-writing.jpg"
+      },
+      {
+        "title": "FAQs Writing",
+        "desc": "Compiling and answering your customers' most common questions to provide quick support and improve their experience.",
+        "title_ar": "كتابة الأسئلة الشائعة (FAQ)",
+        "desc_ar": "جمع وصياغة إجابات لأكثر الأسئلة شيوعًا لتقديم دعم سريع وتحسين التجربة.",
+        "image": "/services/business-writing-services/faqs-writing.jpg"
+      },
+      {
+        "title": "Press Releases Writing",
+        "desc": "Crafting professional press releases to communicate your company's important news and announcements to the media.",
+        "title_ar": "كتابة البيانات الصحفية",
+        "desc_ar": "صياغة بيانات صحفية احترافية لإيصال أخبار الشركة للجهات الإعلامية.",
+        "image": "/services/business-writing-services/press-releases-writing.jpg"
+      },
+      {
+        "title": "Press Articles Writing",
+        "desc": "Writing journalistic-style articles that enhance your brand's image and reach a wider audience.",
+        "title_ar": "كتابة المقالات الصحفية",
+        "desc_ar": "إعداد مقالات بأسلوب صحفي يعزّز صورة العلامة ويصل لشريحة أوسع.",
+        "image": "/services/business-writing-services/press-articles-writing.jpg"
+      },
+      {
+        "title": "Official Speeches Writing",
+        "desc": "Preparing formal and impactful speeches for delivery to public figures or official bodies.",
+        "title_ar": "كتابة الخطابات الرسمية",
+        "desc_ar": "تحضير خطابات رسمية مؤثرة للشخصيات العامة أو الجهات الرسمية.",
+        "image": "/services/business-writing-services/official-speeches-writing.jpg"
+      },
+      {
+        "title": "Corporate Bios Writing",
+        "desc": "Crafting an engaging narrative of your company's history and achievements that reflects its journey and expertise.",
+        "title_ar": "كتابة السيرة المؤسسية",
+        "desc_ar": "صياغة سرد جذاب لتاريخ وإنجازات الشركة يعكس مسيرتها وخبرتها.",
+        "image": "/services/business-writing-services/corporate-bios-writing.jpg"
+      },
+      {
+        "title": "Creative Content Writing",
+        "desc": "Producing innovative and unconventional content that leaves a lasting impression on your audience.",
+        "title_ar": "كتابة المحتوى الإبداعي",
+        "desc_ar": "إنتاج محتوى مبتكر وغير تقليدي يترك انطباعًا دائمًا لدى الجمهور.",
+        "image": "/services/business-writing-services/creative-content-writing.jpg"
+      },
+      {
+        "title": "SEO Content Writing",
+        "desc": "Optimizing your website's content to rank higher in search results, increasing traffic and attracting new customers.",
+        "title_ar": "كتابة محتوى SEO",
+        "desc_ar": "تحسين المحتوى ليتصدّر نتائج البحث ويزيد الزيارات والعملاء.",
+        "image": "/services/business-writing-services/seo-content-writing.jpg"
+      },
+      {
+        "title": "Case Studies Writing",
+        "desc": "Showcasing your clients' success stories in an inspiring and convincing way to build trust and attract more customers.",
+        "title_ar": "كتابة دراسات الحالة",
+        "desc_ar": "عرض قصص نجاح العملاء بأسلوب مُلهم لبناء الثقة وجذب المزيد.",
+        "image": "/services/business-writing-services/case-studies-writing.jpg"
+      },
+      {
+        "title": "Testimonials & Reviews Writing",
+        "desc": "Crafting impactful and authentic customer testimonials and reviews to enhance your service's credibility.",
+        "title_ar": "صياغة الشهادات والتقييمات",
+        "desc_ar": "إعداد شهادات وتقييمات عملاء مؤثرة وأصيلة لتعزيز المصداقية.",
+        "image": "/services/business-writing-services/testimonials-reviews-writing.jpg"
+      },
+      {
+        "title": "Technical / Product FAQ Writing",
+        "desc": "Preparing thorough answers to technical questions about your products to help users solve problems.",
+        "title_ar": "إعداد FAQ تقني/للمنتج",
+        "desc_ar": "تحضير إجابات شاملة للأسئلة التقنية لمساعدة المستخدمين على الحل.",
+        "image": "/services/business-writing-services/technical-product-faq-writing.jpg"
+      },
+      {
+        "title": "Video Script Writing",
+        "desc": "Writing creative and impactful scripts for promotional videos that market your brand.",
+        "title_ar": "كتابة نصوص الفيديو",
+        "desc_ar": "صياغة نصوص مبتكرة ومؤثرة لفيديوهات ترويجية تُعرّف بعلامتك.",
+        "image": "/services/business-writing-services/video-script-writing.jpg"
+      },
+      {
+        "title": "Annual Performance Reports Writing",
+        "desc": "Summarizing and analyzing the company's annual performance in clear reports that highlight achievements and areas for improvement.",
+        "title_ar": "تقارير الأداء السنوية",
+        "desc_ar": "تلخيص وتحليل أداء الشركة سنويًا بتقارير توضح الإنجازات وفرص التحسين.",
+        "image": "/services/business-writing-services/annual-performance-reports-writing.jpg"
+      },
+      {
+        "title": "Governance & Compliance Booklets Writing",
+        "desc": "Drafting clear and concise content for booklets on governance and compliance policies.",
+        "title_ar": "كتيّبات الحوكمة والامتثال",
+        "desc_ar": "صياغة محتوى واضح وموجز لمواد الحوكمة وسياسات الامتثال.",
+        "image": "/services/business-writing-services/governance-compliance-booklets-writing.jpg"
+      },
+      {
+        "title": "Brand Voice & Tone Guide Writing",
+        "desc": "Defining and documenting your brand's voice and tone to ensure consistent communication across all channels.",
+        "title_ar": "دليل نبرة وصوت العلامة",
+        "desc_ar": "تحديد وتوثيق نبرة وصوت العلامة لضمان اتساق التواصل.",
+        "image": "/services/business-writing-services/brand-voice-tone-guide-writing.jpg"
+      },
+      {
+        "title": "Drip Email Campaign Content Writing",
+        "desc": "Creating a series of automated emails that build a relationship with customers and lead them toward a purchase.",
+        "title_ar": "محتوى حملات البريد المتسلسل",
+        "desc_ar": "إعداد سلسلة رسائل آلية تبني علاقة مع العملاء وتوجّههم للشراء.",
+        "image": "/services/business-writing-services/drip-email-campaign-content-writing.jpg"
+      },
+      {
+        "title": "Webinar Scripts Writing",
+        "desc": "Preparing professional and organized scripts for webinars to deliver valuable and engaging content.",
+        "title_ar": "نصوص الندوات الإلكترونية",
+        "desc_ar": "تحضير نصوص منظّمة واحترافية لويبينارات تقدّم محتوى قيّم.",
+        "image": "/services/business-writing-services/webinar-scripts-writing.jpg"
+      },
+      {
+        "title": "How-to Guides & Conversion Content Writing",
+        "desc": "Creating practical guides and instructional content that leads users from learning to making a purchase decision.",
+        "title_ar": "أدلة إرشادية ومحتوى تحويلي",
+        "desc_ar": "إنشاء أدلة عملية تقود المستخدم من التعلّم لاتخاذ قرار الشراء.",
+        "image": "/services/business-writing-services/how-to-guides-conversion-content-writing.jpg"
+      },
+      {
+        "title": "Multilingual / Localization Content Writing",
+        "desc": "Adapting content linguistically and culturally to suit different global markets while maintaining your core message.",
+        "title_ar": "تعريب ومواءمة المحتوى",
+        "desc_ar": "مواءمة المحتوى لغويًا وثقافيًا لأسواق مختلفة مع الحفاظ على الرسالة.",
+        "image": "/services/business-writing-services/multilingual-localization-content-writing.jpg"
+      },
+      {
+        "title": "Direct Response Copywriting",
+        "desc": "Crafting powerful and direct sales copy that prompts the reader to take immediate action.",
+        "title_ar": "نصوص استجابة مباشرة",
+        "desc_ar": "صياغة نصوص بيع مباشرة وقوية تحفّز القارئ على اتخاذ إجراء فوري.",
+        "image": "/services/business-writing-services/direct-response-copywriting.jpg"
+      },
+      {
+        "title": "Promotional Campaign Copywriting",
+        "desc": "Writing short and catchy copy for daily deals and promotional campaigns to drive sales.",
+        "title_ar": "نصوص الحملات الترويجية",
+        "desc_ar": "كتابة نصوص قصيرة وجذّابة للعروض اليومية والحملات لزيادة المبيعات.",
+        "image": "/services/business-writing-services/promotional-campaign-copywriting.jpg"
+      }
+    ],
+    "Academic Writing Services": [
+      {
+        "title": "Research Papers Writing",
+        "desc": "Preparing original and systematic academic research papers according to established scholarly standards.",
+        "title_ar": "كتابة الأبحاث العلمية",
+        "desc_ar": "إعداد أبحاث علمية أصلية ومنهجية وفق المعايير الأكاديمية المعتمدة."
+      },
+      {
+        "title": "Academic Articles Writing",
+        "desc": "Crafting rigorous and well-researched scholarly articles for publication in academic journals.",
+        "title_ar": "كتابة المقالات الأكاديمية",
+        "desc_ar": "صياغة مقالات علمية رصينة للنشر في المجلات الأكاديمية."
+      },
+      {
+        "title": "University Essays Writing",
+        "desc": "Assisting students in writing high-quality university essays and reports across various disciplines.",
+        "title_ar": "كتابة مقالات وتقارير جامعية",
+        "desc_ar": "مساعدة الطلبة في كتابة مقالات وتقارير جامعية عالية الجودة."
+      },
+      {
+        "title": "Thesis and Dissertation Assistance",
+        "desc": "Providing expert support in preparing and reviewing master's theses and doctoral dissertations, from proposal to defense.",
+        "title_ar": "مساعدة في الرسائل والأطروحات",
+        "desc_ar": "دعم احترافي لإعداد ومراجعة رسائل الماجستير والدكتوراه من المقترح حتى المناقشة."
+      },
+      {
+        "title": "Lab Reports Writing",
+        "desc": "Documenting and analyzing lab experiment results in accurate and organized scientific reports.",
+        "title_ar": "كتابة تقارير المختبر",
+        "desc_ar": "توثيق وتحليل نتائج التجارب بتقارير علمية دقيقة ومنظمة."
+      },
+      {
+        "title": "Business/Technical Reports Writing",
+        "desc": "Preparing reports that combine practical analysis with theoretical foundations in business and management fields.",
+        "title_ar": "تقارير أعمال/تقنية",
+        "desc_ar": "إعداد تقارير تجمع التحليل العملي والأسس النظرية في مجالات الأعمال."
+      },
+      {
+        "title": "Literature Reviews Writing",
+        "desc": "Comprehensively summarizing, analyzing, and critiquing previous studies in a specific research area.",
+        "title_ar": "المراجعة الأدبية للدراسات",
+        "desc_ar": "تلخيص وتحليل ونقد الدراسات السابقة في مجال بحث محدّد."
+      },
+      {
+        "title": "Book/Film Reviews Writing",
+        "desc": "Providing in-depth critical analysis of books, films, and artistic works in an academic style.",
+        "title_ar": "مراجعات الكتب/الأفلام",
+        "desc_ar": "تحليل نقدي معمّق لكتب وأفلام وأعمال فنية بأسلوب أكاديمي."
+      },
+      {
+        "title": "Academic Editing",
+        "desc": "Reviewing and improving academic texts to ensure clarity, coherence, and linguistic accuracy.",
+        "title_ar": "التحرير الأكاديمي",
+        "desc_ar": "مراجعة وتحسين النصوص الأكاديمية لضمان الوضوح والترابط والدقة اللغوية."
+      },
+      {
+        "title": "Proofreading",
+        "desc": "Correcting spelling, grammar, and punctuation errors to ensure a flawless text.",
+        "title_ar": "التدقيق اللغوي",
+        "desc_ar": "تصحيح الأخطاء الإملائية والنحوية وعلامات الترقيم لضمان نص خالٍ من العيوب."
+      },
+      {
+        "title": "Citation Management",
+        "desc": "Formatting and organizing reference lists and citations according to international styles (APA, MLA, Chicago).",
+        "title_ar": "تنسيق وإدارة المراجع",
+        "desc_ar": "تنسيق وتنظيم قوائم المراجع والاستشهادات وفق الأساليب الدولية (APA وMLA وChicago)."
+      },
+      {
+        "title": "Publication Support",
+        "desc": "Assisting in preparing research for publication in peer-reviewed journals, including formatting and correspondence.",
+        "title_ar": "دعم النشر الأكاديمي",
+        "desc_ar": "المساعدة في تجهيز البحث للنشر بالمجلات المحكمة، من التنسيق حتى المراسلات."
+      },
+      {
+        "title": "Figure Preparation",
+        "desc": "Designing and creating high-quality graphs and figures to support data in your research.",
+        "title_ar": "إعداد الأشكال والرسوم",
+        "desc_ar": "تصميم وإعداد رسومات وأشكال عالية الجودة لدعم بيانات البحث."
+      },
+      {
+        "title": "Research Proposals Writing",
+        "desc": "Crafting persuasive research proposals that outline the research objectives, significance, and methodology to gain approval or funding.",
+        "title_ar": "إعداد مقترحات البحث",
+        "desc_ar": "صياغة مقترحات مقنعة توضّح الأهداف والأهمية والمنهجية للحصول على الموافقة أو التمويل."
+      },
+      {
+        "title": "Abstracts Writing",
+        "desc": "Writing concise and focused summaries of research papers and theses for conferences or databases.",
+        "title_ar": "كتابة الملخصات",
+        "desc_ar": "تحرير ملخصات مركّزة للأبحاث والرسائل للمؤتمرات أو قواعد البيانات."
+      },
+      {
+        "title": "Personal Reflection Essays Writing",
+        "desc": "Crafting essays that reflect a student's personal experience and critical analysis in an academic context.",
+        "title_ar": "مقالات الانعكاس الشخصي",
+        "desc_ar": "صياغة مقالات تعكس التجربة الشخصية والتحليل النقدي في سياق أكاديمي."
+      },
+      {
+        "title": "Technical Writing",
+        "desc": "Simplifying complex technical information and presenting it in clear, understandable documents.",
+        "title_ar": "الكتابة التقنية",
+        "desc_ar": "تبسيط المعلومات التقنية المعقّدة وتقديمها في وثائق واضحة ومفهومة."
+      },
+      {
+        "title": "Medical Writing",
+        "desc": "Preparing accurate and reliable medical content, from articles and educational materials to clinical reports.",
+        "title_ar": "الكتابة الطبية",
+        "desc_ar": "إعداد محتوى طبي دقيق وموثوق من مقالات ومواد تعليمية وتقارير سريرية."
+      },
+      {
+        "title": "Ghostwriting",
+        "desc": "Writing professional content in your name while maintaining complete confidentiality.",
+        "title_ar": "الكتابة بالنيابة (Ghostwriting)",
+        "desc_ar": "كتابة محتوى احترافي باسمك مع الحفاظ على السرية التامة."
+      },
+      {
+        "title": "Peer-Reviewed Article Writing",
+        "desc": "Preparing high-impact research papers that meet the strict publication standards of international journals.",
+        "title_ar": "كتابة أبحاث محكّمة",
+        "desc_ar": "إعداد أبحاث عالية التأثير تستوفي معايير النشر الصارمة في المجلات الدولية."
+      },
+      {
+        "title": "Conference Paper Writing",
+        "desc": "Crafting concise and impactful research papers specifically designed for presentation at academic conferences.",
+        "title_ar": "كتابة أوراق المؤتمرات",
+        "desc_ar": "صياغة أوراق بحثية موجزة ومؤثرة لعرضها في المؤتمرات العلمية."
+      },
+      {
+        "title": "Open Educational Resources Writing",
+        "desc": "Developing free and accessible educational materials to support and disseminate knowledge.",
+        "title_ar": "إعداد موارد تعليمية مفتوحة",
+        "desc_ar": "تطوير مواد تعليمية مجانية ومفتوحة الوصول لدعم نشر المعرفة."
+      },
+      {
+        "title": "Case Study Papers Writing",
+        "desc": "Analyzing real-world case studies and presenting them in the form of applied research papers.",
+        "title_ar": "أوراق دراسات الحالة",
+        "desc_ar": "تحليل حالات واقعية وتقديمها في أبحاث تطبيقية."
+      },
+      {
+        "title": "e-Learning Course Content Writing",
+        "desc": "Designing and developing interactive educational content for online courses and training programs.",
+        "title_ar": "محتوى الدورات الإلكترونية",
+        "desc_ar": "تصميم وتطوير محتوى تعليمي تفاعلي للدورات والمنصات الإلكترونية."
+      },
+      {
+        "title": "Research Summary Writing",
+        "desc": "Preparing executive and engaging summaries of research to facilitate their presentation.",
+        "title_ar": "تلخيص الأبحاث",
+        "desc_ar": "إعداد ملخصات تنفيذية وجذّابة للأبحاث لتسهيل عرضها."
+      },
+      {
+        "title": "E-Book Academic Content Writing",
+        "desc": "Authoring and editing specialized e-books in various academic fields.",
+        "title_ar": "محتوى كتب إلكترونية أكاديمي",
+        "desc_ar": "تأليف وتحرير كتب إلكترونية متخصّصة في مجالات أكاديمية مختلفة."
+      },
+      {
+        "title": "Edutainment Content Writing",
+        "desc": "Integrating educational content with entertainment elements to make it more engaging and fun.",
+        "title_ar": "محتوى الترفيه التربوي",
+        "desc_ar": "دمج التعليم بالترفيه لصناعة محتوى أكثر جذبًا ومتعة."
+      },
+      {
+        "title": "Forum/Discussion Content Writing",
+        "desc": "Enriching online academic discussions with well-reasoned and evidence-based contributions.",
+        "title_ar": "محتوى المنتديات والنقاشات",
+        "desc_ar": "إثراء النقاشات الأكاديمية بمشاركات مدروسة قائمة على أدلة."
+      },
+      {
+        "title": "Test/Quiz Writing",
+        "desc": "Designing a variety of assessment questions and tests to measure understanding and academic achievement.",
+        "title_ar": "إعداد الاختبارات والامتحانات",
+        "desc_ar": "تصميم أسئلة واختبارات تقييمية متنوعة لقياس الفهم والتحصيل."
+      },
+      {
+        "title": "Academic Translation & Transcreation",
+        "desc": "Translating academic research with cultural and linguistic adaptation to suit the target audience.",
+        "title_ar": "الترجمة والتكييف الأكاديمي",
+        "desc_ar": "ترجمة الأبحاث مع تكييف لغوي وثقافي ملائم للجمهور المستهدف."
+      }
+    ],
+    "Personal Writing Services": [
+      {
+        "title": "CV/Resume Writing",
+        "desc": "Designing a professional resume that highlights your skills and experience, increasing your job opportunities.",
+        "title_ar": "كتابة السيرة الذاتية",
+        "desc_ar": "تصميم سيرة ذاتية احترافية تُبرز مهاراتك وخبراتك لزيادة فرصك الوظيفية."
+      },
+      {
+        "title": "Cover Letters Writing",
+        "desc": "Crafting customized and persuasive cover letters that grab employers' attention and complement your resume.",
+        "title_ar": "كتابة خطابات التغطية",
+        "desc_ar": "صياغة خطابات تغطية مخصّصة ومقنعة تجذب انتباه أصحاب العمل."
+      },
+      {
+        "title": "Recommendation Letters Writing",
+        "desc": "Writing strong and influential recommendation letters to support job or university applications.",
+        "title_ar": "كتابة خطابات التوصية",
+        "desc_ar": "إعداد خطابات توصية قوية لدعم طلبات العمل أو الدراسة."
+      },
+      {
+        "title": "Acceptance and Apology Letters Writing",
+        "desc": "Drafting polite and formal acceptance or apology letters for various occasions.",
+        "title_ar": "خطابات القبول والاعتذار",
+        "desc_ar": "صياغة خطابات قبول واعتذار مهذّبة ورسمية لمختلف المناسبات."
+      },
+      {
+        "title": "Love, Apology, and Thank You Letters Writing",
+        "desc": "Expressing your feelings with sincere and touching words in personally crafted letters.",
+        "title_ar": "خطابات الحب والاعتذار والشكر",
+        "desc_ar": "التعبير عن مشاعرك بكلمات صادقة ومؤثرة في رسائل شخصية."
+      },
+      {
+        "title": "Congratulations and Condolence Letters Writing",
+        "desc": "Crafting appropriate messages for happy or sad occasions with a respectful and appreciative tone.",
+        "title_ar": "رسائل التهنئة والتعزية",
+        "desc_ar": "صياغة عبارات مناسبة للمناسبات السعيدة والمحزنة بنبرة محترمة."
+      },
+      {
+        "title": "Invitations Writing",
+        "desc": "Designing and writing elegant and attractive invitations for your special events like weddings or birthdays.",
+        "title_ar": "كتابة الدعوات",
+        "desc_ar": "تصميم وكتابة دعوات أنيقة وجذّابة لمناسباتك الخاصة."
+      },
+      {
+        "title": "Short Stories Writing",
+        "desc": "Turning your ideas into captivating short stories written in an enjoyable literary style.",
+        "title_ar": "كتابة القصص القصيرة",
+        "desc_ar": "تحويل أفكارك إلى قصص قصيرة مشوّقة بأسلوب أدبي ممتع."
+      },
+      {
+        "title": "Personal Essays and Thoughts Writing",
+        "desc": "Helping you document your thoughts and reflections in inspiring and profound personal essays.",
+        "title_ar": "مقالات وآراء شخصية",
+        "desc_ar": "توثيق أفكارك وتأمّلاتك في مقالات شخصية مُلهمة وعميقة."
+      },
+      {
+        "title": "Memoirs and Diaries Writing",
+        "desc": "Documenting your life experiences and memories in an engaging narrative style to preserve them for future generations.",
+        "title_ar": "كتابة المذكرات واليوميات",
+        "desc_ar": "توثيق تجاربك وذكرياتك بأسلوب سردي مشوّق لحفظها للأجيال."
+      },
+      {
+        "title": "Personal Blog Content Writing",
+        "desc": "Creating unique and engaging content for your personal blog that reflects your interests and attracts readers.",
+        "title_ar": "محتوى المدونات الشخصية",
+        "desc_ar": "إعداد محتوى مميّز وجذّاب لمدونتك يعكس اهتماماتك."
+      },
+      {
+        "title": "Social Media Content Writing",
+        "desc": "Managing and creating content for your personal accounts that expresses your identity and engages with your followers.",
+        "title_ar": "محتوى السوشيال ميديا الشخصي",
+        "desc_ar": "إدارة وصناعة محتوى لحساباتك الشخصية يعكس هويتك ويتفاعل مع جمهورك."
+      },
+      {
+        "title": "Card and Gift Texts Writing",
+        "desc": "Crafting short and distinctive phrases for gift cards and special occasions.",
+        "title_ar": "نصوص البطاقات والهدايا",
+        "desc_ar": "صياغة عبارات قصيرة ومميّزة لبطاقات المناسبات والهدايا."
+      },
+      {
+        "title": "Event Speeches Writing",
+        "desc": "Preparing moving and appropriate speeches for delivery at personal events and functions.",
+        "title_ar": "كتابة خطابات المناسبات",
+        "desc_ar": "تحضير خطابات مؤثّرة ومناسبة للتقديم في الفعاليات الخاصة."
+      },
+      {
+        "title": "SMS and Short Messages Writing",
+        "desc": "Crafting concise and effective text messages for quick communication in various situations.",
+        "title_ar": "رسائل SMS والرسائل القصيرة",
+        "desc_ar": "كتابة رسائل نصية قصيرة وفعّالة للتواصل السريع."
+      },
+      {
+        "title": "Travel Blog Writing",
+        "desc": "Documenting your travel adventures and experiences in an exciting and visual style that attracts travel enthusiasts.",
+        "title_ar": "محتوى مدونة السفر",
+        "desc_ar": "توثيق مغامراتك وتجارب السفر بأسلوب مشوّق بصريًا."
+      },
+      {
+        "title": "Podcast Script / Episode Notes Writing",
+        "desc": "Preparing engaging scripts and episodes for podcasts on topics that interest you and your audience.",
+        "title_ar": "نصوص البودكاست وملاحظات الحلقات",
+        "desc_ar": "إعداد نصوص جذّابة للحلقات بمواضيع تهمّك وتهمّ جمهورك."
+      },
+      {
+        "title": "Interactive CV Content Writing",
+        "desc": "Designing innovative digital resumes that include interactive elements and live links.",
+        "title_ar": "محتوى سيرة ذاتية تفاعلي",
+        "desc_ar": "تصميم سير ذاتية رقمية مبتكرة بعناصر وروابط تفاعلية."
+      },
+      {
+        "title": "Personal Brand Content Writing",
+        "desc": "Developing strategic content to build your personal brand and enhance your digital influence.",
+        "title_ar": "محتوى العلامة الشخصية",
+        "desc_ar": "تطوير محتوى استراتيجي لبناء علامتك الشخصية وتعزيز تأثيرك الرقمي."
+      },
+      {
+        "title": "Narrative Memoirs Writing",
+        "desc": "Transforming your daily experiences into an enjoyable narrative or organized diary.",
+        "title_ar": "كتابة مذكّرات سردية",
+        "desc_ar": "تحويل تجاربك اليومية إلى سرد ممتع أو يوميات منظّمة."
+      },
+      {
+        "title": "YouTube Channel Script Writing",
+        "desc": "Writing engaging and impactful scripts for videos on YouTube or other video platforms.",
+        "title_ar": "نصوص قناة يوتيوب",
+        "desc_ar": "كتابة نصوص جذّابة ومؤثرة لفيديوهات يوتيوب والمنصّات المشابهة."
+      },
+      {
+        "title": "Campaign Content Writing",
+        "desc": "Crafting persuasive and effective content to support your personal or electoral campaign.",
+        "title_ar": "محتوى الحملات الشخصية",
+        "desc_ar": "صياغة محتوى مقنع وفعّال لدعم حملتك الشخصية أو الانتخابية."
+      },
+      {
+        "title": "Photo-Blog Content Writing",
+        "desc": "Writing creative and descriptive text to accompany photos in photography blogs.",
+        "title_ar": "محتوى فوتوبلوغ",
+        "desc_ar": "كتابة نصوص إبداعية ترافق الصور في المدونات الفوتوغرافية."
+      },
+      {
+        "title": "Micro-Content / Quotes Writing",
+        "desc": "Crafting concise and inspiring quotes and thoughts for sharing on social media.",
+        "title_ar": "محتوى قصير/اقتباسات",
+        "desc_ar": "صياغة اقتباسات وأفكار موجزة وملهمة للمشاركة على السوشيال."
+      },
+      {
+        "title": "Personal Event Script Writing",
+        "desc": "Preparing custom scripts and words for managing and presenting private ceremonies and events.",
+        "title_ar": "نصوص فعاليات شخصية",
+        "desc_ar": "تحضير نصوص وكلمات مخصّصة لإدارة وتقديم الفعاليات الخاصة."
+      }
+    ]
+  },
+  "design": {
+    "Business Design Services": [
+      {
+        "title": "Brand Identity",
+        "desc": "Designing a complete visual identity that uniquely reflects your brand's values and vision.",
+        "title_ar": "هوية العلامة التجارية",
+        "desc_ar": "تصميم هوية بصرية متكاملة تعكس قيم ورؤية علامتك بشكل مميّز."
+      },
+      {
+        "title": "Logo Design",
+        "desc": "Creating a professional and memorable logo that becomes a recognizable symbol of your brand.",
+        "title_ar": "تصميم الشعار",
+        "desc_ar": "ابتكار شعار احترافي ولافت يصبح رمزًا يسهل تمييزه لعلامتك."
+      },
+      {
+        "title": "Comprehensive Brand Style Guide",
+        "desc": "Developing a complete guide that sets standards for logo, color, and font usage to ensure visual consistency.",
+        "title_ar": "دليل هوية شامل",
+        "desc_ar": "إعداد دليل يحدّد معايير استخدام الشعار والألوان والخطوط لضمان الاتساق."
+      },
+      {
+        "title": "Visual Brand Strategy",
+        "desc": "Devising an integrated visual strategy to ensure your brand appears consistent and appealing across all platforms.",
+        "title_ar": "استراتيجية الهوية البصرية",
+        "desc_ar": "وضع استراتيجية بصرية متكاملة لظهور متّسق وجذاب عبر كل القنوات."
+      },
+      {
+        "title": "Website Design",
+        "desc": "Designing modern, user-friendly websites that provide an excellent user experience and reflect your brand identity.",
+        "title_ar": "تصميم المواقع",
+        "desc_ar": "تصميم مواقع حديثة وسهلة الاستخدام تعكس هوية العلامة وتقدّم تجربة مميزة."
+      },
+      {
+        "title": "Landing Page Design",
+        "desc": "Creating attractive, goal-oriented landing pages to increase conversion rates.",
+        "title_ar": "تصميم صفحات الهبوط",
+        "desc_ar": "إنشاء صفحات هبوط جذّابة موجهة للهدف لزيادة التحويلات."
+      },
+      {
+        "title": "App UI Design",
+        "desc": "Designing intuitive and visually appealing mobile app interfaces (UI) to enhance user experience.",
+        "title_ar": "تصميم واجهات التطبيقات",
+        "desc_ar": "تصميم واجهات تطبيقات بديهية وجذابة تعزّز تجربة المستخدم."
+      },
+      {
+        "title": "Digital and Print Advertising Design",
+        "desc": "Creating impactful ad designs for digital and print campaigns that grab attention and achieve your goals.",
+        "title_ar": "تصميم إعلانات رقمية ومطبوعة",
+        "desc_ar": "تصميم مواد إعلانية مؤثرة تجذب الانتباه وتحقّق أهداف الحملة."
+      },
+      {
+        "title": "Marketing Campaign Materials Design",
+        "desc": "Designing all visual materials for your marketing campaigns, from banners to social media posts.",
+        "title_ar": "مواد الحملات التسويقية",
+        "desc_ar": "تصميم كل المواد البصرية للحملات من البنرات لمنشورات السوشيال."
+      },
+      {
+        "title": "Email Marketing Graphics and Newsletters",
+        "desc": "Designing attractive and responsive templates for email marketing and newsletters.",
+        "title_ar": "تصاميم البريد والنشرات",
+        "desc_ar": "تصميم قوالب جذّابة ومتجاوبة للبريد التسويقي والنشرات."
+      },
+      {
+        "title": "Social Media Posts Design",
+        "desc": "Creating innovative designs for social media posts that increase engagement and shares.",
+        "title_ar": "تصميم منشورات السوشيال",
+        "desc_ar": "تصاميم مبتكرة لمنشورات تزيد التفاعل والمشاركة."
+      },
+      {
+        "title": "Social Media Cover and Ad Images",
+        "desc": "Designing professional cover images that reflect your brand identity on various social platforms.",
+        "title_ar": "أغلفة وإعلانات للسوشيال",
+        "desc_ar": "تصميم أغلفة وصور إعلانية احترافية متّسقة مع الهوية."
+      },
+      {
+        "title": "Packaging and Product Design",
+        "desc": "Creating attractive and innovative product packaging designs that enhance value and attract consumers.",
+        "title_ar": "تصميم التغليف والمنتج",
+        "desc_ar": "تصميم عبوات ومنتجات جذّابة ومبتكرة تعزّز القيمة وتستقطب المستهلك."
+      },
+      {
+        "title": "Promotional Merchandise Design",
+        "desc": "Designing branded promotional items and gifts to increase brand awareness.",
+        "title_ar": "هدايا ونُتجات ترويجية",
+        "desc_ar": "تصميم هدايا ونُتجات ترويجية ممهورة بالعلامة لرفع الوعي."
+      },
+      {
+        "title": "Business Cards and Stationery Design",
+        "desc": "Designing professional business cards and letterheads that project a positive corporate image.",
+        "title_ar": "بطاقات وهوية مكتبية",
+        "desc_ar": "تصميم بطاقات عمل ومطبوعات مكتبية تعكس صورة احترافية."
+      },
+      {
+        "title": "Signage and Large Format Banners Design",
+        "desc": "Designing clear and attractive signage and banners for commercial spaces and offices.",
+        "title_ar": "لافتات وبنرات كبيرة",
+        "desc_ar": "تصميم لافتات وبنرات واضحة وجذابة للمحال والمكاتب."
+      },
+      {
+        "title": "Infographics and Data Visualization",
+        "desc": "Transforming complex data and information into easy-to-understand and engaging infographics.",
+        "title_ar": "إنفوغرافيك وعرض البيانات",
+        "desc_ar": "تحويل البيانات المعقّدة إلى رسومات معلوماتية سهلة وجذابة."
+      },
+      {
+        "title": "Motion Graphics Design",
+        "desc": "Producing short, innovative motion graphics to explain your services or promote your brand.",
+        "title_ar": "موشن غرافيك",
+        "desc_ar": "إنتاج موشن قصير مبتكر لشرح الخدمات أو الترويج للعلامة."
+      },
+      {
+        "title": "Promotional Video Design",
+        "desc": "Creating professional promotional videos that showcase your products and services in an engaging and impactful way.",
+        "title_ar": "فيديو ترويجي",
+        "desc_ar": "إنتاج فيديوهات ترويجية احترافية تعرض المنتجات والخدمات بشكل مؤثر."
+      },
+      {
+        "title": "Environmental and Wayfinding Design",
+        "desc": "Designing interior/exterior spaces and directional signage to improve visitor experience.",
+        "title_ar": "تصميم بيئي وإرشادي",
+        "desc_ar": "تصميم مساحات داخلية/خارجية وأنظمة إرشاد تُحسّن تجربة الزائر."
+      },
+      {
+        "title": "Illustration Design",
+        "desc": "Creating unique and custom illustrations to enhance your project's visual content.",
+        "title_ar": "تصميم الإيضاحات",
+        "desc_ar": "رسم إيضاحات مخصّصة وفريدة تعزّز المحتوى البصري."
+      },
+      {
+        "title": "Typography Design",
+        "desc": "Focusing on professional font and text design to improve readability and visual appeal.",
+        "title_ar": "تصميم التيبوغرافي",
+        "desc_ar": "تصميم خطوط ونصوص باحترافية لرفع المقروئية والجاذبية."
+      },
+      {
+        "title": "Corporate Presentation Design",
+        "desc": "Designing professional and visually engaging presentations to showcase your ideas and projects.",
+        "title_ar": "عروض تقديمية مؤسسية",
+        "desc_ar": "تصميم عروض تقديمية احترافية وجذابة للأفكار والمشاريع."
+      },
+      {
+        "title": "Visual Content for Blogs and Websites",
+        "desc": "Creating attractive visual content for blogs and websites to increase reader engagement.",
+        "title_ar": "محتوى بصري للويب والمدونات",
+        "desc_ar": "إنتاج محتوى بصري جذّاب يرفع تفاعل القرّاء."
+      },
+      {
+        "title": "Professional Photography and Videography Preparation",
+        "desc": "Editing and processing photos and videos to ensure professional quality.",
+        "title_ar": "معالجة صور وفيديو احترافية",
+        "desc_ar": "تحسين ومعالجة الصور والفيديو لضمان جودة احترافية."
+      },
+      {
+        "title": "UX Research and Wireframing",
+        "desc": "Conducting user research and designing wireframes to ensure a smooth and enjoyable user experience.",
+        "title_ar": "أبحاث UX وبناء الهياكل",
+        "desc_ar": "إجراء أبحاث مستخدم وتصميم هياكل Wireframes لتجربة سلسة."
+      },
+      {
+        "title": "Interactive Content Design",
+        "desc": "Creating interactive content like quizzes and polls to increase audience engagement.",
+        "title_ar": "محتوى تفاعلي",
+        "desc_ar": "إنتاج محتوى تفاعلي (اختبارات/استبيانات) يرفع التفاعل."
+      },
+      {
+        "title": "AR/VR UI/UX Design",
+        "desc": "Designing innovative user interfaces for augmented reality (AR) applications that merge the digital and real worlds.",
+        "title_ar": "تصميم واجهات AR/VR",
+        "desc_ar": "تصميم واجهات مبتكرة لتجارب الواقع المعزّز/الافتراضي."
+      },
+      {
+        "title": "Voice UI Design",
+        "desc": "Designing user-friendly voice user interfaces (VUI) for voice-activated apps and devices.",
+        "title_ar": "تصميم واجهات صوتية",
+        "desc_ar": "تصميم واجهات صوتية سهلة للاستخدام للتطبيقات والأجهزة."
+      },
+      {
+        "title": "Animated Brand Identity",
+        "desc": "Creating animated logos and brand elements to add a dynamic touch to your brand.",
+        "title_ar": "هوية متحركة",
+        "desc_ar": "تحريك الشعار وعناصر الهوية لإضفاء طابع ديناميكي."
+      },
+      {
+        "title": "Interactive Social Media Graphics",
+        "desc": "Creating engaging designs specifically made to encourage sharing on social media.",
+        "title_ar": "تصاميم اجتماعية تفاعلية",
+        "desc_ar": "تصميمات محفّزة على التفاعل والمشاركة على السوشيال."
+      },
+      {
+        "title": "AR-Business Cards",
+        "desc": "Designing innovative business cards that interact with augmented reality for a unique experience.",
+        "title_ar": "بطاقات عمل بالواقع المعزّز",
+        "desc_ar": "بطاقات عمل تفاعلية عبر AR لتجربة فريدة."
+      },
+      {
+        "title": "Product Prototyping & Mockup Design",
+        "desc": "Creating realistic product mockups and visualizations before the manufacturing stage.",
+        "title_ar": "نمذجة ونماذج منتجات",
+        "desc_ar": "إعداد Mockups وتجسيدات واقعية قبل التصنيع."
+      },
+      {
+        "title": "Digital Shopping Experience Design",
+        "desc": "Enhancing the online shopping experience by designing easy and attractive interfaces.",
+        "title_ar": "تصميم تجربة التسوّق الرقمي",
+        "desc_ar": "تحسين تجربة الشراء عبر واجهات سهلة وجذابة."
+      },
+      {
+        "title": "Automotive/Device UI Design",
+        "desc": "Designing user interfaces for digital systems in cars and smart devices.",
+        "title_ar": "واجهات السيارات/الأجهزة",
+        "desc_ar": "تصميم واجهات لأنظمة السيارات والأجهزة الذكية."
+      },
+      {
+        "title": "Game UI/UX Design",
+        "desc": "Designing attractive and intuitive UI/UX for games and simulation applications.",
+        "title_ar": "تصميم UI/UX للألعاب",
+        "desc_ar": "تصميم واجهات وتجارب ألعاب جذابة وبديهية."
+      },
+      {
+        "title": "Smart Signage & Wayfinding",
+        "desc": "Developing smart and interactive signage systems for public spaces.",
+        "title_ar": "لافتات ذكية وإرشاد",
+        "desc_ar": "تطوير أنظمة لافتات ذكية وتفاعلية للمساحات العامة."
+      },
+      {
+        "title": "Mixed Reality Environments Design",
+        "desc": "Designing interactive environments that blend real and virtual reality.",
+        "title_ar": "بيئات واقع مختلط",
+        "desc_ar": "تصميم بيئات تدمج العالمين الواقعي والافتراضي."
+      },
+      {
+        "title": "Large Format Interactive Digital Design",
+        "desc": "Creating interactive visual content designed for large screens in public venues.",
+        "title_ar": "تصميم تفاعلي للشاشات الكبرى",
+        "desc_ar": "إنتاج محتوى بصري تفاعلي مخصص للشاشات الكبيرة."
+      }
+    ],
+    "Academic Design Services": [
+      {
+        "title": "Academic and Conference Poster Design",
+        "desc": "Designing professional and clear scientific posters to present your research findings at conferences.",
+        "title_ar": "بوسترات علمية ومؤتمرات",
+        "desc_ar": "تصميم بوسترات علمية احترافية وواضحة لعرض الأبحاث."
+      },
+      {
+        "title": "Print-Ready and Electronic File Preparation",
+        "desc": "Preparing designs and files in the appropriate formats for high-quality printing or digital display.",
+        "title_ar": "تحضير ملفات للطباعة والإلكتروني",
+        "desc_ar": "تهيئة الملفات بصيغ مناسبة للطباعة عالية الجودة أو العرض الرقمي."
+      },
+      {
+        "title": "Illustrations and Infographics for Posters",
+        "desc": "Transforming research data and findings into attractive and easy-to-understand graphs and infographics.",
+        "title_ar": "إيضاحات وإنفوغرافيك للبوسترات",
+        "desc_ar": "تحويل البيانات إلى رسوم وإنفوغرافيك جذّابة وسهلة الفهم."
+      },
+      {
+        "title": "Poster Review per Conference Standards",
+        "desc": "Ensuring that the scientific poster design complies with the specific guidelines and requirements of the conference.",
+        "title_ar": "مراجعة البوستر حسب معايير المؤتمر",
+        "desc_ar": "مطابقة تصميم البوستر لمتطلبات ومعايير المؤتمر."
+      },
+      {
+        "title": "Academic Presentation Design",
+        "desc": "Designing professional and visually engaging presentation slides to support your lectures and academic talks.",
+        "title_ar": "عروض أكاديمية",
+        "desc_ar": "تصميم شرائح عروض أكاديمية محترفة وجذابة."
+      },
+      {
+        "title": "Table, Chart, and Infographic Design",
+        "desc": "Creating clear and organized tables, charts, and infographics to display data effectively.",
+        "title_ar": "جداول ومخططات وإنفوغرافيك",
+        "desc_ar": "إعداد جداول ورسوم منظمة لعرض البيانات بفعالية."
+      },
+      {
+        "title": "Multimedia Integration in Presentations",
+        "desc": "Adding video, audio, and animation elements to your presentations to make them more interactive.",
+        "title_ar": "دمج الوسائط المتعددة",
+        "desc_ar": "إضافة فيديو وصوت وأنيميشن لعروض أكثر تفاعلية."
+      },
+      {
+        "title": "Educational Summaries and Infographics",
+        "desc": "Summarizing complex information and concepts into easy-to-digest visual summaries.",
+        "title_ar": "ملخّصات وإنفوغرافيك تعليمي",
+        "desc_ar": "تبسيط المفاهيم المعقّدة إلى ملخصات بصرية سهلة."
+      },
+      {
+        "title": "Editable Infographic Templates",
+        "desc": "Designing professional infographic templates that you can easily edit to fit your data.",
+        "title_ar": "قوالب إنفوغرافيك قابلة للتعديل",
+        "desc_ar": "قوالب احترافية قابلة للتخصيص لعرض بياناتك."
+      },
+      {
+        "title": "Thesis and Dissertation Formatting",
+        "desc": "Formatting and designing the pages of theses and dissertations according to your university's academic standards.",
+        "title_ar": "تنسيق الرسائل والأطروحات",
+        "desc_ar": "تنسيق صفحات الرسائل وفق معايير الجامعة الأكاديمية."
+      },
+      {
+        "title": "Academic Template Design",
+        "desc": "Creating custom templates for reports and research papers to ensure consistency and professionalism.",
+        "title_ar": "قوالب أكاديمية",
+        "desc_ar": "تصميم قوالب مخصّصة للتقارير والأبحاث باتساق واحترافية."
+      },
+      {
+        "title": "Illustrations and Mind Maps Design",
+        "desc": "Creating illustrations and mind maps to simplify and visually explain complex concepts.",
+        "title_ar": "إيضاحات وخرائط ذهنية",
+        "desc_ar": "تصميم مخططات وخرائط ذهنية لتبسيط المفاهيم."
+      },
+      {
+        "title": "Scientific Communication Support",
+        "desc": "Designing visual materials that help disseminate your research findings to a wider audience in a simplified and engaging way.",
+        "title_ar": "دعم التواصل العلمي",
+        "desc_ar": "مواد بصرية تُسهّل نشر نتائج الأبحاث لعموم الجمهور."
+      },
+      {
+        "title": "Graphical Abstracts Design",
+        "desc": "Creating concise and attractive graphical abstracts for research articles.",
+        "title_ar": "ملخصات رسومية",
+        "desc_ar": "تصميم ملخصات رسومية مختصرة وجذابة للمقالات البحثية."
+      },
+      {
+        "title": "Fast and Collaborative Design Services",
+        "desc": "Providing fast and flexible design services in direct collaboration with you to meet your urgent needs.",
+        "title_ar": "تصميم سريع وتعاوني",
+        "desc_ar": "خدمات تصميم سريعة ومرنة بالتعاون المباشر لتلبية العاجل."
+      },
+      {
+        "title": "Academic Journal Layout Design",
+        "desc": "Professionally designing and formatting the layout of academic journals and books.",
+        "title_ar": "تصميم إخراج المجلات الأكاديمية",
+        "desc_ar": "تصميم وتنسيق احترافي لإخراج المجلات والكتب الأكاديمية."
+      },
+      {
+        "title": "e-Learning Platform Interface Design",
+        "desc": "Designing an attractive and user-friendly interface for online learning platforms.",
+        "title_ar": "واجهات منصات التعلّم الإلكتروني",
+        "desc_ar": "تصميم واجهات جذّابة وسهلة الاستخدام لمنصات التعليم."
+      },
+      {
+        "title": "Scientific Visualization Design",
+        "desc": "Creating 3D visualizations and scientific models to illustrate complex concepts.",
+        "title_ar": "تصوير علمي ثلاثي الأبعاد",
+        "desc_ar": "إنتاج نماذج وتجسيدات ثلاثية لشرح مفاهيم معقّدة."
+      },
+      {
+        "title": "AR Educational Experience Design",
+        "desc": "Developing interactive educational experiences using augmented reality technology.",
+        "title_ar": "تجارب تعليمية بالواقع المعزّز",
+        "desc_ar": "تطوير تجارب تعليمية تفاعلية باستخدام تقنية AR."
+      },
+      {
+        "title": "Interactive Research Publication Design",
+        "desc": "Creating interactive digital versions of research publications that include multimedia elements.",
+        "title_ar": "منشورات بحثية تفاعلية",
+        "desc_ar": "إصدار نسخ رقمية تفاعلية للأبحاث مع وسائط متعددة."
+      },
+      {
+        "title": "Exhibit/Poster Booth Design",
+        "desc": "Designing attractive exhibition booths and posters for participation in academic fairs and events.",
+        "title_ar": "تصميم أجنحة ومعارض أكاديمية",
+        "desc_ar": "تصميم أجنحة عرض وبوسترات للمشاركة في الفعاليات."
+      },
+      {
+        "title": "Dynamic Mind-Map Design",
+        "desc": "Creating interactive and dynamic mind maps to organize and present ideas.",
+        "title_ar": "خرائط ذهنية ديناميكية",
+        "desc_ar": "تصميم خرائط ذهنية تفاعلية لتنظيم وعرض الأفكار."
+      },
+      {
+        "title": "VR Lab Simulation Design",
+        "desc": "Developing realistic simulation environments for labs and scientific experiments using virtual reality (VR).",
+        "title_ar": "محاكاة معامل بالواقع الافتراضي",
+        "desc_ar": "بناء بيئات محاكاة واقعية للمعامل والتجارب باستخدام VR."
+      },
+      {
+        "title": "AR Lecture Content Design",
+        "desc": "Enriching lectures and lessons with interactive content based on augmented reality.",
+        "title_ar": "محتوى محاضرات بالواقع المعزّز",
+        "desc_ar": "إثراء المحاضرات بمحتوى تفاعلي مبني على AR."
+      }
+    ],
+    "Personal Design Services": [
+      {
+        "title": "Personal Branding Design",
+        "desc": "Designing a complete visual identity that reflects your personal brand and highlights your strengths.",
+        "title_ar": "تصميم العلامة الشخصية",
+        "desc_ar": "تصميم هوية بصرية متكاملة تعكس علامتك الشخصية ونقاط قوتك."
+      },
+      {
+        "title": "Personal Logo Design",
+        "desc": "Creating a unique logo that represents you and enhances your personal brand.",
+        "title_ar": "شعار شخصي",
+        "desc_ar": "ابتكار شعار مميّز يمثّلك ويعزّز علامتك الشخصية."
+      },
+      {
+        "title": "Personal Brand Style Guide",
+        "desc": "Creating a guide that defines your visual style to ensure consistency in your digital presence.",
+        "title_ar": "دليل أسلوب العلامة الشخصية",
+        "desc_ar": "إعداد دليل يحدّد أسلوبك البصري لاستمرارية مظهر موحّد."
+      },
+      {
+        "title": "Personal Social Media Templates",
+        "desc": "Designing custom templates for your social media posts that reflect your identity.",
+        "title_ar": "قوالب سوشيال شخصية",
+        "desc_ar": "تصميم قوالب منشورات مخصّصة تعكس هويتك."
+      },
+      {
+        "title": "Personal Website / Portfolio Design",
+        "desc": "Creating an attractively designed personal website or blog to showcase your work and ideas.",
+        "title_ar": "موقع/بورتفوليو شخصي",
+        "desc_ar": "إنشاء موقع شخصي جذّاب لعرض أعمالك وأفكارك."
+      },
+      {
+        "title": "Invitation and Greeting Card Design",
+        "desc": "Designing unique and custom invitations and cards for your special occasions.",
+        "title_ar": "دعوات وبطاقات تهنئة",
+        "desc_ar": "تصميم دعوات وبطاقات مخصّصة لمناسباتك."
+      },
+      {
+        "title": "Personal Photo Editing and Retouching",
+        "desc": "Editing and processing your personal photos to make them look their best.",
+        "title_ar": "معالجة الصور الشخصية",
+        "desc_ar": "تحسين الصور الشخصية وإجراء الرتوش لإظهارها بأفضل شكل."
+      },
+      {
+        "title": "Mockups Design",
+        "desc": "Creating professional mockups to realistically showcase your work and designs.",
+        "title_ar": "تصميم Mockups",
+        "desc_ar": "إعداد نماذج عرض احترافية لعرض أعمالك بواقعية."
+      },
+      {
+        "title": "Personal Illustrations and Artwork",
+        "desc": "Creating custom artwork and illustrations that express your style and personality.",
+        "title_ar": "رسومات وأعمال فنية شخصية",
+        "desc_ar": "إنشاء أعمال ورسومات مخصّصة تعبّر عن أسلوبك."
+      },
+      {
+        "title": "Personal Magazines and Print Materials",
+        "desc": "Designing personal magazines or books to document your memories or showcase your work.",
+        "title_ar": "مجلات ومواد مطبوعة شخصية",
+        "desc_ar": "تصميم مجلات أو كتب شخصية لتوثيق الذكريات أو عرض الأعمال."
+      },
+      {
+        "title": "Personal Presentation Design",
+        "desc": "Creating visually engaging presentations to showcase your skills or personal projects.",
+        "title_ar": "عروض تقديمية شخصية",
+        "desc_ar": "تصميم عروض جذّابة لعرض مهاراتك ومشاريعك."
+      },
+      {
+        "title": "Digital Template Design",
+        "desc": "Designing reusable digital templates, such as for resumes or presentations.",
+        "title_ar": "تصميم قوالب رقمية",
+        "desc_ar": "إعداد قوالب قابلة لإعادة الاستخدام للسير والعروض وغيرها."
+      },
+      {
+        "title": "Personal Design Coaching and Workshops",
+        "desc": "Providing consulting and training sessions to help you develop your design skills.",
+        "title_ar": "إرشاد وورش تصميم شخصية",
+        "desc_ar": "جلسات تدريبية واستشارات لتطوير مهارات التصميم."
+      },
+      {
+        "title": "On-Demand Rapid Design Services",
+        "desc": "Quickly and efficiently handling small and urgent design requests.",
+        "title_ar": "تصميم سريع عند الطلب",
+        "desc_ar": "تنفيذ طلبات تصميم صغيرة وعاجلة بسرعة وكفاءة."
+      },
+      {
+        "title": "3D Personal Brand Identity",
+        "desc": "Creating 3D visual identity elements to add depth and distinction to your personal brand.",
+        "title_ar": "هوية شخصية ثلاثية الأبعاد",
+        "desc_ar": "تصميم عناصر هوية 3D تضيف عمقًا وتميّزًا لعلامتك."
+      },
+      {
+        "title": "AR Personal Social Posts",
+        "desc": "Creating custom augmented reality filters and effects for your social media posts.",
+        "title_ar": "منشورات AR شخصية",
+        "desc_ar": "إنشاء فلاتر وتأثيرات واقع معزّز لمنشوراتك."
+      },
+      {
+        "title": "Personal Timeline Graphic Design",
+        "desc": "Designing an infographic that tells the story of your life or career in a visually engaging way.",
+        "title_ar": "إنفوغرافيك خط زمني شخصي",
+        "desc_ar": "تصميم رسم زمني يحكي قصة حياتك أو مسارك المهني."
+      },
+      {
+        "title": "Personal Promo Video Design",
+        "desc": "Producing a short, professional video to introduce yourself or promote your skills.",
+        "title_ar": "فيديو ترويجي شخصي",
+        "desc_ar": "إنتاج فيديو قصير احترافي للتعريف بنفسك ومهاراتك."
+      },
+      {
+        "title": "Digital Personal Magazine Design",
+        "desc": "Creating an interactive digital magazine that showcases your interests and talents in a modern style.",
+        "title_ar": "مجلة رقمية شخصية",
+        "desc_ar": "إنشاء مجلة تفاعلية تعرض اهتماماتك ومواهبك بأسلوب حديث."
+      },
+      {
+        "title": "Personal Digital Identity Wallet Design",
+        "desc": "Developing a mobile app that interactively displays your portfolio and resume.",
+        "title_ar": "محفظة هوية رقمية شخصية",
+        "desc_ar": "تطوير تطبيق يَعرض بورتفوليوك وسيرتك بشكل تفاعلي."
+      },
+      {
+        "title": "Personal Website UI/UX Design",
+        "desc": "Designing an outstanding user experience for your personal blog or digital portfolio.",
+        "title_ar": "UI/UX لموقع شخصي",
+        "desc_ar": "تصميم تجربة مستخدم مميّزة لمدونتك أو بورتفوليوك."
+      },
+      {
+        "title": "VR Resume/Portfolio Design",
+        "desc": "Creating an innovative virtual reality (VR) experience to showcase your resume and skills.",
+        "title_ar": "سيرة/بورتفوليو بالواقع الافتراضي",
+        "desc_ar": "تجربة VR مبتكرة لعرض سيرتك ومهاراتك."
+      },
+      {
+        "title": "Animated Life-Event Graphics",
+        "desc": "Creating short animations to celebrate and share your special occasions.",
+        "title_ar": "رسومات أحداث متحركة",
+        "desc_ar": "رسومات/أنيميشن قصيرة للاحتفال ومشاركة المناسبات."
+      }
+    ]
+  },
+  "development": {
+    "Business Programming Services": [
+      {
+        "title": "Frontend Development",
+        "desc": "Building interactive and engaging user interfaces for websites and applications using the latest technologies.",
+        "title_ar": "تطوير الواجهة الأمامية",
+        "desc_ar": "بناء واجهات تفاعلية وجذابة للمواقع والتطبيقات بأحدث التقنيات."
+      },
+      {
+        "title": "Backend Development",
+        "desc": "Programming and developing the servers and databases that power your applications and websites efficiently and securely.",
+        "title_ar": "تطوير الواجهة الخلفية",
+        "desc_ar": "برمجة الخوادم وقواعد البيانات بكفاءة وأمان."
+      },
+      {
+        "title": "Full Stack Development",
+        "desc": "Providing comprehensive software solutions that include both frontend and backend development for your project.",
+        "title_ar": "تطوير فل ستاك",
+        "desc_ar": "حلول برمجية متكاملة تشمل الأمام والخلف للمشروع."
+      },
+      {
+        "title": "Content Management Systems (CMS)",
+        "desc": "Developing and customizing content management systems (like WordPress) to simplify managing your website's content.",
+        "title_ar": "أنظمة إدارة المحتوى (CMS)",
+        "desc_ar": "تطوير وتخصيص أنظمة CMS لتسهيل إدارة محتوى الموقع."
+      },
+      {
+        "title": "Custom Mobile App Development (iOS/Android)",
+        "desc": "Building native, high-performance mobile apps for iOS and Android to meet your business needs.",
+        "title_ar": "تطبيقات جوال مخصّصة",
+        "desc_ar": "بناء تطبيقات أصلية عالية الأداء على iOS/Android."
+      },
+      {
+        "title": "Cross-Platform App Development",
+        "desc": "Developing applications that run on multiple operating systems (iOS, Android) from a single codebase.",
+        "title_ar": "تطبيقات متعددة المنصات",
+        "desc_ar": "تطوير تطبيقات تعمل على منصات متعددة من كود موحّد."
+      },
+      {
+        "title": "Game Development (2D/3D)",
+        "desc": "Designing and programming engaging and interactive 2D and 3D games for various platforms.",
+        "title_ar": "تطوير الألعاب (ثنائي/ثلاثي)",
+        "desc_ar": "تصميم وبرمجة ألعاب 2D/3D ممتعة وتفاعلية."
+      },
+      {
+        "title": "Custom Software Development",
+        "desc": "Developing software solutions specifically designed to meet the unique requirements of your business.",
+        "title_ar": "برمجيات مخصّصة",
+        "desc_ar": "تطوير حلول برمجية مصممة خصيصًا لاحتياجات عملك."
+      },
+      {
+        "title": "Enterprise Software Development (ERP/CRM)",
+        "desc": "Building and customizing Enterprise Resource Planning (ERP) and Customer Relationship Management (CRM) systems to optimize your operations.",
+        "title_ar": "تطوير أنظمة مؤسسية (ERP/CRM)",
+        "desc_ar": "بناء وتخصيص أنظمة ERP/CRM لتحسين العمليات."
+      },
+      {
+        "title": "API Development",
+        "desc": "Creating robust and secure Application Programming Interfaces (APIs) to connect your various systems and applications.",
+        "title_ar": "تطوير واجهات برمجية (APIs)",
+        "desc_ar": "إنشاء واجهات برمجية قوية وآمنة لربط الأنظمة."
+      },
+      {
+        "title": "System Integration Services",
+        "desc": "Connecting and integrating your different systems and applications to ensure seamless data flow.",
+        "title_ar": "تكامل الأنظمة",
+        "desc_ar": "ربط وتكامل الأنظمة والتطبيقات لضمان تدفق بيانات سلس."
+      },
+      {
+        "title": "Cloud-Native Applications",
+        "desc": "Building applications specifically designed to run on cloud infrastructure for maximum flexibility and efficiency.",
+        "title_ar": "تطبيقات سحابية أصلية",
+        "desc_ar": "تطوير تطبيقات مصممة للسحابة لمرونة وكفاءة أعلى."
+      },
+      {
+        "title": "Serverless/BaaS Services",
+        "desc": "Developing applications based on serverless computing models to reduce costs and increase scalability.",
+        "title_ar": "خدمات Serverless/BaaS",
+        "desc_ar": "تطوير تطبيقات بنُهج خالية من الخوادم لخفض التكلفة وزيادة التوسّع."
+      },
+      {
+        "title": "DevOps Services",
+        "desc": "Implementing best DevOps practices to automate development and deployment processes and improve team collaboration.",
+        "title_ar": "خدمات DevOps",
+        "desc_ar": "تطبيق أفضل ممارسات DevOps لأتمتة البناء والنشر وتحسين التعاون."
+      },
+      {
+        "title": "Artificial Intelligence (AI)",
+        "desc": "Developing innovative AI solutions to analyze data, automate processes, and provide smart insights.",
+        "title_ar": "الذكاء الاصطناعي (AI)",
+        "desc_ar": "بناء حلول ذكاء اصطناعي لتحليل البيانات وأتمتة العمليات وتقديم رؤى."
+      },
+      {
+        "title": "Machine Learning (ML)",
+        "desc": "Building machine learning models capable of predicting patterns and making intelligent decisions based on data.",
+        "title_ar": "تعلّم الآلة (ML)",
+        "desc_ar": "تطوير نماذج تعلّم آلي للتنبؤ واتخاذ قرارات ذكية."
+      },
+      {
+        "title": "Natural Language Processing (NLP)",
+        "desc": "Developing systems that understand and analyze human language, such as chatbots and sentiment analysis systems.",
+        "title_ar": "معالجة اللغة الطبيعية (NLP)",
+        "desc_ar": "تطوير أنظمة تفهم اللغة البشرية (شات بوت/تحليل مشاعر)."
+      },
+      {
+        "title": "Computer Vision",
+        "desc": "Building systems that enable computers to 'see' and interpret images and videos.",
+        "title_ar": "رؤية الحاسوب",
+        "desc_ar": "بناء أنظمة تمكّن الحاسوب من فهم الصور والفيديو."
+      },
+      {
+        "title": "Cybersecurity Solutions",
+        "desc": "Providing advanced security solutions to protect your systems and data from cyber threats and attacks.",
+        "title_ar": "حلول الأمن السيبراني",
+        "desc_ar": "تأمين الأنظمة والبيانات ضد التهديدات والهجمات."
+      },
+      {
+        "title": "Penetration Testing",
+        "desc": "Simulating cyberattacks to identify security vulnerabilities in your systems and applications.",
+        "title_ar": "اختبار الاختراق",
+        "desc_ar": "محاكاة هجمات لاكتشاف ثغرات أمنية ومعالجتها."
+      },
+      {
+        "title": "Encryption Services",
+        "desc": "Implementing strong encryption algorithms to secure your sensitive data and ensure its confidentiality.",
+        "title_ar": "خدمات التشفير",
+        "desc_ar": "تطبيق تشفير قوي لحماية البيانات الحساسة وضمان سريتها."
+      },
+      {
+        "title": "E-commerce Development",
+        "desc": "Creating integrated and secure e-commerce platforms with an attractive design and easy shopping experience for your customers.",
+        "title_ar": "تطوير المتاجر الإلكترونية",
+        "desc_ar": "بناء متاجر إلكترونية متكاملة وآمنة بتجربة شراء سهلة."
+      },
+      {
+        "title": "Online Payment Integration",
+        "desc": "Securely and reliably integrating online payment gateways into your website or application to facilitate purchases.",
+        "title_ar": "ربط بوابات الدفع",
+        "desc_ar": "تكامل آمن مع بوابات الدفع الإلكتروني لتسهيل الشراء."
+      },
+      {
+        "title": "Database Programming",
+        "desc": "Designing and developing efficient and organized databases to manage and store your business data securely.",
+        "title_ar": "برمجة قواعد البيانات",
+        "desc_ar": "تصميم وتطوير قواعد بيانات منظّمة وفعّالة لإدارة البيانات."
+      },
+      {
+        "title": "Data Migration",
+        "desc": "Safely and accurately transferring data from old systems to new ones without any loss of information.",
+        "title_ar": "ترحيل البيانات",
+        "desc_ar": "نقل البيانات من الأنظمة القديمة للجديدة بدقة وأمان."
+      },
+      {
+        "title": "Embedded Systems",
+        "desc": "Programming and developing software that runs within embedded devices and systems.",
+        "title_ar": "أنظمة مدمجة",
+        "desc_ar": "برمجة برمجيات تعمل ضمن الأجهزة/الأنظمة المدمجة."
+      },
+      {
+        "title": "Internet of Things (IoT)",
+        "desc": "Developing solutions that connect physical devices to the internet to collect data and control them remotely.",
+        "title_ar": "إنترنت الأشياء (IoT)",
+        "desc_ar": "حلول تربط الأجهزة بالإنترنت لجمع البيانات والتحكم عن بُعد."
+      },
+      {
+        "title": "Maintenance and Support",
+        "desc": "Providing ongoing maintenance and technical support to ensure your systems and applications run efficiently without interruption.",
+        "title_ar": "الصيانة والدعم",
+        "desc_ar": "صيانة مستمرة ودعم تقني لضمان العمل بكفاءة بلا انقطاع."
+      },
+      {
+        "title": "Quality Assurance (QA)",
+        "desc": "Thoroughly inspecting and testing software and applications to ensure they are bug-free and provide an excellent user experience.",
+        "title_ar": "ضمان الجودة (QA)",
+        "desc_ar": "فحص واختبار البرمجيات لضمان خلوّها من الأخطاء وتجربة ممتازة."
+      },
+      {
+        "title": "IT Consulting",
+        "desc": "Providing technical advice and expertise to help you make the best technological decisions for your business.",
+        "title_ar": "استشارات تقنية",
+        "desc_ar": "تقديم المشورة والخبرة لاتخاذ قرارات تقنية مناسبة."
+      },
+      {
+        "title": "No-Code / Low-Code Systems",
+        "desc": "Building simple applications and systems using platforms that do not require deep programming expertise, to speed up development.",
+        "title_ar": "أنظمة No-Code/Low-Code",
+        "desc_ar": "إنشاء تطبيقات سريعة عبر منصّات قليلة/بلا كود لتسريع التطوير."
+      },
+      {
+        "title": "Integration Platform as a Service (iPaaS)",
+        "desc": "Using cloud platforms to easily connect and integrate applications and data across different environments.",
+        "title_ar": "منصّة تكامل كخدمة (iPaaS)",
+        "desc_ar": "استخدام منصّات سحابية لربط التطبيقات والبيانات بسهولة."
+      },
+      {
+        "title": "Predictive AI Solutions Development",
+        "desc": "Building AI models that predict future trends, such as customer behavior or sales performance.",
+        "title_ar": "حلول ذكاء اصطناعي تنبؤية",
+        "desc_ar": "تطوير نماذج تتنبّأ بالاتجاهات كسلوك العملاء أو المبيعات."
+      },
+      {
+        "title": "Enterprise Blockchain Development",
+        "desc": "Creating secure and transparent blockchain solutions for applications like supply chain tracking and smart contracts.",
+        "title_ar": "بلوكتشين للمؤسسات",
+        "desc_ar": "بناء حلول بلوكتشين آمنة وشفافة (سلاسل الإمداد/عقود ذكية)."
+      },
+      {
+        "title": "Enterprise AR/VR Apps",
+        "desc": "Building innovative AR/VR applications for training, product visualization, or enhancing customer experience.",
+        "title_ar": "تطبيقات AR/VR للمؤسسات",
+        "desc_ar": "تطبيقات واقع معزّز/افتراضي للتدريب أو عرض المنتجات."
+      },
+      {
+        "title": "Crypto/Trading Platform Development",
+        "desc": "Creating secure, high-performance platforms for trading financial assets or cryptocurrencies.",
+        "title_ar": "منصّات تداول/كريبتو",
+        "desc_ar": "بناء منصّات تداول آمنة وعالية الأداء للأصول والعملة الرقمية."
+      },
+      {
+        "title": "Deep Learning Model Development",
+        "desc": "Building advanced AI models (Deep Learning) capable of solving complex problems like image and speech recognition.",
+        "title_ar": "نماذج التعلّم العميق",
+        "desc_ar": "تطوير نماذج DL لمهام معقّدة مثل التعرّف على الصور/الصوت."
+      },
+      {
+        "title": "RPA – Robotic Process Automation",
+        "desc": "Programming software robots to automate repetitive office tasks to increase efficiency and reduce errors.",
+        "title_ar": "أتمتة العمليات الروبوتية (RPA)",
+        "desc_ar": "برمجة روبوتات برمجية لأتمتة المهام المتكرّرة ورفع الكفاءة."
+      },
+      {
+        "title": "Big Data Pipeline Development",
+        "desc": "Building robust systems to collect massive amounts of data (Big Data) and analyze it to extract valuable insights.",
+        "title_ar": "أنظمة البيانات الضخمة",
+        "desc_ar": "بناء خطوط بيانات لجمع وتحليل البيانات الضخمة واستخلاص الرؤى."
+      },
+      {
+        "title": "Edge Computing Solutions",
+        "desc": "Programming solutions that process data near its source to reduce latency and increase efficiency.",
+        "title_ar": "حلول الحوسبة الطرفية",
+        "desc_ar": "معالجة البيانات قرب المصدر لتقليل التأخير وزيادة الكفاءة."
+      },
+      {
+        "title": "SaaS Product Development",
+        "desc": "Building and developing Software as a Service (SaaS) products that operate on a subscription basis.",
+        "title_ar": "تطوير منتجات SaaS",
+        "desc_ar": "إنشاء منتجات برمجية كخدمة تعمل بالاشتراك."
+      },
+      {
+        "title": "Quantum Computing Prototype Dev",
+        "desc": "Exploring and building prototypes for applications that leverage the power of quantum computing.",
+        "title_ar": "نماذج حوسبة كمّية",
+        "desc_ar": "استكشاف وبناء نماذج أولية لتطبيقات الحوسبة الكمّية."
+      },
+      {
+        "title": "Industrial IoT Systems Development",
+        "desc": "Connecting machines and sensors in industrial environments to improve productivity and monitor operations.",
+        "title_ar": "أنظمة IIoT الصناعية",
+        "desc_ar": "ربط الآلات والمستشعرات لرفع الإنتاجية ومراقبة التشغيل."
+      },
+      {
+        "title": "Cloud Gaming Backend Development",
+        "desc": "Building the robust backend infrastructure needed to support online multiplayer games.",
+        "title_ar": "خلفيات ألعاب سحابية",
+        "desc_ar": "إنشاء بنية خلفية قوية لدعم ألعاب الإنترنت متعددة اللاعبين."
+      }
+    ],
+    "Academic Programming Services": [
+      {
+        "title": "Programming Assignment Help",
+        "desc": "Providing guidance and assistance in solving programming assignments and projects for university students.",
+        "title_ar": "مساعدة مهام البرمجة",
+        "desc_ar": "تقديم إرشاد ودعم لحل واجبات ومشاريع البرمجة للطلاب."
+      },
+      {
+        "title": "Academic Project Development",
+        "desc": "Assisting in the development and implementation of programming projects required in various academic courses.",
+        "title_ar": "تطوير مشاريع أكاديمية",
+        "desc_ar": "المساعدة في تنفيذ مشاريع برمجية مطلوبة للمساقات."
+      },
+      {
+        "title": "Bug Fixing",
+        "desc": "Identifying and fixing errors (bugs) in code to ensure it functions correctly.",
+        "title_ar": "إصلاح الأخطاء البرمجية",
+        "desc_ar": "اكتشاف وإصلاح الأخطاء لضمان عمل الكود بشكل صحيح."
+      },
+      {
+        "title": "Code Optimization",
+        "desc": "Reviewing and improving code to make it faster, more efficient, and easier to maintain.",
+        "title_ar": "تحسين الكود",
+        "desc_ar": "مراجعة وتحسين الكود ليصبح أسرع وأسهل صيانة."
+      },
+      {
+        "title": "Algorithm Design",
+        "desc": "Assisting in the design and development of effective algorithms to solve computational and logical problems.",
+        "title_ar": "تصميم الخوارزميات",
+        "desc_ar": "تطوير خوارزميات فعّالة لحل مشكلات حسابية ومنطقية."
+      },
+      {
+        "title": "Data Structures",
+        "desc": "Explaining and applying various data structures (like lists and trees) in academic projects.",
+        "title_ar": "هياكل البيانات",
+        "desc_ar": "شرح وتطبيق هياكل البيانات المختلفة ضمن المشاريع."
+      },
+      {
+        "title": "Database Programming",
+        "desc": "Assisting in the design and programming of databases for research and academic projects.",
+        "title_ar": "برمجة قواعد البيانات",
+        "desc_ar": "المساعدة في تصميم وبرمجة قواعد بيانات للأبحاث والمشاريع."
+      },
+      {
+        "title": "Frontend Development",
+        "desc": "Building simple and clear user interfaces for academic projects and applications.",
+        "title_ar": "تطوير الواجهة الأمامية",
+        "desc_ar": "إنشاء واجهات بسيطة وواضحة للمشاريع الأكاديمية."
+      },
+      {
+        "title": "Backend Development",
+        "desc": "Programming the logic and databases that support academic projects and applications.",
+        "title_ar": "تطوير الواجهة الخلفية",
+        "desc_ar": "برمجة المنطق وقواعد البيانات الداعمة للمشاريع."
+      },
+      {
+        "title": "Desktop Application Development",
+        "desc": "Creating applications that run on desktop operating systems (Windows, macOS) for educational or research purposes.",
+        "title_ar": "تطبيقات سطح المكتب",
+        "desc_ar": "بناء تطبيقات لسطح المكتب لأغراض تعليمية/بحثية."
+      },
+      {
+        "title": "Graphical User Interface (GUI) Programming",
+        "desc": "Designing and programming user-friendly graphical interfaces for academic tools and software.",
+        "title_ar": "برمجة الواجهات الرسومية (GUI)",
+        "desc_ar": "تصميم وبرمجة واجهات رسومية سهلة لأدوات أكاديمية."
+      },
+      {
+        "title": "Technical Documentation",
+        "desc": "Documenting code and explaining its functionality in clear technical reports and documents.",
+        "title_ar": "توثيق تقني",
+        "desc_ar": "توثيق الكود وشرح عمله عبر تقارير تقنية واضحة."
+      },
+      {
+        "title": "Research Paper Programming Support",
+        "desc": "Providing the necessary programming support for conducting experiments and analyzing data in technical research.",
+        "title_ar": "دعم برمجي للأبحاث",
+        "desc_ar": "توفير دعم برمجي للتجارب وتحليل البيانات في الأبحاث."
+      },
+      {
+        "title": "Case Study Development",
+        "desc": "Developing software or analyses to support case studies in academic research.",
+        "title_ar": "تطوير دراسات حالة",
+        "desc_ar": "بناء برمجيات/تحليلات تدعم دراسات الحالة الأكاديمية."
+      },
+      {
+        "title": "Code Tutoring",
+        "desc": "Providing one-on-one tutoring sessions to help students understand difficult programming concepts.",
+        "title_ar": "دروس خصوصية في البرمجة",
+        "desc_ar": "جلسات فردية لشرح مفاهيم برمجية صعبة."
+      },
+      {
+        "title": "Code Review Sessions",
+        "desc": "Reviewing students' code and providing constructive feedback for improvement.",
+        "title_ar": "جلسات مراجعة كود",
+        "desc_ar": "مراجعة الكود وتقديم ملاحظات بنّاءة للتحسين."
+      },
+      {
+        "title": "University-Specific Project Support",
+        "desc": "Providing customized assistance that aligns with the requirements and curricula of specific universities.",
+        "title_ar": "دعم مشاريع حسب الجامعة",
+        "desc_ar": "مساعدة مخصّصة تتماشى مع مناهج ومتطلبات الجامعات."
+      },
+      {
+        "title": "Academic Code Maintenance",
+        "desc": "Assisting in updating and maintaining the code for long-term research projects.",
+        "title_ar": "صيانة الكود الأكاديمي",
+        "desc_ar": "تحديث وصيانة كود المشاريع البحثية طويلة الأمد."
+      },
+      {
+        "title": "AI Research Project Development",
+        "desc": "Providing support in building and training AI models for research projects.",
+        "title_ar": "تطوير مشاريع أبحاث الذكاء الاصطناعي",
+        "desc_ar": "دعم بناء وتدريب نماذج الذكاء الاصطناعي للأبحاث."
+      },
+      {
+        "title": "Educational Simulation Development",
+        "desc": "Programming interactive simulation software to simplify and explain complex scientific concepts.",
+        "title_ar": "تطوير محاكاة تعليمية",
+        "desc_ar": "برمجة محاكاة تفاعلية لتبسيط مفاهيم علمية معقدة."
+      },
+      {
+        "title": "Advanced Algorithm & Model Writing",
+        "desc": "Developing and implementing advanced algorithms and computational models for specialized research papers.",
+        "title_ar": "خوارزميات ونماذج متقدمة",
+        "desc_ar": "تطوير خوارزميات ونماذج حسابية لأبحاث متخصصة."
+      },
+      {
+        "title": "GUI For Research Tools Development",
+        "desc": "Designing user-friendly interfaces for software tools specifically designed for research purposes.",
+        "title_ar": "واجهات لأدوات البحث",
+        "desc_ar": "تصميم واجهات مستخدم سهلة لأدوات برمجية بحثية."
+      },
+      {
+        "title": "Statistical Analysis Tool Development",
+        "desc": "Creating custom scripts and tools for performing statistical analysis on research data.",
+        "title_ar": "أدوات التحليل الإحصائي",
+        "desc_ar": "برمجة أدوات/سكربتات للتحليل الإحصائي للبيانات."
+      },
+      {
+        "title": "Academic Software Testing Frameworks",
+        "desc": "Building systems to test and evaluate software used in academic research.",
+        "title_ar": "أطر اختبار برمجيات أكاديمية",
+        "desc_ar": "إنشاء أنظمة لاختبار وتقييم برمجيات البحث."
+      },
+      {
+        "title": "Auto-Grader Development",
+        "desc": "Programming systems that automatically evaluate and grade students' programming assignments.",
+        "title_ar": "مطوّر مصحّح تلقائي",
+        "desc_ar": "بناء أنظمة لتصحيح وتقييم واجبات البرمجة تلقائيًا."
+      },
+      {
+        "title": "Thesis/Dissertation Project Coding",
+        "desc": "Providing comprehensive programming support for implementing the practical side of graduation projects and theses.",
+        "title_ar": "برمجة مشاريع التخرّج/الرسائل",
+        "desc_ar": "دعم برمجي شامل لتنفيذ الجانب العملي للمشاريع."
+      },
+      {
+        "title": "Interactive Research Publication Dev",
+        "desc": "Programming interactive digital versions of scientific research that allow readers to interact with the data.",
+        "title_ar": "منشورات بحثية تفاعلية",
+        "desc_ar": "برمجة نسخ رقمية تفاعلية من الأبحاث تُمكّن القارئ من التفاعل مع البيانات."
+      }
+    ],
+    "Personal Programming Services": [
+      {
+        "title": "Browser Automation Scripts",
+        "desc": "Programming scripts that automatically perform repetitive tasks on a web browser, such as filling out forms.",
+        "title_ar": "أتمتة المتصفح",
+        "desc_ar": "برمجة سكربتات تنفّذ مهام متكرّرة تلقائيًا في المتصفح."
+      },
+      {
+        "title": "Data Collection Scripts",
+        "desc": "Writing small programs to automatically collect specific information from websites.",
+        "title_ar": "سكربتات جمع البيانات",
+        "desc_ar": "برامج صغيرة لجمع معلومات محدّدة تلقائيًا من المواقع."
+      },
+      {
+        "title": "Chat Bots",
+        "desc": "Developing simple chatbots to automatically respond to messages on websites or social media platforms.",
+        "title_ar": "بوتات محادثة",
+        "desc_ar": "تطوير شات بوت يرد تلقائيًا على الرسائل في المواقع/السوشيال."
+      },
+      {
+        "title": "Custom API Integration",
+        "desc": "Connecting your favorite apps and services together using APIs to automate tasks.",
+        "title_ar": "تكامل واجهات برمجية مخصّص",
+        "desc_ar": "ربط تطبيقاتك وخدماتك عبر APIs لأتمتة المهام."
+      },
+      {
+        "title": "Data Scraping and Parsing Scripts",
+        "desc": "Programming tools to extract data from multiple sources and analyze it according to your needs.",
+        "title_ar": "استخراج وتحليل البيانات",
+        "desc_ar": "برمجة أدوات لاستخراج البيانات من مصادر متعددة وتحليلها."
+      },
+      {
+        "title": "Price Tracking Tools",
+        "desc": "Creating scripts that monitor product prices on e-commerce sites and send you alerts when they drop.",
+        "title_ar": "أدوات تتبّع الأسعار",
+        "desc_ar": "سكربتات تراقب الأسعار وتنبّهك عند الانخفاض."
+      },
+      {
+        "title": "Office Task Automation Scripts",
+        "desc": "Automating daily office tasks, such as organizing files or sending emails.",
+        "title_ar": "أتمتة المهام المكتبية",
+        "desc_ar": "أتمتة مهام يومية كتنظيم الملفات أو إرسال البريد."
+      },
+      {
+        "title": "Excel/Google Sheets Macros",
+        "desc": "Writing macros to perform complex and repetitive operations in spreadsheets with a single click.",
+        "title_ar": "ماكروز إكسل/شيتس",
+        "desc_ar": "ماكروز لأداء عمليات معقّدة ومتكرّرة بضغطة واحدة."
+      },
+      {
+        "title": "Custom GUI Tools",
+        "desc": "Developing simple tools with a graphical interface to facilitate your daily tasks on the computer.",
+        "title_ar": "أدوات بواجهة رسومية",
+        "desc_ar": "تطوير أدوات بسيطة بواجهة رسومية لتسهيل المهام اليومية."
+      },
+      {
+        "title": "Desktop Utility Applications",
+        "desc": "Programming small, useful desktop applications to help you organize your work and increase productivity.",
+        "title_ar": "تطبيقات سطح مكتب خدمية",
+        "desc_ar": "تطوير تطبيقات صغيرة مفيدة لزيادة الإنتاجية."
+      },
+      {
+        "title": "Browser Extensions",
+        "desc": "Developing custom extensions for web browsers (like Chrome) to add new features you need.",
+        "title_ar": "إضافات للمتصفح",
+        "desc_ar": "تطوير إضافات مخصّصة للمتصفحات لإضافة مزايا جديدة."
+      },
+      {
+        "title": "Personal Websites",
+        "desc": "Creating simple websites or personal blogs to showcase your resume or work.",
+        "title_ar": "مواقع شخصية",
+        "desc_ar": "إنشاء مواقع أو مدونات شخصية لعرض سيرتك وأعمالك."
+      },
+      {
+        "title": "Personal Assistant Tools",
+        "desc": "Programming tools that act as a personal assistant to remind you of tasks or organize your schedule.",
+        "title_ar": "أدوات مساعد شخصي",
+        "desc_ar": "برمجة أدوات تذكّرك بالمهام وتنظّم جدولك."
+      },
+      {
+        "title": "Resume and Portfolio Generators",
+        "desc": "Creating tools that help you quickly build your resume or digital portfolio.",
+        "title_ar": "منشئ سيرة/بورتفوليو",
+        "desc_ar": "أدوات تساعدك على إنشاء سيرة أو بورتفوليو بسرعة."
+      },
+      {
+        "title": "Educational Projects",
+        "desc": "Assisting in building small programming projects as a way to learn and practice new programming languages.",
+        "title_ar": "مشاريع تعليمية",
+        "desc_ar": "المساعدة في بناء مشاريع صغيرة للتعلّم والممارسة."
+      },
+      {
+        "title": "Mini Games",
+        "desc": "Developing simple and fun games that you can play or share with friends.",
+        "title_ar": "ألعاب صغيرة",
+        "desc_ar": "تطوير ألعاب بسيطة وممتعة للمشاركة واللعب."
+      },
+      {
+        "title": "Discord/Telegram Bots",
+        "desc": "Programming custom bots for chat platforms like Discord and Telegram to perform specific tasks.",
+        "title_ar": "بوتات ديسكورد/تلغرام",
+        "desc_ar": "برمجة بوتات مخصّصة لمنصّات الدردشة لتنفيذ مهام."
+      },
+      {
+        "title": "AI Integration Tools",
+        "desc": "Integrating AI APIs into your personal projects to experiment with their features.",
+        "title_ar": "تكاملات ذكاء اصطناعي",
+        "desc_ar": "دمج واجهات الذكاء الاصطناعي في مشاريعك الشخصية."
+      },
+      {
+        "title": "Custom Code Requests",
+        "desc": "Programming any custom script or small tool to meet your unique personal needs.",
+        "title_ar": "طلبات كود مخصّصة",
+        "desc_ar": "برمجة سكربتات/أدوات صغيرة حسب احتياجك."
+      },
+      {
+        "title": "Hobby and Beginner Projects",
+        "desc": "Providing help and guidance for beginners and hobbyists with their first programming projects.",
+        "title_ar": "مشاريع للهواة والمبتدئين",
+        "desc_ar": "مساعدة الهواة والمبتدئين في مشاريعهم الأولى."
+      },
+      {
+        "title": "Personal Mobile App Development",
+        "desc": "Developing simple mobile apps for personal use, such as habit tracking or note-taking.",
+        "title_ar": "تطبيقات جوال شخصية",
+        "desc_ar": "تطوير تطبيقات جوال بسيطة للاستخدام الشخصي."
+      },
+      {
+        "title": "Personal Productivity Automation Scripts",
+        "desc": "Creating scripts and apps to automate your daily routine and boost your personal productivity.",
+        "title_ar": "أتمتة الإنتاجية الشخصية",
+        "desc_ar": "سكربتات وتطبيقات لأتمتة الروتين وزيادة الإنتاجية."
+      },
+      {
+        "title": "Personal Website Dev",
+        "desc": "Developing and launching your personal website or blog with a simple, clean design.",
+        "title_ar": "تطوير موقع شخصي",
+        "desc_ar": "تطوير وإطلاق موقع/مدونة بتصميم بسيط ونظيف."
+      },
+      {
+        "title": "Personal Chatbot Dev",
+        "desc": "Creating your own chatbot to answer your queries or assist you with specific tasks.",
+        "title_ar": "تطوير شات بوت شخصي",
+        "desc_ar": "إنشاء شات بوت يجيب أسئلتك أو يساعدك في مهام."
+      },
+      {
+        "title": "Personal Dashboard Dev",
+        "desc": "Building a custom dashboard that gathers all your important information (like weather, tasks, and news) in one place.",
+        "title_ar": "لوحة معلومات شخصية",
+        "desc_ar": "إنشاء داشبورد تجمع معلوماتك المهمة في مكان واحد."
+      },
+      {
+        "title": "Habit/Health Tracker Dev",
+        "desc": "Developing a simple app to help you track your daily habits or health goals.",
+        "title_ar": "تتبّع العادات/الصحة",
+        "desc_ar": "تطبيق بسيط لمتابعة العادات أو الأهداف الصحية."
+      },
+      {
+        "title": "Personal Mini-Game Dev",
+        "desc": "Designing and programming small, entertaining games you can enjoy in your free time.",
+        "title_ar": "تطوير ألعاب مصغّرة",
+        "desc_ar": "تصميم وبرمجة ألعاب قصيرة ممتعة لوقت الفراغ."
+      },
+      {
+        "title": "Browser Extension Development",
+        "desc": "Creating extensions for your browser that customize your browsing experience or add needed functionality.",
+        "title_ar": "تطوير إضافات المتصفح",
+        "desc_ar": "إنشاء إضافات تخصّص تجربة التصفّح أو تضيف وظائف مطلوبة."
+      },
+      {
+        "title": "Personal Photo/Video Custom Tool Dev",
+        "desc": "Developing simple tools to add effects or edits to your personal photos and videos.",
+        "title_ar": "أدوات صور/فيديو شخصية",
+        "desc_ar": "أدوات بسيطة لإضافة تأثيرات وتعديلات على صورك وفيديوهاتك."
+      }
+    ]
+  }
+}
