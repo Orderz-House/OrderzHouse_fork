@@ -469,3 +469,36 @@ export const rescheduleAppointment = async (req, res) => {
     });
   }
 };
+
+// Get booked times for a specific date
+export const getBookedTimes = async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: "Date is required",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT appointment_time 
+       FROM applicants_appointments
+       WHERE appointment_date = $1 
+         AND is_deleted = FALSE
+         AND status NOT IN ('canceled', 'rescheduled')`,
+      [date]
+    );
+
+    const bookedTimes = rows.map((r) => r.appointment_time);
+    return res.status(200).json({ success: true, bookedTimes });
+  } catch (err) {
+    console.error("Error fetching booked times:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error fetching booked times",
+      error: err.message,
+    });
+  }
+};

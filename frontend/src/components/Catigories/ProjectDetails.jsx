@@ -17,6 +17,8 @@ import ProjectInfoCard from "./ProjectInfoCard";
 const THEME = "#028090";
 const THEME_DARK = "#05668D";
 
+const COVER_HEIGHT = "h-[360px]";
+
 export default function ProjectDetails({ mode: propMode }) {
   const { id } = useParams();
   const location = useLocation();
@@ -50,25 +52,20 @@ export default function ProjectDetails({ mode: propMode }) {
   const isClient = roleId === 2;
   const isFreelancer = roleId === 3;
 
-  /* ===============================
-     📦 Fetch Project or Task Data
-  =============================== */
+  // =============================== Fetch Project/Task
   useEffect(() => {
     const stateObj = location.state?.project;
     if (stateObj && String(stateObj.id) === String(id)) {
       setItem(stateObj);
       return;
     }
-
     const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
     loader(id)
       .then((res) => setItem(res.task || res.project || res))
       .catch(() => toast.error("Failed to load details."));
   }, [id, location.state, mode]);
 
-  /* ===============================
-     📂 Fetch Project Files
-  =============================== */
+  // =============================== Files
   useEffect(() => {
     if (!id || mode !== "projects") return;
     getProjectFilesApi(id)
@@ -76,32 +73,24 @@ export default function ProjectDetails({ mode: propMode }) {
       .catch(() => toast.error("Failed to load project files."));
   }, [id, mode]);
 
-  /* ===============================
-     ✅ Check if already assigned/applied
-  =============================== */
+  // =============================== Applied/Assigned
   useEffect(() => {
     if (!isFreelancer || mode !== "projects" || !id) return;
-
-    const checkApplied = async () => {
+    (async () => {
       try {
         const isAssigned = await checkIfAssignedApi(id);
         if (isAssigned) setHasApplied(true);
-      } catch (err) {
-        console.error("Check applied error:", err);
+      } catch (e) {
+        console.error(e);
       }
-    };
-
-    checkApplied();
+    })();
   }, [id, isFreelancer, mode]);
 
-  /* ===============================
-     🧩 Handlers
-  =============================== */
+  // =============================== Handlers
   const onApplyToProject = () => {
     if (mode === "tasks") return toast.error("This is only for projects.");
     if (!isFreelancer) return toast.error("Only freelancers can apply to projects.");
     if (hasApplied) return toast.error("You already applied or are assigned to this project.");
-
     setApplyModalType(item?.project_type === "bidding" ? "offer" : "apply");
     setShowApplyModal(true);
   };
@@ -113,15 +102,12 @@ export default function ProjectDetails({ mode: propMode }) {
       setShowApplyModal(false);
       return;
     }
-
     if (busy) return;
 
     setShowApplyModal(false);
-
     try {
       setBusy(true);
       let response;
-
       if (applyModalType === "offer") {
         if (!offerAmount) {
           toast.error("Please enter an offer amount.");
@@ -131,12 +117,11 @@ export default function ProjectDetails({ mode: propMode }) {
       } else {
         response = await applyToProjectApi(id, { message: "" }, token);
       }
-
       toast.success(response?.message || "Application sent successfully!");
       setHasApplied(true);
       setOfferAmount("");
     } catch (err) {
-      console.error("Apply error:", err);
+      console.error(err);
       toast.error(err?.message || "Failed to apply to project.");
     } finally {
       setBusy(false);
@@ -169,16 +154,14 @@ export default function ProjectDetails({ mode: propMode }) {
     }
   };
 
-  /* ===============================
-     🖼️ Loading Placeholder
-  =============================== */
+  // =============================== Skeleton
   if (!item) {
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="h-6 w-32 rounded bg-slate-200 animate-pulse mb-6" />
         <div className="grid lg:grid-cols-[1fr,380px] gap-8">
           <div>
-            <div className="aspect-[16/9] w-full rounded-2xl bg-slate-200 animate-pulse mb-4" />
+            <div className={`w-full ${COVER_HEIGHT} rounded-2xl bg-slate-200 animate-pulse mb-4`} />
             <div className="mt-8 space-y-3">
               <div className="h-5 w-1/2 bg-slate-200 rounded animate-pulse" />
               <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
@@ -194,6 +177,7 @@ export default function ProjectDetails({ mode: propMode }) {
     );
   }
 
+  // =============================== UI
   /* ===============================
      🎨 UI Computations
   =============================== */
@@ -217,16 +201,12 @@ export default function ProjectDetails({ mode: propMode }) {
 
   const acceptClasses =
     "w-full h-11 rounded-xl text-white font-semibold transition " +
-    (canAccept
-      ? "hover:shadow-lg"
-      : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
+    (canAccept ? "hover:shadow-lg" : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
 
   const contactClasses =
     "w-full h-11 rounded-xl border text-slate-700 font-semibold transition hover:bg-slate-50";
 
-  /* ===============================
-     🖼️ Render
-  =============================== */
+  // =============================== Render
   return (
     <section className="relative bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -243,19 +223,29 @@ export default function ProjectDetails({ mode: propMode }) {
 
         <div className="grid lg:grid-cols-[1fr,380px] gap-10">
           <div>
+            {/* ✅ نفس مساحة الـ placeholder دائماً */}
             {cover ? (
               <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mb-4">
-                <div className="aspect-[16/9] bg-slate-50">
-                  <img src={cover} alt={title} className="w-full h-full object-cover" />
+                <div className={`w-full ${COVER_HEIGHT} bg-slate-50 flex items-center justify-center`}>
+                  <img
+                    src={cover}
+                    alt={title}
+                    className="max-h-full w-auto object-contain"
+                  />
                 </div>
               </div>
             ) : (
-              <div className="aspect-[16/9] rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
+              <div
+                className={`w-full ${COVER_HEIGHT} rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-400 mb-4`}
+              >
                 No cover image
               </div>
             )}
 
-            <div className="mt-8">
+            {/* أي صورة داخل الوصف بنفس المقاس */}
+            <div
+              className={`mt-8 [&_img]:w-full [&_img]:${COVER_HEIGHT} [&_img]:object-contain [&_img]:bg-slate-50 [&_img]:p-2 [&_img]:rounded-xl [&_img]:border [&_img]:border-slate-200`}
+            >
               <h2 className="text-xl font-bold text-slate-800 mb-3">
                 {isTasks ? "About this task" : "About this project"}
               </h2>
@@ -293,7 +283,6 @@ export default function ProjectDetails({ mode: propMode }) {
               onPaymentSelected={onPaymentSelected}
               refs={{ paymentInputRef }}
             />
-
             <button
               onClick={() => navigate(-1)}
               className="mt-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-800"
@@ -304,7 +293,7 @@ export default function ProjectDetails({ mode: propMode }) {
         </div>
       </div>
 
-      {/* 🎀 Apply Modal */}
+      {/* Modal */}
       {showApplyModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative animate-[scale-in_0.2s_ease-out]">
@@ -366,11 +355,7 @@ export default function ProjectDetails({ mode: propMode }) {
                   style={{ backgroundColor: THEME }}
                   disabled={busy}
                 >
-                  {busy
-                    ? "Sending..."
-                    : applyModalType === "offer"
-                    ? "Send Offer"
-                    : "Yes, Apply!"}
+                  {busy ? "Sending..." : applyModalType === "offer" ? "Send Offer" : "Yes, Apply!"}
                 </button>
               </div>
             </div>
@@ -382,7 +367,6 @@ export default function ProjectDetails({ mode: propMode }) {
         @keyframes scale-in {
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
-        }
       `}</style>
     </section>
   );

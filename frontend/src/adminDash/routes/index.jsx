@@ -28,7 +28,6 @@ import Profile from "../pages/Profile.jsx";
 function ProjectsSwitch() {
   const { pathname } = useLocation();
   if (pathname.startsWith("/client")) return <ClientsProjects />;
-  // if (pathname.startsWith("/freelancer")) return <FreelancersProjects />;
   return <Navigate to="/admin/operation/projects" replace />;
 }
 
@@ -56,7 +55,6 @@ export default function AdminRouter() {
         {/* <Route path="operation/projects" element={<AdminProjects />} /> */}
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
-
         <Route path="operation/tasks" element={<Tasks />} />
         <Route path="community/blogs" element={<Blogs />} />
         <Route path="finance/payments" element={<Payments />} />
@@ -70,6 +68,60 @@ export default function AdminRouter() {
         <Route path="courses" element={<Courses />} />
         <Route path="appointments" element={<Appointments />} />
         <Route path="tasks" element={<Tasks />} />
+      </Route>
+    </Routes>
+  );
+}
+
+/* (Appointment Manager) */
+export function APMRouter() {
+  return (
+    <Routes>
+      <Route path="/" element={<AdminLayout />}>
+        {/* overview */}
+        <Route
+          index
+          element={
+            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
+              APM Overview (coming soon)
+            </div>
+          }
+        />
+
+        <Route path="appointment" element={<Appointments />} />
+
+        <Route
+          path="history"
+          element={
+            <div className="p-6 rounded-2xl border border-slate-2 00 bg-white">
+              History (coming soon)
+            </div>
+          }
+        />
+        <Route
+          path="questions"
+          element={
+            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
+              Questions (coming soon)
+            </div>
+          }
+        />
+        <Route
+          path="survey"
+          element={
+            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
+              Survey (coming soon)
+            </div>
+          }
+        />
+        <Route
+          path="videos"
+          element={
+            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
+              Videos (coming soon)
+            </div>
+          }
+        />
       </Route>
     </Routes>
   );

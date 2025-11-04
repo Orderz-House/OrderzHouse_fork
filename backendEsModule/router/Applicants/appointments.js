@@ -9,7 +9,7 @@ import {
   deleteAppointment,
   getFilteredAppointments,
   rescheduleAppointment,
-} from "../../controller/Applicants/appointments.js";
+} from "../../controller/Applicants/appointment.js";
 
 const AppointmentRouter = express.Router();
 
@@ -17,6 +17,8 @@ const AppointmentRouter = express.Router();
    PUBLIC ROUTE
 =========================================================== */
 AppointmentRouter.post("/public", createPublicApplicantAppointment);
+AppointmentRouter.get("/booked", getBookedTimes);
+
 
 /* ===========================================================
    ADMIN / MANAGER ROUTES
