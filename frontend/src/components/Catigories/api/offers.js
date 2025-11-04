@@ -18,10 +18,15 @@ const authHeaders = (token) => ({
 export const sendOfferApi = async (projectId, payload, token) => {
   if (!projectId) throw new Error("Missing projectId");
 
+  const body = {
+    bid_amount: payload.offer_amount, 
+    proposal: payload.message || "",  
+  };
+
   try {
     const { data } = await axios.post(
       `${API_BASE}/offers/${projectId}/offers`,
-      payload,
+      body,
       token
         ? { headers: { Authorization: `Bearer ${token}` } }
         : getAuthHeaders()
@@ -34,7 +39,6 @@ export const sendOfferApi = async (projectId, payload, token) => {
     throw new Error(err.response?.data?.message || err.message || "Failed to send offer");
   }
 };
-
 /* =====================================================
     GET MY OFFERS FOR A SPECIFIC PROJECT
 ===================================================== */

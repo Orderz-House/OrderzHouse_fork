@@ -42,7 +42,7 @@
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
-    "twilio": "^5.10.3",
+    "twilio": "^5.10.4",
     "victory": "^37.3.6",
     "ws": "^8.18.3"
   },

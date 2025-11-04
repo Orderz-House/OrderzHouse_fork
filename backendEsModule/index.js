@@ -21,13 +21,12 @@ import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
-import appointmentsRouter from "./router/appointment.js";
+import appointmentRouter from "./router/appointment.js";
 import coursesRouter from "./router/courses.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import categoriesRouter from "./router/category.js";
 import subscriptionsRouter from "./router/subscriptions.js";
-import chatsRouter from "./router/chats.js";
 import notificationsRouter from "./router/notifications.js";
 import authRouter from "./router/auth.js";
 import accessControlRouter from "./router/accessControl.js";
@@ -37,8 +36,11 @@ import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
-import ChatRouter from "./router/chats.js";
+import chatsRouter from "./router/chats.js";
 
+//APPOINTMENTS
+import appointmentsRouter from "./router/Applicants/appointments.js";
+import surveyRouter from "./router/Applicants/survey.js";
 
 // DB connection
 dotenv.config();
@@ -53,8 +55,7 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(express.json());
 app.use(cors({
-  origin:["http://localhost:5173",     
-          "https://thi8ah.com"], 
+  origin: "http://localhost:5173", 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -71,6 +72,9 @@ app.use(limiter);
 */
 
 // Routers
+//APPOINTMENTS
+app.use("/ApplicantsSurvey", surveyRouter);
+app.use("/ApplicantsAppointments", appointmentsRouter);
 app.use("/assignments", assignmentsRouter);
 app.use("/verification", VerificationRouter);
 app.use("/freelancerCategories", freelancerCategoriesRouter);
@@ -84,7 +88,7 @@ app.use("/category", categoriesRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
-app.use("/appointments", appointmentsRouter);
+app.use("/appointments", appointmentRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
@@ -95,8 +99,7 @@ app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
-app.use("/chat", ChatRouter);
-
+app.use("/chat", chatsRouter);
 
 let server, io;
 

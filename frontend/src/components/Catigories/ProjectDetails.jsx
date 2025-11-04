@@ -103,6 +103,7 @@ export default function ProjectDetails({ mode: propMode }) {
       return;
     }
     if (busy) return;
+
     setShowApplyModal(false);
     try {
       setBusy(true);
@@ -133,6 +134,7 @@ export default function ProjectDetails({ mode: propMode }) {
   };
 
   const triggerPaymentUpload = () => paymentInputRef.current?.click();
+
   const onPaymentSelected = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,6 +178,9 @@ export default function ProjectDetails({ mode: propMode }) {
   }
 
   // =============================== UI
+  /* ===============================
+     🎨 UI Computations
+  =============================== */
   const title = item.title;
   const cover = item.cover_pic || item.cover;
   const projectType = item?.project_type ?? item?.type;

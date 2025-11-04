@@ -4,6 +4,7 @@ import {
   Menu,
   X,
   Bell,
+  MessageSquare, 
   User,
   Settings,
   LogOut,
@@ -370,21 +371,14 @@ export default function EnhancedNavbar() {
             )}
 
             {IsAuthenticated && (
-              <div className="relative" ref={notificationsRef}>
+              <>
+                {/* Chat Icon */}
                 <button
-                  onClick={() => {
-                    setIsNotificationsOpen(!isNotificationsOpen);
-                    if (!isNotificationsOpen) fetchNotifications();
-                  }}
+                  onClick={() => navigate("/chat")}
                   className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
-                  aria-label="Notifications"
+                  aria-label="Chat"
                 >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
+                  <MessageSquare className="h-5 w-5" />
                 </button>
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
@@ -422,35 +416,89 @@ export default function EnhancedNavbar() {
                                       n.created_at
                                     ).toLocaleDateString()}
                                   </p>
+
+
+                {/* Notifications Icon */}
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    onClick={() => {
+                      setIsNotificationsOpen(!isNotificationsOpen);
+                      if (!isNotificationsOpen) fetchNotifications();
+                    }}
+                    className="relative p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
+                    aria-label="Notifications"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {isNotificationsOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 className="font-semibold text-gray-900 font-inter">
+                          Notifications
+                        </h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-xs text-[#028090] hover:text-[#026e7a] font-medium font-inter"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          <div className="divide-y divide-gray-100">
+                            {notifications.map((n) => (
+                              <div
+                                key={n.id}
+                                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                  !n.read_status ? "bg-blue-50" : ""
+                                }`}
+                                onClick={() => markAsRead(n.id)}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900 font-inter">
+                                      {n.message}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-2 font-inter">
+                                      {new Date(n.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  {!n.read_status && (
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1" />
+                                  )}
                                 </div>
-                                {!n.read_status && (
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1" />
-                                )}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center">
-                          <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 text-sm font-inter">
-                            No notifications yet
-                          </p>
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-8 text-center">
+                            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 text-sm font-inter">
+                              No notifications yet
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4 border-t border-gray-100 text-center">
+                        <Link
+                          to="/notifications"
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-sm text-[#028090] hover:text-[#026e7a] font-medium font-inter"
+                        >
+                          View all notifications
+                        </Link>
+                      </div>
                     </div>
-                    <div className="p-4 border-t border-gray-100 text-center">
-                      <Link
-                        to="/notifications"
-                        onClick={() => setIsNotificationsOpen(false)}
-                        className="text-sm text-[#028090] hover:text-[#026e7a] font-medium font-inter"
-                      >
-                        View all notifications
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </>
             )}
 
             {/* User menu / Auth */}
@@ -532,16 +580,28 @@ export default function EnhancedNavbar() {
           {/* Mobile menu button */}
           <div className="lg:hidden flex items-center space-x-2">
             {IsAuthenticated && (
-              <button
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-                )}
-              </button>
+              <>
+                {/* Chat Icon (Mobile) */}
+                <button
+                  onClick={() => navigate("/chat")}
+                  className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
+                  aria-label="Chat"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </button>
+                
+                {/* Notifications Icon (Mobile) */}
+                <button
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </>
             )}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
