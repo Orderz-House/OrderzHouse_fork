@@ -21,7 +21,7 @@ import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
-import appointmentsRouter from "./router/appointment.js";
+import appointmentRouter from "./router/appointment.js";
 import coursesRouter from "./router/courses.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
@@ -88,7 +88,7 @@ app.use("/category", categoriesRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
-app.use("/appointments", appointmentsRouter);
+app.use("/appointments", appointmentRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", coursesRouter);
 app.use("/subscriptions", subscriptionsRouter);

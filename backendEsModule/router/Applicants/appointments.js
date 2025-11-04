@@ -9,7 +9,7 @@ import {
   deleteAppointment,
   getFilteredAppointments,
   rescheduleAppointment,
-} from "../../controller/Applicants/appointment.js";
+} from "../../controller/Applicants/appointments.js";
 
 const AppointmentRouter = express.Router();
 

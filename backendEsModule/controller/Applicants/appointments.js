@@ -19,7 +19,7 @@ export const createApplicantAppointment = async (req, res) => {
     }
 
     const {
-      survey_id,
+      survey_id,// use id as param
       appointment_date,
       appointment_time,
       appointment_type,

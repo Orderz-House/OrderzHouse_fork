@@ -44,27 +44,25 @@ export const createSurveyByPublic = async (req, res) => {
       first_name, father_name, last_name, age, nationality,
       social_status, national_id, passport_id, city, state,
       degree, major, university, phone_number, email,
-      how_did_you_know_us, source = "form"
+      how_did_you_know_us, source, notes = "form"
     } = req.body;
 
     await pool.query(
-      `INSERT INTO applicants_surveys (
-        first_name, father_name, last_name, age, nationality, social_status,
-        national_id, passport_id, city, state, degree, major, university,
-        phone_number, email, how_did_you_know_us, source,
-        status, notes, created_at, updated_at
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16,$17,$18,
-        'pending','',NOW(),NOW()
-      )`,
-      [
-        first_name, father_name, last_name, age, nationality, social_status,
-        national_id, passport_id, city, state, degree, major, university,
-        phone_number, email, how_did_you_know_us, source
-      ]
-    );
+  `INSERT INTO applicants_surveys (
+    first_name, father_name, last_name, age, nationality, social_status,
+    national_id, passport_id, city, state, degree, major, university,
+    phone_number, email, how_did_you_know_us, source, notes
+  )
+  VALUES (
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+    $11,$12,$13,$14,$15,$16,$17,$18
+  )`,
+  [
+    first_name, father_name, last_name, age, nationality, social_status,
+    national_id, passport_id, city, state, degree, major, university,
+    phone_number, email, how_did_you_know_us, source, notes
+  ]
+);
 
     return res.status(201).json({
       success: true,
@@ -223,7 +221,6 @@ export const updateSurvey = async (req, res) => {
       phone_number,
       email,
       how_did_you_know_us,
-      status,
       notes,
       assigned_to,
     } = req.body;
@@ -247,11 +244,10 @@ export const updateSurvey = async (req, res) => {
          phone_number = COALESCE($14, phone_number),
          email = COALESCE($15, email),
          how_did_you_know_us = COALESCE($16, how_did_you_know_us),
-         status = COALESCE($17, status),
-         notes = COALESCE($18, notes),
-         assigned_to = COALESCE($19, assigned_to),
+         notes = COALESCE($17, notes),
+         assigned_to = COALESCE($18, assigned_to),
          updated_at = NOW()
-       WHERE id = $20
+       WHERE id = $19
        RETURNING *`,
       [
         first_name,
@@ -270,7 +266,6 @@ export const updateSurvey = async (req, res) => {
         phone_number,
         email,
         how_did_you_know_us,
-        status,
         notes,
         assigned_to,
         id,
