@@ -38,6 +38,10 @@ import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
 import chatsRouter from "./router/chats.js";
 
+//APPOINTMENTS
+import appointmentsRouter from "./router/Applicants/appointments.js";
+import surveyRouter from "./router/Applicants/survey.js";
+
 // DB connection
 dotenv.config();
 
@@ -68,6 +72,9 @@ app.use(limiter);
 */
 
 // Routers
+//APPOINTMENTS
+app.use("/ApplicantsSurvey", surveyRouter);
+app.use("/ApplicantsAppointments", appointmentsRouter);
 app.use("/assignments", assignmentsRouter);
 app.use("/verification", VerificationRouter);
 app.use("/freelancerCategories", freelancerCategoriesRouter);
