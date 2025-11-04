@@ -181,7 +181,7 @@ export const getAssignmentForFreelancerApi = async (projectId) => {
 export const applyToProjectApi = async (projectId, body = {}, token) => {
   try {
     const { data } = await axios.post(
-      `${API_BASE_URL}/projects/${projectId}/apply`,
+      `${API_BASE}/${projectId}/apply`,
       body,
       { headers: { Authorization: `Bearer ${token}` } }
     );

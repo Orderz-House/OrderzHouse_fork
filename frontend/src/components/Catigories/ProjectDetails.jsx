@@ -21,7 +21,7 @@ export default function ProjectDetails({ mode: propMode }) {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const toast = useToast(); // ✅ fixed (no destructuring)
+  const toast = useToast();
 
   const [item, setItem] = useState(null);
   const [projectFiles, setProjectFiles] = useState([]);
@@ -116,7 +116,6 @@ export default function ProjectDetails({ mode: propMode }) {
 
     if (busy) return;
 
-    // Close modal immediately for responsiveness
     setShowApplyModal(false);
 
     try {
@@ -150,6 +149,7 @@ export default function ProjectDetails({ mode: propMode }) {
   };
 
   const triggerPaymentUpload = () => paymentInputRef.current?.click();
+
   const onPaymentSelected = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,7 +195,7 @@ export default function ProjectDetails({ mode: propMode }) {
   }
 
   /* ===============================
-     🎨 UI Calculations
+     🎨 UI Computations
   =============================== */
   const title = item.title;
   const cover = item.cover_pic || item.cover;
