@@ -22,7 +22,6 @@ import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
 const API_BASE = import.meta.env.VITE_APP_API_URL;
 
-
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -90,13 +89,10 @@ export default function EnhancedNavbar() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get(
-        `${API_BASE}/notifications/count`,
-        {
-          headers: { authorization: `Bearer ${token}` },
-          params: { unreadOnly: true },
-        }
-      );
+      const { data } = await axios.get(`${API_BASE}/notifications/count`, {
+        headers: { authorization: `Bearer ${token}` },
+        params: { unreadOnly: true },
+      });
       if (data.success) setUnreadCount(data.count);
     } catch (error) {
       console.error("Error fetching notification count:", error);
@@ -128,7 +124,9 @@ export default function EnhancedNavbar() {
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
-      setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
+      setNotifications((list) =>
+        list.map((n) => ({ ...n, read_status: true }))
+      );
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all as read:", error);
@@ -205,6 +203,8 @@ export default function EnhancedNavbar() {
         return "/client";
       case 3:
         return "/freelancer";
+      case 4:
+        return "/apm";
       default:
         return "/login";
     }
@@ -222,9 +222,21 @@ export default function EnhancedNavbar() {
 
   // Items under Explore
   const exploreItems = [
-    { label: "ABOUT US", path: "/about", onClick: () => handleNavigation("/about", "ABOUT US") },
-    { label: "BLOGS", path: "/blogs", onClick: () => handleNavigation("/blogs", "BLOGS") },
-    { label: "CONTACT", path: "/contact", onClick: () => handleNavigation("/contact", "CONTACT") },
+    {
+      label: "ABOUT US",
+      path: "/about",
+      onClick: () => handleNavigation("/about", "ABOUT US"),
+    },
+    {
+      label: "BLOGS",
+      path: "/blogs",
+      onClick: () => handleNavigation("/blogs", "BLOGS"),
+    },
+    {
+      label: "CONTACT",
+      path: "/contact",
+      onClick: () => handleNavigation("/contact", "CONTACT"),
+    },
     {
       label: "PLANS",
       path: "/plans",
@@ -257,13 +269,17 @@ export default function EnhancedNavbar() {
                       key={item.label}
                       onClick={() => handleNavigation(item.path, item.label)}
                       className={`group relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                        activeLink === item.label ? "text-[#028090]" : "text-gray-700"
+                        activeLink === item.label
+                          ? "text-[#028090]"
+                          : "text-gray-700"
                       }`}
                     >
                       {item.label}
                       <span
                         className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-                          activeLink === item.label ? "w-full" : "w-0 group-hover:w-full"
+                          activeLink === item.label
+                            ? "w-full"
+                            : "w-0 group-hover:w-full"
                         }`}
                       />
                       <span className="absolute inset-0 text-[#028090] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -278,7 +294,9 @@ export default function EnhancedNavbar() {
                 <button
                   onClick={() => setIsExploreOpen((v) => !v)}
                   className={`group inline-flex items-center gap-1 px-5 py-3 text-base font-medium transition-all duration-300 font-inter ${
-                    ["ABOUT US", "BLOGS", "CONTACT", "PLANS"].includes(activeLink)
+                    ["ABOUT US", "BLOGS", "CONTACT", "PLANS"].includes(
+                      activeLink
+                    )
                       ? "text-[#028090]"
                       : "text-gray-700"
                   }`}
@@ -295,7 +313,9 @@ export default function EnhancedNavbar() {
                   <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-[fadeIn_.15s_ease-out]">
                     <ul className="py-2">
                       {exploreItems
-                        .filter((it) => it.condition === undefined ? true : it.condition)
+                        .filter((it) =>
+                          it.condition === undefined ? true : it.condition
+                        )
                         .map((it) => (
                           <li key={it.label}>
                             <button
@@ -360,6 +380,43 @@ export default function EnhancedNavbar() {
                 >
                   <MessageSquare className="h-5 w-5" />
                 </button>
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-900 font-inter">
+                        Notifications
+                      </h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-xs text-[#028090] hover:text-[#026e7a] font-medium font-inter"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        <div className="divide-y divide-gray-100">
+                          {notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                !n.read_status ? "bg-blue-50" : ""
+                              }`}
+                              onClick={() => markAsRead(n.id)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900 font-inter">
+                                    {n.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-2 font-inter">
+                                    {new Date(
+                                      n.created_at
+                                    ).toLocaleDateString()}
+                                  </p>
+
 
                 {/* Notifications Icon */}
                 <div className="relative" ref={notificationsRef}>
@@ -551,7 +608,11 @@ export default function EnhancedNavbar() {
               className="p-2 text-gray-600 hover:text-[#028090] hover:bg-gray-100 rounded-xl transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -596,7 +657,9 @@ export default function EnhancedNavbar() {
                 {isExploreMobileOpen && (
                   <div className="mt-1 ml-2">
                     {exploreItems
-                      .filter((it) => (it.condition === undefined ? true : it.condition))
+                      .filter((it) =>
+                        it.condition === undefined ? true : it.condition
+                      )
                       .map((it) => (
                         <button
                           key={it.label}
