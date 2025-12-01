@@ -511,7 +511,7 @@ const rateFreelancer = async (req, res) => {
 // ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
 
 const verifyPassword = async (req, res) => {
-  const { password } = req.body;
+  const password = req.body;
   const userId = req.token.userId;
 
   try {
