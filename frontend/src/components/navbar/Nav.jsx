@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
-  Menu,
-  X,
   Bell,
   MessageSquare,
   User,
@@ -21,15 +19,17 @@ import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
 const API_BASE = import.meta.env.VITE_APP_API_URL;
 
+// ستايل واحد لكل روابط الهيدر (HOME / TASKS / EXPLORE)
+const TOP_LINK_BASE =
+  "px-5 py-3 text-sm md:text-base font-medium tracking-wide transition-colors duration-150";
+
 export default function EnhancedNavbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
-  const [isExploreMobileOpen, setIsExploreMobileOpen] = useState(false);
 
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
@@ -198,9 +198,15 @@ export default function EnhancedNavbar() {
     { label: "PLANS", path: "/plans" },
   ];
 
+  // لو أنت في ABOUT / BLOGS / ... يخلي زر EXPLORE شكله active
+  const isExploreActive = exploreItems.some(
+    (item) => item.label === activeLink
+  );
+
   return (
     <nav className="relative top-0 left-0 right-0 z-[9999] bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* نفس الارتفاع القديم h-23 */}
         <div className="flex justify-between items-center h-23">
           <div className="flex items-center">
             <button
@@ -219,10 +225,10 @@ export default function EnhancedNavbar() {
                   <button
                     key={item.label}
                     onClick={() => handleNavigation(item.path, item.label)}
-                    className={`px-5 py-3 font-medium ${
+                    className={`${TOP_LINK_BASE} ${
                       activeLink === item.label
                         ? "text-[#028090]"
-                        : "text-gray-700"
+                        : "text-gray-700 hover:text-[#028090]"
                     }`}
                   >
                     {item.label}
@@ -230,10 +236,15 @@ export default function EnhancedNavbar() {
                 )
             )}
 
+            {/* EXPLORE بنفس ستايل اللينكات + active لما يكون داخل أحد صفحات explore */}
             <div className="relative" ref={exploreRef}>
               <button
                 onClick={() => setIsExploreOpen((v) => !v)}
-                className="px-5 py-3 text-gray-700 hover:text-[#028090]"
+                className={`${TOP_LINK_BASE} ${
+                  isExploreActive
+                    ? "text-[#028090]"
+                    : "text-gray-700 hover:text-[#028090]"
+                }`}
               >
                 EXPLORE
                 <ChevronDown
@@ -248,7 +259,7 @@ export default function EnhancedNavbar() {
                     <button
                       key={it.label}
                       onClick={() => handleNavigation(it.path, it.label)}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#028090]"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:text-[#028090] hover:bg-gray-50"
                     >
                       {it.label}
                     </button>
@@ -268,7 +279,7 @@ export default function EnhancedNavbar() {
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"
-                className="inline-flex items-center gap-2 px-5 py-2 border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white"
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white transition-colors duration-150"
               >
                 <Plus className="h-4 w-4" /> Add project
               </Link>
@@ -277,7 +288,7 @@ export default function EnhancedNavbar() {
             {userData?.role_id === 3 && (
               <Link
                 to="/tasks/create"
-                className="inline-flex items-center gap-2 px-5 py-2 border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white"
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white transition-colors duration-150"
               >
                 <Plus className="h-4 w-4" /> Add task
               </Link>
@@ -287,7 +298,7 @@ export default function EnhancedNavbar() {
               <>
                 <button
                   onClick={() => navigate("/chat")}
-                  className="p-2 text-gray-600 hover:text-[#028090]"
+                  className="p-2 text-gray-600 hover:text-[#028090] transition-colors duration-150"
                 >
                   <MessageSquare className="h-5 w-5" />
                 </button>
@@ -298,7 +309,7 @@ export default function EnhancedNavbar() {
                       setIsNotificationsOpen(!isNotificationsOpen);
                       if (!isNotificationsOpen) fetchNotifications();
                     }}
-                    className="p-2 text-gray-600 hover:text-[#028090] relative"
+                    className="p-2 text-gray-600 hover:text-[#028090] relative transition-colors duration-150"
                   >
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
@@ -368,7 +379,7 @@ export default function EnhancedNavbar() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090]"
+                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] transition-colors duration-150"
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-[#028090] flex items-center justify-center">
                     {userData.profile_pic_url ? (
@@ -422,13 +433,13 @@ export default function EnhancedNavbar() {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-6 py-2.5 text-gray-700 hover:text-[#028090]"
+                  className="px-6 py-2.5 text-sm md:text-base font-medium text-gray-700 hover:text-[#028090] transition-colors duration-150"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => navigate("/register")}
-                  className="px-6 py-2.5 border-2 border-[#028090] text-[#028090] hover:bg-[#028090] hover:text-white rounded-2xl"
+                  className="px-6 py-2.5 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] hover:bg-[#028090] hover:text-white rounded-2xl transition-colors duration-150"
                 >
                   Get Started
                 </button>
