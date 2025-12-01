@@ -8,12 +8,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://backend.thi8ah.com', 
+        target: 'http://localhost:5000', 
         changeOrigin: true,              
         rewrite: (path) => path.replace(/^\/api/, ''), 
       },
       '/upload': {
-        target: 'https://backend.thi8ah.com', 
+        target: 'http://localhost:5000', 
         changeOrigin: true,
         rewrite: (path) => path, 
       },

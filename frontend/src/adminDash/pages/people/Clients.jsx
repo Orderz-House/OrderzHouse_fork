@@ -59,7 +59,6 @@ export default function Clients() {
             row.name ||
             "-",
         },
-        { label: "Username", key: "username" },
         { label: "Email", key: "email" },
         { label: "Phone", key: "phone_number" },
         { label: "Country", key: "country" },
@@ -67,7 +66,6 @@ export default function Clients() {
       formFields={[
         { key: "first_name", label: "First Name", required: true },
         { key: "last_name", label: "Last Name", required: true },
-        { key: "username", label: "Username", required: true },
         { key: "email", label: "Email", type: "email", required: true },
         {
           key: "password",
