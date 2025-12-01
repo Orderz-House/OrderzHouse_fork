@@ -12,6 +12,7 @@ import {
   verifyEmailOtp,
   uploadProfilePic,
   sendOtpController,
+  getUserdata,
 } from "../controller/user.js";
 
 import { authentication } from "../middleware/authentication.js";
@@ -27,7 +28,7 @@ usersRouter.post("/verify-otp", verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);
 
 // ==================== AUTHENTICATED ROUTES ====================
-usersRouter.get("/getUserdata", authentication, verifyPassword); 
+usersRouter.get("/getUserdata", authentication, getUserdata);
 usersRouter.post("/uploadProfilePic", authentication, upload.single("file"), uploadProfilePic);
 
 // ==================== USER PROFILE ====================

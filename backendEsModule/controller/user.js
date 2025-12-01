@@ -507,11 +507,28 @@ const rateFreelancer = async (req, res) => {
   }
 };
 
+const getUserdata = async (req, res) => {
+  const userId = req.token.userId;
+
+  const user = await pool.query(
+    "SELECT id, first_name, last_name, email, username, role_id, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
+    [userId]
+  );
+
+  if (!user.rows.length) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  return res.json({
+    success: true,
+    user: user.rows[0],
+  });
+};
 
 // ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
 
 const verifyPassword = async (req, res) => {
-  const password = req.body;
+  const { password } = req.body;  // <-- هذا هو المطلوب
   const userId = req.token.userId;
 
   try {
@@ -524,7 +541,16 @@ const verifyPassword = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const match = await bcrypt.compare(password, userResult.rows[0].password);
+    const hashedPassword = userResult.rows[0].password;
+
+    if (!password || !hashedPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Password or hashed password missing"
+      });
+    }
+
+    const match = await bcrypt.compare(password, hashedPassword);
 
     return res.json({
       success: match,
@@ -626,4 +652,5 @@ export {
   updatePassword,
   deactivateAccount,
   verifyEmailOtp,
+  getUserdata
 };
