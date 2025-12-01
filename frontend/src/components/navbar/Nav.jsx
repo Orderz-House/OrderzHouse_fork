@@ -30,6 +30,7 @@ export default function EnhancedNavbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
@@ -134,6 +135,7 @@ export default function EnhancedNavbar() {
     setActiveLink(label);
     navigate(path);
     setIsExploreOpen(false);
+    setIsMobileMenuOpen(false); // إغلاق منيو الجوال بعد التنقل
   };
 
   useEffect(() => {
@@ -208,6 +210,7 @@ export default function EnhancedNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* نفس الارتفاع القديم h-23 */}
         <div className="flex justify-between items-center h-23">
+          {/* Logo */}
           <div className="flex items-center">
             <button
               onClick={() => handleNavigation("/", "HOME")}
@@ -274,8 +277,32 @@ export default function EnhancedNavbar() {
             />
           </div>
 
-          {/* Right Section */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* زر منيو الجوال + التابلت (يظهر فقط أقل من lg) */}
+          <div className="flex items-center lg:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 rounded-md text-gray-700 hover:text-[#028090] focus:outline-none"
+              aria-label="Open main menu"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Right Section (ديسكتوب فقط) */}
+          <div className="hidden lg:flex items-center space-x-4">
             {userData?.role_id === 2 && (
               <Link
                 to="/create-project"
@@ -448,6 +475,218 @@ export default function EnhancedNavbar() {
           </div>
         </div>
       </div>
+
+      {/* منيو الجوال / التابلت (Drawer) */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-[10000] bg-black bg-opacity-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div
+            className="absolute right-0 top-0 h-full w-72 max-w-full bg-white shadow-xl p-6 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header داخل المنيو */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <img src={logo} alt="Logo" className="h-10 w-auto" />
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-gray-600 hover:text-[#028090]"
+                aria-label="Close menu"
+              >
+                <span className="text-2xl leading-none">&times;</span>
+              </button>
+            </div>
+
+            {/* بيانات المستخدم في الموبايل */}
+            {IsAuthenticated && userData && (
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#028090] flex items-center justify-center">
+                  {userData.profile_pic_url ? (
+                    <img
+                      src={userData.profile_pic_url}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {userData.first_name} {userData.last_name}
+                  </p>
+                  <p className="text-xs text-gray-500">{userData.email}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              {/* Main Links */}
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+                  Main
+                </p>
+                <div className="flex flex-col">
+                  {navLinks.map(
+                    (item) =>
+                      item.condition && (
+                        <button
+                          key={item.label}
+                          onClick={() =>
+                            handleNavigation(item.path, item.label)
+                          }
+                          className={`w-full text-left py-2 text-base ${
+                            activeLink === item.label
+                              ? "text-[#028090]"
+                              : "text-gray-800 hover:text-[#028090]"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      )
+                  )}
+                </div>
+              </div>
+
+              {/* Explore Links */}
+              <div className="pt-4 border-t">
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+                  Explore
+                </p>
+                <div className="flex flex-col">
+                  {exploreItems.map((it) => (
+                    <button
+                      key={it.label}
+                      onClick={() => handleNavigation(it.path, it.label)}
+                      className={`w-full text-left py-2 text-base ${
+                        activeLink === it.label
+                          ? "text-[#028090]"
+                          : "text-gray-800 hover:text-[#028090]"
+                      }`}
+                    >
+                      {it.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Project / Task */}
+              {(userData?.role_id === 2 || userData?.role_id === 3) && (
+                <div className="pt-4 border-t space-y-2">
+                  {userData?.role_id === 2 && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate("/create-project");
+                      }}
+                      className="flex items-center text-base text-[#028090]"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add project
+                    </button>
+                  )}
+                  {userData?.role_id === 3 && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate("/tasks/create");
+                      }}
+                      className="flex items-center text-base text-[#028090]"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add task
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Chat + Notifications */}
+              {IsAuthenticated && (
+                <div className="pt-4 border-t space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/chat");
+                    }}
+                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Chat
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/notifications");
+                    }}
+                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                    {unreadCount > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs h-5 min-w-[1.25rem] px-1">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Dashboard + Sign Out */}
+              {IsAuthenticated && userData && (
+                <div className="pt-4 border-t space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate(getDashboardPath(userData.role_id));
+                    }}
+                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center text-base text-red-600 hover:text-red-700"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+
+              {/* Guest (غير مسجل) */}
+              {!IsAuthenticated && (
+                <div className="pt-4 border-t space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/login");
+                    }}
+                    className="w-full text-left py-2 text-base text-gray-800 hover:text-[#028090]"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/register");
+                    }}
+                    className="w-full text-left py-2 text-base text-[#028090] font-semibold"
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
