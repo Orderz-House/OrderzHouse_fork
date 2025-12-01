@@ -352,7 +352,8 @@ const MobileCards = ({
         const isVerified = truthyYes(verifiedVal);
 
         const secondary =
-          email ?? (country ? String(country) : role ? String(role) : undefined);
+          email ??
+          (country ? String(country) : role ? String(role) : undefined);
 
         return (
           <div
@@ -501,18 +502,18 @@ const DesktopTable = ({
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-        <thead className="border-b border-slate-200 bg-[#028090]">
+        <thead className="border-b border-slate-200 bg-[#e0f7f9]">
           <tr>
             {crudConfig.showExpand && <th className="w-10 px-3 py-2"></th>}
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-white"
+                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#028090]"
               >
                 {col.label}
               </th>
             ))}
-            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-white">
+            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-[#028090]">
               Actions
             </th>
           </tr>
@@ -682,7 +683,7 @@ const DesktopCards = ({
   const budgetCol = pickColumn(columns, ["budget", "price", "amount"]);
 
   return (
-    <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {rows.map((row, idx) => {
         const isExpanded = expandedRow === idx;
         const isEditing = editingRowId === helpers.getId(row);
@@ -698,9 +699,10 @@ const DesktopCards = ({
         return (
           <div
             key={idx}
-            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            className="group relative rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
+                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#9ae2ea]"
           >
-            {/* صورة / أفاتار بسيطة */}
+            {/* الجزء العلوي (أفاتار / حرف أول) */}
             <div
               role="button"
               tabIndex={0}
@@ -708,30 +710,43 @@ const DesktopCards = ({
               onKeyDown={(e) =>
                 e.key === "Enter" && onCardClick?.(row, helpers)
               }
-              className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
+              className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
+              {/* خلفية متدرجة بلون #028090 */}
+              {/* إذا ما في صورة → اعرض الخلفية */}
+              {!avatarUrl && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#028090] via-[#03a6b7] to-[#e0f7f9]" />
+                  <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
+                </>
+              )}
+
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="relative z-10 w-full h-full object-cover mix-blend-multiply"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
+                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#028090] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
                 </div>
               )}
             </div>
 
-            <div className="p-4 space-y-2">
+            {/* المحتوى */}
+            <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-800 truncate">
+                  <div className="font-semibold text-slate-900 truncate">
                     {titleVal}
                   </div>
+
                   {typeof renderSubtitle === "function" && (
-                    <div className="mt-1">{renderSubtitle(row, helpers)}</div>
+                    <div className="mt-0.5 text-[12px] text-slate-500">
+                      {renderSubtitle(row, helpers)}
+                    </div>
                   )}
 
                   {subVal && (
@@ -740,6 +755,7 @@ const DesktopCards = ({
                     </div>
                   )}
                 </div>
+
                 {status && (
                   <div className="shrink-0">
                     {renderPrettyCell(
@@ -751,25 +767,34 @@ const DesktopCards = ({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                {due && (
-                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Due:</span> {String(due)}
-                  </div>
-                )}
-                {budget != null && budget !== "" && (
-                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Budget:</span>{" "}
-                    {String(budget)}
-                  </div>
-                )}
-              </div>
+              {/* Badges صغيرة للـ due / budget */}
+              {(due || (budget != null && budget !== "")) && (
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                  {due && (
+                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
+                      <span className="text-slate-400">Due:</span>{" "}
+                      <span className="font-medium text-slate-700">
+                        {String(due)}
+                      </span>
+                    </div>
+                  )}
+                  {budget != null && budget !== "" && (
+                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
+                      <span className="text-slate-400">Budget:</span>{" "}
+                      <span className="font-medium text-slate-700">
+                        {String(budget)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="pt-2 flex items-center justify-between gap-1.5">
+              {/* الأزرار */}
+              <div className="pt-1 flex items-center justify-between gap-1.5">
                 {crudConfig.showDetails && (
                   <button
                     onClick={() => onOpenDrawer?.(row, idx)}
-                    className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
+                    className="h-9 px-3 rounded-full border border-slate-200 bg-white/80 text-sm text-slate-700 hover:bg-slate-50"
                     title="View / Edit"
                   >
                     <AiOutlineEdit size={18} />
@@ -785,7 +810,7 @@ const DesktopCards = ({
                       {crudConfig?.showRowEdit && (
                         <button
                           onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm"
+                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#e0f7f9]"
                           style={{ borderColor: PRIMARY, color: PRIMARY }}
                           title="Edit"
                         >
@@ -796,7 +821,7 @@ const DesktopCards = ({
                       {crudConfig?.showDelete && (
                         <button
                           onClick={() => helpers.handleDelete(idx)}
-                          className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
+                          className="h-9 px-3 rounded-full border border-red-100 bg-red-50/70 hover:bg-red-100 text-sm text-red-600"
                           title="Delete"
                         >
                           Delete
@@ -807,7 +832,7 @@ const DesktopCards = ({
                 </div>
               </div>
 
-              {/* (Optional) inline expand */}
+              {/* (اختياري) توسيع داخلي */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -898,7 +923,8 @@ const CardsGrid = ({
         return (
           <div
             key={idx}
-            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            className="rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
+                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#9ae2ea]"
           >
             <div
               role="button"
@@ -907,30 +933,35 @@ const CardsGrid = ({
               onKeyDown={(e) =>
                 e.key === "Enter" && onCardClick?.(row, helpers)
               }
-              className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
+              className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#028090] via-[#03a6b7] to-[#e0f7f9]" />
+              <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
+
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="relative z-10 w-full h-full object-cover mix-blend-multiply"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
+                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#028090] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
                 </div>
               )}
             </div>
 
-            <div className="p-4 space-y-2">
+            <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-800 truncate">
+                  <div className="font-semibold text-slate-900 truncate">
                     {titleVal}
                   </div>
                   {typeof renderSubtitle === "function" && (
-                    <div className="mt-1">{renderSubtitle(row, helpers)}</div>
+                    <div className="mt-0.5 text-[12px] text-slate-500">
+                      {renderSubtitle(row, helpers)}
+                    </div>
                   )}
 
                   {subVal && (
@@ -950,25 +981,32 @@ const CardsGrid = ({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                {due && (
-                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Due:</span> {String(due)}
-                  </div>
-                )}
-                {budget != null && budget !== "" && (
-                  <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Budget:</span>{" "}
-                    {String(budget)}
-                  </div>
-                )}
-              </div>
+              {(due || (budget != null && budget !== "")) && (
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                  {due && (
+                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
+                      <span className="text-slate-400">Due:</span>{" "}
+                      <span className="font-medium text-slate-700">
+                        {String(due)}
+                      </span>
+                    </div>
+                  )}
+                  {budget != null && budget !== "" && (
+                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
+                      <span className="text-slate-400">Budget:</span>{" "}
+                      <span className="font-medium text-slate-700">
+                        {String(budget)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="pt-2 flex items-center justify-between gap-1.5">
+              <div className="pt-1 flex items-center justify-between gap-1.5">
                 {crudConfig.showDetails && (
                   <button
                     onClick={() => onOpenDrawer?.(row, idx)}
-                    className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
+                    className="h-9 px-3 rounded-full border border-slate-200 bg-white/80 text-sm text-slate-700 hover:bg-slate-50"
                     title="View / Edit"
                   >
                     <AiOutlineEdit size={18} />
@@ -984,7 +1022,7 @@ const CardsGrid = ({
                       {crudConfig?.showRowEdit && (
                         <button
                           onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm"
+                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#e0f7f9]"
                           style={{ borderColor: PRIMARY, color: PRIMARY }}
                           title="Edit"
                         >
@@ -995,7 +1033,7 @@ const CardsGrid = ({
                       {crudConfig?.showDelete && (
                         <button
                           onClick={() => helpers.handleDelete(idx)}
-                          className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 text-sm text-red-600"
+                          className="h-9 px-3 rounded-full border border-red-100 bg-red-50/70 hover:bg-red-100 text-sm text-red-600"
                           title="Delete"
                         >
                           Delete
@@ -1006,7 +1044,6 @@ const CardsGrid = ({
                 </div>
               </div>
 
-              {/* (Optional) inline expand */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -1028,7 +1065,6 @@ const CardsGrid = ({
     </div>
   );
 };
-
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",

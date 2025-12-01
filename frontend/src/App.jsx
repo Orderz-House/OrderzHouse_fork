@@ -123,8 +123,6 @@ function App() {
           />
           
           
-         
-
           {/* --- Tasks --- */}
           <Route
             path="/tasks"
