@@ -1,5 +1,5 @@
-// File
-import React, { useMemo, useState, useRef, useEffect } from "react";
+// Sidebar.jsx
+import React from "react";
 import {
   FolderKanban,
   CheckSquare,
@@ -10,58 +10,53 @@ import {
   Menu,
   Home,
   X,
+  Settings,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 
-// Props
 const Sidebar = ({
   activePage,
   setActivePage,
-  isMobileMenuOpen,
+  isMobileMenuOpen = false,
   setIsMobileMenuOpen,
   navigation = [],
   bottomNavigation = [],
   onLogout,
+  showDesktopSidebar = true, // 👈 مهم
 }) => {
-  // State
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // نحمي من undefined عشان ما يصير كراش لو ما انرسل لنا setActivePage مثلاً
+  const safeSetActivePage = setActivePage ?? (() => {});
+  const safeSetIsMobileMenuOpen = setIsMobileMenuOpen ?? (() => {});
 
-  // Router
-  const { userData } = useSelector((state) => state.auth);
+  // Redux
+  const userData = useSelector((state) => state.auth?.userData);
   const location = useLocation();
-
-  // Refs
-  const mainListRef = useRef(null);
-
-  // Effect
-  useEffect(() => {}, [location.pathname, isSidebarCollapsed]);
+  const pathname = location?.pathname || "/";
 
   // Helpers
   const getUserDisplayName = () => {
     if (userData?.full_name) return userData.full_name;
     if (userData?.username) return userData.username;
-    return "User Dashboard";
+    return "User";
   };
 
-  // Role
   const getUserRole = () => {
     const roleId = userData?.role_id;
     if (roleId === 1) return "Admin";
     if (roleId === 2) return "Client";
     if (roleId === 3) return "Freelancer";
-    return "User";
+    return "Member";
   };
 
-  // Avatar
   const getUserAvatar = () => userData?.profile_picture || null;
   const getUserInitial = () =>
     (getUserDisplayName().charAt(0) || "U").toUpperCase();
 
   const avatarUrl = getUserAvatar();
-  const hasValidAvatar = avatarUrl && avatarUrl.trim() !== "";
+  const hasValidAvatar = Boolean(avatarUrl && avatarUrl.trim() !== "");
 
-  // Icons
+  // Default icons
   const defaultIcons = {
     projects: FolderKanban,
     tasks: CheckSquare,
@@ -70,18 +65,19 @@ const Sidebar = ({
     profile: User,
     logout: LogOut,
     overview: Home,
+    dashboard: Home,
+    settings: Settings,
   };
 
-  // Active
+  // Active checker
   const isItemActive = (item) => {
     if (item?.path) {
-      const curr = location.pathname || "/";
-      return curr === item.path || curr.startsWith(item.path + "/");
+      return pathname === item.path || pathname.startsWith(item.path + "/");
     }
     return activePage === item?.id;
   };
 
-  // Linker
+  // Wrapper for Link / button
   const Clickable = ({
     item,
     children,
@@ -89,11 +85,20 @@ const Sidebar = ({
     className,
     "data-active": dataActive,
   }) => {
+    const handleClick = (event) => {
+      if (typeof item?.onClick === "function") {
+        item.onClick(event);
+      }
+      if (typeof onClick === "function") {
+        onClick(event);
+      }
+    };
+
     if (item?.path) {
       return (
         <Link
           to={item.path}
-          onClick={onClick}
+          onClick={handleClick}
           className={className}
           data-active={dataActive}
         >
@@ -101,234 +106,154 @@ const Sidebar = ({
         </Link>
       );
     }
+
     return (
-      <button onClick={onClick} className={className} data-active={dataActive}>
+      <button
+        type="button"
+        onClick={handleClick}
+        className={className}
+        data-active={dataActive}
+      >
         {children}
       </button>
     );
   };
 
-  // MobileNav
-  const mobileNav = useMemo(() => navigation.slice(0, 4), [navigation]);
+  const mobileNav = navigation.slice(0, 4);
 
   return (
     <>
       {/* ===================== Desktop Sidebar ===================== */}
-      {/* Sticky */}
-      <aside
-        className={`hidden lg:block lg:sticky lg:top-0 bg-[#028090] border-r border-[#015c6a] transition-all duration-300 ease-in-out
-        ${isSidebarCollapsed ? "lg:w-20" : "lg:w-64"} 
-        w-64 z-40 h-screen`}
-      >
-        {/* Wrapper */}
-        <div className="flex flex-col h-[90vh]">
-          {/* Profile */}
-          <div className="pt-6 px-6 pb-3 relative flex-shrink-0">
-            <div
-              className={`flex flex-col items-center text-center transition-all duration-300 ${
-                isSidebarCollapsed ? "lg:px-0" : ""
-              }`}
-            >
-              {isSidebarCollapsed && (
-                <div className="mb-2">
-                  <button
-                    onClick={() => setIsSidebarCollapsed(false)}
-                    className="hidden lg:flex w-8 h-8 rounded-md items-center justify-center text-white hover:bg-[#015c6a] transition-colors shadow-sm"
-                    aria-label="Expand sidebar"
-                  >
-                    <Menu className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+      {/* ===================== Desktop Sidebar ===================== */}
+<aside
+  className={`
+    hidden lg:flex lg:flex-col lg:h-screen lg:sticky lg:top-0
+    bg-white border-r border-slate-200 shadow-sm relative z-40
+    overflow-hidden transform transition-all duration-300 ease-in-out
+    ${showDesktopSidebar ? "lg:w-64 translate-x-0" : "lg:w-0 -translate-x-full"}
+  `}
+>
+  {/* خط ملون على اليسار (بنفس لونك) */}
+  <span
+    aria-hidden="true"
+    className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#028090] via-[#02707a] to-[#015c6a]"
+  />
 
-              {/* Avatar */}
-              {hasValidAvatar ? (
-                <img
-                  src={avatarUrl}
-                  alt={getUserDisplayName()}
-                  className="w-16 h-16 rounded-full mb-3 object-cover"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    const fallback =
-                      e.target.parentElement.querySelector(".avatar-fallback");
-                    if (fallback) fallback.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div
-                className="avatar-fallback w-16 h-16 rounded-full bg-gradient-to-br from-white to-[#e0f2fe] mb-3 flex items-center justify-center text-[#028090] font-bold text-xl"
-                style={{ display: hasValidAvatar ? "none" : "flex" }}
-              >
-                {getUserInitial()}
-              </div>
-
-              {!isSidebarCollapsed && (
-                <>
-                  <h3 className="text-sm font-semibold text-white">
-                    {getUserDisplayName()}
-                  </h3>
-                  <p className="text-xs text-[#e0f2fe]">{getUserRole()}</p>
-                </>
-              )}
-            </div>
-
-            {!isSidebarCollapsed && (
-              <button
-                onClick={() => setIsSidebarCollapsed(true)}
-                className="hidden lg:flex absolute top-4 right-4 w-8 h-8 rounded-md items-center justify-center text-white hover:bg-[#015c6a] transition-colors shadow-sm"
-                aria-label="Collapse sidebar"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            )}
+  <div className="flex flex-col h-full">
+    {/* Header / Logo + User */}
+    <div className="px-6 py-4 border-b border-slate-100">
+      <div className="flex items-center gap-3">
+        {hasValidAvatar ? (
+          <img
+            src={avatarUrl}
+            alt={getUserDisplayName()}
+            className="w-9 h-9 rounded-full object-cover"
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-[#ccf0f4] text-[#028090] flex items-center justify-center text-sm font-semibold">
+            {getUserInitial()}
           </div>
-
-          {/* Divider */}
-          <div className="px-6 mb-2 flex-shrink-0">
-            <div className="border-t border-[#015c6a]" />
-          </div>
-
-          {/* Nav */}
-          <div
-            ref={mainListRef}
-            className="sidebar-scroll flex-1 overflow-y-auto px-4 pb-4"
-          >
-            <nav className="space-y-1">
-              {navigation.map((item) => {
-                const Icon = item.icon || defaultIcons[item.id] || User;
-                const active = isItemActive(item);
-                const collapsed = isSidebarCollapsed;
-
-                const buttonClasses = [
-                  "w-full flex items-center rounded-lg transition-colors",
-                  collapsed
-                    ? "justify-center px-0 py-1.5"
-                    : "space-x-3 px-3 py-2.5",
-                  !collapsed &&
-                    (active ? "bg-[#016d7a]" : "hover:bg-[#015c6a]"),
-                ]
-                  .filter(Boolean)
-                  .join(" ");
-
-                return (
-                  <Clickable
-                    key={item.id}
-                    item={item}
-                    onClick={() => setActivePage?.(item.id)}
-                    className={buttonClasses}
-                    data-active={active ? "true" : "false"}
-                  >
-                    <>
-                      <span
-                        className={[
-                          "grid place-items-center",
-                          collapsed ? "w-10 h-10 rounded-md" : "w-5 h-5",
-                          collapsed
-                            ? active
-                              ? "bg-[#016d7a] text-white"
-                              : "hover:bg-[#015c6a] text-[#e0f2fe]"
-                            : active
-                            ? "text-white"
-                            : "text-[#e0f2fe]",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      >
-                        <Icon className="w-5 h-5" />
-                      </span>
-
-                      {!collapsed && (
-                        <span
-                          className={`text-sm font-medium ${
-                            active ? "text-white" : "text-[#e0f2fe]"
-                          }`}
-                        >
-                          {item.name}
-                        </span>
-                      )}
-                    </>
-                  </Clickable>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Bottom */}
-          <div className="px-4 py-4 border-t border-[#015c6a] space-y-1 flex-shrink-0">
-            {bottomNavigation.map((item) => {
-              const Icon = item.icon || defaultIcons[item.id] || User;
-              const active = isItemActive(item);
-              const isLogout = item.id === "logout";
-              const collapsed = isSidebarCollapsed;
-
-              const buttonClasses = [
-                "w-full flex items-center rounded-lg transition-colors",
-                collapsed
-                  ? "justify-center px-0 py-1.5"
-                  : "space-x-3 px-3 py-2.5",
-                !collapsed && (active ? "bg-[#016d7a]" : "hover:bg-[#015c6a]"),
-              ]
-                .filter(Boolean)
-                .join(" ");
-
-              return (
-                <Clickable
-                  key={item.id}
-                  item={item}
-                  onClick={() => {
-                    if (isLogout) onLogout?.();
-                    else setActivePage?.(item.id);
-                  }}
-                  className={buttonClasses}
-                  data-active={active ? "true" : "false"}
-                >
-                  <>
-                    <span
-                      className={[
-                        "grid place-items-center",
-                        collapsed ? "w-10 h-10 rounded-md" : "w-5 h-5",
-                        collapsed
-                          ? active
-                            ? "bg-[#016d7a] text-white"
-                            : "hover:bg-[#015c6a] text-[#e0f2fe]"
-                          : active
-                          ? "text-white"
-                          : "text-[#e0f2fe]",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </span>
-
-                    {!collapsed && (
-                      <span
-                        className={`text-sm font-medium ${
-                          active ? "text-white" : "text-[#e0f2fe]"
-                        }`}
-                      >
-                        {item.name}
-                      </span>
-                    )}
-                  </>
-                </Clickable>
-              );
-            })}
-          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-900 truncate">
+            {getUserDisplayName()}
+          </p>
+          <p className="text-xs text-slate-500 truncate">
+            {getUserRole()}
+          </p>
         </div>
+      </div>
+    </div>
 
-        {/* Styles */}
-        <style>{`
-          .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #015e6d transparent; }
-          .sidebar-scroll::-webkit-scrollbar { width: 8px; background: transparent; }
-          .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-          .sidebar-scroll::-webkit-scrollbar-thumb { background-color: #015e6d; border-radius: 8px; border: 2px solid transparent; }
-          .sidebar-scroll:hover::-webkit-scrollbar-thumb { background-color: #015564; }
-        `}</style>
-      </aside>
+    {/* Main Navigation */}
+    <nav className="sidebar-scroll flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      {navigation.map((item) => {
+        const Icon = item.icon || defaultIcons[item.id] || User;
+        const active = isItemActive(item);
+
+        const baseClasses =
+          "w-full flex items-center gap-3 rounded-md px-4 py-2.5 text-sm transition-colors";
+        const stateClasses = active
+          ? "bg-[#e0f7f9] text-[#028090]"
+          : "text-slate-600 hover:bg-slate-50";
+
+        return (
+          <Clickable
+            key={item.id}
+            item={item}
+            onClick={() => safeSetActivePage(item.id)}
+            className={`${baseClasses} ${stateClasses}`}
+            data-active={active ? "true" : "false"}
+          >
+            <>
+              <Icon
+                className={`w-5 h-5 ${
+                  active ? "text-[#028090]" : "text-slate-400"
+                }`}
+              />
+              <span className="truncate">{item.name}</span>
+            </>
+          </Clickable>
+        );
+      })}
+    </nav>
+
+    {/* Bottom Navigation */}
+    {bottomNavigation.length > 0 && (
+      <div className="px-2 pb-4 pt-3 border-t border-slate-100 space-y-1">
+        {bottomNavigation.map((item) => {
+          const Icon = item.icon || defaultIcons[item.id] || User;
+          const active = isItemActive(item);
+          const isLogout = item.id === "logout";
+
+          const baseClasses =
+            "w-full flex items-center gap-3 rounded-md px-4 py-2.5 text-sm transition-colors";
+
+          const stateClasses = isLogout
+            ? active
+              ? "bg-red-50 text-red-600"
+              : "text-red-600 hover:bg-red-50"
+            : active
+            ? "bg-[#e0f7f9] text-[#028090]"
+            : "text-slate-600 hover:bg-slate-50";
+
+          const iconColor = isLogout
+            ? "text-red-500"
+            : active
+            ? "text-[#028090]"
+            : "text-slate-400";
+
+          return (
+            <Clickable
+              key={item.id}
+              item={item}
+              onClick={() => {
+                if (isLogout) {
+                  onLogout?.();
+                } else {
+                  safeSetActivePage(item.id);
+                }
+              }}
+              className={`${baseClasses} ${stateClasses}`}
+              data-active={active ? "true" : "false"}
+            >
+              <>
+                <Icon className={`w-5 h-5 ${iconColor}`} />
+                <span className="truncate">{item.name}</span>
+              </>
+            </Clickable>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</aside>
+
 
       {/* ===================== Mobile Bottom Tab Bar ===================== */}
-      {/* Mobile */}
       <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-screen-sm">
           <div className="relative">
@@ -347,8 +272,8 @@ const Sidebar = ({
                       key={item.id}
                       item={item}
                       onClick={() => {
-                        setActivePage?.(item.id);
-                        setIsMobileMenuOpen(false);
+                        safeSetActivePage(item.id);
+                        safeSetIsMobileMenuOpen(false);
                       }}
                       className="flex flex-col items-center justify-center"
                     >
@@ -375,7 +300,7 @@ const Sidebar = ({
               <div className="absolute left-1/2 -translate-x-1/2 -top-8 w-20 h-20 z-10">
                 <span className="absolute inset-1 rounded-full bg-slate-400/20 shadow-[0_4px_20px_rgba(0,0,0,0.06)] pointer-events-none" />
                 <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  onClick={() => safeSetIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-[#028090] text-white shadow-lg ring-4 ring-white/60 flex items-center justify-center active:scale-95 transition"
                   aria-label="Open menu"
                 >
@@ -393,8 +318,8 @@ const Sidebar = ({
                       key={item.id}
                       item={item}
                       onClick={() => {
-                        setActivePage?.(item.id);
-                        setIsMobileMenuOpen(false);
+                        safeSetActivePage(item.id);
+                        safeSetIsMobileMenuOpen(false);
                       }}
                       className="flex flex-col items-center justify-center"
                     >
@@ -422,7 +347,6 @@ const Sidebar = ({
       </div>
 
       {/* ===================== Mobile Command Sheet ===================== */}
-      {/* Sheet */}
       <div
         className={`
           lg:hidden fixed inset-0 z-[60]
@@ -439,9 +363,10 @@ const Sidebar = ({
           className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
             isMobileMenuOpen ? "opacity-100" : "opacity-0"
           }`}
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={() => safeSetIsMobileMenuOpen(false)}
           aria-label="Close menu backdrop"
         />
+
         {/* Panel */}
         <div
           className={`
@@ -455,7 +380,7 @@ const Sidebar = ({
           {/* Close */}
           <div className="flex justify-center mb-3">
             <button
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => safeSetIsMobileMenuOpen(false)}
               className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 active:scale-95 transition"
               aria-label="Close menu"
               title="Close"
@@ -464,7 +389,7 @@ const Sidebar = ({
             </button>
           </div>
 
-          {/* Grid */}
+          {/* Grid main */}
           <div className="grid grid-cols-4 gap-3">
             {navigation.map((item) => {
               const Icon = item.icon || defaultIcons[item.id] || User;
@@ -474,11 +399,11 @@ const Sidebar = ({
                   key={item.id}
                   item={item}
                   onClick={() => {
-                    setActivePage?.(item.id);
-                    setIsMobileMenuOpen(false);
+                    safeSetActivePage(item.id);
+                    safeSetIsMobileMenuOpen(false);
                   }}
                   className={`flex flex-col items-center justify-center rounded-xl py-3 ${
-                    active ? "bg-slate-100" : "hover:bg-slate-50"
+                    active ? "bg-[#e0f7f9]" : "hover:bg-slate-50"
                   }`}
                 >
                   <>
@@ -499,29 +424,37 @@ const Sidebar = ({
           {/* Divider */}
           <div className="mt-4 pt-3 border-t border-slate-200" />
 
-          {/* BottomGrid */}
+          {/* Bottom grid */}
           <div className="grid grid-cols-4 gap-3 mt-2">
             {bottomNavigation.map((item) => {
               const Icon = item.icon || defaultIcons[item.id] || User;
               const active = isItemActive(item);
               const isLogout = item.id === "logout";
+
               return (
                 <Clickable
                   key={item.id}
                   item={item}
                   onClick={() => {
-                    if (isLogout) onLogout?.();
-                    else setActivePage?.(item.id);
-                    setIsMobileMenuOpen(false);
+                    if (isLogout) {
+                      onLogout?.();
+                    } else {
+                      safeSetActivePage(item.id);
+                    }
+                    safeSetIsMobileMenuOpen(false);
                   }}
                   className={`flex flex-col items-center justify-center rounded-xl py-3 ${
-                    active ? "bg-slate-100" : "hover:bg-slate-50"
+                    active ? "bg-[#e0f7f9]" : "hover:bg-slate-50"
                   }`}
                 >
                   <>
                     <Icon
                       className={`w-6 h-6 ${
-                        active ? "text-[#028090]" : "text-slate-700"
+                        isLogout
+                          ? "text-red-500"
+                          : active
+                          ? "text-[#028090]"
+                          : "text-slate-700"
                       }`}
                     />
                     <span className="text-[11px] mt-1 text-slate-700 text-center line-clamp-1">
@@ -534,6 +467,31 @@ const Sidebar = ({
           </div>
         </div>
       </div>
+
+            <style>{`
+        .sidebar-scroll {
+          scrollbar-width: thin;                 /* Firefox */
+          scrollbar-color: #c9c9c9 transparent;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 6px;                            /* العرض */
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background-color: #e0f7f9;             /* اللون */
+          border-radius: 999px;                  /* حواف دائرية */
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #e0f7f9;
+        }
+      `}</style>
+
     </>
   );
 };

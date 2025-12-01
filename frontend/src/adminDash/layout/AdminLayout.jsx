@@ -10,6 +10,7 @@ import {
 import Cookies from "js-cookie";
 import { setLogout } from "../../slice/auth/authSlice";
 import { disconnectSocket } from "../../services/socketService";
+import TopBar from "../components/TopBar.jsx";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
@@ -168,12 +169,45 @@ export default function AdminLayout() {
   };
 
   const base = getBasePrefix(location.pathname);
-  const { navigation, bottomNavigation } = getNav(role, navigate, base, handleLogout);
+  const { navigation, bottomNavigation } = getNav(
+    role,
+    navigate,
+    base,
+    handleLogout
+  );
 
-  const [activePage, setActivePage] = useState(() => getActiveFromPath(location.pathname));
+  const [activePage, setActivePage] = useState(
+    () => getActiveFromPath(location.pathname)
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => { setActivePage(getActiveFromPath(location.pathname)); }, [location.pathname]);
+  // NEW: تحكم في ظهور السايدبار الديسكتوب + محتوى التوب بار
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(true);
+  const [pageTitle, setPageTitle] = useState("Overview");
+  const [topBarRight, setTopBarRight] = useState(null);
+
+  // تحديث الصفحة النشطة من الـ path
+  useEffect(() => {
+    setActivePage(getActiveFromPath(location.pathname));
+  }, [location.pathname]);
+
+  // تحديث عنوان الصفحة حسب الـ navigation
+  useEffect(() => {
+    const allItems = [...navigation, ...bottomNavigation];
+    const found = allItems.find((item) => item.id === activePage);
+    setPageTitle(found?.name || "Overview");
+  }, [navigation, bottomNavigation, activePage]);
+
+  // زر إظهار/إخفاء السايدبار
+  const handleToggleSidebar = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      // موبايل → افتح/اغلق منيو الموبايل
+      setIsMobileMenuOpen((prev) => !prev);
+    } else {
+      // ديسكتوب → اخفي/اظهر السايدبار
+      setShowDesktopSidebar((prev) => !prev);
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] md:min-h-screen flex bg-slate-50 text-slate-800">
@@ -181,7 +215,9 @@ export default function AdminLayout() {
         activePage={activePage}
         setActivePage={(id) => {
           setActivePage(id);
-          const found = [...navigation, ...bottomNavigation].find((item) => item.id === id);
+          const found = [...navigation, ...bottomNavigation].find(
+            (item) => item.id === id
+          );
           if (found?.onClick) found.onClick();
         }}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -189,10 +225,33 @@ export default function AdminLayout() {
         navigation={navigation}
         bottomNavigation={bottomNavigation}
         onLogout={handleLogout}
+        showDesktopSidebar={showDesktopSidebar} // 👈 جديد
       />
-      <main className="flex-1 px-3 md:px-6 py-[104px] md:py-6">
-        <Outlet />
-      </main>
+
+      <main
+  className="flex-1 px-3 md:px-6  relative"
+  style={{
+    backgroundColor: "#f8fafc",
+    backgroundImage:
+      "radial-gradient(circle at top right, rgba(2, 128, 144, 0.05), transparent 60%), radial-gradient(circle at bottom left, rgba(2, 128, 144, 0.05), transparent 60%)",
+    backgroundRepeat: "no-repeat",
+  }}
+>
+  <TopBar
+    title={pageTitle}
+    onToggleSidebar={handleToggleSidebar}
+    rightContent={topBarRight}
+  />
+
+    <Outlet
+      context={{
+        setTopBarRight,
+        clearTopBarRight: () => setTopBarRight(null),
+      }}
+    />
+</main>
+
     </div>
   );
 }
+

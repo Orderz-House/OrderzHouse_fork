@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { MOCK_ENABLED, mockFetch } from "./mockData.js";
 import {
-  FiPlus,
   FiEdit2,
   FiTrash2,
   FiX,
@@ -98,15 +97,8 @@ function useApi(token) {
   );
 }
 
-function useTableData({
-  endpoint,
-  api,
-  searchQuery,
-  chipValue,
-  chipField,
-  filterValues,
-  refreshKey,
-}) {
+/* ====================== Data Hook (بدون بحث/فلترة) ====================== */
+function useTableData({ endpoint, api, refreshKey }) {
   const dispatch = useDispatch();
   const [localRows, setLocalRows] = useState([]);
   const [loading, setLoadingLocal] = useState(!!endpoint);
@@ -114,18 +106,13 @@ function useTableData({
 
   useEffect(() => {
     if (!endpoint) return;
+
     const controller = new AbortController();
     setLoadingLocal(true);
     setErrorLocal("");
     dispatch(setLoading(true));
 
-    const params = Object.fromEntries(
-      Object.entries({
-        q: searchQuery,
-        [chipField]: chipValue,
-        ...filterValues,
-      }).filter(([, v]) => v != null && String(v).trim() !== "")
-    );
+    const params = {};
 
     // ===== Mock short-circuit =====
     if (MOCK_ENABLED) {
@@ -207,239 +194,10 @@ function useTableData({
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [
-    endpoint,
-    searchQuery,
-    chipValue,
-    chipField,
-    filterValues,
-    refreshKey,
-    api,
-    dispatch,
-  ]);
+  }, [endpoint, refreshKey, api, dispatch]);
 
   return { rows: localRows, setRows: setLocalRows, loading, error };
 }
-
-/* ====================== UI Bits ====================== */
-const SearchBar = ({ value, onChange }) => (
-  <div className="relative">
-    {/* icon */}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-
-    {/* input */}
-    <input
-      placeholder="Search doctors, patients…"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-10 w-full md:w-72 rounded-xl bg-white pl-9 pr-3 text-[13px] outline-none
-                 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300"
-    />
-  </div>
-);
-
-// Select
-const FilterSelect = ({ value, onChange, placeholder, options = [] }) => (
-  <div className="relative">
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-10 appearance-none rounded-xl bg-white pl-3 pr-8 text-[13px] text-slate-700 outline-none
-                 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300"
-    >
-      <option value="">{placeholder}</option>
-      {options.map((opt) =>
-        typeof opt === "object" ? (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ) : (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        )
-      )}
-    </select>
-    <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-  </div>
-);
-
-// Filters
-const FilterBar = ({ filters, filterValues, onFilterChange, onReset }) => {
-  const filterOptions = useMemo(
-    () =>
-      filters.map((f) => ({
-        ...f,
-        options: f.options?.length ? f.options : [],
-      })),
-    [filters]
-  );
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {filterOptions.map((filter) => (
-        <FilterSelect
-          key={filter.key}
-          value={filterValues[filter.key] ?? ""}
-          onChange={(val) => onFilterChange(filter.key, val)}
-          placeholder={filter.label}
-          options={filter.options}
-        />
-      ))}
-
-      <button
-        onClick={onReset}
-        className="h-10 rounded-xl bg-white px-3 text-[13px] text-slate-700 outline-none
-                   ring-1 ring-slate-200 transition hover:bg-slate-50"
-        title="Reset filters"
-      >
-        Reset
-      </button>
-    </div>
-  );
-};
-
-const FormField = ({ label, children, className = "" }) => (
-  <label className={`space-y-1 ${className}`}>
-    <span className="text-[12px] font-medium text-slate-700">{label}</span>
-    {children}
-  </label>
-);
-
-const FormInput = ({ field, value, onChange }) => {
-  const baseClassName =
-    "w-full rounded-xl border border-slate-300 px-3 py-1.5 outline-none focus:ring-2 focus:ring-slate-300 text-[13px] text-slate-800";
-  const { type = "text", placeholder, options = [], required } = field;
-
-  if (type === "textarea") {
-    return (
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={baseClassName}
-        rows={4}
-        required={required}
-      />
-    );
-  }
-
-  if (type === "select") {
-    return (
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={baseClassName}
-        required={required}
-      >
-        <option value="">{placeholder || "Choose…"}</option>
-        {options.map((opt) =>
-          typeof opt === "object" ? (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ) : (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          )
-        )}
-      </select>
-    );
-  }
-
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={baseClassName}
-      required={required}
-    />
-  );
-};
-
-const AddModal = ({
-  isOpen,
-  onClose,
-  title,
-  formFields,
-  formData,
-  onChange,
-  onSubmit,
-  error,
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl max-h-[90vh] overflow-y-auto text-[13.5px]">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600"
-            title="Close"
-          >
-            <FiX />
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-[12px]">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {formFields.map((field) => (
-              <FormField
-                key={field.key}
-                label={field.label}
-                className={field.type === "textarea" ? "sm:col-span-2" : ""}
-              >
-                <FormInput
-                  field={field}
-                  value={formData[field.key] ?? ""}
-                  onChange={(val) => onChange(field.key, val)}
-                />
-              </FormField>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-2 text-sm text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
-              style={{ borderColor: PRIMARY, color: PRIMARY }}
-            >
-              Save
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 /* ====================== Helpers ====================== */
 function renderPrettyCell(col, row, idx) {
@@ -544,7 +302,7 @@ const MobileCards = ({
   editingRowId,
   onSaveEdit,
   onCancelEdit,
-  /* NEW */ onOpenDrawer,
+  onOpenDrawer,
 }) => {
   if (loading) {
     return (
@@ -577,7 +335,7 @@ const MobileCards = ({
   const verifiedCol = pickColumn(columns, ["verified", "is verified"]);
 
   return (
-    <div className="block md:hidden space-y-2 w/full max-w-[100vw] overflow-x-hidden">
+    <div className="block md:hidden space-y-2 w-full max-w-[100vw] overflow-x-hidden">
       {rows.map((row, idx) => {
         const isEditing = editingRowId === helpers.getId(row);
         const isExpanded = expandedRow === idx;
@@ -594,8 +352,7 @@ const MobileCards = ({
         const isVerified = truthyYes(verifiedVal);
 
         const secondary =
-          email ??
-          (country ? String(country) : role ? String(role) : undefined);
+          email ?? (country ? String(country) : role ? String(role) : undefined);
 
         return (
           <div
@@ -685,7 +442,7 @@ const MobileCards = ({
               </div>
             </div>
 
-            {/* (Optional) inline expand يبقى كخيار قديم */}
+            {/* (Optional) inline expand */}
             {isExpanded && (
               <div className="mt-2">
                 <ExpandedRow
@@ -723,7 +480,7 @@ const DesktopTable = ({
   onSaveEdit,
   onCancelEdit,
   crudConfig,
-  /* NEW */ onOpenDrawer,
+  onOpenDrawer,
 }) => {
   if (loading) {
     return (
@@ -744,18 +501,18 @@ const DesktopTable = ({
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-        <thead className="border-b border-slate-200 bg-slate-50">
+        <thead className="border-b border-slate-200 bg-[#028090]">
           <tr>
             {crudConfig.showExpand && <th className="w-10 px-3 py-2"></th>}
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-slate-700"
+                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-white"
               >
                 {col.label}
               </th>
             ))}
-            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-slate-700">
+            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-white">
               Actions
             </th>
           </tr>
@@ -892,7 +649,7 @@ const DesktopCards = ({
   onCancelEdit,
   onCardClick,
   renderSubtitle,
-  /* NEW */ onOpenDrawer,
+  onOpenDrawer,
 }) => {
   if (loading) {
     return (
@@ -1050,7 +807,7 @@ const DesktopCards = ({
                 </div>
               </div>
 
-              {/* (Optional) inline expand يبقى كخيار قديم */}
+              {/* (Optional) inline expand */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -1073,7 +830,7 @@ const DesktopCards = ({
   );
 };
 
-/* ====================== Mobile Cards Grid (جديد) ====================== */
+/* ====================== Mobile Cards Grid ====================== */
 const CardsGrid = ({
   title,
   columns,
@@ -1092,7 +849,7 @@ const CardsGrid = ({
   onCancelEdit,
   onCardClick,
   renderSubtitle,
-  /* NEW */ onOpenDrawer,
+  onOpenDrawer,
 }) => {
   if (loading) {
     return (
@@ -1249,7 +1006,7 @@ const CardsGrid = ({
                 </div>
               </div>
 
-              {/* (Optional) inline expand يبقى كخيار قديم */}
+              {/* (Optional) inline expand */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -1275,13 +1032,10 @@ const CardsGrid = ({
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",
-  addLabel,
   endpoint,
   getOnePath,
   columns,
   formFields = [],
-  chipField = "type",
-  filters = [],
   renderActions,
   hideCrudActions = false,
   token,
@@ -1289,38 +1043,30 @@ export default function PeopleTable({
   desktopAsCards = false,
   onCardClick,
   renderSubtitle,
-  /* NEW */ mobileAsCards = false,
+  mobileAsCards = false,
+  searchValue,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
-  const { editingRowId, error: reduxError } = useSelector((s) => s.users);
+  const { editingRowId } = useSelector((s) => s.users);
 
   const mergedCrudConfig = useMemo(
     () => ({ ...DEFAULT_CRUD_CONFIG, ...crudConfig }),
     [crudConfig]
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [chipValue, setChipValue] = useState("");
-  const [filterValues, setFilterValues] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [expandedRow, setExpandedRow] = useState(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addFormData, setAddFormData] = useState({});
 
   const { rows, setRows, loading, error } = useTableData({
     endpoint,
     api,
-    searchQuery,
-    chipValue,
-    chipField,
-    filterValues,
     refreshKey,
   });
 
   // Pagination
-  const [page, setPage] = useState(1); // page
-  const [pageSize, setPageSize] = useState(15); // size
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   const pagedRows = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -1329,7 +1075,7 @@ export default function PeopleTable({
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, chipValue, filterValues, refreshKey]);
+  }, [refreshKey]);
 
   const tableColumns = columns?.length
     ? columns
@@ -1339,53 +1085,14 @@ export default function PeopleTable({
       ];
 
   const getId = useCallback((row) => row.id ?? row._id, []);
-  const createEmptyForm = useCallback(
-    () =>
-      formFields.reduce((acc, field) => {
-        acc[field.key] = field.defaultValue ?? "";
-        return acc;
-      }, {}),
-    [formFields]
-  );
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-  const handleAddNew = useCallback(() => {
-    setAddFormData(createEmptyForm());
-    setIsAddModalOpen(true);
-  }, [createEmptyForm]);
-
-  const handleAddSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      if (!String(addFormData.first_name ?? addFormData.name ?? "").trim()) {
-        return;
-      }
-      try {
-        if (!endpoint) {
-          const newUser = { id: crypto.randomUUID(), ...addFormData };
-          setRows((prev) => [...prev, newUser]);
-          setIsAddModalOpen(false);
-          return;
-        }
-        await api.post(endpoint, addFormData);
-        setIsAddModalOpen(false);
-        refresh();
-      } catch (err) {
-        console.error(err);
-        dispatch(setError("Failed to save the data"));
-      }
-    },
-    [addFormData, endpoint, api, refresh, setRows, dispatch]
-  );
-
-  const handleAddFormChange = useCallback((key, value) => {
-    setAddFormData((prev) => ({ ...prev, [key]: value }));
-  }, []);
 
   const startEdit = useCallback(
     (rowId) => dispatch(setEditingRowId(rowId)),
     [dispatch]
   );
+
   const handleSaveEdit = useCallback(
     async (formData) => {
       try {
@@ -1410,10 +1117,12 @@ export default function PeopleTable({
     },
     [endpoint, api, dispatch, refresh, setRows]
   );
+
   const handleCancelEdit = useCallback(
     () => dispatch(setEditingRowId(null)),
     [dispatch]
   );
+
   const handleDelete = useCallback(
     async (idx) => {
       const row = rows[idx];
@@ -1432,15 +1141,6 @@ export default function PeopleTable({
     [rows, endpoint, api, dispatch, refresh]
   );
 
-  const handleFilterChange = useCallback(
-    (key, value) => setFilterValues((prev) => ({ ...prev, [key]: value })),
-    []
-  );
-  const handleResetFilters = useCallback(() => {
-    setSearchQuery("");
-    setChipValue("");
-    setFilterValues({});
-  }, []);
   const handleToggleExpand = useCallback(
     (idx) => {
       setExpandedRow((current) => (current === idx ? null : idx));
@@ -1461,7 +1161,7 @@ export default function PeopleTable({
     [rows, setRows, getId, refresh, startEdit, handleDelete]
   );
 
-  /* ===== NEW: Drawer State ===== */
+  // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerIndex, setDrawerIndex] = useState(null);
 
@@ -1492,48 +1192,6 @@ export default function PeopleTable({
 
   return (
     <div className="space-y-3 px-3 sm:px-4 py-3 w-full max-w-[100vw] overflow-x-hidden text-[13.5px] sm:text-[14px]">
-      {/* Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold text-slate-800">
-              {title}
-            </h1>
-            <p className="text-slate-500 text-[12.5px]">
-              You can find all of your records here
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {Boolean(
-              typeof addLabel === "string" ? addLabel.trim() : addLabel
-            ) && (
-              <button
-                onClick={handleAddNew}
-                className="h-9 rounded-full border px-3 text-sm"
-                style={{ borderColor: PRIMARY, color: PRIMARY }}
-                title={String(addLabel)}
-              >
-                {String(addLabel)}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div className="mt-3 flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterBar
-              filters={filters}
-              filterValues={filterValues}
-              onFilterChange={handleFilterChange}
-              onReset={handleResetFilters}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* ===== Mobile View ===== */}
       {mobileAsCards ? (
         <CardsGrid
@@ -1554,7 +1212,7 @@ export default function PeopleTable({
           onCancelEdit={handleCancelEdit}
           onCardClick={onCardClick}
           renderSubtitle={renderSubtitle}
-          /* NEW */ onOpenDrawer={openDrawer}
+          onOpenDrawer={openDrawer}
         />
       ) : (
         <MobileCards
@@ -1573,7 +1231,7 @@ export default function PeopleTable({
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
-          /* NEW */ onOpenDrawer={openDrawer}
+          onOpenDrawer={openDrawer}
         />
       )}
 
@@ -1596,7 +1254,7 @@ export default function PeopleTable({
           onCancelEdit={handleCancelEdit}
           onCardClick={onCardClick}
           renderSubtitle={renderSubtitle}
-          /* NEW */ onOpenDrawer={openDrawer}
+          onOpenDrawer={openDrawer}
         />
       ) : (
         <DesktopTable
@@ -1614,7 +1272,7 @@ export default function PeopleTable({
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
           crudConfig={mergedCrudConfig}
-          /* NEW */ onOpenDrawer={openDrawer}
+          onOpenDrawer={openDrawer}
         />
       )}
 
@@ -1625,7 +1283,6 @@ export default function PeopleTable({
         onPageChange={setPage}
       />
 
-      {/* ===== NEW: Slide-over Drawer ===== */}
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
@@ -1653,17 +1310,6 @@ export default function PeopleTable({
           />
         )}
       </Drawer>
-
-      <AddModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title={`Add ${title}`}
-        formFields={formFields}
-        formData={addFormData}
-        onChange={handleAddFormChange}
-        onSubmit={handleAddSubmit}
-        error={reduxError}
-      />
     </div>
   );
 }

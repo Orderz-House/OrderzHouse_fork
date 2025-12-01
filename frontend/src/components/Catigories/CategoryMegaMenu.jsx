@@ -123,24 +123,22 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   return (
     <div className="relative">
       <button
-        ref={anchorRef}
-        onClick={handleToggle}
-        className={`relative px-5 py-3 text-base font-medium transition-all duration-300 font-inter group ${
-          activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700"
-        }`}
-      >
-        <span className="flex items-center gap-1">
-          CATEGORIES
-          <ChevronDown
-            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          />
-        </span>
-        <span
-          className={`absolute bottom-0 left-1/2 h-0.5 bg-[#028090] transition-all duration-300 ease-out transform -translate-x-1/2 ${
-            activeLink === "CATEGORIES" ? "w-full" : "w-0 group-hover:w-full"
-          }`}
-        />
-      </button>
+  ref={anchorRef}
+  onClick={handleToggle}
+  className={`px-5 py-3 text-sm md:text-base font-medium tracking-wide transition-colors duration-150
+    ${activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700 hover:text-[#028090]"}
+  `}
+>
+  <span className="flex items-center gap-1">
+    CATEGORIES
+    <ChevronDown
+      className={`h-4 w-4 transition-transform duration-200 ${
+        isOpen ? "rotate-180" : ""
+      }`}
+    />
+  </span>
+</button>
+
 
       {isOpen && (
         <div
