@@ -1,5 +1,9 @@
 import pool from "../models/db.js";
 
+/* ===========================================================
+   NOTIFICATION TYPES
+=========================================================== */
+
 export const NOTIFICATION_TYPES = {
   PROJECT_CREATED: "project_created",
   OFFER_SUBMITTED: "offer_submitted",
@@ -17,11 +21,14 @@ export const NOTIFICATION_TYPES = {
   PAYMENT_APPROVED: "payment_approved",
   PAYMENT_REJECTED: "payment_rejected",
   PAYMENT_PENDING: "payment_pending",
+
+  // TASK SYSTEM
   TASK_REQUESTED: "task_requested",
   TASK_REQUEST_ACCEPTED: "task_request_accepted",
   TASK_REQUEST_REJECTED: "task_request_rejected",
   TASK_COMPLETED: "task_completed",
   TASK_NEEDS_APPROVAL: "task_needs_approval",
+
   USER_REGISTERED: "user_registered",
   USER_VERIFIED: "user_verified",
   USER_VERIFICATION_REJECTED: "user_verification_rejected",
@@ -37,6 +44,10 @@ export const NOTIFICATION_TYPES = {
   SYSTEM_ANNOUNCEMENT: "system_announcement",
   CHATS_ADMIN: "chats_admin",
 };
+
+/* ===========================================================
+   ROLE NOTIFICATION PERMISSIONS
+=========================================================== */
 
 const ROLE_NOTIFICATIONS = {
   1: Object.values(NOTIFICATION_TYPES),
@@ -76,9 +87,13 @@ const ROLE_NOTIFICATIONS = {
     NOTIFICATION_TYPES.APPOINTMENT_REQUESTED,
     NOTIFICATION_TYPES.APPOINTMENT_RESCHEDULED,
     NOTIFICATION_TYPES.APPOINTMENT_COMPLETED,
-    NOTIFICATION_TYPES.SUBSCRIPTION_STATUS_CHANGED,
+    NOTIFICATION_TYPES.SUBSCRIPTION_STATUS_CHANGED
   ],
 };
+
+/* ===========================================================
+   HELPERS
+=========================================================== */
 
 const getAdmins = async () => {
   const { rows } = await pool.query(
@@ -94,12 +109,16 @@ const getUserName = async (userId) => {
     [userId]
   );
   if (!rows.length) return "Unknown User";
+
   const { first_name, last_name, username } = rows[0];
   return first_name || last_name
     ? `${first_name || ""} ${last_name || ""}`.trim()
     : username || "Unknown User";
 };
 
+/* ===========================================================
+   CREATE NOTIFICATIONS
+=========================================================== */
 
 export const createNotification = async (
   userId,
@@ -114,7 +133,10 @@ export const createNotification = async (
       [userId]
     );
     if (!userRows.length) return null;
+
     const roleId = userRows[0].role_id;
+
+    // Role restriction:
     if (!(ROLE_NOTIFICATIONS[roleId] || []).includes(type)) return null;
 
     const { rows } = await pool.query(
@@ -126,7 +148,7 @@ export const createNotification = async (
 
     const notification = rows[0];
 
-    
+    // Emit WebSocket
     if (global.io) {
       global.io.to(`user:${userId}`).emit("notification:new", {
         id: notification.id,
@@ -152,19 +174,31 @@ export const createBulkNotifications = async (
   entityType = null
 ) => {
   if (!Array.isArray(userIds) || !userIds.length) return [];
+
   const promises = userIds.map((id) =>
     createNotification(id, type, message, relatedEntityId, entityType)
   );
+
   return (await Promise.all(promises)).filter(Boolean);
 };
 
+/* ===========================================================
+   NOTIFICATION CREATORS
+=========================================================== */
+
 export const NotificationCreators = {
+  /* ===========================
+       MESSAGES + CHAT
+  ============================ */
+
   messageReceived: async (senderId, recipientId, messageId, content) => {
     const senderName = await getUserName(senderId);
     const preview = content?.trim()?.length
       ? content.substring(0, 70)
       : "📎 Sent an attachment";
+
     const message = `You have a new message from ${senderName}: "${preview}"`;
+
     await createNotification(
       recipientId,
       NOTIFICATION_TYPES.MESSAGE_RECEIVED,
@@ -172,14 +206,18 @@ export const NotificationCreators = {
       messageId,
       "message"
     );
+
     await NotificationCreators.chatsAdmin(senderId, recipientId, messageId, preview);
   },
 
   chatsAdmin: async (senderId, receiverId, messageId, contentPreview) => {
     const senderName = await getUserName(senderId);
     const receiverName = receiverId ? await getUserName(receiverId) : "System";
+
     const adminIds = await getAdmins();
+
     const message = `${senderName} sent a message to ${receiverName}: "${contentPreview}"`;
+
     await createBulkNotifications(
       adminIds,
       NOTIFICATION_TYPES.CHATS_ADMIN,
@@ -189,15 +227,21 @@ export const NotificationCreators = {
     );
   },
 
+  /* ===========================
+       SYSTEM ANNOUNCEMENTS
+  ============================ */
+
   systemAnnouncement: async (adminId, messageText, userIds = []) => {
     const adminName = await getUserName(adminId);
     const message = `📢 ${adminName} announced: ${messageText}`;
+
     let recipients = userIds;
     if (!recipients.length) {
       recipients = (
         await pool.query(`SELECT id FROM users WHERE is_deleted = false`)
       ).rows.map((r) => r.id);
     }
+
     await createBulkNotifications(
       recipients,
       NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
@@ -206,7 +250,55 @@ export const NotificationCreators = {
       "system"
     );
   },
+
+  /* ===========================
+        TASK SYSTEM ✨
+  ============================ */
+
+  taskStatusChange: async (userId, taskId, messageText) => {
+    await createNotification(
+      userId,
+      NOTIFICATION_TYPES.TASK_NEEDS_APPROVAL,
+      messageText,
+      taskId,
+      "task"
+    );
+  },
+
+  taskRequested: async (freelancerId, taskId, messageText) => {
+    await createNotification(
+      freelancerId,
+      NOTIFICATION_TYPES.TASK_REQUESTED,
+      messageText,
+      taskId,
+      "task"
+    );
+  },
+
+  paymentSubmitted: async (freelancerId, requestId) => {
+    await createNotification(
+      freelancerId,
+      NOTIFICATION_TYPES.PAYMENT_PENDING,
+      "A client has submitted a payment proof.",
+      requestId,
+      "task_request"
+    );
+  },
+
+  paymentConfirmed: async (userId, requestId) => {
+    await createNotification(
+      userId,
+      NOTIFICATION_TYPES.PAYMENT_APPROVED,
+      "Admin confirmed the payment.",
+      requestId,
+      "task_request"
+    );
+  },
 };
+
+/* ===========================================================
+   FETCH, READ & CLEANUP
+=========================================================== */
 
 export const getUserNotifications = async (
   userId,
@@ -234,8 +326,7 @@ export const markNotificationAsRead = async (notificationId, userId) => {
 
 export const markAllNotificationsAsRead = async (userId) => {
   const { rowCount } = await pool.query(
-    `UPDATE notifications SET read_status = true WHERE user_id = $1 AND read_status = false`,
-    [userId]
+    `UPDATE notifications SET read_status = true WHERE user_id = $1 AND read_status = false`
   );
   return rowCount;
 };
