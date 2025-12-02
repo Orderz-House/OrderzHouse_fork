@@ -14,6 +14,7 @@ startDeadlineWatcher();
 
 
 // Routers
+import CoursesRouter from "./router/course.js";
 import assignmentsRouter from "./router/assignments.js";
 import VerificationRouter from "./router/verification.js";
 import paymentsRouter from "./router/payments.js";
@@ -21,6 +22,7 @@ import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
+import appointmentRouter from "./router/appointment.js";
 import coursesRouter from "./router/courses.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
@@ -82,7 +84,7 @@ app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/logs", logsRouter);
-app.use("/courses", coursesRouter);
+app.use("/courses", CoursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
