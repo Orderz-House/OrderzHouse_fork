@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
+const API_BASE = import.meta.env.VITE_APP_API_URL;  
+
 export default function BlogTopBar({
   showBack = false,
   onBack,
@@ -46,6 +48,7 @@ export default function BlogTopBar({
 
   /* -------- Favorites -------- */
   const [fav, setFav] = useState(false);
+
   useEffect(() => {
     if (!currentId) return;
     const raw = localStorage.getItem("blog_favs");
@@ -81,6 +84,7 @@ export default function BlogTopBar({
     read: "5 min",
     date: new Date().toISOString().slice(0, 10),
   });
+
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleCoverFile = (file) => {
@@ -94,20 +98,28 @@ export default function BlogTopBar({
   };
 
   const handleAttachments = (files) => {
-    const validFiles = Array.from(files).filter(file => {
-      const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/msword', 'application/vnd.openxmlformats-officedocument'];
-      return allowedTypes.some(type => file.type.startsWith(type));
+    const validFiles = Array.from(files).filter((file) => {
+      const allowed = [
+        "image/",
+        "application/pdf",
+        "text/",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument",
+      ];
+      return allowed.some((type) => file.type.startsWith(type));
     });
-    
+
     if (validFiles.length !== files.length) {
-      alert("Some files were skipped (unsupported format). Only images, PDFs, docs, and text files allowed.");
+      alert(
+        "Some files were skipped (unsupported format). Only images, PDFs, docs, and text files allowed."
+      );
     }
-    
-    setAttachments(prev => [...prev, ...validFiles.slice(0, 5 - prev.length)]);
+
+    setAttachments((prev) => [...prev, ...validFiles.slice(0, 5 - prev.length)]);
   };
 
   const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const submitNew = async (e) => {
@@ -126,37 +138,38 @@ export default function BlogTopBar({
         setCreating(false);
         return;
       }
-      
+
       const userRaw = localStorage.getItem("user");
       const user = userRaw ? JSON.parse(userRaw) : null;
-      const authorName = user?.name || "Anonymous"; 
+      const authorName = user?.name || "Anonymous";
 
       const formData = new FormData();
-      formData.append('title', form.title.trim());
-      formData.append('description', form.content.trim());
-      formData.append('category', form.category.trim());
-      formData.append('read_time', form.read.trim() || "5 min");
-      formData.append('cover', coverFile);
-      
-      formData.append('author', authorName);
-      
+      formData.append("title", form.title.trim());
+      formData.append("description", form.content.trim());
+      formData.append("category", form.category.trim());
+      formData.append("read_time", form.read.trim() || "5 min");
+      formData.append("cover", coverFile);
+      formData.append("author", authorName);
+
       const tags = form.tags
         .split(",")
-        .map(t => t.trim())
+        .map((t) => t.trim())
         .filter(Boolean);
+
       if (tags.length > 0) {
-        formData.append('tags', tags.join(","));
+        formData.append("tags", tags.join(","));
       }
 
-      attachments.forEach(file => {
-        formData.append('attachments', file);
+      attachments.forEach((file) => {
+        formData.append("attachments", file);
       });
 
       const token = localStorage.getItem("token");
-      const { data } = await axios.post("http://localhost:5000/blogs", formData, {
+
+      const { data } = await axios.post(`${API_BASE}/blogs`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token ? { Authorization: `Bearer ${token}` } : {} ),
+          "Content-Type": "multipart/form-data",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
@@ -202,7 +215,9 @@ export default function BlogTopBar({
                 }`}
                 title={fav ? "Remove favorite" : "Add to favorites"}
               >
-                <Bookmark className={`w-4 h-4 ${fav ? "text-[#028090] fill-[#028090]" : "text-slate-700"}`} />
+                <Bookmark
+                  className={`w-4 h-4 ${fav ? "text-[#028090] fill-[#028090]" : "text-slate-700"}`}
+                />
               </button>
             )}
 
@@ -245,8 +260,10 @@ export default function BlogTopBar({
             className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
             onClick={() => !creating && setOpen(false)}
           />
+
           <div className="relative z-50 w-full max-w-3xl">
             <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-h-[85vh]">
+              {/* Header */}
               <div className="h-14 px-4 sm:px-6 border-b border-slate-200/60 bg-white/80 backdrop-blur flex items-center justify-between">
                 <div className="font-semibold text-slate-900">Create new blog</div>
                 <button
@@ -258,11 +275,16 @@ export default function BlogTopBar({
                 </button>
               </div>
 
-              <form onSubmit={submitNew} className="p-4 sm:p-6 grid gap-6 overflow-y-auto max-h-[calc(85vh-56px)]">
+              {/* Form */}
+              <form
+                onSubmit={submitNew}
+                className="p-4 sm:p-6 grid gap-6 overflow-y-auto max-h-[calc(85vh-56px)]"
+              >
                 <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Cover Upload */}
                   <div>
                     <label className="block text-sm text-slate-600 mb-2">Cover Image *</label>
-                    <div 
+                    <div
                       className="rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-400 transition p-4 cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
                     >
@@ -282,9 +304,7 @@ export default function BlogTopBar({
                           <div className="mx-auto w-12 h-12 rounded-full grid place-items-center bg-slate-100">
                             <ImageIcon className="w-6 h-6 text-slate-500" />
                           </div>
-                          <p className="mt-2 text-sm text-slate-600">
-                            Click to upload cover image
-                          </p>
+                          <p className="mt-2 text-sm text-slate-600">Click to upload cover image</p>
                         </div>
                       )}
                     </div>
@@ -297,7 +317,7 @@ export default function BlogTopBar({
                     />
                   </div>
 
-                  {/* Form Fields */}
+                  {/* Fields */}
                   <div className="grid gap-4 content-start">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
@@ -311,6 +331,7 @@ export default function BlogTopBar({
                           required
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm text-slate-600 mb-1">Category *</label>
                         <input
@@ -331,18 +352,18 @@ export default function BlogTopBar({
                         value={form.excerpt}
                         onChange={onChange}
                         rows={2}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
-                        placeholder="Short summary..."
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
+                        placeholder="Short summary"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm text-slate-600 mb-1">Tags (comma separated)</label>
+                      <label className="block text-sm text-slate-600 mb-1">Tags</label>
                       <input
                         name="tags"
                         value={form.tags}
                         onChange={onChange}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
                         placeholder="React, JavaScript"
                       />
                     </div>
@@ -357,7 +378,7 @@ export default function BlogTopBar({
                     value={form.content}
                     onChange={onChange}
                     rows={6}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
                     placeholder="Write your article..."
                     required
                   />
@@ -366,22 +387,23 @@ export default function BlogTopBar({
                 {/* Attachments */}
                 <div>
                   <label className="block text-sm text-slate-600 mb-2">
-                    Attachments (optional)
-                    <span className="text-xs text-slate-500 ml-2">Max 5 files (images, PDFs, docs)</span>
+                    Attachments
+                    <span className="text-xs text-slate-500 ml-2">Max 5 files</span>
                   </label>
-                  <div 
+                  <div
                     className="rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-400 transition p-4 cursor-pointer"
                     onClick={() => attachmentsRef.current?.click()}
                   >
-                    <div className="flex flex-col items-center justify-center">
+                    <div className="flex flex-col items-center">
                       <Paperclip className="w-6 h-6 text-slate-500" />
                       <p className="mt-2 text-sm text-slate-600">
-                        {attachments.length > 0 
-                          ? `${attachments.length} file(s) selected` 
+                        {attachments.length > 0
+                          ? `${attachments.length} file(s)`
                           : "Click to add attachments"}
                       </p>
                     </div>
                   </div>
+
                   <input
                     ref={attachmentsRef}
                     type="file"
@@ -389,7 +411,7 @@ export default function BlogTopBar({
                     className="hidden"
                     onChange={(e) => handleAttachments(e.target.files)}
                   />
-                  
+
                   {attachments.length > 0 && (
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {attachments.map((file, index) => (
@@ -419,10 +441,11 @@ export default function BlogTopBar({
                   >
                     Cancel
                   </button>
+
                   <button
                     type="submit"
                     disabled={creating}
-                    className="h-10 px-4 rounded-xl border border-[#028090] text-white bg-[#028090] hover:bg-[#028090]/90 disabled:opacity-60"
+                    className="h-10 px-4 rounded-xl bg-[#028090] border border-[#028090] text-white hover:bg-[#028090]/90 disabled:opacity-50"
                   >
                     {creating ? "Creating..." : "Create"}
                   </button>

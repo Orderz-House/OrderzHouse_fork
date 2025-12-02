@@ -346,37 +346,6 @@ export const deleteSubscription = async (req, res) => {
   }
 };
 
-/**
- * Freelancer Get own subscription
- */
-export const getFreelancerSubscription = async (req, res) => {
-  const freelancerId = req.token?.userId;
-
-  try {
-    const query = `
-      SELECT s.*, 
-             p.id AS plan_id,
-             p.name AS plan_name,
-             p.price AS plan_price,
-             p.duration AS plan_duration,
-             p.description AS plan_description,
-             p.features AS plan_features,
-             p.plan_type AS plan_type
-      FROM subscriptions s
-      JOIN plans p ON p.id = s.plan_id
-      WHERE s.freelancer_id = $1
-      ORDER BY s.end_date DESC
-      LIMIT 1;
-    `;
-    const { rows } = await pool.query(query, [freelancerId]);
-    res.status(200).json({
-      success: true,
-      subscription: rows[0] ?? null,
-    });
-  } catch (err) {
-    handleError(res, err, "Failed to fetch freelancer subscription");
-  }
-};
 
 /**
  * Admin Get all subscriptions
