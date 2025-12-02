@@ -5,6 +5,7 @@ import multer from "multer";
 
 import {
   createProject,
+  uploadProjectMedia,
   getRelatedFreelancers,
   completeHourlyProject,
   submitWorkCompletion,
@@ -28,13 +29,14 @@ import {
   getProjectsBySubCategoryId,
   getProjectsBySubSubCategoryId,
   getProjectById,
-  getProjectsByUserRole
+  getProjectsByUserRole,
+  getProjectFilesByProjectId
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-projectsRouter.post("/", authentication, createProject);
+projectsRouter.post("/", authentication, uploadProjectMedia, createProject);
 
 projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
@@ -44,6 +46,9 @@ projectsRouter.get("/:projectId", authentication, getProjectById);
 projectsRouter.put("/hourly/:projectId", authentication, completeHourlyProject);
 
 projectsRouter.post("/:projectId/assign", authentication, assignFreelancer);
+
+projectsRouter.get("/:projectId/files", authentication, getProjectFilesByProjectId);
+
 
 
 projectsRouter.post(
@@ -127,6 +132,7 @@ projectsRouter.get(
   authentication,
   getProjectTimeline
 );
+
 
 /* -------------------------------
    EXISTING CATEGORY FILTER ROUTES

@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from "react";
-import { Calendar, User, Clock, ChevronRight, Tag, Paperclip, FileText, Image, File } from "lucide-react";
+import {
+  Calendar,
+  User,
+  Clock,
+  ChevronRight,
+  Tag,
+} from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import BlogTopBar from "./components/BlogTopBar.jsx";
+import AttachmentList from "../../components/Attachments/AttachmentList.jsx";
 
 export default function BlogPost() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { state } = useLocation();
 
-  const [post, setPost] = useState(() => (state && state.id === id ? state : null));
+  const [post, setPost] = useState(() =>
+    state && state.id === id ? state : null
+  );
   const [loading, setLoading] = useState(!post);
   const [err, setErr] = useState(null);
+
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   useEffect(() => {
     let mounted = true;
@@ -20,8 +31,9 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(`http://localhost:5000/blogs/${encodeURIComponent(id)}`, {
-        });
+        const { data } = await axios.get(
+          `${API_BASE}/blogs/${encodeURIComponent(id)}`
+        );
         if (!mounted) return;
 
         const item = data?.item ?? data ?? null;
@@ -35,7 +47,6 @@ export default function BlogPost() {
       }
     }
 
-   
     if (!post || (post?.id ?? post?._id) !== id || !post?.sections) {
       load();
     }
@@ -43,9 +54,11 @@ export default function BlogPost() {
     return () => {
       mounted = false;
     };
-  }, [id]); 
+  }, [id, API_BASE]);
+
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
+
   useEffect(() => {
     const onScroll = () => {
       const el = contentRef.current;
@@ -91,41 +104,20 @@ export default function BlogPost() {
       year: "numeric",
     });
 
-  const getFileIcon = (url) => {
-    if (!url) return <File className="w-5 h-5" />;
-    
-    const lowerUrl = url.toLowerCase();
-    if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
-      return <Image className="w-5 h-5 text-emerald-600" />;
-    } else if (lowerUrl.match(/\.(pdf)$/)) {
-      return <FileText className="w-5 h-5 text-rose-600" />;
-    } else if (lowerUrl.match(/\.(doc|docx|txt|rtf)$/)) {
-      return <FileText className="w-5 h-5 text-blue-600" />;
-    }
-    return <File className="w-5 h-5 text-slate-600" />;
-  };
-
-  const getFileName = (url) => {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname.split('/').pop() || 'attachment';
-    } catch {
-      return url.split('/').pop() || 'attachment';
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white">
+      {/* Progress Bar */}
       <div
         className="fixed top-0 left-0 h-1 bg-[#028090] z-40 transition-[width] duration-150"
         style={{ width: `${progress}%` }}
       />
 
+      {/* Top Bar */}
       <BlogTopBar
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl="http://localhost:5000/blogs"
+        createUrl={`${API_BASE}/blogs`}
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);
@@ -134,7 +126,7 @@ export default function BlogPost() {
         currentTitle={post?.title}
         currentExcerpt={post?.excerpt}
       />
-     
+
       {/* Header */}
       <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
         {loading && !post ? (
@@ -174,7 +166,7 @@ export default function BlogPost() {
         )}
       </header>
 
-      {/* Cover */}
+      {/* Cover Image */}
       {!post ? null : (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
@@ -187,18 +179,23 @@ export default function BlogPost() {
         </div>
       )}
 
-      {/* Content */}
+      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {!post ? null : (
-          <article ref={contentRef} className="space-y-8">
+          <article ref={contentRef} className="space-y-8 overflow-x-hidden">
             {(post.sections || []).map((s) => (
-              <section key={s.id ?? s._id} id={s.id ?? s._id} data-article-section>
-                <h2 className="text-xl font-bold text-slate-900 mb-3">
-                  {s.h}
-                </h2>
-                <div className="space-y-4 text-slate-700 leading-relaxed">
+              <section
+                key={s.id ?? s._id}
+                id={s.id ?? s._id}
+                data-article-section
+              >
+                <h2 className="text-xl font-bold text-slate-900 mb-3">{s.h}</h2>
+                <div className="space-y-4 text-slate-700 leading-relaxed break-words">
                   {(s.p || []).map((para, i) => (
-                    <p key={i} className="text-base">
+                    <p
+                      key={i}
+                      className="text-base whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                    >
                       {para}
                     </p>
                   ))}
@@ -206,6 +203,7 @@ export default function BlogPost() {
               </section>
             ))}
 
+            {/* Tags */}
             {Array.isArray(post.tags) && post.tags.length > 0 && (
               <div className="pt-6 border-t border-slate-200">
                 <div className="flex flex-wrap gap-2">
@@ -221,57 +219,14 @@ export default function BlogPost() {
               </div>
             )}
 
+            {/* ✅ Reusable Attachment Component */}
             {post.attachments && (
-              <div className="pt-6 border-t border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <Paperclip className="w-5 h-5 text-slate-600" />
-                  <h3 className="text-lg font-semibold text-slate-900">Attachments</h3>
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  {(() => {
-                    let attachments = [];
-                    if (Array.isArray(post.attachments)) {
-                      attachments = post.attachments;
-                    } else if (typeof post.attachments === 'string') {
-                      try {
-                        const parsed = JSON.parse(post.attachments);
-                        if (Array.isArray(parsed)) {
-                          attachments = parsed;
-                        } else {
-                          attachments = [post.attachments];
-                        }
-                      } catch {
-                        attachments = [post.attachments];
-                      }
-                    }
-                    
-                    return attachments.map((url, index) => (
-                      <a
-                        key={index}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex flex-col items-center w-20"
-                        title={getFileName(url)}
-                      >
-                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center mb-2 group-hover:bg-slate-200 transition-colors">
-                          {getFileIcon(url)}
-                        </div>
-                        <span className="text-xs text-slate-600 text-center truncate w-full">
-                          {getFileName(url).substring(0, 12)}
-                          {getFileName(url).length > 12 ? '...' : ''}
-                        </span>
-                      </a>
-                    ));
-                  })()}
-                </div>
-              </div>
+              <AttachmentList attachments={post.attachments} />
             )}
           </article>
         )}
 
-        {/* Prev/Next */}
+        {/* Prev/Next Placeholder */}
         <div className="mt-12 grid sm:grid-cols-2 gap-4">
           <button
             disabled

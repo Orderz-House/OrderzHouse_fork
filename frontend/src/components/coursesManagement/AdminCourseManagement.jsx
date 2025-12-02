@@ -14,12 +14,13 @@ const AdminCourseManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', category_id: '', title_ar: '', description_ar: ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
+
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,10 +28,10 @@ const AdminCourseManagement = () => {
       try {
         setLoading(true);
         const [coursesRes, categoriesRes] = await Promise.all([
-          axios.get('http://localhost:5000/courses/view', {
+          axios.get(`${API_BASE}/courses/view`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get('http://localhost:5000/category', {
+          axios.get(`${API_BASE}/category`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -46,7 +47,7 @@ const AdminCourseManagement = () => {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, API_BASE]);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,13 +64,13 @@ const AdminCourseManagement = () => {
     try {
       let res;
       if (isEditing) {
-        res = await axios.put(`http://localhost:5000/courses/update/${editingCourseId}`, formData, {
+        res = await axios.put(`${API_BASE}/courses/update/${editingCourseId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => prev.map(c => c.id === editingCourseId ? res.data.course : c));
         toast.success('Course updated successfully!');
       } else {
-        res = await axios.post('http://localhost:5000/courses/create', formData, {
+        res = await axios.post(`${API_BASE}/courses/create`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => [res.data.course, ...prev]);
@@ -87,7 +88,7 @@ const AdminCourseManagement = () => {
   const handleDelete = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
     try {
-      await axios.delete(`http://localhost:5000/courses/delete/${courseId}`, {
+      await axios.delete(`${API_BASE}/courses/delete/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCourses(prev => prev.filter(c => c.id !== courseId));
@@ -236,7 +237,6 @@ const AdminCourseManagement = () => {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-md">

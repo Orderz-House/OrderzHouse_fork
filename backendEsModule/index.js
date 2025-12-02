@@ -14,6 +14,8 @@ startDeadlineWatcher();
 
 
 // Routers
+import CoursesRouter from "./router/course.js";
+import assignmentsRouter from "./router/assignments.js";
 import VerificationRouter from "./router/verification.js";
 import paymentsRouter from "./router/payments.js";
 import AdminUser from "./router/adminUser.js"
@@ -21,7 +23,6 @@ import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
 import appointmentsRouter from "./router/appointment.js";
-import coursesRouter from "./router/courses.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import categoriesRouter from "./router/category.js";
@@ -36,6 +37,7 @@ import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
 //import analyticsRoutes from "./router/analytics.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
+import ChatRouter from "./router/chats.js";
 
 
 // DB connection
@@ -51,7 +53,8 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin:["http://localhost:5173",     
+          "https://thi8ah.com"], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -68,7 +71,7 @@ app.use(limiter);
 */
 
 // Routers
-
+app.use("/assignments", assignmentsRouter);
 app.use("/verification", VerificationRouter);
 app.use("/freelancerCategories", freelancerCategoriesRouter);
 app.use("/blogs", Blogsrouter)
@@ -83,7 +86,7 @@ app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/appointments", appointmentsRouter);
 app.use("/logs", logsRouter);
-app.use("/courses", coursesRouter);
+app.use("/courses", CoursesRouter);
 app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
@@ -92,6 +95,7 @@ app.use("/access-control", accessControlRouter);
 app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
+app.use("/chat", ChatRouter);
 
 
 let server, io;

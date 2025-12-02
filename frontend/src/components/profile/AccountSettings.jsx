@@ -15,6 +15,8 @@ import {
   Calendar
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_APP_API_URL;
+
 const AccountSettings = () => {
   const { token, userData } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
@@ -109,7 +111,7 @@ const AccountSettings = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await axios.post('http://localhost:5000/auth/2fa/generate', {}, {
+      const response = await axios.post(`${API_BASE}/auth/2fa/generate`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setQrCodeUrl(response.data.qrCodeUrl);
@@ -129,7 +131,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/auth/2fa/verify', { token: verificationCode }, {
+      const response = await axios.post(`${API_BASE}/auth/2fa/verify`, { token: verificationCode }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccess(response.data.message);
@@ -153,7 +155,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const verifyResponse = await axios.post('/users/verify-password', {
+      const verifyResponse = await axios.post(`${API_BASE}/users/verify-password`, {
         password: currentPassword
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -164,7 +166,7 @@ const AccountSettings = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/auth/2fa/disable', {}, {
+      await axios.post(`${API_BASE}/auth/2fa/disable`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -197,7 +199,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.put('/users/update-password', {
+      const response = await axios.put(`${API_BASE}/users/update-password`, {
         currentPassword,
         newPassword
       }, {
@@ -231,7 +233,7 @@ const AccountSettings = () => {
     setIsLoading(true);
     setError('');
     try {
-      const verifyResponse = await axios.post('/users/verify-password', {
+      const verifyResponse = await axios.post(`${API_BASE}/users/verify-password`, {
         password: deactivatePassword
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -242,7 +244,7 @@ const AccountSettings = () => {
         return;
       }
 
-      const response = await axios.put('/users/deactivate', {}, {
+      const response = await axios.put(`${API_BASE}/users/deactivate`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

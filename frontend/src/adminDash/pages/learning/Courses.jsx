@@ -106,11 +106,11 @@ function AdminCourses() {
        
         <button
           onClick={openAssign}
-          className="inline-flex items-center gap-2 h-9 rounded-xl text-white px-3 text-sm hover:shadow"
+          className="inline-flex items-center gap-2 h-9 rounded-xl text-white px-3 text-xs hover:shadow"
           style={{ backgroundColor: PRIMARY }}
           title="Assign to user"
         >
-          <UserPlus2 className="w-4 h-4" />
+          <UserPlus2 className="w-3 h-3" />
           Assign
         </button>
 
@@ -196,21 +196,21 @@ function FreelancerCourses() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate(`/courses/${id}`)}
-          className="inline-flex items-center gap-2 h-9 rounded-xl bg-white hover:bg-slate-50 px-3 text-slate-700 text-sm"
+          className="inline-flex items-center gap-2 h-9 rounded-xl bg-white hover:bg-slate-50 px-3 text-slate-700 text-xs"
           style={ringStyle}
           title="Open"
         >
-          <BookOpen className="w-4 h-4" />
+          <BookOpen className="w-3 h-3" />
           Open
         </button>
 
         <button
           onClick={() => navigate(`/courses/${id}?start=1`)}
-          className="inline-flex items-center gap-2 h-9 rounded-xl text-white px-3 text-sm hover:shadow"
+          className="inline-flex items-center gap-2 h-9 rounded-xl text-white px-3 text-xs hover:shadow"
           style={{ backgroundColor: PRIMARY }}
           title={started ? "Continue" : "Start"}
         >
-          <Play className="w-4 h-4" />
+          <Play className="w-3 h-3" />
           {started ? "Continue" : "Start"}
         </button>
       </div>
@@ -226,7 +226,7 @@ function FreelancerCourses() {
       formFields={[]}
       desktopAsCards
       mobileAsCards
-      crudConfig={{ showDetails: true, showRowEdit: false, showDelete: false }}
+      crudConfig={{ showDetails: false, showRowEdit: false, showDelete: false }}
       renderActions={renderActions}
       onCardClick={(row, h) => navigate(`/courses/${h.getId(row)}`)}
     />

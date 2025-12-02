@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
 import { useNavigate } from "react-router";
-  import arabCountries from "../../data/arabCountries.json";
+import arabCountries from "../../data/arabCountries.json";
 import {
   Mail,
   Lock,
@@ -31,6 +31,7 @@ const roles = [
 ];
 
 const PRIMARY = "#028090";
+const API_URL = import.meta.env.VITE_APP_API_URL;
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -72,10 +73,9 @@ const Register = () => {
 
   //========= countries api =========//
 
-useEffect(() => {
-  setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
-}, []);
-
+  useEffect(() => {
+    setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
+  }, []);
 
   // ========= password strength checker =========//
   useEffect(() => {
@@ -90,7 +90,7 @@ useEffect(() => {
   // ========= freelancer categories =========//
   useEffect(() => {
     axios
-      .get("http://localhost:5000/category")
+      .get(`${API_URL}/category`)
       .then((response) => setCategories(response.data.categories || []))
       .catch((error) => console.error("Error fetching categories:", error));
   }, []);
@@ -119,7 +119,7 @@ useEffect(() => {
     if (!isExpanded && !subCategories[categoryId]) {
       try {
         const res = await axios.get(
-          `http://localhost:5000/category/${categoryId}/sub-categories`
+          `${API_URL}/category/${categoryId}/sub-categories`
         );
         setSubCategories((prev) => ({
           ...prev,
@@ -214,7 +214,7 @@ useEffect(() => {
     }
 
     axios
-      .post("http://localhost:5000/users/register", userData)
+      .post(`${API_URL}/users/register`, userData)
       .then((result) => {
         setStatus(true);
         setMessage(
@@ -240,7 +240,7 @@ useEffect(() => {
     }
     setIsVerifying(true);
     axios
-      .post("http://localhost:5000/users/verify-email", { email, otp })
+      .post(`${API_URL}/users/verify-email`, { email, otp })
       .then(() => {
         setStatus(true);
         setMessage("Email verified successfully ✅ Redirecting...");

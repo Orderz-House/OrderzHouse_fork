@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../components/toast/ToastProvider";
 
 import ProjectDetailsStep from "./steps/ProjectDetailsStep";
+import ProjectCoverStep from "./steps/ProjectCoverStep";
 import ProjectFilesStep from "./steps/ProjectFilesStep";
 import AssignFreelancersStep from "./steps/AssignFreelancersStep";
 import PaymentStep from "./steps/PaymentStep";
@@ -11,100 +13,85 @@ import {
   createProjectApi,
   uploadProjectFilesApi,
   assignFreelancerApi,
-  recordOfflinePaymentApi
+  recordOfflinePaymentApi,
 } from "./api/projects";
 
 const THEME = "#028090";
 
 export default function CreateProjectPage() {
-  const token = useSelector(state => state.auth.token);
+  const token = useSelector((state) => state.auth.token);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [step, setStep] = useState(1);
   const [projectData, setProjectData] = useState({});
+  const [coverPic, setCoverPic] = useState(null);
   const [files, setFiles] = useState([]);
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
   const [proofFile, setProofFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+  const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
+  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handleFinalSubmit = async () => {
     if (!token) {
-      alert("You must be logged in to create a project");
+      showToast("You must be logged in to create a project", "error");
       return;
     }
 
     if (!proofFile) {
-      alert("Please upload payment proof to continue");
+      showToast("Please upload payment proof to continue", "error");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Step 1: Create project
-      console.log("Creating project...");
-      const createdProject = await createProjectApi(projectData, token);
+      const createdProject = await createProjectApi(projectData, token, coverPic);
       const projectId = createdProject.id;
-      console.log("Project created:", projectId);
 
-      // Step 2: Upload files (if any)
+      // Step 2: Upload project files (optional)
       if (files.length > 0) {
-        console.log("Uploading project files...");
         try {
           await uploadProjectFilesApi(projectId, files, token);
-          console.log("Files uploaded successfully");
-        } catch (fileError) {
-          console.error("File upload failed:", fileError);
-          // Don't fail the entire process if file upload fails
-          alert("Project created but file upload failed. You can upload files later.");
+        } catch {
+          showToast("Project created but file upload failed. You can upload them later.", "warning");
         }
       }
 
-      // Step 3: Assign freelancer (if selected)
+      // Step 3: Assign freelancer (optional)
       if (selectedFreelancer) {
-        console.log("Assigning freelancer...");
         try {
           await assignFreelancerApi(projectId, selectedFreelancer.id, token);
-          console.log("Freelancer invited successfully");
-        } catch (assignError) {
-          console.error("Freelancer assignment failed:", assignError);
-          alert("Project created but freelancer invitation failed. You can invite them later.");
+        } catch {
+          showToast("Freelancer invitation failed. You can invite later.", "warning");
         }
       }
 
       // Step 4: Record payment proof
-      console.log("Recording payment proof...");
       let amount = 0;
-      if (projectData.project_type === "fixed") {
-        amount = Number(projectData.budget);
-      } else if (projectData.project_type === "hourly") {
-        amount = Number(projectData.hourly_rate) * 3; // 3 hours prepaid
-      } else if (projectData.project_type === "bidding") {
-        amount = Number(projectData.budget_max);
-      }
+      if (projectData.project_type === "fixed") amount = Number(projectData.budget);
+      else if (projectData.project_type === "hourly") amount = Number(projectData.hourly_rate) * 3;
+      else if (projectData.project_type === "bidding") amount = Number(projectData.budget_max);
 
       if (!isNaN(amount) && amount > 0) {
         try {
           await recordOfflinePaymentApi(projectId, proofFile, token, amount);
-          console.log("Payment proof recorded successfully");
-        } catch (paymentError) {
-          console.error("Payment proof upload failed:", paymentError);
-          alert("Project created but payment proof upload failed. Please contact support.");
+        } catch {
+          showToast("Payment proof upload failed. Please contact support.", "warning");
         }
       } else {
-        alert("Invalid payment amount. Cannot submit payment proof.");
+        showToast("Invalid payment amount. Cannot submit payment proof.", "error");
       }
 
-      alert("Project created successfully!");
+      showToast("Project created successfully!", "success");
       navigate("/");
-      
+
     } catch (err) {
-      console.error("Project creation error:", err);
       const errorMessage = err.response?.data?.message || err.message || "Failed to create project";
-      alert(errorMessage);
+      showToast(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -112,9 +99,10 @@ export default function CreateProjectPage() {
 
   const steps = [
     { number: 1, label: "Details" },
-    { number: 2, label: "Files" },
-    { number: 3, label: "Freelancer" },
-    { number: 4, label: "Payment" },
+    { number: 2, label: "Cover" },
+    { number: 3, label: "Files" },
+    { number: 4, label: "Freelancer" },
+    { number: 5, label: "Payment" },
   ];
 
   return (
@@ -135,11 +123,11 @@ export default function CreateProjectPage() {
             <div
               className="absolute left-4 top-[28px] h-1 rounded-full transition-all"
               style={{
-                width: `calc(${((step - 1) / 3) * 100}% + 0.5rem)`,
-                background: "linear-gradient(90deg,#02C39A, #028090 60%, #05668D)"
+                width: `calc(${((step - 1) / 4) * 100}% + 0.5rem)`,
+                background: "linear-gradient(90deg,#02C39A, #028090 60%, #05668D)",
               }}
             />
-            <div className="relative grid grid-cols-4 gap-2">
+            <div className="relative grid grid-cols-5 gap-2">
               {steps.map((s) => {
                 const active = step >= s.number;
                 const done = step > s.number;
@@ -147,20 +135,42 @@ export default function CreateProjectPage() {
                   <div key={s.number} className="flex flex-col items-center">
                     <div
                       className={`w-14 h-14 rounded-full grid place-items-center font-bold ring-2 transition-all ${
-                        active ? "text-white" : "bg-white text-slate-500 ring-slate-200"
+                        active
+                          ? "text-white"
+                          : "bg-white text-slate-500 ring-slate-200"
                       }`}
                       style={{
-                        background: active ? "linear-gradient(135deg,#02C39A,#028090)" : undefined,
-                        boxShadow: active ? "0 10px 24px -10px rgba(2,128,144,.45)" : undefined
+                        background: active
+                          ? "linear-gradient(135deg,#02C39A,#028090)"
+                          : undefined,
+                        boxShadow: active
+                          ? "0 10px 24px -10px rgba(2,128,144,.45)"
+                          : undefined,
                       }}
                     >
                       {done ? (
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                        <svg
+                          className="w-6 h-6"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
-                      ) : s.number}
+                      ) : (
+                        s.number
+                      )}
                     </div>
-                    <span className={`mt-2 text-sm font-semibold ${active ? "text-[#028090]" : "text-slate-500"}`}>
+                    <span
+                      className={`mt-2 text-sm font-semibold ${
+                        active ? "text-[#028090]" : "text-slate-500"
+                      }`}
+                    >
                       {s.label}
                     </span>
                   </div>
@@ -179,7 +189,17 @@ export default function CreateProjectPage() {
               setProjectData={setProjectData}
             />
           )}
+
           {step === 2 && (
+            <ProjectCoverStep
+              coverPic={coverPic}
+              setCoverPic={setCoverPic}
+              onNext={nextStep}
+              onBack={prevStep}
+            />
+          )}
+
+          {step === 3 && (
             <ProjectFilesStep
               onNext={nextStep}
               onBack={prevStep}
@@ -187,7 +207,8 @@ export default function CreateProjectPage() {
               setFiles={setFiles}
             />
           )}
-          {step === 3 && (
+
+          {step === 4 && (
             <AssignFreelancersStep
               onNext={nextStep}
               onBack={prevStep}
@@ -196,7 +217,8 @@ export default function CreateProjectPage() {
               setSelectedFreelancer={setSelectedFreelancer}
             />
           )}
-          {step === 4 && (
+
+          {step === 5 && (
             <PaymentStep
               onBack={prevStep}
               files={files}

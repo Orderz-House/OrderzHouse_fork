@@ -153,7 +153,7 @@ export default function BlogTopBar({
       });
 
       const token = localStorage.getItem("token");
-      const { data } = await axios.post("http://localhost:5000/blogs", formData, {
+      const { data } = await axios.post("https://backend.thi8ah.com/blogs", formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           ...(token ? { Authorization: `Bearer ${token}` } : {} ),

@@ -15,34 +15,35 @@ const CourseDetail = () => {
   const [error, setError] = useState('');
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!token || !id) return;
       try {
-        const accessRes = await axios.get(`http://localhost:5000/courses/check-access/${id}`, {
+        const accessRes = await axios.get(`${API_BASE}/courses/check-access/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHasAccess(accessRes.data.hasAccess);
 
         if (accessRes.data.hasAccess || userData?.role_id === 1) {
-            const [courseRes, materialsRes] = await Promise.all([
-              axios.get(`http://localhost:5000/courses/view/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-              axios.get(`http://localhost:5000/courses/${id}/materials`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-            ]);
-            setCourse(courseRes.data.course);
-            setMaterials(materialsRes.data.materials || []);
+          const [courseRes, materialsRes] = await Promise.all([
+            axios.get(`${API_BASE}/courses/view/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get(`${API_BASE}/courses/${id}/materials`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+          setCourse(courseRes.data.course);
+          setMaterials(materialsRes.data.materials || []);
         }
       } catch (err) {
         console.error('Error fetching course data:', err);
         if (err.response?.status === 403) {
-            setError('Access Denied');
+          setError('Access Denied');
         } else {
-            setError(err.response?.data?.message || 'Failed to load course.');
+          setError(err.response?.data?.message || 'Failed to load course.');
         }
       } finally {
         setLoading(false);
@@ -51,7 +52,7 @@ const CourseDetail = () => {
     };
 
     fetchData();
-  }, [id, token, userData?.role_id]);
+  }, [id, token, userData?.role_id, API_BASE]);
 
   if (checkingAccess) {
     return (
@@ -63,20 +64,20 @@ const CourseDetail = () => {
 
   if (!hasAccess && userData?.role_id !== 1) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
-            <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-            <p className="text-gray-600 mb-6">You don't have permission to access this course.</p>
-            <Link
-              to="/my-courses"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to My Courses
-            </Link>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
+          <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">You don't have permission to access this course.</p>
+          <Link
+            to="/my-courses"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back to My Courses
+          </Link>
         </div>
+      </div>
     );
   }
 
@@ -140,7 +141,7 @@ const CourseDetail = () => {
               <p className="text-gray-600 mt-2">{course.description}</p>
               <div className="flex flex-wrap gap-6 mt-4 text-gray-600">
                 <span className="flex items-center"><DollarSign className="w-5 h-5 mr-1" />${course.price}</span>
-                <span className="flex items-center"><Clock className="w-5 h-5 mr-1" />10 hours</span> {/* Placeholder */}
+                <span className="flex items-center"><Clock className="w-5 h-5 mr-1" />10 hours</span>
                 <span className="flex items-center"><BookOpen className="w-5 h-5 mr-1" />{materials.length} materials</span>
               </div>
             </div>

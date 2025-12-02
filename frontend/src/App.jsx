@@ -7,8 +7,8 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "react-hot-toast";
 
-import Counter from "./counter/Counter";
 import Navbar from "./components/navbar/Nav";
 import EnhancedFooter from "./components/footer/Footer";
 import PrivacyPolicyPage from "./components/policy/Policy";
@@ -17,18 +17,11 @@ import OrderzHousePage from "./components/main/Main";
 import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
-import EditProfile from "./components/profile/EditProfile";
-import VerifyProfile from "./components/profile/VerifyProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
-import TopRatedFreelancers from "./components/topRated/TopRate";
-import FreeLanceDetail from "./components/freelanceDetails/FreeLanceDetail";
-import ManageProject from "./components/manageProject/ManageProject";
 import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
-import AdminVerificationPage from "./components/verifiyForAdmin/VerifiedFreeLance";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
-import ProfileView from "./components/profile/ProfileView";
 import Plans from "./components/plans/Plans.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
@@ -72,6 +65,7 @@ function App() {
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
   const userData = useSelector((state) => state.auth.userData);
+  
 
   const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
@@ -107,7 +101,6 @@ function App() {
           <Route path="/account/suspended" element={<AccountSuspended />} />
 
           {/* --- Public Pages --- */}
-          <Route path="/test" element={<Counter />} />
           <Route path="/" element={<OrderzHousePage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/about" element={<ModernAboutPage />} />
@@ -115,27 +108,11 @@ function App() {
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin-verification" element={<AdminVerificationPage />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfileView />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/verify-profile" element={<VerifyProfile />} />
+          
           <Route path="/terms" element={<Terms />} />
 
           {/* --- Protected Pages --- */}
-          <Route
-            path="/edit-profile"
-            element={
-              <ProtectedRoute>
-                <EditProfile />
-              </ProtectedRoute>
-            }
-          />
+         
           <Route
             path="/create-project"
             element={
@@ -144,30 +121,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/manage-project/:projectId"
-            element={
-              <ProtectedRoute>
-                <ManageProject />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/rate"
-            element={
-              <ProtectedRoute>
-                <TopRatedFreelancers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/freelancer/profile/:id"
-            element={
-              <ProtectedRoute>
-                <FreeLanceDetail />
-              </ProtectedRoute>
-            }
-          />
+          
+          
+         
 
           {/* --- Tasks --- */}
           <Route
@@ -347,6 +303,7 @@ function App() {
           draggable
           pauseOnHover
         />
+        <Toaster position="bottom-right" />
       </GlobalLoadingProvider>
     </>
   );

@@ -19,6 +19,9 @@ import { disconnectSocket } from "../../services/socketService";
 import logo from "../../assets/logo.png";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
+const API_BASE = import.meta.env.VITE_APP_API_URL;
+
+
 export default function EnhancedNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -72,11 +75,11 @@ export default function EnhancedNavbar() {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get("http://localhost:5000/notifications", {
+      const { data } = await axios.get(`${API_BASE}/notifications`, {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
         __silent: true,
-      } );
+      });
       if (data.success) setNotifications(data.notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -87,12 +90,12 @@ export default function EnhancedNavbar() {
     if (!token) return;
     try {
       const { data } = await axios.get(
-        "http://localhost:5000/notifications/count",
+        `${API_BASE}/notifications/count`,
         {
           headers: { authorization: `Bearer ${token}` },
           params: { unreadOnly: true },
         }
-       );
+      );
       if (data.success) setUnreadCount(data.count);
     } catch (error) {
       console.error("Error fetching notification count:", error);
@@ -102,10 +105,10 @@ export default function EnhancedNavbar() {
   const markAsRead = async (notificationId) => {
     try {
       await axios.put(
-        `http://localhost:5000/notifications/${notificationId}/read`,
+        `${API_BASE}/notifications/${notificationId}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications((list) =>
         list.map((n) =>
           n.id === notificationId ? { ...n, read_status: true } : n
@@ -120,10 +123,10 @@ export default function EnhancedNavbar() {
   const markAllAsRead = async () => {
     try {
       await axios.put(
-        "http://localhost:5000/notifications/read-all",
+        `${API_BASE}/notifications/read-all`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
-       );
+      );
       setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -159,9 +162,9 @@ export default function EnhancedNavbar() {
   useEffect(() => {
     if (!token) return;
     axios
-      .get(`http://localhost:5000/users/getUserdata`, {
+      .get(`${API_BASE}/users/getUserdata`, {
         headers: { authorization: `Bearer ${token}` },
-      } )
+      })
       .then((res) => {
         const user = { ...res.data.user, is_online: true };
         dispatch(setUserData(user));

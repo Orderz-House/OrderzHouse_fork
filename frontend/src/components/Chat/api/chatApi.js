@@ -1,11 +1,11 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://backend.thi8ah.com/api";
 
 export const fetchMessages = async (token, { projectId, taskId }) => {
   const endpoint = projectId
-    ? `/chats/project/${projectId}/messages`
-    : `/chats/task/${taskId}/messages`;
+    ? `/chat/project/${projectId}/messages`
+    : `/chat/task/${taskId}/messages`;
   const res = await axios.get(`${API_BASE}${endpoint}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -13,7 +13,7 @@ export const fetchMessages = async (token, { projectId, taskId }) => {
 };
 
 export const sendMessage = async (token, data) => {
-  const res = await axios.post(`${API_BASE}/chats/messages`, data, {
+  const res = await axios.post(`${API_BASE}/chat/messages`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;

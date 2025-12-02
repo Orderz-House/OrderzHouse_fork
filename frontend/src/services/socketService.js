@@ -7,7 +7,7 @@ export const connectSocket = (token, userId) => {
     if (!socket) {
         console.log("Connected Socket");
     
-        socket = io("http://localhost:5000", {
+        socket = io("https://backend.thi8ah.com", {
           auth: {
             token,
             userId

@@ -1,72 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, MessageCircle, User, AlertCircle } from 'lucide-react';
-import { useAppointments } from './hook/useAppointments';
-import axios from 'axios';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from "react";
+import { X, Calendar, MessageCircle, User, AlertCircle } from "lucide-react";
+import { useAppointments } from "./hook/useAppointments";
+import axios from "axios";
+import { useSelector } from "react-redux";
 
 const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) => {
   const { createAppointment, createAppointmentByAdmin, loading, error } = useAppointments();
   const { token } = useSelector((state) => state.auth);
   const [freelancers, setFreelancers] = useState([]);
   const [formData, setFormData] = useState({
-    freelancer_id: '',
-    appointment_date: '',
-    message: '',
-    appointment_type: 'online'
+    freelancer_id: "",
+    appointment_date: "",
+    message: "",
+    appointment_type: "online",
   });
-  const [dateError, setDateError] = useState('');
+  const [dateError, setDateError] = useState("");
+
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   useEffect(() => {
     if (isAdmin) {
       const fetchFreelancers = async () => {
         try {
-          const response = await axios.get('http://localhost:5000/users/allfreelance', {
+          const response = await axios.get(`${API_BASE}/users/allfreelance`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setFreelancers(response.data.freelancers || []);
         } catch (err) {
-          console.error('Failed to fetch freelancers:', err);
+          console.error("Failed to fetch freelancers:", err);
         }
       };
       fetchFreelancers();
     }
-  }, [isAdmin, token]);
+  }, [isAdmin, token, API_BASE]);
 
   const validateDateTime = (dateTime) => {
     if (!dateTime) return true;
-    
     const selectedDate = new Date(dateTime);
     const now = new Date();
-    
+
     if (selectedDate <= now) {
-      setDateError('Cannot schedule appointments in the past. Please select a future date and time.');
+      setDateError(
+        "Cannot schedule appointments in the past. Please select a future date and time."
+      );
       return false;
     }
-    
-    setDateError('');
+
+    setDateError("");
     return true;
   };
 
   const handleDateChange = (e) => {
     const newDate = e.target.value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      appointment_date: newDate
+      appointment_date: newDate,
     }));
-    
+
     validateDateTime(newDate);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateDateTime(formData.appointment_date)) {
       return;
     }
-    
+
     if (isAdmin) {
       if (!formData.freelancer_id) {
-        alert('Please select a freelancer');
+        alert("Please select a freelancer");
         return;
       }
       const result = await createAppointmentByAdmin(formData);
@@ -82,9 +85,9 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
   };
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -100,7 +103,7 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <Calendar className="w-6 h-6 mr-2 text-teal-600" />
-            {isAdmin ? 'Create Appointment (Admin)' : 'Request New Appointment'}
+            {isAdmin ? "Create Appointment (Admin)" : "Request New Appointment"}
           </h2>
           <button
             onClick={onClose}
@@ -149,22 +152,26 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, appointment_type: 'online' }))}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, appointment_type: "online" }))
+                }
                 className={`p-3 border rounded-lg text-center transition-all ${
-                  formData.appointment_type === 'online'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-teal-300 text-teal-600 hover:border-teal-400'
+                  formData.appointment_type === "online"
+                    ? "border-teal-500 bg-teal-50 text-teal-700"
+                    : "border-teal-300 text-teal-600 hover:border-teal-400"
                 }`}
               >
                 🌐 Online
               </button>
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, appointment_type: 'in_company' }))}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, appointment_type: "in_company" }))
+                }
                 className={`p-3 border rounded-lg text-center transition-all ${
-                  formData.appointment_type === 'in_company'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-teal-300 text-teal-600 hover:border-teal-400'
+                  formData.appointment_type === "in_company"
+                    ? "border-teal-500 bg-teal-50 text-teal-700"
+                    : "border-teal-300 text-teal-600 hover:border-teal-400"
                 }`}
               >
                 🏢 In Company
@@ -185,7 +192,7 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
               required
               min={getMinDateTime()}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
-                dateError ? 'border-red-300' : 'border-teal-300'
+                dateError ? "border-red-300" : "border-teal-300"
               }`}
             />
             {dateError && (
@@ -226,10 +233,19 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.appointment_date || (isAdmin && !formData.freelancer_id) || !!dateError}
+              disabled={
+                loading ||
+                !formData.appointment_date ||
+                (isAdmin && !formData.freelancer_id) ||
+                !!dateError
+              }
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Creating...' : (isAdmin ? 'Create Appointment' : 'Request Appointment')}
+              {loading
+                ? "Creating..."
+                : isAdmin
+                ? "Create Appointment"
+                : "Request Appointment"}
             </button>
           </div>
         </form>

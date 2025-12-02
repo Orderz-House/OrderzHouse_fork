@@ -44,7 +44,9 @@ const Drawer = ({ open, onClose, title, subtitle, children }) => {
       {/* Panel */}
       <div
         className={`absolute inset-y-0 right-0 w-full sm:max-w-[520px] bg-white shadow-2xl ring-1 ring-slate-200
-        transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
+        transition-transform duration-300 ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200">
           <div className="min-w-0">
@@ -65,7 +67,9 @@ const Drawer = ({ open, onClose, title, subtitle, children }) => {
             <FiX />
           </button>
         </div>
-        <div className="h-[calc(100%-56px)] overflow-y-auto p-4">{children}</div>
+        <div className="h-[calc(100%-56px)] overflow-y-auto p-4">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -157,18 +161,18 @@ function useTableData({
         });
 
         const list = Array.isArray(data)
-  ? data
-  : Array.isArray(data?.appointments)
-  ? data.appointments
-  : Array.isArray(data?.items)
-  ? data.items
-  : Array.isArray(data?.users)
-  ? data.users
-  : Array.isArray(data?.data)
-  ? data.data
-  : Array.isArray(data?.projects) 
-  ? data.projects
-  : [];
+          ? data
+          : Array.isArray(data?.appointments)
+          ? data.appointments
+          : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.users)
+          ? data.users
+          : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.projects)
+          ? data.projects
+          : [];
 
         const processedList = list.map((row) => ({
           ...row,
@@ -442,7 +446,8 @@ function renderPrettyCell(col, row, idx) {
   const raw = col.render ? col.render(row, idx) : row[col.key];
   const label = String(col.label || col.key || "").toLowerCase();
 
-  if (raw == null || raw === "") return <span className="text-slate-400">—</span>;
+  if (raw == null || raw === "")
+    return <span className="text-slate-400">—</span>;
   const val = String(raw);
   const key = val.toLowerCase();
 
@@ -455,7 +460,9 @@ function renderPrettyCell(col, row, idx) {
     };
     const cls = chipMap[key] || "bg-slate-100 text-slate-600 ring-slate-200";
     return (
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}>
+      <span
+        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}
+      >
         {val}
       </span>
     );
@@ -470,7 +477,9 @@ function renderPrettyCell(col, row, idx) {
       scheduled: "text-sky-600",
       missed: "text-rose-600",
     }[key];
-    return <span className={`font-medium ${color || "text-slate-700"}`}>{val}</span>;
+    return (
+      <span className={`font-medium ${color || "text-slate-700"}`}>{val}</span>
+    );
   }
 
   return val;
@@ -585,7 +594,8 @@ const MobileCards = ({
         const isVerified = truthyYes(verifiedVal);
 
         const secondary =
-          email ?? (country ? String(country) : role ? String(role) : undefined);
+          email ??
+          (country ? String(country) : role ? String(role) : undefined);
 
         return (
           <div
@@ -612,7 +622,9 @@ const MobileCards = ({
                   {state && (
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] ${
-                        state === "online" ? "text-emerald-600" : "text-slate-500"
+                        state === "online"
+                          ? "text-emerald-600"
+                          : "text-slate-500"
                       }`}
                     >
                       <span
@@ -765,7 +777,11 @@ const DesktopTable = ({
 
               return (
                 <React.Fragment key={idx}>
-                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
+                  <tr
+                    className={`hover:bg-slate-50 ${
+                      isExpanded ? "bg-slate-50" : ""
+                    }`}
+                  >
                     {crudConfig.showExpand && (
                       <td className="px-3 py-2 text-center">
                         <button
@@ -829,7 +845,9 @@ const DesktopTable = ({
                   {isExpanded && (
                     <tr>
                       <td
-                        colSpan={columns.length + (crudConfig.showExpand ? 2 : 1)}
+                        colSpan={
+                          columns.length + (crudConfig.showExpand ? 2 : 1)
+                        }
                         className="px-0 py-0"
                       >
                         <ExpandedRow
@@ -899,7 +917,8 @@ const DesktopCards = ({
   }
 
   const nameCol =
-    pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
+    pickColumn(columns, ["title", "name", "full name", "username"]) ||
+    columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
   const dueCol = pickColumn(columns, ["due", "date"]);
@@ -929,12 +948,18 @@ const DesktopCards = ({
               role="button"
               tabIndex={0}
               onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && onCardClick?.(row, helpers)
+              }
               className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
               title="Open"
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
                   {initialsFrom(String(titleVal))}
@@ -945,7 +970,9 @@ const DesktopCards = ({
             <div className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-800 truncate">{titleVal}</div>
+                  <div className="font-semibold text-slate-800 truncate">
+                    {titleVal}
+                  </div>
                   {typeof renderSubtitle === "function" && (
                     <div className="mt-1">{renderSubtitle(row, helpers)}</div>
                   )}
@@ -958,7 +985,11 @@ const DesktopCards = ({
                 </div>
                 {status && (
                   <div className="shrink-0">
-                    {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
+                    {renderPrettyCell(
+                      { label: "Status", key: "status" },
+                      { status },
+                      idx
+                    )}
                   </div>
                 )}
               </div>
@@ -971,7 +1002,8 @@ const DesktopCards = ({
                 )}
                 {budget != null && budget !== "" && (
                   <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Budget:</span> {String(budget)}
+                    <span className="text-slate-500">Budget:</span>{" "}
+                    {String(budget)}
                   </div>
                 )}
               </div>
@@ -983,12 +1015,13 @@ const DesktopCards = ({
                     className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
                     title="View / Edit"
                   >
-                    Details
+                    <AiOutlineEdit size={18} />
                   </button>
                 )}
 
                 <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" && renderActions(row, helpers)}
+                  {typeof renderActions === "function" &&
+                    renderActions(row, helpers)}
 
                   {!hideCrudActions && (
                     <>
@@ -1084,7 +1117,8 @@ const CardsGrid = ({
   }
 
   const nameCol =
-    pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
+    pickColumn(columns, ["title", "name", "full name", "username"]) ||
+    columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
   const dueCol = pickColumn(columns, ["due", "date"]);
@@ -1113,12 +1147,18 @@ const CardsGrid = ({
               role="button"
               tabIndex={0}
               onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && onCardClick?.(row, helpers)
+              }
               className="h-36 bg-slate-100 grid place-items-center overflow-hidden cursor-pointer"
               title="Open"
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-white/80 grid place-items-center text-slate-400 text-sm ring-1 ring-slate-200">
                   {initialsFrom(String(titleVal))}
@@ -1129,7 +1169,9 @@ const CardsGrid = ({
             <div className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-800 truncate">{titleVal}</div>
+                  <div className="font-semibold text-slate-800 truncate">
+                    {titleVal}
+                  </div>
                   {typeof renderSubtitle === "function" && (
                     <div className="mt-1">{renderSubtitle(row, helpers)}</div>
                   )}
@@ -1142,7 +1184,11 @@ const CardsGrid = ({
                 </div>
                 {status && (
                   <div className="shrink-0">
-                    {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
+                    {renderPrettyCell(
+                      { label: "Status", key: "status" },
+                      { status },
+                      idx
+                    )}
                   </div>
                 )}
               </div>
@@ -1155,7 +1201,8 @@ const CardsGrid = ({
                 )}
                 {budget != null && budget !== "" && (
                   <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
-                    <span className="text-slate-500">Budget:</span> {String(budget)}
+                    <span className="text-slate-500">Budget:</span>{" "}
+                    {String(budget)}
                   </div>
                 )}
               </div>
@@ -1167,12 +1214,13 @@ const CardsGrid = ({
                     className="h-9 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-sm text-slate-700"
                     title="View / Edit"
                   >
-                    Details
+                    <AiOutlineEdit size={18} />
                   </button>
                 )}
 
                 <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" && renderActions(row, helpers)}
+                  {typeof renderActions === "function" &&
+                    renderActions(row, helpers)}
 
                   {!hideCrudActions && (
                     <>
@@ -1457,7 +1505,9 @@ export default function PeopleTable({
           </div>
 
           <div className="flex items-center gap-2">
-            {Boolean(typeof addLabel === "string" ? addLabel.trim() : addLabel) && (
+            {Boolean(
+              typeof addLabel === "string" ? addLabel.trim() : addLabel
+            ) && (
               <button
                 onClick={handleAddNew}
                 className="h-9 rounded-full border px-3 text-sm"
@@ -1582,7 +1632,7 @@ export default function PeopleTable({
         title={`Edit ${title}`}
         subtitle={
           selectedRow
-            ? (selectedRow.email || selectedRow.name || selectedRow.title || "")
+            ? selectedRow.email || selectedRow.name || selectedRow.title || ""
             : ""
         }
       >
