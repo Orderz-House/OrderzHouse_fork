@@ -5,7 +5,7 @@ export default function TopBar({ title, onToggleSidebar, rightContent }) {
   return (
     <div
       className="
-        sticky top-0 z-40
+        sticky top-0 z-20
         -mx-3 md:-mx-6 px-3 md:px-6
         h-[69px]
         flex items-center justify-between
