@@ -3,6 +3,7 @@ import { Users, Briefcase, Handshake } from "lucide-react";
 import HeroSection from './sections/Hero';
 import Categories from './sections/Categories';
 import Faq from './sections/Faq';
+import LiveActivity from './sections/LiveActivity';
 import LogoGrid from './sections/logoGrid'; 
 import communityImg from "../../assets/community.jpg";
 
@@ -17,6 +18,9 @@ export default function OrderzHousePageRedesign() {
 
       {/* Categories Section */}
       <Categories />
+
+      {/* Live activity counters (added, placed directly under Popular Services) */}
+      <LiveActivity />
 
       {/* Community Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

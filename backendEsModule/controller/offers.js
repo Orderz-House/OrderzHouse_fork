@@ -45,7 +45,8 @@ export const sendOffer = async (req, res) => {
     if (!freelancerId)
       return res.status(401).json({ success: false, message: "Unauthorized" });
 
-    if (!projectId || bid_amount == null || !proposal) {
+    if (!projectId || bid_amount == null)
+{
       return res
         .status(400)
         .json({ success: false, message: "Missing required fields" });

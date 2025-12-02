@@ -113,9 +113,18 @@ export default function ProjectDetails({ mode: propMode }) {
           toast.error("Please enter an offer amount.");
           return;
         }
-        response = await sendOfferApi(id, { offer_amount: offerAmount, message: "" }, token);
+response = await sendOfferApi(
+  id,
+  { 
+    offer_amount: offerAmount,
+    message: "",           // IMPORTANT: backend expects "message" here
+    delivery_time: 0,      // optional but prevents backend errors
+    cover_letter: ""       // optional but prevents backend errors
+  },
+  token
+);
       } else {
-        response = await applyToProjectApi(id, { message: "" }, token);
+        response = await applyToProjectApi(id, { proposal: "" }, token);
       }
       toast.success(response?.message || "Application sent successfully!");
       setHasApplied(true);

@@ -41,7 +41,7 @@ export const getProjectsByCategory = async (req, res) => {
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.category_id = $1
-        AND p.status = 'active'
+        AND p.status = 'active' OR p.status = 'bidding'
         AND p.is_deleted = false
       ORDER BY p.created_at DESC
       `,
@@ -84,7 +84,7 @@ export const getProjectsBySubCategory = async (req, res) => {
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_category_id = $1
-        AND p.status = 'active'
+        AND p.status = 'active' OR p.status = 'bidding'
         AND p.is_deleted = false
       ORDER BY p.created_at DESC
       `,
@@ -127,7 +127,7 @@ export const getProjectsBySubSubCategory = async (req, res) => {
       JOIN categories c ON sc.category_id = c.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_sub_category_id = $1
-        AND p.status = 'active'
+        AND p.status = 'active' OR p.status = 'bidding'
         AND p.is_deleted = false
       ORDER BY p.created_at DESC
       `,

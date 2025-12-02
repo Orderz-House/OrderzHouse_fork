@@ -15,6 +15,7 @@ export const ToastProvider = ({ children }) => {
     success: (msg) => showToast(msg, "success"),
     error: (msg) => showToast(msg, "error"),
     info: (msg) => showToast(msg, "info"),
+    showToast,
   };
 
   return (
