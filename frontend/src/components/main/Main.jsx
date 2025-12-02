@@ -3,6 +3,7 @@ import { Users, Briefcase, Handshake } from "lucide-react";
 import HeroSection from './sections/Hero';
 import Categories from './sections/Categories';
 import Faq from './sections/Faq';
+import LiveActivity from './sections/LiveActivity';
 import LogoGrid from './sections/logoGrid'; 
 import communityImg from "../../assets/community.jpg";
 
@@ -13,7 +14,8 @@ export default function OrderzHousePageRedesign() {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Merriweather', serif" }}>
       {/* Hero Section */}
-      <HeroSection onSearch={handleSearch} />
+      <HeroSection onSearch={handleSearch} />,
+      
 
       {/* Categories Section */}
       <Categories />

@@ -5,6 +5,7 @@ import {
   sendOffer,
   getMyOffersForProject,
   getOffersForMyProjects,
+  getOffersForProject,
   approveOrRejectOffer,
   getAllProjectForOffer,
   cancelOffer,
@@ -42,6 +43,13 @@ offersRouter.get(
   "/my-projects/offers",
   authentication,
   getOffersForMyProjects
+);
+
+// Get offers for a specific project (client-owner only)
+offersRouter.get(
+  "/project/:projectId/offers",
+  authentication,
+  getOffersForProject
 );
 
 // Approve or reject an offer (client)

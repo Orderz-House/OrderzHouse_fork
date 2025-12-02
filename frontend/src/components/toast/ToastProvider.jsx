@@ -10,8 +10,16 @@ export const ToastProvider = ({ children }) => {
     setToast({ message, type });
   }, []);
 
+  // ✅ provide helper methods
+  const toastAPI = {
+    success: (msg) => showToast(msg, "success"),
+    error: (msg) => showToast(msg, "error"),
+    info: (msg) => showToast(msg, "info"),
+    showToast,
+  };
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={toastAPI}>
       {children}
       {toast.message && (
         <Toast

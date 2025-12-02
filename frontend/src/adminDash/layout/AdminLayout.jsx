@@ -3,37 +3,27 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import {
-  Home,
-  Users,
-  BookOpen,
-  FolderKanban,
-  Calendar,
-  Shield,
-  Clipboard,
-  FileText,
-  CreditCard,
-  DollarSign,
-  BarChart2,
-  User,
-  LogOut,
-  ListChecks,
-  Star,
+  Home, Users, BookOpen, FolderKanban, Calendar, Shield, Clipboard, FileText,
+  CreditCard, DollarSign, BarChart2, User, LogOut, ListChecks, Star,
+  CalendarDays, History, HelpCircle, ListChecks as SurveyIcon, PlaySquare
 } from "lucide-react";
-
 import Cookies from "js-cookie";
 import { setLogout } from "../../slice/auth/authSlice";
 import { disconnectSocket } from "../../services/socketService";
+import TopBar from "../components/TopBar.jsx";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
+  if (roleId === 4) return "apm";            // NEW: appointment manager
   return "user";
 }
 
 function getBasePrefix(pathname) {
   if (pathname.startsWith("/client")) return "/client";
   if (pathname.startsWith("/freelancer")) return "/freelancer";
+  if (pathname.startsWith("/apm")) return "/apm";     // NEW
   return "/admin";
 }
 
@@ -41,27 +31,42 @@ function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
   const p = pathname.replace(base, "") || "/";
 
+  // common
   if (p === "/" || p === "") return "overview";
-  if (p.startsWith("/people/admins")) return "admins";
-  if (p.startsWith("/people/clients")) return "clients";
-  if (p.startsWith("/people/freelancers")) return "freelancers";
-  if (p.startsWith("/learning/courses")) return "courses";
-  if (p.startsWith("/learning/categories")) return "categories";
-  if (p.startsWith("/operation/appointments")) return "appointments";
-  if (p.startsWith("/operation/verifications")) return "verifications";
-  if (p.startsWith("/operation/projects")) return "projects";
-  if (p.startsWith("/operation/tasks")) return "tasks";
-  if (p.startsWith("/community/blogs")) return "blogs";
-  if (p.startsWith("/finance/payments")) return "payments";
-  if (p.startsWith("/finance/plans")) return "plans";
-  if (p.startsWith("/analytics")) return "analytics";
-  if (p.startsWith("/projects")) return "projects";
-  if (p.startsWith("/payments")) return "payments";
-  if (p.startsWith("/tasks")) return "tasks";
-  if (p.startsWith("/courses")) return "courses";
-  if (p.startsWith("/appointments")) return "appointments";
-  if (p.startsWith("/my-subscription")) return "my-subscription";
-  if (p.startsWith("/profile")) return "profile";
+
+  // admin
+  if (base === "/admin") {
+    if (p.startsWith("/people/admins")) return "admins";
+    if (p.startsWith("/people/clients")) return "clients";
+    if (p.startsWith("/people/freelancers")) return "freelancers";
+    if (p.startsWith("/learning/courses")) return "courses";
+    if (p.startsWith("/learning/categories")) return "categories";
+    if (p.startsWith("/operation/appointments")) return "appointments";
+    if (p.startsWith("/operation/verifications")) return "verifications";
+    if (p.startsWith("/operation/projects")) return "projects";
+    if (p.startsWith("/operation/tasks")) return "tasks";
+    if (p.startsWith("/community/blogs")) return "blogs";
+    if (p.startsWith("/finance/payments")) return "payments";
+    if (p.startsWith("/finance/plans")) return "plans";
+    if (p.startsWith("/analytics")) return "analytics";
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/tasks")) return "tasks";
+    if (p.startsWith("/courses")) return "courses";
+    if (p.startsWith("/appointments")) return "appointments";
+    if (p.startsWith("/my-subscription")) return "my-subscription";
+    if (p.startsWith("/profile")) return "profile";
+  }
+
+  // apm
+  if (base === "/apm") {
+    if (p.startsWith("/appointment")) return "appointment";
+    if (p.startsWith("/history")) return "history";
+    if (p.startsWith("/questions")) return "questions";
+    if (p.startsWith("/survey")) return "survey";
+    if (p.startsWith("/videos")) return "videos";
+  }
+
   return "overview";
 }
 
@@ -86,6 +91,22 @@ function getNav(role, navigate, base, onLogout) {
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
       { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+    ];
+    return { navigation, bottomNavigation };
+  }
+
+  if (role === "apm") {
+    const navigation = [
+      { id: "overview",    name: "Overview",    icon: Home,        onClick: () => navigate(`${base}/`) },
+      { id: "appointment", name: "Appointment", icon: CalendarDays, onClick: () => navigate(`${base}/appointment`) },
+      { id: "history",     name: "History",     icon: History,      onClick: () => navigate(`${base}/history`) },
+      { id: "questions",   name: "Questions",   icon: HelpCircle,   onClick: () => navigate(`${base}/questions`) },
+      { id: "survey",      name: "Survey",      icon: SurveyIcon,   onClick: () => navigate(`${base}/survey`) },
+      { id: "videos",      name: "Videos",      icon: PlaySquare,   onClick: () => navigate(`${base}/videos`) },
+    ];
+    const bottomNavigation = [
+      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
+      { id: "logout",  name: "Logout",  icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }
@@ -139,27 +160,54 @@ export default function AdminLayout() {
   const role = mapRole(roleId);
 
   const handleLogout = () => {
-    try {
-      disconnectSocket();
-    } catch (_) {}
+    try { disconnectSocket(); } catch (_) {}
     Cookies.remove("userData");
     dispatch(setLogout());
-    try {
-      localStorage.removeItem("roled");
-    } catch (_) {}
+    try { localStorage.removeItem("roled"); } catch (_) {}
     navigate("/");
     window.location.reload();
   };
 
   const base = getBasePrefix(location.pathname);
-  const { navigation, bottomNavigation } = getNav(role, navigate, base, handleLogout);
+  const { navigation, bottomNavigation } = getNav(
+    role,
+    navigate,
+    base,
+    handleLogout
+  );
 
-  const [activePage, setActivePage] = useState(() => getActiveFromPath(location.pathname));
+  const [activePage, setActivePage] = useState(
+    () => getActiveFromPath(location.pathname)
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // NEW: تحكم في ظهور السايدبار الديسكتوب + محتوى التوب بار
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(true);
+  const [pageTitle, setPageTitle] = useState("Overview");
+  const [topBarRight, setTopBarRight] = useState(null);
+
+  // تحديث الصفحة النشطة من الـ path
   useEffect(() => {
     setActivePage(getActiveFromPath(location.pathname));
   }, [location.pathname]);
+
+  // تحديث عنوان الصفحة حسب الـ navigation
+  useEffect(() => {
+    const allItems = [...navigation, ...bottomNavigation];
+    const found = allItems.find((item) => item.id === activePage);
+    setPageTitle(found?.name || "Overview");
+  }, [navigation, bottomNavigation, activePage]);
+
+  // زر إظهار/إخفاء السايدبار
+  const handleToggleSidebar = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      // موبايل → افتح/اغلق منيو الموبايل
+      setIsMobileMenuOpen((prev) => !prev);
+    } else {
+      // ديسكتوب → اخفي/اظهر السايدبار
+      setShowDesktopSidebar((prev) => !prev);
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] md:min-h-screen flex bg-slate-50 text-slate-800">
@@ -167,7 +215,9 @@ export default function AdminLayout() {
         activePage={activePage}
         setActivePage={(id) => {
           setActivePage(id);
-          const found = [...navigation, ...bottomNavigation].find((item) => item.id === id);
+          const found = [...navigation, ...bottomNavigation].find(
+            (item) => item.id === id
+          );
           if (found?.onClick) found.onClick();
         }}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -175,11 +225,33 @@ export default function AdminLayout() {
         navigation={navigation}
         bottomNavigation={bottomNavigation}
         onLogout={handleLogout}
+        showDesktopSidebar={showDesktopSidebar} // 👈 جديد
       />
 
-      <main className="flex-1 px-3 md:px-6 py-[104px] md:py-6">
-        <Outlet />
-      </main>
+      <main
+  className="flex-1 px-3 md:px-6  relative"
+  style={{
+    backgroundColor: "#f8fafc",
+    backgroundImage:
+      "radial-gradient(circle at top right, rgba(2, 128, 144, 0.05), transparent 60%), radial-gradient(circle at bottom left, rgba(2, 128, 144, 0.05), transparent 60%)",
+    backgroundRepeat: "no-repeat",
+  }}
+>
+  <TopBar
+    title={pageTitle}
+    onToggleSidebar={handleToggleSidebar}
+    rightContent={topBarRight}
+  />
+
+    <Outlet
+      context={{
+        setTopBarRight,
+        clearTopBarRight: () => setTopBarRight(null),
+      }}
+    />
+</main>
+
     </div>
   );
 }
+

@@ -11,15 +11,15 @@ import {
   markAppointmentCompleted
 } from "../controller/appointment.js";
 
-const appointmentsRouter = express.Router();
+const appointmentRouter = express.Router();
 
-appointmentsRouter.post("/admin/appointments", authentication, createAppointmentByAdmin);
-appointmentsRouter.post("/", authentication, makeAppointment);
-appointmentsRouter.patch("/reschedule/:appointment_id", authentication, rescheduleAppointment);
-appointmentsRouter.patch("/accept/:appointment_id", authentication, acceptAppointment);
-appointmentsRouter.patch("/reject/:appointment_id", authentication, rejectAppointment);
-appointmentsRouter.patch("/complete/:appointment_id", authentication, markAppointmentCompleted);
-appointmentsRouter.get("/get", authentication, getAllAppointments);
-appointmentsRouter.get("/my", authentication, getAppointmentsByFreelancer);
+appointmentRouter.post("/admin/appointments", authentication, createAppointmentByAdmin);
+appointmentRouter.post("/", authentication, makeAppointment);
+appointmentRouter.patch("/reschedule/:appointment_id", authentication, rescheduleAppointment);
+appointmentRouter.patch("/accept/:appointment_id", authentication, acceptAppointment);
+appointmentRouter.patch("/reject/:appointment_id", authentication, rejectAppointment);
+appointmentRouter.patch("/complete/:appointment_id", authentication, markAppointmentCompleted);
+appointmentRouter.get("/get", authentication, getAllAppointments);
+appointmentRouter.get("/my", authentication, getAppointmentsByFreelancer);
 
-export default appointmentsRouter;
+export default appointmentRouter;

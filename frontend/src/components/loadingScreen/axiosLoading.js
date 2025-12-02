@@ -18,7 +18,9 @@ function isSilent(config = {}) {
   const headerSilent = config.headers && (config.headers["x-silent"] === "1" || config.headers["x-Silent"] === "1");
   const url = String(config.url || "");
   const urlSilent =
-    url.includes("/notifications") || url.includes("/notifications/count");
+    url.includes("/notifications") ||
+    url.includes("/notifications/count") ||
+    url.includes("/chat");
   return !!(config.__silent || headerSilent || config.meta?.silent || urlSilent);
 }
 
@@ -31,8 +33,10 @@ axios.interceptors.request.use(
     return config;
   },
   (error) => {
-    pending = Math.max(0, pending - 1);
-    notify();
+    if (!isSilent(error.config)) {
+      pending = Math.max(0, pending - 1);
+      notify();
+    }
     return Promise.reject(error);
   }
 );

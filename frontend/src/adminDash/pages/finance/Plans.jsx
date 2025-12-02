@@ -254,23 +254,7 @@ export default function Plans() {
   // ---------------------------
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
-          Plans
-        </h1>
-        {/* New Blog */}
-        <button
-          onClick={openAdd}
-          className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
-          style={{ borderColor: PRIMARY, color: PRIMARY }}
-          title="Add Plan"
-        >
-          <FiPlus />
-          <span className="hidden sm:inline">Add Plan</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
+    
 
       {loading && (
         <div className="text-center py-8 text-slate-500 text-base">

@@ -224,49 +224,8 @@ export default function Analytics() {
   const ICONS = [Users, Folder, ClipboardList, DollarSign, TrendingUp, Activity, CalendarDays, CheckCircle2];
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5" style={ringStyle}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-semibold" style={{ color: T.dark }}>
-              Analytics
-            </h1>
-            <p className="text-slate-500 text-sm">System wide KPIs and trends</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                className="pl-9 pr-3 py-2 rounded-xl border bg-white text-sm outline-none focus:ring-2 focus:ring-slate-200"
-                placeholder="Search metric…"
-                style={ringStyle}
-              />
-            </div>
-            {/* <select
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              className="rounded-xl border bg-white px-3 py-2 text-sm outline-none"
-              style={ringStyle}
-              title="Range"
-            >
-              <option value="last_7">Last 7 days</option>
-              <option value="last_30">Last 30 days</option>
-              <option value="qtd">Quarter to date</option>
-              <option value="ytd">Year to date</option>
-            </select> */}
-            <button
-              className="rounded-xl px-3 py-2 bg-white hover:bg-slate-50 text-sm inline-flex items-center gap-2"
-              style={ringStyle}
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-4 py-6 sm:space-y-6">
+    
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Line */}

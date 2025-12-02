@@ -438,6 +438,45 @@ export const getRelatedFreelancers = async (req, res) => {
 };
 
 /**
+ * DELETE a project owned by authenticated client (soft delete via is_deleted flag)
+ * Route: DELETE /projects/myprojects/:projectId
+ */
+export const deleteProjectByOwner = async (req, res) => {
+  try {
+    const userId = req.token?.userId;
+    const { projectId } = req.params;
+
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!projectId) return res.status(400).json({ success: false, message: "Missing projectId" });
+
+    // Verify ownership
+    const { rows } = await pool.query(
+      `SELECT id, user_id, title FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!rows.length) return res.status(404).json({ success: false, message: "Project not found" });
+    const project = rows[0];
+    if (String(project.user_id) !== String(userId)) return res.status(403).json({ success: false, message: "Not authorized to delete this project" });
+
+    await pool.query(`UPDATE projects SET is_deleted = true WHERE id = $1`, [projectId]);
+
+    // log / notify
+    try {
+      await LogCreators.projectOperation(userId, ACTION_TYPES.PROJECT_DELETE, projectId, true, { title: project.title });
+    } catch (e) {
+      // don't fail the request due to logging
+      console.error("project delete log error:", e);
+    }
+
+    return res.status(200).json({ success: true, message: "Project deleted successfully", data: { id: projectId } });
+  } catch (err) {
+    console.error("deleteProjectByOwner error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
  * -------------------------------
  * RESUBMIT WORK AFTER REVISION
  * Statuses:

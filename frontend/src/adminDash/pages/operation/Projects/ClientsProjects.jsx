@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import PeopleTable from "../../Tables";
+import { useToast } from "../../../../components/toast/ToastProvider";
 import {
   MessageSquare,
   SendHorizontal,
@@ -24,7 +25,7 @@ const ringStyle = { border: `1px solid ${T.ring}` };
 
 /* ---------- Axios ---------- */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL: import.meta.env.VITE_APP_API_URL || "/api",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -38,6 +39,51 @@ export default function Projects() {
 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState(null);
+  const toast = useToast();
+  const [offersMap, setOffersMap] = useState({});
+
+  // 🔍 جلب إحصائيات العروض لكل مشاريع العميل
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await api.get("/offers/my-projects/offers", {
+          headers: token
+            ? { authorization: `Bearer ${token}` }
+            : undefined,
+        });
+
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.offers)
+          ? data.offers
+          : [];
+
+        const map = {};
+        for (const o of list) {
+          const pid = o.project_id ?? o.projectId;
+          if (!pid) continue;
+          if (!map[pid]) {
+            map[pid] = { total: 0, pending: 0, accepted: 0 };
+          }
+          map[pid].total += 1;
+          const status = String(o.offer_status || "").toLowerCase();
+          if (status === "pending") map[pid].pending += 1;
+          if (status === "accepted") map[pid].accepted += 1;
+        }
+
+        if (!cancelled) setOffersMap(map);
+      } catch (e) {
+        console.error("Failed to fetch offers for client projects", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   // Actions inside project cards
   const renderActions = (row, helpers) => {
@@ -57,6 +103,17 @@ export default function Projects() {
         >
           <MessageSquare className="w-3 h-3" />
           Chat
+        </button>
+        <button
+          onClick={() =>
+            navigate(`${base}/project/${encodeURIComponent(id)}`, {
+              state: { project: row, readOnly: true, role: "client", tab: "offers" },
+            })
+          }
+          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+          style={ringStyle}
+        >
+          Offers
         </button>
         <button
           onClick={() => { setReviewFor(row); setReviewOpen(true); }}
@@ -83,17 +140,64 @@ export default function Projects() {
           { label: "Budget", key: "budget" },
           { label: "Progress", key: "progress" },
           { label: "Status", key: "status" },
+          {
+            label: "Offers",
+            key: "offers",
+            render: (row) => {
+              const pid = row.id ?? row._id;
+              const stats = offersMap[pid];
+              if (!stats) return "0";
+              const parts = [`${stats.total}`];
+              if (stats.pending) parts.push(`pending: ${stats.pending}`);
+              if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
+              return parts.join(" | ");
+            },
+          },
         ]}
         formFields={[]}
         desktopAsCards
         crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
         renderActions={renderActions}
+        renderSubtitle={(row) => {
+          const pid = row.id ?? row._id;
+          const stats = offersMap[pid];
+          if (!stats) {
+            return (
+              <span className="text-xs text-slate-400">
+                Offers: 0
+              </span>
+            );
+          }
+          return (
+            <span className="text-xs text-slate-600">
+              Offers:{" "}
+              <span className="font-semibold">{stats.total}</span>
+              {stats.pending ? ` • Pending: ${stats.pending}` : ""}
+              {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
+            </span>
+          );
+        }}
         // ⬇️ النقرة على صورة الكارد تفتح صفحة التفاصيل مع بادئة الدور
         onCardClick={(row, h) =>
           navigate(`${base}/project/${h.getId(row)}`, {
             state: { project: row, readOnly: true, role: "client" },
           })
         }
+          onDelete={async (row, idx, helpers) => {
+            try {
+              const projectId = row.id ?? row._id;
+              if (!projectId) throw new Error("Missing project ID");
+              // API base is set to VITE_APP_API_URL or '/api' — call project delete path relative to that
+              await api.delete(`/projects/myprojects/${projectId}`, {
+                headers: token ? { authorization: `Bearer ${token}` } : undefined,
+              });
+              helpers.setRows((prev) => prev.filter((p, i) => i !== idx));
+              toast.success("Project deleted successfully.");
+            } catch (err) {
+              const msg = err?.response?.data?.message || err?.message || "Failed to delete project.";
+              toast.error(msg);
+            }
+          }}
       />
 
       {reviewOpen && reviewFor && (

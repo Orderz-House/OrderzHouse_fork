@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import LiveActivity from './LiveActivity';
 import axios from "axios";
 import GradientButton from "../../buttons/GradientButton.jsx";
 import { useNavigate } from "react-router-dom";
@@ -305,7 +306,9 @@ export default function HeroFreelancer({ onSearch }) {
               Explore talents
             </GradientButton>
           </div>
-
+<div className="mt-6">
+          <LiveActivity />
+        </div>
           {openList && (
             <div
               className="fixed z-[1000] rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(2,128,144,0.12)] overflow-hidden"
@@ -361,19 +364,22 @@ export default function HeroFreelancer({ onSearch }) {
             </div>
           )}
 
-          {/* Stats */}
+          {/* Stats
           <div className="mt-10 grid grid-cols-3 max-w-xl gap-6">
             <Stat num="10K+" label="Creative Professionals" color={DARK} />
             <Stat num="50K+" label="Projects Delivered" color={THEME} />
             <Stat num="4.9★" label="Client Satisfaction" color={THEME2} />
-          </div>
+          </div> */}
 
           {!loading && error && (
             <div className="mt-6 text-sm text-red-600">Failed to load top rated: {error}</div>
           )}
         </div>
 
-        {/* Right */}
+        {/* Live Activity - Under search, original style */}
+        {/* <div className="mt-6">
+          <LiveActivity />
+        </div> */}
         <div className="relative z-0 h-[240px] md:h-[560px] overflow-hidden pointer-events-none">
           <div className="absolute inset-0 -z-10 blur-3xl opacity-50" style={{ background: `radial-gradient(60% 60% at 50% 40%, ${THEME}22, transparent)` }} />
           <div className="block md:hidden h-full">

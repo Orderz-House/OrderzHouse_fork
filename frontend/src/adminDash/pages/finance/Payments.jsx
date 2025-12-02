@@ -146,51 +146,6 @@ export default function Payments() {
 
   return (
     <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-      {/* Header */}
-      <header className={`${card}`} style={ringStyle}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold" style={{ color: T.dark }}>
-              {tableTitle}
-            </h1>
-            <p className="text-slate-500 text-sm">
-              {role === "admin"
-                ? "Finance overview · admin"
-                : role === "client"
-                ? "Your payments & invoices"
-                : role === "freelancer"
-                ? "Available balance & payouts"
-                : "Finance"}
-            </p>
-          </div>
-
-          {role === "admin" ? (
-            <button
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50"
-              style={ringStyle}
-              onClick={() => exportCSV(filtered, "payments_admin.csv")}
-              title="Export CSV"
-            >
-              <Download className="w-4 h-4" />
-              <span className="text-sm">Export</span>
-            </button>
-          ) : role === "client" ? (
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50" style={ringStyle}>
-                <CreditCard className="w-4 h-4" />
-                <span className="text-sm">Pay invoice</span>
-              </button>
-            </div>
-          ) : role === "freelancer" ? (
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white hover:bg-slate-50" style={ringStyle}>
-                <Download className="w-4 h-4" />
-                <span className="text-sm">Export</span>
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </header>
 
       {role === "freelancer" && (
         <div className="grid gap-3 sm:gap-4 grid-cols-2">
@@ -198,8 +153,6 @@ export default function Payments() {
           <Kpi title="Withdrawable" value={fmtMoney(available)} icon={<CreditCard />} />
         </div>
       )}
-
-    
 
         <PeopleTable
           title={tableTitle}

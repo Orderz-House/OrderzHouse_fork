@@ -5,7 +5,7 @@ export const fetchAllFreelancers = createAsyncThunk(
   'freelance/fetchAllFreelancers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('https://backend.thi8ah.com/users/allfreelance');
+      const response = await axios.get('http://localhost:5000/users/allfreelance');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
