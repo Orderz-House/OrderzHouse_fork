@@ -1,425 +1,201 @@
-import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, AtSign, X, ImageIcon, Paperclip, Smile } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getSocket } from "../../services/socketService";
+import { Send, Paperclip, Smile, Users, Briefcase, MessageSquare, ArrowLeft, Loader2 } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_APP_API_URL;
+
+const colorPalette = {
+  primary: "#028090",
+  accent: "#05668D",
+};
+
+const getUserInitials = (name) => {
+  if (!name) return "?";
+  const parts = name.split(" ").filter(Boolean);
+  return parts.length > 0 ? parts.map((n) => n[0]).join("").toUpperCase() : "?";
+};
 
 export default function ChatPage() {
-  const { projectId, taskId } = useParams();
+  const { chatType: typeFromUrl, chatId: idFromUrl } = useParams();
+  const navigate = useNavigate();
   const { token, userData } = useSelector((state) => state.auth);
+  const socket = getSocket();
 
+  const [conversations, setConversations] = useState([]);
+  const [activeChatDetails, setActiveChatDetails] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [showMentionList, setShowMentionList] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
-  const [filteredMembers, setFilteredMembers] = useState([]);
-  const [locked, setLocked] = useState(false);
+  
+  const [isConversationsLoading, setIsConversationsLoading] = useState(true);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState(null);
 
-  const socket = getSocket();
   const containerRef = useRef(null);
-  const inputRef = useRef(null);
 
-  const chatType = projectId ? "project" : "task";
-  const chatId = projectId || taskId;
-  const API_BASE = "https://backend.thi8ah.com";
-
-  /*===== Helpers =====*/
-
-  const sanitize = (txt = "") =>
-    String(txt).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-  const formatMessage = (text) =>
-    sanitize(text)?.replace(
-      /@\[([^\]]+)\]\((\d+)\)/g,
-      (_, name) =>
-        `<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-medium mx-0.5">@${sanitize(
-          name
-        )}</span>`
-    );
-
-  const getAvatarColor = (id) => {
-    const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500", "bg-orange-500"];
-    return colors[id % colors.length];
-  };
-
-  const getUserInitials = (name) =>
-    name
-      ? name
-          .split(" ")
-          .filter(Boolean)
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-      : "?";
-
-  const scrollToBottom = () => {
-    if (containerRef.current) containerRef.current.scrollTop = containerRef.current.scrollHeight;
-  };
-
-  /*===== Fetch team members (for mentions) — project only =====*/
   useEffect(() => {
-    if (!projectId || !token || !API_BASE) return;
+    if (!token) return;
+    setIsConversationsLoading(true);
+    axios.get(`${API_BASE}/chat/user-chats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setConversations(res.data.chats || []))
+      .catch(err => {
+        console.error("Failed to fetch user conversations:", err);
+        setError("Could not load conversations.");
+      })
+      .finally(() => setIsConversationsLoading(false));
+  }, [token]);
 
-    const fetchTeamMembers = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/projects/${projectId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const project = res.data?.project || {};
-
-        const assignments = Array.isArray(project.assignments) ? project.assignments : [];
-        const freelancers = assignments
-          .map((a) => a?.freelancer)
-          .filter(Boolean)
-          .map((f) => ({
-            id: f.id,
-            name: `${f.first_name || ""} ${f.last_name || ""}`.trim() || f.username || `User#${f.id}`,
-            email: f.email || "",
-            avatar: f.avatar || f.profile_pic_url || null,
-          }));
-
-        const owner = project.project_owner
-          ? {
-              id: project.project_owner.id,
-              name:
-                `${project.project_owner.first_name || ""} ${project.project_owner.last_name || ""}`.trim() ||
-                project.project_owner.username ||
-                `User#${project.project_owner.id}`,
-              email: project.project_owner.email || "",
-              avatar: project.project_owner.avatar || project.project_owner.profile_pic_url || null,
-            }
-          : null;
-
-        const allMembers = [...freelancers, ...(owner ? [owner] : [])];
-        const uniq = [];
-        const seen = new Set();
-        for (const m of allMembers) {
-          if (!m?.id || seen.has(m.id)) continue;
-          seen.add(m.id);
-          uniq.push(m);
-        }
-
-        setTeamMembers(uniq);
-      } catch (err) {
-        console.error("Error fetching team members:", err);
-        setTeamMembers([]); 
-      }
-    };
-
-    fetchTeamMembers();
-  }, [projectId, token, API_BASE]);
-
-  /*===== Fetch messages =====*/
   useEffect(() => {
-    if (!chatId || !token || !API_BASE) return;
+    if (!idFromUrl || !typeFromUrl || !token) {
+      setActiveChatDetails(null);
+      setMessages([]);
+      return;
+    }
 
-    const fetchMessages = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/chat/${chatType}/${chatId}/messages`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const msgs = Array.isArray(res.data?.messages) ? res.data.messages : [];
-        setMessages(msgs);
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-        setMessages([]);
-      }
-    };
-    fetchMessages();
-  }, [chatId, chatType, token, API_BASE]);
+    setIsChatLoading(true);
+    setError(null);
+    const detailEndpoint = `/${typeFromUrl}s/${idFromUrl}`;
+    const messagesEndpoint = `/chat/${typeFromUrl}/${idFromUrl}/messages`;
 
-  /*===== Socket setup =====*/
+    Promise.all([
+      axios.get(`${API_BASE}${detailEndpoint}`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}${messagesEndpoint}`, { headers: { Authorization: `Bearer ${token}` } })
+    ]).then(([detailRes, messagesRes]) => {
+      setActiveChatDetails(detailRes.data.project || detailRes.data.task);
+      setMessages(messagesRes.data.messages || []);
+    }).catch(err => {
+      console.error("Failed to fetch chat details or messages:", err);
+      setError(`Could not load chat for ${typeFromUrl} #${idFromUrl}.`);
+    }).finally(() => setIsChatLoading(false));
+  }, [idFromUrl, typeFromUrl, token]);
+
   useEffect(() => {
-    if (!socket || !chatId) return;
-
-    const roomData = projectId ? { project_id: projectId } : { task_id: taskId };
-
+    if (!socket || !idFromUrl) return;
+    const roomData = { [typeFromUrl === 'project' ? 'project_id' : 'task_id']: idFromUrl };
     socket.emit("join_room", roomData);
-    const onJoined = () => console.log("Joined chat room");
-    const onJoinError = (e) => console.error("Join error:", e);
-    const onNewMessage = ({ message }) => setMessages((prev) => [...prev, message]);
-    const onSystemMessage = ({ message }) => {
-      alert(message);
-      setLocked(true);
-    };
 
-    socket.on("room_joined", onJoined);
-    socket.on("join_error", onJoinError);
-    socket.on("chat:new_message", onNewMessage);
-    socket.on("chat:system_message", onSystemMessage);
+    const handleNewMessage = ({ message }) => {
+      if (String(message.project_id) === idFromUrl || String(message.task_id) === idFromUrl) {
+        setMessages(prev => [...prev, message]);
+      }
+    };
+    
+    const handleSystemMessage = ({ message }) => alert(message);
+
+    socket.on("chat:new_message", handleNewMessage);
+    socket.on("chat:system_message", handleSystemMessage);
 
     return () => {
       socket.emit("leave_room", roomData);
-      socket.off("room_joined", onJoined);
-      socket.off("join_error", onJoinError);
-      socket.off("chat:new_message", onNewMessage);
-      socket.off("chat:system_message", onSystemMessage);
+      socket.off("chat:new_message", handleNewMessage);
+      socket.off("chat:system_message", handleSystemMessage);
     };
-  }, [socket, chatId, projectId, taskId]);
-  useEffect(scrollToBottom, [messages]);
+  }, [socket, idFromUrl, typeFromUrl]);
 
-  /*===== Mentions UI =====*/
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setNewMessage(value);
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = containerRef.current.scrollHeight;
+  }, [messages]);
 
-    const lastAt = value.lastIndexOf("@");
-    if (lastAt !== -1) {
-      const query = value.substring(lastAt + 1);
-      setMentionQuery(query);
-      const base = teamMembers;
-      const filtered =
-        query.length > 0
-          ? base.filter(
-              (m) =>
-                m.name.toLowerCase().includes(query.toLowerCase()) ||
-                m.email.toLowerCase().includes(query.toLowerCase())
-            )
-          : base;
-      setFilteredMembers(filtered);
-      setShowMentionList(true);
-    } else {
-      setShowMentionList(false);
+  // ========================= THE FIX IS HERE =========================
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !typeFromUrl || !idFromUrl) return;
+    
+    // Use the dedicated 'isSending' state
+    setIsSending(true);
+    
+    const payload = { content: newMessage, [typeFromUrl === 'project' ? 'project_id' : 'task_id']: idFromUrl };
+
+    try {
+      const response = await axios.post(`${API_BASE}/chat/messages`, payload, { headers: { Authorization: `Bearer ${token}` } });
+      const sentMessage = response.data.sentMessage;
+      
+      // Instantly update the UI for the sender
+      setMessages(prev => [...prev, sentMessage]);
+      setNewMessage("");
+
+    } catch (err) {
+      console.error("Failed to send message:", err);
+      alert(err.response?.data?.message || "Error: Could not send message.");
+    } finally {
+      // Reset the 'isSending' state
+      setIsSending(false);
     }
   };
+  // =================================================================
 
-  const handleMentionSelect = (member) => {
-    const mentionText = `@[${member.name}](${member.id}) `;
-    const lastAt = newMessage.lastIndexOf("@");
-    if (lastAt !== -1) {
-      setNewMessage(newMessage.substring(0, lastAt) + mentionText);
-    } else {
-      setNewMessage((prev) => prev + mentionText);
-    }
-    setShowMentionList(false);
-    inputRef.current?.focus();
-  };
+  const showChatListOnMobile = !idFromUrl;
 
- /*===== Send message =====*/
-const handleSendMessage = async (e) => {
-  e.preventDefault();
-  if (!newMessage.trim() || isSubmitting || locked) return;
-  setIsSubmitting(true);
-
-  try {
-    const res = await axios.post(
-      `${API_BASE}/chat/messages`,
-      {
-        project_id: projectId || null,
-        task_id: taskId || null,
-        content: newMessage,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (res.data?.success) {
-      const sent = res.data.sentMessage || res.data.message || null;
-      if (sent) {
-        setMessages((prev) => [...prev, sent]);
-        if (socket) socket.emit("chat:new_message", { message: sent });
-      }
-    } else if (String(res.data?.message || "").toLowerCase().includes("locked")) {
-      setLocked(true);
-    }
-  } catch (err) {
-    console.error("Error sending message:", err?.response?.data || err);
-  } finally {
-    setNewMessage("");
-    setIsSubmitting(false);
-  }
-};
-  /*===== UI =====*/
   return (
-    <div className="p-6 h-150">
-      <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm">
-        {/* Header */}
-        <div className="bg-white px-6 py-4 border-b border-gray-200 rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-800 text-lg">
-                {projectId ? "Project Chat" : "Task Chat"}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {locked
-                  ? "🚫 This chat is locked due to a violation."
-                  : `Chat with your team (${teamMembers.length} members)`}
-              </p>
-            </div>
+    <div className="h-screen bg-gray-100">
+      <div className="w-full h-full max-w-6xl mx-auto flex bg-white md:rounded-2xl md:shadow-2xl md:border md:border-gray-200 md:my-4 md:h-[calc(100vh-2rem)] overflow-hidden">
+        
+        <div className={`w-full md:w-1/3 md:max-w-sm bg-white md:border-r md:border-gray-200 flex-col ${showChatListOnMobile ? 'flex' : 'hidden md:flex'}`}>
+          <div className="p-4 border-b border-gray-200"><h2 className="text-xl font-bold text-gray-800">Conversations</h2></div>
+          <div className="flex-1 overflow-y-auto">
+            {isConversationsLoading ? (
+              <div className="p-6 text-center flex items-center justify-center text-gray-500"><Loader2 className="w-5 h-5 mr-2 animate-spin" />Loading...</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {conversations.map((chat) => {
+                  const isProject = chat.chat_type === 'project';
+                  const isActive = Number(chat.id) === Number(idFromUrl) && chat.chat_type === typeFromUrl;
+                  return (
+                    <li key={`${chat.chat_type}-${chat.id}`} onClick={() => navigate(`/chat/${chat.chat_type}/${chat.id}`)} className={`p-4 flex items-center space-x-4 cursor-pointer transition-all duration-200 ${isActive ? 'bg-teal-50 md:border-r-4' : 'hover:bg-gray-100'}`} style={isActive ? {borderColor: colorPalette.primary} : {}}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0`} style={{backgroundColor: isProject ? colorPalette.accent : colorPalette.primary}}>{isProject ? <Users className="w-6 h-6" /> : <Briefcase className="w-6 h-6" />}</div>
+                      <div className="flex-1 overflow-hidden"><p className="font-semibold text-gray-800 truncate">{chat.name}</p><p className="text-sm text-gray-500 capitalize">{chat.chat_type}</p></div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
 
-        {/* Messages */}
-        <div ref={containerRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
-          {messages.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <MessageSquare className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No messages yet</h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                Start a conversation about this {projectId ? "project" : "task"}. Type @ to mention
-                team members.
-              </p>
-            </div>
+        <div className={`flex-1 flex flex-col relative ${showChatListOnMobile ? 'hidden md:flex' : 'flex'}`}>
+          {!idFromUrl ? (
+            <div className="flex-1 flex items-center justify-center bg-gray-50"><div className="text-center px-4"><MessageSquare className="mx-auto h-16 w-16 text-gray-300" /><h3 className="mt-4 text-2xl font-semibold text-gray-700">Welcome to Chat</h3><p className="mt-2 text-md text-gray-500">Select a conversation to get started.</p></div></div>
+          ) : isChatLoading ? (
+            <div className="flex-1 flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>
+          ) : error ? (
+             <div className="flex-1 flex items-center justify-center bg-gray-50"><p className="text-red-500">{error}</p></div>
           ) : (
-            messages.map((msg, index) => {
-              const isMine = msg.sender_id === userData?.id;
-              const sender = msg.sender || {};
-              const showAvatar = !isMine && (index === 0 || messages[index - 1].sender_id !== msg.sender_id);
-
-              // Ensure we have a safe time value
-              let timeText = "";
-              try {
-                const dt = msg.time_sent ? new Date(msg.time_sent) : null;
-                if (dt && !isNaN(dt)) {
-                  timeText = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                }
-              } catch {}
-
-              return (
-                <div key={msg.id || `${msg.sender_id}-${index}`} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-xs lg:max-w-md ${isMine ? "ml-12" : "mr-12"}`}>
-                    <div className="flex items-start">
-                      {!isMine && showAvatar && (
-                        <div className="flex-shrink-0 mr-2">
-                          {sender.avatar ? (
-                            <img
-                              src={sender.avatar}
-                              alt={sender.first_name || "User"}
-                              className="w-10 h-10 rounded-full"
-                            />
-                          ) : (
-                            <div
-                              className={`w-8 h-8 rounded-full ${getAvatarColor(
-                                msg.sender_id || 0
-                              )} text-white flex items-center justify-center text-sm font-medium`}
-                            >
-                              {getUserInitials(
-                                `${sender.first_name || ""} ${sender.last_name || ""}`.trim() ||
-                                  sender.username ||
-                                  "U"
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div
-                        className={`px-4 py-2 rounded-2xl ${
-                          isMine
-                            ? "bg-blue-600 text-white rounded-br-md"
-                            : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
-                        }`}
-                      >
-                        {!isMine && (
-                          <p className="text-sm font-semibold text-gray-700 mb-1">
-                            {sender.first_name} {sender.last_name}
-                          </p>
-                        )}
-                        <div
-                          className="text-sm leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: formatMessage(msg.content || "") }}
-                        />
-                        {timeText && (
-                          <span className={`text-xs ${isMine ? "text-white" : "text-gray-500"} ml-2 block text-right`}>
-                            {timeText}
-                          </span>
-                        )}
+            <>
+              <div className="bg-white px-4 py-3 border-b border-gray-200 flex items-center gap-4 z-10">
+                <button onClick={() => navigate('/chat')} className="md:hidden p-2 rounded-full hover:bg-gray-100"><ArrowLeft className="w-6 h-6 text-gray-600" /></button>
+                <div><h3 className="font-bold text-gray-800 text-lg">{activeChatDetails?.title}</h3></div>
+              </div>
+              <div ref={containerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                {messages.map((msg, index) => {
+                  const isMine = msg.sender_id === userData.id;
+                  const showAvatar = !isMine && (index === 0 || messages[index - 1]?.sender_id !== msg.sender_id);
+                  const timeText = new Date(msg.time_sent).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <div key={msg.id} className={`flex items-end gap-3 ${isMine ? "justify-end" : "justify-start"}`}>
+                      {!isMine && <div className="w-8 h-8 flex-shrink-0">{showAvatar && (msg.sender?.avatar ? <img src={msg.sender.avatar} alt={msg.sender.first_name} className="w-8 h-8 rounded-full object-cover" /> : <div style={{ backgroundColor: colorPalette.accent }} className="w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-bold">{getUserInitials(`${msg.sender?.first_name} ${msg.sender?.last_name}`)}</div>)}</div>}
+                      <div style={isMine ? { backgroundColor: colorPalette.primary } : {}} className={`max-w-lg px-4 py-3 rounded-2xl ${isMine ? "text-white rounded-br-none" : "bg-gray-200 text-gray-800 rounded-bl-none"}`}>
+                        {!isMine && showAvatar && <p style={{ color: colorPalette.accent }} className="text-sm font-bold mb-1">{`${msg.sender?.first_name} ${msg.sender?.last_name}`}</p>}
+                        <p className="text-sm" style={{ wordBreak: 'break-word' }}>{msg.content}</p>
+                        <p className={`text-xs mt-1 ${isMine ? 'text-teal-200' : 'text-gray-500'} text-right`}>{timeText}</p>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+              <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-200">
+                <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+                  <div className="relative flex-1"><input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="w-full bg-gray-50 border-2 border-gray-300 rounded-full px-5 py-3 pr-24 focus:outline-none transition-colors duration-300" onFocus={(e) => e.target.style.borderColor = colorPalette.primary} onBlur={(e) => e.target.style.borderColor = ''} disabled={isSending} />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2"><button type="button" className="p-2 text-gray-400 hover:text-gray-600"><Paperclip className="w-5 h-5" /></button><button type="button" className="p-2 text-gray-400 hover:text-gray-600"><Smile className="w-5 h-5" /></button></div>
                   </div>
-                </div>
-              );
-            })
+                  <button type="submit" className="text-white p-3 rounded-full disabled:opacity-50 transition-transform hover:scale-110" style={{ backgroundColor: colorPalette.primary }} disabled={!newMessage.trim() || isSending}><Send className="w-5 h-5" /></button>
+                </form>
+              </div>
+            </>
           )}
         </div>
-
-        {/* Input */}
-        {!locked && (
-          <div className="bg-white px-6 py-4 border-t border-gray-200 rounded-b-lg relative">
-            {showMentionList && (
-              <div className="absolute bottom-full left-6 right-6 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                <div className="p-2 border-b border-gray-200 flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-600">Mention a team member</span>
-                  <button
-                    onClick={() => setShowMentionList(false)}
-                    className="text-gray-400 hover:text-gray-600 p-1"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-                {filteredMembers.length > 0 ? (
-                  filteredMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      onClick={() => handleMentionSelect(member)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center"
-                    >
-                      {member.avatar ? (
-                        <img src={member.avatar} alt={member.name} className="w-8 h-8 rounded-full mr-3" />
-                      ) : (
-                        <div
-                          className={`w-8 h-8 rounded-full ${getAvatarColor(
-                            member.id
-                          )} text-white flex items-center justify-center text-sm font-medium mr-3`}
-                        >
-                          {getUserInitials(member.name)}
-                        </div>
-                      )}
-                      <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-2 text-sm text-gray-500">No matching members</div>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-              <div className="relative flex-1">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  placeholder="Type your message... @mention to tag someone"
-                  className="w-full border border-gray-300 rounded-full px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={isSubmitting}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-                  <button type="button" className="p-1 text-gray-400 hover:text-gray-600">
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                  <button type="button" className="p-1 text-gray-400 hover:text-gray-600">
-                    <ImageIcon className="w-4 h-4" />
-                  </button>
-                  <button type="button" className="p-1 text-gray-400 hover:text-gray-600">
-                    <Smile className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center shadow-sm hover:shadow-md transition-all"
-                disabled={isSubmitting || !newMessage.trim()}
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                  <Send className="w-5 h-5" />
-                )}
-              </button>
-            </form>
-            <div className="mt-2 text-xs text-gray-500 flex items-center">
-              <AtSign className="w-3 h-3 mr-1" />
-              Type @ to mention a team member
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -123,8 +123,6 @@ function App() {
           />
           
           
-         
-
           {/* --- Tasks --- */}
           <Route
             path="/tasks"
@@ -224,7 +222,7 @@ function App() {
 
           {/* --- Chat --- */}
           <Route
-            path="/chat/project/:projectId"
+            path="/chat"
             element={
               <ProtectedRoute>
                 <ChatPage />
@@ -232,7 +230,7 @@ function App() {
             }
           />
           <Route
-            path="/chat/task/:taskId"
+            path="/chat/:chatType/:chatId"
             element={
               <ProtectedRoute>
                 <ChatPage />

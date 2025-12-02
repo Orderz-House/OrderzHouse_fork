@@ -4,10 +4,14 @@ import {
   getMessagesByTaskId,
   createMessage,
   getAllChatsForAdmin,
+  getUserChats,
 } from "../controller/chats.js";
 import { authentication } from "../middleware/authentication.js";
 
 const chatsRouter = express.Router();
+
+// userchat
+chatsRouter.get("/user-chats", authentication, getUserChats);
 
 // Project chat
 chatsRouter.get("/project/:projectId/messages", authentication, getMessagesByProjectId);
