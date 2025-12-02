@@ -10,6 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import PeopleTable from "../Tables";
+import { MOCK_ENABLED, mockFetch } from "../mockData"; // 👈 جديد
 
 /* ---------- theme tokens ---------- */
 const T = {
@@ -86,10 +87,24 @@ export default function Payments() {
       try {
         const { url } = endpoints[role] ?? endpoints.user;
 
-        const { data } = await axios.get(url, {
-          // headers: { authorization: `Bearer ${token}` },
-          // silent: true
-        });
+        let data;
+
+        // 1) لو الموك شغال نستخدمه أولاً
+        if (MOCK_ENABLED) {
+          const mock = mockFetch(url);
+          if (mock) {
+            data = mock;
+          }
+        }
+
+        // 2) لو ما فيه موك (أو MOCK_ENABLED = false) نرجع للـ API الحقيقي
+        if (!data) {
+          const res = await axios.get(url, {
+            // headers: { authorization: `Bearer ${token}` },
+            // silent: true
+          });
+          data = res.data;
+        }
 
         if (!alive) return;
 
@@ -104,7 +119,7 @@ export default function Payments() {
           setTotals({});
         }
       } finally {
-        alive && setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
     return () => {
@@ -124,7 +139,13 @@ export default function Payments() {
   }, [rows, q, status, method]);
 
   const tableTitle =
-    role === "admin" ? "Payments" : role === "client" ? "Billing" : role === "freelancer" ? "Earnings" : "Payments";
+    role === "admin"
+      ? "Payments"
+      : role === "client"
+      ? "Billing"
+      : role === "freelancer"
+      ? "Earnings"
+      : "Payments";
 
   const filters =
     role === "admin"
@@ -142,28 +163,38 @@ export default function Payments() {
   /* ======== ـFreelancer ======== */
   const available =
     totals?.available ??
-    (Number(totals?.earned || 0) - Number(totals?.clearing || 0) - Number(totals?.withdrawn || 0));
+    (Number(totals?.earned || 0) -
+      Number(totals?.clearing || 0) -
+      Number(totals?.withdrawn || 0));
 
   return (
     <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-
+      {/* كروت الفريلانسر من بيانات الموك */}
       {role === "freelancer" && (
         <div className="grid gap-3 sm:gap-4 grid-cols-2">
-          <Kpi title="Total balance" value={fmtMoney(totals?.earned ?? 0)} icon={<DollarSign />} />
-          <Kpi title="Withdrawable" value={fmtMoney(available)} icon={<CreditCard />} />
+          <Kpi
+            title="Total balance"
+            value={fmtMoney(totals?.earned ?? 0)}
+            icon={<DollarSign />}
+          />
+          <Kpi
+            title="Withdrawable"
+            value={fmtMoney(available)}
+            icon={<CreditCard />}
+          />
         </div>
       )}
 
-        <PeopleTable
-          title={tableTitle}
-          addLabel="Add Payment"
-          endpoint={(endpoints[role] ?? endpoints.user).url}
-          initialRows={filtered}
-          columns={columns}
-          filters={filters}
-          crudConfig={crudConfig}
-          // token={token}
-        />
+      <PeopleTable
+        title={tableTitle}
+        addLabel="Add Payment"
+        endpoint={(endpoints[role] ?? endpoints.user).url}
+        initialRows={filtered}
+        columns={columns}
+        filters={filters}
+        crudConfig={crudConfig}
+        // token={token}
+      />
     </div>
   );
 }
@@ -172,7 +203,10 @@ export default function Payments() {
 function Kpi({ icon, title, value }) {
   return (
     <div className={`${card} flex items-center gap-3`} style={ringStyle}>
-      <div className="w-10 h-10 grid place-items-center rounded-xl text-white" style={{ background: T.primary }}>
+      <div
+        className="w-10 h-10 grid place-items-center rounded-xl text-white"
+        style={{ background: T.primary }}
+      >
         {icon}
       </div>
       <div>
@@ -216,7 +250,9 @@ function exportCSV(rows, filename) {
         keys
           .map((k) => {
             const v = r[k] ?? "";
-            return String(v).includes(",") ? `"${String(v).replace(/"/g, '""')}"` : v;
+            return String(v).includes(",")
+              ? `"${String(v).replace(/"/g, '""')}"`
+              : v;
           })
           .join(",")
       )

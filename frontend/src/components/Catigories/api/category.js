@@ -14,23 +14,31 @@ export const fetchCategoryById = async (id) => {
   throw new Error(data.message || "Failed to fetch category");
 };
 
+// 🔹 هذه تستعملها الميجا منيو أول ما تحط الماوس على الكاتيجوري
 export const fetchSubCategoriesByCategoryId = async (categoryId) => {
-  const { data } = await axios.get(`${API_BASE}/${categoryId}/sub-categories`);
+  const { data } = await axios.get(
+    `${API_BASE}/${categoryId}/sub-categories`,
+    { meta: { silent: true } }          // 👈 مهم: نخليها صامتة
+  );
   if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch sub-categories");
 };
 
+// (لو حاب تخليها صامتة كمان عشان ما تظهر شاشة التحميل عند تغيير الكاتيجوري)
 export const fetchSubSubCategoriesByCategoryId = async (categoryId) => {
   const { data } = await axios.get(
-    `${API_BASE}/sub-category/${categoryId}/sub-sub-categories`
+    `${API_BASE}/sub-category/${categoryId}/sub-sub-categories`,
+    { meta: { silent: true } }          // 👈 اختياري لكن أنصح به لنفس السلاسة
   );
   if (data.success) return data.data;
-  throw new Error(data.message || "Failed to fetch sub-sub-categories");
+  throw new Error("Failed to fetch sub-sub-categories");
 };
 
+// 🔹 هذه تستعملها الميجا منيو لكل sub‑category داخل التوب بار
 export const fetchSubSubCategoriesBySubId = async (subCategoryId) => {
   const { data } = await axios.get(
-    `${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`
+    `${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`,
+    { meta: { silent: true } }          // 👈 برضه صامتة
   );
   if (data.success) return data.data;
   throw new Error(
