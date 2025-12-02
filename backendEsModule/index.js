@@ -22,8 +22,6 @@ import AdminUser from "./router/adminUser.js"
 import tasksRouter from "./router/tasks.js";
 import usersRouter from "./router/user.js";
 import plansRouter from "./router/plans.js";
-import appointmentRouter from "./router/appointment.js";
-import coursesRouter from "./router/courses.js";
 import logsRouter from "./router/logs.js";
 import projectsRouter from "./router/projects.js";
 import categoriesRouter from "./router/category.js";
