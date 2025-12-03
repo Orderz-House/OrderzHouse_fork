@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import {
@@ -15,6 +15,13 @@ import {
   MessageSquare,
   FolderPlus,
 } from "lucide-react";
+
+// 🧩 استيراد دوال الـ API الجاهزة
+import {
+  fetchAdminDashboard,
+  fetchFreelancerDashboard,
+  fetchClientDashboard,
+} from "../api/dashboard";
 
 const PRIMARY = "#028090";
 
@@ -46,30 +53,46 @@ function StatCard({ title, value, sub, icon: Icon, trend, accent }) {
           {title}
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          <div className="text-lg font-semibold text-slate-900">{value}</div>
+          <div className="text-lg font-semibold text-slate-900">
+            {value ?? "—"}
+          </div>
           {trend && (
-            <div className={`inline-flex items-center gap-1 text-[11px] ${trendColor}`}>
+            <div
+              className={`inline-flex items-center gap-1 text-[11px] ${trendColor}`}
+            >
               <TrendIcon className="w-3 h-3" />
               <span>{String(trend).replace(/^[-+]/, "")}</span>
             </div>
           )}
         </div>
-        {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}
+        {sub && (
+          <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>
+        )}
       </div>
     </div>
   );
 }
 
-/* تشارت بسيطة للريڤنيو */
-function SimpleAreaChart() {
-  const points = [40, 60, 55, 70, 90, 80, 95, 110, 120, 140, 130, 160];
+/* تشارت بسيطة للريڤنيو – تستقبل نقاط من الـ API */
+function SimpleAreaChart({ points }) {
+  const safePoints = Array.isArray(points) ? points : [];
   const width = 240;
   const height = 80;
-  const max = Math.max(...points) || 1;
-  const stepX = points.length > 1 ? width / (points.length - 1) : width;
+
+  if (!safePoints.length) {
+    return (
+      <div className="flex items-center justify-center h-32 text-xs text-slate-400">
+        لا توجد بيانات للعرض حالياً
+      </div>
+    );
+  }
+
+  const max = Math.max(...safePoints) || 1;
+  const stepX =
+    safePoints.length > 1 ? width / (safePoints.length - 1) : width;
 
   let linePath = "";
-  points.forEach((v, i) => {
+  safePoints.forEach((v, i) => {
     const x = i * stepX;
     const y = height - (v / max) * (height - 10) - 5;
     linePath += `${i === 0 ? "M" : "L"} ${x},${y} `;
@@ -77,7 +100,10 @@ function SimpleAreaChart() {
   const areaPath = `${linePath} L ${width},${height} L 0,${height} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32 overflow-visible">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full h-32 overflow-visible"
+    >
       <defs>
         <linearGradient id="dash-area" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={PRIMARY} stopOpacity="0.3" />
@@ -98,58 +124,72 @@ function SimpleAreaChart() {
 
 /* ===================== داشبورد الادمن ===================== */
 function AdminDashboard() {
-  const topStats = [
-    {
-      title: "Clients",
-      value: "3,120",
-      sub: "Active on the platform",
-      icon: Users,
-      trend: "+4.2%",
-    },
-    {
-      title: "Freelancers",
-      value: "1,850",
-      sub: "Available to hire",
-      icon: Briefcase,
-      trend: "+3.1%",
-    },
-    {
-      title: "Projects",
-      value: "96",
-      sub: "Open / in progress",
-      icon: ClipboardList,
-      trend: "+1.4%",
-    },
-    {
-      title: "Revenue",
-      value: "$53,210",
-      sub: "Last 30 days",
-      icon: CreditCard,
-      trend: "+7.8%",
-    },
-  ];
+  const [topStats, setTopStats] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [revenuePoints, setRevenuePoints] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const pendingVerifications = [
-    {
-      name: "Khaled F.",
-      role: "Freelancer • Design",
-      email: "khaled@example.com",
-    },
-    {
-      name: "Maha S.",
-      role: "Client • —",
-      email: "maha@example.com",
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // 👇 هنا نستخدم دالة الـ API بدل axios مباشرة
+        const payload = await fetchAdminDashboard();
+
+        setTopStats(
+          Array.isArray(payload?.topStats) ? payload.topStats : []
+        );
+        setPendingVerifications(
+          Array.isArray(payload?.pendingVerifications)
+            ? payload.pendingVerifications
+            : []
+        );
+        setRevenuePoints(
+          Array.isArray(payload?.revenuePoints)
+            ? payload.revenuePoints
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load admin dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   return (
     <div className="space-y-6 py-6">
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
 
       {/* الكروت العلوية */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {topStats.map((s) => (
-          <StatCard key={s.title} {...s} />
-        ))}
+        {topStats.length > 0 ? (
+          topStats.map((s, idx) => (
+            <StatCard
+              key={s.id || s.title || idx}
+              {...s}
+            />
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد إحصائيات بعد.
+            </div>
+          )
+        )}
       </div>
 
       {/* الريڤنيو + البيندينج */}
@@ -160,21 +200,16 @@ function AdminDashboard() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Revenue (last 12 months)
               </h3>
-              <p className="text-xs text-slate-500">Sum — $83,200 (demo)</p>
+              <p className="text-xs text-slate-500">
+                يتم جلب بيانات الرسم من الخادم.
+              </p>
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-700">
               <ArrowUpRight className="w-3 h-3" />
-              Trending up
+              Overview
             </span>
           </div>
-          <SimpleAreaChart />
-          <div className="flex flex-wrap gap-3 text-[11px] text-slate-500">
-            <span>Avg monthly: $6,930</span>
-            <span className="inline-block w-px h-3 bg-slate-200" />
-            <span>Best month: August</span>
-            <span className="inline-block w-px h-3 bg-slate-200" />
-            <span>Worst month: February</span>
-          </div>
+          <SimpleAreaChart points={revenuePoints} />
         </div>
 
         <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-4">
@@ -188,42 +223,48 @@ function AdminDashboard() {
           </div>
 
           <div className="space-y-3">
-            {pendingVerifications.map((p) => (
-              <div
-                key={p.email}
-                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-white grid place-items-center text-xs font-semibold text-slate-600 border border-slate-200">
-                    {p.name.charAt(0)}
+            {pendingVerifications.length > 0 ? (
+              pendingVerifications.map((p, idx) => (
+                <div
+                  key={p.id || p.email || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-white grid place-items-center text-xs font-semibold text-slate-600 border border-slate-200">
+                      {p.initials || p.name?.charAt(0) || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-900 truncate">
+                        {p.name || "بدون اسم"}
+                      </div>
+                      {p.role && (
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {p.role}
+                        </div>
+                      )}
+                      {p.email && (
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {p.email}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-slate-900 truncate">
-                      {p.name}
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      {p.role}
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate">
-                      {p.email}
-                    </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button className="h-8 px-3 rounded-full text-xs border border-emerald-500 text-emerald-700 hover:bg-emerald-50">
+                      Approve
+                    </button>
+                    <button className="h-8 px-3 rounded-full text-xs border border-slate-200 text-slate-500 hover:bg-slate-50">
+                      Reject
+                    </button>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 shrink-0">
-                  <button className="h-8 px-3 rounded-full text-xs border border-emerald-500 text-emerald-700 hover:bg-emerald-50">
-                    Approve
-                  </button>
-                  <button className="h-8 px-3 rounded-full text-xs border border-slate-200 text-slate-500 hover:bg-slate-50">
-                    Reject
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد طلبات تحقق معلّقة حالياً.
               </div>
-            ))}
+            )}
           </div>
-
-          <button className="w-full h-9 rounded-xl text-xs border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50">
-            View all requests
-          </button>
         </div>
       </div>
     </div>
@@ -232,80 +273,74 @@ function AdminDashboard() {
 
 /* ===================== داشبورد الفريلانسر ===================== */
 function FreelancerDashboard() {
-  const balanceCards = [
-    {
-      title: "Total balance",
-      value: "$2,430",
-      sub: "All earnings including pending",
-      icon: Wallet,
-      trend: "+12%",
-    },
-    {
-      title: "Available to withdraw",
-      value: "$1,120",
-      sub: "Ready to cash out",
-      icon: CreditCard,
-      trend: "+7%",
-    },
-    {
-      title: "In review",
-      value: "$890",
-      sub: "Waiting for client approval",
-      icon: Clock,
-      trend: "+3%",
-    },
-  ];
+  const [balanceCards, setBalanceCards] = useState([]);
+  const [activeProjects, setActiveProjects] = useState([]);
+  const [latestClientProjects, setLatestClientProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const activeProjects = [
-    {
-      title: "Landing page redesign",
-      client: "Acme Inc.",
-      status: "In progress",
-      due: "3 days left",
-      budget: "$800",
-    },
-    {
-      title: "Mobile app UI kit",
-      client: "Startup XYZ",
-      status: "Feedback required",
-      due: "Today",
-      budget: "$1,200",
-    },
-    {
-      title: "Branding package",
-      client: "Coffee House",
-      status: "In progress",
-      due: "1 week left",
-      budget: "$650",
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  const latestClientProjects = [
-    {
-      title: "Full-stack dashboard",
-      budget: "$2,000",
-      type: "Fixed • Remote",
-    },
-    {
-      title: "Social media designs",
-      budget: "$500",
-      type: "Monthly • Part time",
-    },
-    {
-      title: "React developer (long term)",
-      budget: "$30/h",
-      type: "Hourly • Remote",
-    },
-  ];
+        const payload = await fetchFreelancerDashboard();
+
+        setBalanceCards(
+          Array.isArray(payload?.balanceCards)
+            ? payload.balanceCards
+            : []
+        );
+        setActiveProjects(
+          Array.isArray(payload?.activeProjects)
+            ? payload.activeProjects
+            : []
+        );
+        setLatestClientProjects(
+          Array.isArray(payload?.latestClientProjects)
+            ? payload.latestClientProjects
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load freelancer dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   return (
     <div className="space-y-6 py-6">
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
 
       {/* الرصيد */}
       <div className="grid gap-4 md:grid-cols-3">
-        {balanceCards.map((c) => (
-          <StatCard key={c.title} {...c} accent="bg-cyan-50" />
-        ))}
+        {balanceCards.length > 0 ? (
+          balanceCards.map((c, idx) => (
+            <StatCard
+              key={c.id || c.title || idx}
+              {...c}
+              accent="bg-cyan-50"
+            />
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد بيانات رصيد حالياً.
+            </div>
+          )
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -327,31 +362,44 @@ function FreelancerDashboard() {
           </div>
 
           <div className="space-y-3">
-            {activeProjects.map((p) => (
-              <div
-                key={p.title}
-                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium text-sm text-slate-900 truncate">
-                    {p.title}
+            {activeProjects.length > 0 ? (
+              activeProjects.map((p, idx) => (
+                <div
+                  key={p.id || p.title || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm text-slate-900 truncate">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {(p.client && p.budget && `${p.client} • ${p.budget}`) ||
+                        p.client ||
+                        p.budget ||
+                        ""}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {p.client} • {p.budget}
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    {p.status && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                        <Activity className="w-3 h-3 mr-1" />
+                        {p.status}
+                      </span>
+                    )}
+                    {p.due && (
+                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {p.due}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
-                    <Activity className="w-3 h-3 mr-1" />
-                    {p.status}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {p.due}
-                  </span>
-                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد مشاريع نشطة حالياً.
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -369,22 +417,28 @@ function FreelancerDashboard() {
             </div>
 
             <div className="space-y-3">
-              {latestClientProjects.map((p) => (
-                <div
-                  key={p.title}
-                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
-                >
-                  <div className="text-sm font-medium text-slate-900">
-                    {p.title}
+              {latestClientProjects.length > 0 ? (
+                latestClientProjects.map((p, idx) => (
+                  <div
+                    key={p.id || p.title || idx}
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
+                  >
+                    <div className="text-sm font-medium text-slate-900">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    <div className="text-xs text-slate-500 flex items-center justify-between mt-1">
+                      <span>{p.type}</span>
+                      <span className="font-semibold text-slate-800">
+                        {p.budget}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500 flex items-center justify-between mt-1">
-                    <span>{p.type}</span>
-                    <span className="font-semibold text-slate-800">
-                      {p.budget}
-                    </span>
-                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-slate-400">
+                  لا توجد مشاريع عملاء حديثة حالياً.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -415,54 +469,63 @@ function FreelancerDashboard() {
 
 /* ===================== داشبورد الكلينت ===================== */
 function ClientDashboard() {
-  const stats = [
-    {
-      title: "Active projects",
-      value: "4",
-      sub: "Running with freelancers",
-      icon: ClipboardList,
-      trend: "+1",
-    },
-    {
-      title: "Open jobs",
-      value: "2",
-      sub: "Awaiting proposals",
-      icon: Briefcase,
-      trend: "+2",
-    },
-    {
-      title: "Total spent",
-      value: "$9,540",
-      sub: "Across all projects",
-      icon: CreditCard,
-      trend: "+18%",
-    },
-    {
-      title: "Hired freelancers",
-      value: "7",
-      sub: "All-time",
-      icon: Users,
-      trend: "+1",
-    },
-  ];
+  const [stats, setStats] = useState([]);
+  const [recentProjects, setRecentProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const recentProjects = [
-    {
-      title: "Multi‑step checkout flow",
-      status: "In progress",
-      budget: "$1,400",
-    },
-    { title: "Logo & brand refresh", status: "Reviewing", budget: "$600" },
-    { title: "Marketing landing page", status: "Completed", budget: "$900" },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const payload = await fetchClientDashboard();
+
+        setStats(Array.isArray(payload?.stats) ? payload.stats : []);
+        setRecentProjects(
+          Array.isArray(payload?.recentProjects)
+            ? payload.recentProjects
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load client dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   return (
     <div className="space-y-6 py-6">
-      
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => (
-          <StatCard key={s.title} {...s} accent="bg-sky-50" />
-        ))}
+        {stats.length > 0 ? (
+          stats.map((s, idx) => (
+            <StatCard
+              key={s.id || s.title || idx}
+              {...s}
+              accent="bg-sky-50"
+            />
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد إحصائيات بعد.
+            </div>
+          )
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -483,22 +546,34 @@ function ClientDashboard() {
           </div>
 
           <div className="space-y-3">
-            {recentProjects.map((p) => (
-              <div
-                key={p.title}
-                className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-slate-900 truncate">
-                    {p.title}
+            {recentProjects.length > 0 ? (
+              recentProjects.map((p, idx) => (
+                <div
+                  key={p.id || p.title || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    {p.status && (
+                      <div className="text-xs text-slate-500">
+                        {p.status}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-500">{p.status}</div>
+                  {p.budget && (
+                    <div className="text-xs font-semibold text-slate-800">
+                      {p.budget}
+                    </div>
+                  )}
                 </div>
-                <div className="text-xs font-semibold text-slate-800">
-                  {p.budget}
-                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد مشاريع حديثة حالياً.
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -531,7 +606,9 @@ export default function Dashboard() {
 
   const rawRoleId =
     userData?.role_id ??
-    (typeof storeRoleId === "number" ? storeRoleId : Number(localStorage.getItem("roled")));
+    (typeof storeRoleId === "number"
+      ? storeRoleId
+      : Number(localStorage.getItem("roled")));
 
   const role = mapRole(Number(rawRoleId));
 

@@ -5,6 +5,7 @@ import SubSidebar from "./SubSideBar.jsx";
 import {
   fetchCategories,
   fetchSubCategoriesByCategoryId,
+  fetchSubSubCategoriesBySubId, // 👈 جديد
 } from "./api/category";
 
 const THEME = "#028090";
@@ -31,6 +32,7 @@ export default function ProjectsPage({ mode: propMode }) {
   const [indexReady, setIndexReady] = useState(false);
   const [nameToCatId, setNameToCatId] = useState({});
   const [nameToSubCat, setNameToSubCat] = useState({});
+  const [subSubInfo, setSubSubInfo] = useState(null); // 👈 معلومات الساب ساب كاتيجوري
 
   // ---------- Load all categories ----------
   useEffect(() => {
@@ -188,6 +190,29 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp,
   ]);
 
+  // ---------- تحميل بيانات الساب ساب كاتيجوري المختارة ----------
+  useEffect(() => {
+    const loadSubSubInfo = async () => {
+      // لو ما في ساب ساب أو ما في ساب كاتيجوري نفضّي المعلومات
+      if (!sub || !subcat) {
+        setSubSubInfo(null);
+        return;
+      }
+
+      try {
+        const list = await fetchSubSubCategoriesBySubId(Number(subcat));
+        const found =
+          list && list.find((item) => String(item.id) === String(sub));
+        setSubSubInfo(found || null);
+      } catch (err) {
+        console.error("Failed to fetch sub-sub-category info", err);
+        setSubSubInfo(null);
+      }
+    };
+
+    loadSubSubInfo();
+  }, [sub, subcat]);
+
   // ---------- اختيار كاتيجوري من الشريط ----------
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
@@ -250,40 +275,58 @@ export default function ProjectsPage({ mode: propMode }) {
 
         {/* عنوان الصفحة */}
         <header className="mt-4 mb-6">
-  <div className="flex items-center gap-2 text-sm">
-    {/* Home icon */}
-    <a
-      href="/"
-      className="inline-flex items-center text-slate-600 hover:text-slate-800"
-      aria-label="Home"
-    >
-      <svg
-        className="w-4 h-4"
-        viewBox="0 0 20 20"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path
-          d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1h-4.5v-4.5h-3V18H4a1 1 0 01-1-1V9.5z"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </a>
+          <div className="flex items-center gap-2 text-sm">
+            {/* Home icon */}
+            <a
+              href="/"
+              className="inline-flex items-center text-slate-600 hover:text-slate-800"
+              aria-label="Home"
+            >
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1h-4.5v-4.5h-3V18H4a1 1 0 01-1-1V9.5z"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
 
-    {/* Slash */}
-    <span className="text-slate-300">/</span>
+            {/* Slash */}
+            <span className="text-slate-300">/</span>
 
-    {/* Category title */}
-    <h1
-      className="text-sm font-semibold tracking-tight text-slate-800"
-      style={{ color: THEME_DARK }}
-    >
-      {meta.title}
-    </h1>
+            {/* Category title */}
+            <h1
+              className="text-sm font-semibold tracking-tight text-slate-800"
+              style={{ color: THEME_DARK }}
+            >
+              {meta.title}
+            </h1>
+          </div>
+
+          {/* عنوان الساب ساب كاتيجوري + وصف بسيط */}
+          {subSubInfo && (
+  <div className="mt-2">
+    <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
+      {subSubInfo.name}
+    </h2>
+    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+      {subSubInfo.description
+        ? subSubInfo.description
+        : `استعرض مشاريع وخدمات مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
+    </p>
+
+    
   </div>
-</header>
+)}
+{/* خط رفيع بعرض الكونتينر ولونه رمادي فاتح */}
+    <hr className="mt-4 border-t border-slate-200" />
+        </header>
 
         {/* المحتوى الرئيسي */}
         <SubSidebar

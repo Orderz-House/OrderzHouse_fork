@@ -1,4 +1,4 @@
-export const MOCK_ENABLED = true;
+export const MOCK_ENABLED = false;
 
 /* ============= Existing mocks ============= */
 const mockCategories = [
@@ -148,6 +148,181 @@ const mockCourses = [
   },
 ];
 
+/* ============= NEW: Dashboard mock ============= */
+const mockDashboardAdmin = {
+  topStats: [
+    {
+      id: "dash-admin-stat-clients",
+      title: "Clients",
+      value: "3,120",
+      sub: "Active on the platform",
+      trend: "+4.2%",
+    },
+    {
+      id: "dash-admin-stat-freelancers",
+      title: "Freelancers",
+      value: "1,850",
+      sub: "Available to hire",
+      trend: "+3.1%",
+    },
+    {
+      id: "dash-admin-stat-projects",
+      title: "Projects",
+      value: "96",
+      sub: "Open / in progress",
+      trend: "+1.4%",
+    },
+    {
+      id: "dash-admin-stat-revenue",
+      title: "Revenue",
+      value: "$53,210",
+      sub: "Last 30 days",
+      trend: "+7.8%",
+    },
+  ],
+  pendingVerifications: [
+    {
+      id: "dash-admin-verif-1",
+      name: "Khaled F.",
+      role: "Freelancer • Design",
+      email: "khaled@example.com",
+    },
+    {
+      id: "dash-admin-verif-2",
+      name: "Maha S.",
+      role: "Client • —",
+      email: "maha@example.com",
+    },
+  ],
+  // نفس النقاط اللي كانت في SimpleAreaChart
+  revenuePoints: [40, 60, 55, 70, 90, 80, 95, 110, 120, 140, 130, 160],
+};
+
+const mockDashboardFreelancer = {
+  balanceCards: [
+    {
+      id: "dash-free-balance-total",
+      title: "Total balance",
+      value: "$2,430",
+      sub: "All earnings including pending",
+      trend: "+12%",
+    },
+    {
+      id: "dash-free-balance-available",
+      title: "Available to withdraw",
+      value: "$1,120",
+      sub: "Ready to cash out",
+      trend: "+7%",
+    },
+    {
+      id: "dash-free-balance-review",
+      title: "In review",
+      value: "$890",
+      sub: "Waiting for client approval",
+      trend: "+3%",
+    },
+  ],
+  activeProjects: [
+    {
+      id: "dash-free-active-1",
+      title: "Landing page redesign",
+      client: "Acme Inc.",
+      status: "In progress",
+      due: "3 days left",
+      budget: "$800",
+    },
+    {
+      id: "dash-free-active-2",
+      title: "Mobile app UI kit",
+      client: "Startup XYZ",
+      status: "Feedback required",
+      due: "Today",
+      budget: "$1,200",
+    },
+    {
+      id: "dash-free-active-3",
+      title: "Branding package",
+      client: "Coffee House",
+      status: "In progress",
+      due: "1 week left",
+      budget: "$650",
+    },
+  ],
+  latestClientProjects: [
+    {
+      id: "dash-free-latest-1",
+      title: "Full-stack dashboard",
+      budget: "$2,000",
+      type: "Fixed • Remote",
+    },
+    {
+      id: "dash-free-latest-2",
+      title: "Social media designs",
+      budget: "$500",
+      type: "Monthly • Part time",
+    },
+    {
+      id: "dash-free-latest-3",
+      title: "React developer (long term)",
+      budget: "$30/h",
+      type: "Hourly • Remote",
+    },
+  ],
+};
+
+const mockDashboardClient = {
+  stats: [
+    {
+      id: "dash-client-stat-active-projects",
+      title: "Active projects",
+      value: "4",
+      sub: "Running with freelancers",
+      trend: "+1",
+    },
+    {
+      id: "dash-client-stat-open-jobs",
+      title: "Open jobs",
+      value: "2",
+      sub: "Awaiting proposals",
+      trend: "+2",
+    },
+    {
+      id: "dash-client-stat-total-spent",
+      title: "Total spent",
+      value: "$9,540",
+      sub: "Across all projects",
+      trend: "+18%",
+    },
+    {
+      id: "dash-client-stat-hired",
+      title: "Hired freelancers",
+      value: "7",
+      sub: "All-time",
+      trend: "+1",
+    },
+  ],
+  recentProjects: [
+    {
+      id: "dash-client-recent-1",
+      title: "Multi‑step checkout flow",
+      status: "In progress",
+      budget: "$1,400",
+    },
+    {
+      id: "dash-client-recent-2",
+      title: "Logo & brand refresh",
+      status: "Reviewing",
+      budget: "$600",
+    },
+    {
+      id: "dash-client-recent-3",
+      title: "Marketing landing page",
+      status: "Completed",
+      budget: "$900",
+    },
+  ],
+};
+
 /* ============= NEW: Payments mock ============= */
 const mockPayments = [
   // shared fields for admin table and cards
@@ -256,6 +431,16 @@ if (/courses(\/.*)?$/.test(endpoint)) {
   }
   if (/^\/freelancer\/payments$/.test(endpoint)) {
     return { items: applyFilters(mockPayments, params), totals: totalsFreelancer };
+  }
+  // dashboard (admin / freelancer / client)
+  if (/^\/dashboard\/admin$/.test(endpoint)) {
+    return mockDashboardAdmin;
+  }
+  if (/^\/dashboard\/freelancer$/.test(endpoint)) {
+    return mockDashboardFreelancer;
+  }
+  if (/^\/dashboard\/client$/.test(endpoint)) {
+    return mockDashboardClient;
   }
 
   return null;
