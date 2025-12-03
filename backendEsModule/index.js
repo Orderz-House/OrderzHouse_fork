@@ -82,6 +82,7 @@ app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", CoursesRouter);
+app.use("/subscriptions", subscriptionsRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);

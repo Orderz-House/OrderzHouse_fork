@@ -6,10 +6,29 @@ export default function ProjectCard({
   linkBase = "projects",
   priceField = "price",
 }) {
-  const { id, title, cover_pic, cover, image, offersVideo, tags = [] } = project;
+  const { id, title, cover_pic, cover, image, offersVideo, tags = [], offers } = project;
   const to = `/${linkBase}/${id}`;
   const displayPrice = project?.[priceField] ?? project?.price ?? project?.budget ?? "—";
   const coverSrc = cover_pic || cover || image;
+
+  // Minimal offer notification block
+  let offerBlock = null;
+  if (Array.isArray(offers) && offers.length > 0) {
+    // Use the first offer for display (can be adjusted)
+    const offer = offers[0];
+    const freelancer = offer?.freelancer || {};
+    offerBlock = (
+      <div className="mt-2 p-2 rounded-lg border border-emerald-200 bg-emerald-50 flex flex-col gap-1">
+        <div className="text-xs font-semibold text-emerald-700">Offer Submitted</div>
+        <div className="flex flex-wrap gap-2 text-xs text-slate-700">
+          <span>Value: <span className="font-bold">${offer?.bid_amount ?? "—"}</span></span>
+          <span>Rating: <span className="font-bold">{freelancer?.rating ?? "—"}</span></span>
+          <span>Completed Jobs: <span className="font-bold">{freelancer?.completed_jobs ?? "—"}</span></span>
+          <span>Avg. Delivery: <span className="font-bold">{freelancer?.avg_delivery_time ?? "—"}</span></span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <article className="group">
@@ -33,6 +52,7 @@ export default function ProjectCard({
           <span className="text-slate-500">From</span>
           <span className="font-semibold text-slate-900">${displayPrice}</span>
         </div>
+        {offerBlock}
         {offersVideo && (
           <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-700">
             🎥 Offers video consultations

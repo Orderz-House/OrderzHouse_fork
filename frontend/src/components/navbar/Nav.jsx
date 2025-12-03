@@ -37,11 +37,9 @@ export default function EnhancedNavbar() {
   const exploreRef = useRef(null);
 
   const dispatch = useDispatch();
-  const { token, userData, IsAuthenticated } = useSelector((state) => ({
-    token: state.auth.token,
-    userData: state.auth.userData,
-    IsAuthenticated: !!state.auth.token,
-  }));
+  // استخدم سيليكتر ثابت عشان نتجنّب تحذير redux عن إرجاع مراجع جديدة كل مرة
+  const { token, userData } = useSelector((state) => state.auth);
+  const IsAuthenticated = !!token;
 
   const navigate = useNavigate();
   const location = useLocation();

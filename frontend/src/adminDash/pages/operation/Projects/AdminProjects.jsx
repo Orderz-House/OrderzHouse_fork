@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -114,6 +114,50 @@ function ClientProjects() {
   // لوحات العميل
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState(null);
+  const [offersMap, setOffersMap] = useState({});
+
+  // جلب عروض العميل لكل مشاريعه مرة واحدة
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await api.get("/offers/my-projects/offers", {
+          headers: token
+            ? { authorization: `Bearer ${token}` }
+            : undefined,
+        });
+
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.offers)
+          ? data.offers
+          : [];
+
+        const map = {};
+        for (const o of list) {
+          const pid = o.project_id ?? o.projectId;
+          if (!pid) continue;
+          if (!map[pid]) {
+            map[pid] = { total: 0, pending: 0, accepted: 0 };
+          }
+          map[pid].total += 1;
+          const status = String(o.offer_status || "").toLowerCase();
+          if (status === "pending") map[pid].pending += 1;
+          if (status === "accepted") map[pid].accepted += 1;
+        }
+
+        if (!cancelled) setOffersMap(map);
+      } catch (e) {
+        console.error("Failed to fetch offers for client projects", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   // أزرار العميل داخل الكارد
   const renderActions = (row, helpers) => {
@@ -157,12 +201,44 @@ function ClientProjects() {
           { label: "Budget", key: "budget" },
           { label: "Progress", key: "progress" },
           { label: "Status", key: "status" },
+          {
+            label: "Offers",
+            key: "offers",
+            render: (row) => {
+              const pid = row.id ?? row._id;
+              const stats = offersMap[pid];
+              if (!stats) return "0";
+              const parts = [`${stats.total}`];
+              if (stats.pending) parts.push(`pending: ${stats.pending}`);
+              if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
+              return parts.join(" | ");
+            },
+          },
         ]}
         formFields={[]}
         /* UI */
         desktopAsCards
         crudConfig={{ showDetails: false, showRowEdit: false, showDelete: true }}
         renderActions={renderActions}
+        renderSubtitle={(row) => {
+          const pid = row.id ?? row._id;
+          const stats = offersMap[pid];
+          if (!stats) {
+            return (
+              <span className="text-xs text-slate-400">
+                Offers: 0
+              </span>
+            );
+          }
+          return (
+            <span className="text-xs text-slate-600">
+              Offers:{" "}
+              <span className="font-semibold">{stats.total}</span>
+              {stats.pending ? ` • Pending: ${stats.pending}` : ""}
+              {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
+            </span>
+          );
+        }}
         onCardClick={(row, h) => navigate(`/project/${h.getId(row)}`, { state: { project: row, readOnly: true, role: "client" } })}
       />
 

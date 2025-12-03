@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import {
   MessageSquare, SendHorizontal, Check, Undo2, X, RefreshCw,
   Loader2, FileText, Code, Palette, Link2
@@ -30,8 +31,14 @@ export default function ProjectDetails() {
   const initial = location.state?.project || null;
   const role = location.state?.role || mapRole(userData?.role_id);
 
+  console.log("[ProjectDetails] Component mounted:", { projectId, role, hasToken: !!token, userData });
+
   const [project, setProject] = useState(initial);
   const [loading, setLoading] = useState(!initial);
+
+  const [offers, setOffers] = useState([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [offersError, setOffersError] = useState("");
 
   const [reviewOpen, setReviewOpen] = useState(false);
 
@@ -60,6 +67,47 @@ export default function ProjectDetails() {
     })();
     return () => (alive = false);
   }, [projectId, role, token, initial]);
+
+  // ============ Load offers for this project (client owner) ============
+  useEffect(() => {
+    if (role !== "client" || !projectId || !token) {
+      console.log("[ProjectDetails] Skipping offers fetch:", { role, projectId: !!projectId, token: !!token });
+      return;
+    }
+    let alive = true;
+
+    (async () => {
+      try {
+        setOffersLoading(true);
+        setOffersError("");
+        console.log("[ProjectDetails] Fetching offers for projectId:", projectId);
+        const { data } = await api.get(`/api/offers/project/${projectId}/offers`, {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        });
+        console.log("[ProjectDetails] Offers API response:", data);
+        if (!alive) return;
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.offers)
+          ? data.offers
+          : [];
+        console.log("[ProjectDetails] Parsed offers:", list);
+        setOffers(list);
+      } catch (e) {
+        if (!alive) return;
+        console.error("[ProjectDetails] Failed to load offers for project:", e);
+        console.error("[ProjectDetails] Error response:", e.response?.data);
+        setOffersError("Failed to load offers for this project.");
+        setOffers([]);
+      } finally {
+        if (alive) setOffersLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [projectId, role, token]);
 
   const cover = useMemo(() => {
     return (
@@ -172,6 +220,180 @@ export default function ProjectDetails() {
                 />
               </div>
             </div>
+
+            {role === "client" && (
+              <div className="rounded-3xl bg-gradient-to-br from-white to-teal-50/30 p-5 border-2 border-teal-100" style={ringStyle}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-slate-800">
+                    Offers Received
+                    <span className="ml-2 inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full" style={{ backgroundColor: T.primary }}>
+                      {offers.length}
+                    </span>
+                  </h2>
+                </div>
+                {offersLoading && (
+                  <div className="text-sm text-slate-500">Loading offers…</div>
+                )}
+                {offersError && !offersLoading && (
+                  <div className="text-sm text-red-600">{offersError}</div>
+                )}
+                {!offersLoading && !offersError && offers.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="text-slate-400 text-5xl mb-3">📭</div>
+                    <p className="text-base font-medium text-slate-600">No offers submitted yet.</p>
+                    <p className="text-sm text-slate-500 mt-1">Freelancers will submit their proposals here</p>
+                  </div>
+                )}
+                {!offersLoading && !offersError && offers.length > 0 && (
+                  <div className="space-y-4">
+                    {offers.map((o) => {
+                      const status = String(o.offer_status || "").toLowerCase();
+                      const isPending = status === "pending";
+                      const statusColors = {
+                        pending: "bg-amber-50 text-amber-700 border-amber-200",
+                        accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        rejected: "bg-red-50 text-red-700 border-red-200",
+                      };
+                      const statusColor = statusColors[status] || statusColors.pending;
+                      
+                      return (
+                        <div
+                          key={o.offer_id || o.id}
+                          className="rounded-xl border-2 border-slate-200 bg-white p-4 hover:border-teal-300 hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
+                                {(o.freelancer_name || o.username || "F").charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-800">
+                                  {o.freelancer_name ||
+                                    o.username ||
+                                    `Freelancer #${o.freelancer_id}`}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  Submitted: {o.submitted_at ? new Date(o.submitted_at).toLocaleString() : new Date(o.created_at).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold" style={{ color: T.primary }}>
+                                {fmt(o.bid_amount)}
+                              </div>
+                              <span className={`inline-block mt-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColor}`}>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {o.proposal && (
+                            <div className="mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                              <div className="text-xs font-semibold text-slate-600 mb-1">Proposal:</div>
+                              <p className="text-sm text-slate-700 whitespace-pre-wrap">{o.proposal}</p>
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-4 text-xs text-slate-600 mb-3">
+                            <div className="flex items-center gap-1">
+                              <span className="text-amber-500">⭐</span>
+                              <span>Rating: <span className="font-bold text-slate-800">{o.rating ?? "N/A"}</span></span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-teal-500">✓</span>
+                              <span>Completed: <span className="font-bold text-slate-800">{o.completed_jobs ?? 0}</span></span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-blue-500">⏱</span>
+                              <span>Avg delivery: <span className="font-bold text-slate-800">{o.avg_delivery_days ? `${Number(o.avg_delivery_days).toFixed(1)}d` : "N/A"}</span></span>
+                            </div>
+                          </div>
+
+                          {isPending && (
+                            <div className="flex items-center gap-2 pt-3 border-t border-slate-200">
+                              <button
+                                className="flex-1 h-10 px-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={async () => {
+                                  try {
+                                    toast.loading("Accepting offer...", { id: "accept-offer" });
+                                    await api.post(
+                                      "/api/offers/offers/approve-reject",
+                                      { offerId: o.offer_id || o.id, action: "accept" },
+                                      {
+                                        headers: token
+                                          ? {
+                                              authorization: `Bearer ${token}`,
+                                            }
+                                          : undefined,
+                                      }
+                                    );
+                                    // Update the accepted offer and reject all others
+                                    setOffers((prev) =>
+                                      prev.map((x) => {
+                                        if ((x.offer_id || x.id) === (o.offer_id || o.id)) {
+                                          return { ...x, offer_status: "accepted" };
+                                        }
+                                        // Reject all other pending offers
+                                        if (x.offer_status === "pending") {
+                                          return { ...x, offer_status: "not_chosen" };
+                                        }
+                                        return x;
+                                      })
+                                    );
+                                    toast.success("Offer accepted successfully! Other offers rejected.", { id: "accept-offer" });
+                                  } catch (e) {
+                                    console.error("Accept offer failed", e);
+                                    toast.error(e?.response?.data?.message || "Failed to accept offer", { id: "accept-offer" });
+                                  }
+                                }}
+                              >
+                                Accept Offer
+                              </button>
+                              <button
+                                className="flex-1 h-10 px-3 rounded-xl bg-white border-2 border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={async () => {
+                                  try {
+                                    toast.loading("Rejecting offer...", { id: "reject-offer" });
+                                    await api.post(
+                                      "/api/offers/offers/approve-reject",
+                                      { offerId: o.offer_id || o.id, action: "reject" },
+                                      {
+                                        headers: token
+                                          ? {
+                                              authorization: `Bearer ${token}`,
+                                            }
+                                          : undefined,
+                                      }
+                                    );
+                                    setOffers((prev) =>
+                                      prev.map((x) =>
+                                        (x.offer_id || x.id) ===
+                                        (o.offer_id || o.id)
+                                          ? {
+                                              ...x,
+                                              offer_status: "rejected",
+                                            }
+                                          : x
+                                      )
+                                    );
+                                    toast.success("Offer rejected", { id: "reject-offer" });
+                                  } catch (e) {
+                                    console.error("Reject offer failed", e);
+                                    toast.error(e?.response?.data?.message || "Failed to reject offer", { id: "reject-offer" });
+                                  }
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           <aside className="lg:col-span-1">
