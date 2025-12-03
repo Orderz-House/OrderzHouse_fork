@@ -1,3 +1,4 @@
+// routes/tasks.js
 import express from "express";
 import multer from "multer";
 import {
@@ -21,7 +22,7 @@ import {
   addTaskFiles,
   getFreelancerCreatedTasks,
   getTaskRequests,
-  getAssignedTasks
+  getAssignedTasks,
 } from "../controller/tasks.js";
 import authentication from "../middleware/authentication.js";
 
@@ -37,12 +38,12 @@ router.put("/admin/payment/:id/confirm", authentication, confirmPaymentByAdmin);
 router.post("/freelancer", authentication, upload.array("files"), createTask);
 router.put("/freelancer/:id", authentication, updateTask);
 router.delete("/freelancer/:id", authentication, deleteTask);
-router.put("/freelancer/requests/:requestId/status", authentication, updateTaskRequestStatus);
+router.put("/freelancer/requests/:id/status", authentication, updateTaskRequestStatus);
 router.post("/freelancer/requests/:id/submit", authentication, upload.array("files"), submitWorkCompletion);
 router.post("/freelancer/requests/:id/resubmit", authentication, upload.array("files"), resubmitWorkCompletion);
 router.put("/freelancer/:id/kanban", authentication, updateTaskKanbanStatus);
 router.get("/freelancer/my-tasks", authentication, getFreelancerCreatedTasks);
-router.get("/freelancer/requests", authentication, getTaskRequests);
+router.get("/freelancer/requests/:taskId", authentication, getTaskRequests);
 router.get("/freelancer/assigned", authentication, getAssignedTasks);
 
 /* ============================== CLIENT ============================== */

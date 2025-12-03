@@ -296,4 +296,13 @@ function Field({ label, children }) {
       <div className="mt-1">{children}</div>
     </div>
   );
+=======
+// src/pages/operation/Projects/ClientsProjects.jsx
+import React from "react";
+import { ClientProjects } from "./AdminProjects.jsx";
+
+export default function ClientsProjects() {
+  // صفحة العميل في المشاريع
+  return <ClientProjects />;
+>>>>>>> 16af400207628dcf9408e6163ac3c82d304a2ffa
 }

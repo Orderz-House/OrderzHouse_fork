@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Search,
   Calendar,
-  User,
   Clock,
   ChevronLeft,
   ChevronRight,
@@ -117,21 +116,21 @@ export default function Blogs() {
                       Featured
                     </span>
                   </div>
+
                   <div className="p-5">
+                    {/* ⛔ Author REMOVED */}
                     <div className="flex items-center gap-3 text-slate-600 text-sm">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {formatDate(featured.date)}
                       </span>
-                      <span className="inline-flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {featured.author}
-                      </span>
+
                       <span className="inline-flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {featured.read}
                       </span>
                     </div>
+
                     <h1 className="text-2xl sm:text-3xl font-semibold mt-3 text-slate-900">
                       {featured.title}
                     </h1>
@@ -149,7 +148,7 @@ export default function Blogs() {
               )}
             </article>
 
-            {/* Tools (right) */}
+            {/* Tools */}
             <div className="space-y-5 lg:self-center w-full">
               <div className="relative">
                 <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -173,12 +172,11 @@ export default function Blogs() {
                     <button
                       key={c}
                       onClick={() => onCat(c)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition
-                        ${
-                          active
-                            ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
-                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-                        }`}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                        active
+                          ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
+                          : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
+                      }`}
                     >
                       {c}
                     </button>
