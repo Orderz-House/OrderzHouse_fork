@@ -146,6 +146,25 @@ export const confirmPaymentByAdmin = async (req, res) => {
 /* ===============================================================
    FREELANCER CONTROLLERS
 ================================================================= */
+function generateSpecialId() {
+  const numbers = "0123456789";
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  const r = (chars, len) =>
+    Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+
+  return (
+    r(numbers, 4) +
+    r(letters, 2) +
+    r(numbers, 2) +
+    r(letters, 1) +
+    r(numbers, 2) +
+    r(letters, 2) +
+    r(numbers, 4) +
+    r(letters, 1) +
+    r(numbers, 2)
+  );
+}
 
 export const createTask = async (req, res) => {
   try {
@@ -411,7 +430,7 @@ export const requestTask = async (req, res) => {
     if (req.token?.role !== 2)
       return res.status(403).json({ success: false, message: "Access denied. Clients only." });
 
-    const { id: taskId } = req.params; // task id
+    const { id: taskId } = req.params; 
     const clientId = req.token.userId;
     const { message } = req.body;
     const files = req.files || [];
@@ -442,23 +461,33 @@ export const requestTask = async (req, res) => {
       attachmentUrls = uploadedFiles.map((f) => f.url);
     }
 
+    const specialOrderId = generateSpecialId();
+
     const reqResult = await pool.query(
-      `INSERT INTO task_req (task_id, client_id, freelancer_id, message, attachments, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending_approval')
-       RETURNING id`,
-      [taskId, clientId, taskData.freelancer_id, message, attachmentUrls]
+      `INSERT INTO task_req 
+         (task_id, client_id, freelancer_id, message, attachments, status, special_order_id)
+       VALUES ($1, $2, $3, $4, $5, 'pending_approval', $6)
+       RETURNING id, special_order_id`,
+      [taskId, clientId, taskData.freelancer_id, message, attachmentUrls, specialOrderId]
     );
 
-    // 🔔 Notify freelancer with real client name
+    // Notify freelancer
     const { rows: clientRows } = await pool.query(
       `SELECT first_name || ' ' || last_name AS full_name FROM users WHERE id = $1`,
       [clientId]
     );
     const clientName = clientRows[0]?.full_name || "A client";
     const notifMessage = `📝 ${clientName} has requested your task "${taskData.title}"`;
+
     await NotificationCreators.taskRequested(taskData.freelancer_id, taskId, notifMessage);
 
-    res.status(201).json({ success: true, message: "Task requested successfully.", requestId: reqResult.rows[0].id });
+    res.status(201).json({
+      success: true,
+      special_order_id: reqResult.rows[0].special_order_id,
+      requestId: reqResult.rows[0].id,
+      message: "Task requested successfully."
+    });
+
   } catch (err) {
     console.error("requestTask error:", err);
     res.status(500).json({ success: false, message: "Server error requesting task." });
