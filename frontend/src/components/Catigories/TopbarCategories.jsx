@@ -139,7 +139,7 @@ export function CategoriesRail({
 
             {loadingFor === hoveredId ? (
               <p className="text-xs text-slate-400">
-                جاري تحميل الأقسام الفرعية…
+                Loading...
               </p>
             ) : hoveredMenu.length ? (
               <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 md:grid-cols-3">

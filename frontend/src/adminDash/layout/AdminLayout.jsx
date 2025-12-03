@@ -30,10 +30,10 @@ function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
   const p = pathname.replace(base, "") || "/";
 
-  // common
+  // مشترك بين الكل
   if (p === "/" || p === "") return "overview";
 
-  // admin
+  // ===== admin =====
   if (base === "/admin") {
     if (p.startsWith("/people/admins")) return "admins";
     if (p.startsWith("/people/clients")) return "clients";
@@ -55,7 +55,27 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/profile")) return "profile";
   }
 
-  // apm
+  // ===== client =====
+  if (base === "/client") {
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/tasks")) return "tasks";
+    if (p.startsWith("/courses")) return "courses";
+    if (p.startsWith("/my-subscription")) return "my-subscription";
+    if (p.startsWith("/profile")) return "profile";
+  }
+
+  // ===== freelancer =====
+  if (base === "/freelancer") {
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/tasks")) return "tasks";
+    if (p.startsWith("/courses")) return "courses";
+    if (p.startsWith("/my-subscription")) return "my-subscription";
+    if (p.startsWith("/profile")) return "profile";
+  }
+
+  // ===== apm =====
   if (base === "/apm") {
     if (p.startsWith("/history")) return "history";
     if (p.startsWith("/questions")) return "questions";
@@ -65,6 +85,7 @@ function getActiveFromPath(pathname) {
 
   return "overview";
 }
+
 
 function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
