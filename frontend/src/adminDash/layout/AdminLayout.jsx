@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
@@ -179,6 +179,11 @@ export default function AdminLayout() {
   const [pageTitle, setPageTitle] = useState("Overview");
   const [topBarRight, setTopBarRight] = useState(null);
 
+  const clearTopBarRight = useCallback(() => {
+  setTopBarRight(null);
+}, []);
+
+
   // تحديث الصفحة النشطة من الـ path
   useEffect(() => {
     setActivePage(getActiveFromPath(location.pathname));
@@ -237,11 +242,12 @@ export default function AdminLayout() {
   />
 
     <Outlet
-      context={{
-        setTopBarRight,
-        clearTopBarRight: () => setTopBarRight(null),
-      }}
-    />
+  context={{
+    setTopBarRight,
+    clearTopBarRight,
+  }}
+/>
+
 </main>
 
     </div>

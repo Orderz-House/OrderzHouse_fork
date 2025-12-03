@@ -188,7 +188,7 @@ export default function EnhancedNavbar() {
     {
       label: "PROJECTS",
       path: "/projectsPage",
-      condition: userData && (userData.role_id === 2 || userData.role_id === 3),
+      condition: userData && (userData.role_id === 1 || userData.role_id === 2 || userData.role_id === 3),
     },
     { label: "TASKS", path: "/tasks", condition: true },
   ];

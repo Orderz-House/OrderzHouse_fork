@@ -1,121 +1,217 @@
-import React, { useRef, useMemo, useEffect, useState } from "react";
-import { fetchCategories } from "./api/category";
+import React, { useMemo, useEffect, useState } from "react";
+import {
+  fetchCategories,
+  fetchSubCategoriesByCategoryId,
+  fetchSubSubCategoriesBySubId,
+} from "./api/category";
 
-export function CategoriesRail({ active, onSelect, catalog = {}, theme, themeDark }) {
-  const list = useMemo(() => Object.entries(catalog).map(([id, v]) => ({ id, name: v.title })), [catalog]);
-  const railRef = useRef(null);
+/**
+ * شريط الكاتيجوري + الميجا منيو (3 ساب كاتيجوري وكل واحد تحته ساب ساب)
+ */
+export function CategoriesRail({
+  active,
+  onSelect,
+  onSelectSubCategory, // (categoryId, subCategoryId, subSubId)
+  catalog = {},
+  theme,
+  themeDark,
+}) {
+  const list = useMemo(
+    () =>
+      Object.entries(catalog).map(([id, v]) => ({
+        id,
+        name: v.title,
+      })),
+    [catalog]
+  );
 
-  const CategoryIcons = {
-    // Design icon
-    design: () => (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 3L21 7L8 20L3 21L4 16L17 3Z" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M15 5L19 9" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    // Content icon
-    content: () => (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M14 2V8H20" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M16 13H8" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M16 17H8" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M10 9H8" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    // Programming icon
-    programming: () => (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M16 18L22 12L16 6" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8 6L2 12L8 18" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    // Development icon
-    development: () => (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="2" y="3" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8 21H16" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 17V21" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M7 8L10 11L7 14" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M13 12H17" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    // Default/fallback icon
-    default: () => (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 6V12L16 14" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
+  // الكاتيجوري اللي عليه الهوفر حاليًا
+  const [hoveredId, setHoveredId] = useState(null);
+
+  // كل كاتيجوري => مصفوفة ساب كاتيجوري + ساب ساب
+  // { [catId]: [{ id, name, subSubs: [...] }, ...] }
+  const [menuMap, setMenuMap] = useState({});
+  const [loadingFor, setLoadingFor] = useState(null);
+
+  const handleHover = (id) => {
+    setHoveredId(id);
+    if (!id) return;
+
+    // لو منيو هذا الكاتيجوري محملة مسبقًا ما نعيد الطلب
+    if (menuMap[id]) return;
+
+    setLoadingFor(id);
+
+    (async () => {
+      try {
+        // 1) نحضر 3 الساب كاتيجوري لهذا الكاتيجوري
+        const subs = await fetchSubCategoriesByCategoryId(Number(id));
+        const subsArray = Array.isArray(subs) ? subs : [];
+
+        // 2) لكل ساب كاتيجوري نحضر ساب ساب تبعه
+        const withChildren = await Promise.all(
+          subsArray.map(async (sub) => {
+            try {
+              const subSubs = await fetchSubSubCategoriesBySubId(
+                Number(sub.id)
+              );
+              return {
+                ...sub,
+                subSubs: Array.isArray(subSubs) ? subSubs : [],
+              };
+            } catch (err) {
+              console.error(
+                "Failed to fetch sub-sub-categories for sub",
+                sub.id,
+                err
+              );
+              return { ...sub, subSubs: [] };
+            }
+          })
+        );
+
+        setMenuMap((prev) => ({
+          ...prev,
+          [id]: withChildren,
+        }));
+      } catch (err) {
+        console.error("Failed to fetch sub-categories for category", err);
+        setMenuMap((prev) => ({
+          ...prev,
+          [id]: [],
+        }));
+      } finally {
+        setLoadingFor((prev) => (prev === id ? null : prev));
+      }
+    })();
   };
 
-  // Map category names to icons
-  const getIconForCategory = (name) => {
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes('content') || nameLower.includes('محتوى')) return CategoryIcons.content;
-    if (nameLower.includes('design') || nameLower.includes('تصميم')) return CategoryIcons.design;
-    if (nameLower.includes('programming') || nameLower.includes('برمجة')) return CategoryIcons.programming;
-    if (nameLower.includes('development') || nameLower.includes('تطوير')) return CategoryIcons.development;
-    return CategoryIcons.default;
-  };
+  const handleLeave = () => setHoveredId(null);
+
+  const hoveredMenu = hoveredId ? menuMap[hoveredId] || [] : [];
+  const hoveredName = hoveredId ? catalog[hoveredId]?.title || "" : "";
+
+  if (!list.length) return null;
 
   return (
-    <div className="relative">
-      <div
-        ref={railRef}
-        className="flex gap-2 sm:gap-3 overflow-x-auto py-2 sm:py-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <style>{`div::-webkit-scrollbar{display:none}`}</style>
-        {list.map((c) => {
-          const isActive = c.id.toString() === active;
-          const IconComponent = getIconForCategory(c.name);
-          
-          return (
-            <button
-              key={c.id}
-              onClick={() => onSelect?.(c.id.toString())}
-              aria-current={isActive ? "true" : "false"}
-              className="snap-start shrink-0 rounded-xl px-3.5 sm:px-4 py-2.5 flex items-center gap-2.5 whitespace-nowrap transition-all duration-200 active:scale-[.98] touch-manipulation min-h-[40px] group"
-              style={{
-                background: isActive ? `linear-gradient(135deg, ${theme}15 0%, ${theme}08 100%)` : "#fff",
-                boxShadow: isActive 
-                  ? `inset 0 0 0 2px ${theme}, 0 4px 12px ${theme}20` 
-                  : "0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.06)",
-                color: isActive ? themeDark : "#0f172a",
-              }}
-            >
-              <span 
-                className="w-9 h-9 rounded-lg grid place-items-center transition-all duration-200 group-hover:scale-110" 
-                style={{ 
-                  background: isActive 
-                    ? `linear-gradient(135deg, ${theme} 0%, ${themeDark} 100%)`
-                    : `${theme}12`,
-                  color: isActive ? "#fff" : theme,
-                  boxShadow: isActive ? `0 2px 8px ${theme}30` : "none"
-                }}
+    <div className="relative" onMouseLeave={handleLeave}>
+      {/* الشريط الرئيسي مثل Fiverr: نصوص وخط تحت النشط */}
+      <nav className="overflow-x-auto whitespace-nowrap">
+        <div className="flex items-stretch gap-6 border-b border-slate-200 min-h-[44px]">
+          {list.map((c) => {
+            const isActive = c.id.toString() === active;
+
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onSelect?.(c.id.toString())}
+                onMouseEnter={() => handleHover(c.id.toString())}
+                onFocus={() => handleHover(c.id.toString())}
+                className={
+                  "relative pb-2 pt-2 text-sm md:text-[15px] whitespace-nowrap border-b-2 border-transparent transition-colors " +
+                  (isActive
+                    ? "font-semibold"
+                    : "text-slate-500 hover:text-slate-900")
+                }
+                style={
+                  isActive
+                    ? { color: themeDark || "#0f172a", borderColor: theme }
+                    : {}
+                }
               >
-                <IconComponent />
-              </span>
-              <span className={`text-sm font-semibold transition-colors ${isActive ? 'text-slate-900' : 'text-slate-700 group-hover:text-slate-900'}`}>
                 {c.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* الميجا منيو (تظهر تحت الشريط عند الهوفر – ديسكتوب فقط) */}
+      {hoveredId && (
+        <div className="hidden md:block absolute left-0 right-0 top-full z-40">
+          <div className="mt-1 rounded-b-2xl border border-t-0 border-slate-200 bg-white shadow-lg px-6 py-4">
+            <div className="mb-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                {hoveredName || "Category"}
+              </p>
+            </div>
+
+            {loadingFor === hoveredId ? (
+              <p className="text-xs text-slate-400">
+                جاري تحميل الأقسام الفرعية…
+              </p>
+            ) : hoveredMenu.length ? (
+              <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 md:grid-cols-3">
+                {hoveredMenu.map((sub) => (
+                  <div key={sub.id} className="min-w-[160px]">
+                    {/* اسم الساب كاتيجوري (العنوان الغامق) */}
+                    <h3 className="text-[13px] font-semibold text-slate-900 mb-2">
+                      {sub.name}
+                    </h3>
+
+                    {/* الساب ساب كاتيجوري تحت العنوان */}
+                    <ul className="space-y-1.5">
+                      {sub.subSubs && sub.subSubs.length ? (
+                        sub.subSubs.map((ss) => (
+                          <li key={ss.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onSelectSubCategory?.(
+                                  hoveredId.toString(), // categoryId
+                                  sub.id.toString(), // subCategoryId
+                                  ss.id.toString() // subSubId
+                                );
+                                setHoveredId(null);
+                              }}
+                              className="text-[13px] text-slate-600 hover:text-slate-900"
+                            >
+                              {ss.name}
+                            </button>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-[12px] text-slate-400">
+                          لا توجد عناصر
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">
+                لا توجد أقسام فرعية لهذا القسم.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function Topbar({ active, onSelect, theme = "#028090", themeDark = "#05668D" }) {
+/**
+ * التوب بار اللاصق بالأعلى (يستخدم CategoriesRail داخله)
+ * يبقى معك لما تسكرول.
+ */
+export default function Topbar({
+  active,
+  onSelect,
+  onSelectSubCategory,
+  theme = "#028090",
+  themeDark = "#05668D",
+}) {
   const [catalog, setCatalog] = useState({});
 
   useEffect(() => {
     const loadCategories = async () => {
       try {
         const categories = await fetchCategories();
-        const catalogObj = Object.fromEntries(categories.map((c) => [c.id.toString(), { title: c.name }]));
+        const catalogObj = Object.fromEntries(
+          categories.map((c) => [c.id.toString(), { title: c.name }])
+        );
         setCatalog(catalogObj);
       } catch (err) {
         console.error("Failed to load categories", err);
@@ -125,11 +221,16 @@ export default function Topbar({ active, onSelect, theme = "#028090", themeDark 
   }, []);
 
   return (
-    <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-5">
-      <div className="relative rounded-2xl bg-white/70 backdrop-blur shadow-[0_10px_36px_rgba(2,128,144,.12)] ring-1 ring-black/5">
-        <div className="relative pl-3 pr-3 sm:px-10">
-          <CategoriesRail active={active} onSelect={onSelect} catalog={catalog} theme={theme} themeDark={themeDark} />
-        </div>
+    <div className="sticky top-0 z-40 bg-white">
+      <div className="-mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <CategoriesRail
+          active={active}
+          onSelect={onSelect}
+          onSelectSubCategory={onSelectSubCategory}
+          catalog={catalog}
+          theme={theme}
+          themeDark={themeDark}
+        />
       </div>
     </div>
   );
