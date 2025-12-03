@@ -490,10 +490,13 @@ export const getProjectFilesByProjectId = async (req, res) => {
       [projectId]
     );
 
+    // حتى لو ما فيش ملفات، نرجّع 200 مع قائمة فاضية بدل 404
     if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No files found for this project.",
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        files: [],
+        note: "No files found for this project.",
       });
     }
 

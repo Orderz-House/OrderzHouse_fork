@@ -40,6 +40,22 @@ projectsRouter.post("/", authentication, uploadProjectMedia, createProject);
 
 projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
+// Allow client to delete their own project (soft delete)
+projectsRouter.delete(
+  "/myprojects/:projectId",
+  authentication,
+  async (req, res, next) => {
+    // simple wrapper to delegate to controller implemented below
+    try {
+      // lazy import to avoid circular problems
+      const { deleteProjectByOwner } = await import("../controller/projectsManagment/projects.js");
+      return deleteProjectByOwner(req, res, next);
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
+
 
 projectsRouter.get("/:projectId", authentication, getProjectById);
 

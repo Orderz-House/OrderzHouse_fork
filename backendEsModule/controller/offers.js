@@ -180,33 +180,19 @@ export const approveOrRejectOffer = async (req, res) => {
     }
 
     if (action === "accept") {
+      // ✅ Check if already accepted offer exists
       const acceptedOffer = await client.query(
         `SELECT id FROM offers WHERE project_id = $1 AND offer_status = 'accepted'`,
         [offer.project_id]
       );
-      if (acceptedOffer.rows.length > 0)
+      if (acceptedOffer.rows.length > 0) {
+        await client.query("ROLLBACK");
         return res
           .status(400)
           .json({ success: false, message: "Only one offer can be accepted per project" });
-
-      const freelancerWork = await client.query(
-        `SELECT id
-         FROM projects
-         WHERE assigned_freelancer_id = $1
-           AND is_deleted = false
-           AND completion_status IN ('in_progress', 'pending_review', 'revision_requested')`,
-        [offer.freelancer_id]
-      );
-
-      if (freelancerWork.rows.length > 0) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          success: false,
-          message:
-            "This freelancer already has an in-progress, reviewing, or revision-requested project.",
-        });
       }
 
+      // ✅ Check if freelancer has active assignments
       const activeAssignment = await client.query(
         `SELECT id 
          FROM project_assignments 
@@ -223,54 +209,92 @@ export const approveOrRejectOffer = async (req, res) => {
         });
       }
 
+      // ✅ Accept the offer
       await client.query(`UPDATE offers SET offer_status = 'accepted' WHERE id = $1`, [offerId]);
 
-      // Mark all other offers for this project as "not_chosen"
+      // ✅ Mark all other offers for this project as "rejected"
       await client.query(
         `UPDATE offers 
-         SET offer_status = 'not_chosen' 
+         SET offer_status = 'rejected' 
          WHERE project_id = $1 
            AND id <> $2 
-           AND offer_status IN ('pending', 'rejected')`,
+           AND offer_status = 'pending'`,
         [offer.project_id, offerId]
       );
 
-      await client.query(
-        `UPDATE projects SET assigned_freelancer_id = $1, completion_status = 'not_started' WHERE id = $2`,
-        [offer.freelancer_id, offer.project_id]
-      );
-      await client.query(
-        `INSERT INTO escrow (project_id, freelancer_id, amount, status) VALUES ($1, $2, $3, 'held')`,
-        [offer.project_id, offer.freelancer_id, offer.bid_amount]
-      );
-
+      // ✅ Create project assignment (simple insert, let DB handle duplicates)
       try {
-        await NotificationCreators.offerStatusChanged(
-          offer.id,
-          offer.project_title,
-          offer.freelancer_id,
-          true
+        await client.query(
+          `INSERT INTO project_assignments (project_id, freelancer_id, status, assigned_at)
+           VALUES ($1, $2, 'active', NOW())`,
+          [offer.project_id, offer.freelancer_id]
         );
-        await NotificationCreators.freelancerAssignmentChanged(
-          offer.project_id,
-          offer.project_title,
-          offer.freelancer_id,
-          true
+      } catch (assignErr) {
+        // If assignment already exists, just update it
+        if (assignErr.code === '23505') { // duplicate key error
+          await client.query(
+            `UPDATE project_assignments SET status = 'active', assigned_at = NOW() 
+             WHERE project_id = $1 AND freelancer_id = $2`,
+            [offer.project_id, offer.freelancer_id]
+          );
+        } else {
+          throw assignErr; // re-throw if it's a different error
+        }
+      }
+      // ✅ Create/update escrow record (simple insert)
+      try {
+        await client.query(
+          `INSERT INTO escrow (project_id, client_id, freelancer_id, amount, status) 
+           VALUES ($1, $2, $3, $4, 'held')`,
+          [offer.project_id, offer.client_id, offer.freelancer_id, offer.bid_amount]
         );
-        await NotificationCreators.escrowFunded(
-          offer.project_id,
-          offer.project_title,
-          offer.freelancer_id,
-          offer.bid_amount
-        );
+      } catch (escrowErr) {
+        // If escrow already exists, just update it
+        if (escrowErr.code === '23505') { // duplicate key error
+          await client.query(
+            `UPDATE escrow SET amount = $4, status = 'held' 
+             WHERE project_id = $1`,
+            [offer.project_id, offer.client_id, offer.freelancer_id, offer.bid_amount]
+          );
+        } else {
+          throw escrowErr; // re-throw if it's a different error
+        }
+      }
+
+      // ✅ Send notifications (optional, don't fail if notification service is unavailable)
+      try {
+        if (NotificationCreators && typeof NotificationCreators.offerStatusChanged === 'function') {
+          await NotificationCreators.offerStatusChanged(
+            offer.id,
+            offer.project_title,
+            offer.freelancer_id,
+            true
+          );
+        }
+        if (NotificationCreators && typeof NotificationCreators.freelancerAssignmentChanged === 'function') {
+          await NotificationCreators.freelancerAssignmentChanged(
+            offer.project_id,
+            offer.project_title,
+            offer.freelancer_id,
+            true
+          );
+        }
+        if (NotificationCreators && typeof NotificationCreators.escrowFunded === 'function') {
+          await NotificationCreators.escrowFunded(
+            offer.project_id,
+            offer.project_title,
+            offer.freelancer_id,
+            offer.bid_amount
+          );
+        }
       } catch (e) {
-        console.error(e);
+        console.error("Notification error (non-critical):", e);
       }
 
       await client.query("COMMIT");
       return res.json({
         success: true,
-        message: "Offer accepted, other offers marked as not chosen, freelancer assigned, escrow funded",
+        message: "Offer accepted, other offers rejected, freelancer assigned, escrow funded",
       });
     }
   } catch (error) {
@@ -326,21 +350,90 @@ export const getOffersForMyProjects = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
 
     const offersQuery = await pool.query(
-      `SELECT o.id AS offer_id, o.freelancer_id, u.first_name || ' ' || u.last_name AS freelancer_name,
-              u.email AS freelancer_email, o.project_id, p.title AS project_title, o.bid_amount,
-              o.proposal, o.offer_status, o.created_at AS submitted_at
+      `SELECT 
+         o.id AS offer_id,
+         o.freelancer_id,
+         o.project_id,
+         o.bid_amount,
+         o.proposal,
+         o.offer_status
        FROM offers o
        JOIN projects p ON o.project_id = p.id
-       JOIN users u ON o.freelancer_id = u.id
        WHERE p.user_id = $1
-       ORDER BY o.created_at DESC`,
+       ORDER BY o.id DESC`,
       [ownerId]
     );
 
-    res.status(200).json({ success: true, offers: offersQuery.rows });
+    res.status(200).json({ success: true, data: offersQuery.rows, message: "Offers fetched successfully" });
   } catch (err) {
     console.error("getOffersForMyProjects error:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * -------------------------------
+ * GET OFFERS FOR A SPECIFIC PROJECT (CLIENT VIEW)
+ * -------------------------------
+ */
+export const getOffersForProject = async (req, res) => {
+  try {
+    const ownerId = req.token?.userId;
+    const { projectId } = req.params;
+
+    if (!ownerId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!projectId)
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing projectId" });
+
+    // ✅ تأكيد أن المشروع مملوك لهذا العميل
+    const proj = await pool.query(
+      `SELECT id, user_id, title 
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!proj.rows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
+
+    if (String(proj.rows[0].user_id) !== String(ownerId))
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view offers for this project",
+      });
+
+    // ✅ Query with freelancer statistics - simplified to check column names
+    const q = `
+      SELECT 
+        o.*,
+        u.first_name,
+        u.last_name,
+        u.first_name || ' ' || u.last_name AS freelancer_name,
+        u.email AS freelancer_email,
+        u.username,
+        p.title AS project_title
+      FROM offers o
+      JOIN projects p ON o.project_id = p.id
+      JOIN users u ON o.freelancer_id = u.id
+      WHERE o.project_id = $1
+      ORDER BY o.id DESC
+    `;
+
+    const { rows } = await pool.query(q, [projectId]);
+
+    return res.status(200).json({
+      success: true,
+      data: rows,
+      message: "Offers fetched successfully",
+    });
+  } catch (err) {
+    console.error("getOffersForProject error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

@@ -14,13 +14,11 @@ export default function OrderzHousePageRedesign() {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Merriweather', serif" }}>
       {/* Hero Section */}
-      <HeroSection onSearch={handleSearch} />
+      <HeroSection onSearch={handleSearch} />,
+      
 
       {/* Categories Section */}
       <Categories />
-
-      {/* Live activity counters (added, placed directly under Popular Services) */}
-      <LiveActivity />
 
       {/* Community Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

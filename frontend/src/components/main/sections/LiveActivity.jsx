@@ -134,40 +134,23 @@ useEffect(() => {
   const fmt = (n) => n.toLocaleString();
 
   return (
-    <section className="py-6 sm:py-8 px-6 lg:px-8 bg-white">
+    <section className="py-6 sm:py-8 ">
       <div className="max-w-7xl mx-auto">
         <div
-          className="rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 justify-between"
-          style={{ background: `linear-gradient(90deg, rgba(0,170,180,0.06) 0%, rgba(2,128,144,0.03) 40%, #ffffff 100%)` }}
+          className="rounded-2xl flex flex-row sm:flex-col items-stretch gap-4 sm:gap-6 justify-between"
+          
         >
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-3">
-              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full" style={{ background: primary }}>
-                <span className="block w-2 h-2 rounded-full bg-white animate-pulse" />
-              </span>
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Live platform activity</div>
-              <div className="ml-2 text-xs text-slate-400">·</div>
-              <div className="text-xs text-slate-500">Active now</div>
-            </div>
 
-            <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-extrabold" style={{ color: primaryDark }}>
-              Platform Live Monitor
-            </div>
-            <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-              Freshly updated numbers that simulate active usage across the platform.
-            </p>
-          </div>
-
-          <div className="flex gap-4 sm:gap-6 items-center justify-center sm:justify-end flex-wrap">
+          <div className="flex gap-4 justify-center sm:justify-end ">
             {/* ==== TOTAL PROJECTS ==== */}
             <div
               onMouseEnter={() => setHoveredTotal(true)}
               onMouseLeave={() => setHoveredTotal(false)}
               onClick={() => setIsPaused((s) => !s)}
-              className={`rounded-xl bg-white ring-1 ring-black/5 p-4 sm:p-5 min-w-[160px] text-center transition-transform duration-200 ${
+              className={`rounded-xl bg-white  p-4 sm:p-5 min-w-[160px] text-center transition-transform duration-200 ${
                 pulseTotal ? "scale-[1.02]" : ""
               }`}
-              style={{ boxShadow: `0 1px 6px rgba(2,128,144,0.06)` }}
+              
             >
               <div className="text-sm text-slate-500">Total projects</div>
               <div className="mt-2 text-2xl sm:text-3xl font-extrabold" style={{ color: primary }}>
