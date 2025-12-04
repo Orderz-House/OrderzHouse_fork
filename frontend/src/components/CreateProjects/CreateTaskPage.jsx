@@ -1,3 +1,4 @@
+// components/CreateProjects/CreateTaskPage.jsx
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +9,7 @@ import ProjectCoverStep from "./steps/ProjectCoverStep";
 import ProjectFilesStep from "./steps/ProjectFilesStep";
 import PaymentStep from "./steps/PaymentStep";
 
-import { createTaskApi, uploadTaskFilesApi } from "./api/tasks"; // عدّل المسار حسب مشروعك
+import { createTaskApi } from "./api/tasks"; // عدّل المسار حسب مشروعك
 
 const THEME = "#028090";
 
@@ -35,44 +36,39 @@ export default function CreateTaskPage() {
     setIsSubmitting(true);
 
     try {
-      // نبني FormData للـ task (مثل المشاريع)
       const formData = new FormData();
+
+      // payload جاي من ProjectDetailsStep (مع price جاهزة للباك)
       const payload = {
         ...taskData,
-        project_type: "fixed", // النوع الوحيد للـ tasks
+        project_type: "fixed", // التاسكات دايمًا fixed
       };
 
-      for (const [key, value] of Object.entries(payload)) {
+      Object.entries(payload).forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach((v) => formData.append(`${key}[]`, v));
         } else if (value !== undefined && value !== null) {
           formData.append(key, value);
         }
+      });
+
+      // الباك إند مستني field اسمه "files"
+      if (coverPic) {
+        formData.append("files", coverPic);
+      }
+      if (files && files.length) {
+        files.forEach((file) => formData.append("files", file));
       }
 
-      if (coverPic) formData.append("cover_pic", coverPic);
+      await createTaskApi(formData, token);
 
-      // 1) إنشاء التاسك
-      const createdTask = await createTaskApi(formData, token);
-      const taskId = createdTask.id;
-
-      // 2) رفع الملفات (اختياري)
-      if (files.length > 0) {
-        try {
-          await uploadTaskFilesApi(taskId, files, token);
-        } catch {
-          showToast(
-            "Task created but file upload failed. You can upload them later.",
-            "warning"
-          );
-        }
-      }
-
-      showToast("Task created successfully!", "success");
-      navigate("/freelancer/tasks"); // عدّل المسار لو عندك صفحة أخرى لقائمة التاسكات
+      showToast("Task created successfully! Pending admin approval.", "success");
+      navigate("/freelancer/tasks");
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || err.message || "Failed to create task";
+        err?.message ||
+        err?.response?.data?.message ||
+        "Failed to create task";
       showToast(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
@@ -99,7 +95,7 @@ export default function CreateTaskPage() {
           </p>
         </div>
 
-        {/* Progress (نفس اللي في صفحة البروجكت تقريبًا) */}
+        {/* Progress */}
         <div className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="relative">
             <div className="absolute left-4 right-4 top-[28px] h-1 bg-slate-100 rounded-full" />
@@ -164,7 +160,7 @@ export default function CreateTaskPage() {
           </div>
         </div>
 
-        {/* Step Content */}
+        {/* Steps */}
         <div className="transition-all duration-300">
           {step === 1 && (
             <ProjectDetailsStep

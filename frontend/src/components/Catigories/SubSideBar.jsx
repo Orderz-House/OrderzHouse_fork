@@ -1,12 +1,16 @@
+// components/Projects/SubSideBar.jsx
 import React, { useEffect, useState } from "react";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
 
 // Projects API
 import {
   fetchAuthProjectsByCategory,
-  fetchAuthProjectsBySubSubCategory,
   fetchAuthProjectsBySubCategory,
+  fetchAuthProjectsBySubSubCategory,
 } from "./api/projects";
+
+// Tasks API
+import { fetchTasksByFilter } from "../CreateProjects/api/tasks";
 
 import ProjectCard from "./ProjectCard";
 
@@ -23,7 +27,6 @@ export default function SubSidebar({
   const [loadingSubSubs, setLoadingSubSubs] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
 
-  // ====== FILTER STATE (Fiverr‑style bar) ======
   const [projectTypeFilter, setProjectTypeFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("default");
   const [budgetFilter, setBudgetFilter] = useState("any");
@@ -33,7 +36,7 @@ export default function SubSidebar({
 
   const isTasks = mode === "tasks";
 
-  // ====== Fetch sub‑sub categories ======
+  // load sub-sub categories
   useEffect(() => {
     if (!categoryId) {
       setSubSubs([]);
@@ -47,7 +50,7 @@ export default function SubSidebar({
       .finally(() => setLoadingSubSubs(false));
   }, [categoryId]);
 
-  // ====== Fetch projects / tasks ======
+  // load items (projects / tasks)
   useEffect(() => {
     if (!categoryId) {
       setItems([]);
@@ -58,28 +61,37 @@ export default function SubSidebar({
 
     const run = async () => {
       try {
+        if (isTasks) {
+          const data = await fetchTasksByFilter({
+            category: Number(categoryId),
+            subcat: subCategoryId ? Number(subCategoryId) : undefined,
+            sub: activeSubSub ? Number(activeSubSub) : undefined,
+          });
+          setItems(Array.isArray(data) ? data : []);
+          return;
+        }
+
+        // projects
         if (activeSubSub) {
-          const data = isTasks
-            ? await fetchAuthTasksBySubSubCategory(Number(activeSubSub))
-            : await fetchAuthProjectsBySubSubCategory(Number(activeSubSub));
+          const data = await fetchAuthProjectsBySubSubCategory(
+            Number(activeSubSub)
+          );
           setItems(Array.isArray(data) ? data : []);
           return;
         }
 
         if (subCategoryId) {
-          const data = isTasks
-            ? await fetchAuthTasksBySubCategory(Number(subCategoryId))
-            : await fetchAuthProjectsBySubCategory(Number(subCategoryId));
+          const data = await fetchAuthProjectsBySubCategory(
+            Number(subCategoryId)
+          );
           setItems(Array.isArray(data) ? data : []);
           return;
         }
 
-        const data = isTasks
-          ? await fetchAuthTasksByCategory(Number(categoryId))
-          : await fetchAuthProjectsByCategory(Number(categoryId));
+        const data = await fetchAuthProjectsByCategory(Number(categoryId));
         setItems(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error(err);
+        console.error("SubSidebar fetch error:", err);
         setItems([]);
       } finally {
         setLoadingItems(false);
@@ -92,11 +104,9 @@ export default function SubSidebar({
   if (!categoryId) return null;
 
   const hasSidebar = subSubs.length > 0;
-  // ProjectCard expects "price" for projects and "budget" for tasks in your code
-  const priceField = isTasks ? "budget" : "price";
+  const priceField = isTasks ? "price" : "budget";
 
-  // ====== Helpers based on your create‑project structure ======
-  // project_type, budget, hourly_rate, budget_min, budget_max, duration_type, duration_days, duration_hours 
+  // helpers (projects only)
   const getProjectType = (item) => item?.project_type || null;
 
   const getBudgetRange = (item) => {
@@ -109,7 +119,6 @@ export default function SubSidebar({
 
     if (type === "hourly") {
       const rate = Number(item?.hourly_rate || 0);
-      // same assumption you use in PaymentStep: 3 hours as estimate :contentReference[oaicite:2]{index=2}
       const total = rate * 3;
       return [total, total];
     }
@@ -120,8 +129,7 @@ export default function SubSidebar({
       return [min, max];
     }
 
-    // Fallback if project_type is missing
-    const value = Number(item?.[priceField] || 0);
+    const value = Number(item?.price || 0);
     return [value, value];
   };
 
@@ -174,36 +182,16 @@ export default function SubSidebar({
     return false;
   };
 
-  // ====== Skeleton grid ======
   const SkeletonGrid = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {[...Array(8)].map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-[16/9] bg-slate-200 rounded-xl mb-3"></div>
-          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+          <div className="aspect-[16/9] bg-slate-200 rounded-xl mb-3" />
+          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+          <div className="h-4 bg-slate-200 rounded w-1/2" />
         </div>
       ))}
     </div>
-  );
-
-  // ====== Small UI components ======
-  const Chip = ({ active, children, onClick }) => (
-    <button
-      onClick={onClick}
-      type="button"
-      className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all ${
-        active
-          ? "text-slate-900"
-          : "text-slate-700 hover:text-slate-900 bg-white"
-      }`}
-      style={{
-        background: active ? theme + "14" : undefined,
-        borderColor: active ? theme : "rgb(226 232 240)",
-      }}
-    >
-      {children}
-    </button>
   );
 
   const FilterDropdown = ({ label, value, onChange, options }) => (
@@ -252,18 +240,16 @@ export default function SubSidebar({
     </button>
   );
 
-  // ====== Apply filters (projects only; tasks stay as-is) ======
+  // filters (projects only)
   let visibleItems = items;
 
   if (!isTasks && items.length) {
     visibleItems = items.filter((item) => {
-      // Project type
       if (projectTypeFilter !== "all") {
         const type = getProjectType(item);
         if (type && type !== projectTypeFilter) return false;
       }
 
-      // Budget ranges
       if (budgetFilter !== "any") {
         const [minBudget, maxBudget] = getBudgetRange(item);
 
@@ -281,7 +267,6 @@ export default function SubSidebar({
         if (budgetFilter === "1000+" && !(minBudget >= 1000)) return false;
       }
 
-      // Delivery time
       if (durationFilter !== "any") {
         const days = getDurationInDays(item);
         if (days != null) {
@@ -292,12 +277,10 @@ export default function SubSidebar({
         }
       }
 
-      // With files – only filters if the API actually sends file info
       if (withFilesOnly && hasFilesInfo(item) && !itemHasFiles(item)) {
         return false;
       }
 
-      // With freelancer – only filters if freelancer info exists
       if (
         withFreelancerOnly &&
         hasFreelancerInfo(item) &&
@@ -309,7 +292,6 @@ export default function SubSidebar({
       return true;
     });
 
-    // Sorting
     if (sortFilter === "price_low_high") {
       visibleItems = [...visibleItems].sort((a, b) => {
         const [, maxA] = getBudgetRange(a);
@@ -333,85 +315,95 @@ export default function SubSidebar({
 
   return (
     <div className="w-full">
-      {/* ===== Top filter bar – like the top row in Fiverr ===== */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterDropdown
-            label="Project type"
-            value={projectTypeFilter}
-            onChange={setProjectTypeFilter}
-            options={[
-              { value: "all", label: "All types" },
-              { value: "fixed", label: "Fixed price" },
-              { value: "hourly", label: "Hourly" },
-              { value: "bidding", label: "Bidding" },
-            ]}
-          />
+      {/* filters bar – projects only */}
+      {!isTasks && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <FilterDropdown
+              label="Project type"
+              value={projectTypeFilter}
+              onChange={setProjectTypeFilter}
+              options={[
+                { value: "all", label: "All types" },
+                { value: "fixed", label: "Fixed price" },
+                { value: "hourly", label: "Hourly" },
+                { value: "bidding", label: "Bidding" },
+              ]}
+            />
 
-          <FilterDropdown
-            label="Budget"
-            value={budgetFilter}
-            onChange={setBudgetFilter}
-            options={[
-              { value: "any", label: "Any budget" },
-              { value: "0-100", label: "Up to $100" },
-              { value: "100-500", label: "$100 – $500" },
-              { value: "500-1000", label: "$500 – $1000" },
-              { value: "1000+", label: "$1000+" },
-            ]}
-          />
+            <FilterDropdown
+              label="Budget"
+              value={budgetFilter}
+              onChange={setBudgetFilter}
+              options={[
+                { value: "any", label: "Any budget" },
+                { value: "0-100", label: "Up to $100" },
+                { value: "100-500", label: "$100 – $500" },
+                { value: "500-1000", label: "$500 – $1000" },
+                { value: "1000+", label: "$1000+" },
+              ]}
+            />
 
-          <FilterDropdown
-            label="Delivery time"
-            value={durationFilter}
-            onChange={setDurationFilter}
-            options={[
-              { value: "any", label: "Any time" },
-              { value: "1", label: "Up to 1 day" },
-              { value: "3", label: "Up to 3 days" },
-              { value: "7", label: "Up to 7 days" },
-              { value: "7+", label: "More than 7 days" },
-            ]}
-          />
+            <FilterDropdown
+              label="Delivery time"
+              value={durationFilter}
+              onChange={setDurationFilter}
+              options={[
+                { value: "any", label: "Any time" },
+                { value: "1", label: "Up to 1 day" },
+                { value: "3", label: "Up to 3 days" },
+                { value: "7", label: "Up to 7 days" },
+                { value: "7+", label: "More than 7 days" },
+              ]}
+            />
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Toggle
+              checked={withFilesOnly}
+              onChange={setWithFilesOnly}
+              label="With files"
+            />
+            <Toggle
+              checked={withFreelancerOnly}
+              onChange={setWithFreelancerOnly}
+              label="With freelancer"
+            />
+          </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-4">
-          <Toggle
-            checked={withFilesOnly}
-            onChange={setWithFilesOnly}
-            label="With files"
-          />
-          <Toggle
-            checked={withFreelancerOnly}
-            onChange={setWithFreelancerOnly}
-            label="With freelancer"
-          />
+      {/* results bar */}
+      {!isTasks && (
+        <div className="mb-4 flex items-center justify-between text-sm px-3">
+          <span className="text-slate-600">
+            {visibleItems.length.toLocaleString()} results
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500">Sort by:</span>
+            <select
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer"
+            >
+              <option value="default">Best selling</option>
+              <option value="newest">Newest</option>
+              <option value="price_low_high">Price: Low to High</option>
+              <option value="price_high_low">Price: High to Low</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ===== Results count + sort bar (like “220,000+ results | Sort by: Best selling”) ===== */}
-      <div className="mb-4 flex items-center justify-between text-sm px-3">
-        <span className="text-slate-600">
-          {visibleItems.length.toLocaleString()} results
-        </span>
-
-        <div className="flex items-center gap-2">
-          <span className="text-slate-500">Sort by:</span>
-          <select
-            value={sortFilter}
-            onChange={(e) => setSortFilter(e.target.value)}
-            className="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer"
-          >
-            <option value="default">Best selling</option>
-            <option value="newest">Newest</option>
-            <option value="price_low_high">Price: Low to High</option>
-            <option value="price_high_low">Price: High to Low</option>
-          </select>
+      {isTasks && (
+        <div className="mb-4 flex items-center justify-between text-sm px-3">
+          <span className="text-slate-600">
+            {items.length.toLocaleString()} tasks
+          </span>
         </div>
-      </div>
+      )}
 
-   
-      {/* Grid */}
+      {/* grid */}
       <div className="flex w-full gap-6 lg:gap-8">
         <div className="flex-1 min-w-0">
           {loadingItems ? (

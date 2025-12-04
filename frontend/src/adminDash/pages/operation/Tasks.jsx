@@ -362,7 +362,7 @@ function FreelancerTasks() {
         </div>
 
         <a
-          href="/freelancer/tasks/new"
+          href="/tasks/create"
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm"
           style={{ backgroundColor: primary }}
         >
