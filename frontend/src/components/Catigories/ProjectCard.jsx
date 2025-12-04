@@ -1,3 +1,4 @@
+// components/Projects/ProjectCard.jsx
 import { Link } from "react-router-dom";
 
 export default function ProjectCard({
@@ -6,25 +7,70 @@ export default function ProjectCard({
   linkBase = "projects",
   priceField = "price",
 }) {
-  const { id, title, cover_pic, cover, image, offersVideo, tags = [], offers } = project;
-  const to = `/${linkBase}/${id}`;
-  const displayPrice = project?.[priceField] ?? project?.price ?? project?.budget ?? "—";
-  const coverSrc = cover_pic || cover || image;
+  const {
+    id,
+    title,
+    cover_pic,
+    cover,
+    image,
+    offersVideo,
+    tags = [],
+    offers,
+  } = project;
 
-  // Minimal offer notification block
+  const to = `/${linkBase}/${id}`;
+  const displayPrice =
+    project?.[priceField] ??
+    project?.price ??
+    project?.budget ??
+    "—";
+
+  const firstAttachment =
+    Array.isArray(project.attachments) && project.attachments.length > 0
+      ? project.attachments[0]
+      : null;
+
+  const coverSrc =
+    cover_pic ||
+    cover ||
+    image ||
+    firstAttachment ||
+    "/placeholder.svg?height=200&width=320";
+
   let offerBlock = null;
-  if (Array.isArray(offers) && offers.length > 0) {
-    // Use the first offer for display (can be adjusted)
+  if (!linkBase.startsWith("tasks") && Array.isArray(offers) && offers.length) {
     const offer = offers[0];
     const freelancer = offer?.freelancer || {};
     offerBlock = (
       <div className="mt-2 p-2 rounded-lg border border-emerald-200 bg-emerald-50 flex flex-col gap-1">
-        <div className="text-xs font-semibold text-emerald-700">Offer Submitted</div>
+        <div className="text-xs font-semibold text-emerald-700">
+          Offer Submitted
+        </div>
         <div className="flex flex-wrap gap-2 text-xs text-slate-700">
-          <span>Value: <span className="font-bold">${offer?.bid_amount ?? "—"}</span></span>
-          <span>Rating: <span className="font-bold">{freelancer?.rating ?? "—"}</span></span>
-          <span>Completed Jobs: <span className="font-bold">{freelancer?.completed_jobs ?? "—"}</span></span>
-          <span>Avg. Delivery: <span className="font-bold">{freelancer?.avg_delivery_time ?? "—"}</span></span>
+          <span>
+            Value:{" "}
+            <span className="font-bold">
+              ${offer?.bid_amount ?? "—"}
+            </span>
+          </span>
+          <span>
+            Rating:{" "}
+            <span className="font-bold">
+              {freelancer?.rating ?? "—"}
+            </span>
+          </span>
+          <span>
+            Completed Jobs:{" "}
+            <span className="font-bold">
+              {freelancer?.completed_jobs ?? "—"}
+            </span>
+          </span>
+          <span>
+            Avg. Delivery:{" "}
+            <span className="font-bold">
+              {freelancer?.avg_delivery_time ?? "—"}
+            </span>
+          </span>
         </div>
       </div>
     );
@@ -43,21 +89,32 @@ export default function ProjectCard({
       </Link>
 
       <div className="p-3 px-1">
-        <h3 className="mt-1 text-[15px] text-slate-800 line-clamp-2" title={title}>
+        <h3
+          className="mt-1 text-[15px] text-slate-800 line-clamp-2"
+          title={title}
+        >
           <Link to={to} state={{ project }} className="hover:underline">
             {title}
           </Link>
         </h3>
+
         <div className="mt-2 flex items-center justify-between text-sm">
-          <span className="text-slate-500">From</span>
-          <span className="font-semibold text-slate-900">${displayPrice}</span>
+          <span className="text-slate-500">
+            {linkBase === "tasks" ? "Price" : "From"}
+          </span>
+          <span className="font-semibold text-slate-900">
+            ${displayPrice}
+          </span>
         </div>
+
         {offerBlock}
-        {offersVideo && (
+
+        {offersVideo && !linkBase.startsWith("tasks") && (
           <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-700">
             🎥 Offers video consultations
           </div>
         )}
+
         {tags.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {tags.slice(0, 5).map((t) => (

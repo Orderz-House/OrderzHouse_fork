@@ -1,5 +1,9 @@
+// components/CreateProjects/steps/ProjectDetailsStep.jsx
 import React, { useState, useEffect } from "react";
-import { fetchCategories, fetchSubSubCategoriesByCategoryId } from "../api/category";
+import {
+  fetchCategories,
+  fetchSubSubCategoriesByCategoryId,
+} from "../api/category";
 
 const THEME = "#028090";
 
@@ -7,7 +11,7 @@ export default function ProjectDetailsStep({
   onNext,
   projectData,
   setProjectData,
-  isTask = false, // 👈 مهم جداً
+  isTask = false,
 }) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
@@ -22,7 +26,7 @@ export default function ProjectDetailsStep({
       duration_type: "days",
       duration_days: 1,
       duration_hours: 1,
-      project_type: "fixed", // الافتراضي
+      project_type: "fixed",
       budget: 1,
       budget_min: 1,
       budget_max: 1,
@@ -31,7 +35,6 @@ export default function ProjectDetailsStep({
     };
 
     const merged = { ...base, ...(projectData || {}) };
-    // لو تاسك خلي النوع دايمًا fixed
     if (isTask) merged.project_type = "fixed";
     return merged;
   });
@@ -61,6 +64,7 @@ export default function ProjectDetailsStep({
 
   useEffect(() => {
     setIsFormValid(validateForm(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
 
   const handleChange = (e) => {
@@ -74,7 +78,10 @@ export default function ProjectDetailsStep({
       "budget_max",
     ];
     let newValue = value;
-    if (noZeroFields.includes(name)) newValue = Math.max(Number(value), 1);
+    if (noZeroFields.includes(name)) {
+      const num = Number(value);
+      newValue = Number.isNaN(num) ? "" : Math.max(num, 1);
+    }
     setForm((prev) => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -151,10 +158,20 @@ export default function ProjectDetailsStep({
     e.preventDefault();
     if (!validateForm()) return;
 
-    // لو تاسك نتأكد مرة أخيرة إن النوع fixed
+    // لو تاسك نبعث فقط الحقول اللي الباك إند مستنيها
     const finalData = isTask
-      ? { ...form, project_type: "fixed" }
-      : { ...form };
+      ? {
+          title: form.title,
+          description: form.description,
+          price: form.budget, // مهم: budget → price
+          category_id: form.category_id,
+          duration_days:
+            form.duration_type === "days" ? form.duration_days : 0,
+          duration_hours:
+            form.duration_type === "hours" ? form.duration_hours : 0,
+          sub_sub_category_id: form.sub_sub_category_id,
+        }
+      : form;
 
     setProjectData(finalData);
     onNext();
@@ -389,7 +406,7 @@ export default function ProjectDetailsStep({
           </div>
         </div>
 
-        {/* Project Type – يظهر فقط في البروجكت */}
+        {/* Project Type – فقط للبروجكتس */}
         {!isTask && (
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -430,7 +447,6 @@ export default function ProjectDetailsStep({
 
         {/* Budget */}
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-          {/* بما إن التاسك Fixed فقط، الجزء هذا يكفي */}
           {form.project_type === "fixed" && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -463,16 +479,8 @@ export default function ProjectDetailsStep({
             </div>
           )}
 
-          {/* باقي الحالات (hourly/bidding) تظل للبروجكت فقط، مش هنستخدمها مع التاسك */}
-          {!isTask && form.project_type === "hourly" && (
-            /* ... نفس كود hourly القديم ... */
-            <></>
-          )}
-
-          {!isTask && form.project_type === "bidding" && (
-            /* ... نفس كود bidding القديم ... */
-            <></>
-          )}
+          {!isTask && form.project_type === "hourly" && <></>}
+          {!isTask && form.project_type === "bidding" && <></>}
         </div>
 
         {/* Duration */}

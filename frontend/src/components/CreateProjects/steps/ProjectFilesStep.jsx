@@ -1,3 +1,4 @@
+// components/CreateProjects/steps/ProjectFilesStep.jsx
 import React, { useState } from "react";
 
 const THEME = "#028090";
@@ -12,7 +13,7 @@ export default function ProjectFilesStep({
   const [dragActive, setDragActive] = useState(false);
 
   const handleChange = (e) => {
-    const selectedFiles = Array.from(e.target.files).slice(0, 5);
+    const selectedFiles = Array.from(e.target.files || []).slice(0, 5);
     setFiles(selectedFiles);
   };
 
@@ -37,11 +38,13 @@ export default function ProjectFilesStep({
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024,
-      sizes = ["Bytes", "KB", "MB", "GB"];
+    if (!bytes) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+    return (
+      Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
+    );
   };
 
   return (
@@ -51,7 +54,7 @@ export default function ProjectFilesStep({
           {isTask ? "Upload Task Files" : "Upload Project Files"}
         </h2>
         <p className="text-slate-600">
-          Drag & drop files or click to select (max 5) - Optional
+          Drag & drop files or click to select (max 5) – Optional
         </p>
       </div>
 
@@ -123,7 +126,9 @@ export default function ProjectFilesStep({
                     />
                   </svg>
                   <div>
-                    <p className="text-slate-900 font-medium">{file.name}</p>
+                    <p className="text-slate-900 font-medium">
+                      {file.name}
+                    </p>
                     <p className="text-slate-500 text-sm">
                       {formatFileSize(file.size)}
                     </p>
@@ -143,12 +148,14 @@ export default function ProjectFilesStep({
 
       <div className="flex gap-4 mt-8">
         <button
+          type="button"
           onClick={onBack}
           className="flex-1 h-12 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
         >
           Back
         </button>
         <button
+          type="button"
           onClick={onNext}
           className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
           style={{ background: THEME }}

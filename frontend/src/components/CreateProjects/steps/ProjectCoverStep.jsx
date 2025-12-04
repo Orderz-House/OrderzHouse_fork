@@ -1,3 +1,4 @@
+// components/CreateProjects/steps/ProjectCoverStep.jsx
 import React, { useState } from "react";
 
 const THEME = "#028090";
@@ -7,14 +8,14 @@ export default function ProjectCoverStep({
   setCoverPic,
   onNext,
   onBack,
-  isTask = false, // 👈
+  isTask = false,
 }) {
   const [preview, setPreview] = useState(
     coverPic ? URL.createObjectURL(coverPic) : null
   );
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setCoverPic(file);
       setPreview(URL.createObjectURL(file));
@@ -29,14 +30,14 @@ export default function ProjectCoverStep({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8">
       <div className="mb-6">
-       <h2 className="text-2xl font-black tracking-tight text-slate-900">
-  {isTask ? "Task Cover Image" : "Project Cover Image"}
-</h2>
-<p className="text-slate-600">
-  {isTask
-    ? "Upload a nice preview image for your task (optional)"
-    : "Upload a nice preview image for your project (optional)"}
-</p>
+        <h2 className="text-2xl font-black tracking-tight text-slate-900">
+          {isTask ? "Task Cover Image" : "Project Cover Image"}
+        </h2>
+        <p className="text-slate-600">
+          {isTask
+            ? "Upload a nice preview image for your task (optional)"
+            : "Upload a nice preview image for your project (optional)"}
+        </p>
       </div>
 
       <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-[#028090]/50 transition-all">
@@ -75,10 +76,11 @@ export default function ProjectCoverStep({
           <div className="relative inline-block">
             <img
               src={preview}
-              alt="Project Cover Preview"
+              alt="Cover preview"
               className="w-full max-w-md mx-auto rounded-2xl shadow-md border border-slate-200"
             />
             <button
+              type="button"
               onClick={handleRemove}
               className="absolute top-2 right-2 bg-white/80 hover:bg-white text-red-600 font-bold rounded-full px-2"
             >
@@ -90,12 +92,14 @@ export default function ProjectCoverStep({
 
       <div className="flex gap-4 mt-8">
         <button
+          type="button"
           onClick={onBack}
           className="flex-1 h-12 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
         >
           Back
         </button>
         <button
+          type="button"
           onClick={onNext}
           className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
           style={{ background: THEME }}
