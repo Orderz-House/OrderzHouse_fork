@@ -11,6 +11,7 @@ import PaymentStep from "./steps/PaymentStep";
 
 import {
   createProjectApi,
+  createAdminProjectApi,
   uploadProjectFilesApi,
   assignFreelancerApi,
   recordOfflinePaymentApi,
@@ -31,8 +32,23 @@ export default function CreateProjectPage() {
   const [proofFile, setProofFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const nextStep = () => {
+    // For admin projects, skip the freelancer assignment step (step 4)
+    if (projectData.isAdminProject && step === 3) {
+      setStep(4); // Go directly to payment step
+    } else {
+      setStep((prev) => Math.min(prev + 1, projectData.isAdminProject ? 4 : 5));
+    }
+  };
+  
+  const prevStep = () => {
+    // For admin projects, skip the freelancer assignment step (step 4)
+    if (projectData.isAdminProject && step === 4) {
+      setStep(3); // Go back to files step
+    } else {
+      setStep((prev) => Math.max(prev - 1, 1));
+    }
+  };
 
   const handleFinalSubmit = async () => {
     if (!token) {
@@ -48,42 +64,57 @@ export default function CreateProjectPage() {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create project
-      const createdProject = await createProjectApi(projectData, token, coverPic);
-      const projectId = createdProject.id;
-
-      // Step 2: Upload project files (optional)
-      if (files.length > 0) {
-        try {
-          await uploadProjectFilesApi(projectId, files, token);
-        } catch {
-          showToast("Project created but file upload failed. You can upload them later.", "warning");
-        }
-      }
-
-      // Step 3: Assign freelancer (optional)
-      if (selectedFreelancer) {
-        try {
-          await assignFreelancerApi(projectId, selectedFreelancer.id, token);
-        } catch {
-          showToast("Freelancer invitation failed. You can invite later.", "warning");
-        }
-      }
-
-      // Step 4: Record payment proof
-      let amount = 0;
-      if (projectData.project_type === "fixed") amount = Number(projectData.budget);
-      else if (projectData.project_type === "hourly") amount = Number(projectData.hourly_rate) * 3;
-      else if (projectData.project_type === "bidding") amount = Number(projectData.budget_max);
-
-      if (!isNaN(amount) && amount > 0) {
-        try {
-          await recordOfflinePaymentApi(projectId, proofFile, token, amount);
-        } catch {
-          showToast("Payment proof upload failed. Please contact support.", "warning");
-        }
+      let createdProject;
+      let projectId;
+      
+      // Check if this is an admin project
+      if (projectData.isAdminProject && projectData.adminData) {
+        // Step 1: Create admin project
+        createdProject = await createAdminProjectApi(projectData.adminData, token, coverPic);
+        projectId = createdProject.id;
+        
+        // For admin projects, we don't need to do the other steps as the project is already assigned
+        showToast("Admin project created successfully!", "success");
+        navigate("/");
+        return;
       } else {
-        showToast("Invalid payment amount. Cannot submit payment proof.", "error");
+        // Step 1: Create regular project
+        createdProject = await createProjectApi(projectData, token, coverPic);
+        projectId = createdProject.id;
+
+        // Step 2: Upload project files (optional)
+        if (files.length > 0) {
+          try {
+            await uploadProjectFilesApi(projectId, files, token);
+          } catch {
+            showToast("Project created but file upload failed. You can upload them later.", "warning");
+          }
+        }
+
+        // Step 3: Assign freelancer (optional)
+        if (selectedFreelancer) {
+          try {
+            await assignFreelancerApi(projectId, selectedFreelancer.id, token);
+          } catch {
+            showToast("Freelancer invitation failed. You can invite later.", "warning");
+          }
+        }
+
+        // Step 4: Record payment proof
+        let amount = 0;
+        if (projectData.project_type === "fixed") amount = Number(projectData.budget);
+        else if (projectData.project_type === "hourly") amount = Number(projectData.hourly_rate) * 3;
+        else if (projectData.project_type === "bidding") amount = Number(projectData.budget_max);
+
+        if (!isNaN(amount) && amount > 0) {
+          try {
+            await recordOfflinePaymentApi(projectId, proofFile, token, amount);
+          } catch {
+            showToast("Payment proof upload failed. Please contact support.", "warning");
+          }
+        } else {
+          showToast("Invalid payment amount. Cannot submit payment proof.", "error");
+        }
       }
 
       showToast("Project created successfully!", "success");
@@ -97,13 +128,21 @@ export default function CreateProjectPage() {
     }
   };
 
-  const steps = [
-    { number: 1, label: "Details" },
-    { number: 2, label: "Cover" },
-    { number: 3, label: "Files" },
-    { number: 4, label: "Freelancer" },
-    { number: 5, label: "Payment" },
-  ];
+  // Dynamically adjust steps based on whether it's an admin project
+  const steps = projectData.isAdminProject 
+    ? [
+        { number: 1, label: "Details" },
+        { number: 2, label: "Cover" },
+        { number: 3, label: "Files" },
+        { number: 4, label: "Payment" },
+      ]
+    : [
+        { number: 1, label: "Details" },
+        { number: 2, label: "Cover" },
+        { number: 3, label: "Files" },
+        { number: 4, label: "Freelancer" },
+        { number: 5, label: "Payment" },
+      ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 py-12">
@@ -123,7 +162,7 @@ export default function CreateProjectPage() {
             <div
               className="absolute left-4 top-[28px] h-1 rounded-full transition-all"
               style={{
-                width: `calc(${((step - 1) / 4) * 100}% + 0.5rem)`,
+                width: `calc(${((step - 1) / (projectData.isAdminProject ? 3 : 4)) * 100}% + 0.5rem)`,
                 background: "linear-gradient(90deg,#02C39A, #028090 60%, #05668D)",
               }}
             />
@@ -208,7 +247,7 @@ export default function CreateProjectPage() {
             />
           )}
 
-          {step === 4 && (
+          {step === 4 && !projectData.isAdminProject && (
             <AssignFreelancersStep
               onNext={nextStep}
               onBack={prevStep}
@@ -218,7 +257,18 @@ export default function CreateProjectPage() {
             />
           )}
 
-          {step === 5 && (
+          {step === 4 && projectData.isAdminProject ? (
+            <PaymentStep
+              onBack={prevStep}
+              files={files}
+              projectData={projectData}
+              selectedFreelancer={selectedFreelancer}
+              proofFile={proofFile}
+              setProofFile={setProofFile}
+              isSubmitting={isSubmitting}
+              onSubmit={handleFinalSubmit}
+            />
+          ) : step === 5 && (
             <PaymentStep
               onBack={prevStep}
               files={files}

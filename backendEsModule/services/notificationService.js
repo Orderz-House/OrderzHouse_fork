@@ -1,7 +1,7 @@
 import pool from "../models/db.js";
 
 /* ===========================================================
-   NOTIFICATION TYPES
+  NOTIFICATION TYPES
 =========================================================== */
 
 export const NOTIFICATION_TYPES = {
@@ -9,6 +9,7 @@ export const NOTIFICATION_TYPES = {
   OFFER_SUBMITTED: "offer_submitted",
   OFFER_APPROVED: "offer_approved",
   OFFER_REJECTED: "offer_rejected",
+  OFFER_EXPIRATION_REMINDER: "offer_expiration_reminder", // New notification type
   FREELANCER_ASSIGNED: "freelancer_assigned",
   FREELANCER_REMOVED: "freelancer_removed",
   PROJECT_STATUS_CHANGED: "project_status_changed",
@@ -46,7 +47,7 @@ export const NOTIFICATION_TYPES = {
 };
 
 /* ===========================================================
-   ROLE NOTIFICATION PERMISSIONS
+  ROLE NOTIFICATION PERMISSIONS
 =========================================================== */
 
 const ROLE_NOTIFICATIONS = {
@@ -92,7 +93,7 @@ const ROLE_NOTIFICATIONS = {
 };
 
 /* ===========================================================
-   HELPERS
+  HELPERS
 =========================================================== */
 
 const getAdmins = async () => {
@@ -117,7 +118,7 @@ const getUserName = async (userId) => {
 };
 
 /* ===========================================================
-   CREATE NOTIFICATIONS
+  CREATE NOTIFICATIONS
 =========================================================== */
 
 export const createNotification = async (
@@ -183,7 +184,7 @@ export const createBulkNotifications = async (
 };
 
 /* ===========================================================
-   NOTIFICATION CREATORS
+  NOTIFICATION CREATORS
 =========================================================== */
 
 export const NotificationCreators = {
@@ -294,10 +295,99 @@ export const NotificationCreators = {
       "task_request"
     );
   },
+
+  /* ===========================
+        OFFER SYSTEM
+  ============================ */
+
+  offerSubmitted: async (offerId, projectId, projectName, freelancerName) => {
+    const adminIds = await getAdmins();
+    
+    // Notify client
+    const { rows: projectRows } = await pool.query(
+      `SELECT user_id FROM projects WHERE id = $1`,
+      [projectId]
+    );
+    
+    if (projectRows.length > 0) {
+      const clientId = projectRows[0].user_id;
+      const message = `New offer received from ${freelancerName} for project "${projectName}"`;
+      
+      await createNotification(
+        clientId,
+        NOTIFICATION_TYPES.OFFER_SUBMITTED,
+        message,
+        offerId,
+        "offer"
+      );
+    }
+    
+    // Notify admins
+    const message = `New offer submitted by ${freelancerName} for project "${projectName}"`;
+    await createBulkNotifications(
+      adminIds,
+      NOTIFICATION_TYPES.OFFER_SUBMITTED,
+      message,
+      offerId,
+      "offer"
+    );
+  },
+
+  offerStatusChanged: async (offerId, projectName, freelancerId, isAccepted) => {
+    const freelancerName = await getUserName(freelancerId);
+    const status = isAccepted ? "accepted" : "rejected";
+    const message = `Your offer for project "${projectName}" has been ${status} by the client.`;
+    
+    await createNotification(
+      freelancerId,
+      isAccepted ? NOTIFICATION_TYPES.OFFER_APPROVED : NOTIFICATION_TYPES.OFFER_REJECTED,
+      message,
+      offerId,
+      "offer"
+    );
+  },
+
+  freelancerAssignmentChanged: async (projectId, projectName, freelancerId, isAssigned) => {
+    const status = isAssigned ? "assigned" : "removed";
+    const message = `You have been ${status} to project "${projectName}".`;
+    
+    await createNotification(
+      freelancerId,
+      isAssigned ? NOTIFICATION_TYPES.FREELANCER_ASSIGNED : NOTIFICATION_TYPES.FREELANCER_REMOVED,
+      message,
+      projectId,
+      "project"
+    );
+  },
+
+  escrowFunded: async (projectId, projectName, freelancerId, amount) => {
+    const message = `Escrow funded for project "${projectName}" with amount ${amount}.`;
+    
+    await createNotification(
+      freelancerId,
+      NOTIFICATION_TYPES.ESCROW_CREATED,
+      message,
+      projectId,
+      "project"
+    );
+  },
+
+  offerExpirationReminder: async (clientId, projectName, offerCount) => {
+    const message = `Reminder: You have ${offerCount} offer${offerCount > 1 ? 's' : ''} for "${projectName}" that will expire in 2 hours. Please review and respond to avoid automatic rejection.`;
+    
+    await createNotification(
+      clientId,
+      NOTIFICATION_TYPES.OFFER_EXPIRATION_REMINDER,
+      message,
+      null,
+      "offer"
+    );
+  },
+
 };
 
 /* ===========================================================
-   FETCH, READ & CLEANUP
+  FETCH, READ & CLEANUP
 =========================================================== */
 
 export const getUserNotifications = async (
