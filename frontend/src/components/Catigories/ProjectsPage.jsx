@@ -143,9 +143,7 @@ export default function ProjectsPage({ mode: propMode }) {
     }
 
     // 3) يحتوي على الاسم داخل sub‑category
-    const subHit = Object.entries(nameToSubCat).find(([k]) =>
-      k.includes(term)
-    );
+    const subHit = Object.entries(nameToSubCat).find(([k]) => k.includes(term));
     if (subHit) {
       const [, val] = subHit;
       const next = new URLSearchParams(sp);
@@ -159,9 +157,7 @@ export default function ProjectsPage({ mode: propMode }) {
     }
 
     // 4) يحتوي على الاسم داخل category
-    const catHit = Object.entries(nameToCatId).find(([k]) =>
-      k.includes(term)
-    );
+    const catHit = Object.entries(nameToCatId).find(([k]) => k.includes(term));
     if (catHit) {
       const [, catId] = catHit;
       const next = new URLSearchParams(sp);
@@ -311,21 +307,19 @@ export default function ProjectsPage({ mode: propMode }) {
 
           {/* عنوان الساب ساب كاتيجوري + وصف بسيط */}
           {subSubInfo && (
-  <div className="mt-2">
-    <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
-      {subSubInfo.name}
-    </h2>
-    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-      {subSubInfo.description
-        ? subSubInfo.description
-        : `استعرض مشاريع وخدمات مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
-    </p>
-
-    
-  </div>
-)}
-{/* خط رفيع بعرض الكونتينر ولونه رمادي فاتح */}
-    <hr className="mt-4 border-t border-slate-200" />
+            <div className="mt-2">
+              <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
+                {subSubInfo.name}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                {subSubInfo.description
+                  ? subSubInfo.description
+                  : `استعرض مشاريع وخدمات مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
+              </p>
+            </div>
+          )}
+          {/* خط رفيع بعرض الكونتينر ولونه رمادي فاتح */}
+          <hr className="mt-4 border-t border-slate-200" />
         </header>
 
         {/* المحتوى الرئيسي */}
