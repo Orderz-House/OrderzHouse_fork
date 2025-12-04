@@ -1,6 +1,6 @@
 import pool from "../models/db.js";
 import { v2 as cloudinary } from 'cloudinary';
-
+import express from "express";
 // ===== CLOUDINARY SETUP =====
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

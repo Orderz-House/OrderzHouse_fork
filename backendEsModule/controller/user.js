@@ -356,41 +356,6 @@ export const sendOtpController = async (req, res) => {
   }
 };
 
-// ==================== USER MANAGEMENT FUNCTIONS ====================
-
-const viewUsers = async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE is_deleted = FALSE");
-    return res.status(200).json({ success: true, users: result.rows });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error fetching users", error: err.message });
-  }
-};
-
-
-const deleteUser = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const result = await pool.query(
-      "UPDATE users SET is_deleted = TRUE WHERE id = $1 RETURNING *",
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "User deleted successfully",
-      user: result.rows[0],
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error deleting user", error: err.message });
-  }
-};
-
-
 
 /* =========================================
    EDIT USER PROFILE 
@@ -450,24 +415,6 @@ export const editUserSelf = async (req, res) => {
 };
 
 
-const getUserById = async (req, res) => {
-  const { userId } = req.token;
-
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    return res.status(200).json({ success: true, user: result.rows[0] });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  }
-};
-
-//profile pic to cloudanary
-
 export const uploadProfilePic = async (req, res) => {
   const userId = req.token.userId;
 
@@ -507,207 +454,7 @@ export const uploadProfilePic = async (req, res) => {
   }
 };
 
-// ==================== PORTFOLIO FUNCTIONS ====================
-
-const getPortfolioByUserId = async (req, res) => {
-  const { userId } = req.token;
-
-  if (!userId) {
-    return res.status(400).json({ success: false, message: "freelancer_id required" });
-  }
-
-  try {
-    const result = await pool.query(
-      "SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC",
-      [userId]
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: `Get All portfolio For ${userId}`,
-      portfolios: result.rows,
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "server error", error: err.message });
-  }
-};
-
-const createPortfolio = async (req, res) => {
-  const { freelancer_id, title, description, skills, hourly_rate, work_url } = req.body;
-
-  if (!freelancer_id || !title) {
-    return res.status(400).json({ success: false, message: "freelancer_id and title are required" });
-  }
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO portfolios (freelancer_id, title, description, skills, hourly_rate, work_url)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [freelancer_id, title, description, skills, hourly_rate, work_url]
-    );
-
-    return res.status(201).json({
-      success: true,
-      message: "Portfolio created successfully",
-      portfolio: result.rows[0],
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error creating portfolio", error: err.message });
-  }
-};
-
-const editPortfolioFreelancer = async (req, res) => {
-  const { portfolioId } = req.params;
-  const { title, description, skills, hourly_rate, work_url } = req.body;
-
-  try {
-    const result = await pool.query(
-      `UPDATE portfolios
-       SET
-         title = COALESCE($1, title),
-         description = COALESCE($2, description),
-         skills = COALESCE($3, skills),
-         hourly_rate = COALESCE($4, hourly_rate),
-         work_url = COALESCE($5, work_url),
-         edit_at = NOW()
-       WHERE id = $6
-       RETURNING *`,
-      [title, description, skills, hourly_rate, work_url, portfolioId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Portfolio not found for this freelancer" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Portfolio updated successfully",
-      portfolio: result.rows[0],
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error updating profile", error: err.message });
-  }
-};
-
-const deletePortfolioFreelancer = async (req, res) => {
-  try {
-    const userId = req.token?.userId;
-    const { freelancerId, portfolioId } = req.body;
-
-    if (parseInt(freelancerId) !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only delete your own portfolio items.",
-      });
-    }
-
-    const result = await pool.query(
-      "DELETE FROM portfolios WHERE freelancer_id = $1 AND id = $2 RETURNING *",
-      [freelancerId, portfolioId]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, message: "Portfolio not found." });
-    }
-
-    return res.status(200).json({ success: true, message: "Deleted Portfolio Successfully" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: "Server Error" });
-  }
-};
-
-// ==================== FREELANCER FUNCTIONS ====================
-
-const getAllFreelancers = async (req, res) => {
-  const filterValue = (req.body.filter || "").toLowerCase();
-  const validFilters = ["active", "deactivated", "all"];
-
-  if (!validFilters.includes(filterValue)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid filter value. Must be 'active', 'deactivated', or 'all'.",
-    });
-  }
-
-  let whereCondition = "users.role_id = 3";
-  if (filterValue === "active") whereCondition += " AND users.is_deleted = FALSE";
-  else if (filterValue === "deactivated") whereCondition += " AND users.is_deleted = TRUE";
-
-  const sqlQuery = `
-    SELECT
-      users.id,
-      users.first_name,
-      users.last_name,
-      users.email,
-      COUNT(order_assignments.id) AS orders_count,
-      COALESCE(
-        json_agg(json_build_object('ip_address', ip_adress.ip_address)) FILTER (WHERE ip_adress.ip_address IS NOT NULL),
-        '[]'
-      ) AS ip_addresses
-    FROM users
-    LEFT JOIN ip_adress ON users.id = ip_adress.user_id
-    LEFT JOIN order_assignments ON users.id = order_assignments.freelancer_id
-    WHERE ${whereCondition}
-    GROUP BY users.id, users.first_name, users.last_name, users.email;
-  `;
-
-  try {
-    const result = await pool.query(sqlQuery);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "No freelancers found" });
-    }
-
-    return res.status(200).json({ success: true, freelancers: result.rows });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error fetching freelancers", error: err.message });
-  }
-};
-
-const deleteFreelancerById = async (req, res) => {
-  const { userId } = req.params;
-
-  try {
-    const result = await pool.query(
-      "UPDATE users SET is_deleted = NOT is_deleted WHERE id = $1 AND role_id = 3 RETURNING *",
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Freelancer not found" });
-    }
-
-    const message = result.rows[0].is_deleted
-      ? "Freelancer deactivated successfully"
-      : "Freelancer activated successfully";
-
-    return res.status(200).json({ success: true, message, freelancer: result.rows[0] });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Error toggling freelancer deletion status",
-      error: err.message,
-    });
-  }
-};
-
-const listOnlineUsers = async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE is_online = TRUE");
-
-    if (result.rows.length === 0) {
-      return res.status(200).json({ success: true, message: "No one is active" });
-    }
-
-    return res.status(200).json({ success: true, message: "Active Users found", users: result.rows });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  }
-};
-
 const rateFreelancer = async (req, res) => {
-  const reviewerId = req.token.userId;
   const reviewerName = req.token.username;
   const { userId, rating, projectId } = req.body;
 
@@ -760,295 +507,28 @@ const rateFreelancer = async (req, res) => {
   }
 };
 
-const getTopFreelancers = async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT id, first_name, last_name, country, username, rating, profile_pic_url
-      FROM users
-      WHERE role_id = 3 AND is_deleted = FALSE
-      ORDER BY rating DESC
-      LIMIT 10
-    `);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "No freelancers found" });
-    }
-
-    return res.status(200).json({ success: true, freelancers: result.rows });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Error fetching top freelancers", error: err.message });
-  }
-};
-
-const getFreelance = async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      "SELECT * FROM users WHERE role_id = 3 AND is_deleted = FALSE"
-    );
-    return res.status(200).json({ success: true, freelancers: rows });
-  } catch (error) {
-    console.error("Error fetching freelancers:", error.message);
-    return res.status(500).json({ success: false, error: "Internal server error" });
-  }
-};
-
-const getFreelanceById = async (req, res) => {
-  try {
-    const freelancerId = req.params.id;
-
-    if (!freelancerId || isNaN(freelancerId)) {
-      return res.status(400).json({ success: false, message: "Invalid freelancer ID" });
-    }
-
-    const { rows } = await pool.query(
-      `SELECT id, first_name, last_name, username, country, profile_pic_url, rating, rating_count, rating_sum
-       FROM users
-       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE`,
-      [freelancerId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Freelancer not found" });
-    }
-
-    return res.status(200).json({ success: true, freelancer: rows[0] });
-  } catch (error) {
-    console.error("Error fetching freelancer:", error.message);
-    return res.status(500).json({ success: false, message: "Internal server error" });
-  }
-};
-
-const getPortfolioByfreelance = async (req, res) => {
-  const { userId } = req.params;
-
-  if (!userId) {
-    return res.status(400).json({ success: false, message: "freelancer_id required" });
-  }
-
-  try {
-    const result = await pool.query(
-      "SELECT * FROM portfolios WHERE freelancer_id = $1 ORDER BY added_at DESC",
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "No portfolio found" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: `Get All portfolio For ${userId}`,
-      portfolios: result.rows,
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "server error", error: err.message });
-  }
-};
-
-// ==================== VERIFICATION FUNCTIONS ====================
-
-const checkVerificationStatus = async (req, res) => {
+const getUserdata = async (req, res) => {
   const userId = req.token.userId;
 
-  try {
-    const userResult = await pool.query(
-      "SELECT first_name, last_name, bio, profile_pic_url, is_verified FROM users WHERE id = $1 AND is_deleted = FALSE",
-      [userId]
-    );
+  const user = await pool.query(
+    "SELECT id, first_name, last_name, email, username, role_id, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
+    [userId]
+  );
 
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    const user = userResult.rows[0];
-
-    const portfolioResult = await pool.query(
-      "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
-      [userId]
-    );
-
-    const portfolioCount = parseInt(portfolioResult.rows[0].count, 10);
-
-    const missingFields = [];
-    if (!user.first_name) missingFields.push("First Name");
-    if (!user.last_name) missingFields.push("Last Name");
-    if (!user.bio) missingFields.push("Bio");
-    if (!user.profile_pic_url) missingFields.push("Profile Picture");
-    if (portfolioCount === 0) missingFields.push("Portfolio Item");
-
-    const isProfileComplete = missingFields.length === 0;
-
-    return res.status(200).json({
-      success: true,
-      isVerified: user.is_verified,
-      isProfileComplete,
-      missingFields,
-      portfolioCount,
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
-  }
-};
-
-const updateVerificationStatus = async (req, res) => {
-  const userId = req.token.userId;
-
-  try {
-    const userResult = await pool.query(
-      "SELECT first_name, last_name, bio, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
-      [userId]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    const user = userResult.rows[0];
-
-    const portfolioResult = await pool.query(
-      "SELECT COUNT(*) as count FROM portfolios WHERE freelancer_id = $1",
-      [userId]
-    );
-
-    const hasPortfolio = parseInt(portfolioResult.rows[0].count, 10) > 0;
-    const isProfileComplete = user.first_name && user.last_name && user.bio && user.profile_pic_url;
-
-    if (isProfileComplete && hasPortfolio) {
-      const updateResult = await pool.query(
-        "UPDATE users SET is_verified = TRUE WHERE id = $1 RETURNING id, is_verified",
-        [userId]
-      );
-
-      try {
-        await NotificationCreators.userVerified(userId, user.first_name);
-      } catch (notificationError) {
-        console.error(`Failed to create self-verification notification for user ${userId}:`, notificationError);
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Profile verified successfully",
-        isVerified: true,
-        user: updateResult.rows[0],
-      });
-    } else {
-      const missingFields = [];
-      if (!user.first_name) missingFields.push("first_name");
-      if (!user.last_name) missingFields.push("last_name");
-      if (!user.bio) missingFields.push("bio");
-      if (!user.profile_pic_url) missingFields.push("profile_image");
-      if (!hasPortfolio) missingFields.push("portfolio_item");
-
-      return res.status(400).json({
-        success: false,
-        message: "Profile is not complete.",
-        missingFields,
-      });
-    }
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
-  }
-};
-
-const verifyFreelancerByAdmin = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `UPDATE users
-       SET is_verified = TRUE, reason_for_disruption = NULL
-       WHERE id = $1 AND role_id = 3 AND is_deleted = FALSE
-       RETURNING *`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer not found or not eligible for verification.",
-      });
-    }
-
-    const freelancer = result.rows[0];
-
-    try {
-      await NotificationCreators.userVerified(freelancer.id, freelancer.first_name);
-    } catch (notificationError) {
-      console.error(`Failed to create admin verification notification for freelancer ${freelancer.id}:`, notificationError);
-    }
-
-    await LogCreators.userManagement(req.token.userId, ACTION_TYPES.ADMIN_VERIFY_USER, true, {
-      targetUserId: freelancer.id,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Freelancer verified successfully.",
-      freelancer,
-    });
-  } catch (err) {
-    console.error("Error verifying freelancer:", err.message);
-    return res.status(500).json({
-      success: false,
-      message: "Server error while verifying freelancer",
-      error: err.message,
-    });
-  }
-};
-
-const rejectFreelancerByAdmin = async (req, res) => {
-  const { id } = req.params;
-  const { reason } = req.body;
-
-  if (!reason) {
-    return res.status(400).json({ success: false, message: "A reason for rejection is required." });
+  if (!user.rows.length) {
+    return res.status(404).json({ success: false, message: "User not found" });
   }
 
-  try {
-    const result = await pool.query(
-      `UPDATE users
-       SET is_verified = FALSE, reason_for_disruption = $1
-       WHERE id = $2 AND role_id = 3 AND is_deleted = FALSE
-       RETURNING *`,
-      [reason, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Freelancer not found or not eligible." });
-    }
-
-    const freelancer = result.rows[0];
-
-    try {
-      await NotificationCreators.userVerificationRejected(freelancer.id, reason);
-    } catch (notificationError) {
-      console.error(`Failed to create rejection notification for freelancer ${freelancer.id}:`, notificationError);
-    }
-
-    await LogCreators.userManagement(req.token.userId, ACTION_TYPES.ADMIN_REJECT_USER, true, {
-      targetUserId: freelancer.id,
-      reason,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Freelancer rejected successfully.",
-      freelancer,
-    });
-  } catch (err) {
-    console.error("Error rejecting freelancer:", err.message);
-    return res.status(500).json({
-      success: false,
-      message: "Server error while rejecting freelancer",
-      error: err.message,
-    });
-  }
+  return res.json({
+    success: true,
+    user: user.rows[0],
+  });
 };
 
 // ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
 
 const verifyPassword = async (req, res) => {
-  const { password } = req.body;
+  const { password } = req.body;  // <-- هذا هو المطلوب
   const userId = req.token.userId;
 
   try {
@@ -1061,7 +541,16 @@ const verifyPassword = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const match = await bcrypt.compare(password, userResult.rows[0].password);
+    const hashedPassword = userResult.rows[0].password;
+
+    if (!password || !hashedPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Password or hashed password missing"
+      });
+    }
+
+    const match = await bcrypt.compare(password, hashedPassword);
 
     return res.json({
       success: match,
@@ -1156,29 +645,12 @@ const deactivateAccount = async (req, res) => {
 // ==================== EXPORTS ====================
 
 export {
-  getUserById,
   register,
   login,
-  viewUsers,
-  deleteUser,
-  getPortfolioByUserId,
-  createPortfolio,
-  editPortfolioFreelancer,
-  deletePortfolioFreelancer,
-  getAllFreelancers,
-  deleteFreelancerById,
-  listOnlineUsers,
   rateFreelancer,
-  getTopFreelancers,
-  getFreelance,
-  getFreelanceById,
-  getPortfolioByfreelance,
-  checkVerificationStatus,
-  updateVerificationStatus,
-  verifyFreelancerByAdmin,
-  rejectFreelancerByAdmin,
   verifyPassword,
   updatePassword,
   deactivateAccount,
   verifyEmailOtp,
+  getUserdata
 };

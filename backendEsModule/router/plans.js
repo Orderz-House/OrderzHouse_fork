@@ -6,9 +6,6 @@ import {
   deletePlan,
   getPlanSubscribers,
   getPlanSubscriptionCounts,
-  getFreelancerSubscription,
-  subscribeToPlan,
-  cancelSubscription,
   adminUpdateSubscription,
   getAllSubscriptions,
   adminCancelSubscription
@@ -64,25 +61,8 @@ plansRouter.patch(
 );
 
 
-plansRouter.get(
-  "/subscription/me",
-  authentication,
-  requireVerifiedWithSubscription, 
-  getFreelancerSubscription
-);
 
-plansRouter.post(
-  "/subscribe",
-  authentication,
-  requireVerifiedWithSubscription,
-  subscribeToPlan
-);
 
-plansRouter.patch(
-  "/cancel",
-  authentication,
-  requireVerifiedWithSubscription,
-  cancelSubscription
-);
+
 
 export default plansRouter;

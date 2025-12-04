@@ -1,519 +1,619 @@
-// Dashboard.jsx
-import { Calendar, CheckCircle, XCircle, DollarSign, ChevronDown } from "lucide-react";
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useOutletContext } from "react-router-dom";
+import {
+  Users,
+  Briefcase,
+  Wallet,
+  CreditCard,
+  Activity,
+  Clock,
+  ClipboardList,
+  ArrowUpRight,
+  ArrowDownRight,
+  MessageSquare,
+  FolderPlus,
+} from "lucide-react";
 
-// الأرقام في الكروت العلوية
-const topStats = [
-  {
-    id: "orders",
-    title: "Total Orders",
-    value: "65",
-    from: "#FFB457",
-    to: "#FF8A4C",
-    Icon: Calendar,
-  },
-  {
-    id: "delivered",
-    title: "Total Delivered",
-    value: "145",
-    from: "#028090",
-    to: "#028090",
-    Icon: CheckCircle,
-  },
-  {
-    id: "canceled",
-    title: "Total Canceled",
-    value: "15",
-    from: "#FF7B8A",
-    to: "#FF4C6A",
-    Icon: XCircle,
-  },
-  {
-    id: "revenue",
-    title: "Total Revenue",
-    value: "$4,568",
-    from: "#34D399",
-    to: "#10B981",
-    Icon: DollarSign,
-  },
-];
+// 🧩 استيراد دوال الـ API الجاهزة
+import {
+  fetchAdminDashboard,
+  fetchFreelancerDashboard,
+  fetchClientDashboard,
+} from "../api/dashboard";
 
-// بيانات الـ Overview (المنطقة المموّجة)
-const overviewLabels = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const PRIMARY = "#028090";
 
-const overviewSeries = [
-  {
-    id: "orders",
-    label: "Total Order",
-    color: "#FF6B6B",
-    data: [30, 55, 45, 70, 60, 85, 55, 75, 70, 90, 80, 95],
-  },
-  {
-    id: "revenue",
-    label: "Total Revenue",
-    color: "#028090",
-    data: [20, 40, 35, 60, 50, 75, 45, 65, 60, 80, 75, 88],
-  },
-];
+/* نفس mapRole المستخدم في AdminLayout تقريباً */
+function mapRole(roleId) {
+  if (roleId === 1) return "admin";
+  if (roleId === 2) return "client";
+  if (roleId === 3) return "freelancer";
+  return "user";
+}
 
-// بيانات Total Revenue (خطين 2020 و 2021)
-const revenueLabels = overviewLabels;
+/* كرت إحصائيات عام */
+function StatCard({ title, value, sub, icon: Icon, trend, accent }) {
+  const trendIsNegative = trend && String(trend).trim().startsWith("-");
+  const TrendIcon = trendIsNegative ? ArrowDownRight : ArrowUpRight;
+  const trendColor = trendIsNegative ? "text-rose-500" : "text-emerald-600";
 
-const revenueSeries = [
-  {
-    id: "y2020",
-    label: "2020",
-    color: "#FF6B6B",
-    data: [2.5, 3.2, 3.0, 3.8, 3.5, 4.2, 3.9, 4.4, 4.0, 4.6, 4.8, 5.0],
-  },
-  {
-    id: "y2021",
-    label: "2021",
-    color: "#028090",
-    data: [3.0, 3.5, 3.4, 4.1, 4.0, 4.8, 4.6, 5.0, 5.1, 5.4, 5.7, 6.0],
-  },
-];
-
-// بيانات Chart Order (الأعمدة)
-const orderBars = [
-  { label: "SAT", value: 40 },
-  { label: "SUN", value: 65 },
-  { label: "MON", value: 55 },
-  { label: "TUE", value: 72 },
-  { label: "WED", value: 60 },
-  { label: "THU", value: 80 },
-  { label: "FRI", value: 50 },
-];
-
-// بيانات Earning Categories
-const earningCategories = [
-  {
-    id: "ui",
-    title: "UI Design",
-    subtitle: "$95 / $1200",
-    badge: "$45",
-    progress: 70,
-    color: "#028090",
-  },
-  {
-    id: "ux",
-    title: "UX Design",
-    subtitle: "$95 / $1200",
-    badge: "$545",
-    progress: 55,
-    color: "#F97373",
-  },
-  {
-    id: "web",
-    title: "Web Developing",
-    subtitle: "$95 / $1200",
-    badge: "$1,245",
-    progress: 80,
-    color: "#10B981",
-  },
-  {
-    id: "illus",
-    title: "Illustration",
-    subtitle: "$95 / $1200",
-    badge: "$95",
-    progress: 45,
-    color: "#FBBF24",
-  },
-];
-
-export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-[#F5F7FB] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-    
+    <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4">
+      <div
+        className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+          accent || "bg-teal-50"
+        }`}
+      >
+        {Icon && <Icon className="w-5 h-5" style={{ color: PRIMARY }} />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] uppercase tracking-wide text-slate-500">
+          {title}
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <div className="text-lg font-semibold text-slate-900">
+            {value ?? "—"}
+          </div>
+          {trend && (
+            <div
+              className={`inline-flex items-center gap-1 text-[11px] ${trendColor}`}
+            >
+              <TrendIcon className="w-3 h-3" />
+              <span>{String(trend).replace(/^[-+]/, "")}</span>
+            </div>
+          )}
+        </div>
+        {sub && (
+          <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        {/* الكروت العلوية (4 كروت) */}
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {topStats.map((item) => (
-            <StatCard key={item.id} {...item} />
-          ))}
-        </section>
+/* تشارت بسيطة للريڤنيو – تستقبل نقاط من الـ API */
+function SimpleAreaChart({ points }) {
+  const safePoints = Array.isArray(points) ? points : [];
+  const width = 240;
+  const height = 80;
 
-        {/* الصف الثاني: Overview + Chart Order */}
-        <section className="grid gap-6 xl:grid-cols-[2.2fr,1fr]">
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-800">Overview</h2>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                  <LegendItem color="#FF6B6B" label="Total Order" />
-                  <LegendItem color="#028090" label="Total Revenue" />
+  if (!safePoints.length) {
+    return (
+      <div className="flex items-center justify-center h-32 text-xs text-slate-400">
+        لا توجد بيانات للعرض حالياً
+      </div>
+    );
+  }
+
+  const max = Math.max(...safePoints) || 1;
+  const stepX =
+    safePoints.length > 1 ? width / (safePoints.length - 1) : width;
+
+  let linePath = "";
+  safePoints.forEach((v, i) => {
+    const x = i * stepX;
+    const y = height - (v / max) * (height - 10) - 5;
+    linePath += `${i === 0 ? "M" : "L"} ${x},${y} `;
+  });
+  const areaPath = `${linePath} L ${width},${height} L 0,${height} Z`;
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full h-32 overflow-visible"
+    >
+      <defs>
+        <linearGradient id="dash-area" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={PRIMARY} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={PRIMARY} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#dash-area)" stroke="none" />
+      <path
+        d={linePath}
+        fill="none"
+        stroke={PRIMARY}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/* ===================== داشبورد الادمن ===================== */
+function AdminDashboard() {
+  const [topStats, setTopStats] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [revenuePoints, setRevenuePoints] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // 👇 هنا نستخدم دالة الـ API بدل axios مباشرة
+        const payload = await fetchAdminDashboard();
+
+        setTopStats(
+          Array.isArray(payload?.topStats) ? payload.topStats : []
+        );
+        setPendingVerifications(
+          Array.isArray(payload?.pendingVerifications)
+            ? payload.pendingVerifications
+            : []
+        );
+        setRevenuePoints(
+          Array.isArray(payload?.revenuePoints)
+            ? payload.revenuePoints
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load admin dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  return (
+    <div className="space-y-6 py-6">
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {/* الكروت العلوية */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {topStats.length > 0 ? (
+          topStats.map((s, idx) => (
+            <StatCard
+              key={s.id || s.title || idx}
+              {...s}
+            />
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد إحصائيات بعد.
+            </div>
+          )
+        )}
+      </div>
+
+      {/* الريڤنيو + البيندينج */}
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                Revenue (last 12 months)
+              </h3>
+              <p className="text-xs text-slate-500">
+                يتم جلب بيانات الرسم من الخادم.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-700">
+              <ArrowUpRight className="w-3 h-3" />
+              Overview
+            </span>
+          </div>
+          <SimpleAreaChart points={revenuePoints} />
+        </div>
+
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">
+              Pending verifications
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              {pendingVerifications.length} waiting
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {pendingVerifications.length > 0 ? (
+              pendingVerifications.map((p, idx) => (
+                <div
+                  key={p.id || p.email || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-white grid place-items-center text-xs font-semibold text-slate-600 border border-slate-200">
+                      {p.initials || p.name?.charAt(0) || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-900 truncate">
+                        {p.name || "بدون اسم"}
+                      </div>
+                      {p.role && (
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {p.role}
+                        </div>
+                      )}
+                      {p.email && (
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {p.email}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button className="h-8 px-3 rounded-full text-xs border border-emerald-500 text-emerald-700 hover:bg-emerald-50">
+                      Approve
+                    </button>
+                    <button className="h-8 px-3 rounded-full text-xs border border-slate-200 text-slate-500 hover:bg-slate-50">
+                      Reject
+                    </button>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد طلبات تحقق معلّقة حالياً.
               </div>
-              <button className="flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-500 shadow-sm">
-                Month
-                <ChevronDown className="h-3 w-3" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== داشبورد الفريلانسر ===================== */
+function FreelancerDashboard() {
+  const [balanceCards, setBalanceCards] = useState([]);
+  const [activeProjects, setActiveProjects] = useState([]);
+  const [latestClientProjects, setLatestClientProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const payload = await fetchFreelancerDashboard();
+
+        setBalanceCards(
+          Array.isArray(payload?.balanceCards)
+            ? payload.balanceCards
+            : []
+        );
+        setActiveProjects(
+          Array.isArray(payload?.activeProjects)
+            ? payload.activeProjects
+            : []
+        );
+        setLatestClientProjects(
+          Array.isArray(payload?.latestClientProjects)
+            ? payload.latestClientProjects
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load freelancer dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  return (
+    <div className="space-y-6 py-6">
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {/* الرصيد */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {balanceCards.length > 0 ? (
+          balanceCards.map((c, idx) => (
+            <StatCard
+              key={c.id || c.title || idx}
+              {...c}
+              accent="bg-cyan-50"
+            />
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد بيانات رصيد حالياً.
+            </div>
+          )
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* المشاريع النشطة */}
+        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                Active projects
+              </h3>
+              <p className="text-xs text-slate-500">
+                Projects you&apos;re currently working on.
+              </p>
+            </div>
+            <button className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
+              <ClipboardList className="w-3 h-3" />
+              View all
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {activeProjects.length > 0 ? (
+              activeProjects.map((p, idx) => (
+                <div
+                  key={p.id || p.title || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm text-slate-900 truncate">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {(p.client && p.budget && `${p.client} • ${p.budget}`) ||
+                        p.client ||
+                        p.budget ||
+                        ""}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    {p.status && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                        <Activity className="w-3 h-3 mr-1" />
+                        {p.status}
+                      </span>
+                    )}
+                    {p.due && (
+                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {p.due}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد مشاريع نشطة حالياً.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* آخر البروجكتس + شورت كاتس */}
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Latest client projects
+              </h3>
+              <button className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50">
+                <FolderPlus className="w-3 h-3" />
+                Browse all
               </button>
             </div>
 
-            <AreaChart labels={overviewLabels} series={overviewSeries} />
-          </div>
-
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-800">Chart Order</h2>
-              <span className="text-xs text-gray-400">This week</span>
+            <div className="space-y-3">
+              {latestClientProjects.length > 0 ? (
+                latestClientProjects.map((p, idx) => (
+                  <div
+                    key={p.id || p.title || idx}
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
+                  >
+                    <div className="text-sm font-medium text-slate-900">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    <div className="text-xs text-slate-500 flex items-center justify-between mt-1">
+                      <span>{p.type}</span>
+                      <span className="font-semibold text-slate-800">
+                        {p.budget}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-slate-400">
+                  لا توجد مشاريع عملاء حديثة حالياً.
+                </div>
+              )}
             </div>
-            <OrderBarChart data={orderBars} />
           </div>
-        </section>
 
-        {/* الصف الثالث: Total Revenue + Earning Categories */}
-        <section className="grid gap-6 xl:grid-cols-[2.2fr,1fr]">
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-800">
-                  Total Revenue
-                </h2>
-                <p className="mt-1 text-xs text-gray-400">Compared to last year</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                <LegendItem color="#028090" label="2021" />
-                <LegendItem color="#FF6B6B" label="2020" />
-              </div>
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">
+              Quick actions
+            </h3>
+            <div className="grid gap-2">
+              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
+                <span>Find new projects</span>
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
+                <span>View my proposals</span>
+                <MessageSquare className="w-3 h-3" />
+              </button>
+              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
+                <span>Go to payouts</span>
+                <CreditCard className="w-3 h-3" />
+              </button>
             </div>
-            <LineChart
-              labels={revenueLabels}
-              series={revenueSeries}
-              highlightIndex={5}
-            />
           </div>
-
-          <EarningCategoriesCard />
-        </section>
-      </div>
-    </div>
-  );
-}
-
-/* ====================== components ====================== */
-
-// كارت من الكروت الأربعة في الأعلى
-function StatCard({ title, value, from, to, Icon }) {
-  return (
-    <div
-      className="relative overflow-hidden rounded-2xl p-4 text-white shadow-sm"
-      style={{
-        background: `linear-gradient(135deg, ${from}, ${to})`,
-      }}
-    >
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10" />
-      <div className="pointer-events-none absolute -left-12 bottom-[-40px] h-32 w-32 rounded-full bg-black/5" />
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-2xl font-semibold leading-tight">{value}</p>
-          <p className="mt-1 text-sm text-white/80">{title}</p>
-        </div>
-        <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/15">
-          <Icon className="h-5 w-5" />
         </div>
       </div>
     </div>
   );
 }
 
-// نقطة صغيرة + عنوان (للّيجند)
-function LegendItem({ color, label }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span
-        className="h-2 w-2 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      <span>{label}</span>
-    </div>
-  );
-}
+/* ===================== داشبورد الكلينت ===================== */
+function ClientDashboard() {
+  const [stats, setStats] = useState([]);
+  const [recentProjects, setRecentProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-// الرسم المموّج (Overview)
-function AreaChart({ labels, series }) {
-  const width = 100;
-  const height = 40;
-  const allValues = series.flatMap((s) => s.data);
-  const maxValue = allValues.length ? Math.max(...allValues) : 0;
-  const safeMax = maxValue || 1;
-  const stepX = labels.length > 1 ? width / (labels.length - 1) : width;
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  const buildAreaPath = (data) => {
-    if (!data.length) return "";
-    let d = "";
-    data.forEach((value, index) => {
-      const x = index * stepX;
-      const y = height - (value / safeMax) * (height - 4) - 2;
-      if (index === 0) d += `M ${x},${y}`;
-      else d += ` L ${x},${y}`;
-    });
-    d += ` L ${width},${height} L 0,${height} Z`;
-    return d;
-  };
+        const payload = await fetchClientDashboard();
+
+        setStats(Array.isArray(payload?.stats) ? payload.stats : []);
+        setRecentProjects(
+          Array.isArray(payload?.recentProjects)
+            ? payload.recentProjects
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load client dashboard data", err);
+        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   return (
-    <div className="w-full">
-      <div className="h-48 w-full">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-full w-full overflow-visible"
-        >
-          <defs>
-            {series.map((s) => (
-              <linearGradient
-                key={s.id}
-                id={`area-gradient-${s.id}`}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="0%" stopColor={s.color} stopOpacity="0.35" />
-                <stop offset="100%" stopColor={s.color} stopOpacity="0" />
-              </linearGradient>
-            ))}
-          </defs>
+    <div className="space-y-6 py-6">
+      {loading && (
+        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+      )}
+      {error && (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
 
-          {/* خطوط الشبكة الأفقية */}
-          {Array.from({ length: 5 }).map((_, idx) => {
-            const y = (height / 4) * idx;
-            return (
-              <line
-                key={idx}
-                x1="0"
-                x2={width}
-                y1={y}
-                y2={y}
-                stroke="#E5E7EB"
-                strokeWidth="0.3"
-              />
-            );
-          })}
-
-          {series.map((s, idx) => (
-            <path
-              key={s.id}
-              d={buildAreaPath(s.data)}
-              fill={`url(#area-gradient-${s.id})`}
-              stroke={s.color}
-              strokeWidth="0.8"
-              strokeLinecap="round"
-              opacity={idx === 0 ? 0.95 : 1}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.length > 0 ? (
+          stats.map((s, idx) => (
+            <StatCard
+              key={s.id || s.title || idx}
+              {...s}
+              accent="bg-sky-50"
             />
-          ))}
-        </svg>
+          ))
+        ) : (
+          !loading && (
+            <div className="col-span-full text-xs text-slate-400">
+              لا توجد إحصائيات بعد.
+            </div>
+          )
+        )}
       </div>
-      <div className="mt-2 flex items-center justify-between text-[10px] font-medium text-gray-400">
-        {labels.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-// الرسم الخطي (Total Revenue)
-function LineChart({ labels, series, highlightIndex = 5 }) {
-  const width = 100;
-  const height = 40;
-  const allValues = series.flatMap((s) => s.data);
-  const maxValue = allValues.length ? Math.max(...allValues) : 0;
-  const safeMax = maxValue || 1;
-  const stepX = labels.length > 1 ? width / (labels.length - 1) : width;
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                Recent projects
+              </h3>
+              <p className="text-xs text-slate-500">
+                A quick look at your latest activity.
+              </p>
+            </div>
+            <button className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
+              <FolderPlus className="w-3 h-3" />
+              Post a project
+            </button>
+          </div>
 
-  const buildLine = (data) => {
-    if (!data.length) return "";
-    let d = "";
-    data.forEach((value, index) => {
-      const x = index * stepX;
-      const y = height - (value / safeMax) * (height - 4) - 2;
-      if (index === 0) d += `M ${x},${y}`;
-      else d += ` L ${x},${y}`;
-    });
-    return d;
-  };
-
-  const highlightSeries = series[1] || series[0];
-  const highlightValue =
-    highlightSeries && highlightSeries.data[highlightIndex] != null
-      ? highlightSeries.data[highlightIndex]
-      : null;
-
-  const hx = highlightValue != null ? highlightIndex * stepX : null;
-  const hy =
-    highlightValue != null
-      ? height - (highlightValue / safeMax) * (height - 4) - 2
-      : null;
-
-  return (
-    <div className="w-full">
-      <div className="h-48 w-full">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-full w-full overflow-visible"
-        >
-          {/* خطوط الشبكة */}
-          {Array.from({ length: 5 }).map((_, idx) => {
-            const y = (height / 4) * idx;
-            return (
-              <line
-                key={idx}
-                x1="0"
-                x2={width}
-                y1={y}
-                y2={y}
-                stroke="#E5E7EB"
-                strokeWidth="0.3"
-              />
-            );
-          })}
-
-          {series.map((s) => (
-            <path
-              key={s.id}
-              d={buildLine(s.data)}
-              fill="none"
-              stroke={s.color}
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-          ))}
-
-          {hx != null && hy != null && (
-            <>
-              <line
-                x1={hx}
-                x2={hx}
-                y1={hy}
-                y2={height}
-                stroke="#9CA3AF"
-                strokeWidth="0.5"
-                strokeDasharray="2 2"
-              />
-              <circle cx={hx} cy={hy} r="1.7" fill={highlightSeries.color} />
-              <g transform={`translate(${hx},${hy - 9})`}>
-                <rect
-                  x="-9"
-                  y="-5"
-                  width="20"
-                  height="10"
-                  rx="2"
-                  fill="#111827"
-                />
-                <text
-                  x="1"
-                  y="0"
-                  textAnchor="middle"
-                  fontSize="3"
-                  fill="#FFFFFF"
+          <div className="space-y-3">
+            {recentProjects.length > 0 ? (
+              recentProjects.map((p, idx) => (
+                <div
+                  key={p.id || p.title || idx}
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3"
                 >
-                  {`$${highlightValue.toFixed(1)}k`}
-                </text>
-              </g>
-            </>
-          )}
-        </svg>
-      </div>
-      <div className="mt-2 flex items-center justify-between text-[10px] font-medium text-gray-400">
-        {labels.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// الأعمدة (Chart Order)
-function OrderBarChart({ data }) {
-  const max = data.length ? Math.max(...data.map((d) => d.value)) : 0;
-  const safeMax = max || 1;
-
-  return (
-    <div className="w-full">
-      <div className="flex h-44 items-end justify-between gap-3">
-        {data.map((item) => {
-          const percentage = (item.value / safeMax) * 100;
-          return (
-            <div
-              key={item.label}
-              className="flex flex-1 flex-col items-center gap-2"
-            >
-              <div className="relative flex h-full w-6 items-end rounded-xl bg-[#FEE2E2]">
-                <div
-                  className="w-full rounded-xl bg-[#F97373]"
-                  style={{ height: `${percentage}%` }}
-                />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate">
+                      {p.title || "بدون عنوان"}
+                    </div>
+                    {p.status && (
+                      <div className="text-xs text-slate-500">
+                        {p.status}
+                      </div>
+                    )}
+                  </div>
+                  {p.budget && (
+                    <div className="text-xs font-semibold text-slate-800">
+                      {p.budget}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400">
+                لا توجد مشاريع حديثة حالياً.
               </div>
-              <span className="text-[10px] font-medium text-gray-400">
-                {item.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// كارت Earning Categories
-function EarningCategoriesCard() {
-  return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-800">
-          Earning Categories
-        </h2>
-        <span className="text-xs text-gray-400">This month</span>
-      </div>
-      <div className="space-y-4">
-        {earningCategories.map((cat) => (
-          <div
-            key={cat.id}
-            className="flex items-center justify-between gap-3"
-          >
-            <div className="flex items-center gap-3">
-              <span
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: cat.color }}
-              />
-              <div>
-                <p className="text-sm font-medium text-gray-800">
-                  {cat.title}
-                </p>
-                <p className="text-[11px] text-gray-400">{cat.subtitle}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden w-20 overflow-hidden rounded-full bg-gray-100 sm:block">
-                <div
-                  className="h-1.5 rounded-full"
-                  style={{
-                    width: `${cat.progress}%`,
-                    backgroundColor: cat.color,
-                  }}
-                />
-              </div>
-              <span className="rounded-full bg-[#ECFDF3] px-3 py-1 text-xs font-semibold text-[#16A34A]">
-                {cat.badge}
-              </span>
-            </div>
+            )}
           </div>
-        ))}
+        </div>
+
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Tips to get better results
+          </h3>
+          <ul className="space-y-2 text-xs text-slate-600 list-disc pl-4">
+            <li>Write clear, detailed project descriptions.</li>
+            <li>Share examples or references of what you like.</li>
+            <li>Invite freelancers with relevant skills directly.</li>
+            <li>Break big projects into smaller milestones.</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
+}
+
+/* ===================== الكومبوننت الرئيسي ===================== */
+export default function Dashboard() {
+  const { userData, roleId: storeRoleId } = useSelector((s) => s.auth || {});
+  const outletCtx = useOutletContext() || {};
+  const { clearTopBarRight } = outletCtx;
+
+  // تنظيف محتوى التوب بار (مثلاً لو صفحة سابقة كانت حاطة حقل بحث)
+  useEffect(() => {
+    clearTopBarRight?.();
+  }, [clearTopBarRight]);
+
+  const rawRoleId =
+    userData?.role_id ??
+    (typeof storeRoleId === "number"
+      ? storeRoleId
+      : Number(localStorage.getItem("roled")));
+
+  const role = mapRole(Number(rawRoleId));
+
+  if (role === "freelancer") return <FreelancerDashboard />;
+  if (role === "client") return <ClientDashboard />;
+  // default admin / user
+  return <AdminDashboard />;
 }

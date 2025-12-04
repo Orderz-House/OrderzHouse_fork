@@ -18,6 +18,7 @@ const uploadFilesToCloudinary = async (files, folder) => {
       );
       Readable.from(file.buffer).pipe(uploadStream);
     });
+
     uploadedFiles.push({
       url: result.secure_url,
       public_id: result.public_id,
@@ -67,7 +68,7 @@ export const getAllTasksForAdmin = async (req, res) => {
   }
 };
 
-// Admin: approve or reject freelancer task 
+// Admin: approve or reject freelancer task
 export const approveTaskByAdmin = async (req, res) => {
   try {
     if (req.token?.role !== 1)
@@ -111,11 +112,12 @@ export const confirmPaymentByAdmin = async (req, res) => {
     if (req.token?.role !== 1)
       return res.status(403).json({ success: false, message: "Access denied. Admins only." });
 
-    const { id } = req.params; 
+    const { id } = req.params;
 
     const result = await pool.query(
       `UPDATE task_req
-          SET status = 'in_progress'
+          SET status = 'in_progress',
+              updated_at = NOW()
         WHERE id = $1
           AND status = 'pending_payment'
           AND payment_proof_url IS NOT NULL
@@ -144,6 +146,25 @@ export const confirmPaymentByAdmin = async (req, res) => {
 /* ===============================================================
    FREELANCER CONTROLLERS
 ================================================================= */
+function generateSpecialId() {
+  const numbers = "0123456789";
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  const r = (chars, len) =>
+    Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+
+  return (
+    r(numbers, 4) +
+    r(letters, 2) +
+    r(numbers, 2) +
+    r(letters, 1) +
+    r(numbers, 2) +
+    r(letters, 2) +
+    r(numbers, 4) +
+    r(letters, 1) +
+    r(numbers, 2)
+  );
+}
 
 export const createTask = async (req, res) => {
   try {
@@ -238,9 +259,11 @@ export const updateTaskRequestStatus = async (req, res) => {
     const result = await pool.query(
       `UPDATE task_req
           SET status = $1, updated_at = NOW()
-        WHERE id = $2 AND status = 'pending_approval'
+        WHERE id = $2 
+          AND status = 'pending_approval'
+          AND freelancer_id = $3
       RETURNING *`,
-      [status, id]
+      [status, id, freelancerId]
     );
 
     if (!result.rows.length)
@@ -269,8 +292,8 @@ export const submitWorkCompletion = async (req, res) => {
     const files = req.files || [];
 
     const reqCheck = await pool.query(
-      `SELECT * FROM task_req WHERE id = $1 AND status = 'in_progress'`,
-      [id]
+      `SELECT * FROM task_req WHERE id = $1 AND status = 'in_progress' AND freelancer_id = $2`,
+      [id, freelancerId]
     );
     if (!reqCheck.rows.length)
       return res.status(404).json({ success: false, message: "Request not found or invalid state." });
@@ -305,8 +328,8 @@ export const resubmitWorkCompletion = async (req, res) => {
     const files = req.files || [];
 
     const reqCheck = await pool.query(
-      `SELECT * FROM task_req WHERE id = $1 AND status = 'reviewing'`,
-      [id]
+      `SELECT * FROM task_req WHERE id = $1 AND status = 'reviewing' AND freelancer_id = $2`,
+      [id, freelancerId]
     );
     if (!reqCheck.rows.length)
       return res.status(404).json({ success: false, message: "Request not found or not in reviewing state." });
@@ -367,6 +390,8 @@ export const updateTaskKanbanStatus = async (req, res) => {
     res.status(500).json({ success: false, message: "Error updating Kanban status." });
   }
 };
+
+// FREELANCER: Get requests for a specific task
 export const getTaskRequests = async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -395,6 +420,7 @@ export const getTaskRequests = async (req, res) => {
       .json({ success: false, message: "Server error fetching task requests." });
   }
 };
+
 /* ===============================================================
    CLIENT CONTROLLERS
 ================================================================= */
@@ -435,23 +461,33 @@ export const requestTask = async (req, res) => {
       attachmentUrls = uploadedFiles.map((f) => f.url);
     }
 
+    const specialOrderId = generateSpecialId();
+
     const reqResult = await pool.query(
-      `INSERT INTO task_req (task_id, client_id, message, attachments, status)
-       VALUES ($1, $2, $3, $4, 'pending_approval')
-       RETURNING id`,
-      [taskId, clientId, message, attachmentUrls]
+      `INSERT INTO task_req 
+         (task_id, client_id, freelancer_id, message, attachments, status, special_order_id)
+       VALUES ($1, $2, $3, $4, $5, 'pending_approval', $6)
+       RETURNING id, special_order_id`,
+      [taskId, clientId, taskData.freelancer_id, message, attachmentUrls, specialOrderId]
     );
 
-    // 🔔 Notify freelancer with real client name
+    // Notify freelancer
     const { rows: clientRows } = await pool.query(
       `SELECT first_name || ' ' || last_name AS full_name FROM users WHERE id = $1`,
       [clientId]
     );
     const clientName = clientRows[0]?.full_name || "A client";
     const notifMessage = `📝 ${clientName} has requested your task "${taskData.title}"`;
+
     await NotificationCreators.taskRequested(taskData.freelancer_id, taskId, notifMessage);
 
-    res.status(201).json({ success: true, message: "Task requested successfully.", requestId: reqResult.rows[0].id });
+    res.status(201).json({
+      success: true,
+      special_order_id: reqResult.rows[0].special_order_id,
+      requestId: reqResult.rows[0].id,
+      message: "Task requested successfully."
+    });
+
   } catch (err) {
     console.error("requestTask error:", err);
     res.status(500).json({ success: false, message: "Server error requesting task." });
@@ -462,7 +498,7 @@ export const submitPaymentProof = async (req, res) => {
   try {
     const clientId = req.token?.userId;
     const { id } = req.params;
-    const files = req.files || [];
+    const files = req.file ? [req.file] : [];
 
     const reqCheck = await pool.query(
       `SELECT * FROM task_req WHERE id = $1 AND client_id = $2 AND status = 'pending_payment'`,
@@ -639,7 +675,7 @@ export const addTaskFiles = async (req, res) => {
     if (!reqCheck.rows.length)
       return res.status(404).json({ success: false, message: "Request not found." });
 
-    const { freelancer_id, client_id, status } = reqCheck.rows[0];
+    const { freelancer_id, client_id } = reqCheck.rows[0];
     if (![freelancer_id, client_id].includes(userId))
       return res.status(403).json({ success: false, message: "You are not part of this request." });
 

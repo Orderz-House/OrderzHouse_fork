@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
-import { CategoriesRail } from "./TopbarCategories.jsx";
+import TopbarCategories from "./TopbarCategories.jsx"; // التوب بار الـ sticky
 import SubSidebar from "./SubSideBar.jsx";
 import {
   fetchCategories,
   fetchSubCategoriesByCategoryId,
+  fetchSubSubCategoriesBySubId, // 👈 جديد
 } from "./api/category";
 
 const THEME = "#028090";
@@ -14,20 +15,24 @@ export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
 
-  const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
-  const mode = propMode || inferredMode; 
+  // نحدد هل الصفحة Tasks أو Projects من الـ URL
+  const inferredMode = location.pathname.startsWith("/tasks")
+    ? "tasks"
+    : "projects";
+  const mode = propMode || inferredMode;
 
   // ====== URL Params ======
   const q = (sp.get("q") || "").trim();
   const category = sp.get("cat") || "";
-  const sub = sp.get("sub") || "";
-  const subcat = sp.get("subcat") || "";
+  const sub = sp.get("sub") || ""; // sub‑sub category
+  const subcat = sp.get("subcat") || ""; // sub category
 
   // ====== Local catalog state ======
   const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
   const [nameToCatId, setNameToCatId] = useState({});
   const [nameToSubCat, setNameToSubCat] = useState({});
+  const [subSubInfo, setSubSubInfo] = useState(null); // 👈 معلومات الساب ساب كاتيجوري
 
   // ---------- Load all categories ----------
   useEffect(() => {
@@ -45,7 +50,7 @@ export default function ProjectsPage({ mode: propMode }) {
     loadCategories();
   }, []);
 
-  // ----------  search (category + sub-category) ----------
+  // ---------- search index (category + sub-category) ----------
   useEffect(() => {
     const buildIndex = async () => {
       try {
@@ -55,11 +60,13 @@ export default function ProjectsPage({ mode: propMode }) {
         const _nameToCatId = {};
         const _nameToSubCat = {};
 
+        // Map: اسم الكاتيجوري → id
         cats.forEach(([id, v]) => {
           const key = (v.title || "").toLowerCase();
           if (key) _nameToCatId[key] = id;
         });
 
+        // Map: اسم الساب كاتيجوري → {id, parentId}
         if (q) {
           await Promise.all(
             cats.map(async ([id]) => {
@@ -88,6 +95,7 @@ export default function ProjectsPage({ mode: propMode }) {
     buildIndex();
   }, [catalog, q]);
 
+  // ---------- default category ----------
   useEffect(() => {
     if (!category && Object.keys(catalog).length > 0) {
       const firstId = Object.keys(catalog)[0];
@@ -99,14 +107,16 @@ export default function ProjectsPage({ mode: propMode }) {
       next.set("page", "1");
       setSp(next, { replace: true });
     }
-  }, [catalog, category]);
+  }, [catalog, category, sp, setSp]);
 
+  // ---------- search by text ----------
   useEffect(() => {
     if (!q || !indexReady) return;
     if (category || subcat || sub) return;
 
     const term = q.toLowerCase().trim();
 
+    // 1) مطابق لاسم sub‑category بالضبط
     const exactSub = nameToSubCat[term];
     if (exactSub) {
       const next = new URLSearchParams(sp);
@@ -119,6 +129,7 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
+    // 2) مطابق لاسم الـ category بالضبط
     const exactCatId = nameToCatId[term];
     if (exactCatId) {
       const next = new URLSearchParams(sp);
@@ -131,7 +142,10 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    const subHit = Object.entries(nameToSubCat).find(([k]) => k.includes(term));
+    // 3) يحتوي على الاسم داخل sub‑category
+    const subHit = Object.entries(nameToSubCat).find(([k]) =>
+      k.includes(term)
+    );
     if (subHit) {
       const [, val] = subHit;
       const next = new URLSearchParams(sp);
@@ -144,7 +158,10 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    const catHit = Object.entries(nameToCatId).find(([k]) => k.includes(term));
+    // 4) يحتوي على الاسم داخل category
+    const catHit = Object.entries(nameToCatId).find(([k]) =>
+      k.includes(term)
+    );
     if (catHit) {
       const [, catId] = catHit;
       const next = new URLSearchParams(sp);
@@ -157,11 +174,46 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
+    // لو ما في نتيجة من البحث بالاسم نمسح q من الـ URL
     const next = new URLSearchParams(sp);
     next.delete("q");
     setSp(next, { replace: true });
-  }, [q, indexReady, nameToCatId, nameToSubCat, category, subcat, sub, sp, setSp]);
+  }, [
+    q,
+    indexReady,
+    nameToCatId,
+    nameToSubCat,
+    category,
+    subcat,
+    sub,
+    sp,
+    setSp,
+  ]);
 
+  // ---------- تحميل بيانات الساب ساب كاتيجوري المختارة ----------
+  useEffect(() => {
+    const loadSubSubInfo = async () => {
+      // لو ما في ساب ساب أو ما في ساب كاتيجوري نفضّي المعلومات
+      if (!sub || !subcat) {
+        setSubSubInfo(null);
+        return;
+      }
+
+      try {
+        const list = await fetchSubSubCategoriesBySubId(Number(subcat));
+        const found =
+          list && list.find((item) => String(item.id) === String(sub));
+        setSubSubInfo(found || null);
+      } catch (err) {
+        console.error("Failed to fetch sub-sub-category info", err);
+        setSubSubInfo(null);
+      }
+    };
+
+    loadSubSubInfo();
+  }, [sub, subcat]);
+
+  // ---------- اختيار كاتيجوري من الشريط ----------
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
     next.set("cat", id.toString());
@@ -172,6 +224,7 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
+  // ---------- اختيار sub‑sub من SubSidebar ===========
   const chooseSub = (subId) => {
     const next = new URLSearchParams(sp);
     if (subId) next.set("sub", subId.toString());
@@ -182,43 +235,108 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
+  // ✅ تُستدعى من الميجا منيو في التوب بار (كاتيجوري + ساب + ساب ساب)
+  const handleSelectFromTopbar = (catId, subCatId, subSubId) => {
+    const next = new URLSearchParams(sp);
+
+    next.set("cat", catId.toString());
+
+    if (subCatId) next.set("subcat", subCatId.toString());
+    else next.delete("subcat");
+
+    if (subSubId) next.set("sub", subSubId.toString());
+    else next.delete("sub");
+
+    next.delete("q");
+    next.set("page", "1");
+    setSp(next, { replace: false });
+  };
+
   const meta = useMemo(
-    () => catalog[category] || { title: mode === "tasks" ? "Tasks" : "Projects", subtitle: "" },
+    () =>
+      catalog[category] || {
+        title: mode === "tasks" ? "Tasks" : "Projects",
+        subtitle: "",
+      },
     [catalog, category, mode]
   );
 
   return (
-    <section className="relative min-h-[70vh] py-8 bg-white">
+    <section className="relative min-h-[70vh] pb-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Categories rail */}
-        <div className="mb-6">
-          <CategoriesRail
-            active={category}
-            onSelect={chooseCat}
-            catalog={catalog}
-            theme={THEME}
-            themeDark={THEME_DARK}
-          />
-        </div>
+        {/* 🔝 التوب بار الـ sticky مع الميجا منيو */}
+        <TopbarCategories
+          active={category}
+          onSelect={chooseCat}
+          onSelectSubCategory={handleSelectFromTopbar}
+          theme={THEME}
+          themeDark={THEME_DARK}
+        />
 
-        {/* Header */}
-        <header className="mb-6">
-          <h1 className="text-3xl font-black tracking-tight" style={{ color: THEME_DARK }}>
-            {meta.title}
-          </h1>
+        {/* عنوان الصفحة */}
+        <header className="mt-4 mb-6">
+          <div className="flex items-center gap-2 text-sm">
+            {/* Home icon */}
+            <a
+              href="/"
+              className="inline-flex items-center text-slate-600 hover:text-slate-800"
+              aria-label="Home"
+            >
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1h-4.5v-4.5h-3V18H4a1 1 0 01-1-1V9.5z"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
+
+            {/* Slash */}
+            <span className="text-slate-300">/</span>
+
+            {/* Category title */}
+            <h1
+              className="text-sm font-semibold tracking-tight text-slate-800"
+              style={{ color: THEME_DARK }}
+            >
+              {meta.title}
+            </h1>
+          </div>
+
+          {/* عنوان الساب ساب كاتيجوري + وصف بسيط */}
+          {subSubInfo && (
+  <div className="mt-2">
+    <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
+      {subSubInfo.name}
+    </h2>
+    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+      {subSubInfo.description
+        ? subSubInfo.description
+        : `استعرض مشاريع وخدمات مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
+    </p>
+
+    
+  </div>
+)}
+{/* خط رفيع بعرض الكونتينر ولونه رمادي فاتح */}
+    <hr className="mt-4 border-t border-slate-200" />
         </header>
 
-        {/* Main Content */}
-        <div className="flex gap-8">
-          <SubSidebar
-            mode={mode}            
-            categoryId={category}
-            activeSubSub={sub}
-            onSelectSubSub={chooseSub}
-            theme={THEME}
-            subCategoryId={subcat}
-          />
-        </div>
+        {/* المحتوى الرئيسي */}
+        <SubSidebar
+          mode={mode}
+          categoryId={category}
+          activeSubSub={sub}
+          onSelectSubSub={chooseSub}
+          theme={THEME}
+          subCategoryId={subcat}
+        />
       </div>
     </section>
   );

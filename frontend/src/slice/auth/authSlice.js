@@ -7,9 +7,17 @@ const initialState = {
   roleId: localStorage.getItem("roleId") || null,
   isLoggedIn: !!localStorage.getItem("token"),
   isVerified: localStorage.getItem("is_verified") || null,
-  userData: Cookies.get("userData")
-    ? JSON.parse(Cookies.get("userData"))
-    : null,
+  uuserData: (() => {
+  const data = Cookies.get("userData");
+  if (!data || data === "undefined" || data === "null") return null;
+
+  try {
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("Invalid userData cookie:", data);
+    return null;
+  }
+})(),
 };
 
 const authSlice = createSlice({

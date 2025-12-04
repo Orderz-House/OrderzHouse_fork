@@ -1,4 +1,4 @@
-import { Calendar, User, Clock } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function BlogCard({ post }) {
@@ -32,6 +32,7 @@ export default function BlogCard({ post }) {
             {post.title}
           </Link>
         </h3>
+
         <p className="text-slate-600 text-sm mt-2 line-clamp-2">
           {post.excerpt}
         </p>
@@ -41,10 +42,8 @@ export default function BlogCard({ post }) {
             <Calendar className="w-3.5 h-3.5" />
             {formatDate(post.date)}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5" />
-            {post.author}
-          </span>
+
+
           <span className="inline-flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             {post.read}

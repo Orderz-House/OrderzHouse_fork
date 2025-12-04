@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
@@ -16,7 +16,6 @@ function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
-  if (roleId === 4) return "apm";            // NEW: appointment manager
   return "user";
 }
 
@@ -31,17 +30,16 @@ function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
   const p = pathname.replace(base, "") || "/";
 
-  // common
+  // مشترك بين الكل
   if (p === "/" || p === "") return "overview";
 
-  // admin
+  // ===== admin =====
   if (base === "/admin") {
     if (p.startsWith("/people/admins")) return "admins";
     if (p.startsWith("/people/clients")) return "clients";
     if (p.startsWith("/people/freelancers")) return "freelancers";
     if (p.startsWith("/learning/courses")) return "courses";
     if (p.startsWith("/learning/categories")) return "categories";
-    if (p.startsWith("/operation/appointments")) return "appointments";
     if (p.startsWith("/operation/verifications")) return "verifications";
     if (p.startsWith("/operation/projects")) return "projects";
     if (p.startsWith("/operation/tasks")) return "tasks";
@@ -53,14 +51,32 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/tasks")) return "tasks";
     if (p.startsWith("/courses")) return "courses";
-    if (p.startsWith("/appointments")) return "appointments";
     if (p.startsWith("/my-subscription")) return "my-subscription";
     if (p.startsWith("/profile")) return "profile";
   }
 
-  // apm
+  // ===== client =====
+  if (base === "/client") {
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/tasks")) return "tasks";
+    if (p.startsWith("/courses")) return "courses";
+    if (p.startsWith("/my-subscription")) return "my-subscription";
+    if (p.startsWith("/profile")) return "profile";
+  }
+
+  // ===== freelancer =====
+  if (base === "/freelancer") {
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/tasks")) return "tasks";
+    if (p.startsWith("/courses")) return "courses";
+    if (p.startsWith("/my-subscription")) return "my-subscription";
+    if (p.startsWith("/profile")) return "profile";
+  }
+
+  // ===== apm =====
   if (base === "/apm") {
-    if (p.startsWith("/appointment")) return "appointment";
     if (p.startsWith("/history")) return "history";
     if (p.startsWith("/questions")) return "questions";
     if (p.startsWith("/survey")) return "survey";
@@ -69,6 +85,7 @@ function getActiveFromPath(pathname) {
 
   return "overview";
 }
+
 
 function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
@@ -79,7 +96,6 @@ function getNav(role, navigate, base, onLogout) {
       { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate(`${base}/people/freelancers`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
       { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => navigate(`${base}/learning/categories`) },
-      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/operation/appointments`) },
       { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate(`${base}/operation/verifications`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/operation/projects`) },
       { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
@@ -98,7 +114,6 @@ function getNav(role, navigate, base, onLogout) {
   if (role === "apm") {
     const navigation = [
       { id: "overview",    name: "Overview",    icon: Home,        onClick: () => navigate(`${base}/`) },
-      { id: "appointment", name: "Appointment", icon: CalendarDays, onClick: () => navigate(`${base}/appointment`) },
       { id: "history",     name: "History",     icon: History,      onClick: () => navigate(`${base}/history`) },
       { id: "questions",   name: "Questions",   icon: HelpCircle,   onClick: () => navigate(`${base}/questions`) },
       { id: "survey",      name: "Survey",      icon: SurveyIcon,   onClick: () => navigate(`${base}/survey`) },
@@ -132,7 +147,6 @@ function getNav(role, navigate, base, onLogout) {
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
       { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
-      { id: "appointments", name: "Appointments", icon: Calendar, onClick: () => navigate(`${base}/appointments`) },
       { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) },
     ];
     const bottomNavigation = [
@@ -185,6 +199,11 @@ export default function AdminLayout() {
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(true);
   const [pageTitle, setPageTitle] = useState("Overview");
   const [topBarRight, setTopBarRight] = useState(null);
+
+  const clearTopBarRight = useCallback(() => {
+  setTopBarRight(null);
+}, []);
+
 
   // تحديث الصفحة النشطة من الـ path
   useEffect(() => {
@@ -244,11 +263,12 @@ export default function AdminLayout() {
   />
 
     <Outlet
-      context={{
-        setTopBarRight,
-        clearTopBarRight: () => setTopBarRight(null),
-      }}
-    />
+  context={{
+    setTopBarRight,
+    clearTopBarRight,
+  }}
+/>
+
 </main>
 
     </div>

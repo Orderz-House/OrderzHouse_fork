@@ -9,13 +9,11 @@ import Courses from "../pages/learning/Courses.jsx";
 import Categories from "../pages/learning/Categories.jsx";
 import SubCategories from "../pages/learning/SubCategories.jsx";
 import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
-import Appointments from "../pages/operation/Appointments.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
-import Projects from "../pages/operation/Projects/ClientsProjects.jsx";
 
-// import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
+import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
 import ClientsProjects from "../pages/operation/Projects/ClientsProjects.jsx";
-// import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
+import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
 import ProjectDetails from "../pages/operation/Projects/ProjectDetails.jsx";
 
 import Blogs from "../pages/community/Blogs.jsx";
@@ -27,9 +25,21 @@ import Profile from "../pages/Profile.jsx";
 
 function ProjectsSwitch() {
   const { pathname } = useLocation();
-  if (pathname.startsWith("/client")) return <ClientsProjects />;
+
+  // /client/projects  -> صفحة العميل
+  if (pathname.startsWith("/client")) {
+    return <ClientsProjects />;
+  }
+
+  // /freelancer/projects -> صفحة الفريلانسر
+  if (pathname.startsWith("/freelancer")) {
+    return <FreelancersProjects />;
+  }
+
+  // أي شيء آخر (عادة admin) نحوله إلى صفحة إدارة المشاريع
   return <Navigate to="/admin/operation/projects" replace />;
 }
+
 
 export default function AdminRouter() {
   return (
@@ -49,10 +59,9 @@ export default function AdminRouter() {
           path="learning/categories/:categoryId/sub/:subCategoryId"
           element={<SubSubCategories />}
         />
-        <Route path="operation/appointments" element={<Appointments />} />
         <Route path="operation/verifications" element={<Verifications />} />
 
-        {/* <Route path="operation/projects" element={<AdminProjects />} /> */}
+        <Route path="operation/projects" element={<AdminProjects />} />
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
         <Route path="operation/tasks" element={<Tasks />} />
@@ -66,62 +75,7 @@ export default function AdminRouter() {
         <Route path="projects" element={<ProjectsSwitch />} />
         <Route path="payments" element={<Payments />} />
         <Route path="courses" element={<Courses />} />
-        <Route path="appointments" element={<Appointments />} />
         <Route path="tasks" element={<Tasks />} />
-      </Route>
-    </Routes>
-  );
-}
-
-/* (Appointment Manager) */
-export function APMRouter() {
-  return (
-    <Routes>
-      <Route path="/" element={<AdminLayout />}>
-        {/* overview */}
-        <Route
-          index
-          element={
-            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
-              APM Overview (coming soon)
-            </div>
-          }
-        />
-
-        <Route path="appointment" element={<Appointments />} />
-
-        <Route
-          path="history"
-          element={
-            <div className="p-6 rounded-2xl border border-slate-2 00 bg-white">
-              History (coming soon)
-            </div>
-          }
-        />
-        <Route
-          path="questions"
-          element={
-            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
-              Questions (coming soon)
-            </div>
-          }
-        />
-        <Route
-          path="survey"
-          element={
-            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
-              Survey (coming soon)
-            </div>
-          }
-        />
-        <Route
-          path="videos"
-          element={
-            <div className="p-6 rounded-2xl border border-slate-200 bg-white">
-              Videos (coming soon)
-            </div>
-          }
-        />
       </Route>
     </Routes>
   );
