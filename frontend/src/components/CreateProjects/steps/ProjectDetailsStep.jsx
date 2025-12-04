@@ -1,13 +1,45 @@
+// components/CreateProjects/steps/ProjectDetailsStep.jsx
 import React, { useState, useEffect } from "react";
 import { fetchCategories, fetchSubSubCategoriesByCategoryId } from "../api/category";
 import { useSelector } from "react-redux";
+ 
 
 const THEME = "#028090";
 
-export default function ProjectDetailsStep({ onNext, projectData, setProjectData }) {
+export default function ProjectDetailsStep({
+  onNext,
+  projectData,
+  setProjectData,
+  isTask = false,
+}) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
   const [skillsInput, setSkillsInput] = useState("");
+
+
+  const [form, setForm] = useState(() => {
+    const base = {
+      title: "",
+      description: "",
+      category_id: "",
+      sub_sub_category_id: "",
+      duration_type: "days",
+      duration_days: 1,
+      duration_hours: 1,
+      project_type: "fixed",
+      budget: 1,
+      budget_min: 1,
+      budget_max: 1,
+      hourly_rate: 1,
+      preferred_skills: [],
+    };
+
+    const merged = { ...base, ...(projectData || {}) };
+    if (isTask) merged.project_type = "fixed";
+    return merged;
+  });
+
+
   const [availableFreelancers, setAvailableFreelancers] = useState([]);
   const [loadingFreelancers, setLoadingFreelancers] = useState(false);
   const roleId = useSelector((state) => state.auth.roleId);
@@ -36,6 +68,14 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
+    fetchCategories()
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Failed to fetch categories:", err);
+        setCategories([]);
+      });
+  }, []);
+
     // Only fetch categories normally for non-admin users
     if (Number(roleId) !== 4) {
       fetchCategories()
@@ -50,22 +90,37 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   useEffect(() => {
     if (!form.category_id) return;
     fetchSubSubCategoriesByCategoryId(form.category_id)
-      .then(data => setSubSubCategories(Array.isArray(data) ? data : []))
-      .catch(err => {
+      .then((data) => setSubSubCategories(Array.isArray(data) ? data : []))
+      .catch((err) => {
         console.error("Failed to fetch sub-sub-categories:", err);
         setSubSubCategories([]);
       });
-    setForm(prev => ({ ...prev, sub_sub_category_id: "" }));
+    setForm((prev) => ({ ...prev, sub_sub_category_id: "" }));
   }, [form.category_id]);
 
   useEffect(() => {
     setIsFormValid(validateForm(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const noZeroFields = ["budget", "hourly_rate", "duration_days", "duration_hours", "budget_min", "budget_max"];
+    const noZeroFields = [
+      "budget",
+      "hourly_rate",
+      "duration_days",
+      "duration_hours",
+      "budget_min",
+      "budget_max",
+    ];
     let newValue = value;
+    if (noZeroFields.includes(name)) {
+      const num = Number(value);
+      newValue = Number.isNaN(num) ? "" : Math.max(num, 1);
+    }
+    setForm((prev) => ({ ...prev, [name]: newValue }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+
     if (noZeroFields.includes(name)) newValue = Math.max(Number(value), 1);
     setForm(prev => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
@@ -84,12 +139,18 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     const newSkill = skillsInput.trim();
     if (!newSkill) return;
     if (form.preferred_skills.includes(newSkill)) return setSkillsInput("");
-    setForm(prev => ({ ...prev, preferred_skills: [...prev.preferred_skills, newSkill] }));
+    setForm((prev) => ({
+      ...prev,
+      preferred_skills: [...prev.preferred_skills, newSkill],
+    }));
     setSkillsInput("");
   };
 
   const handleRemoveSkill = (skill) => {
-    setForm(prev => ({ ...prev, preferred_skills: prev.preferred_skills.filter(s => s !== skill) }));
+    setForm((prev) => ({
+      ...prev,
+      preferred_skills: prev.preferred_skills.filter((s) => s !== skill),
+    }));
   };
 
   const calculateAmountToPay = () => {
@@ -120,7 +181,6 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     const titleLength = form.title.trim().length;
     const descLength = form.description.trim().length;
 
-    // Title validation with min/max limits
     if (!form.title.trim()) {
       newErrors.title = "Title is required";
     } else if (titleLength < 10) {
@@ -129,7 +189,6 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
       newErrors.title = "Title must not exceed 100 characters";
     }
 
-    // Description validation with min/max limits
     if (!form.description.trim()) {
       newErrors.description = "Description is required";
     } else if (descLength < 100) {
@@ -139,13 +198,22 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     }
 
     if (!form.category_id) newErrors.category_id = "Category is required";
-    if (!form.sub_sub_category_id) newErrors.sub_sub_category_id = "Sub-category is required";
-    if (form.project_type === "fixed" && form.budget <= 0) newErrors.budget = "Budget must be greater than 0";
-    if (form.project_type === "hourly" && form.hourly_rate <= 0) newErrors.hourly_rate = "Hourly rate must be greater than 0";
-    if (form.project_type === "bidding") {
-      if (form.budget_min <= 0) newErrors.budget_min = "Min budget must be greater than 0";
-      if (form.budget_max <= 0) newErrors.budget_max = "Max budget must be greater than 0";
-      if (form.budget_max < form.budget_min) newErrors.budget_max = "Max budget must be greater than min budget";
+    if (!form.sub_sub_category_id)
+      newErrors.sub_sub_category_id = "Sub-category is required";
+
+    if (form.project_type === "fixed" && form.budget <= 0)
+      newErrors.budget = "Budget must be greater than 0";
+
+    if (!isTask && form.project_type === "hourly" && form.hourly_rate <= 0)
+      newErrors.hourly_rate = "Hourly rate must be greater than 0";
+
+    if (!isTask && form.project_type === "bidding") {
+      if (form.budget_min <= 0)
+        newErrors.budget_min = "Min budget must be greater than 0";
+      if (form.budget_max <= 0)
+        newErrors.budget_max = "Max budget must be greater than 0";
+      if (form.budget_max < form.budget_min)
+        newErrors.budget_max = "Max budget must be greater than min budget";
     }
 
     // Admin-specific validation
@@ -169,6 +237,24 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    // لو تاسك نبعث فقط الحقول اللي الباك إند مستنيها
+    const finalData = isTask
+      ? {
+          title: form.title,
+          description: form.description,
+          price: form.budget, // مهم: budget → price
+          category_id: form.category_id,
+          duration_days:
+            form.duration_type === "days" ? form.duration_days : 0,
+          duration_hours:
+            form.duration_type === "hours" ? form.duration_hours : 0,
+          sub_sub_category_id: form.sub_sub_category_id,
+        }
+      : form;
+
+    setProjectData(finalData);
+
     
     // For admin users, we need to send different data
     if (Number(roleId) === 4) {
@@ -198,9 +284,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     onNext();
   };
 
-  const inputBase = "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent transition";
+  const inputBase =
+    "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent transition";
 
-  // Character count helpers
   const titleLength = form.title.trim().length;
   const descLength = form.description.trim().length;
   const titleProgress = Math.min((titleLength / 10) * 100, 100);
@@ -208,9 +294,14 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      {/* Header */}
       <div className="p-6 bg-gradient-to-r from-[#02C39A]/10 via-[#028090]/10 to-[#05668D]/10 border-b border-slate-100">
-        <h2 className="text-2xl font-black tracking-tight text-slate-800">Project Details</h2>
-        <p className="text-slate-500">Tell us about your project</p>
+        <h2 className="text-2xl font-black tracking-tight text-slate-800">
+          {isTask ? "Task Details" : "Project Details"}
+        </h2>
+        <p className="text-slate-500">
+          {isTask ? "Tell us about your task" : "Tell us about your project"}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -355,30 +446,51 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         {/* Title */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Project Title <span className="text-red-500">*</span>
+            {isTask ? "Task Title" : "Project Title"}{" "}
+            <span className="text-red-500">*</span>
           </label>
           <input
             name="title"
-            placeholder="e.g., Build a responsive website"
+            placeholder={
+              isTask
+                ? "e.g., Design a landing page section"
+                : "e.g., Build a responsive website"
+            }
             value={form.title}
             onChange={handleChange}
             maxLength={100}
-            className={`${inputBase} ${errors.title ? "ring-red-400 border-red-300" : ""}`}
+            className={`${inputBase} ${
+              errors.title ? "ring-red-400 border-red-300" : ""
+            }`}
           />
           <div className="mt-2 flex items-center justify-between text-xs">
-            <span className={`font-medium ${titleLength < 10 ? "text-amber-600" : titleLength > 100 ? "text-red-600" : "text-emerald-600"}`}>
-              {titleLength < 10 ? `${10 - titleLength} more characters needed` : `${titleLength}/100 characters`}
+            <span
+              className={`font-medium ${
+                titleLength < 10
+                  ? "text-amber-600"
+                  : titleLength > 100
+                  ? "text-red-600"
+                  : "text-emerald-600"
+              }`}
+            >
+              {titleLength < 10
+                ? `${10 - titleLength} more characters needed`
+                : `${titleLength}/100 characters`}
             </span>
             <div className="flex items-center gap-2">
               <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all ${titleLength >= 10 ? "bg-emerald-500" : "bg-amber-500"}`}
+                <div
+                  className={`h-full transition-all ${
+                    titleLength >= 10 ? "bg-emerald-500" : "bg-amber-500"
+                  }`}
                   style={{ width: `${titleProgress}%` }}
                 />
               </div>
             </div>
           </div>
-          {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
+          {errors.title && (
+            <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+          )}
         </div>
 
         {/* Description */}
@@ -389,37 +501,63 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
           <textarea
             name="description"
             rows={6}
-            placeholder="Describe your project in detail..."
+            placeholder={
+              isTask
+                ? "Describe your task in detail..."
+                : "Describe your project in detail..."
+            }
             value={form.description}
             onChange={handleChange}
             maxLength={2000}
-            className={`${inputBase} resize-y ${errors.description ? "ring-red-400 border-red-300" : ""}`}
+            className={`${inputBase} resize-y ${
+              errors.description ? "ring-red-400 border-red-300" : ""
+            }`}
           />
           <div className="mt-2 flex items-center justify-between text-xs">
-            <span className={`font-medium ${descLength < 100 ? "text-amber-600" : descLength > 2000 ? "text-red-600" : "text-emerald-600"}`}>
-              {descLength < 100 ? `${100 - descLength} more characters needed` : `${descLength}/2000 characters`}
+            <span
+              className={`font-medium ${
+                descLength < 100
+                  ? "text-amber-600"
+                  : descLength > 2000
+                  ? "text-red-600"
+                  : "text-emerald-600"
+              }`}
+            >
+              {descLength < 100
+                ? `${100 - descLength} more characters needed`
+                : `${descLength}/2000 characters`}
             </span>
             <div className="flex items-center gap-2">
               <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all ${descLength >= 100 ? "bg-emerald-500" : "bg-amber-500"}`}
+                <div
+                  className={`h-full transition-all ${
+                    descLength >= 100 ? "bg-emerald-500" : "bg-amber-500"
+                  }`}
                   style={{ width: `${descProgress}%` }}
                 />
               </div>
             </div>
           </div>
-          {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors.description}
+            </p>
+          )}
         </div>
 
         {/* Preferred Skills */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Preferred Skills</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Preferred Skills
+          </label>
           <div className="flex gap-3 mb-3">
             <input
               type="text"
               value={skillsInput}
               onChange={(e) => setSkillsInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
+              onKeyDown={(e) =>
+                e.key === "Enter" && (e.preventDefault(), handleAddSkill())
+              }
               placeholder="Type a skill and press Enter or Add"
               className={inputBase}
             />
@@ -435,7 +573,10 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
           {form.preferred_skills.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {form.preferred_skills.map((skill, i) => (
-                <span key={i} className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 border border-slate-200">
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 border border-slate-200"
+                >
                   {skill}
                   <button
                     type="button"
@@ -449,6 +590,103 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
             </div>
           )}
         </div>
+
+        {/* Categories */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="category_id"
+              value={form.category_id}
+              onChange={handleChange}
+              className={`${inputBase} ${
+                errors.category_id ? "ring-red-400 border-red-300" : ""
+              }`}
+            >
+              <option value="">Select Category</option>
+              {Array.isArray(categories) &&
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+            </select>
+            {errors.category_id && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.category_id}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Sub-category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="sub_sub_category_id"
+              value={form.sub_sub_category_id}
+              onChange={handleChange}
+              disabled={!form.category_id}
+              className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${
+                errors.sub_sub_category_id
+                  ? "ring-red-400 border-red-300"
+                  : ""
+              }`}
+            >
+              <option value="">Select Sub-category</option>
+              {Array.isArray(subSubCategories) &&
+                subSubCategories.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+            </select>
+            {errors.sub_sub_category_id && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.sub_sub_category_id}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Project Type – فقط للبروجكتس */}
+        {!isTask && (
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Project Type <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: "fixed", label: "Fixed Price", icon: "💰" },
+                { value: "hourly", label: "Hourly Rate", icon: "⏰" },
+                { value: "bidding", label: "Bidding", icon: "🎯" },
+              ].map((type) => {
+                const active = form.project_type === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() =>
+                      handleChange({
+                        target: { name: "project_type", value: type.value },
+                      })
+                    }
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${
+                      active
+                        ? "border-[#028090] bg-[#E6F7F6] shadow-sm"
+                        : "border-slate-200 hover:border-[#028090]/50"
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{type.icon}</div>
+                    <div className="font-semibold text-slate-800">
+                      {type.label}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
         {/* Project Type */}
         <div>
@@ -477,7 +715,7 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               );
             })}
           </div>
-        </div>
+        )}
 
         {/* Budget */}
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
@@ -487,7 +725,9 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 Budget <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
+                  $
+                </span>
                 <input
                   name="budget"
                   type="number"
@@ -495,78 +735,32 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                   placeholder="0.00"
                   value={form.budget}
                   onChange={handleChange}
-                  className={`${inputBase} pl-8 ${errors.budget ? "ring-red-400 border-red-300" : ""}`}
+                  className={`${inputBase} pl-8 ${
+                    errors.budget ? "ring-red-400 border-red-300" : ""
+                  }`}
                 />
               </div>
-              {errors.budget && <p className="mt-1 text-sm text-red-500">{errors.budget}</p>}
-              <p className="mt-2 text-slate-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
+              {errors.budget && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.budget}
+                </p>
+              )}
+              <p className="mt-2 text-slate-700 font-medium">
+                Estimated amount to pay: ${calculateAmountToPay() || 0}
+              </p>
             </div>
           )}
 
-          {form.project_type === "hourly" && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Hourly Rate <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$/hr</span>
-                <input
-                  name="hourly_rate"
-                  type="number"
-                  min={1}
-                  placeholder="0.00"
-                  value={form.hourly_rate}
-                  onChange={handleChange}
-                  className={`${inputBase} pl-14 ${errors.hourly_rate ? "ring-red-400 border-red-300" : ""}`}
-                />
-              </div>
-              {errors.hourly_rate && <p className="mt-1 text-sm text-red-500">{errors.hourly_rate}</p>}
-              <p className="mt-2 text-slate-700 font-medium">Estimated amount to pay: ${calculateAmountToPay() || 0}</p>
-            </div>
-          )}
-
-          {form.project_type === "bidding" && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Min Budget <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
-                  <input
-                    name="budget_min"
-                    type="number"
-                    min={1}
-                    placeholder="0.00"
-                    value={form.budget_min}
-                    onChange={handleChange}
-                    className={`${inputBase} pl-8 ${errors.budget_min ? "ring-red-400 border-red-300" : ""}`}
-                  />
-                </div>
-                {errors.budget_min && <p className="mt-1 text-sm text-red-500">{errors.budget_min}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Max Budget <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
-                  <input
-                    name="budget_max"
-                    type="number"
-                    min={1}
-                    placeholder="0.00"
-                    value={form.budget_max}
-                    onChange={handleChange}
-                    className={`${inputBase} pl-8 ${errors.budget_max ? "ring-red-400 border-red-300" : ""}`}
-                  />
-                </div>
-                {errors.budget_max && <p className="mt-1 text-sm text-red-500">{errors.budget_max}</p>}
-              </div>
-            </div>
-          )}
+          {!isTask && form.project_type === "hourly" && <></>}
+          {!isTask && form.project_type === "bidding" && <></>}
         </div>
 
         {/* Duration */}
         {form.project_type !== "hourly" && (
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">Project Duration</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              {isTask ? "Task Duration" : "Project Duration"}
+            </label>
             <div className="grid sm:grid-cols-2 gap-4">
               <select
                 name="duration_type"
@@ -578,11 +772,19 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
                 <option value="hours">Hours</option>
               </select>
               <input
-                name={form.duration_type === "days" ? "duration_days" : "duration_hours"}
+                name={
+                  form.duration_type === "days"
+                    ? "duration_days"
+                    : "duration_hours"
+                }
                 type="number"
                 min={1}
                 placeholder={`Duration in ${form.duration_type}`}
-                value={form.duration_type === "days" ? form.duration_days : form.duration_hours}
+                value={
+                  form.duration_type === "days"
+                    ? form.duration_days
+                    : form.duration_hours
+                }
                 onChange={handleChange}
                 className={inputBase}
               />
@@ -594,12 +796,26 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
         <button
           type="submit"
           disabled={!isFormValid}
-          className={`w-full h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${!isFormValid ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg"}`}
+          className={`w-full h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${
+            !isFormValid
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:shadow-lg"
+          }`}
           style={{ background: THEME }}
         >
           Continue to Files
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
           </svg>
         </button>
       </form>
