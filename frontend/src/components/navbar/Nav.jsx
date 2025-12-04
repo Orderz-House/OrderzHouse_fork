@@ -167,19 +167,23 @@ export default function EnhancedNavbar() {
   }, []);
 
   const getDashboardPath = (roleId) => {
-    switch (roleId) {
-      case 1:
-        return "/admin";
-      case 2:
-        return "/client";
-      case 3:
-        return "/freelancer";
-      case 4:
-        return "/apm";
-      default:
-        return "/login";
-    }
-  };
+  switch (Number(roleId)) {
+    case 1:
+      return "/admin";
+    case 2:
+      return "/client";
+    case 3:
+      return "/freelancer";
+    case 4:
+      return "/apm";
+    case 5:
+      // مسار الداشبورد الخاص بالبارتنر
+      return "/partner";
+    default:
+      return "/login";
+  }
+};
+
 
   const navLinks = [
     { label: "HOME", path: "/", condition: true },

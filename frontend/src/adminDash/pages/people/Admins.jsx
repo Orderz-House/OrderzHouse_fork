@@ -271,7 +271,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
       await axios.put(
         url,
         {
-          role_id: 1, // promote to admin
+          role_id: 4, // promote to admin
           permissions,
         },
         {

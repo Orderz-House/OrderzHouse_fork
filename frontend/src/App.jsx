@@ -222,7 +222,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
+          <Route   
             path="/my-appointments"
             element={
               <ProtectedRoute>
@@ -274,6 +274,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/partner/*"
+            element={
+              <ProtectedRoute allowedRoles={[5]}>
+                <AdminRouter />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/projects/:id"
             element={

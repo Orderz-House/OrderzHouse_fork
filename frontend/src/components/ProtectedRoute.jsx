@@ -11,7 +11,7 @@ function ProtectedRoute({ children }) {
   }
 
  
-  if(userData.is_deleted){
+  if(userData.is_deleted){       
     return <Navigate to="/account/suspended" replace />;
   }
 

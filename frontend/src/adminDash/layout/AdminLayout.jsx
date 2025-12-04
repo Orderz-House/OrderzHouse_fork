@@ -16,15 +16,18 @@ function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
+  if (roleId === 5) return "partner";
   return "user";
 }
 
 function getBasePrefix(pathname) {
   if (pathname.startsWith("/client")) return "/client";
   if (pathname.startsWith("/freelancer")) return "/freelancer";
-  if (pathname.startsWith("/apm")) return "/apm";     // NEW
+  if (pathname.startsWith("/apm")) return "/apm";
+  if (pathname.startsWith("/partner")) return "/partner"; 
   return "/admin";
 }
+
 
 function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
@@ -51,7 +54,6 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/tasks")) return "tasks";
     if (p.startsWith("/courses")) return "courses";
-    if (p.startsWith("/my-subscription")) return "my-subscription";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -61,7 +63,6 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/tasks")) return "tasks";
     if (p.startsWith("/courses")) return "courses";
-    if (p.startsWith("/my-subscription")) return "my-subscription";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -71,7 +72,6 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/tasks")) return "tasks";
     if (p.startsWith("/courses")) return "courses";
-    if (p.startsWith("/my-subscription")) return "my-subscription";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -126,7 +126,7 @@ function getNav(role, navigate, base, onLogout) {
     return { navigation, bottomNavigation };
   }
 
-  if (role === "client") {
+  if (role === "client" || role === "partner") {
     const navigation = [
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
@@ -147,7 +147,6 @@ function getNav(role, navigate, base, onLogout) {
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
       { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
       { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
-      { id: "my-subscription", name: "My Subscription", icon: Star, onClick: () => navigate(`${base}/my-subscription`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
