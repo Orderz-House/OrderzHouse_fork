@@ -171,7 +171,6 @@ useEffect(() => {
               <div className="flex items-center justify-center gap-2">
                 <div className="text-sm text-slate-500">Projects in Progress</div>
                 <div className="text-xs text-slate-400">
-                  ({Math.round((processing / Math.max(total, 1)) * 100)}%)
                 </div>
               </div>
               <div className="mt-2 text-2xl sm:text-3xl font-extrabold" style={{ color: primaryDark }}>
@@ -211,18 +210,10 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="text-xs text-slate-500 text-center select-none">
-              {isPaused ? (
-                <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600">Paused</span>
-              ) : (
-                <span className="px-3 py-1 rounded-full" style={{ background: primary, color: "#fff" }}>
-                  Live
-                </span>
-              )}
+       
             </div>
           </div>
         </div>
-      </div>
     </section>
   );
 }
