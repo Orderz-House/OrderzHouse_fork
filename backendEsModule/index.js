@@ -7,10 +7,12 @@ import http from "http";
 import dotenv from "dotenv";
 import "./cron/expireSubscriptions.js";
 import "./cron/autoExpireOldOffers.js";
+import { registerOfferExpirationCronJob } from "./cron/offerExpirationReminder.js"; // Import our new cron job
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 
 
 startDeadlineWatcher();
+registerOfferExpirationCronJob(); // Register our new cron job
 
 
 // Routers

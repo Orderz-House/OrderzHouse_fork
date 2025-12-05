@@ -231,6 +231,20 @@ export default function ProjectDetails() {
                     </span>
                   </h2>
                 </div>
+                
+                {/* 24-Hour Rule Notice */}
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start">
+                    <span className="text-amber-500 mr-2">⚠️</span>
+                    <div className="text-sm">
+                      <span className="font-semibold text-amber-800">Important:</span>{" "}
+                      <span className="text-amber-700">
+                        Clients must accept or reject offers within 24 hours. After this period, offers will automatically expire.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {offersLoading && (
                   <div className="text-sm text-slate-500">Loading offers…</div>
                 )}
@@ -253,6 +267,7 @@ export default function ProjectDetails() {
                         pending: "bg-amber-50 text-amber-700 border-amber-200",
                         accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
                         rejected: "bg-red-50 text-red-700 border-red-200",
+                        expired: "bg-gray-100 text-gray-700 border-gray-300"
                       };
                       const statusColor = statusColors[status] || statusColors.pending;
                       
@@ -274,6 +289,26 @@ export default function ProjectDetails() {
                                 </div>
                                 <div className="text-xs text-slate-500">
                                   Submitted: {o.submitted_at ? new Date(o.submitted_at).toLocaleString() : new Date(o.created_at).toLocaleString()}
+                                  {isPending && (
+                                    <span className="ml-2 text-amber-600">
+                                      {/* Calculate expiration time (24 hours from submission) */}
+                                      {(() => {
+                                        const submitTime = new Date(o.submitted_at || o.created_at);
+                                        const expireTime = new Date(submitTime.getTime() + 24 * 60 * 60 * 1000);
+                                        const now = new Date();
+                                        const hoursLeft = Math.max(0, Math.floor((expireTime - now) / (1000 * 60 * 60)));
+                                        const minsLeft = Math.max(0, Math.floor((expireTime - now) / (1000 * 60)) % 60);
+                                        
+                                        if (hoursLeft > 0) {
+                                          return `Expires in ${hoursLeft}h ${minsLeft}m`;
+                                        } else if (minsLeft > 0) {
+                                          return `Expires in ${minsLeft}m`;
+                                        } else {
+                                          return "Expired";
+                                        }
+                                      })()}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -335,7 +370,7 @@ export default function ProjectDetails() {
                                         }
                                         // Reject all other pending offers
                                         if (x.offer_status === "pending") {
-                                          return { ...x, offer_status: "not_chosen" };
+                                          return { ...x, offer_status: "rejected" };
                                         }
                                         return x;
                                       })
@@ -343,6 +378,17 @@ export default function ProjectDetails() {
                                     toast.success("Offer accepted successfully! Other offers rejected.", { id: "accept-offer" });
                                   } catch (e) {
                                     console.error("Accept offer failed", e);
+                                    // Check if the error is due to offer expiration
+                                    if (e?.response?.data?.message?.includes("expired")) {
+                                      // Update the offer status to expired in the UI
+                                      setOffers((prev) =>
+                                        prev.map((x) =>
+                                          (x.offer_id || x.id) === (o.offer_id || o.id)
+                                            ? { ...x, offer_status: "expired" }
+                                            : x
+                                        )
+                                      );
+                                    }
                                     toast.error(e?.response?.data?.message || "Failed to accept offer", { id: "accept-offer" });
                                   }
                                 }}
@@ -379,6 +425,17 @@ export default function ProjectDetails() {
                                     toast.success("Offer rejected", { id: "reject-offer" });
                                   } catch (e) {
                                     console.error("Reject offer failed", e);
+                                    // Check if the error is due to offer expiration
+                                    if (e?.response?.data?.message?.includes("expired")) {
+                                      // Update the offer status to expired in the UI
+                                      setOffers((prev) =>
+                                        prev.map((x) =>
+                                          (x.offer_id || x.id) === (o.offer_id || o.id)
+                                            ? { ...x, offer_status: "expired" }
+                                            : x
+                                        )
+                                      );
+                                    }
                                     toast.error(e?.response?.data?.message || "Failed to reject offer", { id: "reject-offer" });
                                   }
                                 }}

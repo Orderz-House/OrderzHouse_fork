@@ -1,16 +1,16 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
+import adminViewerOnly from "../middleware/adminViewerOnly.js";
 import multer from "multer";
 
 import {
   createProject,
+  createAdminProject,
   uploadProjectMedia,
   getRelatedFreelancers,
   completeHourlyProject,
-  submitWorkCompletion,
-  approveWorkCompletion,
-  resubmitWorkCompletion,
+  approveWorkCompletion,  resubmitWorkCompletion,
   addProjectFiles,
   assignFreelancer,
   acceptAssignment,
@@ -20,6 +20,7 @@ import {
   getApplicationsForMyProjects,
   getProjectTimeline
 } from "../controller/projectsManagment/projects.js";
+import handleJsonOrForm from "../middleware/handleJsonOrForm.js";
 
 import {
   getProjectsByCategory,
@@ -33,10 +34,15 @@ import {
   getProjectFilesByProjectId
 } from "../controller/projectsManagment/projectsFiltering.js";
 
+import { submitWorkCompletion } from "../controller/payments.js";
+import { getAllFreelancers, getAllProjectsForAdmin, reassignFreelancer } from "../controller/projectsManagment/projects.js";
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 projectsRouter.post("/", authentication, uploadProjectMedia, createProject);
+
+// Admin Viewer project creation with special categories
+projectsRouter.post("/admin", authentication, adminViewerOnly, handleJsonOrForm, createAdminProject);
 
 projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
@@ -149,6 +155,29 @@ projectsRouter.get(
   getProjectTimeline
 );
 
+// Get all freelancers for admin
+projectsRouter.get(
+  "/admin/freelancers",
+  authentication,
+  adminViewerOnly,
+  getAllFreelancers
+);
+
+// Get all projects for admin dashboard
+projectsRouter.get(
+  "/admin/projects",
+  authentication,
+  adminViewerOnly,
+  getAllProjectsForAdmin
+);
+
+// Reassign freelancer to admin project
+projectsRouter.put(
+  "/admin/projects/:projectId/reassign",
+  authentication,
+  adminViewerOnly,
+  reassignFreelancer
+);
 
 /* -------------------------------
    EXISTING CATEGORY FILTER ROUTES

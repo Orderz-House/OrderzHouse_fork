@@ -369,10 +369,23 @@ export default function ProjectDetails({ mode: propMode }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-slate-800">
                 Offers Received
-                <span className="ml-2 inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full" style={{ backgroundColor: THEME }}>
+                <span className="ml-2 inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full" style={{ backgroundColor: THEME }}> 
                   {offersForProject.length}
                 </span>
               </h3>
+            </div>
+            
+            {/* 24-Hour Rule Notice */}
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start">
+                <span className="text-amber-500 mr-2">⚠️</span>
+                <div className="text-sm">
+                  <span className="font-semibold text-amber-800">Important:</span>{" "}
+                  <span className="text-amber-700">
+                    Clients must accept or reject offers within 24 hours. After this period, offers will automatically expire.
+                  </span>
+                </div>
+              </div>
             </div>
 
             {offersForProject.length === 0 ? (
@@ -389,6 +402,7 @@ export default function ProjectDetails({ mode: propMode }) {
                     pending: "bg-amber-50 text-amber-700 border-amber-200",
                     accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
                     rejected: "bg-red-50 text-red-700 border-red-200",
+                    expired: "bg-gray-100 text-gray-700 border-gray-300"
                   };
                   const statusColor = statusColors[o.offer_status] || statusColors.pending;
                   const isPending = String(o.offer_status || "").toLowerCase() === "pending";
@@ -403,7 +417,29 @@ export default function ProjectDetails({ mode: propMode }) {
                             </div>
                             <div>
                               <div className="text-base font-bold text-slate-800">{o.freelancer_name || o.username || "Freelancer"}</div>
-                              <div className="text-xs text-slate-500">Submitted: {new Date(o.submitted_at).toLocaleString()}</div>
+                              <div className="text-xs text-slate-500">
+                                Submitted: {new Date(o.submitted_at).toLocaleString()}
+                                {isPending && (
+                                  <span className="ml-2 text-amber-600">
+                                    {/* Calculate expiration time (24 hours from submission) */}
+                                    {(() => {
+                                      const submitTime = new Date(o.submitted_at);
+                                      const expireTime = new Date(submitTime.getTime() + 24 * 60 * 60 * 1000);
+                                      const now = new Date();
+                                      const hoursLeft = Math.max(0, Math.floor((expireTime - now) / (1000 * 60 * 60)));
+                                      const minsLeft = Math.max(0, Math.floor((expireTime - now) / (1000 * 60)) % 60);
+                                      
+                                      if (hoursLeft > 0) {
+                                        return `Expires in ${hoursLeft}h ${minsLeft}m`;
+                                      } else if (minsLeft > 0) {
+                                        return `Expires in ${minsLeft}m`;
+                                      } else {
+                                        return "Expired";
+                                      }
+                                    })()}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -469,6 +505,17 @@ export default function ProjectDetails({ mode: propMode }) {
                                 toast.success("Offer accepted successfully! Other offers rejected.");
                               } catch (err) {
                                 console.error("Accept offer failed", err);
+                                // Check if the error is due to offer expiration
+                                if (err?.response?.data?.message?.includes("expired")) {
+                                  // Update the offer status to expired in the UI
+                                  setOffersForProject((prev) =>
+                                    prev.map((x) =>
+                                      x.offer_id === o.offer_id
+                                        ? { ...x, offer_status: "expired" }
+                                        : x
+                                    )
+                                  );
+                                }
                                 toast.error(err?.response?.data?.message || "Failed to accept offer");
                               }
                             }}
@@ -500,6 +547,17 @@ export default function ProjectDetails({ mode: propMode }) {
                                 toast.success("Offer rejected.");
                               } catch (err) {
                                 console.error("Reject offer failed", err);
+                                // Check if the error is due to offer expiration
+                                if (err?.response?.data?.message?.includes("expired")) {
+                                  // Update the offer status to expired in the UI
+                                  setOffersForProject((prev) =>
+                                    prev.map((x) =>
+                                      x.offer_id === o.offer_id
+                                        ? { ...x, offer_status: "expired" }
+                                        : x
+                                    )
+                                  );
+                                }
                                 toast.error(err?.response?.data?.message || "Failed to reject offer");
                               }
                             }}

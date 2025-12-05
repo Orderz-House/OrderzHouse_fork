@@ -82,7 +82,8 @@ export const sendOffer = async (req, res) => {
     }
 
     const existingOffer = await pool.query(
-      `SELECT id 
+      `SELECT id, submitted_at,
+              EXTRACT(EPOCH FROM (NOW() - submitted_at))/3600 AS hours_old
        FROM offers 
        WHERE project_id = $1 
          AND freelancer_id = $2 
@@ -91,15 +92,26 @@ export const sendOffer = async (req, res) => {
     );
 
     if (existingOffer.rows.length > 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Pending offer already exists" });
+      const offer = existingOffer.rows[0];
+      // Check if the existing offer is older than 24 hours
+      if (offer.hours_old >= 24) {
+        // Expire the old offer
+        await pool.query(
+          `UPDATE offers SET offer_status = 'expired' WHERE id = $1`,
+          [offer.id]
+        );
+        // Allow new offer to be submitted
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Pending offer already exists" });
+      }
     }
 
     const insertQuery = await pool.query(
       `INSERT INTO offers (freelancer_id, project_id, bid_amount, proposal, offer_status)
        VALUES ($1, $2, $3, $4, 'pending') 
-       RETURNING *`,
+       RETURNING *, NOW() - submitted_at AS age`,
       [freelancerId, projectId, bid_amount, proposal]
     );
 
@@ -147,7 +159,10 @@ export const approveOrRejectOffer = async (req, res) => {
         .json({ success: false, message: "Invalid action" });
 
     const { rows: offerRows } = await client.query(
-      `SELECT o.*, p.user_id AS client_id, p.title AS project_title 
+      `SELECT o.*, 
+              p.user_id AS client_id, 
+              p.title AS project_title,
+              EXTRACT(EPOCH FROM (NOW() - o.submitted_at))/3600 AS hours_old
        FROM offers o 
        JOIN projects p ON o.project_id = p.id 
        WHERE o.id = $1`,
@@ -160,6 +175,14 @@ export const approveOrRejectOffer = async (req, res) => {
     const offer = offerRows[0];
     if (offer.client_id !== clientId)
       return res.status(403).json({ success: false, message: "Not authorized" });
+
+    // Check if the offer has expired (older than 24 hours)
+    if (offer.hours_old >= 24 && offer.offer_status === 'pending') {
+      // Expire the offer
+      await client.query(`UPDATE offers SET offer_status = 'expired' WHERE id = $1`, [offerId]);
+      await client.query("COMMIT");
+      return res.status(400).json({ success: false, message: "This offer has expired. Offers must be accepted or rejected within 24 hours." });
+    }
 
     await client.query("BEGIN");
 
@@ -446,7 +469,9 @@ export const cancelOffer = async (req, res) => {
     const { offerId } = req.params;
 
     const { rows } = await pool.query(
-      `SELECT * FROM offers WHERE id = $1 AND freelancer_id = $2`,
+      `SELECT *,
+              EXTRACT(EPOCH FROM (NOW() - created_at))/3600 AS hours_old
+       FROM offers WHERE id = $1 AND freelancer_id = $2`,
       [offerId, freelancerId]
     );
 
@@ -458,6 +483,18 @@ export const cancelOffer = async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Only pending offers can be cancelled" });
+
+    // Check if the offer has expired (older than 24 hours)
+    if (offer.hours_old >= 24) {
+      // Expire the offer
+      await pool.query(
+        `UPDATE offers SET offer_status = 'expired', updated_at = NOW() WHERE id = $1`,
+        [offerId]
+      );
+      return res
+        .status(400)
+        .json({ success: false, message: "This offer has expired and cannot be cancelled. Offers must be cancelled within 24 hours." });
+    }
 
     await pool.query(
       `UPDATE offers SET offer_status = 'withdrawn', updated_at = NOW() WHERE id = $1`,
@@ -481,7 +518,7 @@ export const autoExpireOldOffers = async () => {
        SET offer_status = 'expired', updated_at = NOW()
        WHERE offer_status = 'pending'
          AND (
-           created_at <= NOW() - INTERVAL '7 days'
+           created_at <= NOW() - INTERVAL '24 hours'
            OR project_id IN (SELECT id FROM projects WHERE status != 'bidding')
          )
        RETURNING id`

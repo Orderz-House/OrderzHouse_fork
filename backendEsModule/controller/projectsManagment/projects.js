@@ -42,6 +42,7 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
 /* ======================================================================
    CREATE PROJECT 
 ====================================================================== */
+// Regular project creation for all users
 export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -136,10 +137,10 @@ export const createProject = async (req, res) => {
         user_id, category_id, sub_category_id, sub_sub_category_id,
         title, description, budget, duration_days, duration_hours,
         project_type, budget_min, budget_max, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted
+        preferred_skills, status, completion_status, is_deleted, admin_category
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,
-        $10,$11,$12,$13,$14,$15,'not_started',false
+        $10,$11,$12,$13,$14,$15,'not_started',false,$16
       ) RETURNING *;
     `;
 
@@ -159,6 +160,7 @@ export const createProject = async (req, res) => {
       hourly_rate || null,
       preferred_skills || [],
       projectStatus,
+      admin_category || null,
     ]);
 
     let project = rows[0];
@@ -234,61 +236,243 @@ export const createProject = async (req, res) => {
  *   pending_review     - freelancer submitted, waiting client approval
  * -------------------------------
  */
-export const submitWorkCompletion = async (req, res) => {
+/* ======================================================================
+   CREATE ADMIN PROJECT (Role ID 4 - Admin Viewer)
+====================================================================== */
+// Admin Viewer project creation with special categories
+export const createAdminProject = async (req, res) => {
   try {
-    const freelancerId = req.token.userId;
-    const { projectId } = req.params;
-    const files = req.files || [];
+    const userId = req.token?.userId;
+    const {
+      admin_category, // Government Project, CV/Resume Project, Other
+      sub_category_id,
+      sub_sub_category_id,
+      title,
+      description,
+      budget,
+      duration_type,
+      duration_days,
+      duration_hours,
+      project_type,
+      budget_min,
+      budget_max,
+      hourly_rate,
+      preferred_skills,
+      assigned_freelancer_id, // For Government and CV projects
+    } = req.body;
 
-    const { rows: check } = await pool.query(
-      `SELECT assigned_freelancer_id, title FROM projects WHERE id = $1 AND is_deleted = false`,
-      [projectId]
-    );
-    if (!check.length || check[0].assigned_freelancer_id !== freelancerId) {
-      return res.status(403).json({ success: false, message: "Only assigned freelancer can submit completion" });
+    /* ------------------------------
+       🧩 Required Field Validation
+    ------------------------------ */
+    const missingFields = [];
+    if (!admin_category) missingFields.push("admin_category");
+    if (!['Government Project', 'CV/Resume Project', 'Other'].includes(admin_category)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid admin category. Must be 'Government Project', 'CV/Resume Project', or 'Other'",
+      });
+    }
+    
+    // For Government and CV projects, freelancer assignment is required
+    if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && !assigned_freelancer_id) {
+      missingFields.push("assigned_freelancer_id");
+    }
+    
+    if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
+    if (!title) missingFields.push("title");
+    if (!description) missingFields.push("description");
+    if (!duration_type) missingFields.push("duration_type");
+    if (!["fixed", "hourly", "bidding"].includes(project_type))
+      missingFields.push("project_type");
+
+    if (duration_type === "days" && (!duration_days || duration_days <= 0))
+      missingFields.push("duration_days");
+    if (duration_type === "hours" && (!duration_hours || duration_hours <= 0))
+      missingFields.push("duration_hours");
+
+    if (project_type === "fixed" && (!budget || budget <= 0))
+      missingFields.push("budget");
+    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0))
+      missingFields.push("hourly_rate");
+    if (project_type === "bidding") {
+      if (!budget_min || budget_min <= 0) missingFields.push("budget_min");
+      if (!budget_max || budget_max <= 0) missingFields.push("budget_max");
+      if (budget_max < budget_min)
+        missingFields.push("budget_max < budget_min");
     }
 
-    let uploadedFiles = [];
-    for (let file of files) {
-      const result = await cloudinary.uploader.upload_stream(
-        { resource_type: "auto", folder: `projects/${projectId}` },
-        (error, result) => {
-          if (error) throw error;
-          uploadedFiles.push({ url: result.secure_url, public_id: result.public_id });
-        }
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
+      });
+    }
+
+    /* ------------------------------
+       🧩 Length Validation
+    ------------------------------ */
+    const titleLength = title.trim().length;
+    const descLength = description.trim().length;
+
+    if (titleLength < 10 || titleLength > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Title must be between 10 and 100 characters.",
+      });
+    }
+
+    if (descLength < 100 || descLength > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: "Description must be between 100 and 2000 characters.",
+      });
+    }
+
+    /* ------------------------------
+       🧩 Project Status Logic
+    ------------------------------ */
+    let projectStatus = "pending";
+    if (project_type === "bidding") projectStatus = "bidding";
+    else if (["fixed", "hourly"].includes(project_type))
+      projectStatus = "pending_payment";
+    
+    // For Government and CV projects, set status to active since freelancer is pre-assigned
+    if (admin_category === 'Government Project' || admin_category === 'CV/Resume Project') {
+      projectStatus = "active";
+    }
+
+    const durationDaysValue = duration_type === "days" ? duration_days : null;
+    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
+
+    /* ------------------------------
+       🧩 Step 1: Insert Project
+    ------------------------------ */
+    const insertQuery = `
+      INSERT INTO projects (
+        user_id, category_id, sub_category_id, sub_sub_category_id,
+        title, description, budget, duration_days, duration_hours,
+        project_type, budget_min, budget_max, hourly_rate,
+        preferred_skills, status, completion_status, is_deleted, assigned_freelancer_id, admin_category
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        $10, $11, $12, $13, $14, $15, 'not_started', false, $16, $17
+      ) RETURNING *;
+    `;
+
+    // Set category_id to a special admin category (we'll use 999 for admin projects)
+    const adminCategoryId = 999;
+    
+    const { rows } = await pool.query(insertQuery, [
+      userId,
+      adminCategoryId, // Special admin category
+      sub_category_id,
+      sub_sub_category_id,
+      title.trim(),
+      description.trim(),
+      budget || null,
+      durationDaysValue,
+      durationHoursValue,
+      project_type,
+      budget_min || null,
+      budget_max || null,
+      hourly_rate || null,
+      preferred_skills || [],
+      projectStatus,
+      assigned_freelancer_id || null, // For Government and CV projects
+      admin_category || null,
+    ]);
+
+    let project = rows[0];
+
+    /* ------------------------------
+       🧩 Step 2: Upload Cover Pic
+    ------------------------------ */
+    if (req.files?.cover_pic && req.files.cover_pic.length > 0) {
+      const coverPicFile = req.files.cover_pic[0];
+      const coverPicResult = await uploadToCloudinary(
+        coverPicFile.buffer,
+        `projects/${project.id}/cover`
       );
-      result.end(file.buffer);
+      const coverPicUrl = coverPicResult.secure_url;
+
+      const { rows: updatedProject } = await pool.query(
+        `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
+        [coverPicUrl, project.id]
+      );
+      project = updatedProject[0];
     }
 
-    await pool.query(
-      `UPDATE projects SET completion_status = 'pending_review', completion_requested_at = NOW() WHERE id = $1`,
-      [projectId]
-    );
+    /* ------------------------------
+       🧩 Step 3: Amount to Pay
+    ------------------------------ */
+    let amountToPay = null;
+    if (project.project_type === "fixed") amountToPay = project.budget;
+    else if (project.project_type === "hourly")
+      amountToPay = (project.hourly_rate || 0) * 3;
 
-    for (let fileData of uploadedFiles) {
+    if (amountToPay !== null) {
+      const { rows: updated } = await pool.query(
+        `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
+        [amountToPay, project.id]
+      );
+      project = updated[0];
+    }
+
+    /* ------------------------------
+       🧩 Step 4: Assign Freelancer for Government/CV Projects
+    ------------------------------ */
+    if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
+      // Create project assignment
+      const assignedAt = new Date();
       await pool.query(
-        `INSERT INTO project_files (project_id, file_url, public_id, uploaded_by) VALUES ($1, $2, $3, $4)`,
-        [projectId, fileData.url, fileData.public_id, freelancerId]
+        `INSERT INTO project_assignments 
+          (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
+         VALUES ($1, $2, $3, 'active', 'admin_assigned', true)
+         RETURNING *`,
+        [project.id, assigned_freelancer_id, assignedAt]
+      );
+      
+      // Update project status
+      await pool.query(
+        `UPDATE projects SET status = 'active' WHERE id = $1`,
+        [project.id]
       );
     }
 
-    await pool.query(
-      `INSERT INTO completion_history (project_id, event, timestamp, actor, notes)
-       VALUES ($1, 'completion_requested', NOW(), $2, $3)`,
-      [projectId, freelancerId, "Freelancer requested completion"]
+    /* ------------------------------
+       🧩 Step 5: Logs & Notifications
+    ------------------------------ */
+    await LogCreators.projectOperation(
+      userId,
+      ACTION_TYPES.PROJECT_CREATE,
+      project.id,
+      true,
+      { title: project.title, category: admin_category }
     );
-
-    await LogCreators.projectOperation(freelancerId, ACTION_TYPES.PROJECT_STATUS_CHANGE, projectId, true, { action: "work_completion_requested" });
 
     try {
-      await NotificationCreators.workCompletionRequested(projectId, check[0].title, freelancerId);
-    } catch (notifErr) {
-      console.error("Notification error:", notifErr);
+      await NotificationCreators.projectCreated(
+        project.id,
+        project.title,
+        userId,
+        adminCategoryId
+      );
+      
+      // Notify assigned freelancer for Government/CV projects
+      if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
+        await NotificationCreators.freelancerAssigned(
+          assigned_freelancer_id,
+          project.id,
+          project.title
+        );
+      }
+    } catch (err) {
+      console.error("Error creating project notifications:", err);
     }
 
-    return res.json({ success: true, message: "Completion requested", files: uploadedFiles });
-  } catch (err) {
-    console.error("submitWorkCompletion error:", err);
+    return res.status(201).json({ success: true, project });
+  } catch (error) {
+    console.error("createAdminProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -1173,3 +1357,166 @@ export const getProjectTimeline = async (req, res) => {
   }
 };
 
+/**
+ * -------------------------------
+ * GET ALL FREELANCERS FOR ADMIN
+ * -------------------------------
+ */
+export const getAllFreelancers = async (req, res) => {
+  try {
+    const { rows: freelancers } = await pool.query(
+      `
+      SELECT id, username, email, first_name, last_name, profile_pic
+      FROM users
+      WHERE role_id = 3
+        AND is_deleted = false
+        AND is_verified = true
+      ORDER BY username ASC;
+      `
+    );
+
+    res.status(200).json({
+      success: true,
+      count: freelancers.length,
+      freelancers,
+    });
+  } catch (error) {
+    console.error("Error fetching all freelancers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching freelancers",
+    });
+  }
+};
+
+/**
+ * -------------------------------
+ * GET ALL PROJECTS FOR ADMIN DASHBOARD
+ * -------------------------------
+ */
+export const getAllProjectsForAdmin = async (req, res) => {
+  try {
+    const { rows: projects } = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.title,
+        p.project_type,
+        p.status,
+        p.completion_status,
+        p.assigned_freelancer_id,
+        p.created_at,
+        p.admin_category,
+        u.username AS client_name,
+        f.username AS freelancer_name,
+        CASE 
+          WHEN p.category_id = 999 THEN 'Admin Project'
+          ELSE 'Regular Project'
+        END AS project_category
+      FROM projects p
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users f ON p.assigned_freelancer_id = f.id
+      WHERE p.is_deleted = false
+      ORDER BY p.created_at DESC
+      `
+    );
+
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      projects,
+    });
+  } catch (error) {
+    console.error("Error fetching all projects for admin:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching projects",
+    });
+  }
+};
+
+/**
+ * -------------------------------
+ * REASSIGN FREELANCER TO PROJECT (ADMIN ONLY)
+ * -------------------------------
+ */
+export const reassignFreelancer = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { freelancerId } = req.body;
+
+    // Check if project exists and is an admin project
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, category_id, title FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+    
+    // Check if it's an admin project (category_id = 999)
+    if (project.category_id !== 999) {
+      return res.status(400).json({ success: false, message: "Only admin projects can be reassigned" });
+    }
+
+    // Check if freelancer exists and is valid
+    const { rows: freelancerRows } = await pool.query(
+      `SELECT id, role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
+      [freelancerId]
+    );
+
+    if (!freelancerRows.length || freelancerRows[0].role_id !== 3 || !freelancerRows[0].is_verified) {
+      return res.status(400).json({ success: false, message: "Invalid freelancer" });
+    }
+
+    // Update the project with the new assigned freelancer
+    await pool.query(
+      `UPDATE projects SET assigned_freelancer_id = $1 WHERE id = $2`,
+      [freelancerId, projectId]
+    );
+
+    // Update or create project assignment record
+    const assignedAt = new Date();
+    const { rows: existingAssignments } = await pool.query(
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
+    );
+
+    if (existingAssignments.length > 0) {
+      // Update existing assignment
+      await pool.query(
+        `UPDATE project_assignments SET assigned_at = $1, status = 'active' WHERE project_id = $2 AND freelancer_id = $3`,
+        [assignedAt, projectId, freelancerId]
+      );
+    } else {
+      // Create new assignment
+      await pool.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
+         VALUES ($1, $2, $3, 'active', 'admin_assigned', true)`,
+        [projectId, freelancerId, assignedAt]
+      );
+    }
+
+    // Update project status to active if it's not already
+    await pool.query(
+      `UPDATE projects SET status = 'active' WHERE id = $1 AND status != 'active'`,
+      [projectId]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Freelancer reassigned successfully",
+      projectId,
+      freelancerId
+    });
+  } catch (error) {
+    console.error("Error reassigning freelancer:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while reassigning freelancer",
+    });
+  }
+};

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchCategories, fetchSubSubCategoriesByCategoryId } from "../api/category";
+import { useSelector } from "react-redux";
 
 const THEME = "#028090";
 
@@ -7,6 +8,10 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
   const [skillsInput, setSkillsInput] = useState("");
+  const [availableFreelancers, setAvailableFreelancers] = useState([]);
+  const [loadingFreelancers, setLoadingFreelancers] = useState(false);
+  const roleId = useSelector((state) => state.auth.roleId);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -21,19 +26,26 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     budget_max: 1,
     hourly_rate: 1,
     preferred_skills: [],
+    // Admin-specific fields
+    admin_category: "",
+    assigned_freelancer_id: "",
     ...projectData
   });
+  
   const [errors, setErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    fetchCategories()
-      .then(data => setCategories(Array.isArray(data) ? data : []))
-      .catch(err => {
-        console.error("Failed to fetch categories:", err);
-        setCategories([]);
-      });
-  }, []);
+    // Only fetch categories normally for non-admin users
+    if (Number(roleId) !== 4) {
+      fetchCategories()
+        .then(data => setCategories(Array.isArray(data) ? data : []))
+        .catch(err => {
+          console.error("Failed to fetch categories:", err);
+          setCategories([]);
+        });
+    }
+  }, [roleId]);
 
   useEffect(() => {
     if (!form.category_id) return;
@@ -57,6 +69,15 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     if (noZeroFields.includes(name)) newValue = Math.max(Number(value), 1);
     setForm(prev => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
+    
+    // Reset freelancer assignment when admin category changes
+    if (name === "admin_category") {
+      setForm(prev => ({ ...prev, assigned_freelancer_id: "" }));
+      // Fetch freelancers when Government or CV category is selected
+      if ((value === "Government Project" || value === "CV/Resume Project") && Number(roleId) === 4) {
+        fetchAvailableFreelancers(form.category_id);
+      }
+    }
   };
 
   const handleAddSkill = () => {
@@ -75,6 +96,23 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
     if (form.project_type === "fixed") return form.budget;
     if (form.project_type === "hourly") return form.hourly_rate * 3;
     return null;
+  };
+
+  const fetchAvailableFreelancers = async (categoryId) => {
+    if (!categoryId) return;
+    setLoadingFreelancers(true);
+    try {
+      const response = await fetch(`/api/projects/categories/${categoryId}/related-freelancers`);
+      const data = await response.json();
+      if (data.success) {
+        setAvailableFreelancers(data.freelancers || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch freelancers:", err);
+      setAvailableFreelancers([]);
+    } finally {
+      setLoadingFreelancers(false);
+    }
   };
 
   const validateForm = (showErrors = true) => {
@@ -109,14 +147,54 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
       if (form.budget_max <= 0) newErrors.budget_max = "Max budget must be greater than 0";
       if (form.budget_max < form.budget_min) newErrors.budget_max = "Max budget must be greater than min budget";
     }
+
+    // Admin-specific validation
+    if (Number(roleId) === 4) {
+      if (!form.admin_category) {
+        newErrors.admin_category = "Admin category is required";
+      } else if (!['Government Project', 'CV/Resume Project', 'Other'].includes(form.admin_category)) {
+        newErrors.admin_category = "Invalid admin category";
+      }
+      
+      // For Government and CV projects, freelancer assignment is required
+      if ((form.admin_category === 'Government Project' || form.admin_category === 'CV/Resume Project') && !form.assigned_freelancer_id) {
+        newErrors.assigned_freelancer_id = "Freelancer assignment is required for this category";
+      }
+    }
+
     if (showErrors) setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setProjectData(form);
+    
+    // For admin users, we need to send different data
+    if (Number(roleId) === 4) {
+      // Prepare admin project data
+      const adminProjectData = {
+        admin_category: form.admin_category,
+        sub_category_id: form.category_id,
+        sub_sub_category_id: form.sub_sub_category_id,
+        title: form.title,
+        description: form.description,
+        duration_type: form.duration_type,
+        duration_days: form.duration_type === "days" ? form.duration_days : undefined,
+        duration_hours: form.duration_type === "hours" ? form.duration_hours : undefined,
+        project_type: form.project_type,
+        budget: form.project_type === "fixed" ? form.budget : undefined,
+        budget_min: form.project_type === "bidding" ? form.budget_min : undefined,
+        budget_max: form.project_type === "bidding" ? form.budget_max : undefined,
+        hourly_rate: form.project_type === "hourly" ? form.hourly_rate : undefined,
+        preferred_skills: form.preferred_skills,
+        assigned_freelancer_id: (form.admin_category === 'Government Project' || form.admin_category === 'CV/Resume Project') ? form.assigned_freelancer_id : undefined
+      };
+      
+      setProjectData({...form, isAdminProject: true, adminData: adminProjectData});
+    } else {
+      setProjectData(form);
+    }
     onNext();
   };
 
@@ -136,6 +214,144 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Admin Category Selection - Only for role_id = 4 */}
+        {Number(roleId) === 4 && (
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Admin Project Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="admin_category"
+              value={form.admin_category}
+              onChange={handleChange}
+              className={`${inputBase} ${errors.admin_category ? "ring-red-400 border-red-300" : ""}`}
+            >
+              <option value="">Select Admin Category</option>
+              <option value="Government Project">Government Project</option>
+              <option value="CV/Resume Project">CV/Resume Project</option>
+              <option value="Other">Other</option>
+            </select>
+            {errors.admin_category && <p className="mt-1 text-sm text-red-500">{errors.admin_category}</p>}
+            
+            {/* Freelancer Assignment - Only for Government and CV projects */}
+            {(form.admin_category === "Government Project" || form.admin_category === "CV/Resume Project") && (
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Assign Freelancer <span className="text-red-500">*</span>
+                </label>
+                {loadingFreelancers ? (
+                  <div className="py-4 text-center text-slate-500">Loading freelancers...</div>
+                ) : availableFreelancers.length > 0 ? (
+                  <>
+                    <select
+                      name="assigned_freelancer_id"
+                      value={form.assigned_freelancer_id}
+                      onChange={handleChange}
+                      className={`${inputBase} ${errors.assigned_freelancer_id ? "ring-red-400 border-red-300" : ""}`}
+                    >
+                      <option value="">Select a Freelancer</option>
+                      {availableFreelancers.map(freelancer => (
+                        <option key={freelancer.id} value={freelancer.id}>
+                          {freelancer.first_name} {freelancer.last_name} ({freelancer.email})
+                        </option>
+                      ))}
+                    </select>
+                    {errors.assigned_freelancer_id && <p className="mt-1 text-sm text-red-500">{errors.assigned_freelancer_id}</p>}
+                  </>
+                ) : (
+                  <div className="py-4 text-center text-slate-500">
+                    No available freelancers for this category
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Regular Category Selection - Hidden for admin users */}
+        {Number(roleId) !== 4 && (
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category_id"
+                value={form.category_id}
+                onChange={handleChange}
+                className={`${inputBase} ${errors.category_id ? "ring-red-400 border-red-300" : ""}`}
+              >
+                <option value="">Select Category</option>
+                {Array.isArray(categories) && categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Sub-category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="sub_sub_category_id"
+                value={form.sub_sub_category_id}
+                onChange={handleChange}
+                disabled={!form.category_id}
+                className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.sub_sub_category_id ? "ring-red-400 border-red-300" : ""}`}
+              >
+                <option value="">Select Sub-category</option>
+                {Array.isArray(subSubCategories) && subSubCategories.map(sub => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+              {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* For admin users, show category selection after admin category selection */}
+        {Number(roleId) === 4 && form.admin_category && (
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category_id"
+                value={form.category_id}
+                onChange={handleChange}
+                className={`${inputBase} ${errors.category_id ? "ring-red-400 border-red-300" : ""}`}
+              >
+                <option value="">Select Category</option>
+                {Array.isArray(categories) && categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Sub-category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="sub_sub_category_id"
+                value={form.sub_sub_category_id}
+                onChange={handleChange}
+                disabled={!form.category_id}
+                className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.sub_sub_category_id ? "ring-red-400 border-red-300" : ""}`}
+              >
+                <option value="">Select Sub-category</option>
+                {Array.isArray(subSubCategories) && subSubCategories.map(sub => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+              {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
+            </div>
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -232,46 +448,6 @@ export default function ProjectDetailsStep({ onNext, projectData, setProjectData
               ))}
             </div>
           )}
-        </div>
-
-        {/* Categories */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="category_id"
-              value={form.category_id}
-              onChange={handleChange}
-              className={`${inputBase} ${errors.category_id ? "ring-red-400 border-red-300" : ""}`}
-            >
-              <option value="">Select Category</option>
-              {Array.isArray(categories) && categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Sub-category <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="sub_sub_category_id"
-              value={form.sub_sub_category_id}
-              onChange={handleChange}
-              disabled={!form.category_id}
-              className={`${inputBase} disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.sub_sub_category_id ? "ring-red-400 border-red-300" : ""}`}
-            >
-              <option value="">Select Sub-category</option>
-              {Array.isArray(subSubCategories) && subSubCategories.map(sub => (
-                <option key={sub.id} value={sub.id}>{sub.name}</option>
-              ))}
-            </select>
-            {errors.sub_sub_category_id && <p className="mt-1 text-sm text-red-500">{errors.sub_sub_category_id}</p>}
-          </div>
         </div>
 
         {/* Project Type */}
