@@ -10,7 +10,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-
 /* =========================================
    CLOUDINARY UPLOAD HELPER
 ========================================= */
@@ -37,10 +36,12 @@ const uploadFilesToCloudinary = async (files, folder) => {
   return uploadedFiles;
 };
 
-// ------------------ EMAIL TRANSPORTER ------------------
+/* =========================================
+   EMAIL TRANSPORTER
+========================================= */
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.EMAIL_USER,
@@ -48,12 +49,50 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ------------------ OTP GENERATOR ------------------
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+/* =========================================
+   OTP HELPERS
+========================================= */
+const generateOtp = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
 
-// ======================================================
-// REGISTER FUNCTION
-// ======================================================
+/**
+ * إرسال OTP إما على الإيميل أو (مستقبلاً) SMS
+ */
+const deliverOtp = async (destination, method, otp) => {
+  try {
+    if (method === "sms") {
+      // لو حابب تركّب Twilio أو غيره لاحقاً
+      console.log(
+        `[OTP - SMS] To: ${destination} | Code: ${otp} (integrate SMS provider here)`
+      );
+      return;
+    }
+
+    // الوضع الافتراضي: إيميل
+    const mailOptions = {
+      from: `"OrderzHouse" <${process.env.EMAIL_FROM}>`,
+      to: destination,
+      subject: "Your login verification code",
+      html: `
+        <h2>Login verification</h2>
+        <p>Use the following One-Time Password (OTP) to complete your login:</p>
+        <h1 style="color:#007bff; font-size: 26px; letter-spacing:4px;">${otp}</h1>
+        <p>This code expires in <b>2 minutes</b>.</p>
+        <br/>
+        <p>Thanks,<br/>OrderzHouse Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.error("deliverOtp error:", err);
+    throw err;
+  }
+};
+
+/* ======================================================
+   REGISTER
+====================================================== */
 const register = async (req, res) => {
   const {
     role_id,
@@ -64,8 +103,8 @@ const register = async (req, res) => {
     phone_number,
     country,
     username,
-    categories = [],         
-    sub_sub_categories = [], 
+    categories = [],
+    sub_sub_categories = [],
   } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,11 +120,15 @@ const register = async (req, res) => {
     !country ||
     !username
   ) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
 
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid email format" });
   }
 
   if (!passwordRegex.test(password)) {
@@ -104,7 +147,9 @@ const register = async (req, res) => {
       [emailLower, username]
     );
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({ success: false, message: "Email or username already exists" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Email or username already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -113,11 +158,21 @@ const register = async (req, res) => {
         (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,FALSE)
        RETURNING *`,
-      [role_id, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
+      [
+        role_id,
+        first_name,
+        last_name,
+        emailLower,
+        hashedPassword,
+        phone_number,
+        country,
+        username,
+      ]
     );
     const user = rows[0];
 
-    if (parseInt(role_id) === 3) {
+    // ربط الكاتيجوري/sub_sub للفريلانسر
+    if (parseInt(role_id, 10) === 3) {
       if (Array.isArray(categories) && categories.length > 0) {
         for (const catId of categories) {
           await pool.query(
@@ -129,7 +184,10 @@ const register = async (req, res) => {
         }
       }
 
-      if (Array.isArray(sub_sub_categories) && sub_sub_categories.length > 0) {
+      if (
+        Array.isArray(sub_sub_categories) &&
+        sub_sub_categories.length > 0
+      ) {
         for (const subSubId of sub_sub_categories) {
           await pool.query(
             `INSERT INTO freelancer_sub_sub_categories (freelancer_id, sub_sub_category_id)
@@ -141,17 +199,16 @@ const register = async (req, res) => {
       }
     }
 
-    // ✅ Step 4: Generate & store OTP
+    // توليد OTP للإيميل
     const otp = generateOtp();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); 
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 دقائق
 
-    await pool.query("UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3", [
-      otp,
-      otpExpiry,
-      user.id,
-    ]);
+    await pool.query(
+      "UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3",
+      [otp, otpExpiry, user.id]
+    );
 
-    // ✅ Step 5: Send OTP via email
+    // إرسال OTP
     const mailOptions = {
       from: `"OrderzHouse" <${process.env.EMAIL_FROM}>`,
       to: user.email,
@@ -159,7 +216,7 @@ const register = async (req, res) => {
       html: `
         <h2>Hello ${user.first_name},</h2>
         <p>Use the following One-Time Password (OTP) to verify your email:</p>
-        <h1 style="color:#007bff; font-size: 28px;">${otp}</h1>
+        <h1 style="color:#007bff; font-size: 28px; letter-spacing:4px;">${otp}</h1>
         <p>This code expires in <b>5 minutes</b>.</p>
         <br/>
         <p>Thanks,<br/>OrderzHouse Team</p>
@@ -168,26 +225,30 @@ const register = async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
-    // ✅ Step 6: Respond success
     return res.status(201).json({
       success: true,
-      message: "User registered successfully. OTP sent to email for verification ✅",
+      message:
+        "User registered successfully. OTP sent to email for verification ✅",
       user_id: user.id,
     });
   } catch (err) {
     console.error("Register Error:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
-// ======================================================
-// ✅ VERIFY EMAIL OTP FUNCTION
-// ======================================================
- const verifyEmailOtp = async (req, res) => {
+/* ======================================================
+   VERIFY EMAIL OTP
+====================================================== */
+const verifyEmailOtp = async (req, res) => {
   const { email, otp } = req.body;
 
   if (!email || !otp) {
-    return res.status(400).json({ success: false, message: "Email and OTP are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and OTP are required" });
   }
 
   try {
@@ -197,17 +258,24 @@ const register = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const user = rows[0];
 
     if (user.email_otp !== otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid OTP" });
     }
 
     if (new Date() > new Date(user.email_otp_expires)) {
-      return res.status(400).json({ success: false, message: "OTP expired" });
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
     }
 
     await pool.query(
@@ -221,146 +289,295 @@ const register = async (req, res) => {
     });
   } catch (err) {
     console.error("Verify Email OTP Error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
-// ===================== LOGIN + OTP =====================
+
+/* ======================================================
+   LOGIN + OTP
+====================================================== */
+// داخل controller/user.js
+
+const DEACTIVATION_GRACE_DAYS = 30;
+
 const login = async (req, res) => {
   try {
     const { email, password, otpMethod = "email" } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password required" });
     }
 
-    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [email.toLowerCase()]);
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE email=$1",
+      [email.toLowerCase()]
+    );
     const user = rows[0];
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
+
+    // لو الإيميل مش مفاعَل
     if (!user.email_verified) {
       return res.status(403).json({
-    success: false,
-    message: "Please verify your email before logging in",
-    });
+        success: false,
+        message: "Please verify your email before logging in",
+      });
     }
+
+    // لو الأكاونت معطّل
+    if (user.is_deleted) {
+      if (user.deactivated_at) {
+        const deactivatedAt = new Date(user.deactivated_at);
+        const now = new Date();
+        const diffMs = now - deactivatedAt;
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        // خلّص فترة السماح
+        if (diffDays > DEACTIVATION_GRACE_DAYS) {
+          return res.status(410).json({
+            success: false,
+            message:
+              "Your account has been permanently deleted after 30 days of deactivation.",
+          });
+        }
+        // أقل من 30 يوم → ممكن نرجّعه Active بعد ما نتأكد من الباسورد
+      } else {
+        // is_deleted = TRUE بدون deactivated_at → احتمال حظر أدمن
+        return res.status(403).json({
+          success: false,
+          message:
+            "Your account is suspended. Please contact support.",
+        });
+      }
+    }
+
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (validPassword) {
-      
-      if (user.failed_login_attempts === 0) {
-        await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL WHERE id=$1", [user.id]);
-        
+      // لو الأكاونت كان معطَّل ضمن فترة السماح → رجعه Active
+      if (user.is_deleted && user.deactivated_at) {
+        await pool.query(
+          `
+          UPDATE users
+          SET 
+            is_deleted = FALSE,
+            deactivated_at = NULL,
+            reason_for_disruption = NULL
+          WHERE id = $1
+          `,
+          [user.id]
+        );
+        user.is_deleted = false;
+        user.deactivated_at = null;
+        user.reason_for_disruption = null;
+      }
+
+      // لو مافي محاولات فاشلة → Login مباشر بدون OTP
+      if ((user.failed_login_attempts || 0) === 0) {
+        await pool.query(
+          "UPDATE users SET otp_code=NULL, otp_expires=NULL, failed_login_attempts=0 WHERE id=$1",
+          [user.id]
+        );
+
         const tokenPayload = {
           userId: user.id,
           role: user.role_id,
-          is_verified: user.is_verified,
+          is_verified: user.email_verified,
           username: user.username,
+          is_deleted: user.is_deleted,
+          is_two_factor_enabled: user.is_two_factor_enabled,
         };
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
-        
+
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+          expiresIn: "1d",
+        });
+
         return res.status(200).json({
           success: true,
           message: "Login successful",
-          token: token,
+          token,
           userInfo: {
             id: user.id,
             username: user.username,
             email: user.email,
-            role_id: user.role_id
-          }
+            role_id: user.role_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            profile_pic_url: user.profile_pic_url,
+            is_deleted: user.is_deleted,
+            is_two_factor_enabled: user.is_two_factor_enabled,
+            email_verified: user.email_verified,
+          },
         });
       }
-      
-      
-      await pool.query("UPDATE users SET failed_login_attempts=0 WHERE id=$1", [user.id]);
 
+      // لو فيه محاولات فاشلة قديمة → صفّر العداد وخليه يكمل على OTP
+      await pool.query(
+        "UPDATE users SET failed_login_attempts=0 WHERE id=$1",
+        [user.id]
+      );
     } else {
       const newAttempts = (user.failed_login_attempts || 0) + 1;
-      await pool.query("UPDATE users SET failed_login_attempts=$1 WHERE id=$2", [newAttempts, user.id]);
+      await pool.query(
+        "UPDATE users SET failed_login_attempts=$1 WHERE id=$2",
+        [newAttempts, user.id]
+      );
 
       if (newAttempts < 3) {
-        return res.status(401).json({ success: false, message: "Invalid credentials" });
+        return res.status(401).json({
+          success: false,
+          message: "Invalid credentials",
+        });
       }
     }
+
+    // من هون وطالع → يا باسورد غلط أكثر من مرة أو عندنا login مشبوه → نرسل OTP
     const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); 
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 دقائق
 
-    await pool.query("UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3", [
-      otp,
-      expiresAt,
-      user.id,
-    ]);
+    await pool.query(
+      "UPDATE users SET otp_code=$1, otp_expires=$2 WHERE id=$3",
+      [otp, expiresAt, user.id]
+    );
 
-    const destination = otpMethod === "email" ? user.email : user.phone_number;
-    await deliverOtp(destination, otpMethod, otp); 
+    const destination =
+      otpMethod === "email" ? user.email : user.phone_number;
+    await deliverOtp(destination, otpMethod, otp);
 
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
       user_id: user.id,
-      username: user.username, 
+      username: user.username,
     });
-
   } catch (err) {
     console.error("Login Error:", err);
-    return res.status(500).json({ message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
-// ===================== VERIFY OTP =====================
-export const verifyOTP = async (req, res) => {
+
+/* ======================================================
+   VERIFY OTP (LOGIN)
+====================================================== */
+const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [email.toLowerCase()]);
+    if (!email || !otp) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and OTP are required" });
+    }
+
+    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [
+      email.toLowerCase(),
+    ]);
     const user = rows[0];
-    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
 
     if (user.otp_code !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid OTP" });
     }
 
-    if (new Date() > new Date(user.otp_expires)) {
-      return res.status(400).json({ message: "OTP expired" });
+    if (!user.otp_expires || new Date() > new Date(user.otp_expires)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP expired" });
     }
 
-    await pool.query("UPDATE users SET otp_code=NULL, otp_expires=NULL, failed_login_attempts=0 WHERE id=$1", [user.id]);
+    await pool.query(
+      "UPDATE users SET otp_code=NULL, otp_expires=NULL, failed_login_attempts=0 WHERE id=$1",
+      [user.id]
+    );
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const tokenPayload = {
+      userId: user.id,
+      role: user.role_id,
+      is_verified: user.email_verified,
+      username: user.username,
+      is_deleted: user.is_deleted,
+      is_two_factor_enabled: user.is_two_factor_enabled,
+    };
 
-    return res.status(200).json({ message: "Login successful", token });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      userInfo: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role_id: user.role_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        profile_pic_url: user.profile_pic_url,
+        is_deleted: user.is_deleted,
+        is_two_factor_enabled: user.is_two_factor_enabled,
+        email_verified: user.email_verified,
+      },
+    });
   } catch (error) {
     console.error("Verify OTP Error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
-
-// ===================== SEND OTP (Manual API) =====================
-export const sendOtpController = async (req, res) => {
+/* ======================================================
+   SEND OTP (MANUAL API)
+====================================================== */
+const sendOtpController = async (req, res) => {
   try {
     const { email, method = "email" } = req.body;
-    if (!email) return res.status(400).json({ message: "Email required" });
+    if (!email)
+      return res
+        .status(400)
+        .json({ success: false, message: "Email required" });
 
     const otp = generateOtp();
     const expires = new Date(Date.now() + 2 * 60 * 1000);
-    await pool.query("UPDATE users SET otp_code = $1, otp_expires = $2 WHERE email = $3", [
-      otp,
-      expires,
-      email.toLowerCase(),
-    ]);
+
+    await pool.query(
+      "UPDATE users SET otp_code = $1, otp_expires = $2 WHERE email = $3",
+      [otp, expires, email.toLowerCase()]
+    );
 
     await deliverOtp(email, method, otp);
-    return res.status(200).json({ message: "OTP sent" });
+    return res.status(200).json({ success: true, message: "OTP sent" });
   } catch (err) {
-    console.error("Login Error:", err);
-    return res.status(500).json({ success: false, message: "Login error", error: err.message });
+    console.error("sendOtpController Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Login error",
+      error: err.message,
+    });
   }
 };
-
 
 /* =========================================
    EDIT USER PROFILE 
 ========================================= */
-export const editUserSelf = async (req, res) => {
+const editUserSelf = async (req, res) => {
   const userId = req.token.userId;
   const {
     first_name,
@@ -375,7 +592,10 @@ export const editUserSelf = async (req, res) => {
     let finalProfileUrl = profile_pic_url;
 
     if (req.files && req.files.length > 0) {
-      const uploaded = await uploadFilesToCloudinary(req.files, "users/profile_pics");
+      const uploaded = await uploadFilesToCloudinary(
+        req.files,
+        "users/profile_pics"
+      );
       finalProfileUrl = uploaded[0].url;
     }
 
@@ -390,8 +610,16 @@ export const editUserSelf = async (req, res) => {
          profile_pic_url = COALESCE($6, profile_pic_url),
          updated_at = NOW()
        WHERE id = $7 AND is_deleted = FALSE
-       RETURNING id, first_name, last_name, username, email, phone_number, country, profile_pic_url`,
-      [first_name, last_name, username, phone_number, country, finalProfileUrl, userId]
+       RETURNING id, first_name, last_name, username, email, phone_number, country, profile_pic_url, is_deleted, is_two_factor_enabled, email_verified`,
+      [
+        first_name,
+        last_name,
+        username,
+        phone_number,
+        country,
+        finalProfileUrl,
+        userId,
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -414,13 +642,17 @@ export const editUserSelf = async (req, res) => {
   }
 };
 
-
-export const uploadProfilePic = async (req, res) => {
+/* =========================================
+   UPLOAD PROFILE PIC (ONE FILE)
+========================================= */
+const uploadProfilePic = async (req, res) => {
   const userId = req.token.userId;
 
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
     }
 
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -428,14 +660,16 @@ export const uploadProfilePic = async (req, res) => {
       async (error, result) => {
         if (error) {
           console.error("Cloudinary Upload Error:", error);
-          return res.status(500).json({ success: false, message: "Error uploading image" });
+          return res
+            .status(500)
+            .json({ success: false, message: "Error uploading image" });
         }
 
         const { rows } = await pool.query(
           `UPDATE users
            SET profile_pic_url = $1, updated_at = NOW()
            WHERE id = $2 AND is_deleted = FALSE
-           RETURNING profile_pic_url`,
+           RETURNING profile_pic_url, is_deleted, is_two_factor_enabled, email_verified`,
           [result.secure_url, userId]
         );
 
@@ -450,16 +684,25 @@ export const uploadProfilePic = async (req, res) => {
     Readable.from(req.file.buffer).pipe(uploadStream);
   } catch (err) {
     console.error("uploadProfilePic Error:", err.message);
-    return res.status(500).json({ success: false, message: "Server error uploading profile picture" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error uploading profile picture",
+    });
   }
 };
 
+/* =========================================
+   RATE FREELANCER
+========================================= */
 const rateFreelancer = async (req, res) => {
   const reviewerName = req.token.username;
   const { userId, rating, projectId } = req.body;
 
   if (!userId || !rating) {
-    return res.status(400).json({ success: false, message: "userId and rating are required" });
+    return res.status(400).json({
+      success: false,
+      message: "userId and rating are required",
+    });
   }
 
   try {
@@ -469,13 +712,18 @@ const rateFreelancer = async (req, res) => {
     );
 
     if (freelancerResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Freelancer not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Freelancer not found" });
     }
 
     const freelancer = freelancerResult.rows[0];
 
     if (freelancer.role_id !== 3) {
-      return res.status(403).json({ success: false, message: "Target user is not a freelancer" });
+      return res.status(403).json({
+        success: false,
+        message: "Target user is not a freelancer",
+      });
     }
 
     const newSum = Number(freelancer.rating_sum) + Number(rating);
@@ -491,9 +739,16 @@ const rateFreelancer = async (req, res) => {
     );
 
     try {
-      await NotificationCreators.reviewSubmitted(null, userId, reviewerName || "A client");
+      await NotificationCreators.reviewSubmitted(
+        null,
+        userId,
+        reviewerName || "A client"
+      );
     } catch (notificationError) {
-      console.error(`Failed to create rating notification for freelancer ${userId}:`, notificationError);
+      console.error(
+        `Failed to create rating notification for freelancer ${userId}:`,
+        notificationError
+      );
     }
 
     return res.status(200).json({
@@ -503,32 +758,62 @@ const rateFreelancer = async (req, res) => {
     });
   } catch (err) {
     console.error("Rating error:", err.message);
-    return res.status(500).json({ success: false, message: "Server error during rating", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server error during rating",
+      error: err.message,
+    });
   }
 };
 
+/* =========================================
+   GET USER DATA (للفرونت)
+========================================= */
 const getUserdata = async (req, res) => {
   const userId = req.token.userId;
 
-  const user = await pool.query(
-    "SELECT id, first_name, last_name, email, username, role_id, profile_pic_url FROM users WHERE id = $1 AND is_deleted = FALSE",
-    [userId]
-  );
+  try {
+    const user = await pool.query(
+      `SELECT 
+         id,
+         first_name,
+         last_name,
+         email,
+         username,
+         role_id,
+         profile_pic_url,
+         is_deleted,
+         is_two_factor_enabled,
+         email_verified
+       FROM users 
+       WHERE id = $1`,
+      [userId]
+    );
 
-  if (!user.rows.length) {
-    return res.status(404).json({ success: false, message: "User not found" });
+    if (!user.rows.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    return res.json({
+      success: true,
+      user: user.rows[0],
+    });
+  } catch (err) {
+    console.error("getUserdata error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
-
-  return res.json({
-    success: true,
-    user: user.rows[0],
-  });
 };
 
-// ==================== PASSWORD & ACCOUNT MANAGEMENT ====================
+/* =========================================
+   PASSWORD & ACCOUNT MANAGEMENT
+========================================= */
 
 const verifyPassword = async (req, res) => {
-  const { password } = req.body;  // <-- هذا هو المطلوب
+  const { password } = req.body;
   const userId = req.token.userId;
 
   try {
@@ -538,7 +823,9 @@ const verifyPassword = async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const hashedPassword = userResult.rows[0].password;
@@ -546,7 +833,7 @@ const verifyPassword = async (req, res) => {
     if (!password || !hashedPassword) {
       return res.status(400).json({
         success: false,
-        message: "Password or hashed password missing"
+        message: "Password or hashed password missing",
       });
     }
 
@@ -558,7 +845,10 @@ const verifyPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Verify Password Error:", error);
-    return res.status(500).json({ success: false, message: "Server error during password verification" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error during password verification",
+    });
   }
 };
 
@@ -568,7 +858,10 @@ const updatePassword = async (req, res) => {
   const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ success: false, message: "Current and new passwords are required" });
+    return res.status(400).json({
+      success: false,
+      message: "Current and new passwords are required",
+    });
   }
 
   if (!passwordRegex.test(newPassword)) {
@@ -585,72 +878,171 @@ const updatePassword = async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    const match = await bcrypt.compare(currentPassword, userResult.rows[0].password);
+    const match = await bcrypt.compare(
+      currentPassword,
+      userResult.rows[0].password
+    );
 
     if (!match) {
-      return res.status(400).json({ success: false, message: "Current password is incorrect" });
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, userId]);
+    await pool.query("UPDATE users SET password = $1 WHERE id = $2", [
+      hashedPassword,
+      userId,
+    ]);
 
-    await LogCreators.userAuth(userId, ACTION_TYPES.PASSWORD_CHANGE, true, { ip: req.ip });
+    await LogCreators.userAuth(
+      userId,
+      ACTION_TYPES.PASSWORD_CHANGE,
+      true,
+      { ip: req.ip }
+    );
 
-    return res.json({ success: true, message: "Password updated successfully" });
+    return res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
   } catch (error) {
     console.error("Update Password Error:", error);
-    return res.status(500).json({ success: false, message: "Server error during password update" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error during password update",
+    });
   }
 };
 
 const deactivateAccount = async (req, res) => {
   const userId = req.token.userId;
-
+  const { reason } = req.body; 
   try {
-    const userCheck = await pool.query("SELECT id, is_deleted FROM users WHERE id = $1", [userId]);
-
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    if (userCheck.rows[0].is_deleted) {
-      return res.status(400).json({ success: false, message: "Account is already deactivated" });
-    }
-
-    await pool.query(
-      `UPDATE users
-       SET is_deleted = TRUE, deactivated_at = NOW(), reason_for_disruption = 'Deactivated by user'
-       WHERE id = $1`,
+    const userCheck = await pool.query(
+      "SELECT id, is_deleted FROM users WHERE id = $1",
       [userId]
     );
 
-    await LogCreators.userAuth(userId, ACTION_TYPES.ACCOUNT_DEACTIVATED, true, {
-      ip: req.ip,
-      reason: "user_initiated",
-    });
+    if (userCheck.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (userCheck.rows[0].is_deleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Account is already deactivated",
+      });
+    }
+
+    const finalReason =
+      (reason && reason.trim()) || "Deactivated by user";
+
+    await pool.query(
+      `
+      UPDATE users
+      SET 
+        is_deleted = TRUE,
+        deactivated_at = NOW(),
+        reason_for_disruption = $2
+      WHERE id = $1
+      `,
+      [userId, finalReason]
+    );
+
+    await LogCreators.userAuth(
+      userId,
+      ACTION_TYPES.ACCOUNT_DEACTIVATED,
+      true,
+      {
+        ip: req.ip,
+        reason: finalReason,
+      }
+    );
 
     return res.json({
       success: true,
-      message: "Account deactivated successfully. You have 30 days to reactivate by logging in.",
+      message:
+        "Account deactivated successfully. You have 30 days to reactivate by logging in.",
     });
   } catch (error) {
     console.error("Deactivate Account Error:", error);
-    return res.status(500).json({ success: false, message: "Server error during account deactivation" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error during account deactivation",
+    });
   }
 };
 
-// ==================== EXPORTS ====================
+const getDeactivatedUsers = async (req, res) => {
+  try {
+    // بس الأدمن
+    if (req.token?.role !== 1) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Access denied. Admins only." });
+    }
 
+    const { rows } = await pool.query(
+      `
+      SELECT
+        id,
+        first_name,
+        last_name,
+        email,
+        role_id,
+        is_deleted,
+        deactivated_at,
+        GREATEST(
+          0,
+          30 - FLOOR(EXTRACT(EPOCH FROM (NOW() - deactivated_at)) / 86400)
+        )::int AS days_remaining
+      FROM users
+      WHERE
+        is_deleted = TRUE
+        AND deactivated_at IS NOT NULL
+        -- لو حابب تشوف بس اللي لسا ضمن فترة الـ 30 يوم:
+        AND deactivated_at > NOW() - INTERVAL '30 days'
+      ORDER BY deactivated_at DESC
+      `
+    );
+
+    return res.json({
+      success: true,
+      users: rows,
+    });
+  } catch (error) {
+    console.error("getDeactivatedUsers Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error fetching deactivated users" });
+  }
+};
+
+
+/* =========================================
+   EXPORTS
+========================================= */
 export {
   register,
   login,
+  verifyOTP,
+  editUserSelf,
   rateFreelancer,
   verifyPassword,
   updatePassword,
   deactivateAccount,
   verifyEmailOtp,
-  getUserdata
+  uploadProfilePic,
+  sendOtpController,
+  getUserdata,
+  getDeactivatedUsers,
 };
