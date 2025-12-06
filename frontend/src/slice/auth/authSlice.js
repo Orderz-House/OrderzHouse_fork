@@ -7,7 +7,7 @@ const initialState = {
   roleId: localStorage.getItem("roleId") || null,
   isLoggedIn: !!localStorage.getItem("token"),
   isVerified: localStorage.getItem("is_verified") || null,
-  uuserData: (() => {
+  userData: (() => {
   const data = Cookies.get("userData");
   if (!data || data === "undefined" || data === "null") return null;
 
