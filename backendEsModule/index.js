@@ -25,6 +25,7 @@ console.log("Running cleanupDeactivatedUsers cron job...");
 
 
 // Routers
+import SubscriptionRouter from "./router/subscription.js";
 import CoursesRouter from "./router/course.js";
 import assignmentsRouter from "./router/assignments.js";
 import VerificationRouter from "./router/verification.js";
@@ -68,9 +69,10 @@ app.use(cors({
     "http://localhost:5174"
   ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
 
 // Rate limiter (optional)
 /*
@@ -98,7 +100,7 @@ app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", CoursesRouter);
-app.use("/subscriptions", subscriptionsRouter);
+app.use("/subscriptions", SubscriptionRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
