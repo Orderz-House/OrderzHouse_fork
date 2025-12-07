@@ -5,7 +5,6 @@ import {
   cancelSubscription
 } from "../controller/plans-subscriptions/subscriptions.js";
 
-import { authentication } from "../middleware/authentication.js";
 import  authentication  from "../middleware/authentication.js";
 import authorization from "../middleware/authorization.js"; 
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
