@@ -1,11 +1,12 @@
+// components/Projects/ProjectsPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
-import TopbarCategories from "./TopbarCategories.jsx"; // التوب بار الـ sticky
+import TopbarCategories from "./TopbarCategories.jsx";
 import SubSidebar from "./SubSideBar.jsx";
 import {
   fetchCategories,
   fetchSubCategoriesByCategoryId,
-  fetchSubSubCategoriesBySubId, // 👈 جديد
+  fetchSubSubCategoriesBySubId,
 } from "./api/category";
 
 const THEME = "#028090";
@@ -15,26 +16,23 @@ export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
 
-  // نحدد هل الصفحة Tasks أو Projects من الـ URL
   const inferredMode = location.pathname.startsWith("/tasks")
     ? "tasks"
     : "projects";
   const mode = propMode || inferredMode;
 
-  // ====== URL Params ======
   const q = (sp.get("q") || "").trim();
   const category = sp.get("cat") || "";
-  const sub = sp.get("sub") || ""; // sub‑sub category
-  const subcat = sp.get("subcat") || ""; // sub category
+  const sub = sp.get("sub") || "";
+  const subcat = sp.get("subcat") || "";
 
-  // ====== Local catalog state ======
   const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
   const [nameToCatId, setNameToCatId] = useState({});
   const [nameToSubCat, setNameToSubCat] = useState({});
-  const [subSubInfo, setSubSubInfo] = useState(null); // 👈 معلومات الساب ساب كاتيجوري
+  const [subSubInfo, setSubSubInfo] = useState(null);
 
-  // ---------- Load all categories ----------
+  // load categories
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -50,23 +48,21 @@ export default function ProjectsPage({ mode: propMode }) {
     loadCategories();
   }, []);
 
-  // ---------- search index (category + sub-category) ----------
+  // build index for text search
   useEffect(() => {
     const buildIndex = async () => {
       try {
         const cats = Object.entries(catalog);
-        if (cats.length === 0) return;
+        if (!cats.length) return;
 
         const _nameToCatId = {};
         const _nameToSubCat = {};
 
-        // Map: اسم الكاتيجوري → id
         cats.forEach(([id, v]) => {
           const key = (v.title || "").toLowerCase();
           if (key) _nameToCatId[key] = id;
         });
 
-        // Map: اسم الساب كاتيجوري → {id, parentId}
         if (q) {
           await Promise.all(
             cats.map(async ([id]) => {
@@ -95,7 +91,7 @@ export default function ProjectsPage({ mode: propMode }) {
     buildIndex();
   }, [catalog, q]);
 
-  // ---------- default category ----------
+  // default category
   useEffect(() => {
     if (!category && Object.keys(catalog).length > 0) {
       const firstId = Object.keys(catalog)[0];
@@ -109,14 +105,13 @@ export default function ProjectsPage({ mode: propMode }) {
     }
   }, [catalog, category, sp, setSp]);
 
-  // ---------- search by text ----------
+  // search by text
   useEffect(() => {
     if (!q || !indexReady) return;
     if (category || subcat || sub) return;
 
     const term = q.toLowerCase().trim();
 
-    // 1) مطابق لاسم sub‑category بالضبط
     const exactSub = nameToSubCat[term];
     if (exactSub) {
       const next = new URLSearchParams(sp);
@@ -129,7 +124,6 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    // 2) مطابق لاسم الـ category بالضبط
     const exactCatId = nameToCatId[term];
     if (exactCatId) {
       const next = new URLSearchParams(sp);
@@ -142,7 +136,6 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    // 3) يحتوي على الاسم داخل sub‑category
     const subHit = Object.entries(nameToSubCat).find(([k]) =>
       k.includes(term)
     );
@@ -158,7 +151,6 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    // 4) يحتوي على الاسم داخل category
     const catHit = Object.entries(nameToCatId).find(([k]) =>
       k.includes(term)
     );
@@ -174,7 +166,6 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    // لو ما في نتيجة من البحث بالاسم نمسح q من الـ URL
     const next = new URLSearchParams(sp);
     next.delete("q");
     setSp(next, { replace: true });
@@ -190,10 +181,9 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp,
   ]);
 
-  // ---------- تحميل بيانات الساب ساب كاتيجوري المختارة ----------
+  // load sub-sub info (title/description)
   useEffect(() => {
     const loadSubSubInfo = async () => {
-      // لو ما في ساب ساب أو ما في ساب كاتيجوري نفضّي المعلومات
       if (!sub || !subcat) {
         setSubSubInfo(null);
         return;
@@ -213,7 +203,6 @@ export default function ProjectsPage({ mode: propMode }) {
     loadSubSubInfo();
   }, [sub, subcat]);
 
-  // ---------- اختيار كاتيجوري من الشريط ----------
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
     next.set("cat", id.toString());
@@ -224,7 +213,6 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
-  // ---------- اختيار sub‑sub من SubSidebar ===========
   const chooseSub = (subId) => {
     const next = new URLSearchParams(sp);
     if (subId) next.set("sub", subId.toString());
@@ -235,7 +223,6 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
-  // ✅ تُستدعى من الميجا منيو في التوب بار (كاتيجوري + ساب + ساب ساب)
   const handleSelectFromTopbar = (catId, subCatId, subSubId) => {
     const next = new URLSearchParams(sp);
 
@@ -264,7 +251,7 @@ export default function ProjectsPage({ mode: propMode }) {
   return (
     <section className="relative min-h-[70vh] pb-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 🔝 التوب بار الـ sticky مع الميجا منيو */}
+        {/* sticky topbar */}
         <TopbarCategories
           active={category}
           onSelect={chooseCat}
@@ -273,10 +260,9 @@ export default function ProjectsPage({ mode: propMode }) {
           themeDark={THEME_DARK}
         />
 
-        {/* عنوان الصفحة */}
+        {/* header */}
         <header className="mt-4 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            {/* Home icon */}
             <a
               href="/"
               className="inline-flex items-center text-slate-600 hover:text-slate-800"
@@ -296,11 +282,7 @@ export default function ProjectsPage({ mode: propMode }) {
                 />
               </svg>
             </a>
-
-            {/* Slash */}
             <span className="text-slate-300">/</span>
-
-            {/* Category title */}
             <h1
               className="text-sm font-semibold tracking-tight text-slate-800"
               style={{ color: THEME_DARK }}
@@ -309,26 +291,23 @@ export default function ProjectsPage({ mode: propMode }) {
             </h1>
           </div>
 
-          {/* عنوان الساب ساب كاتيجوري + وصف بسيط */}
           {subSubInfo && (
-  <div className="mt-2">
-    <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
-      {subSubInfo.name}
-    </h2>
-    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-      {subSubInfo.description
-        ? subSubInfo.description
-        : `استعرض مشاريع وخدمات مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
-    </p>
+            <div className="mt-2">
+              <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
+                {subSubInfo.name}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                {subSubInfo.description
+                  ? subSubInfo.description
+                  : `استعرض عناصر مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
+              </p>
+            </div>
+          )}
 
-    
-  </div>
-)}
-{/* خط رفيع بعرض الكونتينر ولونه رمادي فاتح */}
-    <hr className="mt-4 border-t border-slate-200" />
+          <hr className="mt-4 border-t border-slate-200" />
         </header>
 
-        {/* المحتوى الرئيسي */}
+        {/* content */}
         <SubSidebar
           mode={mode}
           categoryId={category}

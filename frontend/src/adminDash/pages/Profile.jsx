@@ -20,6 +20,22 @@ export default function EditProfile() {
     profile_pic_url: "",
   });
 
+  const [ratingData, setRatingData] = useState({
+    currentRating: 0,
+    lastIncrease: null
+  });
+
+  useEffect(() => {
+    // Get rating data from localStorage
+    const storedRating = localStorage.getItem("freelancerRating");
+    const storedIncrease = localStorage.getItem("lastRatingIncrease");
+    
+    setRatingData({
+      currentRating: userData?.rating !== undefined ? userData.rating : (storedRating ? parseFloat(storedRating) : 0),
+      lastIncrease: storedIncrease ? JSON.parse(storedIncrease) : null
+    });
+  }, [userData]);
+
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -200,6 +216,14 @@ export default function EditProfile() {
             Edit Profile
           </h1>
           <p className="text-slate-500 text-sm">Update your personal details</p>
+          <div className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+            Rating: {ratingData.currentRating.toFixed(2)}
+          </div>
+          {ratingData.lastIncrease && (
+            <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              {ratingData.lastIncrease.previousRating} → {ratingData.lastIncrease.newRating} (+{ratingData.lastIncrease.increase})
+            </div>
+          )}
         </div>
 
         {/* Form Fields */}

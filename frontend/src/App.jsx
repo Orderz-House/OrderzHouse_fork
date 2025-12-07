@@ -35,7 +35,11 @@ import Blogs from "./components/blogs/Blogs.jsx";
 import BlogPost from "./components/blogs/BlogPost.jsx";
 import AdminRouter from "./adminDash/routes/index";
 import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
+
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
+import CreateTaskPage from "./components/CreateProjects/CreateTaskPage";
+import CopywritingTest from "./components/CopywritingTest";
+
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
 import ChatPage from "./components/Chat/ChatPage";
 
@@ -65,7 +69,6 @@ function App() {
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
   const userData = useSelector((state) => state.auth.userData);
-  
 
   const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
@@ -108,11 +111,11 @@ function App() {
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           <Route path="/terms" element={<Terms />} />
 
           {/* --- Protected Pages --- */}
-         
+
           <Route
             path="/create-project"
             element={
@@ -121,8 +124,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
-          
+
           {/* --- Tasks --- */}
           <Route
             path="/tasks"
@@ -132,6 +134,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/tasks/create"
+            element={
+              <ProtectedRoute>
+                <CreateTaskPage /> {/* 👈 صفحة إنشاء التاسك */}
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/tasks/:id"
             element={
@@ -268,6 +280,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProjectDetails />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* --- Copywriting Test --- */}
+          <Route
+            path="/copywriting-test"
+            element={
+              <ProtectedRoute allowedRoles={[3]}>
+                <CopywritingTest />
               </ProtectedRoute>
             }
           />

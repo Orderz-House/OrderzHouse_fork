@@ -30,7 +30,7 @@ export default function CleanFooter() {
   ];
 
   const freelancerLinks = [
-    { label: "Add task", to: "/freelancer/tasks/new" },
+    { label: "Add task", to: "/tasks/create" },
     { label: "Projects", to: "/projectsPage" },
     { label: "Blogs", to: "/blogs" },
   ];

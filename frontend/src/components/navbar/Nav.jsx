@@ -196,7 +196,8 @@ export default function EnhancedNavbar() {
     { label: "BLOGS", path: "/blogs" },
     { label: "CONTACT", path: "/contact" },
     { label: "PLANS", path: "/plans" },
-  ];
+    { label: "COPYWRITING TEST", path: "/copywriting-test", condition: userData && userData.role_id === 3 },
+  ].filter(item => item.condition !== undefined ? item.condition : true);
 
   // لو أنت في ABOUT / BLOGS / ... يخلي زر EXPLORE شكله active
   const isExploreActive = exploreItems.some(

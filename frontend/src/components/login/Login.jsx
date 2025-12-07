@@ -1,3 +1,4 @@
+// src/components/login/Login.jsx
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { GoogleLogin } from "@react-oauth/google";
@@ -26,15 +27,19 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [otp, setOtp] = useState("");
+  const [otpMode, setOtpMode] = useState(null); // 'email' | 'app' | null
+  const [tempToken, setTempToken] = useState("");
 
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [requiresOtp, setRequiresOtp] = useState(false);
 
   const API_BASE = import.meta.env.VITE_APP_API_URL;
+
+  const isOtpStep = otpMode !== null;
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -48,33 +53,63 @@ const Login = () => {
       })
       .then((res) => {
         setIsLoading(false);
-        if (res.data.token) {
+        const data = res.data;
+
+        // ===== 2FA (Authenticator App) =====
+        if (data.requires_2fa && data.temp_token) {
+          setStatus(true);
+          setMessage(
+            "Enter the 6-digit code from your authenticator app."
+          );
+          setOtp("");
+          setOtpMode("app");
+          setTempToken(data.temp_token);
+          return;
+        }
+
+        // ===== Email OTP (محاولات كثيرة) =====
+        if (data.requires_email_otp) {
+          setStatus(true);
+          setMessage(
+            data.message ||
+              "Verification code sent. Please check your email and enter the code below."
+          );
+          setOtp("");
+          setOtpMode("email");
+          return;
+        }
+
+        // ===== Login مباشر (بدون أي خطوة إضافية) =====
+        if (data.token) {
           setStatus(true);
           setMessage("Login successful! Redirecting...");
-          const decoded = jwtDecode(res.data.token);
+          const decoded = jwtDecode(data.token);
           dispatch(
             setLogin({
-              token: res.data.token,
+              token: data.token,
               userId: decoded.userId,
               roleId: decoded.role,
               is_verified: decoded.is_verified,
-              userInfo: res.data.userInfo,
+              userInfo: data.userInfo,
             })
           );
-          connectSocket(res.data.token, decoded.userId);
+          connectSocket(data.token, decoded.userId);
           setTimeout(() => navigate("/"), 1500);
-        } else if (res.data.message === "OTP sent successfully") {
-          setStatus(true);
-          setMessage("Verification code sent. Please check your email and enter the code below.");
-          setRequiresOtp(true);
+          return;
         }
+
+        // fallback
+        setStatus(false);
+        setMessage(data.message || "Unexpected response from server.");
       })
       .catch((err) => {
         setIsLoading(false);
         setStatus(false);
-        const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
+        const errorMessage =
+          err.response?.data?.message ||
+          "Login failed. Please check your credentials.";
         setMessage(errorMessage);
-        setRequiresOtp(false);
+        setOtpMode(null);
       });
   };
 
@@ -83,39 +118,84 @@ const Login = () => {
     setIsLoading(true);
     setMessage("");
 
-    axios
-      .post(`${API_BASE}/users/verify-otp`, {
-        email: email.toLowerCase(),
-        otp,
-      })
-      .then((res) => {
-        setIsLoading(false);
-        setStatus(true);
-        setMessage("Login successful! Redirecting...");
-        const decoded = jwtDecode(res.data.token);
-        dispatch(
-          setLogin({
-            token: res.data.token,
-            userId: decoded.userId,
-            roleId: decoded.role,
-            is_verified: decoded.is_verified,
-            userInfo: res.data.userInfo,
-          })
-        );
-        connectSocket(res.data.token, decoded.userId);
-        setTimeout(() => navigate("/"), 1500);
-      })
-      .catch((err) => {
-        setIsLoading(false);
-        setStatus(false);
-        const errorMessage = err.response?.data?.message || "Invalid or expired OTP.";
-        setMessage(errorMessage);
-        setOtp("");
-      });
+    // Email OTP
+    if (otpMode === "email") {
+      axios
+        .post(`${API_BASE}/users/verify-otp`, {
+          email: email.toLowerCase(),
+          otp,
+        })
+        .then((res) => {
+          setIsLoading(false);
+          const data = res.data;
+
+          setStatus(true);
+          setMessage("Login successful! Redirecting...");
+
+          const decoded = jwtDecode(data.token);
+          dispatch(
+            setLogin({
+              token: data.token,
+              userId: decoded.userId,
+              roleId: decoded.role,
+              is_verified: decoded.is_verified,
+              userInfo: data.userInfo,
+            })
+          );
+          connectSocket(data.token, decoded.userId);
+          setTimeout(() => navigate("/"), 1500);
+        })
+        .catch((err) => {
+          setIsLoading(false);
+          setStatus(false);
+          const errorMessage =
+            err.response?.data?.message || "Invalid or expired OTP.";
+          setMessage(errorMessage);
+          setOtp("");
+        });
+      return;
+    }
+
+    // 2FA App (TOTP)
+    if (otpMode === "app") {
+      axios
+        .post(`${API_BASE}/auth/2fa/verify-login`, {
+          temp_token: tempToken,
+          code: otp,
+        })
+        .then((res) => {
+          setIsLoading(false);
+          const data = res.data;
+
+          setStatus(true);
+          setMessage("Login successful! Redirecting...");
+
+          const decoded = jwtDecode(data.token);
+          dispatch(
+            setLogin({
+              token: data.token,
+              userId: decoded.userId,
+              roleId: decoded.role,
+              is_verified: decoded.is_verified,
+              userInfo: data.userInfo,
+            })
+          );
+          connectSocket(data.token, decoded.userId);
+          setTimeout(() => navigate("/"), 1500);
+        })
+        .catch((err) => {
+          setIsLoading(false);
+          setStatus(false);
+          const errorMessage =
+            err.response?.data?.message || "Invalid 2FA code.";
+          setMessage(errorMessage);
+          setOtp("");
+        });
+    }
   };
 
   const handleSubmit = (e) => {
-    if (requiresOtp) {
+    if (isOtpStep) {
       handleVerifyOtp(e);
     } else {
       handleLogin(e);
@@ -149,10 +229,11 @@ const Login = () => {
   };
 
   const resetToLogin = () => {
-    setRequiresOtp(false);
+    setOtpMode(null);
     setPassword("");
     setOtp("");
     setMessage("");
+    setTempToken("");
   };
 
   return (
@@ -170,25 +251,35 @@ const Login = () => {
             </h1>
             <p className="text-slate-500 mt-2 text-sm">
               Sign in to continue to{" "}
-              <span className="font-semibold text-[#028090]">ORDERZHOUSE</span>
+              <span className="font-semibold text-[#028090]">
+                ORDERZHOUSE
+              </span>
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
             <div className="mb-6 text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white">
-                {requiresOtp ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                {isOtpStep ? (
+                  <Shield className="w-4 h-4" />
+                ) : (
+                  <LogIn className="w-4 h-4" />
+                )}
                 <span className="text-sm">
-                  {requiresOtp ? "Verify Your Identity" : "Sign in"}
+                  {isOtpStep ? "Verify Your Identity" : "Sign in"}
                 </span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {!requiresOtp && (
+              {/* فورم الإيميل + الباسورد */}
+              {!isOtpStep && (
                 <>
                   <div>
-                    <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
+                    <label
+                      htmlFor="email"
+                      className="block text-sm text-slate-700 mb-1.5"
+                    >
                       Email Address
                     </label>
                     <div className="relative">
@@ -207,7 +298,10 @@ const Login = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm text-slate-700 mb-1.5"
+                    >
                       Password
                     </label>
                     <div className="relative">
@@ -228,17 +322,27 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
                       </button>
                     </div>
                   </div>
                 </>
               )}
 
-              {requiresOtp && (
+              {/* فورم الكود (OTP أو 2FA APP) */}
+              {isOtpStep && (
                 <div className="animate-fadeIn">
-                  <label htmlFor="otp" className="block text-sm text-slate-700 mb-1.5">
-                    Verification Code
+                  <label
+                    htmlFor="otp"
+                    className="block text-sm text-slate-700 mb-1.5"
+                  >
+                    {otpMode === "app"
+                      ? "Authenticator Code"
+                      : "Verification Code"}
                   </label>
                   <div className="relative">
                     <Shield className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -247,8 +351,10 @@ const Login = () => {
                       id="otp"
                       placeholder="6-digit code"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      maxLength="6"
+                      onChange={(e) =>
+                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      maxLength={6}
                       required
                       autoFocus
                       disabled={isLoading}
@@ -256,7 +362,9 @@ const Login = () => {
                     />
                   </div>
                   <p className="text-xs text-slate-500 mt-2 text-center">
-                    Enter the 6-digit code sent to your email.
+                    {otpMode === "app"
+                      ? "Open your authenticator app and enter the 6-digit code."
+                      : "Enter the 6-digit code sent to your email."}
                   </p>
                 </div>
               )}
@@ -274,27 +382,35 @@ const Login = () => {
                         >
                           <circle
                             className="opacity-25"
-                            cx="12" cy="12" r="10"
-                            stroke="currentColor" strokeWidth="4"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
                           ></circle>
                           <path
-                            className="opacity-75" fill="currentColor"
+                            className="opacity-75"
+                            fill="currentColor"
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        {requiresOtp ? "Verifying..." : "Signing in..."}
+                        {isOtpStep ? "Verifying..." : "Signing in..."}
                       </>
-                     ) : (
+                    ) : (
                       <>
-                        {requiresOtp ? <KeyRound className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
-                        {requiresOtp ? "Verify & Sign In" : "Sign in"}
+                        {isOtpStep ? (
+                          <KeyRound className="w-5 h-5 mr-2" />
+                        ) : (
+                          <LogIn className="w-5 h-5 mr-2" />
+                        )}
+                        {isOtpStep ? "Verify & Sign In" : "Sign in"}
                       </>
                     )}
                   </div>
                 </GradientButton>
               </div>
 
-              {requiresOtp && (
+              {isOtpStep && (
                 <div className="text-center">
                   <button
                     type="button"
@@ -307,14 +423,17 @@ const Login = () => {
                 </div>
               )}
 
-              {!requiresOtp && (
+              {/* Google login فقط في خطوة الباسورد */}
+              {!isOtpStep && (
                 <>
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-slate-200"></div>
                     </div>
                     <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-slate-500 text-sm">Or continue with</span>
+                      <span className="px-2 bg-white text-slate-500 text-sm">
+                        Or continue with
+                      </span>
                     </div>
                   </div>
 
@@ -349,10 +468,10 @@ const Login = () => {
               </div>
             )}
 
-            {!requiresOtp && (
+            {!isOtpStep && (
               <div className="mt-6 text-center pt-4 border-t border-slate-200">
                 <p className="text-sm text-slate-600">
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <a
                     href="/register"
                     className="font-medium text-[#028090] inline-flex items-center hover:underline"
@@ -367,8 +486,19 @@ const Login = () => {
       </div>
 
       <style jsx>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
-        .animate-fadeIn { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.25s ease-out;
+        }
       `}</style>
     </div>
   );
