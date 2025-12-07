@@ -32,6 +32,7 @@ import offersRouter from "./router/offers.js";
 import ratingsRouter from "./router/rating.js";
 import Blogsrouter from "./router/blogs.js"
 import freelancerCategoriesRouter from "./router/freelancerCategories.js";
+import subscriptionsRouter from "./router/subscription.js";
 //import analyticsRoutes from "./router/analytics.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
 import chatsRouter from "./router/chats.js";
