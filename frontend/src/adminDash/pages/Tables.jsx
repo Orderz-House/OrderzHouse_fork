@@ -88,7 +88,7 @@ function useApi(token) {
     () =>
         axios.create({
           // use VITE_APP_API_URL if available, otherwise route via vite dev proxy at /api
-          baseURL: import.meta.env.VITE_APP_API_URL || "/api",
+          baseURL: import.meta.env.VITE_APP_API_URL || " ",
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
