@@ -7,7 +7,7 @@ export const connectSocket = (token, userId) => {
     if (!socket) {
         console.log("Connected Socket");
     
-        socket = io("https://orderzhouse-backend.onrender.com", {
+        socket = io("http://localhost:5000", {
           auth: {
             token,
             userId

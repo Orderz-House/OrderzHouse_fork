@@ -111,7 +111,7 @@ frontend/
 
 Create a `.env` file in the frontend root with:
 ```
-VITE_API_BASE_URL=https://orderzhouse-backend.onrender.com
+VITE_API_BASE_URL=http://localhost:5000
 VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id
 ```
 
