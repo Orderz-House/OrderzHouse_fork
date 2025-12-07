@@ -38,6 +38,7 @@ import ProjectDetails from "./components/Catigories/ProjectDetails.jsx";
 
 import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import CreateTaskPage from "./components/CreateProjects/CreateTaskPage";
+import CopywritingTest from "./components/CopywritingTest";
 
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
 import ChatPage from "./components/Chat/ChatPage";
@@ -279,6 +280,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProjectDetails />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* --- Copywriting Test --- */}
+          <Route
+            path="/copywriting-test"
+            element={
+              <ProtectedRoute allowedRoles={[3]}>
+                <CopywritingTest />
               </ProtectedRoute>
             }
           />
