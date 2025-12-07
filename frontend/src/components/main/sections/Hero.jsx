@@ -380,12 +380,12 @@ export default function HeroFreelancer({ onSearch }) {
         {/* <div className="mt-6">
           <LiveActivity />
         </div> */}
-        <div className="relative z-0 h-[240px] md:h-[560px] overflow-hidden pointer-events-none">
+        <div className="relative z-0 h-[240px] lg:h-[560px] overflow-hidden pointer-events-none">
           <div className="absolute inset-0 -z-10 blur-3xl opacity-50" style={{ background: `radial-gradient(60% 60% at 50% 40%, ${THEME}22, transparent)` }} />
-          <div className="block md:hidden h-full">
+          <div className="block lg:hidden h-full">
             <MarqueeRow items={topRated} speed={25} direction="left" position="middle" />
           </div>
-          <div className="hidden md:block h-full">
+          <div className="hidden lg:block h-full">
             <MarqueeRow items={row1} speed={16} direction="left" position="top" />
             <MarqueeRow items={row2} speed={9} direction="right" position="middle" />
             <MarqueeRow items={row3} speed={14} direction="left" position="bottom" />
