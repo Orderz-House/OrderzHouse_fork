@@ -16,7 +16,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 
-import PeopleTable from "../Tables"; 
+import PeopleTable from "../Tables";
 
 /* =========================
    Helpers / Theme
@@ -85,150 +85,47 @@ function AdminTasks() {
   );
 }
 
-
 /* =========================
-   Client View (Clean list)
+   Client View (Table from Tables.jsx)
 ========================= */
 function ClientTasks() {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [proj, setProj] = useState("");
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function load() {
-      setLoading(true);
-      try {
-        const [{ data: list }, { data: projs }] = await Promise.all([
-          api.get("/api/client/tasks", {
-            params: { q, status, project: proj },
-          }),
-          api.get("/api/client/projects", { params: { slim: true } }).catch(() => ({ data: [] })),
-        ]);
-        if (!ignore) {
-          setRows(Array.isArray(list) ? list : list?.items ?? []);
-          setProjects(Array.isArray(projs) ? projs : projs?.items ?? []);
-        }
-      } catch (e) {
-        if (!ignore) setRows([]);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-
-    load();
-    return () => { ignore = true; };
-  }, [q, status, proj]);
-
-  const filtered = rows;
+  // لو عندك توكن JWT في redux auth تقدر تستخدمه هنا
+  const { token } = useSelector((s) => s.auth) || {};
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold" style={{ color: themeDark }}>
-            My tasks
-          </h1>
-          <p className="text-slate-600 text-sm">Track milestones and deadlines for your projects.</p>
-        </div>
-      </div>
+    <div className="space-y-3">
+     
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search task or project…"
-          className="w-full md:max-w-sm rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2 focus:ring-slate-200"
-          >
-            <option value="">Status</option>
-            <option value="todo">To do</option>
-            <option value="in_progress">In progress</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
-          </select>
-
-          <select
-            value={proj}
-            onChange={(e) => setProj(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none text-slate-700 focus:ring-2 focus:ring-slate-200"
-          >
-            <option value="">Project</option>
-            {projects.map((p) => (
-              <option key={p.id ?? p._id} value={p.id ?? p._id}>
-                {p.name ?? p.title ?? `#${p.id ?? p._id}`}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
-        <div className="px-4 py-2 bg-slate-50/70 text-slate-500 text-xs font-medium">
-          Tasks
-        </div>
-
-        {loading ? (
-          <div className="p-8 text-center text-slate-500">
-            <Loader2 className="inline-block animate-spin mr-2" /> Loading…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">No tasks yet.</div>
-        ) : (
-          <ul className="divide-y divide-slate-200">
-            {filtered.map((t) => (
-              <li key={t.id ?? t._id} className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-slate-800 font-medium truncate">
-                      <ClipboardList className="w-4 h-4 text-[color:var(--t)]" style={{ ["--t"]: primary }} />
-                      <span className="truncate">{t.title}</span>
-                    </div>
-
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                      <span className="inline-flex items-center gap-1">
-                        <FolderKanban className="w-3.5 h-3.5" /> {t.project_name ?? "—"}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <User2 className="w-3.5 h-3.5" /> {t.assignee_name ?? "—"}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarDays className="w-3.5 h-3.5" /> {t.due_date ? new Date(t.due_date).toLocaleDateString() : "—"}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <ChevronDown className="w-3.5 h-3.5 rotate-90" />
-                        <span className="capitalize">{t.status}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <span
-                    className="ml-auto rounded-full px-3 py-1 text-xs font-medium"
-                    style={{
-                      background: "rgba(2,128,144,.10)",
-                      color: primary,
-                    }}
-                  >
-                    {t.priority ?? "—"}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <PeopleTable
+        title="My tasks"
+        endpoint="/api/client/tasks"
+        token={token}
+        columns={[
+          { label: "Title", key: "title" },
+          { label: "Project", key: "project_name" },
+          { label: "Assignee", key: "assignee_name" },
+          {
+            label: "Due date",
+            key: "due_date",
+            render: (row) =>
+              row.due_date
+                ? new Date(row.due_date).toLocaleDateString()
+                : "—",
+          },
+          { label: "Status", key: "status" },
+          { label: "Priority", key: "priority" },
+        ]}
+        // نخلي الجدول Read‑only للعميل (ما فيه حذف/تعديل)
+        crudConfig={{
+          showDetails: false,
+          showRowEdit: false,
+          showDelete: false,
+          showExpand: false,
+        }}
+        // عرض كروت في الموبايل وجدول في الديسكتوب
+        mobileAsCards
+        desktopAsCards
+      />
     </div>
   );
 }
@@ -246,7 +143,9 @@ function Column({ title, items, onMove, status }) {
       </div>
       <div className="p-3 space-y-3 min-h-[220px]">
         {items.length === 0 && (
-          <div className="text-center text-slate-400 text-sm py-6">No tasks</div>
+          <div className="text-center text-slate-400 text-sm py-6">
+            No tasks
+          </div>
         )}
         {items.map((t) => (
           <div
@@ -256,13 +155,19 @@ function Column({ title, items, onMove, status }) {
             <div className="font-medium text-slate-800">{t.title}</div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1">
-                <FolderKanban className="w-3.5 h-3.5" /> {t.project_name ?? "—"}
+                <FolderKanban className="w-3.5 h-3.5" />{" "}
+                {t.project_name ?? "—"}
               </span>
               <span className="inline-flex items-center gap-1">
-                <CalendarDays className="w-3.5 h-3.5" /> {t.due_date ? new Date(t.due_date).toLocaleDateString() : "—"}
+                <CalendarDays className="w-3.5 h-3.5" />{" "}
+                {t.due_date
+                  ? new Date(t.due_date).toLocaleDateString()
+                  : "—"}
               </span>
-              <span className="ml-auto rounded-full px-2 py-[2px] text-[11px] font-medium"
-                style={{ background: "rgba(2,128,144,.10)", color: primary }}>
+              <span
+                className="ml-auto rounded-full px-2 py-[2px] text-[11px] font-medium"
+                style={{ background: "rgba(2,128,144,.10)", color: primary }}
+              >
                 {t.priority ?? "—"}
               </span>
             </div>
@@ -317,12 +222,15 @@ function FreelancerTasks() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const columns = useMemo(() => ({
-    todo: rows.filter((t) => t.status === "todo"),
-    in_progress: rows.filter((t) => t.status === "in_progress"),
-    review: rows.filter((t) => t.status === "review"),
-    done: rows.filter((t) => t.status === "done"),
-  }), [rows]);
+  const columns = useMemo(
+    () => ({
+      todo: rows.filter((t) => t.status === "todo"),
+      in_progress: rows.filter((t) => t.status === "in_progress"),
+      review: rows.filter((t) => t.status === "review"),
+      done: rows.filter((t) => t.status === "done"),
+    }),
+    [rows]
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -337,16 +245,24 @@ function FreelancerTasks() {
         if (!ignore) setLoading(false);
       }
     })();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const moveTo = async (task, status) => {
     const id = task.id ?? task._id;
-    setRows((arr) => arr.map((t) => ( (t.id ?? t._id) === id ? { ...t, status } : t )));
+    setRows((arr) =>
+      arr.map((t) => ((t.id ?? t._id) === id ? { ...t, status } : t))
+    );
     try {
       await api.put(`/api/freelancer/tasks/${id}`, { status });
     } catch {
-      setRows((arr) => arr.map((t) => ( (t.id ?? t._id) === id ? { ...t, status: task.status } : t )));
+      setRows((arr) =>
+        arr.map((t) =>
+          (t.id ?? t._id) === id ? { ...t, status: task.status } : t
+        )
+      );
       alert("Failed to update status");
     }
   };
@@ -358,7 +274,9 @@ function FreelancerTasks() {
           <h1 className="text-xl font-semibold" style={{ color: themeDark }}>
             My tasks
           </h1>
-          <p className="text-slate-600 text-sm">Drag-free lightweight kanban to manage your work.</p>
+          <p className="text-slate-600 text-sm">
+            Drag-free lightweight kanban to manage your work.
+          </p>
         </div>
 
         <a
@@ -377,10 +295,30 @@ function FreelancerTasks() {
         </div>
       ) : (
         <div className="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Column title="To do" items={columns.todo} onMove={moveTo} status="todo" />
-          <Column title="In progress" items={columns.in_progress} onMove={moveTo} status="in_progress" />
-          <Column title="Review" items={columns.review} onMove={moveTo} status="review" />
-          <Column title="Done" items={columns.done} onMove={moveTo} status="done" />
+          <Column
+            title="To do"
+            items={columns.todo}
+            onMove={moveTo}
+            status="todo"
+          />
+          <Column
+            title="In progress"
+            items={columns.in_progress}
+            onMove={moveTo}
+            status="in_progress"
+          />
+          <Column
+            title="Review"
+            items={columns.review}
+            onMove={moveTo}
+            status="review"
+          />
+          <Column
+            title="Done"
+            items={columns.done}
+            onMove={moveTo}
+            status="done"
+          />
         </div>
       )}
     </div>
@@ -403,9 +341,7 @@ export default function Tasks() {
       <h1 className="text-xl font-semibold mb-2" style={{ color: themeDark }}>
         Tasks
       </h1>
-      <p className="text-slate-600">
-        Please sign in to view your tasks.
-      </p>
+      <p className="text-slate-600">Please sign in to view your tasks.</p>
     </div>
   );
 }
