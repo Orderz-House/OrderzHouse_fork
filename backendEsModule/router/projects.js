@@ -1,7 +1,7 @@
 import express from "express";
 import { authentication } from "../middleware/authentication.js";
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
-import adminViewerOnly from "../middleware/adminViewerOnly.js";
+// import adminViewerOnly from "../middleware/adminViewerOnly.js";
 import multer from "multer";
 
 import {
@@ -20,7 +20,7 @@ import {
   getApplicationsForMyProjects,
   getProjectTimeline
 } from "../controller/projectsManagment/projects.js";
-import handleJsonOrForm from "../middleware/handleJsonOrForm.js";
+// import handleJsonOrForm from "../middleware/handleJsonOrForm.js";
 
 import {
   getProjectsByCategory,
@@ -41,10 +41,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 projectsRouter.post("/", authentication, uploadProjectMedia, createProject);
 
-// Admin Viewer project creation with special categories
-projectsRouter.post("/admin", authentication, adminViewerOnly, handleJsonOrForm, createAdminProject);
+ // Admin Viewer project creation with special categories
+// projectsRouter.post("/admin", authentication, adminViewerOnly, handleJsonOrForm, createAdminProject);
 
-projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
+// projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
 // Allow client to delete their own project (soft delete)
 projectsRouter.delete(
@@ -159,7 +159,7 @@ projectsRouter.get(
 projectsRouter.get(
   "/admin/freelancers",
   authentication,
-  adminViewerOnly,
+  // adminViewerOnly,
   getAllFreelancers
 );
 
@@ -167,7 +167,7 @@ projectsRouter.get(
 projectsRouter.get(
   "/admin/projects",
   authentication,
-  adminViewerOnly,
+  // adminViewerOnly,
   getAllProjectsForAdmin
 );
 
@@ -175,7 +175,7 @@ projectsRouter.get(
 projectsRouter.put(
   "/admin/projects/:projectId/reassign",
   authentication,
-  adminViewerOnly,
+  // adminViewerOnly,
   reassignFreelancer
 );
 
