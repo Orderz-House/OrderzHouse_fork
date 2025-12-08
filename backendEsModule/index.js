@@ -8,6 +8,7 @@ import cron from "node-cron";
 // Cron jobs
 import "./cron/expireSubscriptions.js";
 import "./cron/autoExpireOldOffers.js";
+import { registerOfferExpirationCronJob } from "./cron/offerExpirationReminder.js"; // Import our new cron job
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
 import liveScreenRoutes from "./router/LiveScreen.js";
@@ -16,6 +17,7 @@ dotenv.config();
 
 // Start real-time deadline watcher
 startDeadlineWatcher();
+registerOfferExpirationCronJob(); // Register our new cron job
 
 // delete permanently after 30 days
 cron.schedule("*/1 * * * *", async () => {

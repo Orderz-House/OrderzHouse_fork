@@ -130,6 +130,33 @@ export const recordOfflinePaymentApi = async (projectId, file, token, amount) =>
   return data.payment;
 };
 
+// -------------------- CREATE ADMIN PROJECT --------------------
+export const createAdminProjectApi = async (adminProjectData, token, coverPic) => {
+  const authToken = token || getAuthToken();
+  const formData = new FormData();
+
+  // Append admin-specific data
+  for (const [key, value] of Object.entries(adminProjectData)) {
+    if (key === 'preferred_skills' && Array.isArray(value)) {
+      value.forEach((v) => formData.append(`${key}[]`, v));
+    } else if (value !== undefined && value !== null) {
+      formData.append(key, value);
+    }
+  }
+
+  if (coverPic) formData.append("cover_pic", coverPic);
+
+  const { data } = await axios.post(`${API_BASE}/admin`, formData, {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  if (!data.success) throw new Error(data.message || "Failed to create admin project");
+  return data.project;
+};
+
 // -------------------- CREATE PROJECT DRAFT --------------------
 export const createProjectDraftApi = async (projectData) => {
   const token = getAuthToken();

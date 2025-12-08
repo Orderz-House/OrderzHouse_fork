@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import "animate.css";
@@ -44,6 +44,9 @@ import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvi
 import ChatPage from "./components/Chat/ChatPage";
 
 
+
+// Import admin role 4 routes
+import { adminRole4Routes } from "./adminDash/routes/adminRole4Routes";
 
 const RoleBasedAppointments = ({ userData }) => {
   if (userData?.role_id === 1) {
@@ -277,6 +280,18 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* --- Admin Role 4 (Admin Viewer) --- */}
+          {adminRole4Routes.map((route) => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <ProtectedRoute allowedRoles={[4]}>
+                  {route.element}
+                </ProtectedRoute>
+              }
+            />
+          ))}
           <Route
             path="/projects/:id"
             element={
@@ -292,6 +307,16 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[3]}>
                 <CopywritingTest />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- APM Route (Admin Role 4) --- */}
+          <Route
+            path="/apm"
+            element={
+              <ProtectedRoute allowedRoles={[4]}>
+                <Navigate to="/admin-role-4/dashboard" replace />
               </ProtectedRoute>
             }
           />
