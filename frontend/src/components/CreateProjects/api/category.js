@@ -1,39 +1,82 @@
-// src/components/CreateProjects/api/category.js
 import axios from "axios";
 
 const API_BASE = `${import.meta.env.VITE_APP_API_URL}/category`;
 
-/* ================================
-   MAIN CATEGORIES
-================================ */
+// ================== CATEGORIES ==================
 export const fetchCategories = async () => {
   const { data } = await axios.get(`${API_BASE}/`);
   if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch categories");
 };
 
-/* ================================
-   SUB-CATEGORIES
-================================ */
+export const fetchCategoryById = async (id) => {
+  const { data } = await axios.get(`${API_BASE}/${id}`);
+  if (data.success) return data.data;
+  throw new Error(data.message || "Failed to fetch category");
+};
+
+// ================== SUB‑CATEGORIES ==================
 export const fetchSubCategoriesByCategoryId = async (categoryId) => {
-  const { data } = await axios.get(`${API_BASE}/${categoryId}/sub-categories`);
+  const { data } = await axios.get(
+    `${API_BASE}/${categoryId}/sub-categories`,
+    { meta: { silent: true } } // ما تظهر شاشة التحميل
+  );
   if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch sub-categories");
 };
 
-/* ================================
-   SUB-SUB-CATEGORIES
-================================ */
-/**
- * Fetch all sub-sub-categories by sub-category ID
- */
+// ================== SUB‑SUB BY SUB‑CATEGORY ==================
 export const fetchSubSubCategoriesBySubId = async (subCategoryId) => {
   const { data } = await axios.get(
-    `${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`
+    `${API_BASE}/sub-category/${subCategoryId}/sub-sub-categories`,
+    { meta: { silent: true } }
   );
   if (data.success) return data.data;
-  throw new Error(data.message || "Failed to fetch sub-sub-categories");
+  throw new Error(
+    data.message || "Failed to fetch sub-sub-categories by sub-category"
+  );
 };
 
+// ================== ✅ SUB‑SUB BY CATEGORY ==================
+/**
+ * ترجع كل الـ sub‑sub‑categories التابعة لكاتيجوري معيّن
+ * 1) نجيب 3 ساب كاتيجوري للكاتيجوري
+ * 2) لكل واحد نجيب ساب‑ساب تبعه
+ * 3) نعمل flatten للمصفوفات ونرجعها
+ */
+export const fetchSubSubCategoriesByCategoryId = async (categoryId) => {
+  try {
+    // 1) sub‑categories للكاتيجوري
+    const subs = await fetchSubCategoriesByCategoryId(categoryId);
+    const subsArray = Array.isArray(subs) ? subs : [];
 
-export const fetchSubSubCategoriesByCategoryId = fetchSubSubCategoriesBySubId;
+    if (!subsArray.length) return [];
+
+    // 2) نجيب sub‑sub لكل sub‑category (على التوازي)
+    const results = await Promise.all(
+      subsArray.map((sub) =>
+        fetchSubSubCategoriesBySubId(sub.id).catch((err) => {
+          console.error(
+            "fetchSubSubCategoriesByCategoryId: failed for sub",
+            sub.id,
+            err
+          );
+          return [];
+        })
+      )
+    );
+
+    // 3) ندمج كل النتائج في مصفوفة واحدة
+    return results.reduce(
+      (all, arr) => all.concat(Array.isArray(arr) ? arr : []),
+      []
+    );
+  } catch (err) {
+    console.error(
+      "fetchSubSubCategoriesByCategoryId: failed for category",
+      categoryId,
+      err
+    );
+    return [];
+  }
+};
