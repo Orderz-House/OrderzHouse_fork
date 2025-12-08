@@ -219,109 +219,84 @@ function Column({ title, items, onMove, status }) {
 }
 
 function FreelancerTasks() {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { token } = useSelector((s) => s.auth);
 
-  const columns = useMemo(
-    () => ({
-      todo: rows.filter((t) => t.status === "todo"),
-      in_progress: rows.filter((t) => t.status === "in_progress"),
-      review: rows.filter((t) => t.status === "review"),
-      done: rows.filter((t) => t.status === "done"),
-    }),
-    [rows]
-  );
+  // نفس البيانات لكن نعرضها ككروت من PeopleTable
+  const columns = [
+    { label: "Title", key: "title" },
+    { label: "Project", key: "project_name" },
+    { label: "Client", key: "client_name" },
+    { label: "Due date", key: "due_date" },
+    { label: "Priority", key: "priority" },
+    { label: "Status", key: "status" },
+  ];
 
-  useEffect(() => {
-    let ignore = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get("/api/freelancer/tasks");
-        if (!ignore) setRows(Array.isArray(data) ? data : data?.items ?? []);
-      } catch {
-        if (!ignore) setRows([]);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    })();
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  const moveTo = async (task, status) => {
-    const id = task.id ?? task._id;
-    setRows((arr) =>
-      arr.map((t) => ((t.id ?? t._id) === id ? { ...t, status } : t))
-    );
-    try {
-      await api.put(`/api/freelancer/tasks/${id}`, { status });
-    } catch {
-      setRows((arr) =>
-        arr.map((t) =>
-          (t.id ?? t._id) === id ? { ...t, status: task.status } : t
-        )
-      );
-      alert("Failed to update status");
-    }
-  };
+  // شِيبس بسيطة لتصفية الستاتس من أعلى الجدول (اختياري)
+  const chips = [
+    { label: "All", value: "" },
+    { label: "To do", value: "todo" },
+    { label: "In progress", value: "in_progress" },
+    { label: "Review", value: "review" },
+    { label: "Done", value: "done" },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold" style={{ color: themeDark }}>
-            My tasks
-          </h1>
-          <p className="text-slate-600 text-sm">
-            Drag-free lightweight kanban to manage your work.
-          </p>
-        </div>
+    <PeopleTable
+      /* العنوان */
+      title="My tasks"
 
-        <a
-          href="/tasks/create"
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm"
-          style={{ backgroundColor: primary }}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add task</span>
-        </a>
-      </div>
+      /* مصدر البيانات للفريلانسر */
+      endpoint="/api/freelancer/tasks"
+      token={token}
 
-      {loading ? (
-        <div className="p-8 text-center text-slate-500">
-          <Loader2 className="inline-block animate-spin mr-2" /> Loading…
-        </div>
-      ) : (
-        <div className="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Column
-            title="To do"
-            items={columns.todo}
-            onMove={moveTo}
-            status="todo"
-          />
-          <Column
-            title="In progress"
-            items={columns.in_progress}
-            onMove={moveTo}
-            status="in_progress"
-          />
-          <Column
-            title="Review"
-            items={columns.review}
-            onMove={moveTo}
-            status="review"
-          />
-          <Column
-            title="Done"
-            items={columns.done}
-            onMove={moveTo}
-            status="done"
-          />
+      /* أعمدة الجدول */
+      columns={columns}
+      formFields={[]}
+
+      /* عرض كروت على الديسكتوب والموبايل */
+      desktopAsCards
+      mobileAsCards
+
+      /* فلترة حسب الـ status عن طريق الشيبس */
+      chips={chips}
+      chipField="status"
+
+      /* لا نحتاج CRUD للفريلانسر هنا */
+      crudConfig={{ showDetails: false, showRowEdit: false, showDelete: false }}
+      hideCrudActions
+
+      /* النص الصغير تحت عنوان الكارد */
+      renderSubtitle={(task) => (
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-500">
+          {task.project_name && (
+            <span className="inline-flex items-center gap-1">
+              <FolderKanban className="w-3.5 h-3.5" />
+              {task.project_name}
+            </span>
+          )}
+          {task.client_name && (
+            <span className="inline-flex items-center gap-1">
+              <User2 className="w-3.5 h-3.5" />
+              {task.client_name}
+            </span>
+          )}
+          {task.due_date && (
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="w-3.5 h-3.5" />
+              {new Date(task.due_date).toLocaleDateString()}
+            </span>
+          )}
         </div>
       )}
-    </div>
+
+      /* عند الضغط على الكارد يفتح صفحة تفاصيل التاسك */
+      onCardClick={(row, helpers) => {
+        const id = helpers.getId(row);
+        if (!id) return;
+        navigate(`/freelancer/tasks/${id}`);
+      }}
+    />
   );
 }
 
