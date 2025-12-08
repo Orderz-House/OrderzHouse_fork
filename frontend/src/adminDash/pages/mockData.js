@@ -1,4 +1,4 @@
-export const MOCK_ENABLED = false;
+export const MOCK_ENABLED = true;
 
 /* ============= Existing mocks ============= */
 const mockCategories = [

@@ -1,21 +1,34 @@
 import express from "express";
-// import rateLimit from "express-rate-limit";
 import "./models/db.js";
 import cors from "cors";
-// import { Server } from "socket.io";
 import http from "http";
 import dotenv from "dotenv";
+import cron from "node-cron";
+
+// Cron jobs
 import "./cron/expireSubscriptions.js";
 import "./cron/autoExpireOldOffers.js";
 import { registerOfferExpirationCronJob } from "./cron/offerExpirationReminder.js"; // Import our new cron job
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
+import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
+import liveScreenRoutes from "./router/LiveScreen.js";
 
+dotenv.config();
 
+// Start real-time deadline watcher
 startDeadlineWatcher();
 registerOfferExpirationCronJob(); // Register our new cron job
 
+// delete permanently after 30 days
+cron.schedule("*/1 * * * *", async () => {
+console.log("Running cleanupDeactivatedUsers cron job...");
+  await cleanupDeactivatedUsers();
+});
+
+
 
 // Routers
+import SubscriptionRouter from "./router/subscription.js";
 import CoursesRouter from "./router/course.js";
 import assignmentsRouter from "./router/assignments.js";
 import VerificationRouter from "./router/verification.js";
@@ -51,12 +64,20 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 app.use(express.json());
+
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "https://orderzhouse.com",
+    "http://localhost:5173",
+    "http://localhost:5174"
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+
+
 
 // Rate limiter (optional)
 /*
@@ -79,13 +100,12 @@ app.use("/category" , categoriesRouter);
 app.use("/tasks", tasksRouter);
 app.use("/offers", offersRouter);
 //app.use("/analytics", analyticsRoutes);
-app.use("/category", categoriesRouter);
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/plans", plansRouter);
 app.use("/logs", logsRouter);
 app.use("/courses", CoursesRouter);
-app.use("/subscriptions", subscriptionsRouter);
+app.use("/subscriptions", SubscriptionRouter);
 app.use("/chats", chatsRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/auth", authRouter);
@@ -93,7 +113,7 @@ app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
 app.use("/chat", chatsRouter);
-
+app.use("/api", liveScreenRoutes);
 let server, io;
 
 if (process.env.NODE_ENV !== "test") {

@@ -116,7 +116,7 @@ export const recordOfflinePaymentApi = async (projectId, file, token, amount) =>
   formData.append("amount", amount);
 
   const { data } = await axios.post(
-    `http://localhost:5000/payments/offline/record/${projectId}`,
+    `https://orderzhouse-backend.onrender.com/payments/offline/record/${projectId}`,
     formData,
     {
       headers: {

@@ -10,7 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import PeopleTable from "../Tables";
-import { MOCK_ENABLED, mockFetch } from "../mockData"; // 👈 جديد
+import { MOCK_ENABLED, mockFetch } from "../mockData"; // 👈 موك
 
 /* ---------- theme tokens ---------- */
 const T = {
@@ -24,8 +24,14 @@ const ringStyle = { border: `1px solid ${T.ring}` };
 const card = "rounded-2xl bg-white/80 backdrop-blur shadow-sm p-4 sm:p-5";
 
 /* ---------- helpers ---------- */
-const mapRole = (roleId) =>
-  roleId === 1 ? "admin" : roleId === 2 ? "client" : roleId === 3 ? "freelancer" : "user";
+// 1 = admin, 2 = client, 3 = freelancer, 5 = partner
+const mapRole = (roleId) => {
+  if (roleId === 1) return "admin";
+  if (roleId === 2) return "client";
+  if (roleId === 3) return "freelancer";
+  if (roleId === 5) return "partner";
+  return "user";
+};
 
 const fmtMoney = (n, c = "USD") =>
   new Intl.NumberFormat(undefined, {
@@ -36,9 +42,10 @@ const fmtMoney = (n, c = "USD") =>
 
 /* ---------- endpoints per-role ---------- */
 const endpoints = {
-  admin: { url: "/payments" },
-  client: { url: "/client/payments" },
-  freelancer: { url: "/freelancer/payments" },
+  admin: { url: "/payments" }, // كل الحركات
+  client: { url: "/client/payments" }, // تاريخ العميل
+  freelancer: { url: "/freelancer/payments" }, // تاريخ الفريلانسر
+  partner: { url: "/partner/payments" }, // تاريخ البارتنر (role_id = 5)
   user: { url: "/payments" },
 };
 
@@ -127,13 +134,21 @@ export default function Payments() {
     };
   }, [role, token]);
 
+  // فلترة محلية بسيطة (لو حابب تستخدمها للبحث أو الفلاتر)
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     return rows.filter((it) => {
       const matchQ =
-        !t || Object.values(it).some((v) => String(v ?? "").toLowerCase().includes(t));
-      const matchStatus = status === "all" || String(it.status).toLowerCase() === status;
-      const matchMethod = method === "all" || String(it.method).toLowerCase() === method;
+        !t ||
+        Object.values(it).some((v) =>
+          String(v ?? "")
+            .toLowerCase()
+            .includes(t)
+        );
+      const matchStatus =
+        status === "all" || String(it.status).toLowerCase() === status;
+      const matchMethod =
+        method === "all" || String(it.method).toLowerCase() === method;
       return matchQ && matchStatus && matchMethod;
     });
   }, [rows, q, status, method]);
@@ -145,8 +160,11 @@ export default function Payments() {
       ? "Billing"
       : role === "freelancer"
       ? "Earnings"
+      : role === "partner"
+      ? "Partner payments"
       : "Payments";
 
+  // فلاتر إضافية للـ admin فقط (لو حابب تستخدمها في PeopleTable)
   const filters =
     role === "admin"
       ? [
@@ -163,28 +181,33 @@ export default function Payments() {
   /* ======== ـFreelancer ======== */
   const available =
     totals?.available ??
-    (Number(totals?.earned || 0) -
+    Number(totals?.earned || 0) -
       Number(totals?.clearing || 0) -
-      Number(totals?.withdrawn || 0));
+      Number(totals?.withdrawn || 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-      {/* كروت الفريلانسر من بيانات الموك */}
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden py-6">
+      {/* كروت الفريلانسر (الرصيد الكلي + القابل للسحب) */}
       {role === "freelancer" && (
-        <div className="grid gap-3 sm:gap-4 grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 grid-cols-1 md:grid-cols-2 mx-4">
           <Kpi
-            title="Total balance"
+            title="TOTAL BALANCE"
             value={fmtMoney(totals?.earned ?? 0)}
-            icon={<DollarSign />}
+            icon={<DollarSign className="w-5 h-5" />}
+            caption="All earnings including pending"
+            trend="+12%"
           />
           <Kpi
-            title="Withdrawable"
+            title="AVAILABLE TO WITHDRAW"
             value={fmtMoney(available)}
-            icon={<CreditCard />}
+            icon={<CreditCard className="w-5 h-5" />}
+            caption="Ready to cash out"
+            trend="+7%"
           />
         </div>
       )}
 
+      {/* جدول الـ history لكل الرولات */}
       <PeopleTable
         title={tableTitle}
         addLabel="Add Payment"
@@ -200,18 +223,48 @@ export default function Payments() {
 }
 
 /* ================= UI bits ================= */
-function Kpi({ icon, title, value }) {
+function Kpi({ icon, title, value, caption, trend }) {
   return (
-    <div className={`${card} flex items-center gap-3`} style={ringStyle}>
+    <div
+      className={`${card} flex items-center sm:items-start gap-4`}
+      style={ringStyle}
+    >
+      {/* المربع الفاتح مع الأيقونة */}
       <div
-        className="w-10 h-10 grid place-items-center rounded-xl text-white"
-        style={{ background: T.primary }}
+        className="shrink-0 w-12 h-12 rounded-[1.1rem] flex items-center justify-center"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(2,195,154,0.15), rgba(2,128,144,0.06))",
+        }}
       >
-        {icon}
+        <div className="w-7 h-7 rounded-xl bg-white/80 flex items-center justify-center text-[#028090]">
+          {icon}
+        </div>
       </div>
-      <div>
-        <div className="text-slate-500 text-xs">{title}</div>
-        <div className="text-lg font-semibold text-slate-800">{value}</div>
+
+      {/* النصوص */}
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
+          {title}
+        </div>
+
+        <div className="mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-semibold text-slate-900 truncate">
+            {value}
+          </div>
+
+          {trend && (
+            <span className="text-xs font-semibold text-emerald-600">
+              {trend}
+            </span>
+          )}
+        </div>
+
+        {caption && (
+          <p className="mt-1 text-xs text-slate-500 leading-snug">
+            {caption}
+          </p>
+        )}
       </div>
     </div>
   );

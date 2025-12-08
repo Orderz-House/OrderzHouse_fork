@@ -23,6 +23,9 @@ import Analytics from "../pages/insights/Analytics.jsx";
 import Tasks from "../pages/operation/Tasks.jsx";
 import Profile from "../pages/Profile.jsx";
 
+// 👇 استيراد صفحة الإعدادات
+import AccountSettings from "../../components/profile/AccountSettings.jsx";
+
 function ProjectsSwitch() {
   const { pathname } = useLocation();
 
@@ -40,7 +43,6 @@ function ProjectsSwitch() {
   return <Navigate to="/admin/operation/projects" replace />;
 }
 
-
 export default function AdminRouter() {
   return (
     <Routes>
@@ -52,6 +54,7 @@ export default function AdminRouter() {
         <Route path="people/admins" element={<Admins />} />
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
+
         <Route path="learning/courses" element={<Courses />} />
         <Route path="learning/categories" element={<Categories />} />
         <Route path="learning/categories/:categoryId" element={<SubCategories />} />
@@ -59,6 +62,7 @@ export default function AdminRouter() {
           path="learning/categories/:categoryId/sub/:subCategoryId"
           element={<SubSubCategories />}
         />
+
         <Route path="operation/verifications" element={<Verifications />} />
 
         <Route path="operation/projects" element={<AdminProjects />} />
@@ -69,7 +73,10 @@ export default function AdminRouter() {
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
         <Route path="analytics" element={<Analytics />} />
+
+        {/* Profile & Settings */}
         <Route path="profile" element={<Profile />} />
+        <Route path="settings" element={<AccountSettings />} /> {/* 👈 هون الإضافة */}
 
         {/* generic sections —  /admin  /client  /freelancer */}
         <Route path="projects" element={<ProjectsSwitch />} />
