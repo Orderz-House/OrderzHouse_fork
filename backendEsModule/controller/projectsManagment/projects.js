@@ -9,15 +9,11 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
-
 /**
  * @param {Buffer} buffer 
  * @param {String} folder 
  * @returns {Promise<{secure_url: string, public_id: string}>}
- * 
- * 
  */
-
 export const uploadProjectMedia = upload.fields([
   { name: "cover_pic", maxCount: 1 },
   { name: "project_files", maxCount: 10 },
@@ -36,8 +32,6 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
     stream.pipe(uploadStream);
   });
 };
-
-
 
 /* ======================================================================
    CREATE PROJECT 
@@ -137,10 +131,10 @@ export const createProject = async (req, res) => {
         user_id, category_id, sub_category_id, sub_sub_category_id,
         title, description, budget, duration_days, duration_hours,
         project_type, budget_min, budget_max, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted, admin_category
+        preferred_skills, status, completion_status, is_deleted
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,
-        $10,$11,$12,$13,$14,$15,'not_started',false,$16
+        $10,$11,$12,$13,$14,$15,'not_started',false
       ) RETURNING *;
     `;
 
@@ -160,7 +154,6 @@ export const createProject = async (req, res) => {
       hourly_rate || null,
       preferred_skills || [],
       projectStatus,
-      admin_category || null,
     ]);
 
     let project = rows[0];
@@ -228,254 +221,246 @@ export const createProject = async (req, res) => {
   }
 };
 
-
-/**
- * -------------------------------
- * SUBMIT WORK COMPLETION 
- * Statuses:
- *   pending_review     - freelancer submitted, waiting client approval
- * -------------------------------
- */
 /* ======================================================================
    CREATE ADMIN PROJECT (Role ID 4 - Admin Viewer)
 ====================================================================== */
 // Admin Viewer project creation with special categories
-export const createAdminProject = async (req, res) => {
-  try {
-    const userId = req.token?.userId;
-    const {
-      admin_category, // Government Project, CV/Resume Project, Other
-      sub_category_id,
-      sub_sub_category_id,
-      title,
-      description,
-      budget,
-      duration_type,
-      duration_days,
-      duration_hours,
-      project_type,
-      budget_min,
-      budget_max,
-      hourly_rate,
-      preferred_skills,
-      assigned_freelancer_id, // For Government and CV projects
-    } = req.body;
+// export const createAdminProject = async (req, res) => {
+//   try {
+//     const userId = req.token?.userId;
+//     const {
+//       admin_category, // Government Project, CV/Resume Project, Other
+//       sub_category_id,
+//       sub_sub_category_id,
+//       title,
+//       description,
+//       budget,
+//       duration_type,
+//       duration_days,
+//       duration_hours,
+//       project_type,
+//       budget_min,
+//       budget_max,
+//       hourly_rate,
+//       preferred_skills,
+//       assigned_freelancer_id, // For Government and CV projects
+//     } = req.body;
 
-    /* ------------------------------
-       🧩 Required Field Validation
-    ------------------------------ */
-    const missingFields = [];
-    if (!admin_category) missingFields.push("admin_category");
-    if (!['Government Project', 'CV/Resume Project', 'Other'].includes(admin_category)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid admin category. Must be 'Government Project', 'CV/Resume Project', or 'Other'",
-      });
-    }
+//     /* ------------------------------
+//        🧩 Required Field Validation
+//     ------------------------------ */
+//     const missingFields = [];
+//     if (!admin_category) missingFields.push("admin_category");
+//     if (!['Government Project', 'CV/Resume Project', 'Other'].includes(admin_category)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid admin category. Must be 'Government Project', 'CV/Resume Project', or 'Other'",
+//       });
+//     }
     
-    // For Government and CV projects, freelancer assignment is required
-    if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && !assigned_freelancer_id) {
-      missingFields.push("assigned_freelancer_id");
-    }
+//     // For Government and CV projects, freelancer assignment is required
+//     if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && !assigned_freelancer_id) {
+//       missingFields.push("assigned_freelancer_id");
+//     }
     
-    if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
-    if (!title) missingFields.push("title");
-    if (!description) missingFields.push("description");
-    if (!duration_type) missingFields.push("duration_type");
-    if (!["fixed", "hourly", "bidding"].includes(project_type))
-      missingFields.push("project_type");
+//     if (!sub_sub_category_id) missingFields.push("sub_sub_category_id");
+//     if (!title) missingFields.push("title");
+//     if (!description) missingFields.push("description");
+//     if (!duration_type) missingFields.push("duration_type");
+//     if (!["fixed", "hourly", "bidding"].includes(project_type))
+//       missingFields.push("project_type");
 
-    if (duration_type === "days" && (!duration_days || duration_days <= 0))
-      missingFields.push("duration_days");
-    if (duration_type === "hours" && (!duration_hours || duration_hours <= 0))
-      missingFields.push("duration_hours");
+//     if (duration_type === "days" && (!duration_days || duration_days <= 0))
+//       missingFields.push("duration_days");
+//     if (duration_type === "hours" && (!duration_hours || duration_hours <= 0))
+//       missingFields.push("duration_hours");
 
-    if (project_type === "fixed" && (!budget || budget <= 0))
-      missingFields.push("budget");
-    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0))
-      missingFields.push("hourly_rate");
-    if (project_type === "bidding") {
-      if (!budget_min || budget_min <= 0) missingFields.push("budget_min");
-      if (!budget_max || budget_max <= 0) missingFields.push("budget_max");
-      if (budget_max < budget_min)
-        missingFields.push("budget_max < budget_min");
-    }
+//     if (project_type === "fixed" && (!budget || budget <= 0))
+//       missingFields.push("budget");
+//     if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0))
+//       missingFields.push("hourly_rate");
+//     if (project_type === "bidding") {
+//       if (!budget_min || budget_min <= 0) missingFields.push("budget_min");
+//       if (!budget_max || budget_max <= 0) missingFields.push("budget_max");
+//       if (budget_max < budget_min)
+//         missingFields.push("budget_max < budget_min");
+//     }
 
-    if (missingFields.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
-      });
-    }
+//     if (missingFields.length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
+//       });
+//     }
 
-    /* ------------------------------
-       🧩 Length Validation
-    ------------------------------ */
-    const titleLength = title.trim().length;
-    const descLength = description.trim().length;
+//     /* ------------------------------
+//        🧩 Length Validation
+//     ------------------------------ */
+//     const titleLength = title.trim().length;
+//     const descLength = description.trim().length;
 
-    if (titleLength < 10 || titleLength > 100) {
-      return res.status(400).json({
-        success: false,
-        message: "Title must be between 10 and 100 characters.",
-      });
-    }
+//     if (titleLength < 10 || titleLength > 100) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Title must be between 10 and 100 characters.",
+//       });
+//     }
 
-    if (descLength < 100 || descLength > 2000) {
-      return res.status(400).json({
-        success: false,
-        message: "Description must be between 100 and 2000 characters.",
-      });
-    }
+//     if (descLength < 100 || descLength > 2000) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Description must be between 100 and 2000 characters.",
+//       });
+//     }
 
     /* ------------------------------
        🧩 Project Status Logic
     ------------------------------ */
-    let projectStatus = "pending";
-    if (project_type === "bidding") projectStatus = "bidding";
-    else if (["fixed", "hourly"].includes(project_type))
-      projectStatus = "pending_payment";
+//     let projectStatus = "pending";
+//     if (project_type === "bidding") projectStatus = "bidding";
+//     else if (["fixed", "hourly"].includes(project_type))
+//       projectStatus = "pending_payment";
     
-    // For Government and CV projects, set status to active since freelancer is pre-assigned
-    if (admin_category === 'Government Project' || admin_category === 'CV/Resume Project') {
-      projectStatus = "active";
-    }
+//     // For Government and CV projects, set status to active since freelancer is pre-assigned
+//     if (admin_category === 'Government Project' || admin_category === 'CV/Resume Project') {
+//       projectStatus = "active";
+//     }
 
-    const durationDaysValue = duration_type === "days" ? duration_days : null;
-    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
+//     const durationDaysValue = duration_type === "days" ? duration_days : null;
+//     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
 
-    /* ------------------------------
-       🧩 Step 1: Insert Project
-    ------------------------------ */
-    const insertQuery = `
-      INSERT INTO projects (
-        user_id, category_id, sub_category_id, sub_sub_category_id,
-        title, description, budget, duration_days, duration_hours,
-        project_type, budget_min, budget_max, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted, assigned_freelancer_id, admin_category
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, 'not_started', false, $16, $17
-      ) RETURNING *;
-    `;
+//     /* ------------------------------
+//        🧩 Step 1: Insert Project
+//     ------------------------------ */
+//     const insertQuery = `
+//       INSERT INTO projects (
+//         user_id, category_id, sub_category_id, sub_sub_category_id,
+//         title, description, budget, duration_days, duration_hours,
+//         project_type, budget_min, budget_max, hourly_rate,
+//         preferred_skills, status, completion_status, is_deleted, assigned_freelancer_id, admin_category
+//       ) VALUES (
+//         $1, $2, $3, $4, $5, $6, $7, $8, $9,
+//         $10, $11, $12, $13, $14, $15, 'not_started', false, $16, $17
+//       ) RETURNING *;
+//     `;
 
-    // Set category_id to a special admin category (we'll use 999 for admin projects)
-    const adminCategoryId = 999;
+//     // Set category_id to a special admin category (we'll use 999 for admin projects)
+//     const adminCategoryId = 999;
     
-    const { rows } = await pool.query(insertQuery, [
-      userId,
-      adminCategoryId, // Special admin category
-      sub_category_id,
-      sub_sub_category_id,
-      title.trim(),
-      description.trim(),
-      budget || null,
-      durationDaysValue,
-      durationHoursValue,
-      project_type,
-      budget_min || null,
-      budget_max || null,
-      hourly_rate || null,
-      preferred_skills || [],
-      projectStatus,
-      assigned_freelancer_id || null, // For Government and CV projects
-      admin_category || null,
-    ]);
+//     const { rows } = await pool.query(insertQuery, [
+//       userId,
+//       adminCategoryId, // Special admin category
+//       sub_category_id,
+//       sub_sub_category_id,
+//       title.trim(),
+//       description.trim(),
+//       budget || null,
+//       durationDaysValue,
+//       durationHoursValue,
+//       project_type,
+//       budget_min || null,
+//       budget_max || null,
+//       hourly_rate || null,
+//       preferred_skills || [],
+//       projectStatus,
+//       assigned_freelancer_id || null, // For Government and CV projects
+//       admin_category || null,
+//     ]);
 
-    let project = rows[0];
+//     let project = rows[0];
 
-    /* ------------------------------
-       🧩 Step 2: Upload Cover Pic
-    ------------------------------ */
-    if (req.files?.cover_pic && req.files.cover_pic.length > 0) {
-      const coverPicFile = req.files.cover_pic[0];
-      const coverPicResult = await uploadToCloudinary(
-        coverPicFile.buffer,
-        `projects/${project.id}/cover`
-      );
-      const coverPicUrl = coverPicResult.secure_url;
+//     /* ------------------------------
+//        🧩 Step 2: Upload Cover Pic
+//     ------------------------------ */
+//     if (req.files?.cover_pic && req.files.cover_pic.length > 0) {
+//       const coverPicFile = req.files.cover_pic[0];
+//       const coverPicResult = await uploadToCloudinary(
+//         coverPicFile.buffer,
+//         `projects/${project.id}/cover`
+//       );
+//       const coverPicUrl = coverPicResult.secure_url;
 
-      const { rows: updatedProject } = await pool.query(
-        `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
-        [coverPicUrl, project.id]
-      );
-      project = updatedProject[0];
-    }
+//       const { rows: updatedProject } = await pool.query(
+//         `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
+//         [coverPicUrl, project.id]
+//       );
+//       project = updatedProject[0];
+//     }
 
-    /* ------------------------------
-       🧩 Step 3: Amount to Pay
-    ------------------------------ */
-    let amountToPay = null;
-    if (project.project_type === "fixed") amountToPay = project.budget;
-    else if (project.project_type === "hourly")
-      amountToPay = (project.hourly_rate || 0) * 3;
+//     /* ------------------------------
+//        🧩 Step 3: Amount to Pay
+//     ------------------------------ */
+//     let amountToPay = null;
+//     if (project.project_type === "fixed") amountToPay = project.budget;
+//     else if (project.project_type === "hourly")
+//       amountToPay = (project.hourly_rate || 0) * 3;
 
-    if (amountToPay !== null) {
-      const { rows: updated } = await pool.query(
-        `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
-        [amountToPay, project.id]
-      );
-      project = updated[0];
-    }
+//     if (amountToPay !== null) {
+//       const { rows: updated } = await pool.query(
+//         `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
+//         [amountToPay, project.id]
+//       );
+//       project = updated[0];
+//     }
 
-    /* ------------------------------
-       🧩 Step 4: Assign Freelancer for Government/CV Projects
-    ------------------------------ */
-    if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
-      // Create project assignment
-      const assignedAt = new Date();
-      await pool.query(
-        `INSERT INTO project_assignments 
-          (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
-         VALUES ($1, $2, $3, 'active', 'admin_assigned', true)
-         RETURNING *`,
-        [project.id, assigned_freelancer_id, assignedAt]
-      );
+//     /* ------------------------------
+//        🧩 Step 4: Assign Freelancer for Government/CV Projects
+//     ------------------------------ */
+//     if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
+//       // Create project assignment
+//       const assignedAt = new Date();
+//       await pool.query(
+//         `INSERT INTO project_assignments 
+//           (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
+//          VALUES ($1, $2, $3, 'active', 'admin_assigned', true)
+//          RETURNING *`,
+//         [project.id, assigned_freelancer_id, assignedAt]
+//       );
       
-      // Update project status
-      await pool.query(
-        `UPDATE projects SET status = 'active' WHERE id = $1`,
-        [project.id]
-      );
-    }
+//       // Update project status
+//       await pool.query(
+//         `UPDATE projects SET status = 'active' WHERE id = $1`,
+//         [project.id]
+//       );
+//     }
 
-    /* ------------------------------
-       🧩 Step 5: Logs & Notifications
-    ------------------------------ */
-    await LogCreators.projectOperation(
-      userId,
-      ACTION_TYPES.PROJECT_CREATE,
-      project.id,
-      true,
-      { title: project.title, category: admin_category }
-    );
+//     /* ------------------------------
+//        🧩 Step 5: Logs & Notifications
+//     ------------------------------ */
+//     await LogCreators.projectOperation(
+//       userId,
+//       ACTION_TYPES.PROJECT_CREATE,
+//       project.id,
+//       true,
+//       { title: project.title, category: admin_category }
+//     );
 
-    try {
-      await NotificationCreators.projectCreated(
-        project.id,
-        project.title,
-        userId,
-        adminCategoryId
-      );
+//     try {
+//       await NotificationCreators.projectCreated(
+//         project.id,
+//         project.title,
+//         userId,
+//         adminCategoryId
+//       );
       
-      // Notify assigned freelancer for Government/CV projects
-      if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
-        await NotificationCreators.freelancerAssigned(
-          assigned_freelancer_id,
-          project.id,
-          project.title
-        );
-      }
-    } catch (err) {
-      console.error("Error creating project notifications:", err);
-    }
+//       // Notify assigned freelancer for Government/CV projects
+//       if ((admin_category === 'Government Project' || admin_category === 'CV/Resume Project') && assigned_freelancer_id) {
+//         await NotificationCreators.freelancerAssigned(
+//           assigned_freelancer_id,
+//           project.id,
+//           project.title
+//         );
+//       }
+//     } catch (err) {
+//       console.error("Error creating project notifications:", err);
+//     }
 
-    return res.status(201).json({ success: true, project });
-  } catch (error) {
-    console.error("createAdminProject error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
+//     return res.status(201).json({ success: true, project });
+//   } catch (error) {
+//     console.error("createAdminProject error:", error);
+//     return res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
 
 /**
  * -------------------------------
@@ -541,15 +526,40 @@ export const completeHourlyProject = async (req, res) => {
   try {
     const { projectId } = req.params;
     const { total_hours } = req.body;
+    const userId = req.token?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (typeof total_hours !== "number" || total_hours < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "total_hours must be a non-negative number",
+      });
+    }
 
     const { rows: projectRows } = await pool.query(
-      `SELECT * FROM projects WHERE id = $1`,
+      `SELECT * FROM projects WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
-    if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
 
     const project = projectRows[0];
-    if (project.project_type !== "hourly") return res.status(400).json({ success: false, message: "Not an hourly project" });
+
+    // ✅ تأكد إن اللي يكمّل المشروع هو صاحب المشروع نفسه
+    if (String(project.user_id) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the project owner can complete this hourly project",
+      });
+    }
+
+    if (project.project_type !== "hourly") {
+      return res.status(400).json({ success: false, message: "Not an hourly project" });
+    }
 
     const prepaidHours = project.prepaid_hours || 3;
     const hourlyRate = project.hourly_rate;
@@ -561,19 +571,39 @@ export const completeHourlyProject = async (req, res) => {
     const finalAmount = total_hours * hourlyRate;
 
     const { rows: updated } = await pool.query(
-      `UPDATE projects SET total_hours = $1, amount_to_pay = $2, status = 'completed' WHERE id = $3 RETURNING *`,
+      `UPDATE projects 
+         SET total_hours = $1, amount_to_pay = $2, status = 'completed' 
+       WHERE id = $3 
+       RETURNING *`,
       [total_hours, finalAmount, projectId]
     );
 
-    if (refundAmount > 0) await pool.query(`UPDATE wallets SET balance = balance + $1 WHERE user_id = $2`, [refundAmount, project.user_id]);
-    if (extraPayment > 0) await pool.query(`UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`, [extraPayment, project.user_id]);
+    // 💰 تعديل رصيد محفظة العميل
+    if (refundAmount > 0) {
+      await pool.query(
+        `UPDATE wallets SET balance = balance + $1 WHERE user_id = $2`,
+        [refundAmount, project.user_id]
+      );
+    }
+    if (extraPayment > 0) {
+      await pool.query(
+        `UPDATE wallets SET balance = balance - $1 WHERE user_id = $2`,
+        [extraPayment, project.user_id]
+      );
+    }
 
-    return res.status(200).json({ success: true, project: updated[0], refund: refundAmount || null, extra_payment: extraPayment || null });
+    return res.status(200).json({
+      success: true,
+      project: updated[0],
+      refund: refundAmount || null,
+      extra_payment: extraPayment || null,
+    });
   } catch (error) {
     console.error("completeHourlyProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 /**
  * -------------------------------
  * GET AVAILABLE FREELANCERS (Not currently working)
@@ -599,7 +629,7 @@ export const getRelatedFreelancers = async (req, res) => {
           WHERE 
             pa.freelancer_id = u.id
             AND pa.status IN ('active', 'in_progress')
-            AND p.completion_status IN ('in_progress', 'in_progress', 'pending_review')
+            AND p.completion_status IN ('in_progress', 'pending_review')
             AND p.is_deleted = false
         )
       ORDER BY u.id DESC;
@@ -679,7 +709,9 @@ export const resubmitWorkCompletion = async (req, res) => {
       [projectId]
     );
 
-    if (!projectRows.length) return res.status(404).json({ success: false, message: "Project not found" });
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
     const project = projectRows[0];
 
     if (project.assigned_freelancer_id !== freelancerId) {
@@ -690,31 +722,46 @@ export const resubmitWorkCompletion = async (req, res) => {
       return res.status(400).json({ success: false, message: "Project is not requesting revision" });
     }
 
-    let uploadedFiles = [];
-    for (let file of files) {
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto", folder: `projects/${projectId}` },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        uploadStream.end(file.buffer);
+    // ✅ رفع الملفات باستخدام uploadToCloudinary وتخزين معلومات كاملة متطابقة مع سكيمة project_files
+    const uploadedFiles = [];
+
+    for (const file of files) {
+      const result = await uploadToCloudinary(
+        file.buffer,
+        `projects/${projectId}`
+      );
+
+      uploadedFiles.push({
+        file_name: file.originalname,
+        file_size: file.size,
+        file_url: result.secure_url,
+        public_id: result.public_id,
       });
-      uploadedFiles.push({ url: result.secure_url, public_id: result.public_id });
     }
 
     // Update project status
     await pool.query(
-      `UPDATE projects SET completion_status = 'pending_review', completion_requested_at = NOW() WHERE id = $1`,
+      `UPDATE projects 
+         SET completion_status = 'pending_review', 
+             completion_requested_at = NOW() 
+       WHERE id = $1`,
       [projectId]
     );
 
-    for (let fileData of uploadedFiles) {
+    // ✅ إدخال الملفات بنفس الأعمدة المستخدمة في addProjectFiles
+    for (const fileData of uploadedFiles) {
       await pool.query(
-        `INSERT INTO project_files (project_id, file_url, public_id, uploaded_by) VALUES ($1, $2, $3, $4)`,
-        [projectId, fileData.url, fileData.public_id, freelancerId]
+        `INSERT INTO project_files 
+          (project_id, sender_id, file_name, file_url, file_size, public_id) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          projectId,
+          freelancerId,
+          fileData.file_name,
+          fileData.file_url,
+          fileData.file_size,
+          fileData.public_id,
+        ]
       );
     }
 
@@ -724,15 +771,29 @@ export const resubmitWorkCompletion = async (req, res) => {
       [projectId, freelancerId, "Freelancer resubmitted after revision request"]
     );
 
-    await LogCreators.projectOperation(freelancerId, ACTION_TYPES.PROJECT_STATUS_CHANGE, projectId, true, { action: "revision_resubmitted" });
+    await LogCreators.projectOperation(
+      freelancerId,
+      ACTION_TYPES.PROJECT_STATUS_CHANGE,
+      projectId,
+      true,
+      { action: "revision_resubmitted" }
+    );
 
     try {
-      await NotificationCreators.workResubmittedForReview(projectId, project.title, freelancerId);
+      await NotificationCreators.workResubmittedForReview(
+        projectId,
+        project.title,
+        freelancerId
+      );
     } catch (notifErr) {
       console.error("Notification error:", notifErr);
     }
 
-    return res.json({ success: true, message: "Revision resubmitted", files: uploadedFiles });
+    return res.json({
+      success: true,
+      message: "Revision resubmitted",
+      files: uploadedFiles,
+    });
   } catch (err) {
     console.error("resubmitWorkCompletion error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -771,13 +832,9 @@ export const addProjectFiles = async (req, res) => {
   }
 };
 
-
 /**
  * -------------------------------
  * INVITE FREELANCER TO PROJECT
- * -------------------------------
- * Client sends an invitation → Project gets linked to freelancer,
- * but stays pending until freelancer accepts.
  * -------------------------------
  */
 export const assignFreelancer = async (req, res) => {
@@ -910,7 +967,6 @@ export const assignFreelancer = async (req, res) => {
   }
 };
 
-
 /**
  * -------------------------------
  * FREELANCER ACCEPT ASSIGNMENT
@@ -970,7 +1026,6 @@ export const acceptAssignment = async (req, res) => {
   }
 };
 
-
 /**
  * -------------------------------
  * FREELANCER REJECT ASSIGNMENT
@@ -1010,10 +1065,6 @@ export const rejectAssignment = async (req, res) => {
 /**
  * -------------------------------
  * FREELANCER APPLY FOR ACTIVE PROJECT
- * -------------------------------
- * Freelancers can apply only for "fixed" or "hourly" projects 
- * that are already active.
- * The project remains active — client must later accept one freelancer.
  * -------------------------------
  */
 export const applyForProject = async (req, res) => {
@@ -1081,6 +1132,7 @@ export const applyForProject = async (req, res) => {
         (project_id, freelancer_id, assigned_at, status, assignment_type)
        VALUES ($1, $2, $3, 'pending_client_approval', 'by_freelancer')
        RETURNING *`,
+
       [projectId, freelancerId, assignedAt]
     );
 
@@ -1217,7 +1269,6 @@ export const approveOrRejectApplication = async (req, res) => {
   }
 };
 
-
 export const getApplicationsForMyProjects = async (req, res) => {
   try {
     const ownerId = req.token?.userId;
@@ -1246,9 +1297,6 @@ export const getApplicationsForMyProjects = async (req, res) => {
 /**
  * -------------------------------
  * GET PROJECT STATUS TIMELINE
- * -------------------------------
- * Combines project, assignment, and completion info
- * to build a timeline of the project’s current lifecycle.
  * -------------------------------
  */
 export const getProjectTimeline = async (req, res) => {
