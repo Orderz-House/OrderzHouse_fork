@@ -1,15 +1,18 @@
-
 import pool from "../../models/db.js";
 
+/**
+ * Get full assignment details for freelancer on a specific project
+ */
 export const getAssignmentForFreelancer = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const freelancerId = req.token?.userId; 
+    const freelancerId = req.token?.userId;
 
     if (!projectId || !freelancerId) {
-      return res
-        .status(400)
-        .json({ success: false, message: "projectId and freelancerId are required" });
+      return res.status(400).json({
+        success: false,
+        message: "projectId and freelancerId are required",
+      });
     }
 
     const { rows } = await pool.query(
@@ -38,7 +41,11 @@ export const getAssignmentForFreelancer = async (req, res) => {
         p.cover_pic,
         p.user_id AS client_id,
         u.username AS client_username,
-        COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.username, 'Anonymous') AS client_fullname,
+        COALESCE(
+          NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''),
+          u.username,
+          'Anonymous'
+        ) AS client_fullname,
         u.email AS client_email
       FROM project_assignments pa
       JOIN projects p ON pa.project_id = p.id
@@ -50,18 +57,24 @@ export const getAssignmentForFreelancer = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "No assignment found for this project" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No assignment found for this project" });
     }
 
     return res.status(200).json({ success: true, assignment: rows[0] });
   } catch (err) {
     console.error("getAssignmentForFreelancer error:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
 /**
- * Check if a freelancer is assigned to a given project
+ * Simple check: is this freelancer assigned to this project?
  */
 export const checkIfAssigned = async (req, res) => {
   try {
@@ -76,7 +89,8 @@ export const checkIfAssigned = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT 1 FROM project_assignments 
+      `SELECT 1 
+       FROM project_assignments 
        WHERE project_id = $1 AND freelancer_id = $2 
        LIMIT 1`,
       [projectId, freelancerId]
@@ -87,8 +101,10 @@ export const checkIfAssigned = async (req, res) => {
     return res.status(200).json({ success: true, is_assigned: isAssigned });
   } catch (err) {
     console.error("checkIfAssigned error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };

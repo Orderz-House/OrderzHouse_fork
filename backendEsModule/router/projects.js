@@ -3,29 +3,24 @@ import multer from "multer";
 
 import { authentication } from "../middleware/authentication.js";
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
-// import adminViewerOnly from "../middleware/adminViewerOnly.js";
-// import handleJsonOrForm from "../middleware/handleJsonOrForm.js";
 
 import {
   createProject,
-  // createAdminProject,
   uploadProjectMedia,
-  getRelatedFreelancers,
-  completeHourlyProject,
-  approveWorkCompletion,
-  resubmitWorkCompletion,
-  addProjectFiles,
   assignFreelancer,
-  acceptAssignment,
-  rejectAssignment,
   applyForProject,
   approveOrRejectApplication,
+  acceptAssignment,
+  rejectAssignment,
   getApplicationsForMyProjects,
+  approveWorkCompletion,
+  resubmitWorkCompletion,
+  completeHourlyProject,
+  addProjectFiles,
+  deleteProjectByOwner,
   getProjectTimeline,
-  // admin helpers
+  getRelatedFreelancers,
   getAllFreelancers,
-  getAllProjectsForAdmin,
-  reassignFreelancer,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -38,6 +33,7 @@ import {
   getProjectById,
   getProjectsByUserRole,
   getProjectFilesByProjectId,
+  getPublicCategories,
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 import { submitWorkCompletion } from "../controller/payments.js";
@@ -45,40 +41,28 @@ import { submitWorkCompletion } from "../controller/payments.js";
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-/* --------------------------------
-   CREATE PROJECTS
---------------------------------- */
+/* ======================================================================
+   1) CREATE + MY PROJECTS
+====================================================================== */
 
 projectsRouter.post(
   "/",
   authentication,
-  uploadProjectMedia,
+  uploadProjectMedia, 
   createProject
 );
 
-// مشروع عن طريق admin viewer (لو فعلته)
-// projectsRouter.post(
-//   "/admin",
-//   authentication,
-//   adminViewerOnly,
-//   handleJsonOrForm,
-//   createAdminProject
-// );
-
-// projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
-
-/* --------------------------------
-   DELETE (SOFT DELETE) PROJECT BY OWNER
---------------------------------- */
+projectsRouter.get(
+  "/myprojects",
+  authentication,
+  getProjectsByUserRole
+);
 
 projectsRouter.delete(
   "/myprojects/:projectId",
   authentication,
   async (req, res, next) => {
     try {
-      const { deleteProjectByOwner } = await import(
-        "../controller/projectsManagment/projects.js"
-      );
       return deleteProjectByOwner(req, res, next);
     } catch (err) {
       return next(err);
@@ -86,59 +70,34 @@ projectsRouter.delete(
   }
 );
 
-/* --------------------------------
-   SINGLE PROJECT / BASIC ACTIONS
---------------------------------- */
+/* ======================================================================
+   2) ASSIGNMENT / APPLY
+====================================================================== */
 
-// Get project by id
-projectsRouter.get("/:projectId", authentication, getProjectById);
-
-// Complete hourly project (client side)
-projectsRouter.put(
-  "/hourly/:projectId",
-  authentication,
-  completeHourlyProject
-);
-
-// Invite specific freelancer to this project
 projectsRouter.post(
   "/:projectId/assign",
   authentication,
   assignFreelancer
 );
 
-// Get all files for project (any authorized user)
+projectsRouter.post(
+  "/:projectId/apply",
+  authentication,
+  requireVerifiedWithSubscription,
+  applyForProject
+);
+
+projectsRouter.post(
+  "/applications/decision",
+  authentication,
+  approveOrRejectApplication
+);
+
 projectsRouter.get(
-  "/:projectId/files",
+  "/applications/my-projects",
   authentication,
-  getProjectFilesByProjectId
+  getApplicationsForMyProjects
 );
-
-/* --------------------------------
-   WORK SUBMISSION (PAYMENTS)
---------------------------------- */
-
-// Submit work for review (first submit)
-projectsRouter.post(
-  "/:projectId/submit",
-  authentication,
-  requireVerifiedWithSubscription,
-  upload.array("files"),
-  submitWorkCompletion
-);
-
-// Resubmit after revision requested
-projectsRouter.post(
-  "/:projectId/resubmit",
-  authentication,
-  requireVerifiedWithSubscription,
-  upload.array("files"),
-  resubmitWorkCompletion
-);
-
-/* --------------------------------
-   ASSIGNMENT ACCEPT / REJECT
---------------------------------- */
 
 projectsRouter.post(
   "/assignments/:assignmentId/accept",
@@ -154,9 +113,25 @@ projectsRouter.post(
   rejectAssignment
 );
 
-/* --------------------------------
-   CLIENT APPROVAL / REVISION
---------------------------------- */
+/* ======================================================================
+   3) WORK SUBMIT / REVIEW / RESUBMIT
+====================================================================== */
+
+projectsRouter.post(
+  "/:projectId/submit",
+  authentication,
+  requireVerifiedWithSubscription,
+  upload.array("files"), 
+  submitWorkCompletion
+);
+
+projectsRouter.post(
+  "/:projectId/resubmit",
+  authentication,
+  requireVerifiedWithSubscription,
+  upload.array("files"),
+  resubmitWorkCompletion
+);
 
 projectsRouter.put(
   "/:projectId/approve",
@@ -164,18 +139,20 @@ projectsRouter.put(
   approveWorkCompletion
 );
 
-/* --------------------------------
-   RELATED FREELANCERS + FILE UPLOAD
---------------------------------- */
+/* ======================================================================
+   4) HOURLY PROJECT
+====================================================================== */
 
-// Get available freelancers for category
-projectsRouter.get(
-  "/categories/:categoryId/related-freelancers",
+projectsRouter.put(
+  "/hourly/:projectId",
   authentication,
-  getRelatedFreelancers
+  completeHourlyProject
 );
 
-// Add chat-style files to project (client / freelancer)
+/* ======================================================================
+   5) FILES (chat / attachments)
+====================================================================== */
+
 projectsRouter.post(
   "/:projectId/files",
   authentication,
@@ -183,66 +160,43 @@ projectsRouter.post(
   addProjectFiles
 );
 
-/* --------------------------------
-   NEW ROUTES (APPLY / APPLICATIONS / TIMELINE / ADMIN)
---------------------------------- */
-
-// Freelancer applies to active fixed/hourly project
-projectsRouter.post(
-  "/:projectId/apply",
-  authentication,
-  requireVerifiedWithSubscription,
-  applyForProject
-);
-
-// Client decides on freelancer application (accept/reject)
-projectsRouter.post(
-  "/applications/decision",
-  authentication,
-  approveOrRejectApplication
-);
-
-// Client gets all applications on his projects
 projectsRouter.get(
-  "/applications/my-projects",
+  "/:projectId/files",
   authentication,
-  getApplicationsForMyProjects
+  getProjectFilesByProjectId
 );
 
-// Project full timeline
+/* ======================================================================
+   6) TIMELINE + RELATED FREELANCERS + BASIC INFO
+====================================================================== */
+
 projectsRouter.get(
   "/:projectId/timeline",
   authentication,
   getProjectTimeline
 );
 
-// Admin: list all freelancers
+projectsRouter.get(
+  "/categories/:categoryId/related-freelancers",
+  authentication,
+  getRelatedFreelancers
+);
+
 projectsRouter.get(
   "/admin/freelancers",
   authentication,
-  // adminViewerOnly,
   getAllFreelancers
 );
 
-// Admin: list all projects
 projectsRouter.get(
-  "/admin/projects",
+  "/:projectId",
   authentication,
-  // adminViewerOnly,
-  getAllProjectsForAdmin
+  getProjectById
 );
 
-// Admin: reassign freelancer to admin project
-projectsRouter.put(
-  "/admin/projects/:projectId/reassign",
-  authentication,
-  // adminViewerOnly,
-  reassignFreelancer
-);
-
-/* --------------------------------
-   CATEGORY FILTER ROUTES (AUTH)
---------------------------------- */
+/* ======================================================================
+   7) FILTER ROUTES (AUTH) - PROJECT FILTER ROUTES
+====================================================================== */
 
 projectsRouter.get(
   "/category/:category_id",
@@ -262,9 +216,14 @@ projectsRouter.get(
   getProjectsBySubSubCategory
 );
 
-/* --------------------------------
-   PUBLIC CATEGORY ROUTES (NO AUTH)
---------------------------------- */
+/* ======================================================================
+   8) PUBLIC FILTER ROUTES (NO AUTH)
+====================================================================== */
+
+projectsRouter.get(
+  "/public/categories",
+  getPublicCategories
+);
 
 projectsRouter.get(
   "/public/category/:categoryId",
