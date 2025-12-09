@@ -48,6 +48,8 @@ import subscriptionsRouter from "./router/subscription.js";
 //import analyticsRoutes from "./router/analytics.js";
 import emailVerificationRoutes from "./router/emailVerification.js";
 import chatsRouter from "./router/chats.js";
+import StripeRouter from "./router/Stripe/stripe.js";
+import webhookRouter from "./router/Stripe/stripeWebhook.js";
 
 
 // DB connection
@@ -60,6 +62,9 @@ if (process.env.NODE_ENV !== "test") {
   app.set("trust proxy", 1);
   
 }
+
+//stripe webhook needs the raw body
+app.use("/stripe", webhookRouter);
 
 app.use(express.json());
 
@@ -112,6 +117,8 @@ app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
 app.use("/chat", chatsRouter);
 app.use("/api", liveScreenRoutes);
+app.use("/stripe", StripeRouter);
+
 let server, io;
 
 if (process.env.NODE_ENV !== "test") {

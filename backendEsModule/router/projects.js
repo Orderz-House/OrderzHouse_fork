@@ -19,8 +19,10 @@ import {
   addProjectFiles,
   deleteProjectByOwner,
   getProjectTimeline,
-  getRelatedFreelancers,
+  // admin helpers
   getAllFreelancers,
+  getAllProjectsForAdmin,
+  reassignFreelancer,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -176,27 +178,33 @@ projectsRouter.get(
   getProjectTimeline
 );
 
-projectsRouter.get(
-  "/categories/:categoryId/related-freelancers",
-  authentication,
-  getRelatedFreelancers
-);
-
+// Admin: list all freelancers
 projectsRouter.get(
   "/admin/freelancers",
   authentication,
+  // adminViewerOnly,
   getAllFreelancers
 );
 
+// Admin: list all projects
 projectsRouter.get(
-  "/:projectId",
+  "/admin/projects",
   authentication,
-  getProjectById
+  // adminViewerOnly,
+  getAllProjectsForAdmin
 );
 
-/* ======================================================================
-   7) FILTER ROUTES (AUTH) - PROJECT FILTER ROUTES
-====================================================================== */
+// Admin: reassign freelancer to admin project
+projectsRouter.put(
+  "/admin/projects/:projectId/reassign",
+  authentication,
+  // adminViewerOnly,
+  reassignFreelancer
+);
+
+/* --------------------------------
+   CATEGORY FILTER ROUTES (AUTH)
+--------------------------------- */
 
 projectsRouter.get(
   "/category/:category_id",

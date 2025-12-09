@@ -1208,53 +1208,9 @@ export const getProjectTimeline = async (req, res) => {
 ====================================================================== */
 
 /**
- * Find available freelancers related to a category
- */
-export const getRelatedFreelancers = async (req, res) => {
-  const { categoryId } = req.params;
-
-  try {
-    const { rows: freelancers } = await pool.query(
-      `
-      SELECT DISTINCT u.*
-      FROM users u
-      JOIN freelancer_categories fc ON u.id = fc.freelancer_id
-      WHERE 
-        fc.category_id = $1
-        AND u.role_id = 3
-        AND u.is_deleted = false
-        AND u.is_verified = true
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM project_assignments pa
-          JOIN projects p ON pa.project_id = p.id
-          WHERE 
-            pa.freelancer_id = u.id
-            AND pa.status IN ('active', 'in_progress')
-            AND p.completion_status IN ('in_progress', 'pending_review')
-            AND p.is_deleted = false
-        )
-      ORDER BY u.id DESC;
-      `,
-      [categoryId]
-    );
-
-    res.status(200).json({
-      success: true,
-      count: freelancers.length,
-      freelancers,
-    });
-  } catch (error) {
-    console.error("Error fetching available freelancers:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error while fetching available freelancers",
-    });
-  }
-};
-
-/**
- * Simple helper: get list of all verified freelancers (can be used by client/admin UI)
+ * -------------------------------
+ * GET ALL FREELANCERS FOR ADMIN
+ * -------------------------------
  */
 export const getAllFreelancers = async (req, res) => {
   try {
@@ -1279,6 +1235,138 @@ export const getAllFreelancers = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error while fetching freelancers",
+    });
+  }
+};
+
+/**
+ * -------------------------------
+ * GET ALL PROJECTS FOR ADMIN DASHBOARD
+ * -------------------------------
+ */
+export const getAllProjectsForAdmin = async (req, res) => {
+  try {
+    const { rows: projects } = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.title,
+        p.project_type,
+        p.status,
+        p.completion_status,
+        p.assigned_freelancer_id,
+        p.created_at,
+        p.admin_category,
+        u.username AS client_name,
+        f.username AS freelancer_name,
+        CASE 
+          WHEN p.category_id = 999 THEN 'Admin Project'
+          ELSE 'Regular Project'
+        END AS project_category
+      FROM projects p
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users f ON p.assigned_freelancer_id = f.id
+      WHERE p.is_deleted = false
+      ORDER BY p.created_at DESC
+      `
+    );
+
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      projects,
+    });
+  } catch (error) {
+    console.error("Error fetching all projects for admin:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching projects",
+    });
+  }
+};
+
+/**
+ * -------------------------------
+ * REASSIGN FREELANCER TO PROJECT (ADMIN ONLY)
+ * -------------------------------
+ */
+export const reassignFreelancer = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { freelancerId } = req.body;
+
+    // Check if project exists and is an admin project
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, category_id, title FROM projects WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+    
+    // Check if it's an admin project (category_id = 999)
+    if (project.category_id !== 999) {
+      return res.status(400).json({ success: false, message: "Only admin projects can be reassigned" });
+    }
+
+    // Check if freelancer exists and is valid
+    const { rows: freelancerRows } = await pool.query(
+      `SELECT id, role_id, is_verified FROM users WHERE id = $1 AND is_deleted = false`,
+      [freelancerId]
+    );
+
+    if (!freelancerRows.length || freelancerRows[0].role_id !== 3 || !freelancerRows[0].is_verified) {
+      return res.status(400).json({ success: false, message: "Invalid freelancer" });
+    }
+
+    // Update the project with the new assigned freelancer
+    await pool.query(
+      `UPDATE projects SET assigned_freelancer_id = $1 WHERE id = $2`,
+      [freelancerId, projectId]
+    );
+
+    // Update or create project assignment record
+    const assignedAt = new Date();
+    const { rows: existingAssignments } = await pool.query(
+      `SELECT id FROM project_assignments WHERE project_id = $1 AND freelancer_id = $2`,
+      [projectId, freelancerId]
+    );
+
+    if (existingAssignments.length > 0) {
+      // Update existing assignment
+      await pool.query(
+        `UPDATE project_assignments SET assigned_at = $1, status = 'active' WHERE project_id = $2 AND freelancer_id = $3`,
+        [assignedAt, projectId, freelancerId]
+      );
+    } else {
+      // Create new assignment
+      await pool.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, assigned_at, status, assignment_type, user_invited)
+         VALUES ($1, $2, $3, 'active', 'admin_assigned', true)`,
+        [projectId, freelancerId, assignedAt]
+      );
+    }
+
+    // Update project status to active if it's not already
+    await pool.query(
+      `UPDATE projects SET status = 'active' WHERE id = $1 AND status != 'active'`,
+      [projectId]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Freelancer reassigned successfully",
+      projectId,
+      freelancerId
+    });
+  } catch (error) {
+    console.error("Error reassigning freelancer:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while reassigning freelancer",
     });
   }
 };
