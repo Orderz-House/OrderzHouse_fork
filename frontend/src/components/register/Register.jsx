@@ -28,6 +28,7 @@ import GradientButton from "../buttons/GradientButton.jsx";
 const roles = [
   { id: 2, label: "Customer" },
   { id: 3, label: "Freelancer" },
+  { id: 5, label: "Partner" },
 ];
 
 const PRIMARY = "#028090";
@@ -288,45 +289,7 @@ const Register = () => {
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
             {!showOtpField ? (
               <form onSubmit={register} className="space-y-6">
-                {/* Profile Picture Upload */}
-                <div className="flex flex-col items-center mb-6">
-                  <div className="relative">
-                    <div className="w-28 h-28 bg-slate-100 border border-slate-200 rounded-full overflow-hidden grid place-items-center">
-                      {profile_pic_url ? (
-                        <img
-                          src={profile_pic_url}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-14 h-14 text-slate-400" />
-                      )}
-                      {uploading && (
-                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-slate-600 text-xs">
-                          Uploading…
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Upload Button */}
-                    <label
-                      htmlFor="profile-pic"
-                      className="absolute bottom-0 right-0 w-9 h-9 rounded-full text-white grid place-items-center shadow-md cursor-pointer"
-                      style={{ background: PRIMARY }}
-                    >
-                      +
-                      <input
-                        id="profile-pic"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
-                  </div>
-                  <p className="text-slate-500 text-sm mt-2">Upload profile picture (optional)</p>
-                </div>
-
+              
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* LEFT SIDE */}
                   <div className="space-y-5">

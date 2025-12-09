@@ -33,6 +33,9 @@ function ProjectsSwitch() {
   if (pathname.startsWith("/client")) {
     return <ClientsProjects />;
   }
+  if (pathname.startsWith("/partner")) {
+    return <ClientsProjects />;
+  }
 
   // /freelancer/projects -> صفحة الفريلانسر
   if (pathname.startsWith("/freelancer")) {

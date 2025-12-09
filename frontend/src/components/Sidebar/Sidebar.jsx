@@ -46,6 +46,8 @@ const Sidebar = ({
     if (roleId === 1) return "Admin";
     if (roleId === 2) return "Client";
     if (roleId === 3) return "Freelancer";
+    if (roleId === 5) return "Partner";
+
     return "Member";
   };
 
