@@ -22,10 +22,6 @@ import {
   approveOrRejectApplication,
   getApplicationsForMyProjects,
   getProjectTimeline,
-  // admin helpers
-  getAllFreelancers,
-  getAllProjectsForAdmin,
-  reassignFreelancer,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -216,29 +212,16 @@ projectsRouter.get(
   getProjectTimeline
 );
 
-// Admin: list all freelancers
-projectsRouter.get(
-  "/admin/freelancers",
-  authentication,
-  // adminViewerOnly,
-  getAllFreelancers
-);
 
-// Admin: list all projects
-projectsRouter.get(
-  "/admin/projects",
-  authentication,
-  // adminViewerOnly,
-  getAllProjectsForAdmin
-);
+// // Admin: list all projects
+// projectsRouter.get(
+//   "/admin/projects",
+//   authentication,
+//   // adminViewerOnly,
+//   getAllProjectsForAdmin
+// );
 
-// Admin: reassign freelancer to admin project
-projectsRouter.put(
-  "/admin/projects/:projectId/reassign",
-  authentication,
-  // adminViewerOnly,
-  reassignFreelancer
-);
+
 
 /* --------------------------------
    CATEGORY FILTER ROUTES (AUTH)
