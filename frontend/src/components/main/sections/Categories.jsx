@@ -23,7 +23,7 @@ export default function CategoriesShowcase({
   loop = false,
 }) {
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_APP_API_URL; 
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   const handleSelect = useCallback(
     (cat) => {
@@ -43,16 +43,22 @@ export default function CategoriesShowcase({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`${API_BASE}/category`); 
+        const { data } = await axios.get(`${API_BASE}/category`);
 
         if (data.success && data.data) {
           const mappedCategories = data.data.map((cat) => ({
             id: cat.id,
             name: cat.name,
             description: cat.description,
-            image:
-              cat.image_url ||
-              "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=70&auto=format&fit=crop",
+           image:
+  cat.name.toLowerCase().includes("design")
+    ? "/categories/design.webp"
+    : cat.name.toLowerCase().includes("content")
+    ? "/categories/content-writting.webp"
+    : cat.name.toLowerCase().includes("develop")
+    ? "/categories/development.webp"
+    : "/categories/design.webp", // صورة افتراضية لو الاسم ما طابق أي شيء
+
             tags: cat.related_words || [],
             count: null,
           }));
@@ -70,7 +76,9 @@ export default function CategoriesShowcase({
     fetchCategories();
   }, [API_BASE]);
 
-  const allCategories = fetchedCategories.length ? fetchedCategories : categories;
+  const allCategories = fetchedCategories.length
+    ? fetchedCategories
+    : categories;
   const cats = useMemo(() => allCategories.slice(0, 10), [allCategories]);
 
   const [cols, setCols] = useState(calcCols());
@@ -166,7 +174,10 @@ export default function CategoriesShowcase({
               >
                 <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
                 {cats.map((cat) => (
-                  <div key={cat.id} className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]">
+                  <div
+                    key={cat.id}
+                    className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]"
+                  >
                     <Card cat={cat} onClick={() => handleSelect(cat)} />
                   </div>
                 ))}
@@ -181,7 +192,10 @@ export default function CategoriesShowcase({
                       ? "flex flex-wrap justify-center gap-4 sm:gap-5 items-stretch"
                       : grid + " items-stretch"
                   }`}
-                  style={{ transition: `opacity ${D}ms ease, transform ${D}ms ease`, ...anim }}
+                  style={{
+                    transition: `opacity ${D}ms ease, transform ${D}ms ease`,
+                    ...anim,
+                  }}
                 >
                   {visible.map((cat) => (
                     <div key={cat.id} className="w-[300px]">
@@ -204,7 +218,9 @@ export default function CategoriesShowcase({
                       <span
                         key={i}
                         className={`h-1.5 rounded-full transition-all ${
-                          i === page ? "w-6 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300"
+                          i === page
+                            ? "w-6 bg-[rgb(2,128,144)]"
+                            : "w-2 bg-slate-300"
                         }`}
                       />
                     ))}
@@ -286,20 +302,27 @@ function Card({ cat, onClick }) {
   return (
     <div
       className="group relative rounded-2xl p-[1.5px] cursor-pointer transition-all duration-200 h-full"
-      style={{ background: `linear-gradient(160deg, ${primaryLight}, ${primary})` }}
+      style={{
+        background: `linear-gradient(160deg, ${primaryLight}, ${primary})`,
+      }}
       onClick={onClick}
     >
       <div className="relative rounded-[calc(1rem-2px)] bg-white h-full flex flex-col shadow-sm hover:shadow-md transition">
         <div
           className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden"
-          style={{ background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)` }}
+          style={{
+            background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)`,
+          }}
         >
           <div
             className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-15 blur-2xl"
             style={{ background: primaryLight }}
           />
           <div className="relative z-10 grid grid-cols-[1fr_auto] items-start gap-3 h-[40px]">
-            <h3 className="font-bold text-base leading-tight line-clamp-2 pr-1" title={cat.name}>
+            <h3
+              className="font-bold text-base leading-tight line-clamp-2 pr-1"
+              title={cat.name}
+            >
               {cat.name}
             </h3>
             {typeof cat.count === "number" && cat.count > 0 && (
@@ -312,12 +335,19 @@ function Card({ cat, onClick }) {
 
         <div className="relative -mt-10 px-3">
           <div className="aspect-[16/10] w-full rounded-xl overflow-hidden ring-1 ring-black/5 bg-slate-100">
-            <img src={cat.image} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+            <img
+              src={cat.image}
+              alt={cat.name}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
 
         <div className="p-3 flex flex-col min-h-[140px]">
-          <p className="text-sm text-slate-600 line-clamp-2">{cat.description}</p>
+          <p className="text-sm text-slate-600 line-clamp-2">
+            {cat.description}
+          </p>
 
           {cat.tags?.length ? (
             <div className="mt-2 flex flex-wrap gap-1.5 min-h-[24px]">
@@ -343,7 +373,11 @@ function Card({ cat, onClick }) {
               onClick={onClick}
             >
               Explore
-              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path d="M12.293 4.293a1 1 0 011.414 0L18 8.586a2 2 0 010 2.828l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z" />
               </svg>
             </button>

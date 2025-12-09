@@ -54,11 +54,21 @@ projectsRouter.post(
   createProject
 );
 
-projectsRouter.get(
-  "/myprojects",
-  authentication,
-  getProjectsByUserRole
-);
+// مشروع عن طريق admin viewer (لو فعلته)
+// projectsRouter.post(
+//   "/admin",
+//   authentication,
+//   adminViewerOnly,
+//   handleJsonOrForm,
+//   createAdminProject
+// );
+
+projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
+
+/* --------------------------------
+   DELETE (SOFT DELETE) PROJECT BY OWNER
+--------------------------------- */
+
 
 projectsRouter.delete(
   "/myprojects/:projectId",

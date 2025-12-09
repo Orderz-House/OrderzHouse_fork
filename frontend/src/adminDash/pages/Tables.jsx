@@ -86,9 +86,9 @@ const DEFAULT_CRUD_CONFIG = {
 function useApi(token) {
   return useMemo(
     () =>
-        axios.create({
-          // use VITE_APP_API_URL if available, otherwise route via vite dev proxy at /api
-          baseURL: import.meta.env.VITE_APP_API_URL || " ",
+      axios.create({
+        // use VITE_APP_API_URL if available, otherwise route via vite dev proxy at /api
+        baseURL: import.meta.env.VITE_APP_API_URL || " ",
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -160,6 +160,8 @@ function useTableData({ endpoint, api, refreshKey }) {
           ? data.data
           : Array.isArray(data?.projects)
           ? data.projects
+          : Array.isArray(data?.tasks)
+          ? data.tasks
           : [];
 
         const processedList = list.map((row) => ({
@@ -1169,7 +1171,16 @@ export default function PeopleTable({
         // Parent override: if the parent provided a custom onDelete handler, delegate to it
         if (typeof onDelete === "function") {
           // Provide helpful helpers similar to the built-in helpers
-          await onDelete(row, idx, { rows, setRows, getId, refresh, startEdit, api, endpoint, token });
+          await onDelete(row, idx, {
+            rows,
+            setRows,
+            getId,
+            refresh,
+            startEdit,
+            api,
+            endpoint,
+            token,
+          });
           return;
         }
 
@@ -1183,7 +1194,18 @@ export default function PeopleTable({
         dispatch(setError("Failed to delete this record"));
       }
     },
-    [rows, endpoint, api, dispatch, refresh, onDelete, setRows, getId, startEdit, token]
+    [
+      rows,
+      endpoint,
+      api,
+      dispatch,
+      refresh,
+      onDelete,
+      setRows,
+      getId,
+      startEdit,
+      token,
+    ]
   );
 
   const handleToggleExpand = useCallback(

@@ -1246,30 +1246,20 @@ export const getAllFreelancers = async (req, res) => {
  */
 export const getAllProjectsForAdmin = async (req, res) => {
   try {
-    const { rows: projects } = await pool.query(
-      `
+    const { rows: projects } = await pool.query(`
       SELECT 
         p.id,
         p.title,
         p.project_type,
         p.status,
         p.completion_status,
-        p.assigned_freelancer_id,
         p.created_at,
-        p.admin_category,
-        u.username AS client_name,
-        f.username AS freelancer_name,
-        CASE 
-          WHEN p.category_id = 999 THEN 'Admin Project'
-          ELSE 'Regular Project'
-        END AS project_category
+        u.username AS client_name
       FROM projects p
       LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN users f ON p.assigned_freelancer_id = f.id
       WHERE p.is_deleted = false
       ORDER BY p.created_at DESC
-      `
-    );
+    `);
 
     res.status(200).json({
       success: true,
@@ -1284,6 +1274,7 @@ export const getAllProjectsForAdmin = async (req, res) => {
     });
   }
 };
+
 
 /**
  * -------------------------------

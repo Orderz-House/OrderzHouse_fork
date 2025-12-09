@@ -42,49 +42,38 @@ const api = axios.create({
 ========================= */
 function AdminTasks() {
   const navigate = useNavigate();
+  const { token } = useSelector((s) => s.auth); // 👈 نجيب التوكن من الريدوكس
 
   return (
     <PeopleTable
-      title="Tasks"
-      addLabel="Add Task"
-      endpoint="/tasks"
+      title="All Tasks"
+      endpoint="/tasks/admin"   // 👈 هذا يستدعي GET /api/tasks/admin
+      token={token}            // 👈 ضروري عشان الـ authentication
       columns={[
+        { label: "ID", key: "id" },
         { label: "Title", key: "title" },
-        { label: "Assignee", key: "assignee" },
-        { label: "Project", key: "project" },
-        { label: "Due", key: "due" },
+        { label: "Freelancer", key: "freelancer_name" },
+        { label: "Client", key: "client_name" },
+        { label: "Category", key: "category_name" },
+        {
+          label: "Price",
+          key: "price",
+          render: (row) => `${row.price} $`,
+        },
         { label: "Status", key: "status" },
-        { label: "Priority", key: "priority" },
       ]}
-      formFields={[
-        { key: "title", label: "Title", required: true },
-        { key: "assignee", label: "Assignee" },
-        { key: "project", label: "Project" },
-        { key: "due", label: "Due", type: "date" },
-        {
-          key: "status",
-          label: "Status",
-          type: "select",
-          options: ["Open", "In Progress", "Blocked", "Done"],
-          defaultValue: "Open",
-        },
-        {
-          key: "priority",
-          label: "Priority",
-          type: "select",
-          options: ["Low", "Medium", "High", "Urgent"],
-          defaultValue: "Medium",
-        },
-        { key: "notes", label: "Notes", type: "textarea" },
-      ]}
-      /* ✨ إعدادات الأدمن فقط */
+      /* الأدمن يشوف فقط (بدون تعديل/حذف) */
       desktopAsCards
-      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+      crudConfig={{
+        showDetails: false,
+        showRowEdit: false,
+        showDelete: false,
+      }}
+      // لو حابب تفتح صفحة تفاصيل لاحقًا، تقدر تستخدم onCardClick
+      // onCardClick={(row, h) => navigate(`/admin/tasks/${h.getId(row)}`)}
     />
   );
 }
-
 /* =========================
    Client View (Table from Tables.jsx)
 ========================= */
@@ -224,13 +213,21 @@ function FreelancerTasks() {
 
   // نفس البيانات لكن نعرضها ككروت من PeopleTable
   const columns = [
-    { label: "Title", key: "title" },
-    { label: "Project", key: "project_name" },
-    { label: "Client", key: "client_name" },
-    { label: "Due date", key: "due_date" },
-    { label: "Priority", key: "priority" },
-    { label: "Status", key: "status" },
-  ];
+  { label: "Title", key: "title" },
+  { label: "Category", key: "category_name" },
+  {
+    label: "Price",
+    key: "price",
+    render: (row) => `${row.price} $`, // أو العملة اللي تستخدمها
+  },
+  { label: "Status", key: "status" },
+  {
+    label: "Requests",
+    key: "total_requests",
+    render: (row) => row.total_requests ?? 0,
+  },
+];
+
 
   // شِيبس بسيطة لتصفية الستاتس من أعلى الجدول (اختياري)
   const chips = [
@@ -247,7 +244,7 @@ function FreelancerTasks() {
       title="My tasks"
 
       /* مصدر البيانات للفريلانسر */
-      endpoint="/api/freelancer/tasks"
+      endpoint="/tasks/freelancer/my-tasks"
       token={token}
 
       /* أعمدة الجدول */
