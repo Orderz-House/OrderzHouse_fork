@@ -17,6 +17,7 @@ export default function ProjectDetailsStep({
   const [subSubCategories, setSubSubCategories] = useState([]);
   const [skillsInput, setSkillsInput] = useState("");
 
+  // ====================== Form state ======================
   const [form, setForm] = useState(() => {
     const base = {
       title: "",
@@ -35,13 +36,14 @@ export default function ProjectDetailsStep({
     };
 
     const merged = { ...base, ...(projectData || {}) };
-    if (isTask) merged.project_type = "fixed";
+    if (isTask) merged.project_type = "fixed"; // التاسك دائماً Fixed
     return merged;
   });
 
   const [errors, setErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
 
+  // ====================== Load categories ======================
   useEffect(() => {
     fetchCategories()
       .then((data) => setCategories(Array.isArray(data) ? data : []))
@@ -51,24 +53,33 @@ export default function ProjectDetailsStep({
       });
   }, []);
 
+  // ====================== Load sub‑sub categories when category changes ======================
   useEffect(() => {
-    if (!form.category_id) return;
-    fetchSubSubCategoriesByCategoryId(form.category_id)
+    if (!form.category_id) {
+      setSubSubCategories([]);
+      setForm((prev) => ({ ...prev, sub_sub_category_id: "" }));
+      return;
+    }
+
+    const idAsNumber = Number(form.category_id);
+    if (!idAsNumber) return;
+
+    fetchSubSubCategoriesByCategoryId(idAsNumber)
       .then((data) => setSubSubCategories(Array.isArray(data) ? data : []))
       .catch((err) => {
         console.error("Failed to fetch sub-sub-categories:", err);
         setSubSubCategories([]);
       });
+
+    // إعادة ضبط الساب ساب كاتيجوري عند تغيير الكاتيجوري
     setForm((prev) => ({ ...prev, sub_sub_category_id: "" }));
   }, [form.category_id]);
 
-  useEffect(() => {
-    setIsFormValid(validateForm(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
-
+  // ====================== Helpers ======================
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // حقول لا يُسمح أن تكون 0
     const noZeroFields = [
       "budget",
       "hourly_rate",
@@ -77,19 +88,28 @@ export default function ProjectDetailsStep({
       "budget_min",
       "budget_max",
     ];
+
     let newValue = value;
     if (noZeroFields.includes(name)) {
       const num = Number(value);
       newValue = Number.isNaN(num) ? "" : Math.max(num, 1);
     }
+
     setForm((prev) => ({ ...prev, [name]: newValue }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleAddSkill = () => {
     const newSkill = skillsInput.trim();
     if (!newSkill) return;
-    if (form.preferred_skills.includes(newSkill)) return setSkillsInput("");
+    if (form.preferred_skills.includes(newSkill)) {
+      setSkillsInput("");
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       preferred_skills: [...prev.preferred_skills, newSkill],
@@ -106,11 +126,11 @@ export default function ProjectDetailsStep({
 
   const calculateAmountToPay = () => {
     if (form.project_type === "fixed") return form.budget;
-    if (form.project_type === "hourly") return form.hourly_rate * 3;
+    if (form.project_type === "hourly") return form.hourly_rate * 3; // مثال بسيط
     return null;
   };
 
-  const validateForm = (showErrors = true) => {
+  function validateForm(showErrors = true) {
     const newErrors = {};
     const titleLength = form.title.trim().length;
     const descLength = form.description.trim().length;
@@ -135,24 +155,41 @@ export default function ProjectDetailsStep({
     if (!form.sub_sub_category_id)
       newErrors.sub_sub_category_id = "Sub-category is required";
 
-    if (form.project_type === "fixed" && form.budget <= 0)
+    if (form.project_type === "fixed" && Number(form.budget) <= 0) {
       newErrors.budget = "Budget must be greater than 0";
+    }
 
-    if (!isTask && form.project_type === "hourly" && form.hourly_rate <= 0)
-      newErrors.hourly_rate = "Hourly rate must be greater than 0";
+    if (!isTask && form.project_type === "hourly") {
+      if (Number(form.hourly_rate) <= 0) {
+        newErrors.hourly_rate = "Hourly rate must be greater than 0";
+      }
+    }
 
     if (!isTask && form.project_type === "bidding") {
-      if (form.budget_min <= 0)
+      if (Number(form.budget_min) <= 0) {
         newErrors.budget_min = "Min budget must be greater than 0";
-      if (form.budget_max <= 0)
+      }
+      if (Number(form.budget_max) <= 0) {
         newErrors.budget_max = "Max budget must be greater than 0";
-      if (form.budget_max < form.budget_min)
+      }
+      if (
+        Number(form.budget_max) > 0 &&
+        Number(form.budget_min) > 0 &&
+        Number(form.budget_max) < Number(form.budget_min)
+      ) {
         newErrors.budget_max = "Max budget must be greater than min budget";
+      }
     }
 
     if (showErrors) setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }
+
+  // تحديث زر "Continue" بشكل حي
+  useEffect(() => {
+    setIsFormValid(validateForm(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -165,8 +202,7 @@ export default function ProjectDetailsStep({
           description: form.description,
           price: form.budget, // مهم: budget → price
           category_id: form.category_id,
-          duration_days:
-            form.duration_type === "days" ? form.duration_days : 0,
+          duration_days: form.duration_type === "days" ? form.duration_days : 0,
           duration_hours:
             form.duration_type === "hours" ? form.duration_hours : 0,
           sub_sub_category_id: form.sub_sub_category_id,
@@ -185,6 +221,7 @@ export default function ProjectDetailsStep({
   const titleProgress = Math.min((titleLength / 10) * 100, 100);
   const descProgress = Math.min((descLength / 100) * 100, 100);
 
+  // ====================== JSX ======================
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
@@ -198,7 +235,7 @@ export default function ProjectDetailsStep({
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
-        {/* Title */}
+        {/* ========== Title ========== */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             {isTask ? "Task Title" : "Project Title"}{" "}
@@ -248,7 +285,7 @@ export default function ProjectDetailsStep({
           )}
         </div>
 
-        {/* Description */}
+        {/* ========== Description ========== */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Description <span className="text-red-500">*</span>
@@ -300,7 +337,7 @@ export default function ProjectDetailsStep({
           )}
         </div>
 
-        {/* Preferred Skills */}
+        {/* ========== Preferred Skills ========== */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Preferred Skills
@@ -346,7 +383,7 @@ export default function ProjectDetailsStep({
           )}
         </div>
 
-        {/* Categories */}
+        {/* ========== Categories ========== */}
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -406,7 +443,7 @@ export default function ProjectDetailsStep({
           </div>
         </div>
 
-        {/* Project Type – فقط للبروجكتس */}
+        {/* ========== Project Type (projects only) ========== */}
         {!isTask && (
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -445,7 +482,7 @@ export default function ProjectDetailsStep({
           </div>
         )}
 
-        {/* Budget */}
+        {/* ========== Budget / Price ========== */}
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
           {form.project_type === "fixed" && (
             <div>
@@ -469,9 +506,7 @@ export default function ProjectDetailsStep({
                 />
               </div>
               {errors.budget && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.budget}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.budget}</p>
               )}
               <p className="mt-2 text-slate-700 font-medium">
                 Estimated amount to pay: ${calculateAmountToPay() || 0}
@@ -479,11 +514,93 @@ export default function ProjectDetailsStep({
             </div>
           )}
 
-          {!isTask && form.project_type === "hourly" && <></>}
-          {!isTask && form.project_type === "bidding" && <></>}
+          {!isTask && form.project_type === "hourly" && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Hourly rate <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
+                  $
+                </span>
+                <input
+                  name="hourly_rate"
+                  type="number"
+                  min={1}
+                  placeholder="0.00"
+                  value={form.hourly_rate}
+                  onChange={handleChange}
+                  className={`${inputBase} pl-8 ${
+                    errors.hourly_rate ? "ring-red-400 border-red-300" : ""
+                  }`}
+                />
+              </div>
+              {errors.hourly_rate && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.hourly_rate}
+                </p>
+              )}
+              <p className="mt-2 text-slate-700 text-sm">
+                We’ll show freelancers an estimated total based on this rate.
+              </p>
+            </div>
+          )}
+
+          {!isTask && form.project_type === "bidding" && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Budget range <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs text-slate-500 mb-1">
+                    Min
+                  </span>
+                  <input
+                    name="budget_min"
+                    type="number"
+                    min={1}
+                    value={form.budget_min}
+                    onChange={handleChange}
+                    className={`${inputBase} ${
+                      errors.budget_min ? "ring-red-400 border-red-300" : ""
+                    }`}
+                  />
+                  {errors.budget_min && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.budget_min}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <span className="block text-xs text-slate-500 mb-1">
+                    Max
+                  </span>
+                  <input
+                    name="budget_max"
+                    type="number"
+                    min={1}
+                    value={form.budget_max}
+                    onChange={handleChange}
+                    className={`${inputBase} ${
+                      errors.budget_max ? "ring-red-400 border-red-300" : ""
+                    }`}
+                  />
+                  {errors.budget_max && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.budget_max}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <p className="mt-2 text-slate-700 text-sm">
+                Freelancers will send offers inside this range.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Duration */}
+        {/* ========== Duration ========== */}
         {form.project_type !== "hourly" && (
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -520,7 +637,7 @@ export default function ProjectDetailsStep({
           </div>
         )}
 
-        {/* Submit */}
+        {/* ========== Submit ========== */}
         <button
           type="submit"
           disabled={!isFormValid}

@@ -41,8 +41,7 @@ export const getProjectsByCategory = async (req, res) => {
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.category_id = $1
-        AND p.status = 'active' OR p.status = 'bidding'
-        AND p.is_deleted = false
+      ${buildStatusCondition()}
       ORDER BY p.created_at DESC
       `,
       [category_id]
@@ -84,8 +83,7 @@ export const getProjectsBySubCategory = async (req, res) => {
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_category_id = $1
-        AND p.status = 'active' OR p.status = 'bidding'
-        AND p.is_deleted = false
+      ${buildStatusCondition()}
       ORDER BY p.created_at DESC
       `,
       [sub_category_id]
@@ -127,8 +125,7 @@ export const getProjectsBySubSubCategory = async (req, res) => {
       JOIN categories c ON sc.category_id = c.id
       LEFT JOIN users u ON u.id = p.user_id
       WHERE p.sub_sub_category_id = $1
-        AND p.status = 'active' OR p.status = 'bidding'
-        AND p.is_deleted = false
+      ${buildStatusCondition()}
       ORDER BY p.created_at DESC
       `,
       [sub_sub_category_id]
@@ -334,17 +331,11 @@ export const getProjectById = async (req, res) => {
   }
 };
 
-
-
 /**
  * =========================================================
  * Get Projects by Authenticated User Role
  * =========================================================
- * - If client (role_id = 2): get own created projects
- * - If freelancer (role_id = 3): get assigned projects
- * =========================================================
  */
-
 export const getProjectsByUserRole = async (req, res) => {
   try {
     const userId = req.token?.userId;
@@ -455,8 +446,6 @@ export const getProjectsByUserRole = async (req, res) => {
  * ================================
  *  Get Project Files by Project ID
  * ================================
- * @route   GET /project-files/:projectId
- * @access  Authenticated (client, freelancer, or admin)
  */
 export const getProjectFilesByProjectId = async (req, res) => {
   try {
@@ -490,7 +479,6 @@ export const getProjectFilesByProjectId = async (req, res) => {
       [projectId]
     );
 
-    // حتى لو ما فيش ملفات، نرجّع 200 مع قائمة فاضية بدل 404
     if (rows.length === 0) {
       return res.status(200).json({
         success: true,

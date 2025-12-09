@@ -167,19 +167,22 @@ export default function EnhancedNavbar() {
   }, []);
 
   const getDashboardPath = (roleId) => {
-    switch (roleId) {
-      case 1:
-        return "/admin";
-      case 2:
-        return "/client";
-      case 3:
-        return "/freelancer";
-      case 4:
-        return "/apm";
-      default:
-        return "/login";
-    }
-  };
+  switch (Number(roleId)) {
+    case 1:
+      return "/admin";
+    case 2:
+      return "/client";
+    case 3:
+      return "/freelancer";
+    case 4:
+      return "/apm";
+    case 5:
+      return "/partner";
+    default:
+      return "/login";
+  }
+};
+
 
   const navLinks = [
     { label: "HOME", path: "/", condition: true },
@@ -196,8 +199,7 @@ export default function EnhancedNavbar() {
     { label: "BLOGS", path: "/blogs" },
     { label: "CONTACT", path: "/contact" },
     { label: "PLANS", path: "/plans" },
-    { label: "COPYWRITING TEST", path: "/copywriting-test", condition: userData && userData.role_id === 3 },
-  ].filter(item => item.condition !== undefined ? item.condition : true);
+  ];
 
   // لو أنت في ABOUT / BLOGS / ... يخلي زر EXPLORE شكله active
   const isExploreActive = exploreItems.some(
