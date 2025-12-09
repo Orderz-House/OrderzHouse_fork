@@ -10,6 +10,7 @@ import "./cron/expireSubscriptions.js";
 import "./cron/autoExpireOldOffers.js";
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
+import liveScreenRoutes from "./router/LiveScreen.js";
 
 dotenv.config();
 
@@ -74,6 +75,8 @@ app.use(cors({
 }));
 
 
+
+
 // Rate limiter (optional)
 /*
 const limiter = rateLimit({
@@ -108,7 +111,7 @@ app.use("/ratings", ratingsRouter);
 app.use("/email", emailVerificationRoutes);
 app.use("/payments", paymentsRouter);
 app.use("/chat", chatsRouter);
-
+app.use("/api", liveScreenRoutes);
 let server, io;
 
 if (process.env.NODE_ENV !== "test") {

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import GradientButton from "../buttons/GradientButton.jsx";
 
 const THEME = "#028090";
 
@@ -181,8 +182,16 @@ export default function Plans() {
         style={{ borderColor: "rgba(2,128,144,0.15)" }}
       >
         <p>* A contract is signed after subscription.</p>
-        <p className="mt-1">* Account verification fee is a one-time payment across all plans (25 JD).</p>
+        <p className="mt-1">* Account verification fee is a one-time payment across all plans (25 JD).
+
+        </p>
+<GradientButton href="/contracts/contract.pdf">
+  View Contract
+</GradientButton>
+
+
       </div>
     </div>
+    
   );
-}
+  }
