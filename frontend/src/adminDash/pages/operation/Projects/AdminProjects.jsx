@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
 import {
   Eye,
@@ -54,14 +55,24 @@ function AdminProjects() {
 
   // columns
   const columns = [
-    { label: "Title", key: "title" },
-    { label: "Client", key: "client" },
-    { label: "Owner", key: "owner" },
-    { label: "Due", key: "due" },
-    { label: "Budget", key: "budget" },
-    { label: "Progress", key: "progress" },
-    { label: "Status", key: "status" },
-  ];
+  { label: "Title",       key: "title" },
+  { label: "Client",      key: "client_name" },
+  { label: "Freelancer",  key: "freelancer_name" },
+  { label: "Type",        key: "project_type" },
+  { label: "Status",      key: "status" },
+  { label: "Completion",  key: "completion_status" },
+  { label: "Category",    key: "project_category" },
+  {
+    label: "Created",
+    key: "created_at",
+    render: (row) =>
+      row.created_at
+        ? new Date(row.created_at).toLocaleDateString()
+        : "—",
+  },
+];
+
+
 
   // form fields
   const formFields = [
@@ -89,7 +100,7 @@ function AdminProjects() {
       title="Projects"
       addLabel="Add Project"
       /* data */
-      endpoint="/api/admin/projects"
+      endpoint="/projects/admin/projects"
       token={token}
       columns={columns}
       formFields={formFields}
@@ -192,7 +203,7 @@ function ClientProjects() {
         /* header */
         title="My Projects"
         /* data */
-        endpoint="/api/client/projects"
+  endpoint="/projects/myprojects"
         token={token}
         columns={[
           { label: "Title", key: "title" },

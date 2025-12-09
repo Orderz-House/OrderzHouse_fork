@@ -65,7 +65,7 @@ projectsRouter.post(
 //   createAdminProject
 // );
 
-// projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
+projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
 /* --------------------------------
    DELETE (SOFT DELETE) PROJECT BY OWNER
