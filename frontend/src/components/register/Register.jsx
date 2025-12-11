@@ -24,6 +24,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
+import FreelancerCategorySelector from "./FreelancerCategorySelector.jsx";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -90,10 +91,8 @@ const Register = () => {
 
   // ========= freelancer categories =========//
   useEffect(() => {
-    axios
-      .get(`${API_URL}/category`)
-      .then((response) => setCategories(response.data.categories || []))
-      .catch((error) => console.error("Error fetching categories:", error));
+    // This useEffect can be simplified since we're using the new component
+    // The new component handles its own category fetching
   }, []);
 
   const handleCategoryToggle = (categoryId) => {
@@ -209,9 +208,10 @@ const Register = () => {
       profile_pic_url,
     };
 
+    // Updated to use the new category structure
     if (role_id === "3") {
-      userData.categories = selectedCategories;
-      userData.sub_categories = selectedSubCategories;
+      userData.category_id = freelancerCategories.mainCategory?.id || null;
+      userData.sub_category_ids = freelancerCategories.subCategories.map(sc => sc.id);
     }
 
     axios
@@ -266,6 +266,17 @@ const Register = () => {
 
   const passwordStrengthInfo = getPasswordStrengthText();
 
+  // State for the new category selector
+  const [freelancerCategories, setFreelancerCategories] = useState({
+    mainCategory: null,
+    subCategories: []
+  });
+
+  // Handler for category changes from the new component
+  const handleCategoryChange = (categoryData) => {
+    setFreelancerCategories(categoryData);
+  };
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -317,144 +328,7 @@ const Register = () => {
 
                     {/* Freelancer Categories with Sub-Categories */}
                     {role_id === "3" && (
-                      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60">
-                        <label className="block text-sm text-slate-700 mb-2">
-                          What category would you like to work in?
-                          <span className="block text-xs text-slate-500">
-                            Choose your areas of expertise (categories and sub-categories)
-                          </span>
-                        </label>
-
-                        {/* Selected Categories Display */}
-                        {selectedCategories.length > 0 && (
-                          <div className="mb-3 max-h-20 overflow-y-auto">
-                            <div className="flex flex-wrap gap-2">
-                              {selectedCategories.map((categoryId) => {
-                                const category = categories.find(
-                                  (cat) => cat.id === categoryId
-                                );
-                                return category ? (
-                                  <div
-                                    key={categoryId}
-                                    className="inline-flex items-center bg-[#028090] text-white px-3 py-1 rounded-full text-xs"
-                                  >
-                                    <span className="truncate max-w-24">
-                                      {category.name}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeCategory(categoryId)}
-                                      className="ml-2 hover:bg-white/20 rounded-full p-0.5"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                ) : null;
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Selected Sub-Categories Display */}
-                        {selectedSubCategories.length > 0 && (
-                          <div className="mb-3 max-h-20 overflow-y-auto">
-                            <div className="flex flex-wrap gap-2">
-                              {selectedSubCategories.map((subCategoryId) => {
-                                const name = getSubCategoryName(subCategoryId);
-                                return name ? (
-                                  <div
-                                    key={subCategoryId}
-                                    className="inline-flex items-center bg-emerald-600 text-white px-3 py-1 rounded-full text-xs"
-                                  >
-                                    <span className="truncate max-w-24">{name}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeSubCategory(subCategoryId)}
-                                      className="ml-2 hover:bg-white/20 rounded-full p-0.5"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                ) : null;
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Categories List with Expandable Sub-Categories */}
-                        <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-200">
-                          <div className="p-3 space-y-2">
-                            {categories.map((category) => (
-                              <div key={category.id} className="space-y-1">
-                                {/* Main Category */}
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCategoryToggle(category.id)}
-                                    className={`flex-1 p-3 rounded-lg border text-left transition ${
-                                      selectedCategories.includes(category.id)
-                                        ? "border-[#028090] bg-[#028090]/5 text-[#028090]"
-                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    <div className="flex items-center">
-                                      {selectedCategories.includes(category.id) && (
-                                        <Check className="w-4 h-4 text-[#028090] mr-2" />
-                                      )}
-                                      <span className="truncate">{category.name}</span>
-                                    </div>
-                                  </button>
-
-                                  {/* Expand/Collapse Button */}
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleCategoryExpand(category.id)}
-                                    className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
-                                  >
-                                    {expandedCategories[category.id] ? (
-                                      <ChevronUp className="w-4 h-4 text-slate-600" />
-                                    ) : (
-                                      <ChevronDown className="w-4 h-4 text-slate-600" />
-                                    )}
-                                  </button>
-                                </div>
-
-                                {/* Sub-Categories (shown when expanded) */}
-                                {expandedCategories[category.id] &&
-                                  subCategories[category.id] && (
-                                    <div className="ml-6 space-y-1">
-                                      {subCategories[category.id].map((subCategory) => (
-                                        <button
-                                          key={subCategory.id}
-                                          type="button"
-                                          onClick={() =>
-                                            handleSubCategoryToggle(subCategory.id)
-                                          }
-                                          className={`w-full p-2 rounded-lg border text-left text-sm transition ${
-                                            selectedSubCategories.includes(subCategory.id)
-                                              ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                                          }`}
-                                        >
-                                          <div className="flex items-center">
-                                            {selectedSubCategories.includes(
-                                              subCategory.id
-                                            ) && (
-                                              <Check className="w-4 h-4 text-emerald-600 mr-2" />
-                                            )}
-                                            <span className="truncate">
-                                              {subCategory.name}
-                                            </span>
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                      <FreelancerCategorySelector onCategoryChange={handleCategoryChange} />
                     )}
 
                     {/* First Name */}
