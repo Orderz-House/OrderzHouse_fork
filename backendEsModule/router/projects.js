@@ -38,6 +38,8 @@ import {
   getPublicCategories,
 } from "../controller/projectsManagment/projectsFiltering.js";
 
+import {getAssignmentsForProject} from "../controller/projectsManagment/assignments.js";
+
 
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -244,6 +246,12 @@ projectsRouter.get(
 projectsRouter.get(
   "/public/subsubcategory/:subSubCategoryId",
   getProjectsBySubSubCategoryId
+);
+
+projectsRouter.get(
+  "/project/:projectId/applications",
+  authentication,
+  getAssignmentsForProject
 );
 
 export default projectsRouter;

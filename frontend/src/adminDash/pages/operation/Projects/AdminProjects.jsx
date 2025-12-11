@@ -34,7 +34,7 @@ function mapRole(roleId) {
 
 /* ---------- Axios base ---------- */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL: import.meta.env.VITE_APP_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -182,43 +182,71 @@ function ClientProjects() {
     };
   }, [token]);
 
-  // جلب طلبات التقديم (applications) لكل مشاريع الكلينت
-  useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
+  // // جلب طلبات التقديم (applications) لكل مشاريع الكلينت
+  // useEffect(() => {
+  //   if (!token) return;
+  //   let cancelled = false;
 
-    (async () => {
-      try {
-        const { data } = await api.get("/projects/applications/my-projects", {
-          headers: token ? { authorization: `Bearer ${token}` } : undefined,
-        });
+  //   (async () => {
+  //     try {
+  //       const { data } = await api.get("/projects/applications/my-projects", {
+  //         headers: token ? { authorization: `Bearer ${token}` } : undefined,
+  //       });
 
-        const list = Array.isArray(data?.applications)
-          ? data.applications
-          : Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
+  //       const list = Array.isArray(data?.applications)
+  //         ? data.applications
+  //         : Array.isArray(data?.data)
+  //         ? data.data
+  //         : Array.isArray(data)
+  //         ? data
+  //         : [];
 
-        const map = {};
-        for (const app of list) {
-          const pid = app.project_id ?? app.projectId;
-          if (!pid) continue;
-          if (!map[pid]) map[pid] = [];
-          map[pid].push(app);
-        }
+  //       const map = {};
+  //       for (const app of list) {
+  //         const pid = app.project_id ?? app.projectId;
+  //         if (!pid) continue;
+  //         if (!map[pid]) map[pid] = [];
+  //         map[pid].push(app);
+  //       }
 
-        if (!cancelled) setApplicationsMap(map);
-      } catch (e) {
-        console.error("Failed to fetch applications for client projects", e);
+  //       if (!cancelled) setApplicationsMap(map);
+  //     } catch (e) {
+  //       console.error("Failed to fetch applications for client projects", e);
+  //     }
+  //   })();
+
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, [token]);
+
+
+  const fetchApplicationsForProject = async (projectId) => {
+  if (!token) return;
+  try {
+    const { data } = await api.get(
+      `/projects/project/${projectId}/applications`,
+      {
+        headers: { authorization: `Bearer ${token}` },
       }
-    })();
+    );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+    const list = Array.isArray(data?.applications)
+      ? data.applications
+      : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data)
+      ? data
+      : [];
+
+    setApplicationsMap((prev) => ({
+      ...prev,
+      [projectId]: list,
+    }));
+  } catch (e) {
+    console.error("Failed to fetch applications for project", projectId, e);
+  }
+};
 
   // تحديث حالة application (accept / reject)
   const handleApplicationAction = async (assignmentId, projectId, action) => {
@@ -325,17 +353,18 @@ function ClientProjects() {
 
        
           <button
-            onClick={() => {
-              setAppsProject({ id: pid, title: row.title });
-              setAppsOpen(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-            style={ringStyle}
-            title="View freelancer offers"
-          >
-            <Eye className="w-3 h-3" />
-            Applicants
-          </button>
+  onClick={async () => {
+    setAppsProject({ id: pid, title: row.title });
+    await fetchApplicationsForProject(pid);
+    setAppsOpen(true);
+  }}
+  className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+  style={ringStyle}
+>
+  <Eye className="w-3 h-3" />
+  Applicants
+</button>
+
         
       </div>
     );
