@@ -400,8 +400,9 @@ export const getProjectsByUserRole = async (req, res) => {
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
         LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
-        WHERE pa.freelancer_id = $1
-          AND p.is_deleted = false
+         WHERE pa.freelancer_id = $1
+      AND p.is_deleted = false
+      AND pa.status = 'active'
       `;
     } else {
       return res
