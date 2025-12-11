@@ -23,7 +23,8 @@ const useAuth = () => {
 };
 // ==========================================
 
-// Plan Card Component
+
+// ------------------- Plan Card -------------------
 function PlanCard({ plan, user }) {
   const isPopular = plan.plan_type === "popular";
 
@@ -39,10 +40,10 @@ function PlanCard({ plan, user }) {
         {
           plan_id: plan.id,
           user_id: user.id,
+          is_verified: user.is_verified, // still needed by backend
         }
       );
 
-      // Redirect user to Stripe Checkout page
       window.location.href = response.data.url;
     } catch (error) {
       console.error("Stripe Checkout Error:", error);
@@ -57,7 +58,7 @@ function PlanCard({ plan, user }) {
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onChoose()}
       className={[
-        "group relative flex w-full max-w-sm cursor-pointer flex-col rounded-2xl border bg-white",
+        "group relative flex w-full max-w-sm cursor-pointer flex-col justify-between rounded-2xl border bg-white",
         "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl",
         isPopular ? "border-[2px]" : "border",
       ].join(" ")}
@@ -66,72 +67,75 @@ function PlanCard({ plan, user }) {
         boxShadow: isPopular
           ? "0 8px 28px rgba(2,128,144,0.18)"
           : "0 6px 18px rgba(0,0,0,0.06)",
+        minHeight: "430px",
       }}
     >
-      {/* Header */}
-      <div className="px-6 pt-6">
-        <div className="mb-2 flex items-center justify-between">
-          <span
-            className="rounded-full border px-3 py-1 text-xs font-semibold"
-            style={{ borderColor: "rgba(2,128,144,0.25)", color: THEME }}
-          >
-            {plan.name}
-          </span>
-
-          {isPopular && (
+      {/* TOP CONTENT */}
+      <div className="flex-grow">
+        <div className="px-6 pt-6">
+          <div className="mb-2 flex items-center justify-between">
             <span
-              className="rounded-full px-3 py-1 text-xs font-semibold"
-              style={{ backgroundColor: "rgba(2,128,144,0.08)", color: THEME }}
+              className="rounded-full border px-3 py-1 text-xs font-semibold"
+              style={{ borderColor: "rgba(2,128,144,0.25)", color: THEME }}
             >
-              Popular
+              {plan.name}
             </span>
+
+            {isPopular && (
+              <span
+                className="rounded-full px-3 py-1 text-xs font-semibold"
+                style={{ backgroundColor: "rgba(2,128,144,0.08)", color: THEME }}
+              >
+                Popular
+              </span>
+            )}
+          </div>
+
+          <h3
+            className="text-2xl font-extrabold tracking-tight"
+            style={{ color: THEME }}
+          >
+            {plan.plan_type === "monthly"
+              ? `${plan.duration} Month`
+              : plan.plan_type === "yearly"
+              ? `${plan.duration} Year`
+              : plan.name}
+          </h3>
+
+          <div className="mt-3 flex items-end gap-2">
+            <span className="text-4xl font-extrabold text-slate-900">
+              {plan.price}
+            </span>
+            <span className="mb-1 text-sm font-semibold text-slate-500">JD</span>
+          </div>
+
+          {/* ❌ REMOVED the verification fee UI */}
+        </div>
+
+        <div
+          className="mx-6 my-5 h-px"
+          style={{ background: "rgba(2,128,144,0.12)" }}
+        />
+
+        <ul className="mx-6 mb-4 space-y-2 text-sm text-slate-600">
+          {Array.isArray(plan.features) &&
+            plan.features.map((item, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: THEME }}
+                />
+                {item}
+              </li>
+            ))}
+
+          {plan.description && (
+            <li className="text-xs text-slate-500">{plan.description}</li>
           )}
-        </div>
-
-        <h3
-          className="text-2xl font-extrabold tracking-tight"
-          style={{ color: THEME }}
-        >
-          {plan.plan_type === "monthly"
-            ? `${plan.duration} Month`
-            : plan.plan_type === "yearly"
-            ? `${plan.duration} Year`
-            : plan.name}
-        </h3>
-
-        <div className="mt-3 flex items-end gap-2">
-          <span className="text-4xl font-extrabold text-slate-900">
-            {plan.price}
-          </span>
-          <span className="mb-1 text-sm font-semibold text-slate-500">JD</span>
-        </div>
+        </ul>
       </div>
 
-      {/* Divider */}
-      <div
-        className="mx-6 my-5 h-px"
-        style={{ background: "rgba(2,128,144,0.12)" }}
-      />
-
-      {/* Features */}
-      <ul className="mx-6 mb-4 space-y-2 text-sm text-slate-600">
-        {Array.isArray(plan.features) &&
-          plan.features.map((item, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: THEME }}
-              />
-              {item}
-            </li>
-          ))}
-
-        {plan.description && (
-          <li className="text-xs text-slate-500">{plan.description}</li>
-        )}
-      </ul>
-
-      {/* CTA */}
+      {/* CTA BUTTON */}
       <div className="px-6 pb-6">
         <button
           type="button"
@@ -148,33 +152,27 @@ function PlanCard({ plan, user }) {
         >
           Choose Plan
         </button>
-
-        <p className="mt-2 text-center text-[11px] text-slate-400">
-          Secure payment powered by Stripe
-        </p>
       </div>
     </div>
   );
 }
 
-// Main Plans Component
+
+// ------------------- Main Plans Component -------------------
 export default function Plans() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Redirect client users
   useEffect(() => {
     if (user && user.role_id === 2) navigate("/");
   }, [user, navigate]);
 
-  // Fetch plans from backend
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const res = await axios.get(`${API_URL}/plans`);
-
         setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
       } catch (err) {
         console.error("Failed loading plans:", err);
@@ -183,7 +181,6 @@ export default function Plans() {
         setLoading(false);
       }
     };
-
     fetchPlans();
   }, []);
 
@@ -196,7 +193,8 @@ export default function Plans() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header */}
+      
+      {/* HEADER */}
       <div className="mx-auto max-w-6xl px-4 pt-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">
           Choose Your Plan
@@ -225,9 +223,9 @@ export default function Plans() {
         </p>
       </div>
 
-      {/* Cards */}
+      {/* CARDS */}
       <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.isArray(plans) && plans.length > 0 ? (
+        {plans.length > 0 ? (
           plans.map((p) => (
             <div key={p.id} className="flex justify-center">
               <PlanCard plan={p} user={user} />
@@ -240,7 +238,7 @@ export default function Plans() {
         )}
       </div>
 
-      {/* Note */}
+      {/* CONTRACT SECTION */}
       <div
         className="mx-auto mt-10 max-w-4xl rounded-2xl border bg-white px-6 py-6 text-center text-sm font-semibold text-slate-700"
         style={{ borderColor: "rgba(2,128,144,0.15)" }}
@@ -250,9 +248,15 @@ export default function Plans() {
           * Account verification fee is a one-time payment across all plans (25 JD).
         </p>
 
-        <GradientButton href="/contracts/contract.pdf">
-          View Contract
-        </GradientButton>
+        <div className="flex justify-center mt-4">
+          <GradientButton
+            href="/contracts/contract.pdf"
+            className="text-sm px-4 py-2 rounded-lg"
+            style={{ width: "fit-content" }}
+          >
+            View Contract
+          </GradientButton>
+        </div>
       </div>
     </div>
   );

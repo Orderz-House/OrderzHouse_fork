@@ -15,26 +15,85 @@ export const handleStripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
 
-
+    // ======================================================
+    //  CHECKOUT SUCCESSFUL
+    // ======================================================
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
 
-      const user_id = session.metadata.user_id;
+      const freelancer_id = session.metadata.user_id; 
       const plan_id = session.metadata.plan_id;
+      const includesVerificationFee = session.metadata.includes_verification_fee;
 
+      const stripe_session_id = session.id;
+      const stripe_payment_intent = session.payment_intent;
+      const amount_total = session.amount_total / 1000; 
+
+      console.log("💳 Payment success for freelancer:", freelancer_id);
+
+      // ======================================================
+      // 1️⃣ SAVE PAYMENT RECORD
+      // ======================================================
       await pool.query(
-        `INSERT INTO subscriptions (user_id, plan_id, status)
-         VALUES ($1, $2, 'active')`,
-        [user_id, plan_id]
+        `INSERT INTO payments (user_id, plan_id, amount, stripe_session_id, stripe_payment_intent)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (stripe_session_id) DO NOTHING;`,
+        [freelancer_id, plan_id, amount_total, stripe_session_id, stripe_payment_intent]
       );
 
-      console.log("🔥 Subscription activated for user:", user_id);
+      console.log("💰 Payment saved:", amount_total, "JOD");
+
+      // ======================================================
+      // 2️⃣ VERIFY USER (IF VERIFICATION FEE WAS INCLUDED)
+      // ======================================================
+      if (includesVerificationFee === "yes") {
+        await pool.query(
+          "UPDATE users SET is_verified = true WHERE id = $1",
+          [freelancer_id]
+        );
+        console.log("✔️ User marked as verified");
+      }
+
+      // ======================================================
+      // 3️⃣ GET PLAN DETAILS (DURATION)
+      // ======================================================
+      const planRes = await pool.query(
+        `SELECT duration, plan_type FROM plans WHERE id = $1`,
+        [plan_id]
+      );
+
+      const plan = planRes.rows[0];
+
+      let start_date = new Date();
+      let end_date = new Date(start_date);
+
+      if (plan.plan_type === "monthly") {
+        end_date.setMonth(end_date.getMonth() + plan.duration);
+      } else if (plan.plan_type === "yearly") {
+        end_date.setFullYear(end_date.getFullYear() + plan.duration);
+      } else {
+        end_date.setMonth(end_date.getMonth() + 1);
+      }
+
+      const start_date_sql = start_date.toISOString().split("T")[0];
+      const end_date_sql = end_date.toISOString().split("T")[0];
+
+      // ======================================================
+      // 4️⃣ CREATE SUBSCRIPTION RECORD (MATCHES YOUR TABLE)
+      // ======================================================
+      await pool.query(
+        `INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
+         VALUES ($1, $2, $3, $4, 'active')`,
+        [freelancer_id, plan_id, start_date_sql, end_date_sql]
+      );
+
+      console.log("🔥 Subscription created for freelancer:", freelancer_id);
     }
 
     return res.json({ received: true });
 
   } catch (err) {
-    console.error("Webhook error:", err);
+    console.error("⚠️ Webhook error:", err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 };

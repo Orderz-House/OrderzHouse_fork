@@ -38,7 +38,6 @@ import {
   getPublicCategories,
 } from "../controller/projectsManagment/projectsFiltering.js";
 
-import { submitWorkCompletion } from "../controller/payments.js";
 
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -125,17 +124,6 @@ projectsRouter.post(
   rejectAssignment
 );
 
-/* ======================================================================
-   3) WORK SUBMIT / REVIEW / RESUBMIT
-====================================================================== */
-
-projectsRouter.post(
-  "/:projectId/submit",
-  authentication,
-  requireVerifiedWithSubscription,
-  upload.array("files"), 
-  submitWorkCompletion
-);
 
 projectsRouter.post(
   "/:projectId/resubmit",
