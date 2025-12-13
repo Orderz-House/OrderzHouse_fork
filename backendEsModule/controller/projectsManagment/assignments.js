@@ -112,66 +112,90 @@ export const checkIfAssigned = async (req, res) => {
 /**
  * Get all freelancer applications (assignments) for a specific project
  */
+// جلب كل التطبيقات (العروض) على بروجكت معيّن لصاحب المشروع / الأدمن
 export const getAssignmentsForProject = async (req, res) => {
   try {
     const ownerId = req.token?.userId;
-    const { projectId } = req.params;
+    const roleId = req.token?.role; // 1 = admin (عندك حسب النظام)
+    const projectId = parseInt(req.params.projectId, 10);
 
-    if (!ownerId)
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-    if (!projectId)
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing projectId" });
+    if (Number.isNaN(projectId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID",
+      });
+    }
 
-    const proj = await pool.query(
-      `SELECT id, user_id 
-       FROM projects 
-       WHERE id = $1 AND is_deleted = false`,
+    // نتأكد أن المشروع موجود وغير محذوف
+    const { rows: projectRows } = await pool.query(
+      `
+      SELECT id, user_id, title
+      FROM projects
+      WHERE id = $1
+        AND is_deleted = false
+      `,
       [projectId]
     );
 
-    if (!proj.rows.length)
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
+    if (!projectRows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
 
-    if (String(proj.rows[0].user_id) !== String(ownerId))
+    const project = projectRows[0];
+
+    // فقط صاحب المشروع أو الأدمن يقدر يشوف التطبيقات
+    if (roleId !== 1 && String(project.user_id) !== String(ownerId)) {
       return res.status(403).json({
         success: false,
-        message: "Not authorized to view applications for this project",
+        message: "You are not allowed to view applications for this project",
       });
+    }
 
-    const q = `
-      SELECT 
-        pa.id AS assignment_id,
-        pa.project_id,
+    // التطبيقات على هذا البروجكت
+    const { rows: applications } = await pool.query(
+      `
+      SELECT
+        pa.id,
         pa.freelancer_id,
         pa.status,
         pa.assignment_type,
         pa.assigned_at,
         pa.deadline,
         pa.user_invited,
-        u.first_name || ' ' || u.last_name AS freelancer_name,
-        u.email AS freelancer_email,
-        u.username AS freelancer_username
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.role_id AS freelancer_role
       FROM project_assignments pa
-      JOIN users u ON pa.freelancer_id = u.id
+      JOIN users u ON u.id = pa.freelancer_id
       WHERE pa.project_id = $1
-      ORDER BY pa.id DESC
-    `;
-
-    const { rows } = await pool.query(q, [projectId]);
+      ORDER BY pa.assigned_at DESC
+      `,
+      [projectId]
+    );
 
     return res.status(200).json({
       success: true,
-      applications: rows,
-      message: "Applications fetched successfully",
+      project_id: projectId,
+      project_title: project.title,
+      applications,
     });
-
   } catch (err) {
     console.error("getAssignmentsForProject error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching applications",
+    });
   }
 };
