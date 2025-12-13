@@ -220,33 +220,32 @@ function ClientProjects() {
   //   };
   // }, [token]);
 
-
   const fetchApplicationsForProject = async (projectId) => {
-  if (!token) return;
-  try {
-    const { data } = await api.get(
-      `/projects/project/${projectId}/applications`,
-      {
-        headers: { authorization: `Bearer ${token}` },
-      }
-    );
+    if (!token) return;
+    try {
+      const { data } = await api.get(
+        `/projects/project/${projectId}/applications`,
+        {
+          headers: { authorization: `Bearer ${token}` },
+        }
+      );
 
-    const list = Array.isArray(data?.applications)
-      ? data.applications
-      : Array.isArray(data?.data)
-      ? data.data
-      : Array.isArray(data)
-      ? data
-      : [];
+      const list = Array.isArray(data?.applications)
+        ? data.applications
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+        ? data
+        : [];
 
-    setApplicationsMap((prev) => ({
-      ...prev,
-      [projectId]: list,
-    }));
-  } catch (e) {
-    console.error("Failed to fetch applications for project", projectId, e);
-  }
-};
+      setApplicationsMap((prev) => ({
+        ...prev,
+        [projectId]: list,
+      }));
+    } catch (e) {
+      console.error("Failed to fetch applications for project", projectId, e);
+    }
+  };
 
   // تحديث حالة application (accept / reject)
   const handleApplicationAction = async (assignmentId, projectId, action) => {
@@ -258,6 +257,7 @@ function ClientProjects() {
         { assignmentId, action },
         {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
+          timeout: 15000, // 15s
         }
       );
 
@@ -322,21 +322,7 @@ function ClientProjects() {
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
-        <button
-          onClick={() =>
-            navigate(
-              `/chat?projectId=${encodeURIComponent(
-                id
-              )}&with=${encodeURIComponent(row.assignee || "Freelancer")}`
-            )
-          }
-          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm px-2"
-          style={ringStyle}
-          title="Open chat"
-        >
-          <MessageSquare className="w-3 h-3" />
-          Chat
-        </button>
+        
 
         <button
           onClick={() => {
@@ -351,21 +337,18 @@ function ClientProjects() {
           Receive
         </button>
 
-       
-          <button
-  onClick={async () => {
-    setAppsProject({ id: pid, title: row.title });
-    await fetchApplicationsForProject(pid);
-    setAppsOpen(true);
-  }}
-  className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-  style={ringStyle}
->
-  <Eye className="w-3 h-3" />
-  Applicants
-</button>
-
-        
+        <button
+          onClick={async () => {
+            setAppsProject({ id: pid, title: row.title });
+            await fetchApplicationsForProject(pid);
+            setAppsOpen(true);
+          }}
+          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+          style={ringStyle}
+        >
+          <Eye className="w-3 h-3" />
+          Applicants
+        </button>
       </div>
     );
   };
@@ -410,7 +393,7 @@ function ClientProjects() {
         crudConfig={{
           showDetails: false,
           showRowEdit: false,
-          showDelete: true,
+          showDelete: false,
         }}
         renderActions={renderActions}
         renderSubtitle={(row) => {
@@ -498,21 +481,7 @@ function FreelancerProjects() {
     const isDone = (row.status ?? "").toLowerCase() === "done";
     return (
       <div className="flex gap-2 w-full">
-        <button
-          onClick={() =>
-            navigate(
-              `/chat?projectId=${encodeURIComponent(
-                id
-              )}&with=${encodeURIComponent(row.client || "Client")}`
-            )
-          }
-          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm px-2"
-          style={ringStyle}
-          title="Open chat"
-        >
-          <MessageSquare className="w-3 h-3" />
-          Chat
-        </button>
+       
         <button
           onClick={() => {
             setDeliverFor(row);
@@ -979,9 +948,8 @@ function ClientApplicationsDrawer({
                         <button
                           type="button"
                           disabled={!isPending || submitting}
-                          onClick={() =>
-                            onAction(key, app.project_id, "accept")
-                          }
+                          onClick={() => onAction(key, project.id, "accept")}
+
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
                             isPending && !submitting
                               ? "hover:shadow"
@@ -998,9 +966,8 @@ function ClientApplicationsDrawer({
                         <button
                           type="button"
                           disabled={!isPending || submitting}
-                          onClick={() =>
-                            onAction(key, app.project_id, "reject")
-                          }
+                          onClick={() => onAction(key, project.id, "reject")}
+
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
                             isPending && !submitting
                               ? "hover:bg-slate-50"

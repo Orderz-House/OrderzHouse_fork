@@ -1,8 +1,6 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
-import {
+import React, { useEffect, useState, useCallback } from "react";import { useSelector } from "react-redux";
+import { useOutletContext, useNavigate } from "react-router-dom";import {
   Users,
   Briefcase,
   Wallet,
@@ -14,14 +12,14 @@ import {
   ArrowDownRight,
   MessageSquare,
   FolderPlus,
+  ArrowRight,
+  UserCheck,
+  RefreshCw,
 } from "lucide-react";
 
 // 🧩 استيراد دوال الـ API الجاهزة
-import {
-  fetchAdminDashboard,
-  fetchFreelancerDashboard,
-  fetchClientDashboard,
-} from "../api/dashboard";
+import { fetchAdminDashboard, fetchFreelancerDashboard } from "../api/dashboard";
+
 
 const PRIMARY = "#028090";
 
@@ -469,40 +467,79 @@ function FreelancerDashboard() {
 
 /* ===================== داشبورد الكلينت ===================== */
 function ClientDashboard() {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
+
+  // Attention center
+  const [attention, setAttention] = useState({
+    pendingApplications: [],
+    pendingReviews: [],
+    pendingPayments: [],
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const payload = await fetchClientDashboard();
+      const payload = await fetchClientDashboard();
 
-        setStats(Array.isArray(payload?.stats) ? payload.stats : []);
-        setRecentProjects(
-          Array.isArray(payload?.recentProjects)
-            ? payload.recentProjects
-            : []
-        );
-      } catch (err) {
-        console.error("Failed to load client dashboard data", err);
-        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      setStats(Array.isArray(payload?.stats) ? payload.stats : []);
+      setRecentProjects(
+        Array.isArray(payload?.recentProjects) ? payload.recentProjects : []
+      );
 
-    load();
+      setAttention({
+        pendingApplications: Array.isArray(
+          payload?.attention?.pendingApplications
+        )
+          ? payload.attention.pendingApplications
+          : [],
+        pendingReviews: Array.isArray(payload?.attention?.pendingReviews)
+          ? payload.attention.pendingReviews
+          : [],
+        pendingPayments: Array.isArray(payload?.attention?.pendingPayments)
+          ? payload.attention.pendingPayments
+          : [],
+      });
+    } catch (err) {
+      console.error("Failed to load client dashboard data", err);
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const formatDate = (d) => {
+    if (!d) return "—";
+    try {
+      // If you want English always: toLocaleString("en-US")
+      return new Date(d).toLocaleString();
+    } catch {
+      return "—";
+    }
+  };
+
+  const money = (v) => {
+    if (v == null || v === "") return "—";
+    const n = Number(v);
+    if (Number.isFinite(n)) return new Intl.NumberFormat("en-US").format(n);
+    return String(v);
+  };
+
   return (
-    <div className="space-y-6 py-6">
+    <div className="space-y-6 py-6" dir="ltr">
       {loading && (
-        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
+        <div className="text-xs text-slate-500">Loading dashboard…</div>
       )}
       {error && (
         <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
@@ -510,6 +547,7 @@ function ClientDashboard() {
         </div>
       )}
 
+      {/* ===== Stats ===== */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.length > 0 ? (
           stats.map((s, idx) => (
@@ -522,72 +560,275 @@ function ClientDashboard() {
         ) : (
           !loading && (
             <div className="col-span-full text-xs text-slate-400">
-              لا توجد إحصائيات بعد.
+              No stats yet.
             </div>
           )
         )}
       </div>
 
+      {/* ===== Main Layout ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-          <div className="flex items-center justify-between mb-3">
+        {/* Left (2 cols): Action Center + Recent */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Action Center */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Action Center
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Quick items that need your decision to keep projects moving.
+                </p>
+              </div>
+
+              <button
+                onClick={loadDashboard}
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
+                type="button"
+              >
+                <RefreshCw
+                  className={`w-3 h-3 ${loading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {/* Pending applications */}
+              <MiniListCard
+                title="Applications awaiting your decision"
+                icon={UserCheck}
+                items={attention.pendingApplications}
+                emptyText="No applications right now."
+                footerLabel="View all"
+                onFooter={() => navigate("/projects")}
+                renderItem={(item) => (
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-900 truncate">
+                      {item.project_title || item.projectTitle || "Project"}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      {item.freelancer_name ||
+                        item.freelancerName ||
+                        "Freelancer"}{" "}
+                      • {formatDate(item.assigned_at || item.applied_at)}
+                    </div>
+                  </div>
+                )}
+              />
+
+              {/* Pending reviews */}
+              <MiniListCard
+                title="Deliveries to review"
+                icon={ClipboardList}
+                items={attention.pendingReviews}
+                emptyText="No deliveries to review."
+                footerLabel="View projects"
+                onFooter={() => navigate("/projects")}
+                renderItem={(p) => (
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-900 truncate">
+                      {p.title || "Untitled"}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      Status:{" "}
+                      {p.completion_status || p.completionStatus || "—"}
+                    </div>
+                  </div>
+                )}
+              />
+
+              {/* Pending payments */}
+              <MiniListCard
+                title="Pending payments"
+                icon={Wallet}
+                items={attention.pendingPayments}
+                emptyText="No pending payments."
+                footerLabel="Go to payments"
+                onFooter={() => navigate("/projects")}
+                renderItem={(p) => (
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-900 truncate">
+                      {p.title || "Untitled"}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      Amount:{" "}
+                      {money(p.amount_to_pay ?? p.amountToPay ?? p.budget)}
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Recent projects */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Recent projects
+                </h3>
+                <p className="text-xs text-slate-500">
+                  A quick look at your latest activity.
+                </p>
+              </div>
+
+              <button
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
+                onClick={() => navigate("/projects")}
+                type="button"
+              >
+                <ArrowRight className="w-3 h-3" />
+                View all
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {recentProjects.length > 0 ? (
+                recentProjects.map((p, idx) => (
+                  <button
+                    key={p.id || p.title || idx}
+                    type="button"
+                    onClick={() => p?.id && navigate(`/project/${p.id}`)}
+                    className="w-full text-left rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3 hover:bg-slate-50"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-900 truncate">
+                        {p.title || "Untitled"}
+                      </div>
+
+                      <div className="text-xs text-slate-500 flex flex-wrap gap-2">
+                        {p.status ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-slate-200 bg-white">
+                            {p.status}
+                          </span>
+                        ) : null}
+
+                        {p.completion_status ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-slate-200 bg-white">
+                            {p.completion_status}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="text-xs font-semibold text-slate-800">
+                      {money(p.amount_to_pay ?? p.budget)}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-xs text-slate-400">
+                  No recent projects yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right col: Quick actions + Tips */}
+        <div className="space-y-6">
+          {/* Quick actions */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">
-                Recent projects
+                Quick actions
               </h3>
               <p className="text-xs text-slate-500">
-                A quick look at your latest activity.
+                Shortcuts to common actions.
               </p>
             </div>
-            <button className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <FolderPlus className="w-3 h-3" />
-              Post a project
-            </button>
+
+            <div className="grid gap-2">
+              <button
+                className="inline-flex items-center justify-between gap-2 h-10 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs"
+                onClick={() => navigate("/projects/new")}
+                type="button"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <FolderPlus className="w-4 h-4" />
+                  Post a new project
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                className="inline-flex items-center justify-between gap-2 h-10 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs"
+                onClick={() => navigate("/projects")}
+                type="button"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4" />
+                  Go to my projects
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {recentProjects.length > 0 ? (
-              recentProjects.map((p, idx) => (
-                <div
-                  key={p.id || p.title || idx}
-                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-slate-900 truncate">
-                      {p.title || "بدون عنوان"}
-                    </div>
-                    {p.status && (
-                      <div className="text-xs text-slate-500">
-                        {p.status}
-                      </div>
-                    )}
-                  </div>
-                  {p.budget && (
-                    <div className="text-xs font-semibold text-slate-800">
-                      {p.budget}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-slate-400">
-                لا توجد مشاريع حديثة حالياً.
-              </div>
-            )}
+          {/* Tips */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-slate-900">
+              Tips for better results
+            </h3>
+            <ul className="space-y-2 text-xs text-slate-600 list-disc pl-4">
+              <li>Write a clear, detailed description with examples.</li>
+              <li>Define requirements and deliverables explicitly.</li>
+              <li>Attach references (files/links) to reduce revisions.</li>
+              <li>Split large projects into milestones.</li>
+            </ul>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-900">
-            Tips to get better results
-          </h3>
-          <ul className="space-y-2 text-xs text-slate-600 list-disc pl-4">
-            <li>Write clear, detailed project descriptions.</li>
-            <li>Share examples or references of what you like.</li>
-            <li>Invite freelancers with relevant skills directly.</li>
-            <li>Break big projects into smaller milestones.</li>
-          </ul>
+/* ===== Small helper card (same theme) ===== */
+function MiniListCard({
+  title,
+  icon: Icon,
+  items,
+  emptyText,
+  footerLabel,
+  onFooter,
+  renderItem,
+}) {
+  const top = Array.isArray(items) ? items.slice(0, 4) : [];
+
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="inline-flex items-center gap-2">
+          {Icon ? <Icon className="w-4 h-4 text-slate-600" /> : null}
+          <div className="text-xs font-semibold text-slate-900">{title}</div>
         </div>
+
+        {typeof onFooter === "function" ? (
+          <button
+            type="button"
+            onClick={onFooter}
+            className="text-[11px] text-slate-500 hover:text-slate-700"
+          >
+            {footerLabel || "View"}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        {top.length > 0 ? (
+          top.map((item, idx) => (
+            <div
+              key={item?.id || item?.assignment_id || idx}
+              className="rounded-lg bg-white border border-slate-100 px-2.5 py-2"
+            >
+              {renderItem ? renderItem(item) : null}
+            </div>
+          ))
+        ) : (
+          <div className="text-[11px] text-slate-400">{emptyText}</div>
+        )}
       </div>
     </div>
   );

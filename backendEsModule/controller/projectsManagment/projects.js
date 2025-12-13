@@ -497,8 +497,14 @@ export const approveOrRejectApplication = async (req, res) => {
       `SELECT id FROM project_assignments WHERE project_id = $1 AND status = 'active'`,
       [assignment.project_id]
     );
-    if (existingAccepted.rows.length > 0)
-      return res.status(400).json({ success: false, message: "Only one freelancer can be accepted per project" });
+    if (existingAccepted.rows.length > 0) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    success: false,
+    message: "Already have active freelancer",
+  });
+}
+
 
     await client.query(
       `UPDATE project_assignments SET status = 'active' WHERE id = $1`,
@@ -511,12 +517,15 @@ export const approveOrRejectApplication = async (req, res) => {
       [assignment.project_id, assignmentId]
     );
 
-    await client.query(
-      `UPDATE projects 
-       SET assigned_freelancer_id = $1, status = 'in_progress', completion_status = 'in_progress'
-       WHERE id = $2`,
-      [assignment.freelancer_id, assignment.project_id]
-    );
+    await client.query(`
+  UPDATE projects
+  SET status = 'in_progress',
+      completion_status = 'in_progress',
+      updated_at = NOW()
+  WHERE id = $1
+`, [assignment.project_id]);
+
+
 
     await client.query("COMMIT");
 
@@ -570,14 +579,15 @@ export const acceptAssignment = async (req, res) => {
       [assignmentId]
     );
 
-    await pool.query(
-      `UPDATE projects 
-       SET status = 'in_progress', 
-           completion_status = 'in_progress', 
-           assigned_freelancer_id = $1 
-       WHERE id = $2`,
-      [freelancerId, assignment.project_id]
+    await client.query(
+      `UPDATE projects
+       SET status = 'in_progress',
+           completion_status = 'in_progress',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [assignment.project_id]
     );
+
 
     await LogCreators.projectOperation(
       freelancerId,
