@@ -42,6 +42,9 @@ import CopywritingTest from "./components/CopywritingTest";
 
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
 // import ChatPage from "./components/Chat/ChatPage";
+import PaymentSuccess from "./components/success/PaymentSuccess";
+
+
 
 
 
@@ -304,6 +307,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/payment/success"
+           element={<PaymentSuccess />} />
+
 
           {/* --- 404 Fallback --- */}
           <Route
