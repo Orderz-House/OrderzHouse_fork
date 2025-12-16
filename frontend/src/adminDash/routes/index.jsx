@@ -5,7 +5,7 @@ import Dashboard from "../pages/Dashboard.jsx";
 import Admins from "../pages/people/Admins.jsx";
 import Clients from "../pages/people/Clients.jsx";
 import Freelancers from "../pages/people/Freelancers.jsx";
-import Courses from "../pages/learning/Courses.jsx";
+// import Courses from "../pages/learning/Courses.jsx";
 import Categories from "../pages/learning/Categories.jsx";
 import SubCategories from "../pages/learning/SubCategories.jsx";
 import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
@@ -20,7 +20,7 @@ import Blogs from "../pages/community/Blogs.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
-import Tasks from "../pages/operation/Tasks.jsx";
+// import Tasks from "../pages/operation/Tasks.jsx";
 import Profile from "../pages/Profile.jsx";
 
 // 👇 استيراد صفحة الإعدادات
@@ -58,7 +58,7 @@ export default function AdminRouter() {
         <Route path="people/clients" element={<Clients />} />
         <Route path="people/freelancers" element={<Freelancers />} />
 
-        <Route path="learning/courses" element={<Courses />} />
+        {/* <Route path="learning/courses" element={<Courses />} /> */}
         <Route path="learning/categories" element={<Categories />} />
         <Route path="learning/categories/:categoryId" element={<SubCategories />} />
         <Route
@@ -71,7 +71,7 @@ export default function AdminRouter() {
         <Route path="operation/projects" element={<AdminProjects />} />
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
-        <Route path="operation/tasks" element={<Tasks />} />
+        {/* <Route path="operation/tasks" element={<Tasks />} /> */}
         <Route path="community/blogs" element={<Blogs />} />
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
@@ -84,8 +84,8 @@ export default function AdminRouter() {
         {/* generic sections —  /admin  /client  /freelancer */}
         <Route path="projects" element={<ProjectsSwitch />} />
         <Route path="payments" element={<Payments />} />
-        <Route path="courses" element={<Courses />} />
-        <Route path="tasks" element={<Tasks />} />
+        {/* <Route path="courses" element={<Courses />} /> */}
+        {/* <Route path="tasks" element={<Tasks />} /> */}
       </Route>
     </Routes>
   );

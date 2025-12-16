@@ -61,7 +61,7 @@ const Sidebar = ({
   // Default icons
   const defaultIcons = {
     projects: FolderKanban,
-    tasks: CheckSquare,
+    // tasks: CheckSquare,
     payments: CreditCard,
     notifications: Bell,
     profile: User,

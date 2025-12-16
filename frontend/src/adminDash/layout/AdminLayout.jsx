@@ -41,19 +41,19 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/people/admins")) return "admins";
     if (p.startsWith("/people/clients")) return "clients";
     if (p.startsWith("/people/freelancers")) return "freelancers";
-    if (p.startsWith("/learning/courses")) return "courses";
+    // if (p.startsWith("/learning/courses")) return "courses";
     if (p.startsWith("/learning/categories")) return "categories";
     if (p.startsWith("/operation/verifications")) return "verifications";
     if (p.startsWith("/operation/projects")) return "projects";
-    if (p.startsWith("/operation/tasks")) return "tasks";
+    // if (p.startsWith("/operation/tasks")) return "tasks";
     if (p.startsWith("/community/blogs")) return "blogs";
     if (p.startsWith("/finance/payments")) return "payments";
     if (p.startsWith("/finance/plans")) return "plans";
     if (p.startsWith("/analytics")) return "analytics";
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    if (p.startsWith("/tasks")) return "tasks";
-    if (p.startsWith("/courses")) return "courses";
+    // if (p.startsWith("/tasks")) return "tasks";
+    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -61,15 +61,15 @@ function getActiveFromPath(pathname) {
   if (base === "/client") {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    if (p.startsWith("/tasks")) return "tasks";
-    if (p.startsWith("/courses")) return "courses";
+    // if (p.startsWith("/tasks")) return "tasks";
+    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
   if (base === "/partner") {
       if (p.startsWith("/projects")) return "projects";
       if (p.startsWith("/payments")) return "payments";
-      if (p.startsWith("/tasks")) return "tasks";
-      if (p.startsWith("/courses")) return "courses";
+      // if (p.startsWith("/tasks")) return "tasks";
+      // if (p.startsWith("/courses")) return "courses";
       if (p.startsWith("/profile")) return "profile";
   }
 
@@ -77,8 +77,8 @@ function getActiveFromPath(pathname) {
   if (base === "/freelancer") {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    if (p.startsWith("/tasks")) return "tasks";
-    if (p.startsWith("/courses")) return "courses";
+    // if (p.startsWith("/tasks")) return "tasks";
+    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -101,11 +101,11 @@ function getNav(role, navigate, base, onLogout) {
       { id: "admins", name: "Admins", icon: Users, onClick: () => navigate(`${base}/people/admins`) },
       { id: "clients", name: "Clients", icon: Users, onClick: () => navigate(`${base}/people/clients`) },
       { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate(`${base}/people/freelancers`) },
-      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
+      // { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
       { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => navigate(`${base}/learning/categories`) },
       { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate(`${base}/operation/verifications`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/operation/projects`) },
-      { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
+      // { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
       { id: "blogs", name: "Blogs", icon: FileText, onClick: () => navigate(`${base}/community/blogs`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/finance/payments`) },
       { id: "plans", name: "Plans", icon: DollarSign, onClick: () => navigate(`${base}/finance/plans`) },
@@ -138,7 +138,7 @@ function getNav(role, navigate, base, onLogout) {
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
-      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
+      // { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
@@ -152,8 +152,8 @@ function getNav(role, navigate, base, onLogout) {
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
-      { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
-      { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
+      // { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
+      // { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },

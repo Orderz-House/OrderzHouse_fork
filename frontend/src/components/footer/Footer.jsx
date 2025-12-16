@@ -18,21 +18,17 @@ export default function CleanFooter() {
     { label: "Home", to: "/" },
     { label: "About Us", to: "/about" },
     { label: "Blogs", to: "/blogs" },
-    { label: "Contact", to: "/contact" },
     { label: "Projects", to: "/projectsPage" },
     { label: "Plans", to: "/plans" },
   ];
 
   const clientLinks = [
     { label: "Add project", to: "/create-project" },
-    { label: "Plans & Pricing", to: "/plans" },
-    { label: "Contact Support", to: "/contact" },
   ];
 
   const freelancerLinks = [
-    { label: "Add task", to: "/tasks/create" },
+    // { label: "Add task", to: "/tasks/create" },
     { label: "Projects", to: "/projectsPage" },
-    { label: "Blogs", to: "/blogs" },
   ];
 
   const resourceLinks = [
@@ -44,7 +40,6 @@ export default function CleanFooter() {
   const companyLinks = [
     { label: "About Us", to: "/about" },
     { label: "Contact", to: "/contact" },
-    { label: "Blogs", to: "/blogs" },
   ];
 
   const Block = ({ title, items }) => (

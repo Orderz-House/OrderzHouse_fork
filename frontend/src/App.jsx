@@ -19,17 +19,17 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
-import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
+// import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
 import NotificationsPage from "./components/notifications/NotificationsPage";
 import AccountSuspended from "./components/AccountSuspended/AccountSuspended";
 import Plans from "./components/plans/Plans.jsx";
 import ProjectsPage from "./components/Catigories/ProjectsPage";
 import AdminAppointments from "./components/Appointments/AdminAppointments";
 import FreelancerAppointments from "./components/Appointments/FreelancerAppointments";
-import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
-import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
-import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
-import AccessDenied from "./components/coursesManagement/AccessDenied";
+// import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
+// import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
+// import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
+// import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx";
 import BlogPost from "./components/blogs/BlogPost.jsx";
@@ -41,7 +41,7 @@ import CreateTaskPage from "./components/CreateProjects/CreateTaskPage";
 import CopywritingTest from "./components/CopywritingTest";
 
 import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
-import ChatPage from "./components/Chat/ChatPage";
+// import ChatPage from "./components/Chat/ChatPage";
 
 
 
@@ -128,35 +128,35 @@ function App() {
           />
 
           {/* --- Tasks --- */}
-          <Route
+          {/* <Route
             path="/tasks"
             element={
               <ProtectedRoute>
                 <ProjectsPage mode="tasks" />
               </ProtectedRoute>
-            }
-          />
+            } */}
+          
 
-          <Route
+          {/* <Route
             path="/tasks/create"
             element={
               <ProtectedRoute>
                 <CreateTaskPage /> {/* 👈 صفحة إنشاء التاسك */}
-              </ProtectedRoute>
+              {/* </ProtectedRoute>
             }
-          />
+          /> */}
 
-          <Route
+          {/* <Route
             path="/tasks/:id"
             element={
               <ProtectedRoute>
                 <ProjectDetails mode="tasks" />
               </ProtectedRoute>
-            }
-          />
+          //   }
+          // /> */} 
 
           {/* --- Course Management --- */}
-          <Route
+          {/* <Route
             path="/courses/:id"
             element={
               <ProtectedRoute>
@@ -188,7 +188,7 @@ function App() {
                 <AdminCourseAccessControl />
               </ProtectedRoute>
             }
-          />
+          /> */}
 
           {/* --- Notifications & Projects --- */}
           <Route
@@ -234,7 +234,7 @@ function App() {
             }
           />
 
-          {/* --- Chat --- */}
+          {/* --- Chat ---
           <Route
             path="/chat"
             element={
@@ -250,7 +250,7 @@ function App() {
                 <ChatPage />
               </ProtectedRoute>
             }
-          />
+          /> */}
 
           {/* --- Admin / Client / Freelancer --- */}
           <Route

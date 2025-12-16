@@ -52,7 +52,7 @@ export default function EnhancedNavbar() {
     else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
     else if (p.startsWith("/contact")) setActiveLink("CONTACT");
     else if (p.startsWith("/plans")) setActiveLink("PLANS");
-    else if (p.startsWith("/tasks")) setActiveLink("TASKS");
+    // else if (p.startsWith("/tasks")) setActiveLink("TASKS");
     else if (
       p.startsWith("/projects") ||
       p.startsWith("/projectspage") ||
@@ -60,7 +60,7 @@ export default function EnhancedNavbar() {
     ) {
       setActiveLink("PROJECTS");
     } else if (p.startsWith("/create-project")) setActiveLink("ADD PROJECT");
-    else if (p.startsWith("/tasks/create")) setActiveLink("ADD TASK");
+    // else if (p.startsWith("/tasks/create")) setActiveLink("ADD TASK");
     else setActiveLink(null);
   }, [location.pathname]);
 
@@ -191,7 +191,7 @@ export default function EnhancedNavbar() {
       path: "/projectsPage",
       condition: userData && (userData.role_id === 1 || userData.role_id === 2 || userData.role_id === 3),
     },
-    { label: "TASKS", path: "/tasks", condition: true },
+    // { label: "TASKS", path: "/tasks", condition: true },
   ];
 
   const exploreItems = [
@@ -312,7 +312,7 @@ export default function EnhancedNavbar() {
                 <Plus className="h-4 w-4" /> Add project
               </Link>
             )}
-
+{/* 
             {userData?.role_id === 3 && (
               <Link
                 to="/tasks/create"
@@ -320,16 +320,16 @@ export default function EnhancedNavbar() {
               >
                 <Plus className="h-4 w-4" /> Add task
               </Link>
-            )}
+            )} */}
 
-            {IsAuthenticated && (
+            {/* {IsAuthenticated && (
               <>
                 <button
-                  onClick={() => navigate("/chat")}
+                  // onClick={() => navigate("/chat")}
                   className="p-2 text-gray-600 hover:text-[#028090] transition-colors duration-150"
                 >
                   <MessageSquare className="h-5 w-5" />
-                </button>
+                </button> */}
 
                 <div className="relative" ref={notificationsRef}>
                   <button
@@ -399,8 +399,8 @@ export default function EnhancedNavbar() {
                     </div>
                   )}
                 </div>
-              </>
-            )}
+              
+            
 
             {/* User Menu */}
             {IsAuthenticated && userData ? (
@@ -574,7 +574,7 @@ export default function EnhancedNavbar() {
                 </div>
               </div>
 
-              {/* Add Project / Task */}
+              {/* Add Project / Task
               {(userData?.role_id === 2 || userData?.role_id === 3) && (
                 <div className="pt-4 border-t space-y-2">
                   {userData?.role_id === 2 && (
@@ -602,12 +602,12 @@ export default function EnhancedNavbar() {
                     </button>
                   )}
                 </div>
-              )}
+              )} */}
 
               {/* Chat + Notifications */}
-              {IsAuthenticated && (
-                <div className="pt-4 border-t space-y-2">
-                  <button
+              {/* {IsAuthenticated && (
+                <div className="pt-4 border-t space-y-2"> */}
+                  {/* <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       navigate("/chat");
@@ -616,8 +616,8 @@ export default function EnhancedNavbar() {
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Chat
-                  </button>
-                  <button
+                  </button> */}
+                  {/* <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       navigate("/notifications");
@@ -633,7 +633,7 @@ export default function EnhancedNavbar() {
                     )}
                   </button>
                 </div>
-              )}
+              )} */}
 
               {/* Dashboard + Sign Out */}
               {IsAuthenticated && userData && (

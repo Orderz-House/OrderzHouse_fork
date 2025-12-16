@@ -129,53 +129,53 @@ export default function ProjectDetails() {
     );
   }, [project]);
 
-  const chatWith =
-    role === "client" ? (project?.assignee || "Freelancer") : (project?.client || "Client");
+  // const chatWith =
+  //   role === "client" ? (project?.assignee || "Freelancer") : (project?.client || "Client");
 
-  const isDone = (project?.status ?? "").toLowerCase() === "done";
+  // const isDone = (project?.status ?? "").toLowerCase() === "done";
 
-  const RightActions = () => (
-    <div className="space-y-3">
-      <button
-        onClick={() =>
-          navigate(
-            `/chat?projectId=${encodeURIComponent(projectId)}&with=${encodeURIComponent(chatWith)}`
-          )
-        }
-        className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
-        style={ringStyle}
-        title="Open chat"
-      >
-        <MessageSquare className="w-4 h-4" />
-        Chat
-      </button>
+  // const RightActions = () => (
+  //   <div className="space-y-3">
+  //     <button
+  //       onClick={() =>
+  //         navigate(
+  //           `/chat?projectId=${encodeURIComponent(projectId)}&with=${encodeURIComponent(chatWith)}`
+  //         )
+  //       }
+  //       className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
+  //       style={ringStyle}
+  //       title="Open chat"
+  //     >
+  //       <MessageSquare className="w-4 h-4" />
+  //       Chat
+  //     </button>
 
-      {role === "client" ? (
-        <button
-          onClick={() => setReviewOpen(true)}
-          className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl text-white text-sm hover:shadow"
-          style={{ backgroundColor: T.primary }}
-          title="Review & receive delivery"
-        >
-          <SendHorizontal className="w-4 h-4" />
-          Receive
-        </button>
-      ) : role === "freelancer" ? (
-        <button
-          onClick={() => setDeliverOpen(true)}
-          disabled={isDone}
-          className={`w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl text-white text-sm ${
-            isDone ? "opacity-60 cursor-not-allowed" : "hover:shadow"
-          }`}
-          style={{ backgroundColor: T.primary }}
-          title={isDone ? "Already delivered" : "Deliver this project"}
-        >
-          <SendHorizontal className="w-4 h-4" />
-          {isDone ? "Delivered" : "Deliver"}
-        </button>
-      ) : null}
-    </div>
-  );
+  //     {role === "client" ? (
+  //       <button
+  //         onClick={() => setReviewOpen(true)}
+  //         className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl text-white text-sm hover:shadow"
+  //         style={{ backgroundColor: T.primary }}
+  //         title="Review & receive delivery"
+  //       >
+  //         <SendHorizontal className="w-4 h-4" />
+  //         Receive
+  //       </button>
+  //     ) : role === "freelancer" ? (
+  //       <button
+  //         onClick={() => setDeliverOpen(true)}
+  //         disabled={isDone}
+  //         className={`w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl text-white text-sm ${
+  //           isDone ? "opacity-60 cursor-not-allowed" : "hover:shadow"
+  //         }`}
+  //         style={{ backgroundColor: T.primary }}
+  //         title={isDone ? "Already delivered" : "Deliver this project"}
+  //       >
+  //         <SendHorizontal className="w-4 h-4" />
+  //         {isDone ? "Delivered" : "Deliver"}
+  //       </button>
+  //     ) : null}
+  //   </div>
+  // );
 
   return (
     <div className="p-4 md:p-6">
