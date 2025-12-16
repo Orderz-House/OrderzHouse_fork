@@ -32,7 +32,139 @@ function formatMoney(n) {
 }
 
 /* ===================== Client dashboard (عندك موجود) ===================== */
-// export async function fetchClientDashboard() { ... }
+/* ===================== Client dashboard ===================== */
+export async function fetchClientDashboard() {
+  const api = axios.create({
+    baseURL: API_BASE,
+    headers: { ...getAuthHeaders() },
+  });
+
+  // مشاريع الكلينت + Applications (Assignments) + Offers (اختياري لكن مفيد لو عندك نظام عروض)
+  const [projectsRes, appsRes, offersRes] = await Promise.allSettled([
+    api.get("/projects/myprojects"),
+    api.get("/projects/applications/my-projects"),
+    api.get("/offers/my-projects/offers"),
+  ]);
+
+  const projects =
+    projectsRes.status === "fulfilled"
+      ? pickArray(projectsRes.value?.data, ["projects", "data", "rows", null])
+      : [];
+
+  const applications =
+    appsRes.status === "fulfilled"
+      ? pickArray(appsRes.value?.data, ["applications", "data", "rows", null])
+      : [];
+
+  const offers =
+    offersRes.status === "fulfilled"
+      ? pickArray(offersRes.value?.data, ["offers", "data", "rows", null])
+      : [];
+
+  // ===== Pending decisions (Applications + Offers) =====
+  const pendingApplications = applications.filter(
+    (a) => String(a?.status || "").toLowerCase() === "pending_client_approval"
+  );
+
+  const pendingOffers = offers.filter(
+    (o) => String(o?.offer_status || o?.status || "").toLowerCase() === "pending"
+  );
+
+  // ندمجهم في قائمة وحدة للـ Action Center (حتى لو شكل offer مختلف)
+  const pendingDecisions = [
+    ...pendingApplications,
+    ...pendingOffers.map((o) => ({
+      ...o,
+      // نحاول نوحّد أسماء الحقول قدر الإمكان (عشان الكارد يعرض بشكل أحسن)
+      project_title: o.project_title || o.projectTitle || o.title,
+      freelancer_name:
+        o.freelancer_name ||
+        o.freelancerName ||
+        o.freelancer_username ||
+        o.username,
+      applied_at: o.created_at || o.createdAt || o.offered_at || o.offeredAt,
+    })),
+  ];
+
+  // ===== Pending payments =====
+  const pendingPaymentProjects = projects.filter(
+    (p) => String(p?.status || "").toLowerCase() === "pending_payment"
+  );
+
+  const pendingPaymentsAmount = pendingPaymentProjects.reduce(
+    (sum, p) => sum + toNum(p?.amount_to_pay ?? p?.amountToPay ?? 0),
+    0
+  );
+
+  // ===== Pending reviews =====
+  const pendingReviews = projects.filter(
+    (p) => String(p?.completion_status || "").toLowerCase() === "pending_review"
+  );
+
+  // ===== Active projects =====
+  const activeProjectsCount = projects.filter((p) => {
+    const s = String(p?.status || "").toLowerCase();
+    return ["in_progress", "active", "running", "started"].includes(s);
+  }).length;
+
+  // ===== Stats cards =====
+  const stats = [
+    {
+      id: "active_projects",
+      title: "Active projects",
+      value: activeProjectsCount,
+      sub: "Currently running",
+      icon: Briefcase,
+      accent: "bg-sky-50",
+    },
+    {
+      id: "pending_decisions",
+      title: "Pending decisions",
+      value: pendingDecisions.length,
+      sub: "Offers / applications waiting for you",
+      icon: UserCheck,
+      accent: "bg-amber-50",
+    },
+    {
+      id: "pending_reviews",
+      title: "Pending reviews",
+      value: pendingReviews.length,
+      sub: "Work submitted, needs review",
+      icon: ClipboardList,
+      accent: "bg-indigo-50",
+    },
+    {
+      id: "pending_payments",
+      title: "Pending payments",
+      value: pendingPaymentProjects.length,
+      sub:
+        pendingPaymentProjects.length > 0
+          ? `Due: ${formatMoney(pendingPaymentsAmount)}`
+          : "No payments pending",
+      icon: Wallet,
+      accent: "bg-rose-50",
+    },
+  ];
+
+  // ===== Recent projects =====
+  const recentProjects = [...projects]
+    .sort((a, b) => {
+      const da = new Date(a?.updated_at || a?.created_at || 0).getTime();
+      const db = new Date(b?.updated_at || b?.created_at || 0).getTime();
+      return db - da;
+    })
+    .slice(0, 6);
+
+  return {
+    stats,
+    recentProjects,
+    attention: {
+      pendingApplications: pendingDecisions.slice(0, 4),
+      pendingReviews: pendingReviews.slice(0, 4),
+      pendingPayments: pendingPaymentProjects.slice(0, 4),
+    },
+  };
+}
 
 /* ===================== Admin dashboard ===================== */
 export async function fetchAdminDashboard() {
