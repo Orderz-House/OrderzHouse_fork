@@ -510,7 +510,7 @@ function FreelancerProjects() {
       fd.append("links", JSON.stringify(payload.links || {}));
       fd.append("checklist", JSON.stringify(payload.checklist || {}));
       (payload.files || []).forEach((f) => fd.append("files", f));
-      await api.post(`/api/freelancer/projects/${project.id}/deliver`, fd, {
+      await api.post(`/freelancer/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
     } catch (e) {
@@ -603,7 +603,7 @@ function ClientReviewDrawer({
       try {
         setLoading(true);
         const { data } = await api.get(
-          `/api/client/projects/${project.id}/deliveries`,
+          `/client/projects/${project.id}/deliveries`,
           {
             headers: { authorization: `Bearer ${token}` },
           }
