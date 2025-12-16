@@ -695,72 +695,87 @@ export const approveWorkCompletion = async (req, res) => {
   try {
     const clientId = req.token.userId;
     const { projectId } = req.params;
-    const { action } = req.body; // 'approve' or 'revision_requested'
+    const { action } = req.body;
 
     if (!["approve", "revision_requested"].includes(action)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid action" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action",
+      });
     }
 
-    const { rows: projectRows } = await pool.query(
-      `SELECT user_id, assigned_freelancer_id, title 
-       FROM projects 
+    // 1) Load project
+    const { rows } = await pool.query(
+      `SELECT id, user_id, title
+       FROM projects
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
     );
-    if (!projectRows.length)
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
 
-    const project = projectRows[0];
-    if (project.user_id !== clientId)
-      return res
-        .status(403)
-        .json({ success: false, message: "Only client can approve work" });
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const project = rows[0];
+
+    // 2) Only client can approve
+    if (String(project.user_id) !== String(clientId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Only client can approve work",
+      });
+    }
 
     const newStatus =
       action === "approve" ? "completed" : "revision_requested";
 
+    // 3) Update ONLY the column you have
     await pool.query(
-      `UPDATE projects 
-         SET completion_status = $1, completed_at = NOW() 
+      `UPDATE projects
+       SET completion_status = $1,
+           updated_at = NOW()
        WHERE id = $2`,
       [newStatus, projectId]
     );
 
-    await pool.query(
-      `INSERT INTO completion_history (project_id, event, timestamp, actor, notes)
-       VALUES ($1, $2, NOW(), $3, $4)`,
-      [projectId, newStatus, clientId, `Client ${action}`]
-    );
-
-    await LogCreators.projectOperation(
-      clientId,
-      ACTION_TYPES.PROJECT_STATUS_CHANGE,
-      projectId,
-      true,
-      { action: newStatus }
-    );
-
+    // 4) Optional notification (safe)
     try {
-      await NotificationCreators.workCompletionReviewed(
-        project.assigned_freelancer_id,
-        projectId,
-        project.title,
-        newStatus
+      const { rows: freelancers } = await pool.query(
+        `SELECT freelancer_id
+         FROM project_assignments
+         WHERE project_id = $1 AND status = 'active'`,
+        [projectId]
       );
-    } catch (notifErr) {
-      console.error("Notification error:", notifErr);
-    }
 
-    return res.json({ success: true, message: `Work ${action}` });
+      for (const f of freelancers) {
+        try {
+          await NotificationCreators?.workCompletionReviewed?.(
+            f.freelancer_id,
+            projectId,
+            project.title,
+            newStatus
+          );
+        } catch {}
+      }
+    } catch {}
+
+    return res.json({
+      success: true,
+      message: `Work ${action}`,
+      completion_status: newStatus,
+    });
   } catch (err) {
     console.error("approveWorkCompletion error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
 
 /**
  * Freelancer → resubmit work after revision requested
@@ -1369,5 +1384,211 @@ export const reassignFreelancer = async (req, res) => {
       success: false,
       message: "Server error while reassigning freelancer",
     });
+  }
+};
+
+
+/* ======================================================================
+   5.B) DELIVERY (Freelancer -> Client) using project_files
+====================================================================== */
+
+export const submitProjectDelivery = async (req, res) => {
+  const freelancerId = req.token?.userId;
+  const { projectId } = req.params;
+  const files = req.files?.project_files || [];
+
+  if (!freelancerId) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+  if (!projectId) {
+    return res.status(400).json({ success: false, message: "Missing projectId" });
+  }
+  if (!files.length) {
+    return res.status(400).json({ success: false, message: "No files uploaded" });
+  }
+
+  try {
+    const { rows: projectRows } = await pool.query(
+      `SELECT id, user_id AS client_id, status, title
+         FROM projects
+        WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+
+    // تحقق الصلاحية عبر project_assignments فقط
+    const { rows: activeAssignment } = await pool.query(
+      `SELECT 1
+         FROM project_assignments
+        WHERE project_id = $1
+          AND freelancer_id = $2
+          AND status = 'active'
+        LIMIT 1`,
+      [projectId, freelancerId]
+    );
+
+    if (!activeAssignment.length) {
+      return res.status(403).json({
+        success: false,
+        message: "Only an active freelancer on this project can submit a delivery",
+      });
+    }
+
+    const st = String(project.status || "").toLowerCase();
+    if (st !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        message: "Project must be in progress to submit a delivery",
+      });
+    }
+
+    const sentAt = new Date();
+    const uploadedFiles = [];
+
+    for (const file of files) {
+      const result = await uploadToCloudinary(
+        file.buffer,
+        `projects/${projectId}/deliveries`
+      );
+
+      const { rows } = await pool.query(
+        `INSERT INTO project_files
+          (project_id, sender_id, file_name, file_url, file_size, public_id, sent_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          projectId,
+          freelancerId,
+          file.originalname,
+          result.secure_url,
+          file.size || 0,
+          result.public_id,
+          sentAt,
+        ]
+      );
+
+      uploadedFiles.push(rows[0]);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Delivery submitted successfully",
+      sent_at: sentAt,
+      files: uploadedFiles,
+    });
+  } catch (err) {
+    console.error("submitProjectDelivery error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+export const getProjectDeliveries = async (req, res) => {
+  const userId = req.token?.userId;
+  const { projectId } = req.params;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+  if (!projectId) {
+    return res.status(400).json({ success: false, message: "Missing projectId" });
+  }
+
+  try {
+    // 1) Load project (NO assigned_freelancer_id)
+    const { rows: projectRows } = await pool.query(
+      `SELECT id,
+              user_id AS client_id
+         FROM projects
+        WHERE id = $1
+          AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (!projectRows.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+
+    // 2) Permission:
+    // - client can view
+    // - OR any freelancer with active / pending assignment
+    const isClient = String(project.client_id) === String(userId);
+
+    let isFreelancer = false;
+    if (!isClient) {
+      const { rows: activeAssignment } = await pool.query(
+        `SELECT 1
+           FROM project_assignments
+          WHERE project_id = $1
+            AND freelancer_id = $2
+            AND status IN ('active', 'pending_client_approval', 'pending_acceptance')
+          LIMIT 1`,
+        [projectId, userId]
+      );
+
+      isFreelancer = activeAssignment.length > 0;
+    }
+
+    if (!isClient && !isFreelancer) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this project's deliveries",
+      });
+    }
+
+    // 3) Pull all files and group by sent_at (each group = delivery version)
+    const { rows: files } = await pool.query(
+      `SELECT id,
+              project_id,
+              sender_id,
+              file_name,
+              file_url,
+              file_size,
+              public_id,
+              sent_at
+         FROM project_files
+        WHERE project_id = $1
+        ORDER BY sent_at DESC, id DESC`,
+      [projectId]
+    );
+
+    const map = new Map();
+
+    for (const f of files) {
+      const key = f.sent_at
+        ? new Date(f.sent_at).toISOString()
+        : "unknown";
+
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          sent_at: f.sent_at,
+          files: [],
+        });
+      }
+
+      map.get(key).files.push(f);
+    }
+
+    const deliveries = Array.from(map.values()).sort((a, b) => {
+      const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0;
+      const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0;
+      return tb - ta;
+    });
+
+    return res.json({
+      success: true,
+      deliveries,
+    });
+  } catch (err) {
+    console.error("getProjectDeliveries error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };

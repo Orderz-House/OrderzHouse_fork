@@ -11,6 +11,7 @@ import Cookies from "js-cookie";
 import { setLogout } from "../../slice/auth/authSlice";
 import { disconnectSocket } from "../../services/socketService";
 import TopBar from "../components/TopBar.jsx";
+import { useToast } from "../../components/toast/ToastProvider.jsx";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";

@@ -23,6 +23,8 @@ import {
   getAllFreelancers,
   getAllProjectsForAdmin,
   reassignFreelancer,
+  submitProjectDelivery,
+  getProjectDeliveries,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -252,6 +254,24 @@ projectsRouter.get(
   "/project/:projectId/applications",
   authentication,
   getAssignmentsForProject
+);
+
+
+/* ======================================================================
+   DELIVERY (freelancer submit) + RECEIVE (client view)
+====================================================================== */
+
+projectsRouter.post(
+  "/:projectId/deliver",
+  authentication,
+  requireVerifiedWithSubscription,
+  uploadProjectMedia,
+  submitProjectDelivery
+);
+projectsRouter.get(
+  "/:projectId/deliveries",
+  authentication,
+  getProjectDeliveries
 );
 
 export default projectsRouter;
