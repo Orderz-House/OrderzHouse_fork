@@ -7,7 +7,7 @@ const primaryDark = "rgb(0, 90, 100)";
 const primaryLight = "rgb(0, 170, 180)";
 
 function calcCols() {
-  if (typeof window === "undefined") return 5;
+  if (typeof window === "undefined") return 3;
   if (window.matchMedia("(min-width: 1280px)").matches) return 3;
   if (window.matchMedia("(min-width: 1024px)").matches) return 3;
   if (window.matchMedia("(min-width: 768px)").matches) return 3;
@@ -19,7 +19,7 @@ export default function CategoriesShowcase({
   title = "Popular services",
   categories = [],
   onSelect,
-  pageSize = 5,
+  pageSize = 6,
   loop = false,
 }) {
   const navigate = useNavigate();
@@ -39,35 +39,34 @@ export default function CategoriesShowcase({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const { data } = await axios.get(`${API_BASE}/category`);
+        if (!data?.success || !data?.data) throw new Error("Invalid response format from API");
 
-        if (data.success && data.data) {
-          const mappedCategories = data.data.map((cat) => ({
-            id: cat.id,
-            name: cat.name,
-            description: cat.description,
-           image:
-  cat.name.toLowerCase().includes("design")
-    ? "/categories/design.webp"
-    : cat.name.toLowerCase().includes("content")
-    ? "/categories/content-writting.webp"
-    : cat.name.toLowerCase().includes("develop")
-    ? "/categories/development.webp"
-    : "/categories/design.webp", // صورة افتراضية لو الاسم ما طابق أي شيء
+        const mappedCategories = data.data.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description,
+          image: cat.name?.toLowerCase().includes("design")
+            ? "/categories/design.png"
+            : cat.name?.toLowerCase().includes("content")
+            ? "/categories/content-writting.png"
+            : cat.name?.toLowerCase().includes("develop")
+            ? "/categories/development.png"
+            : "/categories/design.png",
+          tags: cat.related_words || [],
+          count: null,
+        }));
 
-            tags: cat.related_words || [],
-            count: null,
-          }));
-          setFetchedCategories(mappedCategories);
-        } else {
-          throw new Error("Invalid response format from API");
-        }
+        setFetchedCategories(mappedCategories);
       } catch (err) {
-        setError(err.message);
+        setError(err?.message || "Something went wrong");
       } finally {
         setLoading(false);
       }
@@ -76,14 +75,11 @@ export default function CategoriesShowcase({
     fetchCategories();
   }, [API_BASE]);
 
-  const allCategories = fetchedCategories.length
-    ? fetchedCategories
-    : categories;
-  const cats = useMemo(() => allCategories.slice(0, 10), [allCategories]);
+  const allCategories = fetchedCategories.length ? fetchedCategories : categories;
+  const cats = useMemo(() => allCategories.slice(0, 12), [allCategories]);
 
+  // Responsive cols
   const [cols, setCols] = useState(calcCols());
-  const effPageSize = Math.min(pageSize, cols);
-
   useEffect(() => {
     const mds = [
       window.matchMedia("(min-width: 1280px)"),
@@ -97,9 +93,13 @@ export default function CategoriesShowcase({
     return () => mds.forEach((m) => m.removeEventListener("change", update));
   }, []);
 
+  const effPageSize = Math.max(1, Math.min(pageSize, cols * 2)); // show more on desktop
   const totalPages = Math.max(1, Math.ceil(cats.length / effPageSize));
   const [page, setPage] = useState(0);
-  useEffect(() => setPage((p) => Math.min(p, totalPages - 1)), [totalPages]);
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages - 1));
+  }, [totalPages]);
 
   const goNext = useCallback(() => {
     if (page + 1 < totalPages) setPage(page + 1);
@@ -125,19 +125,20 @@ export default function CategoriesShowcase({
     return cats.slice(start, start + effPageSize);
   }, [cats, page, effPageSize]);
 
-  const grid = `grid gap-4 sm:gap-5 justify-items-center
+  const grid = `grid gap-5 justify-items-center
     ${cols === 1 ? "grid-cols-1" : ""}
     ${cols === 2 ? "sm:grid-cols-2" : ""}
     ${cols === 3 ? "md:grid-cols-3" : ""}
-    ${cols === 4 ? "lg:grid-cols-4" : ""}
-    ${cols >= 5 ? "xl:grid-cols-5" : ""}
   `;
-
-  const D = 180;
-  const anim = { opacity: 1, transform: "translateY(0)" };
-
+  
   return (
-    <section className="relative py-10 sm:py-14 md:py-16 px-6 sm:px-5 lg:px-8 bg-white">
+   <section className>
+      <StyleTag />
+
+      {/* soft background blobs */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl jtk-bg1" />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full opacity-20 blur-3xl jtk-bg2" />
+
       <div className="max-w-7xl mx-auto relative">
         {/* Header */}
         <div className="mb-8 sm:mb-10 text-center">
@@ -152,8 +153,8 @@ export default function CategoriesShowcase({
         {/* Loading */}
         {loading && (
           <div className="text-center py-12">
-            <div className="inline-block w-8 h-8 border-4 border-[rgb(2,128,144)] border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-slate-600">Loading categories.</p>
+            <div className="inline-block w-9 h-9 border-4 border-[rgb(2,128,144)] border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-slate-600">Loading categories...</p>
           </div>
         )}
 
@@ -167,38 +168,26 @@ export default function CategoriesShowcase({
         {/* Content */}
         {!loading && !error && cats.length > 0 && (
           <>
-            <div className="md:hidden">
-              <div
-                className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]"
-                style={{ scrollBehavior: "smooth" }}
-              >
+            {/* Mobile: savage carousel */}
+            <div className="md:hidden relative">
+            
+
+              <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] px-1">
                 <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
                 {cats.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="snap-start shrink-0 w-[85%] xs:w-[80%] sm:w-[70%]"
-                  >
+                  <div key={cat.id} className="snap-start shrink-0 w-[88%] sm:w-[72%]">
                     <Card cat={cat} onClick={() => handleSelect(cat)} />
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Desktop: grid + pagination */}
             <div className="hidden md:block">
               <div className="flex justify-center">
-                <div
-                  className={`${
-                    visible.length < cols
-                      ? "flex flex-wrap justify-center gap-4 sm:gap-5 items-stretch"
-                      : grid + " items-stretch"
-                  }`}
-                  style={{
-                    transition: `opacity ${D}ms ease, transform ${D}ms ease`,
-                    ...anim,
-                  }}
-                >
+                <div className={`${grid} items-stretch`} style={{ transition: "opacity 180ms ease" }}>
                   {visible.map((cat) => (
-                    <div key={cat.id} className="w-[300px]">
+                    <div key={cat.id} className="w-[340px]">
                       <Card cat={cat} onClick={() => handleSelect(cat)} />
                     </div>
                   ))}
@@ -213,14 +202,14 @@ export default function CategoriesShowcase({
                     hasPrev={loop || page > 0}
                     hasNext={loop || page < totalPages - 1}
                   />
-                  <div className="mt-6 flex items-center justify-center gap-2">
+                  <div className="mt-7 flex items-center justify-center gap-2">
                     {Array.from({ length: totalPages }).map((_, i) => (
-                      <span
+                      <button
                         key={i}
+                        onClick={() => setPage(i)}
+                        aria-label={`Go to page ${i + 1}`}
                         className={`h-1.5 rounded-full transition-all ${
-                          i === page
-                            ? "w-6 bg-[rgb(2,128,144)]"
-                            : "w-2 bg-slate-300"
+                          i === page ? "w-7 bg-[rgb(2,128,144)]" : "w-2 bg-slate-300 hover:bg-slate-400"
                         }`}
                       />
                     ))}
@@ -301,89 +290,127 @@ function ChevronLeft() {
 function Card({ cat, onClick }) {
   return (
     <div
-      className="group relative rounded-2xl p-[1.5px] cursor-pointer transition-all duration-200 h-full"
-      style={{
-        background: `linear-gradient(160deg, ${primaryLight}, ${primary})`,
-      }}
       onClick={onClick}
+      className="jtk-card group relative cursor-pointer select-none h-full"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onClick?.()}
+      aria-label={`Open ${cat.name}`}
     >
-      <div className="relative rounded-[calc(1rem-2px)] bg-white h-full flex flex-col shadow-sm hover:shadow-md transition">
-        <div
-          className="rounded-t-[calc(1rem-2px)] px-3 pt-3 pb-12 text-white relative overflow-hidden"
-          style={{
-            background: `linear-gradient(160deg, ${primaryDark} 0%, ${primary} 70%, ${primaryDark} 100%)`,
-          }}
-        >
-          <div
-            className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-15 blur-2xl"
-            style={{ background: primaryLight }}
-          />
-          <div className="relative z-10 grid grid-cols-[1fr_auto] items-start gap-3 h-[40px]">
-            <h3
-              className="font-bold text-base leading-tight line-clamp-2 pr-1"
-              title={cat.name}
-            >
-              {cat.name}
-            </h3>
-            {typeof cat.count === "number" && cat.count > 0 && (
-              <span className="ml-0 inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[10px] tracking-wide whitespace-nowrap shrink-0">
-                {cat.count.toLocaleString()} jobs
-              </span>
-            )}
+      <div className="jtk-border absolute inset-0 rounded-3xl" />
+
+      <div className="relative rounded-3xl bg-white/95 backdrop-blur-xl overflow-hidden shadow-[0_20px_60px_-30px_rgba(0,0,0,.35)] h-full flex flex-col">
+        {/* Header */}
+        <div className="relative px-4 pt-4 pb-12 text-white overflow-hidden">
+          <div className="absolute inset-0 jtk-hero" />
+          <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full blur-3xl opacity-40 jtk-blob" />
+
+          <div className="relative z-10 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-extrabold tracking-tight text-base sm:text-lg leading-tight line-clamp-2" title={cat.name}>
+                {cat.name}
+              </h3>
+              <p className="mt-1 text-[11px] text-white/80 line-clamp-1">
+                Premium category • Tap to explore
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="relative -mt-10 px-3">
-          <div className="aspect-[16/10] w-full rounded-xl overflow-hidden ring-1 ring-black/5 bg-slate-100">
-            <img
-              src={cat.image}
-              alt={cat.name}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
+        {/* Image */}
+        <div className="relative -mt-9 px-4">
+          <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden ring-1 ring-black/5 bg-slate-900">
+            <img src={cat.image} alt={cat.name} className="h-full w-full object-cover jtk-img" loading="lazy" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/0" />
+            <div className="jtk-shine absolute inset-0" />
           </div>
         </div>
 
-        <div className="p-3 flex flex-col min-h-[140px]">
+        {/* Body */}
+        <div className="p-4 flex flex-col flex-1">
           <p className="text-sm text-slate-600 line-clamp-2">
-            {cat.description}
+            {cat.description || "High quality services with premium freelancers."}
           </p>
 
-          {cat.tags?.length ? (
-            <div className="mt-2 flex flex-wrap gap-1.5 min-h-[24px]">
-              {cat.tags.map((t, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="min-h-[24px]" />
-          )}
+          <div className="mt-3 flex flex-wrap gap-2 min-h-[28px]">
+            {(cat.tags || []).slice(0, 4).map((t, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
 
           <div className="flex-1" />
 
-          <div className="mt-2">
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-slate-500">
+              Explore now <span className="ml-1 inline-block jtk-dot">•</span> <span className="ml-1">Fast</span>
+            </div>
+
             <button
-              className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-white text-sm"
-              style={{ backgroundColor: primary }}
-              onClick={onClick}
+              className="jtk-btn inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-white text-sm font-semibold"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+              }}
             >
               Explore
-              <svg
-                className="h-3.5 w-3.5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M12.293 4.293a1 1 0 011.414 0L18 8.586a2 2 0 010 2.828l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z" />
               </svg>
             </button>
           </div>
         </div>
+
+        <div className="h-1.5 w-full bg-gradient-to-r from-[rgb(0,170,180)] via-[rgb(2,128,144)] to-[rgb(0,90,100)]" />
       </div>
     </div>
+  );
+}
+
+function StyleTag() {
+  return (
+    <style>{`
+      .jtk-bg1{ background: radial-gradient(circle at 30% 30%, rgba(0,170,180,.9), transparent 60%); }
+      .jtk-bg2{ background: radial-gradient(circle at 70% 70%, rgba(2,128,144,.9), transparent 60%); }
+
+      .jtk-card { transform-style: preserve-3d; transition: transform 220ms ease, filter 220ms ease; will-change: transform; }
+      .jtk-card:hover { transform: translateY(-6px) scale(1.01); filter: saturate(1.05); }
+
+      .jtk-border { background: linear-gradient(140deg, rgba(0,170,180,.9), rgba(2,128,144,.9), rgba(0,90,100,.9)); opacity: .85; }
+      .jtk-hero{
+        background:
+          radial-gradient(1200px 400px at 20% 20%, rgba(0,170,180,.55), transparent 55%),
+          radial-gradient(900px 400px at 80% 10%, rgba(2,128,144,.55), transparent 55%),
+          linear-gradient(160deg, rgba(0,90,100,1), rgba(2,128,144,1));
+      }
+      .jtk-blob{ background: rgba(0,170,180,.55); }
+
+      .jtk-img{ transition: transform 420ms ease, filter 420ms ease; }
+      .jtk-card:hover .jtk-img{ transform: scale(1.08); filter: contrast(1.05); }
+
+      .jtk-shine{
+        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.18) 18%, transparent 38%);
+        transform: translateX(-120%);
+        transition: transform 650ms ease;
+        mix-blend-mode: overlay;
+      }
+      .jtk-card:hover .jtk-shine{ transform: translateX(120%); }
+
+      .jtk-btn{
+        background: linear-gradient(160deg, rgb(0,170,180), rgb(2,128,144), rgb(0,90,100));
+        box-shadow: 0 14px 30px -18px rgba(0,0,0,.55);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
+      .jtk-btn:hover{
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px -18px rgba(0,0,0,.65);
+      }
+
+      .jtk-dot{ color: rgb(2,128,144); }
+    `}</style>
   );
 }
