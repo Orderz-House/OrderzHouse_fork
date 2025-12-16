@@ -512,9 +512,12 @@ function FreelancerProjects() {
     setDeliverSubmitting(true);
     try {
       const fd = new FormData();
-      (payload.files || []).forEach((f) => fd.append("project_files", f));
-
-      await api.post(`/projects/${project.id}/deliver`, fd, {
+      fd.append("category", payload.category);
+      fd.append("notes", payload.notes || "");
+      fd.append("links", JSON.stringify(payload.links || {}));
+      fd.append("checklist", JSON.stringify(payload.checklist || {}));
+      (payload.files || []).forEach((f) => fd.append("files", f));
+      await api.post(`/api/freelancer/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
 
@@ -646,9 +649,12 @@ function ClientReviewDrawer({
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/projects/${project.id}/deliveries`, {
-          headers: { authorization: `Bearer ${token}` },
-        });
+        const { data } = await api.get(
+          `/api/client/projects/${project.id}/deliveries`,
+          {
+            headers: { authorization: `Bearer ${token}` },
+          }
+        );
 
         if (!alive) return;
 

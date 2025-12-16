@@ -52,10 +52,10 @@ export default function ProjectDetails() {
         setLoading(true);
         const endpoint =
           role === "client"
-            ? `/api/client/projects/${projectId}`
+            ? `/client/projects/${projectId}`
             : role === "freelancer"
-            ? `/api/freelancer/projects/${projectId}`
-            : `/api/projects/${projectId}`;
+            ? `/freelancer/projects/${projectId}`
+            : `/projects/${projectId}`;
         const { data } = await api.get(endpoint, {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
@@ -439,7 +439,7 @@ export default function ProjectDetails() {
             fd.append("links", JSON.stringify(payload.links || {}));
             fd.append("checklist", JSON.stringify(payload.checklist || {}));
             (payload.files || []).forEach((f) => fd.append("files", f));
-            await api.post(`/api/freelancer/projects/${project.id}/deliver`, fd, {
+            await api.post(`/freelancer/projects/${project.id}/deliver`, fd, {
               headers: token ? { authorization: `Bearer ${token}` } : undefined,
             });
           }}
@@ -469,7 +469,7 @@ function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges, tok
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`, {
+        const { data } = await api.get(`/client/projects/${project.id}/deliveries`, {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
         if (!alive) return;
