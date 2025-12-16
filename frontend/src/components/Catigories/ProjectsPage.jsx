@@ -16,10 +16,10 @@ export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
 
-  // const inferredMode = location.pathname.startsWith("/tasks")
-  //   ? "tasks"
-  //   : "projects";
-  // const mode = propMode || inferredMode;
+   const inferredMode = location.pathname.startsWith("/tasks")
+     ? "tasks"
+     : "projects";
+   const mode = propMode || inferredMode;
 
   const q = (sp.get("q") || "").trim();
   const category = sp.get("cat") || "";
@@ -239,14 +239,14 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
-  // const meta = useMemo(
-  //   () =>
-  //     catalog[category] || {
-  //       title: mode === "tasks" ? "Tasks" : "Projects",
-  //       subtitle: "",
-  //     },
-  //   [catalog, category, mode]
-  // );
+   const meta = useMemo(
+    () => 
+      catalog[category] || {
+        title: mode === "tasks" ? "Tasks" : "Projects",
+         subtitle: "",
+      },
+    [catalog, category, mode]
+   );
 
   return (
     <section className="relative min-h-[70vh] pb-8 bg-white">

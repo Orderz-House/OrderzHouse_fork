@@ -128,32 +128,32 @@ function App() {
           />
 
           {/* --- Tasks --- */}
-          {/* <Route
+           <Route
             path="/tasks"
             element={
               <ProtectedRoute>
                 <ProjectsPage mode="tasks" />
               </ProtectedRoute>
-            } */}
-          
+            } 
+          />
 
-          {/* <Route
+          <Route
             path="/tasks/create"
             element={
               <ProtectedRoute>
                 <CreateTaskPage /> {/* 👈 صفحة إنشاء التاسك */}
-              {/* </ProtectedRoute>
+               </ProtectedRoute>
             }
-          /> */}
+          /> 
 
-          {/* <Route
+           <Route
             path="/tasks/:id"
             element={
               <ProtectedRoute>
                 <ProjectDetails mode="tasks" />
               </ProtectedRoute>
-          //   }
-          // /> */} 
+             }
+           /> 
 
           {/* --- Course Management --- */}
           {/* <Route
@@ -188,7 +188,7 @@ function App() {
                 <AdminCourseAccessControl />
               </ProtectedRoute>
             }
-          /> */}
+          />  */}
 
           {/* --- Notifications & Projects --- */}
           <Route

@@ -312,7 +312,7 @@ export default function EnhancedNavbar() {
                 <Plus className="h-4 w-4" /> Add project
               </Link>
             )}
-{/* 
+
             {userData?.role_id === 3 && (
               <Link
                 to="/tasks/create"
@@ -320,8 +320,7 @@ export default function EnhancedNavbar() {
               >
                 <Plus className="h-4 w-4" /> Add task
               </Link>
-            )} */}
-
+            )} 
             {/* {IsAuthenticated && (
               <>
                 <button
@@ -574,7 +573,7 @@ export default function EnhancedNavbar() {
                 </div>
               </div>
 
-              {/* Add Project / Task
+              Add Project / Task
               {(userData?.role_id === 2 || userData?.role_id === 3) && (
                 <div className="pt-4 border-t space-y-2">
                   {userData?.role_id === 2 && (
@@ -602,7 +601,7 @@ export default function EnhancedNavbar() {
                     </button>
                   )}
                 </div>
-              )} */}
+              )} 
 
               {/* Chat + Notifications */}
               {/* {IsAuthenticated && (
@@ -633,7 +632,7 @@ export default function EnhancedNavbar() {
                     )}
                   </button>
                 </div>
-              )} */}
+              )}
 
               {/* Dashboard + Sign Out */}
               {IsAuthenticated && userData && (
