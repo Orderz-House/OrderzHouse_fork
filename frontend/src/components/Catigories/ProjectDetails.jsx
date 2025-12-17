@@ -7,8 +7,7 @@ import {
   applyToProjectApi,
   checkIfAssignedApi,
 } from "./api/projects";
-import { sendOfferApi, getOffersForProjectApi } from "./api/offers";
-// import { getTaskByIdApi, submitPaymentProofApi } from "./api/tasks";
+import { sendOfferApi, getOffersForProjectApi } from "./api/offers"; import { getTaskByIdApi, submitPaymentProofApi } from "./api/tasks";
 import { useSelector } from "react-redux";
 import { useToast } from "../../components/toast/ToastProvider";
 import AttachmentList from "../Attachments/AttachmentList";
@@ -38,7 +37,7 @@ export default function ProjectDetails({ mode: propMode }) {
 
   const paymentInputRef = useRef(null);
 
-  // const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
+  const inferredMode = location.pathname.startsWith("/tasks") ? "tasks" : "projects";
   const mode = propMode || inferredMode;
 
   const readOnly = !!location.state?.readOnly;
@@ -62,7 +61,7 @@ export default function ProjectDetails({ mode: propMode }) {
       setItem(stateObj);
       return;
     }
-    // const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
+    const loader = mode === "tasks" ? getTaskByIdApi : getProjectByIdApi;
     loader(id)
       .then((res) => setItem(res.task || res.project || res))
       .catch(() => toast.error("Failed to load details."));
@@ -200,10 +199,10 @@ export default function ProjectDetails({ mode: propMode }) {
     }
   };
 
-  // const onContact = () => {
-  //   // if (mode === "tasks") navigate(`/chat/task/${id}`);
-  //   else navigate(`/chat/project/${id}`);
-  // };
+  const onContact = () => {
+     if (mode === "tasks") navigate(`/chat/task/${id}`);
+    else navigate(`/chat/project/${id}`);
+  };
 
   const triggerPaymentUpload = () => paymentInputRef.current?.click();
 
@@ -256,20 +255,20 @@ export default function ProjectDetails({ mode: propMode }) {
   const title = item.title;
   const cover = item.cover_pic || item.cover;
   const projectType = item?.project_type ?? item?.type;
-  // const isTasks = mode === "tasks";
+  const isTasks = mode === "tasks";
 
   let canAccept = true;
-  // if (isTasks && isFreelancer) canAccept = false;
-  // if (!isTasks && isClient) canAccept = false;
+  if (isTasks && isFreelancer) canAccept = false;
+  if (!isTasks && isClient) canAccept = false;
   if (isFreelancer && hasApplied) canAccept = false;
 
-  // const acceptLabel = hasApplied
-  //   ? "Already Applied"
-  //   // : !isTasks && isFreelancer && projectType === "bidding"
-  //   ? "Send Offer"
-  //   // : isTasks
-  //   ? "Get this task"
-  //   : "Apply to Project";
+  const acceptLabel = hasApplied
+    ? "Already Applied"
+     : !isTasks && isFreelancer && projectType === "bidding"
+    ? "Send Offer"
+     : isTasks
+    ? "Get this task"
+    : "Apply to Project";
 
   const acceptClasses =
     "w-full h-11 rounded-xl text-white font-semibold transition " +
@@ -341,12 +340,12 @@ export default function ProjectDetails({ mode: propMode }) {
           <aside className="lg:sticky lg:top-24">
             <ProjectInfoCard
               item={item}
-              // isTasks={isTasks}
+               isTasks={isTasks}
               isClient={isClient}
               isFreelancer={isFreelancer}
               busy={busy}
               onContact={onContact}
-              // onApplyToProject={!isTasks ? onApplyToProject : undefined}
+               onApplyToProject={!isTasks ? onApplyToProject : undefined}
               acceptLabel={acceptLabel}
               contactLabel="Contact"
               acceptClasses={acceptClasses}
