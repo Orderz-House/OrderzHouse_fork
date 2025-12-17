@@ -3,12 +3,10 @@ import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
 import { useToast } from "../../../../components/toast/ToastProvider";
 import {
   Eye,
-  MessageSquare,
   SendHorizontal,
   X,
   RefreshCw,
@@ -18,7 +16,6 @@ import {
   FileText,
   Code,
   Palette,
-  Link2,
 } from "lucide-react";
 
 /* ---------- Theme ---------- */
@@ -36,7 +33,6 @@ function mapRole(roleId) {
 /* ---------- Axios base ---------- */
 const api = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL || "",
-  // headers: { "Content-Type": "application/json" },
 });
 
 /* ===================== Entry ===================== */
@@ -54,7 +50,6 @@ function AdminProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
 
-  // columns
   const columns = [
     { label: "Title", key: "title" },
     { label: "Client", key: "client_name" },
@@ -71,7 +66,6 @@ function AdminProjects() {
     },
   ];
 
-  // form fields
   const formFields = [
     { key: "title", label: "Title", required: true },
     { key: "client", label: "Client" },
@@ -99,10 +93,8 @@ function AdminProjects() {
 
   return (
     <PeopleTable
-      /* header */
       title="Projects"
       addLabel="Add Project"
-      /* data */
       endpoint="/projects/admin/projects"
       token={token}
       columns={columns}
@@ -116,11 +108,8 @@ function AdminProjects() {
           options: chips.slice(1).map((c) => c.value),
         },
       ]}
-      /* UI */
       desktopAsCards
-      /* Admin wants default CRUD inside cards */
       crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-      /* open details (admin route غالباً نسبي) */
       onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
     />
   );
@@ -130,20 +119,29 @@ function AdminProjects() {
 function ClientProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
+  const toast = useToast();
 
-  // لوحات العميل (استلام التسليم)
+  // receive drawer
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState(null);
+  const [reviewHelpers, setReviewHelpers] = useState(null);
+
+  // offers summary (for cards)
   const [offersMap, setOffersMap] = useState({});
 
-  // طلبات الفريلانسَر (applications)
+  // applications drawer
   const [applicationsMap, setApplicationsMap] = useState({});
   const [appsProject, setAppsProject] = useState(null);
   const [appsOpen, setAppsOpen] = useState(false);
   const [appsSubmitting, setAppsSubmitting] = useState(false);
-  const [reviewHelpers, setReviewHelpers] = useState(null);
 
-  // جلب عروض العميل لكل مشاريعه مرة واحدة
+  // ✅ bidding offers drawer (NEW)
+  const [biddingOffersMap, setBiddingOffersMap] = useState({});
+  const [biddingProject, setBiddingProject] = useState(null);
+  const [biddingOpen, setBiddingOpen] = useState(false);
+  const [biddingSubmitting, setBiddingSubmitting] = useState(false);
+
+  // جلب عروض العميل (عدادات) لكل مشاريعه
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
@@ -164,10 +162,9 @@ function ClientProjects() {
         for (const o of list) {
           const pid = o.project_id ?? o.projectId;
           if (!pid) continue;
-          if (!map[pid]) {
-            map[pid] = { total: 0, pending: 0, accepted: 0 };
-          }
+          if (!map[pid]) map[pid] = { total: 0, pending: 0, accepted: 0 };
           map[pid].total += 1;
+
           const status = String(o.offer_status || "").toLowerCase();
           if (status === "pending") map[pid].pending += 1;
           if (status === "accepted") map[pid].accepted += 1;
@@ -184,53 +181,12 @@ function ClientProjects() {
     };
   }, [token]);
 
-  // // جلب طلبات التقديم (applications) لكل مشاريع الكلينت
-  // useEffect(() => {
-  //   if (!token) return;
-  //   let cancelled = false;
-
-  //   (async () => {
-  //     try {
-  //       const { data } = await api.get("/projects/applications/my-projects", {
-  //         headers: token ? { authorization: `Bearer ${token}` } : undefined,
-  //       });
-
-  //       const list = Array.isArray(data?.applications)
-  //         ? data.applications
-  //         : Array.isArray(data?.data)
-  //         ? data.data
-  //         : Array.isArray(data)
-  //         ? data
-  //         : [];
-
-  //       const map = {};
-  //       for (const app of list) {
-  //         const pid = app.project_id ?? app.projectId;
-  //         if (!pid) continue;
-  //         if (!map[pid]) map[pid] = [];
-  //         map[pid].push(app);
-  //       }
-
-  //       if (!cancelled) setApplicationsMap(map);
-  //     } catch (e) {
-  //       console.error("Failed to fetch applications for client projects", e);
-  //     }
-  //   })();
-
-  //   return () => {
-  //     cancelled = true;
-  //   };
-  // }, [token]);
-
   const fetchApplicationsForProject = async (projectId) => {
     if (!token) return;
     try {
-      const { data } = await api.get(
-        `/projects/project/${projectId}/applications`,
-        {
-          headers: { authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await api.get(`/projects/project/${projectId}/applications`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
 
       const list = Array.isArray(data?.applications)
         ? data.applications
@@ -240,16 +196,36 @@ function ClientProjects() {
         ? data
         : [];
 
-      setApplicationsMap((prev) => ({
-        ...prev,
-        [projectId]: list,
-      }));
+      setApplicationsMap((prev) => ({ ...prev, [projectId]: list }));
     } catch (e) {
       console.error("Failed to fetch applications for project", projectId, e);
     }
   };
 
-  // تحديث حالة application (accept / reject)
+  // ✅ جلب عروض bidding لمشروع واحد
+  const fetchBiddingOffersForProject = async (projectId) => {
+    if (!token) return;
+    try {
+      const { data } = await api.get(`/offers/project/${projectId}/offers`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      const list = Array.isArray(data?.offers)
+        ? data.offers
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+        ? data
+        : [];
+
+      setBiddingOffersMap((prev) => ({ ...prev, [projectId]: list }));
+    } catch (e) {
+      console.error("Failed to fetch bidding offers for project", projectId, e);
+      toast?.error?.("Failed to load offers.");
+    }
+  };
+
+  // accept/reject application
   const handleApplicationAction = async (assignmentId, projectId, action) => {
     if (!token) return;
     setAppsSubmitting(true);
@@ -259,38 +235,28 @@ function ClientProjects() {
         { assignmentId, action },
         {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
-          timeout: 15000, // 15s
+          timeout: 15000,
         }
       );
 
       setApplicationsMap((prev) => {
         const next = { ...prev };
         const list = next[projectId] ? [...next[projectId]] : [];
-        if (!list.length) {
-          next[projectId] = list;
-          return next;
-        }
+        if (!list.length) return next;
 
         if (action === "accept") {
-          // واحد مقبول والباقي not_chosen حسب الباك إند
           next[projectId] = list.map((app) => {
             const key = app.assignment_id ?? app.id;
-            if (key === assignmentId) {
-              return { ...app, status: "active" };
-            }
+            if (key === assignmentId) return { ...app, status: "active" };
             const statusKey = String(app.status || "").toLowerCase();
-            if (statusKey === "pending_client_approval") {
+            if (statusKey === "pending_client_approval")
               return { ...app, status: "not_chosen" };
-            }
             return app;
           });
         } else {
-          // reject فقط لهذا الـ assignment
           next[projectId] = list.map((app) => {
             const key = app.assignment_id ?? app.id;
-            if (key === assignmentId) {
-              return { ...app, status: "rejected" };
-            }
+            if (key === assignmentId) return { ...app, status: "rejected" };
             return app;
           });
         }
@@ -299,28 +265,43 @@ function ClientProjects() {
       });
     } catch (err) {
       console.error("Failed to update application status", err);
-      try {
-        alert(
-          err?.response?.data?.message ||
-            "Failed to update application. Please try again."
-        );
-      } catch {}
+      toast?.error?.(err?.response?.data?.message || "Failed to update application.");
     } finally {
       setAppsSubmitting(false);
     }
   };
 
-  // أزرار العميل داخل الكارد
-  const renderActions = (row, helpers) => {
-    const id = helpers.getId(row);
-    const pid = row.id ?? row._id ?? id;
-    const appsForProject = applicationsMap[pid] || [];
-    const projectType = String(row.project_type || "").toLowerCase();
-    const isBidding = projectType === "bidding";
+  // ✅ accept/reject bidding offer
+  const handleBiddingOfferAction = async (offerId, projectId, action) => {
+    if (!token) return;
+    setBiddingSubmitting(true);
+    try {
+      await api.post(
+        `/offers/offers/approve-reject`,
+        { offerId, action },
+        {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+          timeout: 15000,
+        }
+      );
 
-    const pendingCount = appsForProject.filter(
-      (a) => String(a.status || "").toLowerCase() === "pending_client_approval"
-    ).length;
+      // refresh offers list
+      await fetchBiddingOffersForProject(projectId);
+
+      toast?.success?.(action === "accept" ? "Offer accepted ✅" : "Offer rejected ✅");
+    } catch (err) {
+      console.error("Failed to respond to offer", err);
+      toast?.error?.(err?.response?.data?.message || "Failed to update offer.");
+    } finally {
+      setBiddingSubmitting(false);
+    }
+  };
+
+  // actions inside card
+  const renderActions = (row, helpers) => {
+    const pid = row.id ?? row._id ?? helpers.getId(row);
+    const projectType = String(row.project_type || row.status || "").toLowerCase();
+    const isBidding = projectType === "bidding";
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
@@ -340,6 +321,15 @@ function ClientProjects() {
 
         <button
           onClick={async () => {
+            // ✅ إذا bidding -> افتح عروض البيدينج
+            if (isBidding) {
+              setBiddingProject({ id: pid, title: row.title });
+              await fetchBiddingOffersForProject(pid);
+              setBiddingOpen(true);
+              return;
+            }
+
+            // غير هيك -> applications
             setAppsProject({ id: pid, title: row.title });
             await fetchApplicationsForProject(pid);
             setAppsOpen(true);
@@ -355,16 +345,17 @@ function ClientProjects() {
   };
 
   const currentApplications =
-    appsProject && applicationsMap[appsProject.id]
-      ? applicationsMap[appsProject.id]
+    appsProject && applicationsMap[appsProject.id] ? applicationsMap[appsProject.id] : [];
+
+  const currentBiddingOffers =
+    biddingProject && biddingOffersMap[biddingProject.id]
+      ? biddingOffersMap[biddingProject.id]
       : [];
 
   return (
     <>
       <PeopleTable
-        /* header */
         title="My Projects"
-        /* data */
         endpoint="/projects/myprojects"
         token={token}
         columns={[
@@ -389,20 +380,14 @@ function ClientProjects() {
           },
         ]}
         formFields={[]}
-        /* UI */
         desktopAsCards
-        crudConfig={{
-          showDetails: false,
-          showRowEdit: false,
-          showDelete: false,
-        }}
+        crudConfig={{ showDetails: false, showRowEdit: false, showDelete: false }}
         renderActions={renderActions}
         renderSubtitle={(row) => {
           const pid = row.id ?? row._id;
           const stats = offersMap[pid];
-          if (!stats) {
-            return <span className="text-xs text-slate-400">Offers: 0</span>;
-          }
+          if (!stats) return <span className="text-xs text-slate-400">Offers: 0</span>;
+
           return (
             <span className="text-xs text-slate-600">
               Offers: <span className="font-semibold">{stats.total}</span>
@@ -429,34 +414,24 @@ function ClientProjects() {
             await api.put(
               `/projects/${projectId}/approve`,
               { action: "approve" },
-              {
-                headers: token
-                  ? { authorization: `Bearer ${token}` }
-                  : undefined,
-              }
+              { headers: token ? { authorization: `Bearer ${token}` } : undefined }
             );
 
-            // ✅ تحديث فوري للـ chip بدون ريفرش صفحة
             reviewHelpers?.setRows?.((prev) =>
               prev.map((r) => {
                 const rid = reviewHelpers?.getId?.(r) ?? r.id ?? r._id;
                 if (String(rid) !== String(projectId)) return r;
-
-                return {
-                  ...r,
-                  completion_status: "completed", // إذا أنت تعرض completion_status
-                  status: "completed", // احتياط لو تعرض status
-                };
+                return { ...r, completion_status: "completed", status: "completed" };
               })
             );
 
-            // ✅ اختياري: إعادة جلب من السيرفر للتأكيد
             reviewHelpers?.refresh?.();
           }}
           token={token}
         />
       )}
 
+      {/* applications drawer */}
       {appsOpen && appsProject && (
         <ClientApplicationsDrawer
           project={appsProject}
@@ -469,6 +444,20 @@ function ClientProjects() {
           submitting={appsSubmitting}
         />
       )}
+
+      {/* ✅ bidding offers drawer (same UI style) */}
+      {biddingOpen && biddingProject && (
+        <ClientBiddingOffersDrawer
+          project={biddingProject}
+          offers={currentBiddingOffers}
+          onClose={() => {
+            setBiddingOpen(false);
+            setBiddingProject(null);
+          }}
+          onAction={handleBiddingOfferAction}
+          submitting={biddingSubmitting}
+        />
+      )}
     </>
   );
 }
@@ -478,14 +467,12 @@ function FreelancerProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
 
-  // form deliver
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [deliverFor, setDeliverFor] = useState(null);
   const [deliverSubmitting, setDeliverSubmitting] = useState(false);
-  const toast = useToast(); // ✅
+  const toast = useToast();
 
   const renderActions = (row, helpers) => {
-    const id = helpers.getId(row);
     const isDone = (row.status ?? "").toLowerCase() === "done";
     return (
       <div className="flex gap-2 w-full">
@@ -517,6 +504,7 @@ function FreelancerProjects() {
       fd.append("links", JSON.stringify(payload.links || {}));
       fd.append("checklist", JSON.stringify(payload.checklist || {}));
       (payload.files || []).forEach((f) => fd.append("files", f));
+
       await api.post(`/api/freelancer/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
@@ -526,10 +514,7 @@ function FreelancerProjects() {
       setDeliverFor(null);
     } catch (err) {
       console.error(err);
-      toast?.error?.(
-        err?.response?.data?.message ||
-          "Something went wrong. Please try again."
-      );
+      toast?.error?.(err?.response?.data?.message || "Something went wrong.");
     } finally {
       setDeliverSubmitting(false);
     }
@@ -538,9 +523,7 @@ function FreelancerProjects() {
   return (
     <>
       <PeopleTable
-        /* header */
         title="My Assigned Projects"
-        /* data */
         endpoint="/projects/myprojects"
         token={token}
         columns={[
@@ -552,13 +535,8 @@ function FreelancerProjects() {
           { label: "Status", key: "status" },
         ]}
         formFields={[]}
-        /* UI */
         desktopAsCards
-        crudConfig={{
-          showDetails: false,
-          showRowEdit: false,
-          showDelete: false,
-        }}
+        crudConfig={{ showDetails: false, showRowEdit: false, showDelete: false }}
         renderActions={renderActions}
         onCardClick={(row, h) =>
           navigate(`/project/${h.getId(row)}`, {
@@ -574,9 +552,7 @@ function FreelancerProjects() {
             setDeliverOpen(false);
             setDeliverFor(null);
           }}
-          onSubmit={(payload) =>
-            submitDelivery({ project: deliverFor, payload, token })
-          }
+          onSubmit={(payload) => submitDelivery({ project: deliverFor, payload, token })}
           submitting={deliverSubmitting}
         />
       )}
@@ -584,25 +560,148 @@ function FreelancerProjects() {
   );
 }
 
+/* ===================== ✅ Bidding Offers Drawer (NEW, same style as applications) ===================== */
+function ClientBiddingOffersDrawer({ project, offers, onClose, onAction, submitting }) {
+  const formatStatus = (status) => {
+    const key = String(status || "").toLowerCase();
+    if (key === "pending") return "Waiting for your decision";
+    if (key === "accepted") return "Accepted";
+    if (key === "rejected") return "Rejected";
+    return status || "Unknown";
+  };
+
+  const statusClasses = (status) => {
+    const key = String(status || "").toLowerCase();
+    if (key === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
+    if (key === "accepted") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (key === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-slate-50 text-slate-600 border-slate-200";
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999]">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+            <div className="font-semibold text-slate-800">
+              Bidding offers — {project.title}
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {offers.length === 0 ? (
+              <div className="text-sm text-slate-500">No offers have been submitted yet.</div>
+            ) : (
+              <ul className="space-y-3">
+                {offers.map((o) => {
+                  const offerId = o.offer_id ?? o.id;
+                  const statusKey = String(o.offer_status ?? o.status ?? "").toLowerCase();
+                  const isPending = statusKey === "pending";
+
+                  const name =
+                    o.freelancer_name ||
+                    `${o.first_name || ""}${o.last_name ? ` ${o.last_name}` : ""}`.trim() ||
+                    o.username ||
+                    "Freelancer";
+
+                  const amount = o.bid_amount ?? o.offer_amount ?? o.amount ?? 0;
+
+                  return (
+                    <li
+                      key={offerId}
+                      className="rounded-xl border border-slate-200 bg-white p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                       <div className="font-medium text-slate-800">
+                               Freelancer
+                          {(o.freelancer_id || o.user_id) && (
+                         <span className="ml-2 text-xs text-slate-500">
+                             # {o.freelancer_id || o.user_id}
+                              </span>
+                                )}
+                                  </div>
+                         <div className="text-xs text-slate-500">
+                          Submitted:{" "}
+                          {o.submitted_at || o.created_at
+                            ? new Date(o.submitted_at || o.created_at).toLocaleString()
+                            : "—"}
+                        </div>
+
+                        {/* ✅ المطلوب: السعر يبين */}
+                        <div className="text-sm text-slate-700">
+                          Offer Amount: <span className="font-semibold">${Number(amount || 0)}</span>
+                        </div>
+
+                        <div className="mt-1">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusClasses(
+                              o.offer_status ?? o.status
+                            )}`}
+                          >
+                            {formatStatus(o.offer_status ?? o.status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-row sm:flex-col gap-2 sm:items-end">
+                        <button
+                          type="button"
+                          disabled={!isPending || submitting}
+                          onClick={() => onAction(offerId, project.id, "accept")}
+                          className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
+                            isPending && !submitting ? "hover:shadow" : "opacity-60 cursor-not-allowed"
+                          }`}
+                          style={{ backgroundColor: T.primary }}
+                        >
+                          {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
+                          <Check className="w-3 h-3" />
+                          Accept
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={!isPending || submitting}
+                          onClick={() => onAction(offerId, project.id, "reject")}
+                          className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
+                            isPending && !submitting ? "hover:bg-slate-50" : "opacity-60 cursor-not-allowed"
+                          }`}
+                          style={ringStyle}
+                        >
+                          <X className="w-3 h-3" />
+                          Reject
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 /* ===================== Client Drawer (استلام التسليم) ===================== */
-function ClientReviewDrawer({
-  project,
-  onClose,
-  onApprove,
-  onRequestChanges,
-  token,
-}) {
-  const toast = useToast(); // ✅
+/* ملاحظة: خليت بقية الكود كما هو عندك — نفس ClientReviewDrawer و ClientApplicationsDrawer و DeliverModal و Field */
+/* ------- الصق هنا نفس دوالك الحالية بدون تغيير ------- */
+
+function ClientReviewDrawer({ project, onClose, onApprove, onRequestChanges, token }) {
+  const toast = useToast();
 
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ states كانت ناقصة
   const [submitting, setSubmitting] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requestText, setRequestText] = useState("");
 
-  // lock scroll
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -613,13 +712,10 @@ function ClientReviewDrawer({
 
   const groupDeliveries = (files) => {
     const map = new Map();
-
     for (const f of files) {
       const at = f.sent_at || f.sentAt;
       const key = at ? new Date(at).toISOString() : "unknown";
-      if (!map.has(key)) {
-        map.set(key, { id: key, at, notes: "", links: {}, attachments: [] });
-      }
+      if (!map.has(key)) map.set(key, { id: key, at, notes: "", links: {}, attachments: [] });
       map.get(key).attachments.push({
         name: f.file_name,
         url: f.file_url,
@@ -627,21 +723,12 @@ function ClientReviewDrawer({
         id: f.id,
       });
     }
-
-    return Array.from(map.values()).sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
-    );
-  };
-
-  const toTime = (x) => {
-    const dt = x?.at ? new Date(x.at) : null;
-    const t = dt && !Number.isNaN(dt.getTime()) ? dt.getTime() : 0;
-    return t;
+    return Array.from(map.values()).sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   };
 
   const versions = groupDeliveries(deliveries);
   const latest = versions[0] || null;
-  // ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
+
   useEffect(() => {
     if (!project?.id || !token) return;
     let alive = true;
@@ -649,12 +736,9 @@ function ClientReviewDrawer({
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(
-          `/api/client/projects/${project.id}/deliveries`,
-          {
-            headers: { authorization: `Bearer ${token}` },
-          }
-        );
+        const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
 
         if (!alive) return;
 
@@ -683,12 +767,9 @@ function ClientReviewDrawer({
     if (!project?.id || !token) return;
     try {
       setLoading(true);
-      const { data } = await api.get(
-        `/api/client/projects/${project.id}/deliveries`,
-        {
-          headers: { authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await api.get(`/api/client/projects/${project.id}/deliveries`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
 
       const list = Array.isArray(data?.deliveries)
         ? data.deliveries
@@ -709,7 +790,7 @@ function ClientReviewDrawer({
   const approve = async () => {
     try {
       setSubmitting(true);
-      await onApprove(project.id); // يستدعي PUT /projects/:id/approve :contentReference[oaicite:4]{index=4}
+      await onApprove(project.id);
       toast?.success?.("Project approved ✅");
       onClose();
     } catch (err) {
@@ -731,9 +812,7 @@ function ClientReviewDrawer({
       onClose();
     } catch (err) {
       console.error(err);
-      toast?.error?.(
-        err?.response?.data?.message || "فشل إرسال طلب التعديلات."
-      );
+      toast?.error?.(err?.response?.data?.message || "فشل إرسال طلب التعديلات.");
     } finally {
       setSubmitting(false);
     }
@@ -741,32 +820,20 @@ function ClientReviewDrawer({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999]">
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-slate-800">
-              Receive Project — {project.title}
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100"
-            >
+            <div className="font-semibold text-slate-800">Receive Project — {project.title}</div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
               <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
 
-          {/* Body */}
           <div className="p-5 space-y-5">
             <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="flex items-center justify-between">
-                <div className="font-medium text-slate-800">
-                  Latest delivery
-                </div>
+                <div className="font-medium text-slate-800">Latest delivery</div>
                 <button
                   className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
                   style={ringStyle}
@@ -774,33 +841,23 @@ function ClientReviewDrawer({
                   disabled={loading}
                   type="button"
                 >
-                  <RefreshCw
-                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                  />
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                   Refresh
                 </button>
               </div>
 
               {!latest ? (
-                <div className="text-sm text-slate-500 mt-3">
-                  {loading ? "Loading..." : "No deliveries yet."}
-                </div>
+                <div className="text-sm text-slate-500 mt-3">{loading ? "Loading..." : "No deliveries yet."}</div>
               ) : (
                 <div className="mt-3 space-y-3">
                   <div className="text-xs text-slate-500">
-                    Delivered on{" "}
-                    {latest.at ? new Date(latest.at).toLocaleString() : "—"}
+                    Delivered on {latest.at ? new Date(latest.at).toLocaleString() : "—"}
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Primary">
                       {latest.links?.primary ? (
-                        <a
-                          className="text-sky-700 hover:underline break-all"
-                          href={latest.links.primary}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
+                        <a className="text-sky-700 hover:underline break-all" href={latest.links.primary} target="_blank" rel="noreferrer">
                           {latest.links.primary}
                         </a>
                       ) : (
@@ -810,12 +867,7 @@ function ClientReviewDrawer({
 
                     {latest.links?.secondary ? (
                       <Field label="Secondary">
-                        <a
-                          className="text-sky-700 hover:underline break-all"
-                          href={latest.links.secondary}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
+                        <a className="text-sky-700 hover:underline break-all" href={latest.links.secondary} target="_blank" rel="noreferrer">
                           {latest.links.secondary}
                         </a>
                       </Field>
@@ -824,9 +876,7 @@ function ClientReviewDrawer({
 
                   {latest.notes ? (
                     <Field label="Notes">
-                      <div className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {latest.notes}
-                      </div>
+                      <div className="text-sm text-slate-700 whitespace-pre-wrap">{latest.notes}</div>
                     </Field>
                   ) : null}
 
@@ -837,23 +887,13 @@ function ClientReviewDrawer({
                           const name =
                             typeof f === "string"
                               ? f
-                              : f?.name ||
-                                f?.filename ||
-                                f?.originalname ||
-                                f?.url ||
-                                `Attachment ${idx + 1}`;
-                          const url =
-                            typeof f === "object" ? f?.url || f?.path : null;
+                              : f?.name || f?.filename || f?.originalname || f?.url || `Attachment ${idx + 1}`;
+                          const url = typeof f === "object" ? f?.url || f?.path : null;
 
                           return (
                             <li key={`${name}-${idx}`}>
                               {url ? (
-                                <a
-                                  className="text-sky-700 hover:underline break-all"
-                                  href={url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
+                                <a className="text-sky-700 hover:underline break-all" href={url} target="_blank" rel="noreferrer">
                                   {name}
                                 </a>
                               ) : (
@@ -871,17 +911,13 @@ function ClientReviewDrawer({
               )}
             </section>
 
-            {/* Actions */}
             <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="flex items-center gap-2">
                 <button
                   disabled={!latest || submitting}
                   onClick={approve}
                   className="h-11 px-4 rounded-xl text-white text-sm inline-flex items-center gap-2"
-                  style={{
-                    backgroundColor: T.primary,
-                    opacity: !latest || submitting ? 0.75 : 1,
-                  }}
+                  style={{ backgroundColor: T.primary, opacity: !latest || submitting ? 0.75 : 1 }}
                   type="button"
                 >
                   <Check className="w-4 h-4" /> Approve
@@ -912,10 +948,7 @@ function ClientReviewDrawer({
                       disabled={!requestText.trim() || submitting}
                       onClick={request}
                       className="h-10 px-3 rounded-xl text-white text-sm"
-                      style={{
-                        backgroundColor: T.dark,
-                        opacity: !requestText.trim() || submitting ? 0.75 : 1,
-                      }}
+                      style={{ backgroundColor: T.dark, opacity: !requestText.trim() || submitting ? 0.75 : 1 }}
                       type="button"
                     >
                       Send request
@@ -933,28 +966,18 @@ function ClientReviewDrawer({
               ) : null}
             </section>
 
-            {/* History */}
             <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="font-medium text-slate-800">History</div>
               {versions.length === 0 ? (
-                <div className="text-sm text-slate-500 mt-2">
-                  {loading ? "Loading..." : "No history yet."}
-                </div>
+                <div className="text-sm text-slate-500 mt-2">{loading ? "Loading..." : "No history yet."}</div>
               ) : (
                 <ol className="mt-3 space-y-3">
                   {versions.map((v) => (
-                    <li
-                      key={v.id || v.at}
-                      className="rounded-xl bg-white p-3"
-                      style={ringStyle}
-                    >
+                    <li key={v.id || v.at} className="rounded-xl bg-white p-3" style={ringStyle}>
                       <div className="text-xs text-slate-500">
-                        {v.at ? new Date(v.at).toLocaleString() : "—"} —{" "}
-                        {v.id || "—"}
+                        {v.at ? new Date(v.at).toLocaleString() : "—"} — {v.id || "—"}
                       </div>
-                      <div className="mt-1 text-sm text-slate-700">
-                        {v.notes || "—"}
-                      </div>
+                      <div className="mt-1 text-sm text-slate-700">{v.notes || "—"}</div>
                     </li>
                   ))}
                 </ol>
@@ -969,13 +992,7 @@ function ClientReviewDrawer({
 }
 
 /* ===================== Client Applications Drawer ===================== */
-function ClientApplicationsDrawer({
-  project,
-  applications,
-  onClose,
-  onAction,
-  submitting,
-}) {
+function ClientApplicationsDrawer({ project, applications, onClose, onAction, submitting }) {
   const formatStatus = (status) => {
     const key = String(status || "").toLowerCase();
     if (key === "pending_client_approval") return "Waiting for your decision";
@@ -987,43 +1004,28 @@ function ClientApplicationsDrawer({
 
   const statusClasses = (status) => {
     const key = String(status || "").toLowerCase();
-    if (key === "pending_client_approval")
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    if (key === "active")
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (key === "pending_client_approval") return "bg-amber-50 text-amber-700 border-amber-200";
+    if (key === "active") return "bg-emerald-50 text-emerald-700 border-emerald-200";
     if (key === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
-    if (key === "not_chosen")
-      return "bg-slate-50 text-slate-600 border-slate-200";
+    if (key === "not_chosen") return "bg-slate-50 text-slate-600 border-slate-200";
     return "bg-slate-50 text-slate-600 border-slate-200";
   };
 
   return createPortal(
     <div className="fixed inset-0 z-[9999]">
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-slate-800">
-              Freelancer applications — {project.title}
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100"
-            >
+            <div className="font-semibold text-slate-800">Freelancer applications — {project.title}</div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
               <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
 
-          {/* Body */}
           <div className="p-5 space-y-4">
             {applications.length === 0 ? (
-              <div className="text-sm text-slate-500">
-                No freelancers have applied to this project yet.
-              </div>
+              <div className="text-sm text-slate-500">No freelancers have applied to this project yet.</div>
             ) : (
               <ul className="space-y-3">
                 {applications.map((app) => {
@@ -1039,29 +1041,14 @@ function ClientApplicationsDrawer({
                       <div className="space-y-1">
                         <div className="font-medium text-slate-800">
                           {app.freelancer_name || "Freelancer"}
-                          {app.freelancer_id && (
-                            <span className="ml-2 text-xs text-slate-500">
-                              # {app.freelancer_id}
-                            </span>
-                          )}
+                          {app.freelancer_id && <span className="ml-2 text-xs text-slate-500"># {app.freelancer_id}</span>}
                         </div>
-                        {app.freelancer_email && (
-                          <div className="text-xs text-slate-500">
-                            {app.freelancer_email}
-                          </div>
-                        )}
+                        {app.freelancer_email && <div className="text-xs text-slate-500">{app.freelancer_email}</div>}
                         <div className="text-xs text-slate-500">
-                          Applied:{" "}
-                          {app.assigned_at
-                            ? new Date(app.assigned_at).toLocaleString()
-                            : "—"}
+                          Applied: {app.assigned_at ? new Date(app.assigned_at).toLocaleString() : "—"}
                         </div>
                         <div className="mt-1">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusClasses(
-                              app.status
-                            )}`}
-                          >
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusClasses(app.status)}`}>
                             {formatStatus(app.status)}
                           </span>
                         </div>
@@ -1073,15 +1060,11 @@ function ClientApplicationsDrawer({
                           disabled={!isPending || submitting}
                           onClick={() => onAction(key, project.id, "accept")}
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
-                            isPending && !submitting
-                              ? "hover:shadow"
-                              : "opacity-60 cursor-not-allowed"
+                            isPending && !submitting ? "hover:shadow" : "opacity-60 cursor-not-allowed"
                           }`}
                           style={{ backgroundColor: T.primary }}
                         >
-                          {submitting && (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          )}
+                          {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
                           <Check className="w-3 h-3" />
                           Accept
                         </button>
@@ -1090,9 +1073,7 @@ function ClientApplicationsDrawer({
                           disabled={!isPending || submitting}
                           onClick={() => onAction(key, project.id, "reject")}
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
-                            isPending && !submitting
-                              ? "hover:bg-slate-50"
-                              : "opacity-60 cursor-not-allowed"
+                            isPending && !submitting ? "hover:bg-slate-50" : "opacity-60 cursor-not-allowed"
                           }`}
                           style={ringStyle}
                         >
@@ -1116,128 +1097,66 @@ function ClientApplicationsDrawer({
 /* ===================== Freelancer Modal ===================== */
 function DeliverModal({ project, onClose, onSubmit, submitting }) {
   const [category, setCategory] = useState(project.category || "programming");
-  const [primaryLink, setPrimaryLink] = useState("");
-  const [secondaryLink, setSecondaryLink] = useState("");
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState([]);
   const [confirmed, setConfirmed] = useState(false);
 
-  const readOnlyCategory = !!project.category;
   const requiredOk = confirmed && files.length > 0;
-
-  const handleFile = (e) => setFiles(Array.from(e.target.files || []));
+  const HeaderIcon = () => {
+    if (category === "content") return <FileText className="w-5 h-5" style={{ color: T.dark }} />;
+    if (category === "design") return <Palette className="w-5 h-5" style={{ color: T.dark }} />;
+    return <Code className="w-5 h-5" style={{ color: T.dark }} />;
+  };
 
   const submit = (e) => {
     e.preventDefault();
     if (!requiredOk) return;
-    onSubmit({
-      category,
-      notes,
-      links: { primary: primaryLink, secondary: secondaryLink },
-      checklist: { confirmed },
-      files,
-    });
-  };
-
-  const HeaderIcon = () => {
-    if (category === "content")
-      return <FileText className="w-5 h-5" style={{ color: T.dark }} />;
-    if (category === "design")
-      return <Palette className="w-5 h-5" style={{ color: T.dark }} />;
-    return <Code className="w-5 h-5" style={{ color: T.dark }} />;
+    onSubmit({ category, notes, files, links: {}, checklist: { confirmed } });
   };
 
   return createPortal(
     <div className="fixed inset-0 z-[9999]">
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
-          {/* header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <HeaderIcon />
-              <div className="font-semibold text-slate-800">
-                Deliver Project — {project.title}
-              </div>
+              <div className="font-semibold text-slate-800">Deliver Project — {project.title}</div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100"
-            >
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
               <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
 
-          {/* body */}
           <form onSubmit={submit} className="p-5 space-y-5">
-            {/* Attachments */}
             <div>
-              <label className="text-sm text-slate-600">
-                Attachments (optional)
-              </label>
+              <label className="text-sm text-slate-600">Attachments (optional)</label>
               <div className="mt-1.5 flex items-center gap-3">
-                <label
-                  className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm"
-                  style={ringStyle}
-                >
+                <label className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm" style={ringStyle}>
                   Upload files
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                  />
+                  <input type="file" multiple className="hidden" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
                 </label>
-                {files.length > 0 && (
-                  <div className="text-xs text-slate-600">
-                    {files.length} file{files.length > 1 ? "s" : ""} selected
-                  </div>
-                )}
+                {files.length > 0 && <div className="text-xs text-slate-600">{files.length} selected</div>}
               </div>
             </div>
 
-            {/* Confirm */}
-            <label
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white cursor-pointer"
-              style={ringStyle}
-            >
-              <input
-                type="checkbox"
-                className="accent-emerald-600"
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              <span className="text-sm text-slate-700">
-                I confirm this delivery matches the project requirements.
-              </span>
+            <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white cursor-pointer" style={ringStyle}>
+              <input type="checkbox" className="accent-emerald-600" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+              <span className="text-sm text-slate-700">I confirm this delivery matches the project requirements.</span>
             </label>
 
-            {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-              <div className="text-xs text-slate-500">
-                Trusted links are preferred over large uploads.
-              </div>
+              <div className="text-xs text-slate-500">Trusted links are preferred over large uploads.</div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
-                  style={ringStyle}
-                  disabled={submitting}
-                >
+                <button type="button" onClick={onClose} className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm" style={ringStyle} disabled={submitting}>
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!requiredOk || submitting}
                   className="h-11 px-4 rounded-xl text-white text-sm inline-flex items-center gap-2"
-                  style={{
-                    backgroundColor: T.primary,
-                    opacity: !requiredOk || submitting ? 0.75 : 1,
-                  }}
+                  style={{ backgroundColor: T.primary, opacity: !requiredOk || submitting ? 0.75 : 1 }}
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Submit Delivery
@@ -1260,9 +1179,6 @@ function Field({ label, children }) {
       <div className="mt-1">{children}</div>
     </div>
   );
-}
-function capitalize(s) {
-  return (s || "").charAt(0).toUpperCase() + (s || "").slice(1);
 }
 
 export { AdminProjects, ClientProjects, FreelancerProjects };

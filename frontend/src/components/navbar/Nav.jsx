@@ -573,7 +573,6 @@ export default function EnhancedNavbar() {
                 </div>
               </div>
 
-              Add Project / Task
               {(userData?.role_id === 2 || userData?.role_id === 3) && (
                 <div className="pt-4 border-t space-y-2">
                   {userData?.role_id === 2 && (
