@@ -69,7 +69,7 @@ export default function LiveActivity() {
       <div className="max-w-7xl mx-auto">
         <div className="rounded-2xl flex flex-row sm:flex-col items-stretch gap-4 sm:gap-6 justify-between">
 
-          <div className="flex gap-4 justify-center sm:justify-end">
+<div className="flex flex-wrap gap-4 justify-center sm:flex-nowrap sm:justify-end">
 
             {/* ==== TOTAL PROJECTS ==== */}
             <div

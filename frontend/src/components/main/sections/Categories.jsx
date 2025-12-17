@@ -136,8 +136,8 @@ export default function CategoriesShowcase({
       <StyleTag />
 
       {/* soft background blobs */}
-      <div className="pointer-events-none absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl jtk-bg1" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full opacity-20 blur-3xl jtk-bg2" />
+      {/* <div className="pointer-events-none absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl jtk-bg1" /> */}
+      {/* <div className="pointer-events-none absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full opacity-20 blur-3xl jtk-bg2" /> */}
 
       <div className="max-w-7xl mx-auto relative">
         {/* Header */}
