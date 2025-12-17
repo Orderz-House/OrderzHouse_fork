@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
+import { useToast } from "../../../../components/toast/ToastProvider";
 import {
   Eye,
   MessageSquare,
@@ -35,7 +36,7 @@ function mapRole(roleId) {
 /* ---------- Axios base ---------- */
 const api = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL || "",
-  headers: { "Content-Type": "application/json" },
+  // headers: { "Content-Type": "application/json" },
 });
 
 /* ===================== Entry ===================== */
@@ -140,6 +141,7 @@ function ClientProjects() {
   const [appsProject, setAppsProject] = useState(null);
   const [appsOpen, setAppsOpen] = useState(false);
   const [appsSubmitting, setAppsSubmitting] = useState(false);
+  const [reviewHelpers, setReviewHelpers] = useState(null);
 
   // جلب عروض العميل لكل مشاريعه مرة واحدة
   useEffect(() => {
@@ -322,10 +324,9 @@ function ClientProjects() {
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
-        
-
         <button
           onClick={() => {
+            setReviewHelpers(helpers);
             setReviewFor(row);
             setReviewOpen(true);
           }}
@@ -372,7 +373,7 @@ function ClientProjects() {
           { label: "Due", key: "due" },
           { label: "Budget", key: "budget" },
           { label: "Progress", key: "progress" },
-          { label: "Status", key: "status" },
+          { label: "Status", key: "completion_status" },
           {
             label: "Offers",
             key: "offers",
@@ -424,27 +425,33 @@ function ClientProjects() {
             setReviewOpen(false);
             setReviewFor(null);
           }}
-          onApprove={async (projectId, versionId) => {
-            await api.post(
-              `/api/client/projects/${projectId}/approve`,
-              { versionId },
+          onApprove={async (projectId) => {
+            await api.put(
+              `/projects/${projectId}/approve`,
+              { action: "approve" },
               {
                 headers: token
                   ? { authorization: `Bearer ${token}` }
                   : undefined,
               }
             );
-          }}
-          onRequestChanges={async (projectId, versionId, message) => {
-            await api.post(
-              `/api/client/projects/${projectId}/request-changes`,
-              { versionId, message },
-              {
-                headers: token
-                  ? { authorization: `Bearer ${token}` }
-                  : undefined,
-              }
+
+            // ✅ تحديث فوري للـ chip بدون ريفرش صفحة
+            reviewHelpers?.setRows?.((prev) =>
+              prev.map((r) => {
+                const rid = reviewHelpers?.getId?.(r) ?? r.id ?? r._id;
+                if (String(rid) !== String(projectId)) return r;
+
+                return {
+                  ...r,
+                  completion_status: "completed", // إذا أنت تعرض completion_status
+                  status: "completed", // احتياط لو تعرض status
+                };
+              })
             );
+
+            // ✅ اختياري: إعادة جلب من السيرفر للتأكيد
+            reviewHelpers?.refresh?.();
           }}
           token={token}
         />
@@ -475,13 +482,13 @@ function FreelancerProjects() {
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [deliverFor, setDeliverFor] = useState(null);
   const [deliverSubmitting, setDeliverSubmitting] = useState(false);
+  const toast = useToast(); // ✅
 
   const renderActions = (row, helpers) => {
     const id = helpers.getId(row);
     const isDone = (row.status ?? "").toLowerCase() === "done";
     return (
       <div className="flex gap-2 w-full">
-       
         <button
           onClick={() => {
             setDeliverFor(row);
@@ -513,12 +520,18 @@ function FreelancerProjects() {
       await api.post(`/api/freelancer/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
-    } catch (e) {
-      alert("Failed to deliver. Please try again.");
-    } finally {
-      setDeliverSubmitting(false);
+
+      toast?.success?.("Delivery submitted successfully ✅");
       setDeliverOpen(false);
       setDeliverFor(null);
+    } catch (err) {
+      console.error(err);
+      toast?.error?.(
+        err?.response?.data?.message ||
+          "Something went wrong. Please try again."
+      );
+    } finally {
+      setDeliverSubmitting(false);
     }
   };
 
@@ -579,13 +592,17 @@ function ClientReviewDrawer({
   onRequestChanges,
   token,
 }) {
+  const toast = useToast(); // ✅
+
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [message, setMessage] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
 
-  // قفل / فتح الـ scroll عند فتح/إغلاق الدروار
+  // ✅ states كانت ناقصة
+  const [submitting, setSubmitting] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requestText, setRequestText] = useState("");
+
+  // lock scroll
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -594,7 +611,37 @@ function ClientReviewDrawer({
     };
   }, []);
 
-  // جلب التسليمات الخاصة بالمشروع
+  const groupDeliveries = (files) => {
+    const map = new Map();
+
+    for (const f of files) {
+      const at = f.sent_at || f.sentAt;
+      const key = at ? new Date(at).toISOString() : "unknown";
+      if (!map.has(key)) {
+        map.set(key, { id: key, at, notes: "", links: {}, attachments: [] });
+      }
+      map.get(key).attachments.push({
+        name: f.file_name,
+        url: f.file_url,
+        size: f.file_size,
+        id: f.id,
+      });
+    }
+
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
+    );
+  };
+
+  const toTime = (x) => {
+    const dt = x?.at ? new Date(x.at) : null;
+    const t = dt && !Number.isNaN(dt.getTime()) ? dt.getTime() : 0;
+    return t;
+  };
+
+  const versions = groupDeliveries(deliveries);
+  const latest = versions[0] || null;
+  // ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
   useEffect(() => {
     if (!project?.id || !token) return;
     let alive = true;
@@ -620,7 +667,6 @@ function ClientReviewDrawer({
           : [];
 
         setDeliveries(list);
-        setSelected(list[0] || null);
       } catch (e) {
         if (alive) console.error("Failed to load deliveries", e);
       } finally {
@@ -633,22 +679,64 @@ function ClientReviewDrawer({
     };
   }, [project?.id, token]);
 
-  const latest = versions[0];
+  const refresh = async () => {
+    if (!project?.id || !token) return;
+    try {
+      setLoading(true);
+      const { data } = await api.get(
+        `/api/client/projects/${project.id}/deliveries`,
+        {
+          headers: { authorization: `Bearer ${token}` },
+        }
+      );
+
+      const list = Array.isArray(data?.deliveries)
+        ? data.deliveries
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+        ? data
+        : [];
+
+      setDeliveries(list);
+    } catch (e) {
+      console.error("Failed to refresh deliveries", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const approve = async () => {
-    if (!latest) return;
-    setSubmitting(true);
-    await onApprove(project.id, latest.id);
-    setSubmitting(false);
-    onClose();
+    try {
+      setSubmitting(true);
+      await onApprove(project.id); // يستدعي PUT /projects/:id/approve :contentReference[oaicite:4]{index=4}
+      toast?.success?.("Project approved ✅");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast?.error?.(err?.response?.data?.message || "فشل اعتماد المشروع.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const request = async () => {
-    if (!latest) return;
-    setSubmitting(true);
-    await onRequestChanges(project.id, latest.id, requestText.trim());
-    setSubmitting(false);
-    onClose();
+    const msg = requestText.trim();
+    if (!msg) return;
+
+    try {
+      setSubmitting(true);
+      await onRequestChanges(project.id, msg);
+      toast?.info?.("Change request sent ✉️");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast?.error?.(
+        err?.response?.data?.message || "فشل إرسال طلب التعديلات."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return createPortal(
@@ -682,10 +770,9 @@ function ClientReviewDrawer({
                 <button
                   className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
                   style={ringStyle}
-                  onClick={() => {
-                    setLoading(true);
-                    setTimeout(() => setLoading(false), 400);
-                  }}
+                  onClick={refresh}
+                  disabled={loading}
+                  type="button"
                 >
                   <RefreshCw
                     className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -696,53 +783,85 @@ function ClientReviewDrawer({
 
               {!latest ? (
                 <div className="text-sm text-slate-500 mt-3">
-                  No deliveries yet.
+                  {loading ? "Loading..." : "No deliveries yet."}
                 </div>
               ) : (
                 <div className="mt-3 space-y-3">
                   <div className="text-xs text-slate-500">
-                    Delivered on {new Date(latest.at).toLocaleString()}
+                    Delivered on{" "}
+                    {latest.at ? new Date(latest.at).toLocaleString() : "—"}
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Primary">
-                      <a
-                        className="text-sky-700 hover:underline break-all"
-                        href={latest.links?.primary}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {latest.links?.primary}
-                      </a>
-                    </Field>
-                    {latest.links?.secondary && (
-                      <Field label="Secondary">
+                      {latest.links?.primary ? (
                         <a
                           className="text-sky-700 hover:underline break-all"
-                          href={latest.links?.secondary}
+                          href={latest.links.primary}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {latest.links?.secondary}
+                          {latest.links.primary}
+                        </a>
+                      ) : (
+                        <span className="text-slate-500 text-sm">—</span>
+                      )}
+                    </Field>
+
+                    {latest.links?.secondary ? (
+                      <Field label="Secondary">
+                        <a
+                          className="text-sky-700 hover:underline break-all"
+                          href={latest.links.secondary}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {latest.links.secondary}
                         </a>
                       </Field>
-                    )}
+                    ) : null}
                   </div>
 
-                  {latest.notes && (
+                  {latest.notes ? (
                     <Field label="Notes">
                       <div className="text-sm text-slate-700 whitespace-pre-wrap">
                         {latest.notes}
                       </div>
                     </Field>
-                  )}
+                  ) : null}
 
                   <Field label="Attachments">
                     {latest.attachments?.length ? (
                       <ul className="list-disc ml-4 text-sm text-slate-700">
-                        {latest.attachments.map((f) => (
-                          <li key={f}>{f}</li>
-                        ))}
+                        {latest.attachments.map((f, idx) => {
+                          const name =
+                            typeof f === "string"
+                              ? f
+                              : f?.name ||
+                                f?.filename ||
+                                f?.originalname ||
+                                f?.url ||
+                                `Attachment ${idx + 1}`;
+                          const url =
+                            typeof f === "object" ? f?.url || f?.path : null;
+
+                          return (
+                            <li key={`${name}-${idx}`}>
+                              {url ? (
+                                <a
+                                  className="text-sky-700 hover:underline break-all"
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {name}
+                                </a>
+                              ) : (
+                                name
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
                       <span className="text-slate-500 text-sm">—</span>
@@ -763,9 +882,11 @@ function ClientReviewDrawer({
                     backgroundColor: T.primary,
                     opacity: !latest || submitting ? 0.75 : 1,
                   }}
+                  type="button"
                 >
                   <Check className="w-4 h-4" /> Approve
                 </button>
+
                 <button
                   type="button"
                   disabled={!latest || submitting}
@@ -777,7 +898,7 @@ function ClientReviewDrawer({
                 </button>
               </div>
 
-              {requesting && (
+              {requesting ? (
                 <div className="mt-3">
                   <textarea
                     value={requestText}
@@ -795,6 +916,7 @@ function ClientReviewDrawer({
                         backgroundColor: T.dark,
                         opacity: !requestText.trim() || submitting ? 0.75 : 1,
                       }}
+                      type="button"
                     >
                       Send request
                     </button>
@@ -808,7 +930,7 @@ function ClientReviewDrawer({
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
             </section>
 
             {/* History */}
@@ -816,18 +938,19 @@ function ClientReviewDrawer({
               <div className="font-medium text-slate-800">History</div>
               {versions.length === 0 ? (
                 <div className="text-sm text-slate-500 mt-2">
-                  No history yet.
+                  {loading ? "Loading..." : "No history yet."}
                 </div>
               ) : (
                 <ol className="mt-3 space-y-3">
                   {versions.map((v) => (
                     <li
-                      key={v.id}
+                      key={v.id || v.at}
                       className="rounded-xl bg-white p-3"
                       style={ringStyle}
                     >
                       <div className="text-xs text-slate-500">
-                        {new Date(v.at).toLocaleString()} — {v.id}
+                        {v.at ? new Date(v.at).toLocaleString() : "—"} —{" "}
+                        {v.id || "—"}
                       </div>
                       <div className="mt-1 text-sm text-slate-700">
                         {v.notes || "—"}
@@ -949,7 +1072,6 @@ function ClientApplicationsDrawer({
                           type="button"
                           disabled={!isPending || submitting}
                           onClick={() => onAction(key, project.id, "accept")}
-
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
                             isPending && !submitting
                               ? "hover:shadow"
@@ -967,7 +1089,6 @@ function ClientApplicationsDrawer({
                           type="button"
                           disabled={!isPending || submitting}
                           onClick={() => onAction(key, project.id, "reject")}
-
                           className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
                             isPending && !submitting
                               ? "hover:bg-slate-50"
@@ -1002,7 +1123,7 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
   const [confirmed, setConfirmed] = useState(false);
 
   const readOnlyCategory = !!project.category;
-  const requiredOk = !!(primaryLink && primaryLink.trim()) && !!confirmed;
+  const requiredOk = confirmed && files.length > 0;
 
   const handleFile = (e) => setFiles(Array.from(e.target.files || []));
 
@@ -1052,85 +1173,6 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
 
           {/* body */}
           <form onSubmit={submit} className="p-5 space-y-5">
-            {/* Category + Notes */}
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-slate-600">Category</label>
-                {readOnlyCategory ? (
-                  <div
-                    className="mt-1.5 px-3 py-2.5 rounded-xl bg-slate-50 text-slate-700"
-                    style={ringStyle}
-                  >
-                    {capitalize(project.category)}
-                  </div>
-                ) : (
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none"
-                    style={ringStyle}
-                  >
-                    <option value="programming">Programming</option>
-                    <option value="content">Content Writing</option>
-                    <option value="design">Design</option>
-                  </select>
-                )}
-              </div>
-              <div>
-                <label className="text-sm text-slate-600">
-                  Notes (optional)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Anything the client should know about this delivery…"
-                  className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none min-h-[44px]"
-                  style={ringStyle}
-                />
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-slate-600">
-                  Primary delivery link <span className="text-rose-500">*</span>
-                </label>
-                <div className="mt-1.5 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Link2 className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="url"
-                    required
-                    value={primaryLink}
-                    onChange={(e) => setPrimaryLink(e.target.value)}
-                    placeholder="Repository / build / preview…"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white text-sm outline-none"
-                    style={ringStyle}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-slate-600">
-                  Secondary link (optional)
-                </label>
-                <div className="mt-1.5 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Link2 className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="url"
-                    value={secondaryLink}
-                    onChange={(e) => setSecondaryLink(e.target.value)}
-                    placeholder="Live URL / extra preview / backup…"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white text-sm outline-none"
-                    style={ringStyle}
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Attachments */}
             <div>
               <label className="text-sm text-slate-600">

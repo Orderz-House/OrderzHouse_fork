@@ -63,7 +63,7 @@ export const createCheckoutSession = async (req, res) => {
           product_data: {
             name: "Account Verification Fee",
           },
-          unit_amount: 25 * 1000, // 25 JD
+          unit_amount: 25 * 1000, 
         },
         quantity: 1,
       });
@@ -82,8 +82,9 @@ export const createCheckoutSession = async (req, res) => {
 },
 
 
-      success_url: `${process.env.CLIENT_URL}/payment/success`,
+      success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+
     });
 
     return res.status(200).json({ url: session.url });
@@ -91,5 +92,25 @@ export const createCheckoutSession = async (req, res) => {
   } catch (error) {
     console.error("🔥 STRIPE ERROR:", error);
     return res.status(500).json({ error: "Failed to create checkout session" });
+  }
+};
+
+
+export const verifyPaymentBySession = async (req, res) => {
+  try {
+    const { session_id } = req.query;
+    if (!session_id) return res.status(400).json({ ok: false, error: "Missing session_id" });
+
+    const payRes = await pool.query(
+      "SELECT id, user_id, plan_id, amount FROM payments WHERE stripe_session_id = $1 LIMIT 1",
+      [session_id]
+    );
+
+    if (payRes.rowCount === 0) return res.status(404).json({ ok: false });
+
+    return res.json({ ok: true, payment: payRes.rows[0] });
+  } catch (e) {
+    console.error("verifyPaymentBySession error:", e);
+    return res.status(500).json({ ok: false });
   }
 };

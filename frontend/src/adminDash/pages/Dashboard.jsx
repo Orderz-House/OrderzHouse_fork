@@ -1,6 +1,8 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useState, useCallback } from "react";import { useSelector } from "react-redux";
-import { useOutletContext, useNavigate } from "react-router-dom";import {
+import React, { useEffect, useState, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { useOutletContext, useNavigate } from "react-router-dom";
+import {
   Users,
   Briefcase,
   Wallet,
@@ -18,8 +20,11 @@ import { useOutletContext, useNavigate } from "react-router-dom";import {
 } from "lucide-react";
 
 // 🧩 استيراد دوال الـ API الجاهزة
-import { fetchAdminDashboard, fetchFreelancerDashboard } from "../api/dashboard";
-
+import {
+  fetchAdminDashboard,
+  fetchFreelancerDashboard,
+  fetchClientDashboard,
+} from "../api/dashboard";
 
 const PRIMARY = "#028090";
 
@@ -63,9 +68,272 @@ function StatCard({ title, value, sub, icon: Icon, trend, accent }) {
             </div>
           )}
         </div>
-        {sub && (
-          <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>
-        )}
+        {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Skeleton helpers ===================== */
+function Sk({ className = "" }) {
+  return (
+    <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />
+  );
+}
+
+function StatCardSkeleton({ accent = "bg-slate-100" }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4">
+      <div className={`h-10 w-10 rounded-xl ${accent} animate-pulse`} />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Sk className="h-3 w-24" />
+        <Sk className="h-6 w-16" />
+        <Sk className="h-3 w-36" />
+      </div>
+    </div>
+  );
+}
+
+function MiniRowSkeleton() {
+  return (
+    <div className="rounded-lg bg-white border border-slate-100 px-2.5 py-2 space-y-2">
+      <Sk className="h-3 w-2/3" />
+      <Sk className="h-3 w-1/2" />
+    </div>
+  );
+}
+
+function MiniListCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="inline-flex items-center gap-2">
+          <Sk className="h-4 w-4 rounded" />
+          <Sk className="h-3 w-28" />
+        </div>
+        <Sk className="h-3 w-10" />
+      </div>
+
+      <div className="space-y-2">
+        <MiniRowSkeleton />
+        <MiniRowSkeleton />
+        <MiniRowSkeleton />
+      </div>
+    </div>
+  );
+}
+
+function RecentProjectRowSkeleton() {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3">
+      <div className="min-w-0 flex-1 space-y-2">
+        <Sk className="h-4 w-1/2" />
+        <div className="flex gap-2">
+          <Sk className="h-5 w-14 rounded-full" />
+          <Sk className="h-5 w-20 rounded-full" />
+        </div>
+      </div>
+      <Sk className="h-4 w-16" />
+    </div>
+  );
+}
+
+/* ===================== Page Skeletons ===================== */
+function AdminDashboardSkeleton() {
+  return (
+    <div className="space-y-6 py-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatCardSkeleton key={i} />
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="space-y-2">
+              <Sk className="h-4 w-48" />
+              <Sk className="h-3 w-64" />
+            </div>
+            <Sk className="h-6 w-20 rounded-full" />
+          </div>
+          <Sk className="h-32 w-full rounded-xl" />
+        </div>
+
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <Sk className="h-4 w-44" />
+            <Sk className="h-3 w-20" />
+          </div>
+
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Sk className="h-9 w-9 rounded-full" />
+                  <div className="min-w-0 space-y-2">
+                    <Sk className="h-3 w-32" />
+                    <Sk className="h-3 w-20" />
+                    <Sk className="h-3 w-40" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Sk className="h-8 w-20 rounded-full" />
+                  <Sk className="h-8 w-20 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FreelancerDashboardSkeleton() {
+  return (
+    <div className="space-y-6 py-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <StatCardSkeleton key={i} accent="bg-cyan-50" />
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="space-y-2">
+              <Sk className="h-4 w-36" />
+              <Sk className="h-3 w-64" />
+            </div>
+            <Sk className="h-9 w-20 rounded-xl" />
+          </div>
+
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Sk className="h-4 w-1/2" />
+                  <Sk className="h-3 w-1/3" />
+                </div>
+                <div className="flex gap-2">
+                  <Sk className="h-5 w-16 rounded-full" />
+                  <Sk className="h-5 w-16 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <Sk className="h-4 w-44" />
+              <Sk className="h-8 w-24 rounded-full" />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
+                >
+                  <Sk className="h-4 w-2/3" />
+                  <div className="mt-2 flex items-center justify-between">
+                    <Sk className="h-3 w-20" />
+                    <Sk className="h-3 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <Sk className="h-4 w-28 mb-3" />
+            <div className="grid gap-2">
+              <Sk className="h-9 w-full rounded-xl" />
+              <Sk className="h-9 w-full rounded-xl" />
+              <Sk className="h-9 w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClientDashboardSkeleton() {
+  return (
+    <div className="space-y-6 py-6" dir="ltr">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatCardSkeleton key={i} accent="bg-sky-50" />
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="space-y-2">
+                <Sk className="h-4 w-32" />
+                <Sk className="h-3 w-72" />
+              </div>
+              <Sk className="h-9 w-24 rounded-xl" />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <MiniListCardSkeleton />
+              <MiniListCardSkeleton />
+              <MiniListCardSkeleton />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="space-y-2">
+                <Sk className="h-4 w-36" />
+                <Sk className="h-3 w-64" />
+              </div>
+              <Sk className="h-9 w-20 rounded-xl" />
+            </div>
+
+            <div className="space-y-3">
+              <RecentProjectRowSkeleton />
+              <RecentProjectRowSkeleton />
+              <RecentProjectRowSkeleton />
+              <RecentProjectRowSkeleton />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <div className="space-y-2 mb-3">
+              <Sk className="h-4 w-28" />
+              <Sk className="h-3 w-44" />
+            </div>
+            <div className="grid gap-2">
+              <Sk className="h-10 w-full rounded-xl" />
+              <Sk className="h-10 w-full rounded-xl" />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
+            <Sk className="h-4 w-44 mb-3" />
+            <div className="space-y-2">
+              <Sk className="h-3 w-64" />
+              <Sk className="h-3 w-56" />
+              <Sk className="h-3 w-60" />
+              <Sk className="h-3 w-48" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -134,21 +402,16 @@ function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        // 👇 هنا نستخدم دالة الـ API بدل axios مباشرة
         const payload = await fetchAdminDashboard();
 
-        setTopStats(
-          Array.isArray(payload?.topStats) ? payload.topStats : []
-        );
+        setTopStats(Array.isArray(payload?.topStats) ? payload.topStats : []);
         setPendingVerifications(
           Array.isArray(payload?.pendingVerifications)
             ? payload.pendingVerifications
             : []
         );
         setRevenuePoints(
-          Array.isArray(payload?.revenuePoints)
-            ? payload.revenuePoints
-            : []
+          Array.isArray(payload?.revenuePoints) ? payload.revenuePoints : []
         );
       } catch (err) {
         console.error("Failed to load admin dashboard data", err);
@@ -161,11 +424,17 @@ function AdminDashboard() {
     load();
   }, []);
 
+  const showSkeleton =
+    loading &&
+    !error &&
+    topStats.length === 0 &&
+    pendingVerifications.length === 0 &&
+    revenuePoints.length === 0;
+
+  if (showSkeleton) return <AdminDashboardSkeleton />;
+
   return (
     <div className="space-y-6 py-6">
-      {loading && (
-        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
-      )}
       {error && (
         <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
           {error}
@@ -176,10 +445,7 @@ function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {topStats.length > 0 ? (
           topStats.map((s, idx) => (
-            <StatCard
-              key={s.id || s.title || idx}
-              {...s}
-            />
+            <StatCard key={s.id || s.title || idx} {...s} />
           ))
         ) : (
           !loading && (
@@ -286,14 +552,10 @@ function FreelancerDashboard() {
         const payload = await fetchFreelancerDashboard();
 
         setBalanceCards(
-          Array.isArray(payload?.balanceCards)
-            ? payload.balanceCards
-            : []
+          Array.isArray(payload?.balanceCards) ? payload.balanceCards : []
         );
         setActiveProjects(
-          Array.isArray(payload?.activeProjects)
-            ? payload.activeProjects
-            : []
+          Array.isArray(payload?.activeProjects) ? payload.activeProjects : []
         );
         setLatestClientProjects(
           Array.isArray(payload?.latestClientProjects)
@@ -311,11 +573,17 @@ function FreelancerDashboard() {
     load();
   }, []);
 
+  const showSkeleton =
+    loading &&
+    !error &&
+    balanceCards.length === 0 &&
+    activeProjects.length === 0 &&
+    latestClientProjects.length === 0;
+
+  if (showSkeleton) return <FreelancerDashboardSkeleton />;
+
   return (
     <div className="space-y-6 py-6">
-      {loading && (
-        <div className="text-xs text-slate-500">جارِ تحميل البيانات...</div>
-      )}
       {error && (
         <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
           {error}
@@ -326,11 +594,7 @@ function FreelancerDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         {balanceCards.length > 0 ? (
           balanceCards.map((c, idx) => (
-            <StatCard
-              key={c.id || c.title || idx}
-              {...c}
-              accent="bg-cyan-50"
-            />
+            <StatCard key={c.id || c.title || idx} {...c} accent="bg-cyan-50" />
           ))
         ) : (
           !loading && (
@@ -495,9 +759,7 @@ function ClientDashboard() {
       );
 
       setAttention({
-        pendingApplications: Array.isArray(
-          payload?.attention?.pendingApplications
-        )
+        pendingApplications: Array.isArray(payload?.attention?.pendingApplications)
           ? payload.attention.pendingApplications
           : [],
         pendingReviews: Array.isArray(payload?.attention?.pendingReviews)
@@ -522,7 +784,6 @@ function ClientDashboard() {
   const formatDate = (d) => {
     if (!d) return "—";
     try {
-      // If you want English always: toLocaleString("en-US")
       return new Date(d).toLocaleString();
     } catch {
       return "—";
@@ -536,11 +797,19 @@ function ClientDashboard() {
     return String(v);
   };
 
+  const showSkeleton =
+    loading &&
+    !error &&
+    stats.length === 0 &&
+    recentProjects.length === 0 &&
+    attention.pendingApplications.length === 0 &&
+    attention.pendingReviews.length === 0 &&
+    attention.pendingPayments.length === 0;
+
+  if (showSkeleton) return <ClientDashboardSkeleton />;
+
   return (
     <div className="space-y-6 py-6" dir="ltr">
-      {loading && (
-        <div className="text-xs text-slate-500">Loading dashboard…</div>
-      )}
       {error && (
         <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
           {error}
@@ -587,9 +856,7 @@ function ClientDashboard() {
                 className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
                 type="button"
               >
-                <RefreshCw
-                  className={`w-3 h-3 ${loading ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
                 Refresh
               </button>
             </div>
@@ -609,10 +876,8 @@ function ClientDashboard() {
                       {item.project_title || item.projectTitle || "Project"}
                     </div>
                     <div className="text-[11px] text-slate-500 truncate">
-                      {item.freelancer_name ||
-                        item.freelancerName ||
-                        "Freelancer"}{" "}
-                      • {formatDate(item.assigned_at || item.applied_at)}
+                      {item.freelancer_name || item.freelancerName || "Freelancer"} •{" "}
+                      {formatDate(item.assigned_at || item.applied_at)}
                     </div>
                   </div>
                 )}
@@ -632,8 +897,7 @@ function ClientDashboard() {
                       {p.title || "Untitled"}
                     </div>
                     <div className="text-[11px] text-slate-500 truncate">
-                      Status:{" "}
-                      {p.completion_status || p.completionStatus || "—"}
+                      Status: {p.completion_status || p.completionStatus || "—"}
                     </div>
                   </div>
                 )}
@@ -653,8 +917,7 @@ function ClientDashboard() {
                       {p.title || "Untitled"}
                     </div>
                     <div className="text-[11px] text-slate-500 truncate">
-                      Amount:{" "}
-                      {money(p.amount_to_pay ?? p.amountToPay ?? p.budget)}
+                      Amount: {money(p.amount_to_pay ?? p.amountToPay ?? p.budget)}
                     </div>
                   </div>
                 )}
@@ -719,9 +982,7 @@ function ClientDashboard() {
                   </button>
                 ))
               ) : (
-                <div className="text-xs text-slate-400">
-                  No recent projects yet.
-                </div>
+                <div className="text-xs text-slate-400">No recent projects yet.</div>
               )}
             </div>
           </div>

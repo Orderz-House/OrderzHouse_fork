@@ -5,13 +5,8 @@ import axios from "axios";
 import { loadStripe } from "@stripe/stripe-js";
 import GradientButton from "../buttons/GradientButton.jsx";
 
-// Theme
 const THEME = "#028090";
-
-// API URL from .env
 const API_URL = import.meta.env.VITE_APP_API_URL;
-
-// Stripe public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // ================ Auth Hook ================
@@ -23,26 +18,19 @@ const useAuth = () => {
 };
 // ==========================================
 
-
-// ------------------- Plan Card -------------------
 function PlanCard({ plan, user }) {
   const isPopular = plan.plan_type === "popular";
 
-  // Stripe Checkout Trigger
   const onChoose = async () => {
     if (!user) return (window.location.href = "/login");
 
     try {
-      const stripe = await stripePromise;
+      await stripePromise; // not strictly needed if redirecting by URL, but fine to keep
 
-      const response = await axios.post(
-        `${API_URL}/stripe/create-checkout-session`,
-        {
-          plan_id: plan.id,
-          user_id: user.id,
-          is_verified: user.is_verified, // still needed by backend
-        }
-      );
+      const response = await axios.post(`${API_URL}/stripe/create-checkout-session`, {
+        plan_id: plan.id,
+        user_id: user.id,
+      });
 
       window.location.href = response.data.url;
     } catch (error) {
@@ -70,7 +58,6 @@ function PlanCard({ plan, user }) {
         minHeight: "430px",
       }}
     >
-      {/* TOP CONTENT */}
       <div className="flex-grow">
         <div className="px-6 pt-6">
           <div className="mb-2 flex items-center justify-between">
@@ -91,10 +78,7 @@ function PlanCard({ plan, user }) {
             )}
           </div>
 
-          <h3
-            className="text-2xl font-extrabold tracking-tight"
-            style={{ color: THEME }}
-          >
+          <h3 className="text-2xl font-extrabold tracking-tight" style={{ color: THEME }}>
             {plan.plan_type === "monthly"
               ? `${plan.duration} Month`
               : plan.plan_type === "yearly"
@@ -103,39 +87,26 @@ function PlanCard({ plan, user }) {
           </h3>
 
           <div className="mt-3 flex items-end gap-2">
-            <span className="text-4xl font-extrabold text-slate-900">
-              {plan.price}
-            </span>
+            <span className="text-4xl font-extrabold text-slate-900">{plan.price}</span>
             <span className="mb-1 text-sm font-semibold text-slate-500">JD</span>
           </div>
-
-          {/* ❌ REMOVED the verification fee UI */}
         </div>
 
-        <div
-          className="mx-6 my-5 h-px"
-          style={{ background: "rgba(2,128,144,0.12)" }}
-        />
+        <div className="mx-6 my-5 h-px" style={{ background: "rgba(2,128,144,0.12)" }} />
 
         <ul className="mx-6 mb-4 space-y-2 text-sm text-slate-600">
           {Array.isArray(plan.features) &&
             plan.features.map((item, i) => (
               <li key={i} className="flex items-center gap-2">
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: THEME }}
-                />
+                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: THEME }} />
                 {item}
               </li>
             ))}
 
-          {plan.description && (
-            <li className="text-xs text-slate-500">{plan.description}</li>
-          )}
+          {plan.description && <li className="text-xs text-slate-500">{plan.description}</li>}
         </ul>
       </div>
 
-      {/* CTA BUTTON */}
       <div className="px-6 pb-6">
         <button
           type="button"
@@ -145,9 +116,7 @@ function PlanCard({ plan, user }) {
           }}
           className="w-full rounded-xl px-4 py-2 font-bold text-white transition"
           style={{ background: THEME }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.filter = "brightness(1.08)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.08)")}
           onMouseLeave={(e) => (e.currentTarget.style.filter = "none")}
         >
           Choose Plan
@@ -157,8 +126,6 @@ function PlanCard({ plan, user }) {
   );
 }
 
-
-// ------------------- Main Plans Component -------------------
 export default function Plans() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -184,17 +151,16 @@ export default function Plans() {
     fetchPlans();
   }, []);
 
-  if (loading)
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-600">
         Loading plans...
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      
-      {/* HEADER */}
       <div className="mx-auto max-w-6xl px-4 pt-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">
           Choose Your Plan
@@ -223,7 +189,6 @@ export default function Plans() {
         </p>
       </div>
 
-      {/* CARDS */}
       <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {plans.length > 0 ? (
           plans.map((p) => (
@@ -232,13 +197,10 @@ export default function Plans() {
             </div>
           ))
         ) : (
-          <p className="text-center text-slate-500 col-span-full">
-            No plans available.
-          </p>
+          <p className="text-center text-slate-500 col-span-full">No plans available.</p>
         )}
       </div>
 
-      {/* CONTRACT SECTION */}
       <div
         className="mx-auto mt-10 max-w-4xl rounded-2xl border bg-white px-6 py-6 text-center text-sm font-semibold text-slate-700"
         style={{ borderColor: "rgba(2,128,144,0.15)" }}

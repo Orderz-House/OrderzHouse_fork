@@ -1,5 +1,3 @@
-// controllers/stripeWebhookController.js
-
 import Stripe from "stripe";
 import pool from "../../models/db.js";
 
@@ -29,11 +27,8 @@ export const handleStripeWebhook = async (req, res) => {
       const stripe_payment_intent = session.payment_intent;
       const amount_total = session.amount_total / 1000; 
 
-      console.log("💳 Payment success for freelancer:", freelancer_id);
 
-      // ======================================================
-      // 1️⃣ SAVE PAYMENT RECORD
-      // ======================================================
+     
       await pool.query(
         `INSERT INTO payments (user_id, plan_id, amount, stripe_session_id, stripe_payment_intent)
          VALUES ($1, $2, $3, $4, $5)
@@ -43,9 +38,7 @@ export const handleStripeWebhook = async (req, res) => {
 
       console.log("💰 Payment saved:", amount_total, "JOD");
 
-      // ======================================================
-      // 2️⃣ VERIFY USER (IF VERIFICATION FEE WAS INCLUDED)
-      // ======================================================
+      
       if (includesVerificationFee === "yes") {
         await pool.query(
           "UPDATE users SET is_verified = true WHERE id = $1",
@@ -54,9 +47,7 @@ export const handleStripeWebhook = async (req, res) => {
         console.log("✔️ User marked as verified");
       }
 
-      // ======================================================
-      // 3️⃣ GET PLAN DETAILS (DURATION)
-      // ======================================================
+    
       const planRes = await pool.query(
         `SELECT duration, plan_type FROM plans WHERE id = $1`,
         [plan_id]
@@ -78,9 +69,7 @@ export const handleStripeWebhook = async (req, res) => {
       const start_date_sql = start_date.toISOString().split("T")[0];
       const end_date_sql = end_date.toISOString().split("T")[0];
 
-      // ======================================================
-      // 4️⃣ CREATE SUBSCRIPTION RECORD (MATCHES YOUR TABLE)
-      // ======================================================
+     
       await pool.query(
         `INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
          VALUES ($1, $2, $3, $4, 'active')`,
@@ -97,3 +86,5 @@ export const handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 };
+
+

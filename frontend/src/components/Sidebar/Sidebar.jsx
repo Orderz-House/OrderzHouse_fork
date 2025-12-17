@@ -126,7 +126,6 @@ const Sidebar = ({
   return (
     <>
       {/* ===================== Desktop Sidebar ===================== */}
-      {/* ===================== Desktop Sidebar ===================== */}
 <aside
   className={`
     hidden lg:flex lg:flex-col lg:h-screen lg:sticky lg:top-0

@@ -1,7 +1,5 @@
-// routes/stripeWebhookRoutes.js
-
 import express from "express";
-import { handleStripeWebhook } from "../../controller/Stripe/stripeWebhookController.js";
+import { handleStripeWebhook } from "../../controller/Stripe/stripeWebhook.js";
 
 const webhookRouter = express.Router();
 

@@ -1,61 +1,44 @@
-import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Bookmark,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Star,
+  User,
+} from "lucide-react";
 import { useToast } from "../../components/toast/ToastProvider";
-import API from "../api/axios"
+import API from "../api/axios";
 
-const PRIMARY = "#028090";
+const ACCENT = "#028090";
+const BORDER = "#E6EAEE";
+const MUTED = "#7B8A97";
+const dark = "#30353b";
+const BG = "#F5F7FA";
 
-export default function EditProfile() {
-  const { userData } = useSelector((state) => state.auth);
+export default function Profile() {
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    username: "",
-    email: "",
-    phone_number: "",
-    country: "",
-    profile_pic_url: "",
-  });
-
-  const [ratingData, setRatingData] = useState({
-    currentRating: 0,
-    lastIncrease: null
-  });
-
-  useEffect(() => {
-    // Get rating data from localStorage
-    const storedRating = localStorage.getItem("freelancerRating");
-    const storedIncrease = localStorage.getItem("lastRatingIncrease");
-    
-    setRatingData({
-      currentRating: userData?.rating !== undefined ? userData.rating : (storedRating ? parseFloat(storedRating) : 0),
-      lastIncrease: storedIncrease ? JSON.parse(storedIncrease) : null
-    });
-  }, [userData]);
-
-  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [activeTab, setActiveTab] = useState("about");
 
   useEffect(() => {
     fetchUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ===================== Fetch User Profile ===================== */
   const fetchUserProfile = async () => {
     try {
       setFetchLoading(true);
       const res = await API.get("/users/getUserdata");
       const data = res.data;
 
-      if (data.success && data.user) {
-        setFormData(data.user);
+      if (data?.success && data?.user) {
+        setProfile(data.user);
       } else {
-        showToast(data.message || "Failed to load profile", "error");
+        showToast(data?.message || "Failed to load profile", "error");
       }
     } catch (err) {
       console.error(err);
@@ -65,222 +48,470 @@ export default function EditProfile() {
     }
   };
 
-  /* ===================== Validate Inputs ===================== */
-  const validate = () => {
-    const errors = {};
-    if (!formData.first_name?.trim()) errors.first_name = "Required";
-    if (!formData.last_name?.trim()) errors.last_name = "Required";
-    if (!formData.username?.trim()) errors.username = "Required";
-    if (!/^\d{10}$/.test(formData.phone_number))
-      errors.phone_number = "10 digits required";
-    if (!formData.country?.trim()) errors.country = "Required";
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+  const roleTitle = (role_id) => {
+    // عدّل المسميات لو عندك Roles مختلفة
+    if (role_id === 1) return "Admin";
+    if (role_id === 2) return "Client";
+    if (role_id === 3) return "Freelancer";
+    return "User";
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const vm = useMemo(() => {
+    const p = profile || {};
+
+    const fullName =
+      [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+      p.username ||
+      "—";
+
+    const location = p.country || "—";
+    const title = roleTitle(p.role_id);
+
+    const rating5 = Number(p.rating || 0); // من الداتا بيس (1..5)
+    const rating10 = Math.max(0, Math.min(10, rating5 * 2)); // للعرض مثل 8,6
+
+    // بالصورة عندك Work/Skills: مو موجودين بجدول users، فخليتهم placeholders مثل التصميم
+    const workItems = [];
+
+    const skills = [];
+
+    const phone = p.phone_number || "—";
+    const email = p.email || "—";
+    const address = p.country || "—";
+    const site = "—"; // ما عندك عمود website بالusers
+
+    const birthday = "—";
+    const gender = "—";
+
+    return {
+      fullName,
+      location,
+      title,
+      rating10,
+      rating5,
+      workItems,
+      skills,
+      phone,
+      email,
+      address,
+      site,
+      birthday,
+      gender,
+      profilePic: p.profile_pic_url || "",
+    };
+  }, [profile]);
+
+  const formatRating = (n) => {
+    const v = Number.isFinite(n) ? n : 0;
+    return v.toFixed(1).replace(".", ",");
   };
 
-  /* ===================== Upload Profile Image to Cloudinary ===================== */
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const StarRow = ({ value5 }) => {
+    const v = Math.max(0, Math.min(5, Number(value5 || 0)));
+    const full = Math.floor(v);
+    const hasHalf = v - full >= 0.5;
 
-    setUploading(true);
-    try {
-      const formDataCloud = new FormData();
-      formDataCloud.append("file", file);
-      formDataCloud.append(
-        "upload_preset",
-        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-      );
-      formDataCloud.append(
-        "cloud_name",
-        import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-      );
-      formDataCloud.append("folder", "users/profile_pics");
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 5 }).map((_, i) => {
+          const isFull = i < full;
+          const isHalf = i === full && hasHalf;
 
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${
-          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-        }/auto/upload`,
-        { method: "POST", body: formDataCloud }
-      );
-      const data = await uploadRes.json();
+          if (isHalf) {
+            return (
+              <span key={i} className="relative inline-block w-4 h-4">
+                <Star
+                  className="absolute inset-0 w-4 h-4"
+                  style={{ stroke: "#C9D3DC" }}
+                />
+                <span
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ width: "50%" }}
+                >
+                  <Star
+                    className="w-4 h-4"
+                    style={{ stroke: ACCENT, fill: ACCENT }}
+                  />
+                </span>
+              </span>
+            );
+          }
 
-      if (data.secure_url) {
-        setFormData((prev) => ({ ...prev, profile_pic_url: data.secure_url }));
-        showToast("Profile picture uploaded!", "success");
-
-        const updateRes = await API.put("/users/edit", {
-          profile_pic_url: data.secure_url,
-        });
-
-        if (updateRes.data.success) {
-          showToast("Profile picture updated successfully!", "success");
-        } else {
-          showToast(
-            updateRes.data.message || "Error updating profile picture",
-            "error"
+          return (
+            <Star
+              key={i}
+              className="w-4 h-4"
+              style={{
+                stroke: isFull ? ACCENT : "#C9D3DC",
+                fill: isFull ? ACCENT : "transparent",
+              }}
+            />
           );
-        }
-      } else {
-        showToast("Cloudinary upload failed", "error");
-      }
-    } catch (err) {
-      console.error("Image upload error:", err);
-      showToast("Error uploading image", "error");
-    } finally {
-      setUploading(false);
-    }
+        })}
+      </div>
+    );
   };
 
-  /* ===================== Save Other Profile Edits ===================== */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) {
-      showToast("Please fill all required fields", "error");
-      return;
-    }
+  const WorkItem = ({ item, fallbackLabel }) => {
+    const title = item?.title || fallbackLabel;
+    const tag = item?.tag || "";
+    const line1 = item?.address || "";
+    const line2 = item?.contact || "";
 
-    setLoading(true);
-    try {
-      const res = await API.put("/users/edit", formData);
-      const data = res.data;
+    return (
+      <div className="py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-slate-800 truncate">
+              {title}
+            </p>
+            {line1 ? (
+              <p className="text-[11.5px] mt-0.5" style={{ color: MUTED }}>
+                {line1}
+              </p>
+            ) : null}
+            {line2 ? (
+              <p className="text-[11.5px]" style={{ color: MUTED }}>
+                {line2}
+              </p>
+            ) : null}
+          </div>
 
-      if (data.success) {
-        showToast("Profile updated successfully!", "success");
-      } else {
-        showToast(data.message || "Failed to update profile", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Server error while saving changes", "error");
-    } finally {
-      setLoading(false);
-    }
+          {tag ? (
+            <span
+              className="shrink-0 rounded px-2 py-0.5 text-[11px] font-medium"
+              style={{ background: "#ccf0f4", color: "#028090" }}
+            >
+              {tag}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
   };
 
-  /* ===================== Loader ===================== */
   if (fetchLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] text-slate-600">
+      <div
+        className="min-h-[420px] grid place-items-center"
+        style={{ background: BG, color: MUTED }}
+      >
         Loading profile…
       </div>
     );
   }
 
-  /* ===================== UI ===================== */
   return (
-    <div className="space-y-4 px-4 sm:px-6 py-6 text-[14px]">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col items-center mb-6">
-          <div className="relative">
-            <div className="w-28 h-28 bg-slate-100 border border-slate-200 rounded-full overflow-hidden grid place-items-center">
-              {formData.profile_pic_url ? (
-                <img
-                  src={formData.profile_pic_url}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
+    <div className="min-h-screen py-6" style={{ background: BG }}>
+      <div
+        className="mx-auto w-full  overflow-hidden rounded"
+        style={{ border: `1px solid ${BORDER}`, background: "#fff" }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr]">
+          {/* LEFT */}
+          <aside
+            className="border-b md:border-b-0 "
+            style={{ borderColor: BORDER }}
+          >
+            <div className="p-5">
+              <div
+                className="w-full h-[175px] overflow-hidden rounded-sm bg-slate-100 border"
+                style={{ borderColor: BORDER }}
+              >
+                {vm.profilePic ? (
+                  <img
+                    src={vm.profilePic}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full grid place-items-center">
+                    <User className="w-12 h-12" style={{ color: "#B7C3CE" }} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-5 pb-5">
+              <p
+                className="text-[11px] font-semibold tracking-wider"
+                style={{ color: MUTED }}
+              >
+                WORK
+              </p>
+
+              <div className="mt-2 divide-y" style={{ borderColor: BORDER }}>
+                <WorkItem
+                  item={{
+                    title: "—",
+                    tag: "Primary",
+                    address: "",
+                    contact: "",
+                  }}
+                  fallbackLabel="—"
                 />
+                <div className="h-px" style={{ background: BORDER }} />
+                <WorkItem
+                  item={{
+                    title: "—",
+                    tag: "Secondary",
+                    address: "",
+                    contact: "",
+                  }}
+                  fallbackLabel="—"
+                />
+              </div>
+
+              <div className="mt-5">
+                <p
+                  className="text-[11px] font-semibold tracking-wider"
+                  style={{ color: MUTED }}
+                >
+                  SKILLS
+                </p>
+
+                <div className="mt-2">
+                  <ul className="space-y-1">
+                    {["—", "—", "—", "—", "—"].map((s, i) => (
+                      <li
+                        key={i}
+                        className="text-[12px]"
+                        style={{ color: MUTED }}
+                      >
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* RIGHT */}
+          <main className="p-5 pl-10">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h1 className="text-[20px] font-semibold text-slate-800 truncate">
+                    {vm.fullName}
+                  </h1>
+                  <span
+                    className="flex items-center gap-1 text-[12px]"
+                    style={{ color: MUTED }}
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    {vm.location}
+                  </span>
+                </div>
+
+                <p
+                  className="text-[12.5px] font-medium mt-0.5"
+                  style={{ color: ACCENT }}
+                >
+                  {vm.title}
+                </p>
+
+                <div className="mt-8">
+                  <p
+                    className="text-[11px] font-semibold tracking-wider"
+                    style={{ color: MUTED }}
+                  >
+                    RATING
+                  </p>
+
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-[18px] font-semibold text-slate-800">
+                      {formatRating(vm.rating10)}
+                    </span>
+                    <StarRow value5={vm.rating5} />
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="h-9 px-3 rounded border text-[12px] font-medium flex items-center gap-2"
+                    style={{
+                      borderColor: BORDER,
+                      color: "#4B5563",
+                      background: "#fff",
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Send message
+                  </button>
+
+                  <button
+                    type="button"
+                    className="h-9 px-4 rounded border text-[12px] font-semibold flex items-center gap-2"
+                    style={{
+                      borderColor: "#BFE5F7",
+                      background: "#e0f7f9",
+                      color: "#028090",
+                    }}
+                  >
+                    ✓ Contacts
+                  </button>
+
+                  <button
+                    type="button"
+                    className="h-9 px-2 text-[12px] font-medium"
+                    style={{ color: MUTED }}
+                  >
+                    Report user
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="hidden sm:flex items-center gap-2 text-[12px] font-medium"
+                style={{ color: MUTED }}
+              >
+                <Bookmark className="w-4 h-4" />
+                Bookmark
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div
+              className="mt-5 border-b flex items-center gap-6"
+              style={{ borderColor: BORDER }}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab("timeline")}
+                className="py-3 text-[12px] font-medium flex items-center gap-2"
+                style={{
+                  color: activeTab === "timeline" ? "#111827" : MUTED,
+                  borderBottom:
+                    activeTab === "timeline"
+                      ? `2px solid ${ACCENT}`
+                      : "2px solid transparent",
+                }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    background:
+                      activeTab === "timeline" ? ACCENT : "transparent",
+                  }}
+                />
+                Timeline
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("about")}
+                className="py-3 text-[12px] font-medium flex items-center gap-2"
+                style={{
+                  color: activeTab === "about" ? "#111827" : MUTED,
+                  borderBottom:
+                    activeTab === "about"
+                      ? `2px solid ${ACCENT}`
+                      : "2px solid transparent",
+                }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    background: activeTab === "about" ? ACCENT : "transparent",
+                  }}
+                />
+                About
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="pt-10">
+              {activeTab === "timeline" ? (
+                <div className="text-[12.5px]" style={{ color: MUTED }}>
+                  No timeline items yet.
+                </div>
               ) : (
-                <User className="w-14 h-14 text-slate-400" />
-              )}
-              {uploading && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-slate-600 text-xs">
-                  Uploading…
+                <div className="space-y-6">
+                  {/* Contact Information */}
+                  <div>
+                    <p
+                      className="text-[11px] font-semibold tracking-wider"
+                      style={{ color: dark }}
+                    >
+                      CONTACT INFORMATION
+                    </p>
+
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-3 text-[12.5px]">
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ color: MUTED }}
+                      >
+                        <Phone className="w-4 h-4" />
+                        Phone:
+                      </div>
+                      <div className="font-medium" style={{ color: ACCENT }}>
+                        {vm.phone}
+                      </div>
+
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ color: MUTED }}
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Address:
+                      </div>
+                      <div className="text-slate-700">{vm.address}</div>
+
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ color: MUTED }}
+                      >
+                        <Mail className="w-4 h-4" />
+                        E-mail:
+                      </div>
+                      <div className="font-medium" style={{ color: ACCENT }}>
+                        {vm.email}
+                      </div>
+
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ color: MUTED }}
+                      >
+                        <span
+                          className="w-4 h-4 grid place-items-center text-[10px] font-bold border rounded"
+                          style={{ borderColor: BORDER }}
+                        >
+                          @
+                        </span>
+                        Site:
+                      </div>
+                      <div className="font-medium" style={{ color: ACCENT }}>
+                        {vm.site}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Basic Information */}
+                  <div>
+                    <p
+                      className="text-[11px] font-semibold tracking-wider"
+                      style={{ color: dark }}
+                    >
+                      BASIC INFORMATION
+                    </p>
+
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-3 text-[12.5px]">
+                      <div style={{ color: MUTED }}>Birthday:</div>
+                      <div className="text-slate-700">{vm.birthday}</div>
+
+                      <div style={{ color: MUTED }}>Gender:</div>
+                      <div className="text-slate-700">{vm.gender}</div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Upload Button */}
-            <label
-              htmlFor="profile-pic"
-              className="absolute bottom-0 right-0 w-9 h-9 rounded-full text-white grid place-items-center shadow-md cursor-pointer"
-              style={{ background: PRIMARY }}
-            >
-              +
-              <input
-                id="profile-pic"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </label>
-          </div>
-
-          <h1 className="mt-3 font-semibold text-slate-800 text-lg">
-            Edit Profile
-          </h1>
-          <p className="text-slate-500 text-sm">Update your personal details</p>
-          <div className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-            Rating: {ratingData.currentRating.toFixed(2)}
-          </div>
-          {ratingData.lastIncrease && (
-            <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-              {ratingData.lastIncrease.previousRating} → {ratingData.lastIncrease.newRating} (+{ratingData.lastIncrease.increase})
-            </div>
-          )}
+          </main>
         </div>
-
-        {/* Form Fields */}
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          {[
-            { label: "First Name", key: "first_name" },
-            { label: "Last Name", key: "last_name" },
-            { label: "Username", key: "username" },
-            { label: "Email", key: "email", disabled: true },
-            { label: "Phone Number", key: "phone_number" },
-            { label: "Country", key: "country" },
-          ].map((field) => (
-            <label key={field.key} className="space-y-1">
-              <span className="text-[13px] font-medium text-slate-700">
-                {field.label}
-              </span>
-              <input
-                name={field.key}
-                value={formData[field.key] || ""}
-                onChange={handleChange}
-                disabled={field.disabled}
-                className={`w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300 ${
-                  field.disabled
-                    ? "bg-slate-50 text-slate-400 cursor-not-allowed"
-                    : "bg-white text-slate-800"
-                } ${
-                  validationErrors[field.key]
-                    ? "border-rose-300 focus:ring-rose-200"
-                    : "border-slate-300"
-                }`}
-              />
-              {validationErrors[field.key] && (
-                <span className="text-xs text-rose-500">
-                  {validationErrors[field.key]}
-                </span>
-              )}
-            </label>
-          ))}
-
-          <div className="md:col-span-2 flex justify-end mt-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className={`h-10 px-6 rounded-full text-sm font-medium shadow-sm transition-all border ${
-                loading
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  : "bg-[var(--primary)] text-white hover:bg-[#016d7a]"
-              }`}
-              style={{ background: PRIMARY }}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

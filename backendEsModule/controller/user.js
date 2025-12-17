@@ -819,6 +819,9 @@ const rateFreelancer = async (req, res) => {
 /* =========================================
    GET USER DATA (للفرونت)
 ========================================= */
+/* =========================================
+   GET USER DATA (للفرونت)
+========================================= */
 const getUserdata = async (req, res) => {
   const userId = req.token.userId;
 
@@ -832,9 +835,17 @@ const getUserdata = async (req, res) => {
          username,
          role_id,
          profile_pic_url,
+         phone_number,
+         country,
+         bio,
+         rating,
+         rating_sum,
+         rating_count,
          is_deleted,
          is_two_factor_enabled,
-         email_verified
+         email_verified,
+         created_at,
+         updated_at
        FROM users 
        WHERE id = $1`,
       [userId]
@@ -857,6 +868,7 @@ const getUserdata = async (req, res) => {
       .json({ success: false, message: "Server error" });
   }
 };
+
 
 /* =========================================
    PASSWORD & ACCOUNT MANAGEMENT
