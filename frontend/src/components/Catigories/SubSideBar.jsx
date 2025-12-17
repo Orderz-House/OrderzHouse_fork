@@ -357,19 +357,7 @@ export default function SubSidebar({
               ]}
             />
           </div>
-
-          <div className="flex items-center gap-4">
-            <Toggle
-              checked={withFilesOnly}
-              onChange={setWithFilesOnly}
-              label="With files"
-            />
-            <Toggle
-              checked={withFreelancerOnly}
-              onChange={setWithFreelancerOnly}
-              label="With freelancer"
-            />
-          </div>
+       
         </div>
       )}
 

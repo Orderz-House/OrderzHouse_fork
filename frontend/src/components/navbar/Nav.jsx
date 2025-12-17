@@ -313,14 +313,14 @@ export default function EnhancedNavbar() {
               </Link>
             )}
 
-            {userData?.role_id === 3 && (
+            {/* {userData?.role_id === 3 && (
               <Link
                 to="/tasks/create"
                 className="inline-flex items-center gap-2 px-5 py-2 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white transition-colors duration-150"
               >
                 <Plus className="h-4 w-4" /> Add task
-              </Link>
-            )} 
+              </Link> */}
+            {/* )}  */}
             {/* {IsAuthenticated && (
               <>
                 <button
