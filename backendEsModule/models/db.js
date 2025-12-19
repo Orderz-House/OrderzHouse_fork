@@ -24,11 +24,25 @@ const config = fromUrl
 // 🔹 Initialize pool
 const pool = new Pool(config);
 
+// Add event listeners for debugging
+pool.on('connect', () => {
+  console.log('✅ Database connection established');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ Database connection error:', err.message);
+});
+
+pool.on('remove', () => {
+  console.log('⚠️ Database connection removed from pool');
+});
+
 // ✅ Test connection once at startup
 (async () => {
   try {
     const result = await pool.query("SELECT NOW()");
     console.log("✅ Connected to PostgreSQL! Current time:", result.rows[0].now);
+    console.log("📊 Pool stats - Total:", pool.totalCount, "Idle:", pool.idleCount, "Waiting:", pool.waitingCount);
   } catch (err) {
     console.error("❌ DB connection error:", err.message);
   }

@@ -1,8 +1,12 @@
 import express from "express";
 import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url';
 
 import { authentication } from "../middleware/authentication.js";
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
+import adminOnly from "../middleware/adminOnly.js";
 
 import {
   createProject,
@@ -25,6 +29,8 @@ import {
   reassignFreelancer,
   submitProjectDelivery,
   getProjectDeliveries,
+  // bulk project helpers
+  createBulkProjects,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -45,6 +51,69 @@ import {getAssignmentsForProject} from "../controller/projectsManagment/assignme
 
 const projectsRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Get the directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/* ======================================================================
+   BULK PROJECT ENDPOINTS
+====================================================================== */
+
+// Endpoint to get titles for bulk project creation
+projectsRouter.get(
+  "/bulk-project-titles",
+  authentication,
+  adminOnly,
+  (req, res) => {
+    try {
+      // Read titles from titles.txt file
+      const titlesFilePath = path.join(process.cwd(), 'titles.txt');
+      console.log('Attempting to read titles from:', titlesFilePath);
+      console.log('Current working directory:', process.cwd());
+      
+      // Check if file exists
+      if (!fs.existsSync(titlesFilePath)) {
+        console.error('Titles file not found at:', titlesFilePath);
+        // Try alternative path
+        const altPath = path.join(__dirname, '..', '..', 'titles.txt');
+        console.log('Trying alternative path:', altPath);
+        if (fs.existsSync(altPath)) {
+          console.log('Found file at alternative path');
+          const titlesData = fs.readFileSync(altPath, 'utf8');
+          const titles = titlesData.split('\n').filter(title => title.trim() !== '');
+          console.log('Successfully read', titles.length, 'titles from alternative path');
+          return res.json(titles);
+        }
+        return res.status(404).json({ 
+          success: false, 
+          message: "Titles file not found" 
+        });
+      }
+      
+      const titlesData = fs.readFileSync(titlesFilePath, 'utf8');
+      const titles = titlesData.split('\n').filter(title => title.trim() !== '');
+      
+      console.log('Successfully read', titles.length, 'titles from file');
+      res.json(titles);
+    } catch (error) {
+      console.error("Error reading titles file:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to read titles file",
+        error: error.message
+      });
+    }
+  }
+);
+
+// Endpoint to create bulk projects
+projectsRouter.post(
+  "/admin/bulk-create",
+  authentication,
+  adminOnly,
+  createBulkProjects
+);
 
 /* ======================================================================
    1) CREATE + MY PROJECTS

@@ -404,10 +404,49 @@ export const getProjectsByUserRole = async (req, res) => {
       AND p.is_deleted = false
       AND pa.status = 'active'
       `;
+    } else if (roleId === 1 || roleId === 4) {
+      // Admin role - get all projects with bulk project filtering
+      roleLabel = "admin";
+      query = `
+        SELECT 
+          p.*,
+          u.username AS client_username,
+          c.name AS category_name,
+          sc.name AS sub_category_name,
+          ssc.name AS sub_sub_category_name
+        FROM projects p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
+        WHERE p.is_deleted = false
+      `;
     } else {
       return res
         .status(403)
         .json({ success: false, message: "Role not allowed" });
+    }
+
+    // Add bulk project filtering for non-admin users
+    if (roleId !== 1 && roleId !== 4) {
+      // Get user's active subscription and associated plan
+      const subscriptionResult = await pool.query(
+        `SELECT s.plan_id 
+         FROM subscriptions s 
+         JOIN plans p ON s.plan_id = p.id 
+         WHERE s.freelancer_id = $1 
+         AND s.status = 'active'
+         ORDER BY s.end_date DESC 
+         LIMIT 1`,
+        [userId]
+      );
+      
+      const userPlanId = subscriptionResult.rows[0]?.plan_id;
+      
+      // If user is not on free plan (plan_id != 1), hide bulk projects
+      if (userPlanId !== 1) {
+        query += ` AND (p.is_bulk_project IS NULL OR p.is_bulk_project = false)`;
+      }
     }
 
     if (q && q.trim()) {

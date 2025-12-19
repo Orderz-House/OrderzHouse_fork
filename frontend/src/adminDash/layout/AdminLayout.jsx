@@ -14,7 +14,7 @@ import TopBar from "../components/TopBar.jsx";
 import { useToast } from "../../components/toast/ToastProvider.jsx";
 
 function mapRole(roleId) {
-  if (roleId === 1) return "admin";
+  if (roleId === 1 || roleId === 4) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
   if (roleId === 5) return "partner";
@@ -24,11 +24,9 @@ function mapRole(roleId) {
 function getBasePrefix(pathname) {
   if (pathname.startsWith("/client")) return "/client";
   if (pathname.startsWith("/freelancer")) return "/freelancer";
-  if (pathname.startsWith("/apm")) return "/apm";
   if (pathname.startsWith("/partner")) return "/partner"; 
   return "/admin";
 }
-
 
 function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
@@ -83,17 +81,8 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/profile")) return "profile";
   }
 
-  // ===== apm =====
-  if (base === "/apm") {
-    if (p.startsWith("/history")) return "history";
-    if (p.startsWith("/questions")) return "questions";
-    if (p.startsWith("/survey")) return "survey";
-    if (p.startsWith("/videos")) return "videos";
-  }
-
   return "overview";
 }
-
 
 function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
@@ -115,21 +104,6 @@ function getNav(role, navigate, base, onLogout) {
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
       { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
-    ];
-    return { navigation, bottomNavigation };
-  }
-
-  if (role === "apm") {
-    const navigation = [
-      { id: "overview",    name: "Overview",    icon: Home,        onClick: () => navigate(`${base}/`) },
-      { id: "history",     name: "History",     icon: History,      onClick: () => navigate(`${base}/history`) },
-      { id: "questions",   name: "Questions",   icon: HelpCircle,   onClick: () => navigate(`${base}/questions`) },
-      { id: "survey",      name: "Survey",      icon: SurveyIcon,   onClick: () => navigate(`${base}/survey`) },
-      { id: "videos",      name: "Videos",      icon: PlaySquare,   onClick: () => navigate(`${base}/videos`) },
-    ];
-    const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout",  name: "Logout",  icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }

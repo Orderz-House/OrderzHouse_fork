@@ -208,6 +208,106 @@ export const createProject = async (req, res) => {
   }
 };
 
+export const createBulkProjects = async (req, res) => {
+  try {
+    const userId = req.token?.userId;
+    const { title } = req.body;
+
+    // Validate input
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Title is required for bulk project creation",
+      });
+    }
+
+    // Validate title length
+    const titleLength = title.trim().length;
+    if (titleLength < 10 || titleLength > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Title must be between 10 and 100 characters.",
+      });
+    }
+
+    // Set default values for bulk projects
+    // Use valid category IDs that exist in the database
+    const categoryId = 1; // Default category (should exist)
+    const subCategoryId = null; // Allow null values for optional foreign keys
+    const subSubCategoryId = null; // Allow null values for optional foreign keys
+    const description = ".bulk project description"; // Default description
+    const projectType = "fixed"; // Default project type
+    const status = "open"; // Default status
+    const completionStatus = "not_started"; // Default completion status
+    const budget = 500; // Default budget
+    const durationDays = 7; // Default duration
+
+    console.log("Creating bulk project with title:", title);
+
+    // Insert project with bulk project settings
+    const insertQuery = `
+      INSERT INTO projects (
+        user_id, category_id, sub_category_id, sub_sub_category_id,
+        title, description, budget, duration_days, duration_hours,
+        project_type, status, completion_status, is_deleted, is_bulk_project
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,
+        $10,$11,$12,$13,$14
+      ) RETURNING *;
+    `;
+
+    console.log("Executing insert query with params:", [
+      userId,
+      categoryId,
+      subCategoryId,
+      subSubCategoryId,
+      title.trim(),
+      description,
+      budget,
+      durationDays,
+      null, // duration_hours
+      projectType,
+      status,
+      completionStatus,
+      false, // is_deleted
+      true   // is_bulk_project
+    ]);
+
+    const { rows } = await pool.query(insertQuery, [
+      userId,
+      categoryId,
+      subCategoryId,
+      subSubCategoryId,
+      title.trim(),
+      description,
+      budget,
+      durationDays,
+      null, // duration_hours
+      projectType,
+      status,
+      completionStatus,
+      false, // is_deleted
+      true   // is_bulk_project
+    ]);
+
+    console.log("Bulk project created successfully:", rows[0]);
+
+    res.status(201).json({
+      success: true,
+      message: "Bulk project created successfully",
+      project: rows[0],
+    });
+  } catch (error) {
+    console.error("Error creating bulk project:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      success: false,
+      message: "Server error while creating bulk project",
+      error: error.message
+    });
+  }
+};
+
 /* ======================================================================
    2) ASSIGNMENT / INVITES (CLIENT & FREELANCER)
 ====================================================================== */
@@ -1239,16 +1339,21 @@ export const getProjectTimeline = async (req, res) => {
  */
 export const getAllFreelancers = async (req, res) => {
   try {
-    const { rows: freelancers } = await pool.query(
-      `
+    console.log("getAllFreelancers called");
+    console.log("Database pool state:", pool.totalCount, "connections");
+    
+    const query = `
       SELECT id, username, email, first_name, last_name, profile_pic
       FROM users
       WHERE role_id = 3
         AND is_deleted = false
         AND is_verified = true
       ORDER BY username ASC;
-      `
-    );
+    `;
+    
+    console.log("Executing query:", query);
+    const { rows: freelancers } = await pool.query(query);
+    console.log("getAllFreelancers query successful, found", freelancers.length, "freelancers");
 
     res.status(200).json({
       success: true,
@@ -1257,9 +1362,11 @@ export const getAllFreelancers = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching all freelancers:", error);
+    console.error("Error stack:", error.stack);
     res.status(500).json({
       success: false,
       message: "Server error while fetching freelancers",
+      error: error.message
     });
   }
 };
@@ -1271,7 +1378,38 @@ export const getAllFreelancers = async (req, res) => {
  */
 export const getAllProjectsForAdmin = async (req, res) => {
   try {
-    const { rows: projects } = await pool.query(`
+    console.log("getAllProjectsForAdmin called");
+    
+    // First, check if the is_bulk_project column exists
+    try {
+      console.log("Checking if is_bulk_project column exists...");
+      const columnCheck = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'projects' AND column_name = 'is_bulk_project'
+      `);
+      
+      if (columnCheck.rows.length === 0) {
+        console.warn("Warning: is_bulk_project column does not exist in projects table");
+        // Try to add the column if it doesn't exist
+        try {
+          console.log("Attempting to add is_bulk_project column...");
+          await pool.query(`
+            ALTER TABLE projects 
+            ADD COLUMN IF NOT EXISTS is_bulk_project BOOLEAN DEFAULT FALSE
+          `);
+          console.log("Successfully added is_bulk_project column");
+        } catch (alterError) {
+          console.error("Error adding is_bulk_project column:", alterError.message);
+        }
+      } else {
+        console.log("is_bulk_project column exists");
+      }
+    } catch (columnError) {
+      console.warn("Error checking for is_bulk_project column:", columnError.message);
+    }
+    
+    const query = `
       SELECT 
         p.id,
         p.title,
@@ -1279,12 +1417,17 @@ export const getAllProjectsForAdmin = async (req, res) => {
         p.status,
         p.completion_status,
         p.created_at,
+        p.is_bulk_project,
         u.username AS client_name
       FROM projects p
       LEFT JOIN users u ON p.user_id = u.id
       WHERE p.is_deleted = false
       ORDER BY p.created_at DESC
-    `);
+    `;
+    
+    console.log("Executing query:", query);
+    const { rows: projects } = await pool.query(query);
+    console.log("getAllProjectsForAdmin query successful, found", projects.length, "projects");
 
     res.status(200).json({
       success: true,
@@ -1293,9 +1436,11 @@ export const getAllProjectsForAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching all projects for admin:", error);
+    console.error("Error stack:", error.stack);
     res.status(500).json({
       success: false,
       message: "Server error while fetching projects",
+      error: error.message
     });
   }
 };

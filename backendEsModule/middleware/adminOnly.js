@@ -11,9 +11,9 @@ const adminOnly = (req, res, next) => {
       });
     }
 
-    const roleId = tokenData.role || tokenData.role;
+    const roleId = tokenData.role || tokenData.roleId || (tokenData.data && tokenData.data.role) || (tokenData.user && tokenData.user.role_id);
     
-    if (Number(roleId) !== 1) {
+    if (Number(roleId) !== 1 && Number(roleId) !== 4) {
       return res.status(403).json({ 
         success: false, 
         message: "Forbidden - Admin access required" 

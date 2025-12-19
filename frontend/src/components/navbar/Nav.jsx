@@ -175,7 +175,7 @@ export default function EnhancedNavbar() {
     case 3:
       return "/freelancer";
     case 4:
-      return "/apm";
+      return "/admin";
     case 5:
       return "/partner";
     default:

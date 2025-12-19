@@ -18,11 +18,9 @@ const PERMISSION_DEFS = [
   { key: "admins", label: "Manage admins" },
   { key: "clients", label: "Manage clients" },
   { key: "freelancers", label: "Manage freelancers" },
-  // { key: "courses", label: "Manage courses" },
   { key: "categories", label: "Manage categories" },
   { key: "verifications", label: "Verify freelancers" },
   { key: "projects", label: "Manage projects" },
-  // { key: "tasks", label: "Manage tasks" },
   { key: "blogs", label: "Manage blogs" },
   { key: "payments", label: "Manage payments" },
   { key: "plans", label: "Manage plans" },
@@ -32,8 +30,7 @@ const PERMISSION_DEFS = [
 function getInitialPermissions() {
   const base = {};
   PERMISSION_DEFS.forEach((p) => {
-    // Enable Overview by default, others off
-    base[p.key] = p.key === "overview";
+    base[p.key] = p.key === "overview"; // Enable Overview by default
   });
   return base;
 }
@@ -48,9 +45,17 @@ export default function Admins() {
   const [tableRefreshKey, setTableRefreshKey] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Put "Add admin" button in top bar
+  // Put "Add admin" button in top bar (ONLY role 1)
   useEffect(() => {
     if (!setTopBarRight) return;
+
+    const r = Number(roleId);
+
+    // Only super admin (role 1) sees the button
+    if (r !== 1) {
+      clearTopBarRight && clearTopBarRight();
+      return;
+    }
 
     const button = (
       <button
@@ -68,7 +73,7 @@ export default function Admins() {
     return () => {
       clearTopBarRight && clearTopBarRight();
     };
-  }, [setTopBarRight, clearTopBarRight]);
+  }, [setTopBarRight, clearTopBarRight, roleId]);
 
   // Protect route
   if (!token) {
@@ -79,7 +84,9 @@ export default function Admins() {
     );
   }
 
-  if (Number(roleId) !== 1) {
+  // Allow role 1 and role 4 to access the page
+  const r = Number(roleId);
+  if (r !== 1 && r !== 4) {
     return (
       <div className="text-center mt-10 text-red-500">
         Access denied: Admins only.
@@ -175,7 +182,8 @@ export default function Admins() {
         crudConfig={{ showExpand: false, showEdit: true, showDelete: true }}
       />
 
-      {isModalOpen && (
+      {/* Modal ONLY for role 1 */}
+      {isModalOpen && Number(roleId) === 1 && (
         <AddAdminModal
           token={token}
           onClose={() => setIsModalOpen(false)}
@@ -236,9 +244,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
       const arr = Array.isArray(list) ? list : [];
       setResults(arr);
 
-      if (!arr.length) {
-        setError("No users found for this search.");
-      }
+      if (!arr.length) setError("No users found for this search.");
     } catch (err) {
       console.error("Search users failed", err);
       setError(
@@ -297,7 +303,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center">
-      {/* الخلفية المعتمة – تغطي كل شيء بما فيه الناف بار والسايد بار */}
+      {/* overlay */}
       <button
         type="button"
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -307,7 +313,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
         }}
       />
 
-      {/* صندوق المودال */}
+      {/* modal */}
       <div className="relative w-full max-w-5xl rounded-2xl bg-white shadow-2xl border border-slate-200 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
@@ -381,7 +387,6 @@ function AddAdminModal({ token, onClose, onCreated }) {
                     u.username ||
                     "User";
                   const email = u.email || u.phone_number || u.phone || "";
-
                   const isActive = selectedId && selectedId === idVal;
 
                   return (
@@ -430,13 +435,13 @@ function AddAdminModal({ token, onClose, onCreated }) {
               <h3 className="font-medium text-slate-800 text-sm">
                 2. Permissions
               </h3>
+
               {selected ? (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                   User{" "}
                   <span className="font-semibold">
-                    {`${selected.first_name || ""} ${
-                      selected.last_name || ""
-                    }`.trim() ||
+                    {`${selected.first_name || ""} ${selected.last_name || ""}`
+                      .trim() ||
                       selected.name ||
                       selected.username ||
                       "User"}
@@ -498,6 +503,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
             <span className="font-semibold">permissions</span> object to your
             backend.
           </div>
+
           <div className="flex gap-2">
             <button
               type="button"
@@ -509,6 +515,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
             >
               Cancel
             </button>
+
             <button
               type="button"
               disabled={!selected || saving}

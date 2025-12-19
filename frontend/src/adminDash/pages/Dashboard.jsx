@@ -32,7 +32,9 @@ const PRIMARY = "#028090";
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
-  if (roleId === 3) return "freelancer";
+  if (roleId === 3) return "freelancer"; 
+  if (roleId === 4) return "admin";
+
   return "user";
 }
 

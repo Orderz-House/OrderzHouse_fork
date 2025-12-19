@@ -20,24 +20,18 @@ import {
   Palette,
   Link2,
 } from "lucide-react";
+import api from "../../../api/axios";
 
 /* ---------- Theme ---------- */
 const T = { primary: "#028090", dark: "#05668D", ring: "rgba(15,23,42,.10)" };
-const ringStyle = { border: `1px solid ${T.ring}` };
 
 /* ---------- Role map ---------- */
 function mapRole(roleId) {
-  if (roleId === 1) return "admin";
+  if (roleId === 1 || roleId === 4) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
   return "user";
 }
-
-/* ---------- Axios base ---------- */
-const api = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL || "",
-  // headers: { "Content-Type": "application/json" },
-});
 
 /* ===================== Entry ===================== */
 export default function Projects() {
@@ -52,11 +46,25 @@ export default function Projects() {
 /* ===================== Admin ===================== */
 function AdminProjects() {
   const navigate = useNavigate();
-  const { token } = useSelector((s) => s.auth);
+  const { token, userData } = useSelector((s) => s.auth);
+  const roleId = userData?.role_id;
 
   // columns
   const columns = [
-    { label: "Title", key: "title" },
+    { 
+      label: "Title", 
+      key: "title",
+      render: (row) => (
+        <div className="flex items-center">
+          <span>{row.title}</span>
+          {row.is_bulk_project && (
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              BULK
+            </span>
+          )}
+        </div>
+      )
+    },
     { label: "Client", key: "client_name" },
     { label: "Freelancer", key: "freelancer_name" },
     { label: "Type", key: "project_type" },
@@ -97,32 +105,101 @@ function AdminProjects() {
     { label: "Done", value: "Done" },
   ];
 
+  // Function to handle bulk project creation
+  const handleBulkCreate = async (event) => {
+    try {
+      // Add loading state to prevent duplicate clicks
+      const button = event?.target;
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Creating...';
+      }
+      
+      // Fetch titles from the backend endpoint using axios for consistency
+      const titlesResponse = await api.get('/projects/bulk-project-titles');
+      const titles = titlesResponse.data;
+      
+      // Check if we got titles
+      if (!Array.isArray(titles) || titles.length === 0) {
+        throw new Error('No titles found in the file');
+      }
+      
+      // Take first 20 titles
+      const selectedTitles = titles.slice(0, 20);
+      
+      // Create projects for each title
+      const createdProjects = [];
+      for (const title of selectedTitles) {
+        try {
+          const response = await api.post('/projects/admin/bulk-create', {
+            title: title,
+          });
+          createdProjects.push(response.data.project);
+          console.log(`Created project: ${title}`);
+        } catch (createError) {
+          console.error(`Failed to create project "${title}":`, createError);
+          // Continue with other projects even if one fails
+        }
+      }
+      
+      // Show success notification
+      alert(`Successfully created ${createdProjects.length} bulk projects!`);
+      
+      // Refresh the projects list
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating bulk projects:', error);
+      alert('Failed to create bulk projects. Please try again. Check console for details.');
+    } finally {
+      // Reset button state
+      const button = event?.target;
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Bulk';
+      }
+    }
+  };
+
   return (
-    <PeopleTable
-      /* header */
-      title="Projects"
-      addLabel="Add Project"
-      /* data */
-      endpoint="/projects/admin/projects"
-      token={token}
-      columns={columns}
-      formFields={formFields}
-      chips={chips}
-      chipField="status"
-      filters={[
-        {
-          key: "status",
-          label: "Status",
-          options: chips.slice(1).map((c) => c.value),
-        },
-      ]}
-      /* UI */
-      desktopAsCards
-      /* Admin wants default CRUD inside cards */
-      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-      /* open details (admin route غالباً نسبي) */
-      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
-    />
+    <div>
+      {/* Bulk button - only visible for role_id = 4 */}
+      {roleId === 4 && (
+        <div className="mb-4">
+          <button
+            onClick={handleBulkCreate}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Bulk
+          </button>
+        </div>
+      )}
+      
+      <PeopleTable
+        /* header */
+        title="Projects"
+        addLabel="Add Project"
+        /* data */
+        endpoint="/projects/admin/projects"
+        token={token}
+        columns={columns}
+        formFields={formFields}
+        chips={chips}
+        chipField="status"
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            options: chips.slice(1).map((c) => c.value),
+          },
+        ]}
+        /* UI */
+        desktopAsCards
+        /* Admin wants default CRUD inside cards */
+        crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+        /* open details (admin route غالباً نسبي) */
+        onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+      />
+    </div>
   );
 }
 
