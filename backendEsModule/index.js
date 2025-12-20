@@ -4,6 +4,7 @@ import cors from "cors";
 import http from "http";
 import dotenv from "dotenv";
 import cron from "node-cron";
+import "./services/notificationListeners.js";
 
 // Cron jobs
 import "./cron/expireSubscriptions.js";
@@ -18,7 +19,7 @@ dotenv.config();
 startDeadlineWatcher();
 
 // delete permanently after 30 days
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("*/20 * * * *", async () => {
 console.log("Running cleanupDeactivatedUsers cron job...");
   await cleanupDeactivatedUsers();
 });

@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
-import { NotificationCreators } from "../services/notificationService.js";
+import { NotificationCreators } from "../services/notificationService.js"; // تركته زي ما هو
+import eventBus from "../events/eventBus.js"; // ✅ ADDED
 import nodemailer from "nodemailer";
 import pool from "../models/db.js";
 import cloudinary from "../cloudinary/setupfile.js";
@@ -789,14 +790,19 @@ const rateFreelancer = async (req, res) => {
     );
 
     try {
-      await NotificationCreators.reviewSubmitted(
-        null,
-        userId,
-        reviewerName || "A client"
-      );
+      // ✅ EVENT BUS بدل NotificationCreators
+      eventBus.emit("rating.submitted", {
+        ratingId: null,
+        projectId: projectId || null,
+        freelancerId: userId,
+        clientId: req.token?.userId || null,
+        clientName: reviewerName || "A client",
+        rating,
+        comment: null,
+      });
     } catch (notificationError) {
       console.error(
-        `Failed to create rating notification for freelancer ${userId}:`,
+        `Failed to emit rating.submitted event for freelancer ${userId}:`,
         notificationError
       );
     }
@@ -816,9 +822,6 @@ const rateFreelancer = async (req, res) => {
   }
 };
 
-/* =========================================
-   GET USER DATA (للفرونت)
-========================================= */
 /* =========================================
    GET USER DATA (للفرونت)
 ========================================= */
@@ -868,7 +871,6 @@ const getUserdata = async (req, res) => {
       .json({ success: false, message: "Server error" });
   }
 };
-
 
 /* =========================================
    PASSWORD & ACCOUNT MANAGEMENT
