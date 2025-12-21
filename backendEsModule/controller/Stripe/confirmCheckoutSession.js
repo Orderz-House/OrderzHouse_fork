@@ -6,95 +6,124 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const confirmCheckoutSession = async (req, res) => {
   try {
     const { session_id } = req.query;
-    if (!session_id) return res.status(400).json({ ok: false, error: "Missing session_id" });
+    if (!session_id) {
+      return res.status(400).json({ ok: false, error: "Missing session_id" });
+    }
 
-    // 1) Get the session from Stripe (trusted)
+    // 1️⃣ Get session from Stripe 
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
-    // 2) Confirm it was paid
     if (session.payment_status !== "paid") {
       return res.status(400).json({ ok: false, error: "Payment not completed" });
     }
 
-    // 3) Extract metadata you already set in createCheckoutSession
-    const freelancer_id = session.metadata?.user_id;
-    const plan_id = session.metadata?.plan_id;
-    const includesVerificationFee = session.metadata?.includes_verification_fee;
+    const user_id = Number(session.metadata.user_id);
+    const purpose = session.metadata.purpose; // 'plan' | 'project'
+    const reference_id = Number(session.metadata.reference_id);
+    const includesVerificationFee =
+      session.metadata.includes_verification_fee === "yes";
 
-    if (!freelancer_id || !plan_id) {
-      return res.status(400).json({ ok: false, error: "Missing metadata on session" });
+    const amount = session.amount_total / 1000;
+
+    if (!user_id || !purpose || !reference_id) {
+      return res.status(400).json({ ok: false, error: "Invalid metadata" });
     }
 
-    const stripe_session_id = session.id;
-    const stripe_payment_intent = session.payment_intent;
-    const amount_total = session.amount_total / 1000;
-
-    // 4) Insert payment (idempotent)
+    // 2️⃣ Insert payment (idempotent)
     await pool.query(
-      `INSERT INTO payments (user_id, plan_id, amount, stripe_session_id, stripe_payment_intent)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (stripe_session_id) DO NOTHING;`,
-      [freelancer_id, plan_id, amount_total, stripe_session_id, stripe_payment_intent]
-    );
+  `
+  INSERT INTO payments (
+    user_id,
+    amount,
+    currency,
+    purpose,
+    reference_id,
+    stripe_session_id,
+    stripe_payment_intent,
+    status
+  )
+  VALUES ($1, $2, 'JOD', $3, $4, $5, $6, 'paid')
+  ON CONFLICT (stripe_session_id)
+  DO UPDATE SET status = 'paid';
+  `,
+  [
+    user_id,
+    amount,
+    purpose,
+    reference_id,
+    session.id,
+    session.payment_intent,
+  ]
+);
 
-    // 5) Update verification if needed
-    if (includesVerificationFee === "yes") {
+
+    // 3️⃣ Verification fee logic (plans only)
+    if (includesVerificationFee) {
       await pool.query(
-        "UPDATE users SET is_verified = true WHERE id = $1",
-        [freelancer_id]
+        `
+        UPDATE users
+        SET is_verified = true
+        WHERE id = $1 AND is_verified = false
+        `,
+        [user_id]
       );
     }
 
-    // 6) Create subscription dates based on plan
-    const planRes = await pool.query(
-      `SELECT duration, plan_type FROM plans WHERE id = $1`,
-      [plan_id]
-    );
+    // 4️⃣ PLAN LOGIC → create subscription
+    if (purpose === "plan") {
+      const planRes = await pool.query(
+        "SELECT duration, plan_type FROM plans WHERE id = $1",
+        [reference_id]
+      );
 
-    if (planRes.rowCount === 0) {
-      return res.status(404).json({ ok: false, error: "Plan not found" });
-    }
+      if (planRes.rowCount === 0) {
+        return res.status(404).json({ ok: false, error: "Plan not found" });
+      }
 
-    const plan = planRes.rows[0];
+      const plan = planRes.rows[0];
 
-    let start_date = new Date();
-    let end_date = new Date(start_date);
+      const start = new Date();
+      const end = new Date(start);
 
-    if (plan.plan_type === "monthly") {
-      end_date.setMonth(end_date.getMonth() + plan.duration);
-    } else if (plan.plan_type === "yearly") {
-      end_date.setFullYear(end_date.getFullYear() + plan.duration);
-    } else {
-      end_date.setMonth(end_date.getMonth() + 1);
-    }
+      if (plan.plan_type === "monthly") {
+        end.setMonth(end.getMonth() + plan.duration);
+      } else {
+        end.setFullYear(end.getFullYear() + plan.duration);
+      }
 
-    const start_date_sql = start_date.toISOString().split("T")[0];
-    const end_date_sql = end_date.toISOString().split("T")[0];
-
-    // 7) Insert subscription (IMPORTANT: prevent duplicates)
-    // Best: add stripe_session_id column to subscriptions and make it UNIQUE.
-    const subCheck = await pool.query(
-      `SELECT id FROM subscriptions WHERE freelancer_id = $1 AND plan_id = $2 AND start_date = $3 LIMIT 1`,
-      [freelancer_id, plan_id, start_date_sql]
-    );
-
-    if (subCheck.rowCount === 0) {
       await pool.query(
-        `INSERT INTO subscriptions (freelancer_id, plan_id, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, 'active')`,
-        [freelancer_id, plan_id, start_date_sql, end_date_sql]
+        `
+        INSERT INTO subscriptions (
+          freelancer_id,
+          plan_id,
+          start_date,
+          end_date,
+          status,
+          stripe_session_id
+        )
+        VALUES ($1, $2, $3, $4, 'active', $5)
+        ON CONFLICT (stripe_session_id) DO NOTHING;
+        `,
+        [user_id, reference_id, start, end, session.id]
       );
     }
 
-    const payRes = await pool.query(
-      `SELECT id, user_id, plan_id, amount FROM payments WHERE stripe_session_id = $1 LIMIT 1`,
-      [stripe_session_id]
-    );
+    // 5️⃣ PROJECT LOGIC → move project to admin review
+    if (purpose === "project") {
+      await pool.query(
+        `
+        UPDATE projects
+        SET status = 'pending_admin'
+        WHERE id = $1 AND status = 'pending_payment'
+        `,
+        [reference_id]
+      );
+    }
 
-    return res.json({ ok: true, payment: payRes.rows[0] });
+    return res.json({ ok: true });
 
-  } catch (e) {
-    console.error("confirmCheckoutSession error:", e);
+  } catch (err) {
+    console.error("confirmCheckoutSession error:", err);
     return res.status(500).json({ ok: false, error: "Server error" });
   }
 };

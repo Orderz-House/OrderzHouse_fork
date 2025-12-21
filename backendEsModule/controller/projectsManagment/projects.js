@@ -167,21 +167,8 @@ export const createProject = async (req, res) => {
       project = updatedProject[0];
     }
 
-    // ------------ Step 3: amount_to_pay ------------
-    let amountToPay = null;
-    if (project.project_type === "fixed") amountToPay = project.budget;
-    else if (project.project_type === "hourly")
-      amountToPay = (project.hourly_rate || 0) * 3;
 
-    if (amountToPay !== null) {
-      const { rows: updated } = await pool.query(
-        `UPDATE projects SET amount_to_pay = $1 WHERE id = $2 RETURNING *`,
-        [amountToPay, project.id]
-      );
-      project = updated[0];
-    }
-
-    // ------------ Step 4: logs & notifications ------------
+    // ------------ Step 3: logs & notifications ------------
     await LogCreators.projectOperation(
       userId,
       ACTION_TYPES.PROJECT_CREATE,
@@ -206,6 +193,54 @@ export const createProject = async (req, res) => {
     console.error("createProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
+};
+
+// Admin approve project after payment
+
+export const adminApproveProject = async (req, res) => {
+  const { project_id } = req.body;
+
+  const { rows } = await pool.query(
+    `
+    SELECT p.*, pay.id AS payment_id
+    FROM projects p
+    JOIN payments pay
+      ON pay.reference_id = p.id
+     AND pay.purpose = 'project'
+     AND pay.status = 'paid'
+    WHERE p.id = $1
+    `,
+    [project_id]
+  );
+
+  if (!rows.length) {
+    return res.status(400).json({ error: "Payment not found" });
+  }
+
+  const project = rows[0];
+
+  let escrowAmount =
+    project.project_type === "fixed"
+      ? project.budget
+      : project.hourly_rate * 3;
+
+  await pool.query(
+    `
+    INSERT INTO escrow (
+      project_id, client_id, freelancer_id,
+      amount, status, payment_id
+    )
+    VALUES ($1,$2,NULL,$3,'held',$4)
+    `,
+    [project.id, project.user_id, escrowAmount, project.payment_id]
+  );
+
+  await pool.query(
+    "UPDATE projects SET status = 'active' WHERE id = $1",
+    [project.id]
+  );
+
+  res.json({ success: true });
 };
 
 /* ======================================================================

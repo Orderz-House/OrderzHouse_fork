@@ -2,6 +2,7 @@ import axios from "axios";
 import { store } from "../../../store/store";
 
 const API_BASE = `${import.meta.env.VITE_APP_API_URL}/projects`;
+const STRIPE_BASE = `${import.meta.env.VITE_APP_API_URL}/stripe`;
 
 // -------------------- UTILITY --------------------
 /**
@@ -18,24 +19,34 @@ export const createProjectApi = async (projectData, token, coverPic) => {
   const authToken = token || getAuthToken();
   const formData = new FormData();
 
-  for (const [key, value] of Object.entries(projectData)) {
+  Object.entries(projectData).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+
     if (Array.isArray(value)) {
-      value.forEach((v) => formData.append(`${key}[]`, v));
+      value.forEach((v) => {
+        if (v !== undefined && v !== null && v !== "") {
+          formData.append(`${key}[]`, v);
+        }
+      });
     } else {
       formData.append(key, value);
     }
-  }
+  });
 
-  if (coverPic) formData.append("cover_pic", coverPic);
+  if (coverPic instanceof File) {
+    formData.append("cover_pic", coverPic);
+  }
 
   const { data } = await axios.post(`${API_BASE}/`, formData, {
     headers: {
       Authorization: `Bearer ${authToken}`,
-      "Content-Type": "multipart/form-data",
     },
   });
 
-  if (!data.success) throw new Error(data.message || "Failed to create project");
+  if (!data?.success) {
+    throw new Error(data?.message || "Failed to create project");
+  }
+
   return data.project;
 };
 
@@ -48,100 +59,78 @@ export const uploadProjectFilesApi = async (projectId, files, token) => {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
 
-  try {
-    const { data } = await axios.post(`${API_BASE}/${projectId}/files`, formData, {
+  const { data } = await axios.post(
+    `${API_BASE}/${projectId}/files`,
+    formData,
+    {
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "multipart/form-data",
       },
-    });
+    }
+  );
 
-    if (!data.success) throw new Error(data.message || "Failed to upload files");
-    return data.files;
-  } catch (err) {
-    console.error("Upload files error:", err.response?.data || err.message);
-    throw err.response?.data || err;
+  if (!data?.success) {
+    throw new Error(data?.message || "Failed to upload files");
   }
-};
 
-// -------------------- FETCH RELATED FREELANCERS --------------------
-export const fetchRelatedFreelancersApi = async (categoryId) => {
-  if (!categoryId) throw new Error("Missing categoryId");
-  const token = getAuthToken();
-
-  try {
-    const { data } = await axios.get(
-      `${API_BASE}/categories/${categoryId}/related-freelancers`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (!data.success) throw new Error(data.message || "Failed to fetch freelancers");
-    return data.freelancers;
-  } catch (err) {
-    console.error("Fetch related freelancers error:", err.response?.data || err.message);
-    throw err.response?.data || err;
-  }
+  return data.files;
 };
 
 // -------------------- ASSIGN FREELANCER --------------------
 export const assignFreelancerApi = async (projectId, freelancerId, token) => {
   if (!projectId) throw new Error("Missing projectId");
   if (!freelancerId) throw new Error("Missing freelancerId");
+
   const authToken = token || getAuthToken();
 
-  try {
-    const { data } = await axios.post(
-      `${API_BASE}/${projectId}/assign`,
-      { freelancer_id: freelancerId },
-      { headers: { Authorization: `Bearer ${authToken}` } }
-    );
+  const { data } = await axios.post(
+    `${API_BASE}/${projectId}/assign`,
+    { freelancer_id: freelancerId },
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
 
-    if (!data.success) throw new Error(data.message || "Failed to assign freelancer");
-    return data;
-  } catch (err) {
-    console.error("Assign freelancer error:", err.response?.data || err.message);
-    throw err.response?.data || err;
+  if (!data?.success) {
+    throw new Error(data?.message || "Failed to assign freelancer");
   }
+
+  return data;
 };
 
-// -------------------- RECORD OFFLINE PAYMENT --------------------
-export const recordOfflinePaymentApi = async (projectId, file, token, amount) => {
-  if (!projectId) throw new Error("Missing projectId");
-  if (!file) throw new Error("No payment proof file provided");
-  if (amount == null || isNaN(amount)) throw new Error("Payment amount is required and must be numeric");
-  if (!token) throw new Error("User token is required");
+// -------------------- CREATE STRIPE PROJECT CHECKOUT --------------------
+export const createProjectCheckoutSessionApi = async (projectId, token) => {
+  if (!projectId) throw new Error("Project ID is required");
 
-  const formData = new FormData();
-  formData.append("proof", file);
-  formData.append("amount", amount);
+  const authToken = token || getAuthToken();
 
   const { data } = await axios.post(
-    `https://orderzhouse-backend.onrender.com/payments/offline/record/${projectId}`,
-    formData,
+    `${STRIPE_BASE}/project-checkout-session`,
+    { project_id: projectId },
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
       },
     }
   );
 
-  if (!data.success) throw new Error(data.message || "Failed to submit payment proof");
-  return data.payment;
+  if (!data?.url) {
+    throw new Error("Failed to create Stripe checkout session");
+  }
+
+  return data; // { url }
 };
 
 // -------------------- CREATE PROJECT DRAFT --------------------
 export const createProjectDraftApi = async (projectData) => {
   const token = getAuthToken();
-  try {
-    const { data } = await axios.post(`${API_BASE}/draft`, projectData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
 
-    if (!data.success) throw new Error(data.message || "Failed to create project draft");
-    return data;
-  } catch (err) {
-    console.error("Create draft error:", err.response?.data || err.message);
-    throw err.response?.data || err;
+  const { data } = await axios.post(`${API_BASE}/draft`, projectData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Failed to create project draft");
   }
+
+  return data;
 };

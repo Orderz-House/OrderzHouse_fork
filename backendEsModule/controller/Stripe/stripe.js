@@ -3,7 +3,6 @@ import pool from "../../models/db.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-
 export const createCheckoutSession = async (req, res) => {
   try {
     const { plan_id, user_id } = req.body;
@@ -12,7 +11,6 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(400).json({ error: "Missing plan_id or user_id" });
     }
 
-    // Fetch plan
     const planRes = await pool.query(
       "SELECT id, name, description, price FROM plans WHERE id = $1",
       [plan_id]
@@ -22,9 +20,6 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(404).json({ error: "Plan not found" });
     }
 
-    const plan = planRes.rows[0];
-
-    // Fetch user
     const userRes = await pool.query(
       "SELECT id, is_verified FROM users WHERE id = $1",
       [user_id]
@@ -34,83 +29,108 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const plan = planRes.rows[0];
     const user = userRes.rows[0];
 
-    // ------------------------------
-    // BUILD STRIPE LINE ITEMS
-    // ------------------------------
-
-    const line_items = [];
-
-    // Main plan item
-    line_items.push({
-      price_data: {
-        currency: "jod",
-        product_data: {
-          name: plan.name,
-          description: plan.description || undefined,
+    const line_items = [
+      {
+        price_data: {
+          currency: "jod",
+          product_data: {
+            name: plan.name,
+            description: plan.description || undefined,
+          },
+          unit_amount: Math.round(Number(plan.price) * 1000),
         },
-        unit_amount: Math.round(parseFloat(plan.price) * 1000),
+        quantity: 1,
       },
-      quantity: 1,
-    });
+    ];
 
-    // Add 25 JD verification fee ONLY if user has not paid it before
     if (!user.is_verified) {
       line_items.push({
         price_data: {
           currency: "jod",
-          product_data: {
-            name: "Account Verification Fee",
-          },
-          unit_amount: 25 * 1000, 
+          product_data: { name: "Account Verification Fee" },
+          unit_amount: 25 * 1000,
         },
         quantity: 1,
       });
     }
 
-    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
+      payment_method_types: ["card"],
       line_items,
-
       metadata: {
-  user_id,
-  plan_id,
-  includes_verification_fee: !user.is_verified ? "yes" : "no",
-},
-
-
+        user_id: String(user_id),
+        purpose: "plan",
+        reference_id: String(plan_id),
+        includes_verification_fee: user.is_verified ? "no" : "yes",
+      },
       success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
-
     });
 
-    return res.status(200).json({ url: session.url });
+    return res.json({ url: session.url });
 
-  } catch (error) {
-    console.error("🔥 STRIPE ERROR:", error);
-    return res.status(500).json({ error: "Failed to create checkout session" });
+  } catch (err) {
+    console.error("Stripe create session error:", err);
+    return res.status(500).json({ error: "Stripe error" });
   }
 };
 
-
-export const verifyPaymentBySession = async (req, res) => {
+export const createProjectCheckoutSession = async (req, res) => {
   try {
-    const { session_id } = req.query;
-    if (!session_id) return res.status(400).json({ ok: false, error: "Missing session_id" });
+    const { project_id } = req.body;
+    const userId = req.token.userId;
 
-    const payRes = await pool.query(
-      "SELECT id, user_id, plan_id, amount FROM payments WHERE stripe_session_id = $1 LIMIT 1",
-      [session_id]
+    const { rows } = await pool.query(
+      `SELECT * FROM projects WHERE id = $1 AND user_id = $2`,
+      [project_id, userId]
     );
 
-    if (payRes.rowCount === 0) return res.status(404).json({ ok: false });
+    if (!rows.length) {
+      return res.status(404).json({ error: "Project not found" });
+    }
 
-    return res.json({ ok: true, payment: payRes.rows[0] });
-  } catch (e) {
-    console.error("verifyPaymentBySession error:", e);
-    return res.status(500).json({ ok: false });
+    const project = rows[0];
+
+    let amount = 0;
+
+    if (project.project_type === "fixed") {
+      amount = project.budget;
+    } else if (project.project_type === "hourly") {
+      amount = project.hourly_rate * 3; // minimum
+    } else {
+      return res.status(400).json({ error: "Bidding paid later" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "jod",
+            product_data: { name: project.title },
+            unit_amount: Math.round(amount * 1000),
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        user_id: String(userId),
+        purpose: "project",
+        reference_id: String(project.id),
+      },
+      success_url: `${process.env.CLIENT_URL}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/projects/payment-cancel`,
+    });
+
+    return res.json({ url: session.url });
+
+  } catch (err) {
+    console.error("createProjectCheckoutSession error:", err);
+    res.status(500).json({ error: "Stripe error" });
   }
 };

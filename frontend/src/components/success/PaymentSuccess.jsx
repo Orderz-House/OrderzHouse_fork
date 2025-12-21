@@ -15,8 +15,8 @@ export default function PaymentSuccess() {
       const session_id = params.get("session_id");
 
       if (!session_id) {
-        toast.success("Payment successful!");
-        return navigate("/plans", { replace: true });
+        toast.success("Payment completed successfully.");
+        return navigate("/", { replace: true });
       }
 
       try {
@@ -24,16 +24,31 @@ export default function PaymentSuccess() {
           params: { session_id },
         });
 
-        if (res.data?.ok) {
-          toast.success("Payment successful! Subscription activated.");
-        } else {
-          toast.info(res.data?.error || "Payment received. Finalizing your subscription...");
+        if (!res.data?.ok) {
+          toast.info(
+            res.data?.error ||
+              "Payment received. Finalizing your request..."
+          );
+          return navigate("/", { replace: true });
         }
+
+        // 🔹 DIFFERENTIATE PURPOSE
+        if (res.data.purpose === "plan") {
+          toast.success("Payment successful! Subscription activated.");
+          navigate("/plans", { replace: true });
+        }
+
+        if (res.data.purpose === "project") {
+          toast.success(
+            "Payment completed successfully. Your project is waiting for admin approval."
+          );
+          navigate("/my-projects", { replace: true });
+        }
+
       } catch (e) {
         console.error("confirm error:", e);
-        toast.info("Payment received. Finalizing your subscription...");
-      } finally {
-        navigate("/plans", { replace: true });
+        toast.info("Payment received. Finalizing your request...");
+        navigate("/", { replace: true });
       }
     };
 
