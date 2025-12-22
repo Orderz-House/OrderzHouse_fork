@@ -1,8 +1,8 @@
 // components/Projects/ProjectInfoCard.jsx
 import { CheckCircle2 } from "lucide-react";
 
-const THEME = "#028090";
-const THEME_DARK = "#05668D";
+const THEME = "#F97316";
+const THEME_DARK = "#C2410C";
 
 export default function ProjectInfoCard({
   item,
@@ -140,15 +140,15 @@ export default function ProjectInfoCard({
 
         <ul className="mt-4 space-y-2 text-sm text-slate-600">
           <li className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Secure
+            <CheckCircle2 className="w-4 h-4 text-orange-600" /> Secure
             checkout
           </li>
           <li className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Money-back
+            <CheckCircle2 className="w-4 h-4 text-orange-600" /> Money-back
             guarantee
           </li>
           <li className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 24/7 support
+            <CheckCircle2 className="w-4 h-4 text-orange-600" /> 24/7 support
           </li>
         </ul>
       </div>

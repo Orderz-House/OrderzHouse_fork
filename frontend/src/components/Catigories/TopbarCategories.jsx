@@ -200,8 +200,8 @@ export default function Topbar({
   active,
   onSelect,
   onSelectSubCategory,
-  theme = "#028090",
-  themeDark = "#05668D",
+  theme = "#F97316",
+  themeDark = "#C2410C",
 }) {
   const [catalog, setCatalog] = useState({});
 

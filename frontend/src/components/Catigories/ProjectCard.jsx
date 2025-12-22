@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function ProjectCard({
   project,
-  theme = "#028090",
+  theme = "#F97316",
   linkBase = "projects",
   priceField = "price",
 }) {
@@ -42,8 +42,8 @@ export default function ProjectCard({
     const offer = offers[0];
     const freelancer = offer?.freelancer || {};
     offerBlock = (
-      <div className="mt-2 p-2 rounded-lg border border-emerald-200 bg-emerald-50 flex flex-col gap-1">
-        <div className="text-xs font-semibold text-emerald-700">
+      <div className="mt-2 p-2 rounded-lg border border-orange-200 bg-orange-50 flex flex-col gap-1">
+        <div className="text-xs font-semibold text-orange-700">
           Offer Submitted
         </div>
         <div className="flex flex-wrap gap-2 text-xs text-slate-700">

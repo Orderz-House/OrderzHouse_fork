@@ -113,9 +113,9 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const goToProjects = (subSub) => {
     if (!selectedCategory || !subSub) return;
     navigate(
-      `/projectsPage?cat=${encodeURIComponent(selectedCategory.id)}&sub=${encodeURIComponent(
-        subSub.id
-      )}`
+      `/projectsPage?cat=${encodeURIComponent(
+        selectedCategory.id
+      )}&sub=${encodeURIComponent(subSub.id)}`
     );
     setIsOpen(false);
   };
@@ -123,22 +123,25 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   return (
     <div className="relative">
       <button
-  ref={anchorRef}
-  onClick={handleToggle}
-  className={`px-5 py-3 text-sm md:text-base font-medium tracking-wide transition-colors duration-150
-    ${activeLink === "CATEGORIES" ? "text-[#028090]" : "text-gray-700 hover:text-[#028090]"}
+        ref={anchorRef}
+        onClick={handleToggle}
+        className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors duration-150 rounded-full
+    ${
+      activeLink === "CATEGORIES"
+        ? "text-gray-900"
+        : "text-gray-600 hover:text-gray-900"
+    }
   `}
->
-  <span className="flex items-center gap-1">
-    CATEGORIES
-    <ChevronDown
-      className={`h-4 w-4 transition-transform duration-200 ${
-        isOpen ? "rotate-180" : ""
-      }`}
-    />
-  </span>
-</button>
-
+      >
+        <span className="flex items-center gap-1">
+          Categories{" "}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-200 mt-1${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </span>
+      </button>
 
       {isOpen && (
         <div
@@ -147,7 +150,9 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
           className="fixed left-1/2 -translate-x-1/2 z-50 mt-0 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
         >
           {loading ? (
-            <div className="p-8 text-center text-gray-500 font-inter">Loading...</div>
+            <div className="p-8 text-center text-gray-500 font-inter">
+              Loading...
+            </div>
           ) : (
             <div className="p-6 space-y-6">
               {/* Tabs (categories) */}
@@ -158,7 +163,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     onClick={() => handleSelectCategory(cat)}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                       selectedCategory?.id === cat.id
-                        ? "bg-[#028090] text-white"
+                        ? "bg-[#F97316] text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -181,7 +186,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                           onClick={() => handleSelectSubCategory(sub)}
                           className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                             selectedSubCategory?.id === sub.id
-                              ? "bg-[#028090] text-white"
+                              ? "bg-[#F97316] text-white"
                               : "text-gray-700 hover:bg-gray-100"
                           }`}
                         >
@@ -205,7 +210,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                               <a
                                 key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.id}`}
                                 href="#"
-                                className="text-xs text-gray-700 bg-gray-100 hover:bg-[#028090] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
+                                className="text-xs text-gray-700 bg-gray-100 hover:bg-[#F97316] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   goToProjects(s);

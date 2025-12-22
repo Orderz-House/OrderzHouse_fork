@@ -19,7 +19,7 @@ export default function SubSidebar({
   categoryId,
   activeSubSub,
   onSelectSubSub,
-  theme = "#028090",
+  theme = "#F97316",
   subCategoryId,
 }) {
   const [subSubs, setSubSubs] = useState([]);
@@ -225,7 +225,7 @@ export default function SubSidebar({
         className={
           "relative inline-flex h-5 w-9 items-center rounded-full border transition-colors " +
           (checked
-            ? "bg-emerald-500 border-emerald-500"
+            ? "bg-orange-500 border-orange-500"
             : "bg-slate-200 border-slate-300")
         }
       >
@@ -357,7 +357,19 @@ export default function SubSidebar({
               ]}
             />
           </div>
-       
+
+          <div className="flex items-center gap-4">
+            <Toggle
+              checked={withFilesOnly}
+              onChange={setWithFilesOnly}
+              label="With files"
+            />
+            <Toggle
+              checked={withFreelancerOnly}
+              onChange={setWithFreelancerOnly}
+              label="With freelancer"
+            />
+          </div>
         </div>
       )}
 
