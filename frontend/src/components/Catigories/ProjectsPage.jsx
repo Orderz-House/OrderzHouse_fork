@@ -9,8 +9,8 @@ import {
   fetchSubSubCategoriesBySubId,
 } from "./api/category";
 
-const THEME = "#028090";
-const THEME_DARK = "#05668D";
+const THEME = "#F97316";
+const THEME_DARK = "#C2410C";
 
 export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
@@ -249,8 +249,11 @@ export default function ProjectsPage({ mode: propMode }) {
    );
 
   return (
-    <section className="relative min-h-[70vh] pb-8 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative min-h-[70vh] pb-8  via-white to-white">
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -bottom-28 right-10 h-72 w-72 rounded-full bg-orange-100/60 blur-3xl" />
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32">
         {/* sticky topbar */}
         <TopbarCategories
           active={category}

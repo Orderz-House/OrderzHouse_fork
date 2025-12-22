@@ -112,3 +112,163 @@
     transform: translateY(-25px) scale(0.95);
   }
 }
+/* Selection */
+::selection {
+  background: rgba(2, 195, 154, 0.25);
+}
+
+/* Scrollbar (WebKit) */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, .7);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, .25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, .35);
+}
+.noise {
+  position: relative;
+}
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* Utility: animated gradient border */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(2,195,154,.6), rgba(2,128,144,.6), rgba(2,195,154,.35));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: .65;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Utility: grid background */
+.bg-grid {
+  background-size: 48px 48px;
+  background-image: linear-gradient(to right, rgba(148,163,184,.08) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(148,163,184,.08) 1px, transparent 1px);
+}
+
+@layer utilities {
+  /* مدة موحدة لكل الأنيميشن (تقدر تغيّرها من الـ inline style --dur) */
+  .center-beat {
+    animation: beat var(--dur, 3.2s) ease-in-out infinite;
+    transform-origin: center;
+  }
+
+  .ripple {
+    position: absolute;
+    inset: -28px;
+    border-radius: 40px;
+    border: 2px solid rgba(167, 139, 250, 0.35);
+    opacity: 0;
+    animation: ripple var(--dur, 3.2s) ease-out infinite;
+    filter: blur(0.2px);
+  }
+  .ripple.r2 { animation-delay: 0.22s; }
+  .ripple.r3 { animation-delay: 0.44s; }
+
+  .wave-path {
+    stroke-dasharray: 10 90;
+    stroke-dashoffset: 100;
+    opacity: 0;
+    animation: wave var(--dur, 3.2s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .dot-hit {
+    opacity: 0;
+    animation: dotHit var(--dur, 3.2s) ease-out infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .hit {
+    animation: hit var(--dur, 3.2s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    will-change: transform, filter;
+  }
+
+  @keyframes beat {
+  /* نبضة سريعة بالبداية ثم ثبات طويل */
+  0%, 100% { transform: scale(1); }
+  6%  { transform: scale(1.06); }
+  12% { transform: scale(0.99); }
+  18% { transform: scale(1.03); }
+  24% { transform: scale(1); }   /* هنا انتهت النبضة */
+  100%{ transform: scale(1); }   /* rest طويل */
+}
+
+@keyframes ripple {
+  /* الموجة تطلع وتختفي بدري، وباقي الوقت rest */
+  0%   { transform: scale(0.92); opacity: 0; }
+  10%  { opacity: 0.55; }
+  26%  { opacity: 0.18; }
+  38%  { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes wave {
+  /* التردد يمشي على الخط بسرعة ثم يختفي وباقي الوقت rest */
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  10%  { opacity: 1; }
+  28%  { opacity: 1; }
+  40%  { stroke-dashoffset: 0; opacity: 0; }  /* خلصت الموجة بدري */
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes dotHit {
+  /* وميض نقطة سريع ثم rest */
+  0%, 28%, 100% { opacity: 0; r: 6; }
+  34% { opacity: 0.85; r: 9; }
+  40% { opacity: 0; r: 6; }
+}
+
+@keyframes hit {
+  /* إضاءة المربعات/الكروت: تشتغل بدري ثم rest طويل */
+  0%, 30%, 100% { transform: scale(1); filter: none; }
+
+  36% {
+    transform: scale(1.05);
+    filter:
+      drop-shadow(0 16px 26px rgba(0,0,0,0.18))
+      drop-shadow(0 0 18px rgba(99,102,241,0.55));
+  }
+
+  44% {
+    transform: scale(1.01);
+    filter:
+      drop-shadow(0 14px 22px rgba(0,0,0,0.14))
+      drop-shadow(0 0 10px rgba(99,102,241,0.35));
+  }
+
+  52% { transform: scale(1); filter: none; }
+}
+
+
+  /* احترام إعداد تقليل الحركة */
+  @media (prefers-reduced-motion: reduce) {
+    .center-beat, .ripple, .wave-path, .hit, .dot-hit { animation: none !important; }
+  }
+}

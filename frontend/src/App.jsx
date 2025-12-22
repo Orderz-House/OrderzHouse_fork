@@ -2,7 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import "animate.css";
-import "./components/loadingScreen/axiosLoading.js";
+// import "./components/loadingScreen/axiosLoading.js";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
@@ -40,7 +40,7 @@ import CreateProjectPage from "./components/CreateProjects/CreateProjectPage";
 import CreateTaskPage from "./components/CreateProjects/CreateTaskPage";
 import CopywritingTest from "./components/CopywritingTest";
 
-import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
+// import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
 // import ChatPage from "./components/Chat/ChatPage";
 import PaymentSuccess from "./components/success/PaymentSuccess";
 
@@ -92,7 +92,7 @@ function App() {
 
   return (
     <>
-      <GlobalLoadingProvider>
+      {/* <GlobalLoadingProvider> */}
         {!shouldHideNavbar && <Navbar />}
 
         <Routes
@@ -341,7 +341,7 @@ function App() {
           pauseOnHover
         />
         <Toaster position="bottom-right" />
-      </GlobalLoadingProvider>
+      {/* </GlobalLoadingProvider> */}
     </>
   );
 }

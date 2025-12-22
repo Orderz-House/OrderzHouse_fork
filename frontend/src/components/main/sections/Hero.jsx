@@ -1,525 +1,1081 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import LiveActivity from './LiveActivity';
-import axios from "axios";
-import GradientButton from "../../buttons/GradientButton.jsx";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  fetchCategories,
-  fetchSubSubCategoriesByCategoryId,
-} from "../../Catigories/api/category";
+import HoverCardsBackground from "../../HoverCardsBackground";
+import { fetchCategories, fetchSubCategoriesByCategoryId } from "../../Catigories/api/category";
+import { AnimatePresence, motion } from "framer-motion";
 
-// Theme
-const THEME = "#028090";
-const THEME2 = "#02C39A";
-const DARK = "#05668D";
 
-// Config
-const USE_MOCK = true;
-const API_ENDPOINT = "/top-rated";
 
-// Axios
-const api = axios.create({ baseURL: "" });
+function NetworkLines() {
+  const STROKE = "#E5E7EB";
+  const DOT = "#111827";
+  const strokeWidth = 2;
 
-// Mock
-const MOCK_DATA = [
-  { name: "Lina M.", role: "UI/UX Designer", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=60", rate: 45, badge: "Figma" },
-  { name: "Omar K.", role: "Front-end Dev", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=60", rate: 55, badge: "React" },
-  { name: "Sofia R.", role: "Brand Designer", avatar: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&q=60", rate: 40, badge: "Branding" },
-  { name: "Hadi S.", role: "Motion Artist", avatar: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200&q=60", rate: 60, badge: "After Effects" },
-  { name: "Sara A.", role: "SEO Strategist", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=60", rate: 50, badge: "SEO" },
-  { name: "Yousef D.", role: "Full-stack Dev", avatar: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200&q=60", rate: 70, badge: "Node.js" },
-  { name: "Maya P.", role: "Video Editor", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=60", rate: 48, badge: "Premiere" },
-  { name: "Ali N.", role: "Product Designer", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=60", rate: 52, badge: "Design System" },
-  { name: "Nour F.", role: "Copywriter", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=60", rate: 38, badge: "Content" },
-  { name: "Rami H.", role: "Mobile Dev", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=60", rate: 65, badge: "Flutter" },
-  { name: "Dana Q.", role: "Illustrator", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=60", rate: 42, badge: "Illustration" },
-  { name: "Karim Z.", role: "Data Analyst", avatar: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200&q=60", rate: 58, badge: "Analytics" },
-];
+  const W = 1365;
+  const H = 420;
 
-// Helpers
-const chunk = (arr, size) => {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-};
+  const P = (xPct, yPct) => ({ x: xPct * W, y: yPct * H });
 
-// Fetch
-function useTopRated({ useMock }) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // ====== مركز الشبكة ======
+  const center = P(0.5, 0.585); // نفس top-[58.5%] في DOM
 
-  useEffect(() => {
-    let mounted = true;
-    async function fetchData() {
-      setLoading(true);
-      setError("");
-      try {
-        if (useMock) {
-          await new Promise((r) => setTimeout(r, 400));
-          if (mounted) setData(MOCK_DATA);
-        } else {
-          const res = await api.get(API_ENDPOINT);
-          const arr = (res.data ?? []).map((it) => ({
-            name: it.name,
-            role: it.role,
-            avatar: it.avatar,
-            rate: it.rate,
-            badge: it.badge ?? it.mainSkill,
-          }));
-          if (mounted) setData(arr);
-        }
-      } catch (e) {
-        if (mounted) setError(e?.message || "Failed to load");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    fetchData();
-    return () => { mounted = false; };
-  }, [useMock]);
+  // join points يمين/يسار قرب المركز (بنفس فكرة Y)
+  const joinOffset = 200;
+  const stagger = 48;
 
-  return { data, loading, error };
+  const leftJoinTop = { x: center.x - joinOffset, y: center.y };
+  const leftJoinBottom = { x: center.x - joinOffset - stagger, y: center.y };
+
+  const rightJoinTop = { x: center.x + joinOffset, y: center.y };
+  const rightJoinBottom = { x: center.x + joinOffset + stagger, y: center.y };
+
+  // ====== نقاط (dots) مثل التصميم الأصلي (مبنية على نسب الكود القديم) ======
+  // === NEW: sync lines with the DOM positions of the 4 squares ===
+  // (match these % with your absolute left/top in the DOM)
+  const yellowC = P(0.22, 0.274); // YellowIdeaIcon  left-[22%] top-[27.4%]
+  const blueC = P(0.18, 0.811); // BluePeopleIcon  left-[18%] top-[81.1%]
+  const redC = P(0.78, 0.347); // RedShieldIcon   left-[78%] top-[34.7%]
+  const chatC = P(0.82, 0.839); // ChatCard        left-[82%] top-[83.9%]
+
+  // sizes (same as your components)
+  const yellowSize = 74;
+  const blueSize = 88;
+  const redSize = 92;
+  const chatSize = 88;
+
+  // distance from square edge -> dot
+  const gap = 28;
+
+  // left side (dot is to the right of the square)
+  const TL_START_X = yellowC.x + yellowSize / 2;
+  const TL = { x: TL_START_X + gap, y: yellowC.y };
+
+  const BL_START_X = blueC.x + blueSize / 2;
+  const BL = { x: BL_START_X + gap, y: blueC.y };
+
+  // right side (dot is to the left of the square)
+  const TR_END_X = redC.x - redSize / 2;
+  const TR = { x: TR_END_X - gap, y: redC.y };
+
+  const BR_END_X = chatC.x - chatSize / 2;
+  const BR = { x: BR_END_X - gap, y: chatC.y };
+
+  // ====== الخط الأفقي الرئيسي ======
+  // (خليه ثابت عشان ما ندخل في حسابات responsive معقدة)
+  const MAIN_X1 = 0.131 * W;
+  const MAIN_X2 = 0.869 * W;
+
+  // ====== ✅ امتداد سفلي جديد (Bottom expansion) ======
+  // نقطة فرع وسطية تحت المركز
+  const bottomHub = P(0.5, 0.86);
+
+  // نقاط توزيع قبل الوصول للمربعات السفلية
+  const bL = P(0.4, 0.86);
+  const bM = P(0.5, 0.82);
+  const bR = P(0.6, 0.86);
+
+  // مراكز المربعات الجديدة (مكانها في DOM)
+  const sL = P(0.35, 0.93);
+  const sM = P(0.5, 0.93);
+  const sR = P(0.65, 0.93);
+
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox={`0 0 ${W} ${H}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* ====== Base lines (static) ====== */}
+      <path
+        d={`M${0.06 * W} ${center.y} H${0.94 * W}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      {/* short connectors near icons */}
+      <path
+        d={`M${TL_START_X} ${TL.y} H${TL.x}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${BL_START_X} ${BL.y} H${BL.x}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${TR.x} ${TR.y} H${TR_END_X}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${BR.x} ${BR.y} H${BR_END_X}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      {/* diagonals to join points */}
+      <path
+        d={`M${leftJoinTop.x} ${leftJoinTop.y} L${TL.x} ${TL.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${leftJoinBottom.x} ${leftJoinBottom.y} L${BL.x} ${BL.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${rightJoinTop.x} ${rightJoinTop.y} L${TR.x} ${TR.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${rightJoinBottom.x} ${rightJoinBottom.y} L${BR.x} ${BR.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      {/* ✅ امتداد سفلي (center -> bottomHub -> (bL,bM,bR) -> (sL,sM,sR)) */}
+      <path
+        d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      <path
+        d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      <path
+        d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+      {/* <path d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke={STROKE} strokeWidth={strokeWidth} /> */}
+      <path
+        d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
+        stroke={STROKE}
+        strokeWidth={strokeWidth}
+      />
+
+      {/* ====== Dots (static) ====== */}
+      <circle cx={TL.x} cy={TL.y} r="4" fill={DOT} />
+      <circle cx={BL.x} cy={BL.y} r="4" fill={DOT} />
+      <circle cx={TR.x} cy={TR.y} r="4" fill={DOT} />
+      <circle cx={BR.x} cy={BR.y} r="4" fill={DOT} />
+
+      {/* ✅ dots للامتداد السفلي */}
+      <circle cx={bottomHub.x} cy={bottomHub.y} r="4" fill={DOT} />
+      <circle cx={bL.x} cy={bL.y} r="4" fill={DOT} />
+      <circle cx={bR.x} cy={bR.y} r="4" fill={DOT} />
+
+      {/* ====== Wave overlay (animated) ====== */}
+      <g filter="url(#lineGlow)">
+        {/* center -> joins */}
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.06s" }}
+          d={`M${center.x} ${center.y} H${leftJoinTop.x}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.12s" }}
+          d={`M${center.x} ${center.y} H${leftJoinBottom.x}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.06s" }}
+          d={`M${center.x} ${center.y} H${rightJoinTop.x}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.12s" }}
+          d={`M${center.x} ${center.y} H${rightJoinBottom.x}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        {/* joins -> dots */}
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.26s" }}
+          d={`M${leftJoinTop.x} ${leftJoinTop.y} L${TL.x} ${TL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.34s" }}
+          d={`M${leftJoinBottom.x} ${leftJoinBottom.y} L${BL.x} ${BL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.26s" }}
+          d={`M${rightJoinTop.x} ${rightJoinTop.y} L${TR.x} ${TR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.34s" }}
+          d={`M${rightJoinBottom.x} ${rightJoinBottom.y} L${BR.x} ${BR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        {/* dots -> squares (short) */}
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.54s" }}
+          d={`M${TL.x} ${TL.y} H${TL_START_X}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.62s" }}
+          d={`M${BL.x} ${BL.y} H${BL_START_X}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.54s" }}
+          d={`M${TR.x} ${TR.y} H${TR_END_X}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.62s" }}
+          d={`M${BR.x} ${BR.y} H${BR_END_X}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        {/* ✅ موجة الامتداد السفلي */}
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.42s" }}
+          d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.62s" }}
+          d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.66s" }}
+          d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.70s" }}
+          d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.86s" }}
+          d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        {/* <path pathLength="100" className="wave-path" style={{ "--delay": "0.90s" }} d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke="#A78BFA" strokeWidth="3.2" strokeLinecap="round" /> */}
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.94s" }}
+          d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
+        {/* dot flashes */}
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.48s" }}
+          cx={TL.x}
+          cy={TL.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.56s" }}
+          cx={BL.x}
+          cy={BL.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.48s" }}
+          cx={TR.x}
+          cy={TR.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.56s" }}
+          cx={BR.x}
+          cy={BR.y}
+          r="6"
+          fill="#A78BFA"
+        />
+
+        {/* bottom flashes */}
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.74s" }}
+          cx={bottomHub.x}
+          cy={bottomHub.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.88s" }}
+          cx={bL.x}
+          cy={bL.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.92s" }}
+          cx={bM.x}
+          cy={bM.y}
+          r="6"
+          fill="#A78BFA"
+        />
+        <circle
+          className="dot-hit"
+          style={{ "--delay": "0.96s" }}
+          cx={bR.x}
+          cy={bR.y}
+          r="6"
+          fill="#A78BFA"
+        />
+      </g>
+    </svg>
+  );
 }
 
-/* =========================================================
-   ✅ Hero (sub-sub-categories)
-   ========================================================= */
-export default function HeroFreelancer({ onSearch }) {
-  const typeRef = useRef(null);
-  const inputRef = useRef(null);
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+function CenterLogoCard() {
+  return (
+    <div
+      className={[
+        "relative grid place-items-center",
+        "h-[170px] w-[170px]",
+        "rounded-[32px]",
+        "center-beat",
+      ].join(" ")}
+    >
+      <span className="ripple" />
+      <span className="ripple r2" />
+      <span className="ripple r3" />
 
-  const [menuPos, setMenuPos] = useState({ left: 0, top: 0, width: 0 });
-  const [openList, setOpenList] = useState(false);
+      <img
+        src="/logo.png" // ✅ اسم ملف اللوجو داخل public
+        alt="logo"
+        className="h-auto w-[200px] object-contain drop-shadow-[0_18px_30px_rgba(0,0,0,0.18)]"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function YellowIdeaIcon() {
+  return (
+    <div
+      className={[
+        "grid place-items-center",
+        "h-[74px] w-[74px]",
+        "rounded-2xl",
+        "bg-gradient-to-b from-yellow-100 to-yellow-400",
+        "shadow-[0_12px_30px_rgba(0,0,0,0.35)]",
+        "ring-1 ring-black/5",
+      ].join(" ")}
+    >
+      <img
+        src="/icon/freelancer.png" // ✅ غيّر الاسم لملفك
+        alt="icon"
+        className="h-12 w-12 object-contain"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function BluePeopleIcon() {
+  return (
+    <div
+      className={[
+        "grid place-items-center",
+        "h-[88px] w-[88px]",
+        "rounded-2xl",
+        "bg-gradient-to-b from-sky-300 to-sky-500",
+        "shadow-[0_12px_30px_rgba(0,0,0,0.35)]",
+        "ring-1 ring-black/5",
+      ].join(" ")}
+    >
+      <img
+        src="/icon/tasktime.png" // ✅ غيّر الاسم لملفك
+        alt="icon"
+        className="h-18 w-18 object-contain"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function RedShieldIcon() {
+  return (
+    <div
+      className={[
+        "grid place-items-center",
+        "h-[92px] w-[92px]",
+        "rounded-2xl",
+        "bg-gradient-to-b from-orange-400 to-red-500",
+        "shadow-[0_12px_30px_rgba(0,0,0,0.35)]",
+        "ring-1 ring-black/5",
+      ].join(" ")}
+    >
+      <img
+        src="/icon/client.png" // ✅ غيّر الاسم لملفك
+        alt="icon"
+        className="h-24 w-24 object-contain"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function ChatCard() {
+  return (
+    <div
+      className={[
+        "grid place-items-center",
+        "h-[88px] w-[88px]",
+        "rounded-2xl",
+        "bg-white",
+        "shadow-[0_12px_30px_rgba(0,0,0,0.35)]",
+        "ring-1 ring-black/5",
+      ].join(" ")}
+    >
+      <img
+        src="/icon/project.png" // ✅ غيّر الاسم لملفك
+        alt="icon"
+        className="h-18 w-18 object-contain"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function WhitePlusCard({ size = 78, src = "/icon/task.png", alt = "icon" }) {
+  return (
+    <div
+      className={[
+        "grid place-items-center",
+        "rounded-2xl bg-white",
+        "shadow-[0_12px_30px_rgba(0,0,0,0.35)] ring-1 ring-black/5",
+      ].join(" ")}
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="h-12 w-12 object-contain"
+        draggable="false"
+      />
+    </div>
+  );
+}
+
+function AvatarCard({ src, size = 112 }) {
+  return (
+    <div
+      className="overflow-hidden rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.35)] ring-1 ring-black/5"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={src}
+        alt="avatar"
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+    </div>
+  );
+}
+function BatmanFrame({
+  className = "",
+  strokeWidth = 3,
+  stroke = "rgba(17,24,39,0.9)",
+}) {
+  return (
+    <svg
+      className={`pointer-events-none absolute ${className}`}
+      viewBox="0 0 1000 520"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="
+          M 60 210
+          L 120 130
+          L 270 170
+          L 250 90
+          L 300 90
+          L 420 170
+          L 460 100
+          L 500 140
+          L 540 100
+          L 580 170
+          L 710 90
+          L 760 90
+          L 740 170
+          L 880 130
+          L 940 210
+          L 820 280
+          L 620 360
+          L 680 410
+          L 500 505
+          L 320 410
+          L 380 360
+          L 170 270
+          Z
+        "
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        strokeLinejoin="miter" // ✅ زوايا حادة
+        strokeMiterlimit="18" // ✅ يزيد حدّة الزاوية
+        strokeLinecap="butt"
+      />
+    </svg>
+  );
+}
+
+function HeroSearch({
+  to = "/projectsPage",              // عدّلها لو عندك Route مختلف
+  buttonText = "Explore Talents",
+}) {
+  const navigate = useNavigate();
+
+  const inputRef = useRef(null);
+  const anchorRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const [term, setTerm] = useState("");
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const [cats, setCats] = useState([]);
+  const [subcats, setSubcats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ---- helpers: normalize api objects (عشان لو أسماء الحقول تختلف)
+  const norm = (x) => ({
+    id: x?.id ?? x?.categoryId ?? x?.subCategoryId ?? x?._id,
+    name: x?.name ?? x?.categoryName ?? x?.subCategoryName ?? x?.title ?? "",
+  });
+
+  // ---- load categories + subCategories once
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+
+        const catsRaw = await fetchCategories();
+        const catsNorm = (catsRaw || []).map(norm).filter((c) => c.id && c.name);
+
+        // تحميل subCategories لكل Category
+        const subsAll = [];
+        await Promise.all(
+          catsNorm.map(async (c) => {
+            try {
+              const subsRaw = await fetchSubCategoriesByCategoryId(c.id);
+              (subsRaw || []).forEach((s) => {
+                const sn = norm(s);
+                if (sn.id && sn.name) subsAll.push({ ...sn, categoryId: c.id });
+              });
+            } catch {
+              // ignore per-category errors
+            }
+          })
+        );
+
+        if (!alive) return;
+        setCats(catsNorm);
+        setSubcats(subsAll);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // ---- menu position (fixed) under input
   const updateMenuPos = () => {
-    const el = inputRef.current;
+    const el = anchorRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setMenuPos({ left: r.left, top: r.bottom + 8, width: r.width });
+    setMenuPos({
+      left: r.left,
+      top: r.bottom + 10,
+      width: r.width,
+    });
   };
 
-  const { data: topRated, loading, error } = useTopRated({ useMock: USE_MOCK });
-  const [row1, row2, row3] = useMemo(() => {
-    const rows = chunk(topRated, 4);
-    return [rows[0] || [], rows[1] || [], rows[2] || []];
-  }, [topRated]);
-
   useEffect(() => {
-    const el = typeRef.current;
-    if (!el) return;
-    const phrases = ["designers", "developers", "video editors", "marketers", "SEO experts"];
-    let i = 0, j = 0, deleting = false;
-    const tick = () => {
-      const word = phrases[i];
-      j = deleting ? j - 1 : j + 1;
-      el.textContent = word.slice(0, j);
-      if (!deleting && j === word.length) { deleting = true; setTimeout(tick, 1300); return; }
-      if (deleting && j === 0) { deleting = false; i = (i + 1) % phrases.length; }
-      setTimeout(tick, deleting ? 40 : 60);
-    };
-    el.textContent = phrases[0];
-    tick();
-  }, []);
+    if (!open) return;
 
-  const [cats, setCats] = useState([]);  
-  const [subs, setSubs] = useState([]);
-  const [loadingSug, setLoadingSug] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadAll = async () => {
-      try {
-        setLoadingSug(true);
-        const list = await fetchCategories();
-        if (!mounted) return;
-        setCats(list || []);
-        const allSubs = [];
-        for (const c of list || []) {
-          try {
-            const s = await fetchSubSubCategoriesByCategoryId(Number(c.id));
-            (s || []).forEach((it) => {
-              allSubs.push({
-                id: String(it.id),
-                name: it.name,
-                parentId: String(c.id),
-                parentName: c.name,
-              });
-            });
-          } catch {}
-        }
-        if (!mounted) return;
-        setSubs(allSubs);
-      } catch (e) {
-        console.error("Suggestions load error:", e);
-      } finally {
-        if (mounted) setLoadingSug(false);
-      }
-    };
-    loadAll();
-    return () => { mounted = false; };
-  }, []);
-
-  // filter
-  const suggestions = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return [];
-    const starts = (s) => s.toLowerCase().startsWith(q);
-    const has = (s) => s.toLowerCase().includes(q);
-
-    const catItems = cats
-      .map((c) => ({ type: "cat", id: String(c.id), label: c.name }))
-      .filter((x) => starts(x.label) || has(x.label));
-
-    const subItems = subs
-      .map((s) => ({
-        type: "subsub",
-        id: s.id,
-        parentId: s.parentId,
-        label: s.name,
-        meta: s.parentName,
-      }))
-      .filter((x) => starts(x.label) || has(x.label));
-
-    return [...subItems, ...catItems].slice(0, 12);
-  }, [searchTerm, cats, subs]);
-
-
-  useEffect(() => {
-    if (!openList) return;
     updateMenuPos();
-    const onWin = () => updateMenuPos();
-    window.addEventListener("resize", onWin);
-    window.addEventListener("scroll", onWin, true);
+    const onResize = () => updateMenuPos();
+    const onScroll = () => updateMenuPos();
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
+
     return () => {
-      window.removeEventListener("resize", onWin);
-      window.removeEventListener("scroll", onWin, true);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll, true);
     };
-  }, [openList]);
+  }, [open]);
 
-  const goByText = (valueFromEvent) => {
-    const value = (valueFromEvent ?? searchTerm).trim();
-    if (!value) return;
-    const term = value.toLowerCase();
+  // ---- close when clicking outside
+  useEffect(() => {
+    const onPointerDown = (e) => {
+      const t = e.target;
+      if (menuRef.current?.contains(t)) return;
+      if (anchorRef.current?.contains(t)) return;
+      setOpen(false);
+      setActive(-1);
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, []);
 
-    const exactSub = subs.find((s) => (s.name || "").toLowerCase() === term);
-    if (exactSub) { navigate(`/projectsPage?cat=${encodeURIComponent(exactSub.parentId)}&sub=${encodeURIComponent(exactSub.id)}`); return; }
-    const hitSub = subs.find((s) => (s.name || "").toLowerCase().includes(term));
-    if (hitSub) { navigate(`/projectsPage?cat=${encodeURIComponent(hitSub.parentId)}&sub=${encodeURIComponent(hitSub.id)}`); return; }
-    const catExact = cats.find((c) => (c.name || "").toLowerCase() === term);
-    if (catExact) { navigate(`/projectsPage?cat=${encodeURIComponent(catExact.id)}`); return; }
-    const catHit = cats.find((c) => (c.name || "").toLowerCase().includes(term));
-    if (catHit) { navigate(`/projectsPage?cat=${encodeURIComponent(catHit.id)}`); return; }
+  // ---- suggestions (cats + subcats)
+  const suggestions = useMemo(() => {
+    const q = term.trim().toLowerCase();
+    const limit = 10;
 
-    if (typeof onSearch === "function") { try { onSearch(value); } catch {} }
-    navigate(`/projectsPage?q=${encodeURIComponent(value)}`);
+    const catItems = cats.map((c) => ({
+      type: "cat",
+      id: c.id,
+      label: c.name,
+    }));
+
+    const subItems = subcats.map((s) => ({
+      type: "subcat",
+      id: s.id,
+      label: s.name,
+      categoryId: s.categoryId,
+    }));
+
+    const all = [...catItems, ...subItems];
+
+    if (!q) return all.slice(0, limit);
+
+    return all
+      .filter((it) => it.label.toLowerCase().includes(q))
+      .slice(0, limit);
+  }, [term, cats, subcats]);
+
+  const closeList = () => {
+    setOpen(false);
+    setActive(-1);
   };
 
-  const goBySuggestion = (item) => {
-    if (!item) return;
-    if (item.type === "cat") {
-      navigate(`/projectsPage?cat=${encodeURIComponent(item.id)}`);
-    } else if (item.type === "subsub") {
-      navigate(`/projectsPage?cat=${encodeURIComponent(item.parentId)}&sub=${encodeURIComponent(item.id)}`);
+  const goTo = (url) => {
+    closeList();
+    navigate(url);
+  };
+
+  const goBySuggestion = (s) => {
+    if (!s) return;
+    if (s.type === "cat") {
+      goTo(`${to}?cat=${encodeURIComponent(s.id)}&page=1`);
+      return;
     }
-    setOpenList(false);
+    if (s.type === "subcat") {
+      goTo(
+        `${to}?cat=${encodeURIComponent(s.categoryId)}&subcat=${encodeURIComponent(s.id)}&page=1`
+      );
+      return;
+    }
+  };
+
+  // نفس منطق ProjectsPage: إذا كتب اسم يطابق Category/SubCategory بالضبط -> يروح لهم
+  const goByText = (raw) => {
+    const text = (raw ?? "").trim();
+    if (!text) {
+      goTo(`${to}?page=1`);
+      return;
+    }
+
+    const q = text.toLowerCase();
+
+    const exactSub = subcats.find((s) => (s.name || "").toLowerCase() === q);
+    if (exactSub) {
+      goTo(
+        `${to}?cat=${encodeURIComponent(exactSub.categoryId)}&subcat=${encodeURIComponent(exactSub.id)}&page=1`
+      );
+      return;
+    }
+
+    const exactCat = cats.find((c) => (c.name || "").toLowerCase() === q);
+    if (exactCat) {
+      goTo(`${to}?cat=${encodeURIComponent(exactCat.id)}&page=1`);
+      return;
+    }
+
+    // fallback: نص عام
+    goTo(`${to}?q=${encodeURIComponent(text)}&page=1`);
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    if (active >= 0 && suggestions[active]) {
+      goBySuggestion(suggestions[active]);
+    } else {
+      goByText(term);
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      updateMenuPos();
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = Math.min((active < 0 ? -1 : active) + 1, suggestions.length - 1);
+      setActive(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = Math.max(active - 1, 0);
+      setActive(prev);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeList();
+    }
   };
 
   return (
-    <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(0,0,0,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.12) 1px, transparent 1px)",
-              backgroundSize: "48px 48px",
-            }}
-          />
-        </div>
-        <div className="absolute inset-0 overflow-hidden">
-          <div
-            className="absolute -top-24 -right-24 w-[38rem] h-[38rem] rounded-full blur-3xl opacity-30 animate-blob"
-            style={{ background: `radial-gradient(closest-side, ${THEME}55, transparent 70%)` }}
-          />
-          <div
-            className="absolute -bottom-24 -left-24 w-[34rem] h-[34rem] rounded-full blur-3xl opacity-30 animate-blob-slower"
-            style={{ background: `radial-gradient(closest-side, ${THEME2}55, transparent 70%)` }}
-          />
-        </div>
-      </div>
+    <div className="mt-0 flex flex-col items-center gap-4">
+      {/* Search */}
+      <form className="w-full max-w-md" onSubmit={onSubmit}>
+        <label htmlFor="hero-search" className="sr-only">
+          Search
+        </label>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-screen-xl mx-auto px-6 py-10 sm:py-14 md:py-16 w-full grid lg:grid-cols-[1.1fr_.9fr] gap-10 items-center">
-        {/* Left */}
-        <div className="relative z-20">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 bg-white/70 backdrop-blur text-slate-700 mb-6 shadow-sm">
-            <span className="flex -space-x-1">
-              <span className="w-3.5 h-3.5 rounded-full border border-white" style={{ background: DARK }}/>
-              <span className="w-3.5 h-3.5 rounded-full border border-white" style={{ background: THEME }}/>
-              <span className="w-3.5 h-3.5 rounded-full border border-white" style={{ background: THEME2 }}/>
-            </span>
-            <span className="text-[15px]">10,000+ Creative Professionals</span>
-          </div>
-
-          {/* Heading */}
-          <h1 className="font-black tracking-tight leading-[0.95]">
-            <span className="block text-[48px] sm:text-[64px] md:text-[84px] xl:text-[96px]" style={{ color: DARK }}>ORDERZ</span>
-            <span className="block text-[40px] sm:text-[52px] md:text-[68px] xl:text-[78px]" style={{ color: THEME2 }}>HOUSE</span>
-          </h1>
-
-          <p className="mt-5 text-xl md:text-2xl text-slate-600 font-semibold">Where work finds its perfect home.</p>
-          <p className="mt-3 text-sm sm:text-lg text-slate-600">
-            Match instantly with <span className="font-semibold text-slate-800">vetted</span>{" "}
-            <span ref={typeRef} className="font-semibold text-[color:var(--t)]" style={{ ["--t"]: THEME }}>designers</span>.
-          </p>
-
-          {/* Search */}
-          <div className="mt-7 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search categories or sub-sub-categories…"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-12 outline-none ring-[3px] ring-transparent focus:border-[color:var(--t)] focus:ring-[color:var(--t)]/15 transition"
-                style={{ ["--t"]: THEME }}
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setOpenList(true); updateMenuPos(); }}
-                onFocus={() => { setOpenList(suggestions.length > 0); updateMenuPos(); }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") goByText(e.currentTarget.value);
-                  if (e.key === "ArrowDown") {
-                    const first = document.querySelector('[data-sug="item-0"]');
-                    first?.focus();
-                    e.preventDefault();
-                  }
-                }}
-              />
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <div ref={anchorRef} className="rounded-full bg-gradient-to-r from-violet-200/70 via-orange-200/60 to-sky-200/70 p-[1px]">
+          <div className="relative rounded-full bg-white/70 backdrop-blur-md ring-1 ring-black/10 shadow-[0_18px_45px_rgba(17,24,39,0.08)]">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21 21l-4.3-4.3m1.3-5.2a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
-            </div>
+            </span>
 
-            <GradientButton onClick={() => goByText()}>
-              Explore talents
-            </GradientButton>
+            <input
+              ref={inputRef}
+              id="hero-search"
+              type="text"
+              value={term}
+              onChange={(e) => {
+                setTerm(e.target.value);
+                setOpen(true);
+                setActive(-1);
+              }}
+              onFocus={() => {
+                setOpen(true);
+                updateMenuPos();
+              }}
+              onKeyDown={onKeyDown}
+              placeholder="Search anything..."
+              className="w-full rounded-full bg-transparent py-3 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2 focus:ring-violet-300/60"
+              autoComplete="off"
+            />
           </div>
-<div className="mt-6">
-          <LiveActivity />
         </div>
-          {openList && (
-            <div
-              className="fixed z-[1000] rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(2,128,144,0.12)] overflow-hidden"
-              style={{ left: menuPos.left, top: menuPos.top, width: menuPos.width }}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              {loadingSug ? (
-                <div className="p-3 text-sm text-slate-500">Loading…</div>
-              ) : suggestions.length === 0 ? (
-                <div className="p-3 text-sm text-slate-500">No matches</div>
-              ) : (
-                <ul className="max-h-[60vh] overflow-auto">
-                  {suggestions.map((sug, idx) => (
-                    <li key={`${sug.type}-${sug.id}`}>
-                      <button
-                        type="button"
-                        data-sug={`item-${idx}`}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none flex items-center justify-between"
-                        onClick={() => goBySuggestion(sug)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") goBySuggestion(sug);
-                          if (e.key === "ArrowDown") {
-                            const next = document.querySelector(`[data-sug="item-${idx + 1}"]`);
-                            (next || inputRef.current)?.focus();
-                            e.preventDefault();
-                          }
-                          if (e.key === "ArrowUp") {
-                            if (idx === 0) { inputRef.current?.focus(); e.preventDefault(); return; }
-                            const prev = document.querySelector(`[data-sug="item-${idx - 1}"]`);
-                            prev?.focus();
-                            e.preventDefault();
-                          }
-                        }}
+
+        {/* dropdown */}
+        {open && (loading || suggestions.length > 0) && (
+          <div
+            ref={menuRef}
+            className="fixed z-[99999] overflow-hidden rounded-2xl bg-white/90 backdrop-blur-md ring-1 ring-black/10 shadow-[0_24px_60px_rgba(0,0,0,0.14)]"
+            style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
+          >
+            {loading ? (
+              <div className="px-4 py-3 text-sm text-gray-500">Loading…</div>
+            ) : (
+              <ul className="max-h-[320px] overflow-auto py-2">
+                {suggestions.map((s, i) => (
+                  <li key={`${s.type}-${s.id}-${i}`}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()} // يمنع فقدان الفوكس
+                      onMouseEnter={() => setActive(i)}
+                      onClick={() => goBySuggestion(s)}
+                      className={[
+                        "w-full px-4 py-2.5 text-left text-sm",
+                        "flex items-center justify-between gap-3",
+                        i === active ? "bg-orange-50" : "hover:bg-orange-50/70",
+                      ].join(" ")}
+                    >
+                      <span className="text-gray-800">{s.label}</span>
+                      <span
+                        className={[
+                          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                          s.type === "cat"
+                            ? "bg-violet-100 text-violet-700"
+                            : "bg-orange-100 text-orange-700",
+                        ].join(" ")}
                       >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-bold"
-                            style={{
-                              background: sug.type === "subsub" ? `${THEME}14` : `${THEME2}14`,
-                              color: sug.type === "subsub" ? THEME : THEME2,
-                            }}
-                          >
-                            {sug.type === "subsub" ? "S" : "C"}
-                          </span>
-                          <span className="text-slate-800">{sug.label}</span>
-                        </span>
-                        {sug.meta && <span className="text-[11px] text-slate-500">in {sug.meta}</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-
-          {/* Stats
-          <div className="mt-10 grid grid-cols-3 max-w-xl gap-6">
-            <Stat num="10K+" label="Creative Professionals" color={DARK} />
-            <Stat num="50K+" label="Projects Delivered" color={THEME} />
-            <Stat num="4.9★" label="Client Satisfaction" color={THEME2} />
-          </div> */}
-
-          {!loading && error && (
-            <div className="mt-6 text-sm text-red-600">Failed to load top rated: {error}</div>
-          )}
-        </div>
-
-        {/* Live Activity - Under search, original style */}
-        {/* <div className="mt-6">
-          <LiveActivity />
-        </div> */}
-        <div className="relative z-0 h-[240px] lg:h-[560px] overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 -z-10 blur-3xl opacity-50" style={{ background: `radial-gradient(60% 60% at 50% 40%, ${THEME}22, transparent)` }} />
-          <div className="block lg:hidden h-full">
-            <MarqueeRow items={topRated} speed={25} direction="left" position="middle" />
+                        {s.type === "cat" ? "Category" : "Sub"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="hidden lg:block h-full">
-            <MarqueeRow items={row1} speed={16} direction="left" position="top" />
-            <MarqueeRow items={row2} speed={9} direction="right" position="middle" />
-            <MarqueeRow items={row3} speed={14} direction="left" position="bottom" />
-          </div>
-          {loading && <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]" />}
-        </div>
-      </div>
+        )}
+      </form>
 
-      {/* Divider */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-[#05668D] via-[#028090] via-[#00A896] via-[#02C39A] to-[#F0F3BD] opacity-40" />
-
-      {/* Styles */}
-      <style>{`
-        @keyframes blob { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.03)} }
-        .animate-blob { animation: blob 9s ease-in-out infinite; }
-        .animate-blob-slower { animation: blob 12s ease-in-out infinite; }
-        .shine-bar{ position:absolute; top:0; bottom:0;
-          background: linear-gradient(115deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0) 35%,rgba(255,255,255,0.55) 50%,rgba(255,255,255,0) 65%,rgba(255,255,255,0) 100%);
-          transform: translate3d(0,0,0); animation: cardShine 2.2s ease-in-out infinite; }
-        @keyframes cardShine{ 0% { transform: translate3d(-40%,0,0); } 100% { transform: translate3d(170%,0,0); } }
-      `}</style>
-    </section>
-  );
-}
-
-// Stat
-function Stat({ num, label, color }) {
-  return (
-    <div className="text-center sm:text-left">
-      <div className="text-2xl font-extrabold" style={{ color }}>{num}</div>
-      <div className="text-sm text-slate-500">{label}</div>
-    </div>
-  );
-}
-
-// Card
-function TalentCard({ name, role, avatar, rate, badge }) {
-  return (
-    <div className="pointer-events-auto shrink-0 w-[220px] p-[1px] rounded-2xl bg-white/60 backdrop-blur border border-slate-200 shadow-[0_8px_24px_rgba(2,128,144,0.12)]">
-      <div className="relative rounded-2xl overflow-hidden bg-white">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="shine-bar" style={{ left: "-35%", width: "70%" }} />
-        </div>
-        <div className="p-4">
-          <div className="flex items-center gap-3">
-            <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover" />
-            <div>
-              <div className="font-semibold text-slate-900">{name}</div>
-              <div className="text-xs text-slate-500">{role}</div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs px-2 py-1 rounded-full border border-slate-200 bg-white">{badge}</span>
-            <span className="text-sm font-medium text-slate-800">${rate}/h</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Marquee
-function MarqueeRow({ items = [], speed = 24, direction = "left", position = "top" }) {
-  const trackRef = useRef(null);
-  const segRef = useRef(null);
-  const reqRef = useRef(0);
-  const lastTsRef = useRef(0);
-  const offsetRef = useRef(0);
-  const segWidthRef = useRef(0);
-
-  useEffect(() => {
-    const measure = () => {
-      if (!segRef.current) return;
-      segWidthRef.current = segRef.current.getBoundingClientRect().width;
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (segRef.current) ro.observe(segRef.current);
-    window.addEventListener("resize", measure);
-    window.addEventListener("load", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("load", measure);
-    };
-  }, [items]);
-
-  useEffect(() => {
-    const dir = direction === "right" ? 1 : -1;
-    const step = (ts) => {
-      const w = segWidthRef.current;
-      if (!trackRef.current || !w) {
-        lastTsRef.current = ts;
-        reqRef.current = requestAnimationFrame(step);
-        return;
-      }
-      const dt = (ts - (lastTsRef.current || ts)) / 1000;
-      lastTsRef.current = ts;
-      const v = w / Math.max(0.001, speed);
-      let x = offsetRef.current + dir * v * dt;
-      if (x <= -w) x += w;
-      if (x >= 0) x -= w;
-      offsetRef.current = x;
-      trackRef.current.style.transform = `translate3d(${x}px,0,0)`;
-      reqRef.current = requestAnimationFrame(step);
-    };
-    reqRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(reqRef.current);
-  }, [speed, direction]);
-
-  const posStyle = position === "top"
-    ? { top: "1.5rem" }
-    : position === "middle"
-    ? { top: "50%", transform: "translateY(-50%)" }
-    : { bottom: "1.5rem" };
-
-  return (
-    <div className="absolute left-0 right-0 flex items-center" style={posStyle}>
-      <div
-        className="relative w-full overflow-hidden"
-        style={{
-          WebkitMaskImage: "linear-gradient(90deg, transparent 0, black 8%, black 92%, transparent 100%)",
-          maskImage: "linear-gradient(90deg, transparent 0, black 8%, black 92%, transparent 100%)",
-        }}
+      {/* Button (نفس ستايل زرّك) */}
+      <button
+        className={[
+          "rounded-full px-8 py-3",
+          "text-sm font-semibold text-white",
+          "bg-gradient-to-b from-orange-400 to-red-500",
+          "shadow-[0_14px_30px_rgba(249,115,22,0.35)]",
+          "ring-1 ring-black/10",
+          "transition hover:brightness-95 active:scale-[0.99]",
+        ].join(" ")}
+        type="button"
+        onClick={() => goByText(term)}
       >
-        <div ref={trackRef} className="flex will-change-transform" style={{ transform: "translate3d(0,0,0)" }}>
-          <div ref={segRef} className="flex gap-6 pr-6">
-            {items.map((p, i) => <TalentCard key={`a-${i}`} {...p} />)}
-          </div>
-          <div className="flex gap-6 pr-6" aria-hidden>
-            {items.map((p, i) => <TalentCard key={`b-${i}`} {...p} />)}
+        {buttonText}
+      </button>
+    </div>
+  );
+}
+
+
+export default function Hero() {
+  const leftAvatar = "https://i.pravatar.cc/300?img=12";
+  const rightAvatar = "https://i.pravatar.cc/200?img=32";
+
+  return (
+    <section className="relative isolate overflow-hidden bg-white h-screen">
+      <HoverCardsBackground className="min-h-screen">
+        <div className="pt-14 sm:pt-20">
+          {/* ✅ Background soft glows (yellow + orange) */}
+          <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
+          {/* Glow خفيف تحت عشان الامتداد السفلي */}
+          {/* <div className="pointer-events-none absolute bottom-[-120px] left-[10%] h-[320px] w-[320px] rounded-full bg-yellow-300/10 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-[-140px] right-[8%] h-[340px] w-[340px] rounded-full bg-orange-400/10 blur-3xl" /> */}
+
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="relative">
+              {/* ✅ Batman frame حول المحتوى */}
+              <BatmanFrame
+                className="
+        left-1/2 top-[42%]
+        -translate-x-1/2 -translate-y-1/2
+        w-[1600px] h-[780px]
+        opacity-80
+        z-[5]
+        
+      "
+                strokeWidth={0.03}
+              />
+              {/* ✅ illustration أكبر من الأسفل */}
+              <div
+                className="relative mx-auto w-full max-w-[1088px] aspect-[1365/420]"
+                style={{ "--dur": "5.8s" }}
+              >
+                <NetworkLines />
+
+                {/* Left avatar */}
+                <div className="absolute left-[0%] top-[58.5%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "1.05s" }}>
+                    <AvatarCard src={leftAvatar} size={112} />
+                  </div>
+                </div>
+
+                {/* Yellow icon */}
+                <div className="absolute left-[22%] top-[27.4%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "0.70s" }}>
+                    <YellowIdeaIcon />
+                  </div>
+                </div>
+
+                {/* Blue icon */}
+                <div className="absolute left-[18%] top-[81.1%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "0.78s" }}>
+                    <BluePeopleIcon />
+                  </div>
+                </div>
+
+                {/* Center purple */}
+                <div className="absolute left-[49.8%] top-[57.5%] -translate-x-1/2 -translate-y-1/2">
+                  <CenterLogoCard />
+                </div>
+
+                {/* Orange/Red icon */}
+                <div className="absolute left-[78%] top-[34.7%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "0.70s" }}>
+                    <RedShieldIcon />
+                  </div>
+                </div>
+
+                {/* Right avatar */}
+                <div className="absolute left-[100%] top-[58.5%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "1.12s" }}>
+                    <AvatarCard src={rightAvatar} size={112} />
+                  </div>
+                </div>
+
+                {/* Right chat card */}
+                <div className="absolute left-[82%] top-[83.9%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "0.86s" }}>
+                    <ChatCard />
+                  </div>
+                </div>
+
+                {/* ✅ مربعات جديدة أسفل الشبكة */}
+                <div className="absolute left-[34%] top-[99%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "1.45s" }}>
+                    <WhitePlusCard src="/icon/safepayment.png" alt="Post task" />
+                  </div>
+                </div>
+
+                <div className="absolute left-[66%] top-[99%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="hit" style={{ "--delay": "1.55s" }}>
+                    <WhitePlusCard src="/icon/progress.png" alt="Post task" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Text */}
+              <div className="pb-16 sm:pb-20">
+                <h1 className="mx-auto max-w-3xl text-center text-[40px] font-extrabold leading-[0.98] tracking-tight text-gray-900 sm:text-5xl lg:text-5xl">
+                  All-in-one
+                  <br />
+                  platform
+                </h1>
+
+                <p className="mx-auto mt-6 max-w-md text-center text-sm leading-6 text-gray-500 sm:text-[15px]">
+                  Where work finds its perfect home.
+                </p>
+
+               <HeroSearch to="/projectsPage" />
+
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+        {/* <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-28 bg-gradient-to-b from-transparent via-white/80 to-white" /> */}
+      </HoverCardsBackground>
+    </section>
   );
 }

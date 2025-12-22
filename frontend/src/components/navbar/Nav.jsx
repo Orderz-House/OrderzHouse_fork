@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
   Bell,
-  MessageSquare,
   User,
   LogOut,
   LayoutDashboard,
@@ -14,16 +13,15 @@ import { setLogout, setUserData } from "../../slice/auth/authSlice";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
-import logo from "../../assets/logo.png";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
 const API_BASE = import.meta.env.VITE_APP_API_URL;
 
-// ستايل واحد لكل روابط الهيدر (HOME / TASKS / EXPLORE)
+// نفس ستايل روابط الهيدر
 const TOP_LINK_BASE =
-  "px-5 py-3 text-sm md:text-base font-medium tracking-wide transition-colors duration-150";
+  "px-3 py-2 text-sm font-semibold tracking-wide transition-colors duration-150 rounded-full";
 
-export default function EnhancedNavbar() {
+export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -37,14 +35,29 @@ export default function EnhancedNavbar() {
   const exploreRef = useRef(null);
 
   const dispatch = useDispatch();
-  // استخدم سيليكتر ثابت عشان نتجنّب تحذير redux عن إرجاع مراجع جديدة كل مرة
   const { token, userData } = useSelector((state) => state.auth);
   const IsAuthenticated = !!token;
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isDashboard =
+  /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(
+    (location.pathname || "").toLowerCase()
+  );
 
-  // Active link
+const [dashExpanded, setDashExpanded] = useState(false);
+
+useEffect(() => {
+  if (!isDashboard) {
+    setDashExpanded(false);
+    return;
+  }
+  // ابدأ بشكل pill ثم وسّعها على فريم التالي (للأنيميشن)
+  setDashExpanded(false);
+  requestAnimationFrame(() => setDashExpanded(true));
+}, [isDashboard]);
+
+  // ===== Active link (نفس منطق ملفك) =====
   useEffect(() => {
     const p = (location.pathname || "").toLowerCase();
     if (p === "/") setActiveLink("HOME");
@@ -52,7 +65,6 @@ export default function EnhancedNavbar() {
     else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
     else if (p.startsWith("/contact")) setActiveLink("CONTACT");
     else if (p.startsWith("/plans")) setActiveLink("PLANS");
-    // else if (p.startsWith("/tasks")) setActiveLink("TASKS");
     else if (
       p.startsWith("/projects") ||
       p.startsWith("/projectspage") ||
@@ -60,11 +72,10 @@ export default function EnhancedNavbar() {
     ) {
       setActiveLink("PROJECTS");
     } else if (p.startsWith("/create-project")) setActiveLink("ADD PROJECT");
-    // else if (p.startsWith("/tasks/create")) setActiveLink("ADD TASK");
     else setActiveLink(null);
   }, [location.pathname]);
 
-  // Notifications
+  // ===== Notifications =====
   const fetchNotifications = async () => {
     if (!token) return;
     try {
@@ -121,6 +132,7 @@ export default function EnhancedNavbar() {
     }
   };
 
+  // ===== Logout =====
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
@@ -133,9 +145,10 @@ export default function EnhancedNavbar() {
     setActiveLink(label);
     navigate(path);
     setIsExploreOpen(false);
-    setIsMobileMenuOpen(false); // إغلاق منيو الجوال بعد التنقل
+    setIsMobileMenuOpen(false);
   };
 
+  // ===== Load user + notifications =====
   useEffect(() => {
     if (!token) return;
     axios
@@ -148,16 +161,15 @@ export default function EnhancedNavbar() {
         fetchUnreadCount();
       })
       .catch(() => handleLogout());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);
 
+  // ===== Close on outside click =====
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target))
         setIsUserMenuOpen(false);
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(e.target)
-      )
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target))
         setIsNotificationsOpen(false);
       if (exploreRef.current && !exploreRef.current.contains(e.target))
         setIsExploreOpen(false);
@@ -167,31 +179,32 @@ export default function EnhancedNavbar() {
   }, []);
 
   const getDashboardPath = (roleId) => {
-  switch (Number(roleId)) {
-    case 1:
-      return "/admin";
-    case 2:
-      return "/client";
-    case 3:
-      return "/freelancer";
-    case 4:
-      return "/apm";
-    case 5:
-      return "/partner";
-    default:
-      return "/login";
-  }
-};
+    switch (Number(roleId)) {
+      case 1:
+        return "/admin";
+      case 2:
+        return "/client";
+      case 3:
+        return "/freelancer";
+      case 4:
+        return "/apm";
+      case 5:
+        return "/partner";
+      default:
+        return "/login";
+    }
+  };
 
-
+  // ===== Links =====
   const navLinks = [
-    { label: "HOME", path: "/", condition: true },
+    { label: "Home", path: "/", condition: true },
     {
-      label: "PROJECTS",
+      label: "Projects",
       path: "/projectsPage",
-      condition: userData && (userData.role_id === 1 || userData.role_id === 2 || userData.role_id === 3),
+      condition:
+        userData &&
+        (userData.role_id === 1 || userData.role_id === 2 || userData.role_id === 3),
     },
-    // { label: "TASKS", path: "/tasks", condition: true },
   ];
 
   const exploreItems = [
@@ -201,88 +214,121 @@ export default function EnhancedNavbar() {
     { label: "PLANS", path: "/plans" },
   ];
 
-  // لو أنت في ABOUT / BLOGS / ... يخلي زر EXPLORE شكله active
-  const isExploreActive = exploreItems.some(
-    (item) => item.label === activeLink
-  );
+  const isExploreActive = exploreItems.some((item) => item.label === activeLink);
+
+  // ✅ ألوان الثيم البرتقالي
+  const ACCENT = "text-gray-900";
+  const ACCENT_HOVER = "hover:text-gray-900";
+  const ACCENT_BORDER = "border-gray-600";
 
   return (
-    <nav className="relative top-0 left-0 right-0 z-[9999] bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* نفس الارتفاع القديم h-23 */}
-        <div className="flex justify-between items-center h-23">
-          {/* Logo */}
-          <div className="flex items-center">
+<header
+  className={[
+    "z-[9999]",
+    isDashboard ? "relative" : "fixed inset-x-0 top-0",
+  ].join(" ")}
+>
+<div
+  className={[
+    isDashboard
+      ? "w-full px-0 transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
+      : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6",
+    isDashboard ? (dashExpanded ? "pt-0" : "pt-6") : "",
+  ].join(" ")}
+>
+       <nav
+  className={[
+    "mx-auto bg-white/95 backdrop-blur ring-1 ring-black/10",
+    "transition-[max-width,border-radius,box-shadow,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)]",
+    isDashboard
+      ? "w-full py-4"
+      : "max-w-[980px] rounded-full py-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)]",
+    isDashboard && (dashExpanded ? "rounded-none shadow-sm" : "rounded-full"),
+  ].join(" ")}
+  style={
+    isDashboard
+      ? { maxWidth: dashExpanded ? "100%" : "980px" }
+      : undefined
+  }
+  aria-label="Primary"
+>
+ <div
+    className={[
+      "mx-auto w-full max-w-[980px] flex items-center justify-between",
+      isDashboard ? "px-6" : "px-5 sm:px-6",
+    ].join(" ")}
+  >
+
+          {/* Left */}
+          <div className="flex items-center gap-4 sm:gap-8">
             <button
               onClick={() => handleNavigation("/", "HOME")}
-              className="flex items-center"
+              className="text-[15px] font-extrabold tracking-tight text-gray-900"
             >
-              <img src={logo} alt="Logo" className="h-16 my-2 w-auto" />
+              OrderzHouse
             </button>
-          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {navLinks.map(
-              (item) =>
-                item.condition && (
-                  <button
-                    key={item.label}
-                    onClick={() => handleNavigation(item.path, item.label)}
-                    className={`${TOP_LINK_BASE} ${
-                      activeLink === item.label
-                        ? "text-[#028090]"
-                        : "text-gray-700 hover:text-[#028090]"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )
-            )}
-
-            {/* EXPLORE بنفس ستايل اللينكات + active لما يكون داخل أحد صفحات explore */}
-            <div className="relative" ref={exploreRef}>
-              <button
-                onClick={() => setIsExploreOpen((v) => !v)}
-                className={`${TOP_LINK_BASE} ${
-                  isExploreActive
-                    ? "text-[#028090]"
-                    : "text-gray-700 hover:text-[#028090]"
-                }`}
-              >
-                EXPLORE
-                <ChevronDown
-                  className={`ml-1 h-4 w-4 inline ${
-                    isExploreOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-              {isExploreOpen && (
-                <div className="absolute mt-2 w-48 bg-white shadow-lg rounded-xl">
-                  {exploreItems.map((it) => (
+            {/* Desktop links (lg+) */}
+            <div className="hidden lg:flex items-center gap-1">
+              {navLinks.map(
+                (item) =>
+                  item.condition && (
                     <button
-                      key={it.label}
-                      onClick={() => handleNavigation(it.path, it.label)}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:text-[#028090] hover:bg-gray-50"
+                      key={item.label}
+                      onClick={() => handleNavigation(item.path, item.label)}
+                      className={[
+                        TOP_LINK_BASE,
+                        activeLink === item.label ? ACCENT : `text-gray-600 ${ACCENT_HOVER}`,
+                      ].join(" ")}
                     >
-                      {it.label}
+                      {item.label}
                     </button>
-                  ))}
-                </div>
+                  )
               )}
-            </div>
 
-            <CategoryMegaMenu
-              activeLink={activeLink}
-              onSetActiveLink={setActiveLink}
-            />
+              {/* EXPLORE */}
+              <div className="relative" ref={exploreRef}>
+                <button
+                  onClick={() => setIsExploreOpen((v) => !v)}
+                  className={[
+                    TOP_LINK_BASE,
+                    isExploreActive ? ACCENT : `text-gray-600 ${ACCENT_HOVER}`,
+                  ].join(" ")}
+                >
+                  Explore
+                  <ChevronDown
+                    className={`ml-1 h-4 w-4 inline transition-transform ${
+                      isExploreOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {isExploreOpen && (
+                  <div className="absolute left-0 mt-2 w-52 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden">
+                    {exploreItems.map((it) => (
+                      <button
+                        key={it.label}
+                        onClick={() => handleNavigation(it.path, it.label)}
+                        className={`w-full text-left px-4 py-2.5 text-sm text-gray-700 ${ACCENT_HOVER} hover:bg-gray-50`}
+                      >
+                        {it.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Categories Mega Menu */}
+              <CategoryMegaMenu activeLink={activeLink} onSetActiveLink={setActiveLink} />
+            </div>
           </div>
 
-          {/* زر منيو الجوال + التابلت (يظهر فقط أقل من lg) */}
-          <div className="flex items-center lg:hidden">
+          {/* Right */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile menu button ( < lg ) */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-md text-gray-700 hover:text-[#028090] focus:outline-none"
+              className={`inline-flex lg:hidden p-2 rounded-full text-gray-700 ${ACCENT_HOVER}`}
               aria-label="Open main menu"
             >
               <svg
@@ -292,51 +338,36 @@ export default function EnhancedNavbar() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-          </div>
 
-          {/* Right Section (ديسكتوب فقط) */}
-          <div className="hidden lg:flex items-center space-x-4">
-            {userData?.role_id === 2 && (
-              <Link
-                to="/create-project"
-                className="inline-flex items-center gap-2 px-5 py-2 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white transition-colors duration-150"
-              >
-                <Plus className="h-4 w-4" /> Add project
-              </Link>
-            )}
-
-            {/* {userData?.role_id === 3 && (
-              <Link
-                to="/tasks/create"
-                className="inline-flex items-center gap-2 px-5 py-2 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] rounded-full hover:bg-[#028090] hover:text-white transition-colors duration-150"
-              >
-                <Plus className="h-4 w-4" /> Add task
-              </Link> */}
-            {/* )}  */}
-            {/* {IsAuthenticated && (
-              <>
-                <button
-                  // onClick={() => navigate("/chat")}
-                  className="p-2 text-gray-600 hover:text-[#028090] transition-colors duration-150"
+            {/* Desktop right (lg+) */}
+            <div className="hidden lg:flex items-center gap-3">
+              {/* Add project (client role) */}
+              {userData?.role_id === 2 && (
+                <Link
+                  to="/create-project"
+                  className={[
+                    "inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border text-gray-600",
+                    ACCENT_BORDER,
+                    "hover:text-gray-900 hover:border-gray-900 transition-colors",
+                  ].join(" ")}
                 >
-                  <MessageSquare className="h-5 w-5" />
-                </button> */}
+                  <Plus className="h-4 w-4" /> Add project
+                </Link>
+              )}
 
+              {/* Notifications */}
+              {IsAuthenticated && (
                 <div className="relative" ref={notificationsRef}>
                   <button
                     onClick={() => {
                       setIsNotificationsOpen(!isNotificationsOpen);
                       if (!isNotificationsOpen) fetchNotifications();
                     }}
-                    className="p-2 text-gray-600 hover:text-[#028090] relative transition-colors duration-150"
+                    className={`p-2 text-gray-600 ${ACCENT_HOVER} relative transition-colors duration-150`}
+                    aria-label="Notifications"
                   >
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
@@ -345,52 +376,44 @@ export default function EnhancedNavbar() {
                       </span>
                     )}
                   </button>
+
                   {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border overflow-hidden z-50">
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
                       <div className="p-4 border-b flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-900">
-                          Notifications
-                        </h3>
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
                         {unreadCount > 0 && (
-                          <button
-                            onClick={markAllAsRead}
-                            className="text-xs text-[#028090]"
-                          >
+                          <button onClick={markAllAsRead} className="text-xs text-orange-600">
                             Mark all as read
                           </button>
                         )}
                       </div>
+
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length > 0 ? (
                           notifications.map((n) => (
                             <div
                               key={n.id}
                               className={`p-4 cursor-pointer ${
-                                !n.read_status ? "bg-blue-50" : ""
+                                !n.read_status ? "bg-orange-50/60" : ""
                               } hover:bg-gray-50`}
                               onClick={() => markAsRead(n.id)}
                             >
-                              <p className="text-sm text-gray-900">
-                                {n.message}
-                              </p>
+                              <p className="text-sm text-gray-900">{n.message}</p>
                               <p className="text-xs text-gray-400 mt-2">
-                                {new Date(
-                                  n.created_at
-                                ).toLocaleDateString()}
+                                {new Date(n.created_at).toLocaleDateString()}
                               </p>
                             </div>
                           ))
                         ) : (
-                          <div className="p-8 text-center text-gray-500 text-sm">
-                            No notifications yet
-                          </div>
+                          <div className="p-8 text-center text-gray-500 text-sm">No notifications yet</div>
                         )}
                       </div>
+
                       <div className="p-4 border-t text-center">
                         <Link
                           to="/notifications"
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="text-sm text-[#028090]"
+                          className="text-sm text-orange-600"
                         >
                           View all notifications
                         </Link>
@@ -398,112 +421,129 @@ export default function EnhancedNavbar() {
                     </div>
                   )}
                 </div>
-              
-            
+              )}
 
-            {/* User Menu */}
-            {IsAuthenticated && userData ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-[#028090] transition-colors duration-150"
-                >
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#028090] flex items-center justify-center">
-                    {userData.profile_pic_url ? (
-                      <img
-                        src={userData.profile_pic_url}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-4 w-4 text-white" />
-                    )}
-                  </div>
-                  <ChevronDown
-                    className={`h-4 w-4 ${
-                      isUserMenuOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+              {/* User menu */}
+              {IsAuthenticated && userData ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className={`flex items-center gap-2 p-2 text-gray-700 ${ACCENT_HOVER} transition-colors duration-150`}
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-orange-500 flex items-center justify-center">
+                      {userData.profile_pic_url ? (
+                        <img
+                          src={userData.profile_pic_url}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-4 w-4 text-white" />
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
 
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border overflow-hidden z-50">
-                    <div className="p-4 border-b">
-                      <p className="font-medium text-gray-900">
-                        {userData.first_name} {userData.last_name}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {userData.email}
-                      </p>
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                      <div className="p-4 border-b">
+                        <p className="font-medium text-gray-900">
+                          {userData.first_name} {userData.last_name}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">{userData.email}</p>
+                      </div>
+
+                      <div className="py-2">
+                        <Link
+                          to={getDashboardPath(userData.role_id)}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className={`flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50`}
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          Dashboard
+                        </Link>
+
+                        <button
+                          onClick={handleLogout}
+                          className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
+                        >
+                          <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                    <div className="py-2">
-                      <Link
-                        to={getDashboardPath(userData.role_id)}
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
-                      >
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        Dashboard
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
-                      >
-                        <LogOut className="h-4 w-4 mr-2 text-red-500" />
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-6 py-2.5 text-sm md:text-base font-medium text-gray-700 hover:text-[#028090] transition-colors duration-150"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => navigate("/register")}
-                  className="px-6 py-2.5 text-sm md:text-base font-medium border-2 border-[#028090] text-[#028090] hover:bg-[#028090] hover:text-white rounded-2xl transition-colors duration-150"
-                >
-                  Get Started
-                </button>
-              </div>
-            )}
+                  )}
+                </div>
+              ) : (
+                // Guest
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => navigate("/login")}
+                    className={`hidden sm:inline-flex text-sm font-semibold text-gray-700 ${ACCENT_HOVER}`}
+                  >
+                    Sign in
+                  </button>
+
+                  <button
+                    onClick={() => navigate("/register")}
+                    className={[
+                      "inline-flex items-center justify-center rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white hover:bg-black/90",
+                      
+                      ACCENT_BORDER,
+                      ACCENT,
+                    ].join(" ")}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* CTA (مثل ناف بارك الأصلي) */}
+            {/* <a
+              href="#demo"
+              className="hidden sm:inline-flex items-center justify-center rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white hover:bg-black/90"
+            >
+              Request a Demo
+            </a> */}
           </div>
-        </div>
+          </div>
+        </nav>
       </div>
 
-      {/* منيو الجوال / التابلت (Drawer) */}
+      {/* ===== Mobile Drawer ===== */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-[10000] bg-black bg-opacity-40 lg:hidden"
+          className="fixed inset-0 z-[10000] bg-black/40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
             className="absolute right-0 top-0 h-full w-72 max-w-full bg-white shadow-xl p-6 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header داخل المنيو */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <img src={logo} alt="Logo" className="h-10 w-auto" />
-              </div>
+              <button
+                onClick={() => handleNavigation("/", "HOME")}
+                className="text-base font-extrabold tracking-tight text-gray-900"
+              >
+                OrderzHouse
+              </button>
+
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 text-gray-600 hover:text-[#028090]"
+                className={`p-2 text-gray-600 ${ACCENT_HOVER}`}
                 aria-label="Close menu"
               >
                 <span className="text-2xl leading-none">&times;</span>
               </button>
             </div>
 
-            {/* بيانات المستخدم في الموبايل */}
+            {/* user info */}
             {IsAuthenticated && userData && (
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#028090] flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-orange-500 flex items-center justify-center">
                   {userData.profile_pic_url ? (
                     <img
                       src={userData.profile_pic_url}
@@ -524,24 +564,18 @@ export default function EnhancedNavbar() {
             )}
 
             <div className="space-y-6">
-              {/* Main Links */}
+              {/* Main */}
               <div>
-                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
-                  Main
-                </p>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Main</p>
                 <div className="flex flex-col">
                   {navLinks.map(
                     (item) =>
                       item.condition && (
                         <button
                           key={item.label}
-                          onClick={() =>
-                            handleNavigation(item.path, item.label)
-                          }
+                          onClick={() => handleNavigation(item.path, item.label)}
                           className={`w-full text-left py-2 text-base ${
-                            activeLink === item.label
-                              ? "text-[#028090]"
-                              : "text-gray-800 hover:text-[#028090]"
+                            activeLink === item.label ? "text-orange-600" : `text-gray-800 ${ACCENT_HOVER}`
                           }`}
                         >
                           {item.label}
@@ -551,20 +585,16 @@ export default function EnhancedNavbar() {
                 </div>
               </div>
 
-              {/* Explore Links */}
+              {/* Explore */}
               <div className="pt-4 border-t">
-                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
-                  Explore
-                </p>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Explore</p>
                 <div className="flex flex-col">
                   {exploreItems.map((it) => (
                     <button
                       key={it.label}
                       onClick={() => handleNavigation(it.path, it.label)}
                       className={`w-full text-left py-2 text-base ${
-                        activeLink === it.label
-                          ? "text-[#028090]"
-                          : "text-gray-800 hover:text-[#028090]"
+                        activeLink === it.label ? "text-orange-600" : `text-gray-800 ${ACCENT_HOVER}`
                       }`}
                     >
                       {it.label}
@@ -573,55 +603,31 @@ export default function EnhancedNavbar() {
                 </div>
               </div>
 
-              Add Project / Task
-              {(userData?.role_id === 2 || userData?.role_id === 3) && (
-                <div className="pt-4 border-t space-y-2">
-                  {userData?.role_id === 2 && (
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        navigate("/create-project");
-                      }}
-                      className="flex items-center text-base text-[#028090]"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add project
-                    </button>
-                  )}
-                  {userData?.role_id === 3 && (
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        navigate("/tasks/create");
-                      }}
-                      className="flex items-center text-base text-[#028090]"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add task
-                    </button>
-                  )}
-                </div>
-              )} 
-
-              {/* Chat + Notifications */}
-              {/* {IsAuthenticated && (
-                <div className="pt-4 border-t space-y-2"> */}
-                  {/* <button
+              {/* Add project */}
+              {userData?.role_id === 2 && (
+                <div className="pt-4 border-t">
+                  <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      navigate("/chat");
+                      navigate("/create-project");
                     }}
-                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                    className="flex items-center text-base text-orange-600"
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Chat
-                  </button> */}
-                  {/* <button
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add project
+                  </button>
+                </div>
+              )}
+
+              {/* Notifications shortcut */}
+              {IsAuthenticated && (
+                <div className="pt-4 border-t">
+                  <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       navigate("/notifications");
                     }}
-                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                    className={`flex items-center text-base text-gray-800 ${ACCENT_HOVER}`}
                   >
                     <Bell className="h-4 w-4 mr-2" />
                     Notifications
@@ -634,19 +640,20 @@ export default function EnhancedNavbar() {
                 </div>
               )}
 
-              {/* Dashboard + Sign Out */}
-              {IsAuthenticated && userData && (
+              {/* Dashboard + Sign out */}
+              {IsAuthenticated && userData ? (
                 <div className="pt-4 border-t space-y-2">
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       navigate(getDashboardPath(userData.role_id));
                     }}
-                    className="flex items-center text-base text-gray-800 hover:text-[#028090]"
+                    className={`flex items-center text-base text-gray-800 ${ACCENT_HOVER}`}
                   >
                     <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard
                   </button>
+
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
@@ -658,17 +665,14 @@ export default function EnhancedNavbar() {
                     Sign Out
                   </button>
                 </div>
-              )}
-
-              {/* Guest (غير مسجل) */}
-              {!IsAuthenticated && (
+              ) : (
                 <div className="pt-4 border-t space-y-2">
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       navigate("/login");
                     }}
-                    className="w-full text-left py-2 text-base text-gray-800 hover:text-[#028090]"
+                    className={`w-full text-left py-2 text-base text-gray-800 ${ACCENT_HOVER}`}
                   >
                     Sign In
                   </button>
@@ -677,7 +681,7 @@ export default function EnhancedNavbar() {
                       setIsMobileMenuOpen(false);
                       navigate("/register");
                     }}
-                    className="w-full text-left py-2 text-base text-[#028090] font-semibold"
+                    className="w-full text-left py-2 text-base text-orange-600 font-semibold"
                   >
                     Get Started
                   </button>
@@ -687,6 +691,6 @@ export default function EnhancedNavbar() {
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
