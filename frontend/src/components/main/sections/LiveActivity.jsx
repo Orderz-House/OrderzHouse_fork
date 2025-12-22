@@ -16,11 +16,11 @@ export default function LiveActivity() {
   const [pulseProcessing, setPulseProcessing] = useState(false);
   const [pulseClients, setPulseClients] = useState(false);
   const [pulseFreelancers, setPulseFreelancers] = useState(false);
-
+  const API = import.meta.env.VITE_APP_API_URL;
   // ========= FETCH REAL DATA FROM DATABASE =========
   const fetchStats = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/stats");
+      const res = await fetch(`${API}/api/stats`);
       const data = await res.json();
 
       // Add pulse animation when values update
