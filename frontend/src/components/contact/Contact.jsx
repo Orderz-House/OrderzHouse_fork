@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin } from "lucide-react";
-import emailjs from "@emailjs/browser"; 
+import emailjs from "@emailjs/browser";
 
 import GradientButton from "../buttons/GradientButton.jsx";
 
@@ -58,96 +58,77 @@ export default function ContactUsPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#F0F3BD]/10 via-white to-[#02C39A]/5 pointer-events-none"></div>
-      <div className="absolute top-10 left-4 sm:top-20 sm:left-10 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#F0F3BD]/20 to-[#02C39A]/10 blur-xl animate-pulse pointer-events-none"></div>
-      <div className="absolute bottom-10 right-4 sm:bottom-20 sm:right-10 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-[#05668D]/10 to-[#028090]/20 blur-2xl animate-pulse pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/4 w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#00A896]/5 to-[#F0F3BD]/10 blur-3xl animate-pulse pointer-events-none"></div>
-      <div className="absolute top-1/4 right-1/3 w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-[#028090]/8 to-[#02C39A]/15 blur-2xl animate-pulse pointer-events-none"></div>
-
-      <div className="relative z-10">
+    <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
+          {/* Glow خفيف تحت عشان الامتداد السفلي */}
+      <div className="relative z-10 pt-16">
         <section className="py-16 text-center">
-          <h1
-            className="text-5xl font-bold mb-4"
-            style={{ fontFamily: "'Merriweather', serif" }}
-          >
-            Get in <span className="text-[#028090]">Touch</span>
+          <h1 className="text-5xl font-bold mb-4 text-slate-900" style={{ fontFamily: "'Merriweather', serif" }}>
+            Get in <span className="text-orange-600">Touch</span>
           </h1>
           <p
-            className="text-gray-600 max-w-xl mx-auto"
+            className="text-slate-600 max-w-xl mx-auto"
             style={{ fontFamily: "'Merriweather', serif" }}
           >
-            Have questions or need assistance? We're here to help you with
-            anything you need.
+            Have questions or need assistance? We're here to help you with anything you need.
           </p>
         </section>
 
         <section className="pb-20">
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 xl:grid-cols-3 gap-12">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-[#F0F3BD]/20">
-              <h2
-                className="text-2xl font-bold mb-8 text-gray-700"
-                style={{ fontFamily: "'Merriweather', serif" }}
-              >
+            {/* Info */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-[0_25px_70px_rgba(15,23,42,0.08)] border border-orange-100/60">
+              <h2 className="text-2xl font-bold mb-8 text-slate-800" style={{ fontFamily: "'Merriweather', serif" }}>
                 Contact Information
               </h2>
+
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090]/90 to-[#028090]/100 rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 bg-gradient-to-br from-orange-500 to-rose-500 shadow-[0_12px_30px_rgba(249,115,22,0.25)]">
                     <Phone className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">
-                      Phone Number
-                    </h3>
-                    <p className="text-gray-600">+962 791 433 341</p>
+                    <h3 className="font-bold text-slate-800 mb-2">Phone Number</h3>
+                    <p className="text-slate-600">+962 791 433 341</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090] to-[#028090]/90 rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 bg-gradient-to-br from-violet-500 to-indigo-600 shadow-[0_12px_30px_rgba(99,102,241,0.20)]">
                     <Mail className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">
-                      Email Address
-                    </h3>
-                    <p className="text-gray-600">info@orderzhouse.com</p>
+                    <h3 className="font-bold text-slate-800 mb-2">Email Address</h3>
+                    <p className="text-slate-600">info@orderzhouse.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#028090]/60 to-[#028090]  rounded-xl flex items-center justify-center mr-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_12px_30px_rgba(245,158,11,0.18)]">
                     <MapPin className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-700 mb-2">
-                      Office Location
-                    </h3>
-                    <p className="text-gray-600">Amman, Madinah Street</p>
-                    <p className="text-gray-600">
-                      Al-Basem Complex 2, Office 405
-                    </p>
+                    <h3 className="font-bold text-slate-800 mb-2">Office Location</h3>
+                    <p className="text-slate-600">Amman, Madinah Street</p>
+                    <p className="text-slate-600">Al-Basem Complex 2, Office 405</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Contact Form */}
-            <div className="xl:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-[#F0F3BD]/20">
-              <h2
-                className="text-2xl font-bold mb-8 text-gray-700"
-                style={{ fontFamily: "'Merriweather', serif" }}
-              >
+            <div className="xl:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-[0_25px_70px_rgba(15,23,42,0.08)] border border-orange-100/60">
+              <h2 className="text-2xl font-bold mb-8 text-slate-800" style={{ fontFamily: "'Merriweather', serif" }}>
                 Send us a Message
               </h2>
 
               {submitStatus === "success" && (
-                <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl border border-green-200">
+                <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200">
                   Your message has been sent successfully!
                 </div>
               )}
               {submitStatus === "error" && (
-                <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200">
+                <div className="mb-6 p-4 bg-rose-50 text-rose-800 rounded-xl border border-rose-200">
                   Something went wrong. Please try again.
                 </div>
               )}
@@ -161,7 +142,8 @@ export default function ContactUsPage() {
                     onChange={handleChange}
                     required
                     placeholder="Full Name *"
-                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
+                    className="w-full px-4 py-3 rounded-xl bg-white/90 border border-slate-200
+                               focus:ring-2 focus:ring-orange-300/70 focus:border-orange-300 focus:outline-none"
                   />
                   <input
                     type="email"
@@ -170,7 +152,8 @@ export default function ContactUsPage() {
                     onChange={handleChange}
                     required
                     placeholder="Email Address *"
-                    className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
+                    className="w-full px-4 py-3 rounded-xl bg-white/90 border border-slate-200
+                               focus:ring-2 focus:ring-indigo-300/60 focus:border-indigo-300 focus:outline-none"
                   />
                 </div>
 
@@ -180,7 +163,8 @@ export default function ContactUsPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone Number"
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-white/90 border border-slate-200
+                             focus:ring-2 focus:ring-orange-300/70 focus:border-orange-300 focus:outline-none"
                 />
 
                 <select
@@ -188,7 +172,8 @@ export default function ContactUsPage() {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-white/90 border border-slate-200
+                             focus:ring-2 focus:ring-orange-300/70 focus:border-orange-300 focus:outline-none"
                 >
                   <option value="">Select a subject *</option>
                   <option value="general">General Inquiry</option>
@@ -204,16 +189,22 @@ export default function ContactUsPage() {
                   required
                   rows="4"
                   placeholder="Your Message *"
-                  className="w-full px-4 py-3 border border-[#F0F3BD]/50 rounded-xl focus:ring-2 focus:ring-[#028090] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-white/90 border border-slate-200
+                             focus:ring-2 focus:ring-indigo-300/60 focus:border-indigo-300 focus:outline-none"
                 />
 
+                {/* Keep your existing button component (no logic changes) */}
                 <GradientButton
-                  type="submit" 
+                  type="submit"
                   className="w-full md:w-auto px-6 py-3 font-semibold"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </GradientButton>
+
+                <p className="text-xs text-slate-500">
+                  Tip: you can keep the CTA orange, and use violet as a soft accent for focus states.
+                </p>
               </form>
             </div>
           </div>

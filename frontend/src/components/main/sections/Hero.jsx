@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HoverCardsBackground from "../../HoverCardsBackground";
-import { fetchCategories, fetchSubCategoriesByCategoryId } from "../../Catigories/api/category";
+import {
+  fetchCategories,
+  fetchSubCategoriesByCategoryId,
+} from "../../Catigories/api/category";
 import { AnimatePresence, motion } from "framer-motion";
-
-
 
 function NetworkLines() {
   const STROKE = "#E5E7EB";
@@ -19,7 +20,7 @@ function NetworkLines() {
   // ====== مركز الشبكة ======
   const center = P(0.5, 0.585); // نفس top-[58.5%] في DOM
 
-  // join points يمين/يسار قرب المركز (بنفس فكرة Y)
+  // join points يمين/يسار قرب المركز
   const joinOffset = 200;
   const stagger = 48;
 
@@ -29,9 +30,7 @@ function NetworkLines() {
   const rightJoinTop = { x: center.x + joinOffset, y: center.y };
   const rightJoinBottom = { x: center.x + joinOffset + stagger, y: center.y };
 
-  // ====== نقاط (dots) مثل التصميم الأصلي (مبنية على نسب الكود القديم) ======
-  // === NEW: sync lines with the DOM positions of the 4 squares ===
-  // (match these % with your absolute left/top in the DOM)
+  // ====== NEW: sync lines with the DOM positions of the 4 squares ======
   const yellowC = P(0.22, 0.274); // YellowIdeaIcon  left-[22%] top-[27.4%]
   const blueC = P(0.18, 0.811); // BluePeopleIcon  left-[18%] top-[81.1%]
   const redC = P(0.78, 0.347); // RedShieldIcon   left-[78%] top-[34.7%]
@@ -60,21 +59,13 @@ function NetworkLines() {
   const BR_END_X = chatC.x - chatSize / 2;
   const BR = { x: BR_END_X - gap, y: chatC.y };
 
-  // ====== الخط الأفقي الرئيسي ======
-  // (خليه ثابت عشان ما ندخل في حسابات responsive معقدة)
-  const MAIN_X1 = 0.131 * W;
-  const MAIN_X2 = 0.869 * W;
-
   // ====== ✅ امتداد سفلي جديد (Bottom expansion) ======
-  // نقطة فرع وسطية تحت المركز
   const bottomHub = P(0.5, 0.86);
 
-  // نقاط توزيع قبل الوصول للمربعات السفلية
   const bL = P(0.4, 0.86);
   const bM = P(0.5, 0.82);
   const bR = P(0.6, 0.86);
 
-  // مراكز المربعات الجديدة (مكانها في DOM)
   const sL = P(0.35, 0.93);
   const sM = P(0.5, 0.93);
   const sR = P(0.65, 0.93);
@@ -148,51 +139,53 @@ function NetworkLines() {
         strokeWidth={strokeWidth}
       />
 
-      {/* ✅ امتداد سفلي (center -> bottomHub -> (bL,bM,bR) -> (sL,sM,sR)) */}
-      <path
-        d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-
-      <path
-        d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-      <path
-        d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-      <path
-        d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-
-      <path
-        d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-      {/* <path d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke={STROKE} strokeWidth={strokeWidth} /> */}
-      <path
-        d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
-        stroke={STROKE}
-        strokeWidth={strokeWidth}
-      />
-
       {/* ====== Dots (static) ====== */}
       <circle cx={TL.x} cy={TL.y} r="4" fill={DOT} />
       <circle cx={BL.x} cy={BL.y} r="4" fill={DOT} />
       <circle cx={TR.x} cy={TR.y} r="4" fill={DOT} />
       <circle cx={BR.x} cy={BR.y} r="4" fill={DOT} />
 
-      {/* ✅ dots للامتداد السفلي */}
-      <circle cx={bottomHub.x} cy={bottomHub.y} r="4" fill={DOT} />
-      <circle cx={bL.x} cy={bL.y} r="4" fill={DOT} />
-      <circle cx={bR.x} cy={bR.y} r="4" fill={DOT} />
+      {/* ✅✅ Bottom expansion (STATIC) — hidden on lg and smaller */}
+      <g className="hidden lg:inline">
+        <path
+          d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+
+        <path
+          d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+        <path
+          d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+        <path
+          d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+
+        <path
+          d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+        {/* <path d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke={STROKE} strokeWidth={strokeWidth} /> */}
+        <path
+          d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
+          stroke={STROKE}
+          strokeWidth={strokeWidth}
+        />
+
+        {/* dots للامتداد السفلي */}
+        <circle cx={bottomHub.x} cy={bottomHub.y} r="4" fill={DOT} />
+        <circle cx={bL.x} cy={bL.y} r="4" fill={DOT} />
+        <circle cx={bR.x} cy={bR.y} r="4" fill={DOT} />
+      </g>
 
       {/* ====== Wave overlay (animated) ====== */}
       <g filter="url(#lineGlow)">
@@ -310,65 +303,6 @@ function NetworkLines() {
           strokeLinecap="round"
         />
 
-        {/* ✅ موجة الامتداد السفلي */}
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.42s" }}
-          d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.62s" }}
-          d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.66s" }}
-          d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.70s" }}
-          d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.86s" }}
-          d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        {/* <path pathLength="100" className="wave-path" style={{ "--delay": "0.90s" }} d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke="#A78BFA" strokeWidth="3.2" strokeLinecap="round" /> */}
-        <path
-          pathLength="100"
-          className="wave-path"
-          style={{ "--delay": "0.94s" }}
-          d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
-          stroke="#A78BFA"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-
         {/* dot flashes */}
         <circle
           className="dot-hit"
@@ -403,41 +337,281 @@ function NetworkLines() {
           fill="#A78BFA"
         />
 
-        {/* bottom flashes */}
+        {/* ✅✅ Bottom expansion (ANIMATED) — hidden on lg and smaller */}
+        <g className="hidden lg:inline">
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.42s" }}
+            d={`M${center.x} ${center.y} L${bottomHub.x} ${bottomHub.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.62s" }}
+            d={`M${bottomHub.x} ${bottomHub.y} L${bL.x} ${bL.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.66s" }}
+            d={`M${bottomHub.x} ${bottomHub.y} L${bM.x} ${bM.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.70s" }}
+            d={`M${bottomHub.x} ${bottomHub.y} L${bR.x} ${bR.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.86s" }}
+            d={`M${bL.x} ${bL.y} L${sL.x} ${sL.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+          {/* <path pathLength="100" className="wave-path" style={{ "--delay": "0.90s" }} d={`M${bM.x} ${bM.y} L${sM.x} ${sM.y}`} stroke="#A78BFA" strokeWidth="3.2" strokeLinecap="round" /> */}
+          <path
+            pathLength="100"
+            className="wave-path"
+            style={{ "--delay": "0.94s" }}
+            d={`M${bR.x} ${bR.y} L${sR.x} ${sR.y}`}
+            stroke="#A78BFA"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          {/* bottom flashes */}
+          <circle
+            className="dot-hit"
+            style={{ "--delay": "0.74s" }}
+            cx={bottomHub.x}
+            cy={bottomHub.y}
+            r="6"
+            fill="#A78BFA"
+          />
+          <circle
+            className="dot-hit"
+            style={{ "--delay": "0.88s" }}
+            cx={bL.x}
+            cy={bL.y}
+            r="6"
+            fill="#A78BFA"
+          />
+          <circle
+            className="dot-hit"
+            style={{ "--delay": "0.92s" }}
+            cx={bM.x}
+            cy={bM.y}
+            r="6"
+            fill="#A78BFA"
+          />
+          <circle
+            className="dot-hit"
+            style={{ "--delay": "0.96s" }}
+            cx={bR.x}
+            cy={bR.y}
+            r="6"
+            fill="#A78BFA"
+          />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+function MobileNetworkLines() {
+  const STROKE = "#E5E7EB";
+  const DOT = "#111827";
+  const W = 360;
+  const H = 260;
+
+  const center = { x: W * 0.5, y: H * 0.52 };
+
+  // nodes around center (match the % used below for cards)
+  const TL = { x: W * 0.22, y: H * 0.26 };
+  const TR = { x: W * 0.78, y: H * 0.26 };
+  const BL = { x: W * 0.22, y: H * 0.8 };
+  const BR = { x: W * 0.78, y: H * 0.8 };
+
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox={`0 0 ${W} ${H}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <filter id="mLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* base lines */}
+      <path
+        d={`M${center.x} ${center.y} L${TL.x} ${TL.y}`}
+        stroke={STROKE}
+        strokeWidth="2"
+      />
+      <path
+        d={`M${center.x} ${center.y} L${TR.x} ${TR.y}`}
+        stroke={STROKE}
+        strokeWidth="2"
+      />
+      <path
+        d={`M${center.x} ${center.y} L${BL.x} ${BL.y}`}
+        stroke={STROKE}
+        strokeWidth="2"
+      />
+      <path
+        d={`M${center.x} ${center.y} L${BR.x} ${BR.y}`}
+        stroke={STROKE}
+        strokeWidth="2"
+      />
+
+      {/* dots */}
+      <circle cx={TL.x} cy={TL.y} r="4" fill={DOT} />
+      <circle cx={TR.x} cy={TR.y} r="4" fill={DOT} />
+      <circle cx={BL.x} cy={BL.y} r="4" fill={DOT} />
+      <circle cx={BR.x} cy={BR.y} r="4" fill={DOT} />
+
+      {/* wave overlay (re-uses your existing .wave-path/.dot-hit animations) */}
+      <g filter="url(#mLineGlow)">
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.10s" }}
+          d={`M${center.x} ${center.y} L${TL.x} ${TL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.18s" }}
+          d={`M${center.x} ${center.y} L${TR.x} ${TR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.26s" }}
+          d={`M${center.x} ${center.y} L${BL.x} ${BL.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          pathLength="100"
+          className="wave-path"
+          style={{ "--delay": "0.34s" }}
+          d={`M${center.x} ${center.y} L${BR.x} ${BR.y}`}
+          stroke="#A78BFA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+
         <circle
           className="dot-hit"
-          style={{ "--delay": "0.74s" }}
-          cx={bottomHub.x}
-          cy={bottomHub.y}
+          style={{ "--delay": "0.44s" }}
+          cx={TL.x}
+          cy={TL.y}
           r="6"
           fill="#A78BFA"
         />
         <circle
           className="dot-hit"
-          style={{ "--delay": "0.88s" }}
-          cx={bL.x}
-          cy={bL.y}
+          style={{ "--delay": "0.52s" }}
+          cx={TR.x}
+          cy={TR.y}
           r="6"
           fill="#A78BFA"
         />
         <circle
           className="dot-hit"
-          style={{ "--delay": "0.92s" }}
-          cx={bM.x}
-          cy={bM.y}
+          style={{ "--delay": "0.60s" }}
+          cx={BL.x}
+          cy={BL.y}
           r="6"
           fill="#A78BFA"
         />
         <circle
           className="dot-hit"
-          style={{ "--delay": "0.96s" }}
-          cx={bR.x}
-          cy={bR.y}
+          style={{ "--delay": "0.68s" }}
+          cx={BR.x}
+          cy={BR.y}
           r="6"
           fill="#A78BFA"
         />
       </g>
     </svg>
+  );
+}
+
+function MobileHeroVisual({ leftAvatar, rightAvatar }) {
+  return (
+    <div className="mx-auto w-full max-w-[420px]">
+      <div
+        className="relative mx-auto aspect-[360/260] w-full"
+        style={{ "--dur": "5.8s" }}
+      >
+        <MobileNetworkLines />
+
+        {/* Center */}
+        <div className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 scale-[0.62] origin-center">
+          <CenterLogoCard />
+        </div>
+
+        {/* 4 nodes around */}
+        <div className="absolute left-[22%] top-[26%] -translate-x-1/2 -translate-y-1/2 scale-[0.82]">
+          <div className="hit" style={{ "--delay": "0.70s" }}>
+            <YellowIdeaIcon />
+          </div>
+        </div>
+
+        <div className="absolute left-[78%] top-[26%] -translate-x-1/2 -translate-y-1/2 scale-[0.82]">
+          <div className="hit" style={{ "--delay": "0.76s" }}>
+            <RedShieldIcon />
+          </div>
+        </div>
+
+        <div className="absolute left-[22%] top-[80%] -translate-x-1/2 -translate-y-1/2 scale-[0.82]">
+          <div className="hit" style={{ "--delay": "0.82s" }}>
+            <BluePeopleIcon />
+          </div>
+        </div>
+
+        <div className="absolute left-[78%] top-[80%] -translate-x-1/2 -translate-y-1/2 scale-[0.82]">
+          <div className="hit" style={{ "--delay": "0.88s" }}>
+            <ChatCard />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -638,7 +812,7 @@ function BatmanFrame({
 }
 
 function HeroSearch({
-  to = "/projectsPage",              // عدّلها لو عندك Route مختلف
+  to = "/projectsPage", // عدّلها لو عندك Route مختلف
   buttonText = "Explore Talents",
 }) {
   const navigate = useNavigate();
@@ -671,7 +845,9 @@ function HeroSearch({
         setLoading(true);
 
         const catsRaw = await fetchCategories();
-        const catsNorm = (catsRaw || []).map(norm).filter((c) => c.id && c.name);
+        const catsNorm = (catsRaw || [])
+          .map(norm)
+          .filter((c) => c.id && c.name);
 
         // تحميل subCategories لكل Category
         const subsAll = [];
@@ -788,7 +964,9 @@ function HeroSearch({
     }
     if (s.type === "subcat") {
       goTo(
-        `${to}?cat=${encodeURIComponent(s.categoryId)}&subcat=${encodeURIComponent(s.id)}&page=1`
+        `${to}?cat=${encodeURIComponent(
+          s.categoryId
+        )}&subcat=${encodeURIComponent(s.id)}&page=1`
       );
       return;
     }
@@ -807,7 +985,9 @@ function HeroSearch({
     const exactSub = subcats.find((s) => (s.name || "").toLowerCase() === q);
     if (exactSub) {
       goTo(
-        `${to}?cat=${encodeURIComponent(exactSub.categoryId)}&subcat=${encodeURIComponent(exactSub.id)}&page=1`
+        `${to}?cat=${encodeURIComponent(
+          exactSub.categoryId
+        )}&subcat=${encodeURIComponent(exactSub.id)}&page=1`
       );
       return;
     }
@@ -839,7 +1019,10 @@ function HeroSearch({
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const next = Math.min((active < 0 ? -1 : active) + 1, suggestions.length - 1);
+      const next = Math.min(
+        (active < 0 ? -1 : active) + 1,
+        suggestions.length - 1
+      );
       setActive(next);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -852,14 +1035,17 @@ function HeroSearch({
   };
 
   return (
-    <div className="mt-0 flex flex-col items-center gap-4">
+    <div className="mt-0 flex flex-col items-center gap-4 px-6">
       {/* Search */}
       <form className="w-full max-w-md" onSubmit={onSubmit}>
         <label htmlFor="hero-search" className="sr-only">
           Search
         </label>
 
-        <div ref={anchorRef} className="rounded-full bg-gradient-to-r from-violet-200/70 via-orange-200/60 to-sky-200/70 p-[1px]">
+        <div
+          ref={anchorRef}
+          className="rounded-full bg-gradient-to-r from-violet-200/70 via-orange-200/60 to-sky-200/70 p-[1px]"
+        >
           <div className="relative rounded-full bg-white/70 backdrop-blur-md ring-1 ring-black/10 shadow-[0_18px_45px_rgba(17,24,39,0.08)]">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -900,7 +1086,11 @@ function HeroSearch({
           <div
             ref={menuRef}
             className="fixed z-[99999] overflow-hidden rounded-2xl bg-white/90 backdrop-blur-md ring-1 ring-black/10 shadow-[0_24px_60px_rgba(0,0,0,0.14)]"
-            style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
+            style={{
+              top: menuPos.top,
+              left: menuPos.left,
+              width: menuPos.width,
+            }}
           >
             {loading ? (
               <div className="px-4 py-3 text-sm text-gray-500">Loading…</div>
@@ -958,7 +1148,6 @@ function HeroSearch({
   );
 }
 
-
 export default function Hero() {
   const leftAvatar = "https://i.pravatar.cc/300?img=12";
   const rightAvatar = "https://i.pravatar.cc/200?img=32";
@@ -966,7 +1155,7 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-white h-screen">
       <HoverCardsBackground className="min-h-screen">
-        <div className="pt-14 sm:pt-20">
+        <div className="pt-24 sm:pt-20">
           {/* ✅ Background soft glows (yellow + orange) */}
           <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
@@ -974,11 +1163,11 @@ export default function Hero() {
           {/* <div className="pointer-events-none absolute bottom-[-120px] left-[10%] h-[320px] w-[320px] rounded-full bg-yellow-300/10 blur-3xl" />
           <div className="pointer-events-none absolute bottom-[-140px] right-[8%] h-[340px] w-[340px] rounded-full bg-orange-400/10 blur-3xl" /> */}
 
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl px-2\10 sm:px-20 xl:px-6">
             <div className="relative">
               {/* ✅ Batman frame حول المحتوى */}
               <BatmanFrame
-                className="
+                className="hidden md:block
         left-1/2 top-[42%]
         -translate-x-1/2 -translate-y-1/2
         w-[1600px] h-[780px]
@@ -989,8 +1178,14 @@ export default function Hero() {
                 strokeWidth={0.03}
               />
               {/* ✅ illustration أكبر من الأسفل */}
+              <div className="md:hidden">
+                <MobileHeroVisual
+                  leftAvatar={leftAvatar}
+                  rightAvatar={rightAvatar}
+                />
+              </div>
               <div
-                className="relative mx-auto w-full max-w-[1088px] aspect-[1365/420]"
+                className="relative mx-auto  w-full max-w-[1088px] aspect-[1365/420] hidden md:block"
                 style={{ "--dur": "5.8s" }}
               >
                 <NetworkLines />
@@ -1043,21 +1238,25 @@ export default function Hero() {
                 </div>
 
                 {/* ✅ مربعات جديدة أسفل الشبكة */}
-                <div className="absolute left-[34%] top-[99%] -translate-x-1/2 -translate-y-1/2">
-                  <div className="hit" style={{ "--delay": "1.45s" }}>
-                    <WhitePlusCard src="/icon/safepayment.png" alt="Post task" />
+                <div className="hidden lg:block">
+                  <div className="absolute left-[34%] top-[99%] -translate-x-1/2 -translate-y-1/2 ">
+                    <div className="hit" style={{ "--delay": "1.45s" }}>
+                      <WhitePlusCard
+                        src="/icon/safepayment.png"
+                        alt="Post task"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="absolute left-[66%] top-[99%] -translate-x-1/2 -translate-y-1/2">
-                  <div className="hit" style={{ "--delay": "1.55s" }}>
-                    <WhitePlusCard src="/icon/progress.png" alt="Post task" />
+                  <div className="absolute left-[66%] top-[99%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="hit" style={{ "--delay": "1.55s" }}>
+                      <WhitePlusCard src="/icon/progress.png" alt="Post task" />
+                    </div>
                   </div>
                 </div>
               </div>
-
               {/* Text */}
-              <div className="pb-16 sm:pb-20">
+              <div className="pb-16 sm:pb-20 pt-6 md:pt-12 lg:pt-10 xl:pt-0">
                 <h1 className="mx-auto max-w-3xl text-center text-[40px] font-extrabold leading-[0.98] tracking-tight text-gray-900 sm:text-5xl lg:text-5xl">
                   All-in-one
                   <br />
@@ -1068,8 +1267,7 @@ export default function Hero() {
                   Where work finds its perfect home.
                 </p>
 
-               <HeroSearch to="/projectsPage" />
-
+                <HeroSearch to="/projectsPage" />
               </div>
             </div>
           </div>

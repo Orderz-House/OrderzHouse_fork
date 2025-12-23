@@ -1,13 +1,44 @@
 import React from "react";
 import { Users, Briefcase, Handshake, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
+
+// ===== Animations =====
+const ease = [0.22, 1, 0.36, 1];
+
+const sectionStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.12, delayChildren: 0.05 },
+  },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease } },
+};
+
+const leftIn = {
+  hidden: { opacity: 0, x: -26, y: 6, filter: "blur(4px)" },
+  show: { opacity: 1, x: 0, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease } },
+};
+
+const rightIn = {
+  hidden: { opacity: 0, x: 26, y: 6, filter: "blur(4px)" },
+  show: { opacity: 1, x: 0, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease } },
+};
+
+const centerPop = {
+  hidden: { opacity: 0, scale: 0.96, filter: "blur(6px)" },
+  show: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.85, ease } },
+};
 
 // communityImg: صورة الوسط (استبدلها بنفس متغيرك)
 export default function CommunitySection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-orange-50 py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
       {/* ✅ Seam fades (top/bottom) متناسقة مع الخلفية الجديدة */}
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 bg-gradient-to-b from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 bg-gradient-to-b from-white to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
 
       {/* ✅ Soft glows (نهدي + برتقالي) */}
       <div className="pointer-events-none absolute -top-24 left-[-90px] h-[420px] w-[420px] rounded-full bg-violet-300/18 blur-3xl" />
@@ -24,15 +55,15 @@ export default function CommunitySection() {
         >
           <defs>
             <linearGradient id="communityGradientDuo" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#EDE9FE" stopOpacity="0.92" /> {/* violet-100 */}
+              <stop offset="0%" stopColor="#EDE9FE" stopOpacity="0.92" />
               <stop offset="45%" stopColor="#FFFFFF" stopOpacity="0.70" />
-              <stop offset="100%" stopColor="#FFEDD5" stopOpacity="0.75" /> {/* orange-100 */}
+              <stop offset="100%" stopColor="#FFEDD5" stopOpacity="0.75" />
             </linearGradient>
 
             <linearGradient id="communityGradientDuo2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#E0E7FF" stopOpacity="0.70" /> {/* indigo-100 */}
-              <stop offset="55%" stopColor="#FFF7ED" stopOpacity="0.60" /> {/* orange-50 */}
-              <stop offset="100%" stopColor="#FFE4E6" stopOpacity="0.55" /> {/* rose-100 */}
+              <stop offset="0%" stopColor="#E0E7FF" stopOpacity="0.70" />
+              <stop offset="55%" stopColor="#FFF7ED" stopOpacity="0.60" />
+              <stop offset="100%" stopColor="#FFE4E6" stopOpacity="0.55" />
             </linearGradient>
           </defs>
 
@@ -60,45 +91,65 @@ export default function CommunitySection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-[420px] items-center justify-center sm:min-h-[520px] md:min-h-[620px]">
-          <div className="max-w-5xl text-center space-y-6 sm:space-y-8">
+          <motion.div
+            variants={sectionStagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.28 }}
+            className="max-w-5xl text-center space-y-6 sm:space-y-8"
+          >
             {/* Title */}
             <div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
-                Join Our{" "}
-                <span className="block bg-gradient-to-r text-slate-950 bg-clip-text text-transparent">
-                  Community
-                </span>
-              </h1>
+              <motion.h1
+                variants={fadeUp}
+                className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight"
+              >
+                Join Our <span className="block text-slate-950">Community</span>
+              </motion.h1>
 
-              <p className="mx-auto max-w-2xl text-base sm:text-sm md:text-lg text-gray-700 leading-relaxed px-4">
+              <motion.p
+                variants={fadeUp}
+                className="mx-auto max-w-2xl text-base sm:text-sm md:text-lg text-gray-700 leading-relaxed px-4"
+              >
                 Connect with talented professionals, collaborate on exciting projects, and build lasting relationships
                 in our freelance ecosystem.
-              </p>
+              </motion.p>
             </div>
 
             {/* Content */}
             <div className="mt-8 sm:mt-10 md:mt-12">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto items-start lg:items-center">
-                {/* Left column (نهدي) */}
-                <div className="text-center sm:text-left space-y-6 sm:space-y-8 order-1 lg:order-1">
-                  <FeatureCard
-                    tone="violet"
-                    Icon={Users}
-                    title="Freelancer"
-                    desc="Apply to tasks, showcase your skills, and get paid with confidence."
-                    align="left"
-                  />
-                  <FeatureCard
-                    tone="violet"
-                    Icon={Briefcase}
-                    title="Client"
-                    desc="Post what you need, review proposals, and build your dream team."
-                    align="left"
-                  />
-                </div>
+                {/* Left column (من اليسار) */}
+                <motion.div
+                  variants={sectionStagger}
+                  className="text-center sm:text-left space-y-6 sm:space-y-8 order-1 lg:order-1"
+                >
+                  <motion.div variants={leftIn}>
+                    <FeatureCard
+                      tone="violet"
+                      Icon={Users}
+                      title="Freelancer"
+                      desc="Apply to tasks, showcase your skills, and get paid with confidence."
+                      align="left"
+                    />
+                  </motion.div>
 
-                {/* Center Image */}
-                <div className="lg:col-span-2 flex justify-center order-3 sm:order-2 lg:order-2">
+                  <motion.div variants={leftIn}>
+                    <FeatureCard
+                      tone="violet"
+                      Icon={Briefcase}
+                      title="Client"
+                      desc="Post what you need, review proposals, and build your dream team."
+                      align="left"
+                    />
+                  </motion.div>
+                </motion.div>
+
+                {/* Center Image (من النص) */}
+                <motion.div
+                  variants={centerPop}
+                  className="lg:col-span-2 flex justify-center order-3 sm:order-2 lg:order-2"
+                >
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-0 -z-10 rounded-[36px] bg-white/35 blur-xl" />
                     <div className="pointer-events-none absolute inset-0 -z-10 rounded-[36px] bg-gradient-to-br from-violet-200/25 to-orange-200/25 blur-2xl" />
@@ -110,28 +161,36 @@ export default function CommunitySection() {
                       draggable={false}
                     />
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Right column (برتقالي) */}
-                <div className="text-center sm:text-left space-y-6 sm:space-y-8 order-2 sm:order-3 lg:order-3">
-                  <FeatureCard
-                    tone="orange"
-                    Icon={Handshake}
-                    title="Customer Success"
-                    desc="Collaborate smoothly, agree on delivery, and win together."
-                    align="right"
-                  />
-                  <FeatureCard
-                    tone="orange"
-                    Icon={ShieldCheck}
-                    title="Secure Payments"
-                    desc="Escrow-like flow so both client and freelancer are protected."
-                    align="right"
-                  />
-                </div>
+                {/* Right column (من اليمين) */}
+                <motion.div
+                  variants={sectionStagger}
+                  className="text-center sm:text-left space-y-6 sm:space-y-8 order-2 sm:order-3 lg:order-3"
+                >
+                  <motion.div variants={rightIn}>
+                    <FeatureCard
+                      tone="orange"
+                      Icon={Handshake}
+                      title="Customer Success"
+                      desc="Collaborate smoothly, agree on delivery, and win together."
+                      align="right"
+                    />
+                  </motion.div>
+
+                  <motion.div variants={rightIn}>
+                    <FeatureCard
+                      tone="orange"
+                      Icon={ShieldCheck}
+                      title="Secure Payments"
+                      desc="Escrow-like flow so both client and freelancer are protected."
+                      align="right"
+                    />
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -158,10 +217,7 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
       ? "bg-gradient-to-b from-orange-400 to-red-500 shadow-[0_14px_30px_rgba(249,115,22,0.22)]"
       : "bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[0_14px_30px_rgba(139,92,246,0.20)]";
 
-  const badgeRing =
-    tone === "orange"
-      ? "ring-orange-500/15"
-      : "ring-violet-500/15";
+  const badgeRing = tone === "orange" ? "ring-orange-500/15" : "ring-violet-500/15";
 
   return (
     <div
@@ -186,7 +242,6 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
             "relative",
           ].join(" ")}
         >
-          {/* subtle soft ring */}
           <span
             className={[
               "pointer-events-none absolute inset-[-6px] rounded-[22px]",

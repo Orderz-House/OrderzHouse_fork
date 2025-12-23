@@ -40,22 +40,26 @@ export default function Header() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const isDashboard =
-  /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(
-    (location.pathname || "").toLowerCase()
-  );
+ const pathname = (location.pathname || "").toLowerCase();
+
+const isDashboardRoute =
+  /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(pathname);
+
+// ✅ خلي Projects + Blogs نفس منطق الداشبورد
+const isDashboardLike =
+  isDashboardRoute || /^\/(projectspage|projects|blogs)(\/|$)/.test(pathname);
+
 
 const [dashExpanded, setDashExpanded] = useState(false);
 
 useEffect(() => {
-  if (!isDashboard) {
+  if (!isDashboardLike) {
     setDashExpanded(false);
     return;
   }
-  // ابدأ بشكل pill ثم وسّعها على فريم التالي (للأنيميشن)
   setDashExpanded(false);
   requestAnimationFrame(() => setDashExpanded(true));
-}, [isDashboard]);
+}, [isDashboardLike]);
 
   // ===== Active link (نفس منطق ملفك) =====
   useEffect(() => {
@@ -225,28 +229,28 @@ useEffect(() => {
 <header
   className={[
     "z-[9999]",
-    isDashboard ? "relative" : "fixed inset-x-0 top-0",
+    isDashboardLike ? "relative" : "fixed inset-x-0 top-0",
   ].join(" ")}
 >
 <div
   className={[
-    isDashboard
+    isDashboardLike
       ? "w-full px-0 transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
       : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6",
-    isDashboard ? (dashExpanded ? "pt-0" : "pt-6") : "",
+    isDashboardLike ? (dashExpanded ? "pt-0" : "pt-6") : "",
   ].join(" ")}
 >
        <nav
   className={[
     "mx-auto bg-white/95 backdrop-blur ring-1 ring-black/10",
     "transition-[max-width,border-radius,box-shadow,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)]",
-    isDashboard
-      ? "w-full py-4"
+    isDashboardLike
+      ? "w-full py-3"
       : "max-w-[980px] rounded-full py-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)]",
-    isDashboard && (dashExpanded ? "rounded-none shadow-sm" : "rounded-full"),
+    isDashboardLike && (dashExpanded ? "rounded-none shadow-sm" : "rounded-full"),
   ].join(" ")}
   style={
-    isDashboard
+    isDashboardLike
       ? { maxWidth: dashExpanded ? "100%" : "980px" }
       : undefined
   }
@@ -254,8 +258,8 @@ useEffect(() => {
 >
  <div
     className={[
-      "mx-auto w-full max-w-[980px] flex items-center justify-between",
-      isDashboard ? "px-6" : "px-5 sm:px-6",
+      "mx-auto w-full max-w-[1265px] flex items-center justify-between",
+      isDashboardLike ? "px-6" : "px-5 sm:px-6",
     ].join(" ")}
   >
 
