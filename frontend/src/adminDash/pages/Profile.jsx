@@ -11,7 +11,8 @@ import {
 import { useToast } from "../../components/toast/ToastProvider";
 import API from "../api/axios";
 
-const ACCENT = "#028090";
+
+const ACCENT = "#C2410C";
 const BORDER = "#E6EAEE";
 const MUTED = "#7B8A97";
 const dark = "#30353b";
@@ -180,7 +181,7 @@ export default function Profile() {
           {tag ? (
             <span
               className="shrink-0 rounded px-2 py-0.5 text-[11px] font-medium"
-              style={{ background: "#ccf0f4", color: "#028090" }}
+              style={{ background: "#C2410C", color: "#fffeffff" }}
             >
               {tag}
             </span>
@@ -346,9 +347,9 @@ export default function Profile() {
                     type="button"
                     className="h-9 px-4 rounded border text-[12px] font-semibold flex items-center gap-2"
                     style={{
-                      borderColor: "#BFE5F7",
-                      background: "#e0f7f9",
-                      color: "#028090",
+                      borderColor: "",
+                      background: "#C2410C",
+                      color: "#fffeffff",
                     }}
                   >
                     ✓ Contacts

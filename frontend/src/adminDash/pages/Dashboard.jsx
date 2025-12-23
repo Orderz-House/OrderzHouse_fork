@@ -26,7 +26,7 @@ import {
   fetchClientDashboard,
 } from "../api/dashboard";
 
-const PRIMARY = "#028090";
+const PRIMARY = "#C2410C";
 
 /* نفس mapRole المستخدم في AdminLayout تقريباً */
 function mapRole(roleId) {

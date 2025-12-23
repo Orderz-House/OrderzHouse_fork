@@ -23,7 +23,7 @@ import React from "react";
 import ExpandedRow from "./expandedRow.jsx";
 import Pagination from "../../components/Catigories/Pagination.jsx";
 
-const PRIMARY = "#028090";
+const PRIMARY = "#C2410C";
 const DEBOUNCE_DELAY = 300;
 
 
@@ -43,7 +43,7 @@ const TableSkeleton = ({
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-        <thead className="border-b border-slate-200 bg-[#e0f7f9]">
+<thead className="border-b border-slate-200 bg-[#FCE7E0]">
           <tr>
             {showExpand && <th className="w-10 px-3 py-2"></th>}
 
@@ -627,18 +627,20 @@ const DesktopTable = ({
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-        <thead className="border-b border-slate-200 bg-[#e0f7f9]">
+        <thead className="border-b border-slate-200 bg-[#FCE7E0]">
+
           <tr>
             {crudConfig.showExpand && <th className="w-10 px-3 py-2"></th>}
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#028090]"
+                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#C2410C]
+"
               >
                 {col.label}
               </th>
             ))}
-            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-[#028090]">
+            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-[#C2410C]">
               Actions
             </th>
           </tr>
@@ -843,7 +845,7 @@ const DesktopCards = ({
               {/* إذا ما في صورة → اعرض الخلفية */}
               {!avatarUrl && (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#028090] via-[#03a6b7] to-[#e0f7f9]" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#C2410C] via-[#E25822] to-[#FCE7E0]" />
                   <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
                 </>
               )}
@@ -855,7 +857,7 @@ const DesktopCards = ({
                   className="relative z-10 w-full h-full object-cover mix-blend-multiply"
                 />
               ) : (
-                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#028090] text-base font-semibold">
+                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
                 </div>
               )}
@@ -936,7 +938,7 @@ const DesktopCards = ({
                       {crudConfig?.showRowEdit && (
                         <button
                           onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#e0f7f9]"
+                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#FCE7E0]"
                           style={{ borderColor: PRIMARY, color: PRIMARY }}
                           title="Edit"
                         >
@@ -1060,7 +1062,7 @@ const CardsGrid = ({
               className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#028090] via-[#03a6b7] to-[#e0f7f9]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#C2410C] via-[#E25822] to-[#FCE7E0]" />
               <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
 
               {avatarUrl ? (
@@ -1070,7 +1072,7 @@ const CardsGrid = ({
                   className="relative z-10 w-full h-full object-cover mix-blend-multiply"
                 />
               ) : (
-                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#028090] text-base font-semibold">
+                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
                 </div>
               )}
@@ -1146,7 +1148,7 @@ const CardsGrid = ({
                       {crudConfig?.showRowEdit && (
                         <button
                           onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#e0f7f9]"
+                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#FCE7E0]"
                           style={{ borderColor: PRIMARY, color: PRIMARY }}
                           title="Edit"
                         >
