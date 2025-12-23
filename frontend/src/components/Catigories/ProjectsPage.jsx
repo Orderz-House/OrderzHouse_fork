@@ -16,10 +16,10 @@ export default function ProjectsPage({ mode: propMode }) {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
 
-   const inferredMode = location.pathname.startsWith("/tasks")
-     ? "tasks"
-     : "projects";
-   const mode = propMode || inferredMode;
+  const inferredMode = location.pathname.startsWith("/tasks")
+    ? "tasks"
+    : "projects";
+  const mode = propMode || inferredMode;
 
   const q = (sp.get("q") || "").trim();
   const category = sp.get("cat") || "";
@@ -31,6 +31,7 @@ export default function ProjectsPage({ mode: propMode }) {
   const [nameToCatId, setNameToCatId] = useState({});
   const [nameToSubCat, setNameToSubCat] = useState({});
   const [subSubInfo, setSubSubInfo] = useState(null);
+  const [subCatInfo, setSubCatInfo] = useState(null);
 
   // load categories
   useEffect(() => {
@@ -38,8 +39,15 @@ export default function ProjectsPage({ mode: propMode }) {
       try {
         const cats = await fetchCategories();
         const catalogObj = Object.fromEntries(
-          cats.map((c) => [String(c.id), { title: c.name }])
+          cats.map((c) => [
+            String(c.id),
+            {
+              title: c.name,
+              subtitle: c.description || c.subtitle || "", // <-- مهم
+            },
+          ])
         );
+
         setCatalog(catalogObj);
       } catch (err) {
         console.error("Failed to fetch categories", err);
@@ -136,9 +144,7 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    const subHit = Object.entries(nameToSubCat).find(([k]) =>
-      k.includes(term)
-    );
+    const subHit = Object.entries(nameToSubCat).find(([k]) => k.includes(term));
     if (subHit) {
       const [, val] = subHit;
       const next = new URLSearchParams(sp);
@@ -151,9 +157,7 @@ export default function ProjectsPage({ mode: propMode }) {
       return;
     }
 
-    const catHit = Object.entries(nameToCatId).find(([k]) =>
-      k.includes(term)
-    );
+    const catHit = Object.entries(nameToCatId).find(([k]) => k.includes(term));
     if (catHit) {
       const [, catId] = catHit;
       const next = new URLSearchParams(sp);
@@ -202,6 +206,26 @@ export default function ProjectsPage({ mode: propMode }) {
 
     loadSubSubInfo();
   }, [sub, subcat]);
+  useEffect(() => {
+    const loadSubCatInfo = async () => {
+      // لو مافي subcat أو فيه sub (sub-sub) نخليها null
+      if (!subcat || sub) {
+        setSubCatInfo(null);
+        return;
+      }
+
+      try {
+        const subs = await fetchSubCategoriesByCategoryId(Number(category));
+        const found = subs?.find((s) => String(s.id) === String(subcat));
+        setSubCatInfo(found || null);
+      } catch (e) {
+        console.error("Failed to fetch sub-category info", e);
+        setSubCatInfo(null);
+      }
+    };
+
+    loadSubCatInfo();
+  }, [category, subcat, sub]);
 
   const chooseCat = (id) => {
     const next = new URLSearchParams(sp);
@@ -239,21 +263,22 @@ export default function ProjectsPage({ mode: propMode }) {
     setSp(next, { replace: false });
   };
 
-   const meta = useMemo(
-    () => 
+  const meta = useMemo(
+    () =>
       catalog[category] || {
         title: mode === "tasks" ? "Tasks" : "Projects",
-         subtitle: "",
+        subtitle: "",
       },
     [catalog, category, mode]
-   );
+  );
 
   return (
     <section className="relative min-h-[70vh] pb-8  via-white to-white">
+      
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -bottom-28 right-10 h-72 w-72 rounded-full bg-orange-100/60 blur-3xl" />
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         {/* sticky topbar */}
         <TopbarCategories
           active={category}
@@ -287,25 +312,34 @@ export default function ProjectsPage({ mode: propMode }) {
             </a>
             <span className="text-slate-300">/</span>
             <h1
-              className="text-sm font-semibold tracking-tight text-slate-800"
+              className="text-xs sm:text-sm font-semibold tracking-tight text-slate-800"
               style={{ color: THEME_DARK }}
             >
               {meta.title}
             </h1>
           </div>
 
-          {subSubInfo && (
-            <div className="mt-2">
-              <h2 className="text-base sm:text-2xl font-semibold text-slate-900">
-                {subSubInfo.name}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                {subSubInfo.description
-                  ? subSubInfo.description
-                  : `استعرض عناصر مرتبطة بـ "${subSubInfo.name}" ضمن قسم ${meta.title}.`}
-              </p>
-            </div>
-          )}
+          {(() => {
+            const headerTitle =
+              subSubInfo?.name || subCatInfo?.name || meta.title;
+            const headerDesc =
+              subSubInfo?.description ||
+              subCatInfo?.description ||
+              meta.subtitle ||
+              ` "${headerTitle}".`;
+
+            return (
+              <div className="mt-2">
+                <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
+                  {headerTitle}
+                </h2>
+
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed break-words [overflow-wrap:anywhere]">
+                  {headerDesc}
+                </p>
+              </div>
+            );
+          })()}
 
           <hr className="mt-4 border-t border-slate-200" />
         </header>
