@@ -15,7 +15,10 @@ import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL;
+const API_BASE = import.meta.env.VITE_APP_API_URL
+const ORANGE = "#C2410C";
+const ORANGE_DARK = "#9A3412";
+
 
 // نفس ستايل روابط الهيدر
 const TOP_LINK_BASE =
@@ -386,7 +389,11 @@ useEffect(() => {
                       <div className="p-4 border-b flex justify-between items-center">
                         <h3 className="font-semibold text-gray-900">Notifications</h3>
                         {unreadCount > 0 && (
-                          <button onClick={markAllAsRead} className="text-xs text-orange-600">
+<button
+  onClick={markAllAsRead}
+  className="text-xs"
+  style={{ color: ORANGE }}
+>
                             Mark all as read
                           </button>
                         )}
@@ -398,7 +405,7 @@ useEffect(() => {
                             <div
                               key={n.id}
                               className={`p-4 cursor-pointer ${
-                                !n.read_status ? "bg-orange-50/60" : ""
+!n.read_status ? "bg-orange-50/60" : ""
                               } hover:bg-gray-50`}
                               onClick={() => markAsRead(n.id)}
                             >
@@ -417,7 +424,8 @@ useEffect(() => {
                         <Link
                           to="/notifications"
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="text-sm text-orange-600"
+className="text-sm"
+style={{ color: ORANGE }}
                         >
                           View all notifications
                         </Link>
@@ -434,7 +442,10 @@ useEffect(() => {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className={`flex items-center gap-2 p-2 text-gray-700 ${ACCENT_HOVER} transition-colors duration-150`}
                   >
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-orange-500 flex items-center justify-center">
+<div
+  className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center"
+  style={{ backgroundColor: ORANGE }}
+>
                       {userData.profile_pic_url ? (
                         <img
                           src={userData.profile_pic_url}
@@ -547,7 +558,10 @@ useEffect(() => {
             {/* user info */}
             {IsAuthenticated && userData && (
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-orange-500 flex items-center justify-center">
+<div
+  className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center"
+  style={{ backgroundColor: ORANGE }}
+>
                   {userData.profile_pic_url ? (
                     <img
                       src={userData.profile_pic_url}
@@ -615,7 +629,8 @@ useEffect(() => {
                       setIsMobileMenuOpen(false);
                       navigate("/create-project");
                     }}
-                    className="flex items-center text-base text-orange-600"
+className="flex items-center text-base"
+style={{ color: ORANGE }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add project
@@ -685,7 +700,8 @@ useEffect(() => {
                       setIsMobileMenuOpen(false);
                       navigate("/register");
                     }}
-                    className="w-full text-left py-2 text-base text-orange-600 font-semibold"
+className="w-full text-left py-2 text-base font-semibold"
+style={{ color: ORANGE }}
                   >
                     Get Started
                   </button>

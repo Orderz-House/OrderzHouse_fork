@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 /* ---------- Theme ---------- */
-const T = { primary: "#028090", dark: "#05668D", ring: "rgba(15,23,42,.10)" };
+const T = { primary: "#C2410C", dark: "#9A3412", ring: "rgba(15,23,42,.10)" };
 const ringStyle = { border: `1px solid ${T.ring}` };
 
 /* ---------- Role map ---------- */

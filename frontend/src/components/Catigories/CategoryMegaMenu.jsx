@@ -56,7 +56,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     }
   }, [isOpen]);
 
-  // 👇 توحيد البيانات القادمة من الـAPI إلى {id, name}
+  // normalize API data
   const normalizeItem = (obj) => ({
     id:
       obj?.id ??
@@ -70,14 +70,14 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const cats = await fetchCategories(); // {id, name, ...}
+      const cats = await fetchCategories();
       const categoriesWithSubs = await Promise.all(
         (cats || []).map(async (category) => {
-          const subCats = await fetchSubCategoriesByCategoryId(category.id); // {id, name, ...} غالباً
+          const subCats = await fetchSubCategoriesByCategoryId(category.id);
           const subCategoriesWithSubs = await Promise.all(
             (subCats || []).map(async (sub) => {
               const subSubsRaw = await fetchSubSubCategoriesBySubId(sub.id);
-              const subSubs = (subSubsRaw || []).map(normalizeItem); // ← هنا التطبيع
+              const subSubs = (subSubsRaw || []).map(normalizeItem);
               return { ...sub, subSubCategories: subSubs };
             })
           );
@@ -109,7 +109,6 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
   const handleSelectSubCategory = (sub) => setSelectedSubCategory(sub);
 
-  // ← استخدمنا s.id الموحّد بدل sub_sub_category_id
   const goToProjects = (subSub) => {
     if (!selectedCategory || !subSub) return;
     navigate(
@@ -126,17 +125,17 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
         ref={anchorRef}
         onClick={handleToggle}
         className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors duration-150 rounded-full
-    ${
-      activeLink === "CATEGORIES"
-        ? "text-gray-900"
-        : "text-gray-600 hover:text-gray-900"
-    }
-  `}
+          ${
+            activeLink === "CATEGORIES"
+              ? "text-gray-900"
+              : "text-gray-600 hover:text-gray-900"
+          }
+        `}
       >
         <span className="flex items-center gap-1">
-          Categories{" "}
+          Categories
           <ChevronDown
-            className={`h-4 w-4 transition-transform duration-200 mt-1${
+            className={`h-4 w-4 transition-transform duration-200 mt-1 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
@@ -147,7 +146,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
         <div
           ref={menuRef}
           style={{ top: menuTop }}
-          className="fixed left-1/2 -translate-x-1/2 z-50 mt-0 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
+          className="fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
         >
           {loading ? (
             <div className="p-8 text-center text-gray-500 font-inter">
@@ -155,7 +154,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
             </div>
           ) : (
             <div className="p-6 space-y-6">
-              {/* Tabs (categories) */}
+              {/* Categories tabs */}
               <div className="flex gap-6 overflow-x-auto pb-3 border-b border-gray-200">
                 {categories.map((cat) => (
                   <button
@@ -163,7 +162,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     onClick={() => handleSelectCategory(cat)}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                       selectedCategory?.id === cat.id
-                        ? "bg-[#F97316] text-white"
+                        ? "bg-[#C2410C] text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -174,7 +173,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
 
               {selectedCategory && (
                 <div className="flex gap-6">
-                  {/* Left list (subcategories) */}
+                  {/* Subcategories */}
                   <div className="w-1/4 border-r border-gray-200 pr-4 min-w-[220px]">
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">
                       {selectedCategory.name} Types
@@ -186,7 +185,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                           onClick={() => handleSelectSubCategory(sub)}
                           className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                             selectedSubCategory?.id === sub.id
-                              ? "bg-[#F97316] text-white"
+                              ? "bg-[#C2410C] text-white"
                               : "text-gray-700 hover:bg-gray-100"
                           }`}
                         >
@@ -196,7 +195,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                     </div>
                   </div>
 
-                  {/* Right grid (sub-sub-categories) */}
+                  {/* Sub-sub-categories */}
                   <div className="flex-1">
                     {selectedSubCategory ? (
                       <>
@@ -210,7 +209,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
                               <a
                                 key={`subsub-${selectedCategory.id}-${selectedSubCategory.id}-${s.id}`}
                                 href="#"
-                                className="text-xs text-gray-700 bg-gray-100 hover:bg-[#F97316] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
+                                className="text-xs text-gray-700 bg-gray-100 hover:bg-[#C2410C] hover:text-white transition-all px-3 py-2 rounded-md font-inter"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   goToProjects(s);
