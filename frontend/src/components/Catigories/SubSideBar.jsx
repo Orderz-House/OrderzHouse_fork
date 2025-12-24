@@ -1,12 +1,17 @@
 // components/Projects/SubSideBar.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
+
+// Projects API
 import {
   fetchAuthProjectsByCategory,
   fetchAuthProjectsBySubCategory,
   fetchAuthProjectsBySubSubCategory,
 } from "./api/projects";
+
+// Tasks API
 import { fetchTasksByFilter } from "../CreateProjects/api/tasks";
+
 import ProjectCard from "./ProjectCard";
 
 export default function SubSidebar({
@@ -14,7 +19,7 @@ export default function SubSidebar({
   categoryId,
   activeSubSub,
   onSelectSubSub,
-  theme = "#F97316",
+  theme = "#028090",
   subCategoryId,
 }) {
   const [subSubs, setSubSubs] = useState([]);
@@ -22,36 +27,82 @@ export default function SubSidebar({
   const [loadingSubSubs, setLoadingSubSubs] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
 
-  // filters
   const [projectTypeFilter, setProjectTypeFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("default");
   const [budgetFilter, setBudgetFilter] = useState("any");
   const [durationFilter, setDurationFilter] = useState("any");
   const [withFilesOnly, setWithFilesOnly] = useState(false);
   const [withFreelancerOnly, setWithFreelancerOnly] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Mobile filters sheet (phone UI)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const isTasks = mode === "tasks";
 
-  const activeFiltersCount = [
-    projectTypeFilter !== "all",
-    budgetFilter !== "any",
-    durationFilter !== "any",
-    withFilesOnly,
-    withFreelancerOnly,
-  ].filter(Boolean).length;
+  const activeFiltersCount = useMemo(() => {
+    return [
+      projectTypeFilter !== "all",
+      budgetFilter !== "any",
+      durationFilter !== "any",
+      withFilesOnly,
+      withFreelancerOnly,
+    ].filter(Boolean).length;
+  }, [projectTypeFilter, budgetFilter, durationFilter, withFilesOnly, withFreelancerOnly]);
 
+  const filterPillHint = activeFiltersCount === 0 ? "All" : `${activeFiltersCount}`;
+
+  const SORT_LABELS = {
+    default: "Best",
+    newest: "Newest",
+    price_low_high: "Low to High",
+    price_high_low: "High to Low",
+  };
+
+  const sortPillLabel = SORT_LABELS[sortFilter] || "Best";
+
+  const filterSummary = activeFiltersCount === 0 ? "All" : `${activeFiltersCount} selected`;
+
+  // Close sheet on Escape + prevent body scroll when open
   useEffect(() => {
-    if (!categoryId) return;
+    if (!mobileFiltersOpen) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMobileFiltersOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileFiltersOpen]);
+
+  // load sub-sub categories
+  useEffect(() => {
+    if (!categoryId) {
+      setSubSubs([]);
+      return;
+    }
+
     setLoadingSubSubs(true);
     fetchSubSubCategoriesByCategoryId(Number(categoryId))
       .then((data) => setSubSubs(Array.isArray(data) ? data : []))
+      .catch(() => setSubSubs([]))
       .finally(() => setLoadingSubSubs(false));
   }, [categoryId]);
 
+  // load items (projects / tasks)
   useEffect(() => {
-    if (!categoryId) return;
+    if (!categoryId) {
+      setItems([]);
+      return;
+    }
+
     setLoadingItems(true);
+
     const run = async () => {
       try {
         if (isTasks) {
@@ -63,16 +114,24 @@ export default function SubSidebar({
           setItems(Array.isArray(data) ? data : []);
           return;
         }
+
+        // projects
         if (activeSubSub) {
-          const data = await fetchAuthProjectsBySubSubCategory(Number(activeSubSub));
+          const data = await fetchAuthProjectsBySubSubCategory(
+            Number(activeSubSub)
+          );
           setItems(Array.isArray(data) ? data : []);
           return;
         }
+
         if (subCategoryId) {
-          const data = await fetchAuthProjectsBySubCategory(Number(subCategoryId));
+          const data = await fetchAuthProjectsBySubCategory(
+            Number(subCategoryId)
+          );
           setItems(Array.isArray(data) ? data : []);
           return;
         }
+
         const data = await fetchAuthProjectsByCategory(Number(categoryId));
         setItems(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -82,41 +141,90 @@ export default function SubSidebar({
         setLoadingItems(false);
       }
     };
+
     run();
   }, [categoryId, activeSubSub, subCategoryId, isTasks]);
 
-  // reusable select (used desktop + bottom sheet)
-  const FilterSelect = ({ label, value, onChange, options }) => (
-    <label className="block">
-      <span className="text-xs font-semibold text-slate-600">{label}</span>
-      <div className="relative mt-2">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200/80"
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <svg
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <path
-            d="M6 9l6 6 6-6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-    </label>
-  );
+  if (!categoryId) return null;
+
+  const hasSidebar = subSubs.length > 0;
+  const priceField = isTasks ? "price" : "budget";
+
+  // helpers (projects only)
+  const getProjectType = (item) => item?.project_type || null;
+
+  const getBudgetRange = (item) => {
+    const type = item?.project_type;
+
+    if (type === "fixed") {
+      const value = Number(item?.budget || 0);
+      return [value, value];
+    }
+
+    if (type === "hourly") {
+      const rate = Number(item?.hourly_rate || 0);
+      const total = rate * 3;
+      return [total, total];
+    }
+
+    if (type === "bidding") {
+      const min = Number(item?.budget_min || 0);
+      const max = Number(item?.budget_max || min);
+      return [min, max];
+    }
+
+    const value = Number(item?.price || 0);
+    return [value, value];
+  };
+
+  const getDurationInDays = (item) => {
+    const durationType = item?.duration_type;
+    if (!durationType) return null;
+
+    if (durationType === "days") {
+      const d = Number(item?.duration_days || 0);
+      return Number.isFinite(d) ? d : null;
+    }
+
+    if (durationType === "hours") {
+      const h = Number(item?.duration_hours || 0);
+      if (!Number.isFinite(h)) return null;
+      return h / 24;
+    }
+
+    return null;
+  };
+
+  const hasFilesInfo = (item) =>
+    item &&
+    ("files_count" in item ||
+      "filesCount" in item ||
+      Array.isArray(item.files));
+
+  const itemHasFiles = (item) => {
+    if (!item) return false;
+    if ("files_count" in item) return Number(item.files_count) > 0;
+    if ("filesCount" in item) return Number(item.filesCount) > 0;
+    if (Array.isArray(item.files)) return item.files.length > 0;
+    return false;
+  };
+
+  const hasFreelancerInfo = (item) =>
+    item &&
+    ("freelancer_id" in item ||
+      "assigned_freelancer_id" in item ||
+      "freelancer" in item ||
+      "assigned_freelancer" in item);
+
+  const itemHasFreelancer = (item) => {
+    if (!item) return false;
+    if ("freelancer_id" in item && item.freelancer_id) return true;
+    if ("assigned_freelancer_id" in item && item.assigned_freelancer_id)
+      return true;
+    if (item.freelancer) return true;
+    if (item.assigned_freelancer) return true;
+    return false;
+  };
 
   const SkeletonGrid = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -130,87 +238,407 @@ export default function SubSidebar({
     </div>
   );
 
-  if (!categoryId) return null;
-  const priceField = isTasks ? "price" : "budget";
+  const FilterDropdown = ({ label, value, onChange, options }) => (
+    <div className="inline-flex items-center">
+      <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5">
+        <span className="text-sm text-slate-700 mr-2 whitespace-nowrap">
+          {label}
+        </span>
+        <select
+          className="bg-transparent text-sm text-slate-600 focus:outline-none focus:ring-0 pr-4"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
+  const Toggle = ({ checked, onChange, label }) => (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2 text-sm text-slate-700"
+    >
+      <span
+        className={
+          "relative inline-flex h-5 w-9 items-center rounded-full border transition-colors " +
+          (checked
+            ? "bg-emerald-500 border-emerald-500"
+            : "bg-slate-200 border-slate-300")
+        }
+      >
+        <span
+          className={
+            "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform " +
+            (checked ? "translate-x-4" : "translate-x-1")
+          }
+        />
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+
+  // filters (projects only)
   let visibleItems = items;
+
+  if (!isTasks && items.length) {
+    visibleItems = items.filter((item) => {
+      if (projectTypeFilter !== "all") {
+        const type = getProjectType(item);
+        if (type && type !== projectTypeFilter) return false;
+      }
+
+      if (budgetFilter !== "any") {
+        const [minBudget, maxBudget] = getBudgetRange(item);
+
+        if (budgetFilter === "0-100" && !(maxBudget <= 100)) return false;
+        if (
+          budgetFilter === "100-500" &&
+          !(minBudget <= 500 && maxBudget >= 100)
+        )
+          return false;
+        if (
+          budgetFilter === "500-1000" &&
+          !(minBudget <= 1000 && maxBudget >= 500)
+        )
+          return false;
+        if (budgetFilter === "1000+" && !(minBudget >= 1000)) return false;
+      }
+
+      if (durationFilter !== "any") {
+        const days = getDurationInDays(item);
+        if (days != null) {
+          if (durationFilter === "1" && !(days <= 1)) return false;
+          if (durationFilter === "3" && !(days <= 3)) return false;
+          if (durationFilter === "7" && !(days <= 7)) return false;
+          if (durationFilter === "7+" && !(days > 7)) return false;
+        }
+      }
+
+      if (withFilesOnly && hasFilesInfo(item) && !itemHasFiles(item)) {
+        return false;
+      }
+
+      if (
+        withFreelancerOnly &&
+        hasFreelancerInfo(item) &&
+        !itemHasFreelancer(item)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (sortFilter === "price_low_high") {
+      visibleItems = [...visibleItems].sort((a, b) => {
+        const [, maxA] = getBudgetRange(a);
+        const [, maxB] = getBudgetRange(b);
+        return maxA - maxB;
+      });
+    } else if (sortFilter === "price_high_low") {
+      visibleItems = [...visibleItems].sort((a, b) => {
+        const [, maxA] = getBudgetRange(a);
+        const [, maxB] = getBudgetRange(b);
+        return maxB - maxA;
+      });
+    } else if (sortFilter === "newest") {
+      visibleItems = [...visibleItems].sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+        const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+  }
 
   return (
     <div className="w-full">
-      {/* ===== Filters bar ===== */}
+      {/* filters bar – projects only */}
       {!isTasks && (
         <div className="mb-4">
-          {/* Mobile: Filters + Sort */}
-          <div className="sm:hidden flex items-center gap-2">
+          {/* Desktop (keep your original layout) */}
+          <div className="hidden sm:flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <FilterDropdown
+                label="Project type"
+                value={projectTypeFilter}
+                onChange={setProjectTypeFilter}
+                options={[
+                  { value: "all", label: "All types" },
+                  { value: "fixed", label: "Fixed price" },
+                  { value: "hourly", label: "Hourly" },
+                  { value: "bidding", label: "Bidding" },
+                ]}
+              />
+
+              <FilterDropdown
+                label="Budget"
+                value={budgetFilter}
+                onChange={setBudgetFilter}
+                options={[
+                  { value: "any", label: "Any budget" },
+                  { value: "0-100", label: "Up to $100" },
+                  { value: "100-500", label: "$100 – $500" },
+                  { value: "500-1000", label: "$500 – $1000" },
+                  { value: "1000+", label: "$1000+" },
+                ]}
+              />
+
+              <FilterDropdown
+                label="Delivery time"
+                value={durationFilter}
+                onChange={setDurationFilter}
+                options={[
+                  { value: "any", label: "Any time" },
+                  { value: "1", label: "Up to 1 day" },
+                  { value: "3", label: "Up to 3 days" },
+                  { value: "7", label: "Up to 7 days" },
+                  { value: "7+", label: "More than 7 days" },
+                ]}
+              />
+            </div>
+
+       
+          </div>
+
+          {/* Mobile (phone UI like apps) */}
+          <div className="sm:hidden flex items-center gap-3">
             <button
-              onClick={() => setFiltersOpen(true)}
-              className="flex-1 h-11 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm ring-1 ring-black/5 flex items-center justify-between"
+              type="button"
+              onClick={() => setMobileFiltersOpen(true)}
+              className={[
+                "flex-1 flex items-center justify-between",
+                "rounded-full border border-slate-200 bg-white/90 backdrop-blur",
+                "px-4 py-3 shadow-sm",
+                "active:scale-[0.99]",
+              ].join(" ")}
             >
-              <span className="text-sm font-semibold text-slate-800">Filters</span>
-              {activeFiltersCount > 0 ? (
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-extrabold text-orange-700">
-                  {activeFiltersCount}
-                </span>
-              ) : (
-                <span className="text-xs font-semibold text-slate-400">All</span>
-              )}
+              <span className="text-sm font-semibold text-slate-900">Filters</span>
+              <span className="text-xs font-semibold text-slate-400">{filterPillHint}</span>
             </button>
 
-            <div className="h-11 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm ring-1 ring-black/5 flex items-center">
+            <div className="relative shrink-0">
+              <div
+                className={[
+                  "flex items-center gap-2",
+                  "rounded-full border border-slate-200 bg-white/90 backdrop-blur",
+                  "px-4 py-3 shadow-sm",
+                ].join(" ")}
+              >
+                <span className="text-sm font-semibold text-slate-900">{sortPillLabel}</span>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-slate-500"
+                >
+                  <path
+                    d="M6 9l6 6l6-6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+
+              {/* invisible select above the pill */}
               <select
                 value={sortFilter}
                 onChange={(e) => setSortFilter(e.target.value)}
-                className="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Sort"
               >
-                <option value="default">Best</option>
+                <option value="default">Best selling</option>
                 <option value="newest">Newest</option>
-                <option value="price_low_high">Low → High</option>
-                <option value="price_high_low">High → Low</option>
+                <option value="price_low_high">Price: Low to High</option>
+                <option value="price_high_low">Price: High to Low</option>
               </select>
             </div>
           </div>
 
-          {/* Desktop grid filters */}
-          <div className="hidden sm:grid grid-cols-3 gap-3">
-            <FilterSelect
-              label="Project type"
-              value={projectTypeFilter}
-              onChange={setProjectTypeFilter}
-              options={[
-                { value: "all", label: "All types" },
-                { value: "fixed", label: "Fixed price" },
-                { value: "hourly", label: "Hourly" },
-                { value: "bidding", label: "Bidding" },
-              ]}
+          {/* Mobile filters sheet */}
+          <div
+            className={[
+              "fixed inset-0 z-[9998] sm:hidden",
+              mobileFiltersOpen ? "" : "pointer-events-none",
+            ].join(" ")}
+          >
+            {/* backdrop */}
+            <div
+              className={[
+                "absolute inset-0 bg-slate-900/40",
+                "transition-opacity duration-200",
+                mobileFiltersOpen ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+              onClick={() => setMobileFiltersOpen(false)}
             />
-            <FilterSelect
-              label="Budget"
-              value={budgetFilter}
-              onChange={setBudgetFilter}
-              options={[
-                { value: "any", label: "Any budget" },
-                { value: "0-100", label: "Up to $100" },
-                { value: "100-500", label: "$100 – $500" },
-                { value: "500-1000", label: "$500 – $1000" },
-                { value: "1000+", label: "$1000+" },
-              ]}
-            />
-            <FilterSelect
-              label="Delivery time"
-              value={durationFilter}
-              onChange={setDurationFilter}
-              options={[
-                { value: "any", label: "Any time" },
-                { value: "1", label: "Up to 1 day" },
-                { value: "3", label: "Up to 3 days" },
-                { value: "7", label: "Up to 7 days" },
-                { value: "7+", label: "More than 7 days" },
-              ]}
-            />
+
+            {/* sheet */}
+            <div
+              className={[
+                "absolute inset-x-0 bottom-0 mx-auto w-full max-w-lg",
+                "rounded-t-3xl bg-white",
+                "p-4 shadow-2xl ring-1 ring-black/10",
+                "transition-transform duration-300",
+                mobileFiltersOpen ? "translate-y-0" : "translate-y-full",
+              ].join(" ")}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-base font-bold text-slate-900">Filters</div>
+                  <div className="text-xs text-slate-500">
+                    {filterSummary}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm"
+                  aria-label="Close"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-slate-700">
+                    <path
+                      d="M6 6l12 12M18 6L6 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {/* Project type */}
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-800">Project type</div>
+                  <div className="relative mt-2">
+                    <select
+                      value={projectTypeFilter}
+                      onChange={(e) => setProjectTypeFilter(e.target.value)}
+                      className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
+                    >
+                      <option value="all">All types</option>
+                      <option value="fixed">Fixed price</option>
+                      <option value="hourly">Hourly</option>
+                      <option value="bidding">Bidding</option>
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Budget */}
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-800">Budget</div>
+                  <div className="relative mt-2">
+                    <select
+                      value={budgetFilter}
+                      onChange={(e) => setBudgetFilter(e.target.value)}
+                      className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
+                    >
+                      <option value="any">Any budget</option>
+                      <option value="0-100">Up to $100</option>
+                      <option value="100-500">$100 – $500</option>
+                      <option value="500-1000">$500 – $1000</option>
+                      <option value="1000+">$1000+</option>
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Delivery time */}
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-800">Delivery time</div>
+                  <div className="relative mt-2">
+                    <select
+                      value={durationFilter}
+                      onChange={(e) => setDurationFilter(e.target.value)}
+                      className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
+                    >
+                      <option value="any">Any time</option>
+                      <option value="1">Up to 1 day</option>
+                      <option value="3">Up to 3 days</option>
+                      <option value="7">Up to 7 days</option>
+                      <option value="7+">More than 7 days</option>
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className={[
+                  "mt-4 w-full",
+                  "rounded-full px-6 py-3",
+                  "text-sm font-semibold text-white",
+                  "bg-gradient-to-b from-orange-400 to-red-500",
+                  "shadow-[0_12px_24px_rgba(249,115,22,0.25)]",
+                  "ring-1 ring-black/10",
+                ].join(" ")}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ===== Items grid ===== */}
+      {/* results bar */}
+      {!isTasks && (
+        <div className="mb-4 flex items-center justify-between text-sm px-3">
+          <span className="text-slate-600">
+            {visibleItems.length.toLocaleString()} results
+          </span>
+            <div className="hidden sm:flex items-center gap-2">
+            <span className="text-slate-500">Sort by:</span>
+            <select
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer"
+            >
+              <option value="default">Best selling</option>
+              <option value="newest">Newest</option>
+              <option value="price_low_high">Price: Low to High</option>
+              <option value="price_high_low">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {isTasks && (
+        <div className="mb-4 flex items-center justify-between text-sm px-3">
+          <span className="text-slate-600">
+            {items.length.toLocaleString()} tasks
+          </span>
+        </div>
+      )}
+
+      {/* grid */}
       <div className="flex w-full gap-6 lg:gap-8">
         <div className="flex-1 min-w-0">
           {loadingItems ? (
@@ -239,97 +667,6 @@ export default function SubSidebar({
           )}
         </div>
       </div>
-
-      {/* ===== Bottom Sheet (Mobile Filters) ===== */}
-      {filtersOpen && !isTasks && (
-        <div className="fixed inset-0 z-[9999] sm:hidden">
-          {/* Backdrop */}
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/35"
-            onClick={() => setFiltersOpen(false)}
-          />
-
-          {/* Sheet */}
-          <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-5 shadow-2xl ring-1 ring-black/10 animate-[slideUp_.3s_ease-out]">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-extrabold text-slate-900">Filters</h3>
-              <button
-                onClick={() => setFiltersOpen(false)}
-                className="h-9 w-9 rounded-full border border-slate-200 grid place-items-center text-slate-600"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <FilterSelect
-                label="Project type"
-                value={projectTypeFilter}
-                onChange={setProjectTypeFilter}
-                options={[
-                  { value: "all", label: "All types" },
-                  { value: "fixed", label: "Fixed price" },
-                  { value: "hourly", label: "Hourly" },
-                  { value: "bidding", label: "Bidding" },
-                ]}
-              />
-              <FilterSelect
-                label="Budget"
-                value={budgetFilter}
-                onChange={setBudgetFilter}
-                options={[
-                  { value: "any", label: "Any budget" },
-                  { value: "0-100", label: "Up to $100" },
-                  { value: "100-500", label: "$100 – $500" },
-                  { value: "500-1000", label: "$500 – $1000" },
-                  { value: "1000+", label: "$1000+" },
-                ]}
-              />
-              <FilterSelect
-                label="Delivery time"
-                value={durationFilter}
-                onChange={setDurationFilter}
-                options={[
-                  { value: "any", label: "Any time" },
-                  { value: "1", label: "Up to 1 day" },
-                  { value: "3", label: "Up to 3 days" },
-                  { value: "7", label: "Up to 7 days" },
-                  { value: "7+", label: "More than 7 days" },
-                ]}
-              />
-            </div>
-
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={() => {
-                  setProjectTypeFilter("all");
-                  setBudgetFilter("any");
-                  setDurationFilter("any");
-                  setWithFilesOnly(false);
-                  setWithFreelancerOnly(false);
-                }}
-                className="flex-1 h-11 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => setFiltersOpen(false)}
-                className="flex-1 h-11 rounded-2xl bg-gradient-to-b from-orange-400 to-red-500 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(249,115,22,0.25)]"
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-
-          <style>{`
-            @keyframes slideUp {
-              0% { transform: translateY(100%); opacity: 0; }
-              100% { transform: translateY(0); opacity: 1; }
-            }
-          `}</style>
-        </div>
-      )}
     </div>
   );
 }

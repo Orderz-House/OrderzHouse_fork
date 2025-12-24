@@ -284,7 +284,7 @@ const Register = () => {
         <div className="absolute -bottom-32 -left-28 w-96 h-96 rounded-full bg-[#028090]/5 blur-3xl" />
       </div>
 
-      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8">
+      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 pt-32">
         <div className="w-full max-w-5xl">
           <div className="text-center mb-6">
             <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">

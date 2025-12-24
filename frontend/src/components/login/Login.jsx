@@ -58,9 +58,7 @@ const Login = () => {
         // ===== 2FA (Authenticator App) =====
         if (data.requires_2fa && data.temp_token) {
           setStatus(true);
-          setMessage(
-            "Enter the 6-digit code from your authenticator app."
-          );
+          setMessage("Enter the 6-digit code from your authenticator app.");
           setOtp("");
           setOtpMode("app");
           setTempToken(data.temp_token);
@@ -238,12 +236,16 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#028090]/10 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#028090]/5 blur-3xl" />
-      </div>
+      {/* <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" /> */}
+      {/* ✅ Orange theme glows */}
+      {/* <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-orange-500/8 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-amber-300/10 blur-3xl" />
+      </div> */}
 
-      <div className="flex min-h-screen items-center justify-center p-4 lg:px-8">
+      <div className="flex min-h-screen items-center justify-center pt-32 p-4 lg:px-8">
         <div className="w-full max-w-lg">
           <div className="text-center mb-6">
             <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
@@ -251,20 +253,14 @@ const Login = () => {
             </h1>
             <p className="text-slate-500 mt-2 text-sm">
               Sign in to continue to{" "}
-              <span className="font-semibold text-[#028090]">
-                ORDERZHOUSE
-              </span>
+              <span className="font-semibold text-orange-600">ORDERZHOUSE</span>
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
             <div className="mb-6 text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white">
-                {isOtpStep ? (
-                  <Shield className="w-4 h-4" />
-                ) : (
-                  <LogIn className="w-4 h-4" />
-                )}
+                {isOtpStep ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
                 <span className="text-sm">
                   {isOtpStep ? "Verify Your Identity" : "Sign in"}
                 </span>
@@ -276,10 +272,7 @@ const Login = () => {
               {!isOtpStep && (
                 <>
                   <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm text-slate-700 mb-1.5"
-                    >
+                    <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
                       Email Address
                     </label>
                     <div className="relative">
@@ -292,16 +285,13 @@ const Login = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         disabled={isLoading}
-                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="password"
-                      className="block text-sm text-slate-700 mb-1.5"
-                    >
+                    <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
                       Password
                     </label>
                     <div className="relative">
@@ -314,19 +304,15 @@ const Login = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         disabled={isLoading}
-                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
                       />
                       <button
                         type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#028090]"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-orange-600"
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
@@ -336,13 +322,8 @@ const Login = () => {
               {/* فورم الكود (OTP أو 2FA APP) */}
               {isOtpStep && (
                 <div className="animate-fadeIn">
-                  <label
-                    htmlFor="otp"
-                    className="block text-sm text-slate-700 mb-1.5"
-                  >
-                    {otpMode === "app"
-                      ? "Authenticator Code"
-                      : "Verification Code"}
+                  <label htmlFor="otp" className="block text-sm text-slate-700 mb-1.5">
+                    {otpMode === "app" ? "Authenticator Code" : "Verification Code"}
                   </label>
                   <div className="relative">
                     <Shield className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -351,14 +332,12 @@ const Login = () => {
                       id="otp"
                       placeholder="6-digit code"
                       value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       maxLength={6}
                       required
                       autoFocus
                       disabled={isLoading}
-                      className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50 text-center tracking-widest"
+                      className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 text-center tracking-widest"
                     />
                   </div>
                   <p className="text-xs text-slate-500 mt-2 text-center">
@@ -370,7 +349,12 @@ const Login = () => {
               )}
 
               <div className="flex items-center justify-center">
-                <GradientButton type="submit" disabled={isLoading}>
+                {/* ✅ حاولت أعطي GradientButton ثيم برتقالي بدون ما أغير منطقها */}
+                <GradientButton
+                  type="submit"
+                  disabled={isLoading}
+                  className="from-orange-400 via-orange-500 to-red-500"
+                >
                   <div className="relative z-10 flex items-center px-12">
                     {isLoading ? (
                       <>
@@ -398,11 +382,7 @@ const Login = () => {
                       </>
                     ) : (
                       <>
-                        {isOtpStep ? (
-                          <KeyRound className="w-5 h-5 mr-2" />
-                        ) : (
-                          <LogIn className="w-5 h-5 mr-2" />
-                        )}
+                        {isOtpStep ? <KeyRound className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
                         {isOtpStep ? "Verify & Sign In" : "Sign in"}
                       </>
                     )}
@@ -416,7 +396,7 @@ const Login = () => {
                     type="button"
                     onClick={resetToLogin}
                     disabled={isLoading}
-                    className="text-[#028090] hover:underline font-medium text-sm"
+                    className="text-orange-600 hover:underline font-medium text-sm"
                   >
                     ← Back to login
                   </button>
@@ -474,7 +454,7 @@ const Login = () => {
                   Don&apos;t have an account?{" "}
                   <a
                     href="/register"
-                    className="font-medium text-[#028090] inline-flex items-center hover:underline"
+                    className="font-medium text-orange-600 inline-flex items-center hover:underline"
                   >
                     Sign up now <ArrowRight className="ml-1 h-4 w-4" />
                   </a>

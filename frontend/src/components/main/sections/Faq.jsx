@@ -117,12 +117,12 @@ function TopicCard({ cat, count, onOpen }) {
       "
       style={{ transform: "perspective(900px)" }}
     >
-      <div
+      {/* <div
         className="h-1.5"
         style={{
-          background: `linear-gradient(90deg, ${THEME} 0%, ${THEME_LIGHT} 55%, ${THEME_DARK} 100%)`,
+          background: `linear-gradient(90deg, #ffedd5 0%, ${THEME_LIGHT} 55%, #ffedd5 100%)`,
         }}
-      />
+      /> */}
       <div className="p-5">
         <div className="flex items-center gap-3">
           <div
