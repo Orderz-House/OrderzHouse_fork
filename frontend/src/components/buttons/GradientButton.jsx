@@ -1,7 +1,7 @@
 import React from "react";
 
-const THEME = "#028090";
-const DARK = "#05668D";
+const THEME = "#F97316";
+const DARK = "#C2410C";
 
 const GradientButton = ({
   children,
@@ -10,14 +10,14 @@ const GradientButton = ({
   className = "",
   style = {},
 }) => {
-  const baseClasses = `rounded-2xl px-6 py-3 text-white font-medium text-sm sm:text-lg shadow-lg 
+  const baseClasses = `rounded-2xl px-6 py-3 text-white font-medium text-sm sm:text-lg shadow-lg bg-gradient-to-b from-orange-400 to-red-500
                        hover:shadow-xl transition-all hover:-translate-y-0.5 
                        flex items-center justify-center ${className}`;
 
-  const baseStyle = {
-    background: `linear-gradient(to right, ${DARK}, ${THEME}, ${THEME})`,
-    ...style,
-  };
+  // const baseStyle = {
+  //   background: `linear-gradient(to right, ${DARK}, ${THEME}, ${THEME})`,
+  //   ...style,
+  // };
 
   // 🔥 إذا فيه href → استخدم <a>
   if (href) {
@@ -27,7 +27,7 @@ const GradientButton = ({
         target="_blank"
         rel="noopener noreferrer"
         className={baseClasses}
-        style={baseStyle}
+        // style={baseStyle}
       >
         {children}
       </a>
@@ -36,7 +36,7 @@ const GradientButton = ({
 
   // 🔥 إذا ما فيه href → استخدم <button> كالمعتاد
   return (
-    <button className={baseClasses} style={baseStyle} onClick={onClick}>
+    <button className={baseClasses}  onClick={onClick}>
       {children}
     </button>
   );

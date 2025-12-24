@@ -50,7 +50,7 @@ export default function CleanFooter() {
           <li key={l.to}>
             <Link
               to={l.to}
-              className="text-sm text-gray-600 hover:text-[#028090] transition-colors"
+              className="text-sm text-gray-600 hover:text-[#C2410C] transition-colors"
             >
               {l.label}
             </Link>
