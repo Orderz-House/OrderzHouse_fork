@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import {
   MessageSquare,
   SendHorizontal,
   X,
+  Bell,
   RefreshCw,
   Check,
   Undo2,
@@ -21,11 +22,186 @@ import {
   Link2,
   Download,
   FolderOpen,
+  Activity,
+  LayoutList,
+  Clock,
+  CreditCard,
 } from "lucide-react";
 
 /* ---------- Theme ---------- */
 const T = { primary: "#C2410C", dark: "#9A3412", ring: "rgba(15,23,42,.10)" };
 const ringStyle = { border: `1px solid ${T.ring}` };
+
+/* ---------- Small UI helpers (Projects page) ---------- */
+const cx = (...a) => a.filter(Boolean).join(" ");
+
+function statFromProjects(list = []) {
+  const norm = (p) =>
+    String(p?.completion_status || p?.status || "").toLowerCase();
+
+  let total = list.length;
+  let completed = 0;
+  let pendingReview = 0;
+  let pendingPayment = 0;
+  let active = 0;
+
+  for (const p of list) {
+    const s = norm(p);
+    const isCompleted = ["completed", "done", "finished"].includes(s);
+    const isPendingReview = [
+      "pending_review",
+      "awaiting_client",
+      "waiting_client",
+    ].includes(s);
+    const isPendingPayment = ["pending_payment", "payment_pending"].includes(s);
+
+    if (isCompleted) completed++;
+    else if (isPendingReview) pendingReview++;
+    else if (isPendingPayment) pendingPayment++;
+    else active++;
+  }
+
+  return { total, active, pendingReview, pendingPayment, completed };
+}
+
+function useProjectsStats(endpoint, token) {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    pendingReview: 0,
+    pendingPayment: 0,
+    completed: 0,
+  });
+
+  useEffect(() => {
+    if (!token || !endpoint) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get(endpoint, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+
+        const list =
+          Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data?.projects)
+            ? data.projects
+            : Array.isArray(data)
+            ? data
+            : [];
+
+        if (!cancelled) setStats(statFromProjects(list));
+      } catch (e) {
+        console.error("Stats fetch failed:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [endpoint, token]);
+
+  return { stats, loading };
+}
+
+function StatPill({ icon: Icon, label, value, tone = "slate" }) {
+  const toneCls =
+    tone === "violet"
+      ? "bg-violet-50 border-violet-200/70 text-violet-700"
+      : tone === "emerald"
+      ? "bg-emerald-50 border-emerald-200/70 text-emerald-700"
+      : tone === "amber"
+      ? "bg-amber-50 border-amber-200/70 text-amber-700"
+      : tone === "orange"
+      ? "bg-orange-50 border-orange-200/70 text-orange-700"
+      : "bg-slate-50 border-slate-200/70 text-slate-700";
+
+  return (
+    <div className={cx("rounded-2xl border px-3 py-3 bg-white", toneCls)}>
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={cx(
+            "h-9 w-9 rounded-2xl grid place-items-center border bg-white/60 shrink-0",
+            toneCls
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold opacity-80 truncate">
+            {label}
+          </div>
+          <div className="text-sm font-extrabold text-slate-900">{value}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectsHero({ title, subtitle, eyebrow = "PROJECTS" }) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 lg:p-6 text-white shadow-sm"
+      style={{ background: "linear-gradient(135deg,#7C3AED,#6366F1,#8B5CF6)" }}
+    >
+      <div className="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute left-6 -bottom-24 h-56 w-56 rounded-full bg-black/10 blur-2xl" />
+
+      <div className="relative">
+        <div className="text-[10px] uppercase tracking-[0.22em] text-white/70 font-semibold">
+          {eyebrow}
+        </div>
+        <h2 className="mt-2 text-[18px] sm:text-[22px] lg:text-[26px] font-extrabold leading-tight text-white">
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className="mt-2 text-[12px] sm:text-sm text-white/80 max-w-2xl">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProjectsKPIs({ stats, loading }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatPill
+        icon={LayoutList}
+        label="Total projects"
+        value={loading ? "…" : stats.total}
+        tone="slate"
+      />
+      <StatPill
+        icon={Activity}
+        label="Active"
+        value={loading ? "…" : stats.active}
+        tone="violet"
+      />
+      <StatPill
+        icon={Clock}
+        label="Pending review"
+        value={loading ? "…" : stats.pendingReview}
+        tone="amber"
+      />
+      <StatPill
+        icon={CreditCard}
+        label="Pending payment"
+        value={loading ? "…" : stats.pendingPayment}
+        tone="orange"
+      />
+    </div>
+  );
+}
+
 
 /* ---------- Role map ---------- */
 function mapRole(roleId) {
@@ -55,6 +231,7 @@ export default function Projects() {
 function AdminProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
+  const { stats, loading } = useProjectsStats("/projects/admin/projects", token);
 
   // columns
   const columns = [
@@ -62,7 +239,11 @@ function AdminProjects() {
     { label: "Client", key: "client_name" },
     { label: "Freelancer", key: "freelancer_name" },
     { label: "Type", key: "project_type" },
-    { label: "Status", key: "status" },
+    {
+      label: "Status",
+      key: "status",
+      render: (row) => row?.completion_status || row?.status,
+    },
     { label: "Completion", key: "completion_status" },
     { label: "Category", key: "project_category" },
     {
@@ -100,38 +281,48 @@ function AdminProjects() {
   ];
 
   return (
-    <PeopleTable
-      /* header */
-      title="Projects"
-      addLabel="Add Project"
-      /* data */
-      endpoint="/projects/admin/projects"
-      token={token}
-      columns={columns}
-      formFields={formFields}
-      chips={chips}
-      chipField="status"
-      filters={[
-        {
-          key: "status",
-          label: "Status",
-          options: chips.slice(1).map((c) => c.value),
-        },
-      ]}
-      /* UI */
-      desktopAsCards
-      /* Admin wants default CRUD inside cards */
-      crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-      /* open details (admin route غالباً نسبي) */
-      onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
-    />
+    <div className="space-y-5 min-w-0">
+      <ProjectsHero
+        eyebrow="ADMIN"
+        title="Projects"
+        subtitle="Manage all projects, track status, and keep everything organized."
+      />
+      <ProjectsKPIs stats={stats} loading={loading} />
+      <PeopleTable
+            /* header */
+            title="Projects"
+            addLabel="Add Project"
+            /* data */
+            endpoint="/projects/admin/projects"
+            token={token}
+            columns={columns}
+            formFields={formFields}
+            chips={chips}
+            chipField="status"
+            filters={[
+              {
+                key: "status",
+                label: "Status",
+                options: chips.slice(1).map((c) => c.value),
+              },
+            ]}
+            /* UI */
+            desktopAsCards
+            /* Admin wants default CRUD inside cards */
+            crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+            /* open details (admin route غالباً نسبي) */
+            onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+          />
+    </div>
   );
 }
+
 
 /* ===================== Client ===================== */
 function ClientProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
+  const { stats, loading } = useProjectsStats("/projects/myprojects", token);
 
   // لوحات العميل (استلام التسليم)
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -144,6 +335,7 @@ function ClientProjects() {
   const [appsOpen, setAppsOpen] = useState(false);
   const [appsSubmitting, setAppsSubmitting] = useState(false);
   const [reviewHelpers, setReviewHelpers] = useState(null);
+  const [reviewMode, setReviewMode] = useState("review");
 
   // جلب عروض العميل لكل مشاريعه مرة واحدة
   useEffect(() => {
@@ -256,7 +448,9 @@ function ClientProjects() {
     if (!token) return;
     setAppsSubmitting(true);
     try {
-      await api.post("/projects/applications/decision", { assignmentId, id: assignmentId, projectId, action },
+      await api.post(
+        "/projects/applications/decision",
+        { assignmentId, id: assignmentId, projectId, action },
         {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
           timeout: 15000, // 15s
@@ -322,9 +516,10 @@ function ClientProjects() {
       (a) => String(a.status || "").toLowerCase() === "pending_client_approval"
     ).length;
 
-    const statusKey = String(row.completion_status || row.status || "").toLowerCase();
+    const statusKey = String(
+      row.completion_status || row.status || ""
+    ).toLowerCase();
     const isCompleted = statusKey === "completed" || statusKey === "done";
-
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
@@ -332,11 +527,14 @@ function ClientProjects() {
           onClick={() => {
             setReviewHelpers(helpers);
             setReviewFor(row);
+            setReviewMode(isCompleted ? "files" : "review");
             setReviewOpen(true);
           }}
           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
           style={{ backgroundColor: T.primary }}
-          title={isCompleted ? "View project files" : "Review & receive delivery"}
+          title={
+            isCompleted ? "View project files" : "Review & receive delivery"
+          }
         >
           {isCompleted ? (
             <FolderOpen className="w-3 h-3" />
@@ -346,18 +544,37 @@ function ClientProjects() {
           {isCompleted ? "Files" : "Receive"}
         </button>
 
-        <button
-          onClick={async () => {
-            setAppsProject({ id: pid, title: row.title });
-            await fetchApplicationsForProject(pid);
-            setAppsOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-          style={ringStyle}
-        >
-          <Eye className="w-3 h-3" />
-          Applicants
-        </button>
+        {isCompleted ? (
+          <button
+            type="button"
+            onClick={() => {
+              setReviewHelpers(helpers);
+              setReviewFor(row);
+              setReviewMode("request");
+              setReviewOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+            style={ringStyle}
+            title="Request changes from freelancer"
+          >
+            <Undo2 className="w-3 h-3" />
+            Request changes
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={async () => {
+              setAppsProject({ id: pid, title: row.title });
+              await fetchApplicationsForProject(pid);
+              setAppsOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+            style={ringStyle}
+          >
+            <Eye className="w-3 h-3" />
+            Applicants
+          </button>
+        )}
       </div>
     );
   };
@@ -369,70 +586,79 @@ function ClientProjects() {
 
   return (
     <>
-      <PeopleTable
-        /* header */
-        title="My Projects"
-        /* data */
-        endpoint="/projects/myprojects"
-        token={token}
-        columns={[
-          { label: "Title", key: "title" },
-          { label: "Freelancer", key: "assignee" },
-          { label: "Due", key: "due" },
-          { label: "Budget", key: "budget" },
-          { label: "Progress", key: "progress" },
-          { label: "Status", key: "completion_status" },
-          {
-            label: "Offers",
-            key: "offers",
-            render: (row) => {
-              const pid = row.id ?? row._id;
-              const stats = offersMap[pid];
-              if (!stats) return "0";
-              const parts = [`${stats.total}`];
-              if (stats.pending) parts.push(`pending: ${stats.pending}`);
-              if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
-              return parts.join(" | ");
-            },
-          },
-        ]}
-        formFields={[]}
-        /* UI */
-        desktopAsCards
-        crudConfig={{
-          showDetails: false,
-          showRowEdit: false,
-          showDelete: false,
-        }}
-        renderActions={renderActions}
-        renderSubtitle={(row) => {
-          const pid = row.id ?? row._id;
-          const stats = offersMap[pid];
-          if (!stats) {
-            return <span className="text-xs text-slate-400">Offers: 0</span>;
-          }
-          return (
-            <span className="text-xs text-slate-600">
-              Offers: <span className="font-semibold">{stats.total}</span>
-              {stats.pending ? ` • Pending: ${stats.pending}` : ""}
-              {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
-            </span>
-          );
-        }}
-        onCardClick={(row, h) =>
-          navigate(`/project/${h.getId(row)}`, {
-            state: { project: row, readOnly: true, role: "client" },
-          })
-        }
-      />
-
+      <div className="space-y-5 min-w-0">
+        <ProjectsHero
+          eyebrow="CLIENT"
+          title="My projects"
+          subtitle="Review deliveries, manage applicants, and track progress."
+        />
+        <ProjectsKPIs stats={stats} loading={loading} />
+        <PeopleTable
+                /* header */
+                title="My Projects"
+                /* data */
+                endpoint="/projects/myprojects"
+                token={token}
+                columns={[
+                  { label: "Title", key: "title" },
+                  { label: "Freelancer", key: "assignee" },
+                  { label: "Due", key: "due" },
+                  { label: "Budget", key: "budget" },
+                  { label: "Progress", key: "progress" },
+                  { label: "Status", key: "completion_status" },
+                  {
+                    label: "Offers",
+                    key: "offers",
+                    render: (row) => {
+                      const pid = row.id ?? row._id;
+                      const stats = offersMap[pid];
+                      if (!stats) return "0";
+                      const parts = [`${stats.total}`];
+                      if (stats.pending) parts.push(`pending: ${stats.pending}`);
+                      if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
+                      return parts.join(" | ");
+                    },
+                  },
+                ]}
+                formFields={[]}
+                /* UI */
+                desktopAsCards
+                crudConfig={{
+                  showDetails: false,
+                  showRowEdit: false,
+                  showDelete: false,
+                }}
+                renderActions={renderActions}
+                renderSubtitle={(row) => {
+                  const pid = row.id ?? row._id;
+                  const stats = offersMap[pid];
+                  if (!stats) {
+                    return <span className="text-xs text-slate-400">Offers: 0</span>;
+                  }
+                  return (
+                    <span className="text-xs text-slate-600">
+                      Offers: <span className="font-semibold">{stats.total}</span>
+                      {stats.pending ? ` • Pending: ${stats.pending}` : ""}
+                      {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
+                    </span>
+                  );
+                }}
+                onCardClick={(row, h) =>
+                  navigate(`/project/${h.getId(row)}`, {
+                    state: { project: row, readOnly: true, role: "client" },
+                  })
+                }
+              />
+      </div>
       {reviewOpen && reviewFor && (
         <ClientReviewDrawer
           project={reviewFor}
-          readOnly={String(reviewFor?.completion_status || reviewFor?.status || "").toLowerCase() === "completed"}
+          mode={reviewMode}
+          readOnly={reviewMode === "files"}
           onClose={() => {
             setReviewOpen(false);
             setReviewFor(null);
+            setReviewMode("review");
           }}
           onApprove={async (projectId) => {
             await api.put(
@@ -462,6 +688,37 @@ function ClientProjects() {
             // ✅ اختياري: إعادة جلب من السيرفر للتأكيد
             reviewHelpers?.refresh?.();
           }}
+          onRequestChanges={async (projectId, message) => {
+            const headers = token
+              ? { authorization: `Bearer ${token}` }
+              : undefined;
+
+            // ✅ endpoint الصحيح
+            await api.post(
+              `/projects/${projectId}/request-changes`,
+              { message },
+              { headers }
+            );
+
+            // ✅ تحديث فوري للواجهة: completed -> in_progress
+            reviewHelpers?.setRows?.((prev) =>
+              prev.map((r) => {
+                const rid = reviewHelpers?.getId?.(r) ?? r.id ?? r._id;
+                if (String(rid) !== String(projectId)) return r;
+                return {
+                  ...r,
+                  status: "in_progress",
+                  completion_status: "in_progress",
+                };
+              })
+            );
+
+            // ✅ ريـفريش للبيانات (اختياري)
+            reviewHelpers?.refresh?.();
+
+            // ✅ اغلاق اللوحة
+            setReviewOpen(false);
+          }}
           token={token}
         />
       )}
@@ -482,37 +739,140 @@ function ClientProjects() {
   );
 }
 
+
 /* ===================== Freelancer ===================== */
 function FreelancerProjects() {
   const navigate = useNavigate();
   const { token } = useSelector((s) => s.auth);
+  const { stats, loading } = useProjectsStats("/projects/myprojects", token);
+  const tableHelpersRef = useRef(null);
+  const [pendingLocal, setPendingLocal] = useState({});
 
   // form deliver
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [deliverFor, setDeliverFor] = useState(null);
   const [deliverSubmitting, setDeliverSubmitting] = useState(false);
-  const toast = useToast(); // ✅
+  const toast = useToast();
+
+  // notifications (change requests)
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifFor, setNotifFor] = useState(null);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifItems, setNotifItems] = useState([]);
+
+  const openNotifications = async (row, helpers) => {
+    const projectId = helpers.getId(row);
+    setNotifFor(row);
+    setNotifOpen(true);
+    setNotifLoading(true);
+
+    try {
+      const headers = token ? { authorization: `Bearer ${token}` } : undefined;
+
+      const { data } = await api.get(`/projects/${projectId}/change-requests`, {
+        headers,
+      });
+
+      const items = data?.requests || data?.items || [];
+      setNotifItems(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error(err);
+      const msg = row?.change_request_message;
+      setNotifItems(
+        msg
+          ? [
+              {
+                id: "local",
+                message: msg,
+                created_at: row?.change_request_at || null,
+              },
+            ]
+          : []
+      );
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const renderActions = (row, helpers) => {
+    if (!tableHelpersRef.current) tableHelpersRef.current = helpers;
+
     const id = helpers.getId(row);
-    const isDone = (row.status ?? "").toLowerCase() === "done";
+
+    const completionKey = String(row?.completion_status || "").toLowerCase();
+    const statusKey = String(row?.status || "").toLowerCase();
+
+    // ✅ completed state (اعتمد على completion_status)
+    const isCompleted =
+      completionKey === "completed" ||
+      completionKey === "done" ||
+      completionKey === "finished";
+
+    // ✅ server says: waiting for client
+    const isWaitingServer =
+      completionKey === "pending_review" ||
+      statusKey === "pending_review" ||
+      completionKey === "awaiting_client" ||
+      completionKey === "waiting_client" ||
+      statusKey === "awaiting_client" ||
+      statusKey === "waiting_client";
+    // ✅ local fallback: hide Deliver immediately after submit
+    const isWaitingLocal = !!pendingLocal[id] && !isCompleted;
+
+    const isWaiting = isWaitingServer || isWaitingLocal;
+
     return (
       <div className="flex gap-2 w-full">
+        {/* Notification bell */}
         <button
-          onClick={() => {
-            setDeliverFor(row);
-            setDeliverOpen(true);
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openNotifications(row, helpers);
           }}
-          disabled={isDone}
-          className={`inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs px-2 ${
-            isDone ? "opacity-60 cursor-not-allowed" : "hover:shadow"
-          }`}
-          style={{ backgroundColor: T.primary }}
-          title={isDone ? "Already delivered" : "Deliver this project"}
+          className="absolute right-3 top-3 inline-flex items-center justify-center h-9 w-9 rounded-full bg-white/90 border border-slate-200 text-slate-700 hover:bg-slate-50"
+          title="Notifications"
         >
-          <SendHorizontal className="w-3 h-3" />
-          {isDone ? "Delivered" : "Deliver"}
+          <Bell className="w-4 h-4" />
+          {!!String(row?.change_request_message || "").trim() ||
+          !!Number(row?.change_requests_unresolved_count || 0) ? (
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-orange-500 ring-2 ring-white" />
+          ) : null}
         </button>
+
+        {/* ✅ Completed */}
+        {isCompleted ? (
+          <div className="inline-flex items-center justify-center h-10 px-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold">
+            ✅ تم اعتماد العمل بنجاح
+          </div>
+        ) : isWaiting ? (
+          /* ✅ Waiting */
+          <div
+            className="inline-flex items-center justify-center h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-medium"
+            title="Waiting for client decision"
+          >
+            <span className="shiny-text">
+              Awaiting the client's decision...
+            </span>
+          </div>
+        ) : (
+          /* ✅ Deliver */
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDeliverFor(row);
+              setDeliverOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs px-3 hover:shadow"
+            style={{ backgroundColor: T.primary }}
+            title="Deliver this project"
+          >
+            <SendHorizontal className="w-3 h-3" />
+            Deliver
+          </button>
+        )}
       </div>
     );
   };
@@ -526,6 +886,27 @@ function FreelancerProjects() {
       await api.post(`/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
+
+      const hid = tableHelpersRef.current?.getId?.(project) ?? project.id;
+
+      // ✅ 1) hide Deliver immediately (local)
+      setPendingLocal((m) => ({ ...m, [hid]: true }));
+
+      // ✅ 2) update row instantly (UI)
+      tableHelpersRef.current?.setRows?.((prev) =>
+        prev.map((r) => {
+          const rid = tableHelpersRef.current?.getId?.(r) ?? r.id ?? r._id;
+          if (String(rid) !== String(hid)) return r;
+          return {
+            ...r,
+            completion_status: "pending_review",
+            status: "pending_review",
+          };
+        })
+      );
+
+      // ✅ 3) refetch to persist after refresh
+      tableHelpersRef.current?.refresh?.();
 
       toast?.success?.("Delivery submitted successfully ✅");
       setDeliverOpen(false);
@@ -543,36 +924,40 @@ function FreelancerProjects() {
 
   return (
     <>
-      <PeopleTable
-        /* header */
-        title="My Assigned Projects"
-        /* data */
-        endpoint="/projects/myprojects"
-        token={token}
-        columns={[
-          { label: "Title", key: "title" },
-          { label: "Client", key: "client" },
-          { label: "Due", key: "due" },
-          { label: "Budget", key: "budget" },
-          { label: "Progress", key: "progress" },
-          { label: "Status", key: "status" },
-        ]}
-        formFields={[]}
-        /* UI */
-        desktopAsCards
-        crudConfig={{
-          showDetails: false,
-          showRowEdit: false,
-          showDelete: false,
-        }}
-        renderActions={renderActions}
-        onCardClick={(row, h) =>
-          navigate(`/project/${h.getId(row)}`, {
-            state: { project: row, readOnly: true, role: "freelancer" },
-          })
-        }
-      />
-
+      <div className="space-y-5 min-w-0">
+        <ProjectsHero
+          eyebrow="FREELANCER"
+          title="My assigned projects"
+          subtitle="Deliver work, respond to change requests, and track progress."
+        />
+        <ProjectsKPIs stats={stats} loading={loading} />
+        <PeopleTable
+                title="My Assigned Projects"
+                endpoint="/projects/myprojects"
+                token={token}
+                renderActions={renderActions}
+                columns={[
+                  { label: "Title", key: "title" },
+                  { label: "Client", key: "client" },
+                  { label: "Due", key: "due" },
+                  { label: "Budget", key: "budget" },
+                  { label: "Progress", key: "progress" },
+                  {
+                    label: "Status",
+                    key: "status",
+                    render: (row) => row?.completion_status || row?.status,
+                  },
+                ]}
+                formFields={[]}
+                desktopAsCards
+                crudConfig={{
+                  showDetails: false,
+                  showRowEdit: false,
+                  showDelete: false,
+                }}
+                renderSubtitle={() => null}
+              />
+      </div>
       {deliverOpen && deliverFor && (
         <DeliverModal
           project={deliverFor}
@@ -586,9 +971,64 @@ function FreelancerProjects() {
           submitting={deliverSubmitting}
         />
       )}
+
+      {notifOpen && (
+        <div className="fixed inset-0 z-[9999]">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setNotifOpen(false)}
+          />
+          <div className="absolute left-1/2 top-[35%] -translate-x-1/2 w-[min(520px,90vw)] max-w-none bg-white rounded-2xl shadow-2xl border border-slate-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-slate-900">
+                  Notifications
+                </div>
+                <div className="text-xs text-slate-500 truncate">
+                  {notifFor?.title || ""}
+                </div>
+              </div>
+              <button
+                className="h-9 w-9 rounded-full border border-slate-200 hover:bg-slate-50 grid place-items-center"
+                onClick={() => setNotifOpen(false)}
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {notifLoading ? (
+              <div className="text-sm text-slate-500">Loading…</div>
+            ) : notifItems.length === 0 ? (
+              <div className="text-sm text-slate-500">No messages</div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto pr-1">
+                <div className="space-y-3">
+                  {notifItems.map((it) => (
+                    <div
+                      key={it.id}
+                      className="rounded-xl border border-slate-200 p-3"
+                    >
+                      <div className="text-xs text-slate-500 mb-1">
+                        {it.created_at
+                          ? new Date(it.created_at).toLocaleString()
+                          : ""}
+                      </div>
+                      <div className="text-sm text-slate-800 whitespace-pre-wrap">
+                        {it.message}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
 
 /* ===================== Client Drawer (استلام التسليم) ===================== */
 function ClientReviewDrawer({
@@ -598,6 +1038,7 @@ function ClientReviewDrawer({
   onRequestChanges,
   token,
   readOnly = false,
+  mode = "review",
 }) {
   const toast = useToast(); // ✅
 
@@ -620,8 +1061,52 @@ function ClientReviewDrawer({
 
   const canRequest = typeof onRequestChanges === "function";
 
+  const viewMode = mode || (readOnly ? "files" : "review");
+  const isFilesMode = viewMode === "files";
+  const isRequestMode = viewMode === "request";
+  const headerTitle = isFilesMode
+    ? "Project Files"
+    : isRequestMode
+    ? "Request changes"
+    : "Receive Project";
+
   /* ---------- Download attachments ---------- */
   const [downloadingMap, setDownloadingMap] = useState({});
+  const [downloadingAllLatest, setDownloadingAllLatest] = useState(false);
+
+  const downloadAllLatest = async () => {
+    if (!shownAttachments?.length || downloadingAllLatest) return;
+
+    setDownloadingAllLatest(true);
+    try {
+      const items = shownAttachments
+        .map((f, idx) => {
+          const name =
+            typeof f === "string"
+              ? f
+              : f?.name ||
+                f?.filename ||
+                f?.originalname ||
+                f?.url ||
+                `Attachment ${idx + 1}`;
+
+          const url = typeof f === "object" ? f?.url || f?.path : null;
+          const id = typeof f === "object" ? f?.id : null;
+
+          if (!url) return null; // ما نقدر ننزّل بدون رابط
+          return { url, name, id };
+        })
+        .filter(Boolean);
+
+      for (let i = 0; i < items.length; i++) {
+        await startDownload(items[i], i);
+        // فاصل صغير لتقليل احتمال الـ browser يعلق/يمنع
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    } finally {
+      setDownloadingAllLatest(false);
+    }
+  };
 
   const isAbsoluteUrl = (u) => /^https?:\/\//i.test(String(u || ""));
 
@@ -658,7 +1143,9 @@ function ClientReviewDrawer({
       const last = urlObj.pathname.split("/").filter(Boolean).pop();
       return last || null;
     } catch {
-      const parts = String(u || "").split("?")[0].split("/");
+      const parts = String(u || "")
+        .split("?")[0]
+        .split("/");
       return parts.filter(Boolean).pop() || null;
     }
   };
@@ -673,7 +1160,8 @@ function ClientReviewDrawer({
     try {
       const absolute = isAbsoluteUrl(target);
       const client = absolute ? axios : api;
-      const headers = !absolute && token ? { authorization: `Bearer ${token}` } : undefined;
+      const headers =
+        !absolute && token ? { authorization: `Bearer ${token}` } : undefined;
 
       const res = await client.get(target, {
         responseType: "blob",
@@ -720,7 +1208,6 @@ function ClientReviewDrawer({
     };
   }, []);
 
-  
   // Backend returns deliveries already grouped:
   // { id, sent_at, files: [ { file_name, file_url, file_size, id, ... } ] }
   const normalizeDelivery = (d, idx) => {
@@ -771,8 +1258,7 @@ function ClientReviewDrawer({
       const fromFreelancer = versions.find((v) =>
         (v.attachments || []).some(
           (a) =>
-            a?.senderId != null &&
-            String(a.senderId) === String(freelancerId)
+            a?.senderId != null && String(a.senderId) === String(freelancerId)
         )
       );
       if (fromFreelancer) return fromFreelancer;
@@ -815,7 +1301,7 @@ function ClientReviewDrawer({
     ? versions.filter((v) => String(v.id ?? v.at ?? "") !== latestKey)
     : versions;
 
-// ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
+  // ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
   useEffect(() => {
     if (!project?.id || !token) return;
     let alive = true;
@@ -854,12 +1340,9 @@ function ClientReviewDrawer({
     if (!project?.id || !token) return;
     try {
       setLoading(true);
-      const { data } = await api.get(
-        `/projects/${project.id}/deliveries`,
-        {
-          headers: { authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await api.get(`/projects/${project.id}/deliveries`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
 
       const list = Array.isArray(data?.deliveries)
         ? data.deliveries
@@ -921,11 +1404,11 @@ function ClientReviewDrawer({
         onClick={onClose}
       />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="font-semibold text-slate-800">
-              {readOnly ? "Project Files" : "Receive Project"} — {project.title}
+              {headerTitle} — {project.title}
             </div>
             <button
               onClick={onClose}
@@ -936,243 +1419,99 @@ function ClientReviewDrawer({
           </div>
 
           {/* Body */}
-          <div className="p-5 space-y-5">
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="flex items-center justify-between">
-                <div className="font-medium text-slate-800">
-                  Latest delivery
-                </div>
-                <button
-                  className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
-                  style={ringStyle}
-                  onClick={refresh}
-                  disabled={loading}
-                  type="button"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                  />
-                  Refresh
-                </button>
-              </div>
-
-              {!latest ? (
-                <div className="text-sm text-slate-500 mt-3">
-                  {loading ? "Loading..." : "No deliveries yet."}
-                </div>
-              ) : (
-                <div className="mt-3 space-y-3">
-                  <div className="text-xs text-slate-500">
-                    Delivered on{" "}
-                    {latest.at ? new Date(latest.at).toLocaleString() : "—"}
+          <div className="p-5 space-y-5 flex-1 overflow-y-auto overscroll-contain">
+            {mode !== "request" && (
+              <section className="rounded-2xl bg-white p-4" style={ringStyle}>
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-slate-800">
+                    Latest delivery
                   </div>
+                  <button
+                    className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50"
+                    style={ringStyle}
+                    onClick={refresh}
+                    disabled={loading}
+                    type="button"
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                    />
+                    Refresh
+                  </button>
+                </div>
 
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <Field label="Primary">
-                      {latest.links?.primary ? (
-                        <a
-                          className="text-sky-700 hover:underline break-all"
-                          href={latest.links.primary}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {latest.links.primary}
-                        </a>
-                      ) : (
-                        <span className="text-slate-500 text-sm">—</span>
-                      )}
-                    </Field>
+                {!latest ? (
+                  <div className="text-sm text-slate-500 mt-3">
+                    {loading ? "Loading..." : "No deliveries yet."}
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    <div className="text-xs text-slate-500">
+                      Delivered on{" "}
+                      {latest.at ? new Date(latest.at).toLocaleString() : "—"}
+                    </div>
 
-                    {latest.links?.secondary ? (
-                      <Field label="Secondary">
-                        <a
-                          className="text-sky-700 hover:underline break-all"
-                          href={latest.links.secondary}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {latest.links.secondary}
-                        </a>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <Field label="Primary">
+                        {latest.links?.primary ? (
+                          <a
+                            className="text-sky-700 hover:underline break-all"
+                            href={latest.links.primary}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {latest.links.primary}
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 text-sm">—</span>
+                        )}
+                      </Field>
+
+                      {latest.links?.secondary ? (
+                        <Field label="Secondary">
+                          <a
+                            className="text-sky-700 hover:underline break-all"
+                            href={latest.links.secondary}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {latest.links.secondary}
+                          </a>
+                        </Field>
+                      ) : null}
+                    </div>
+
+                    {latest.notes ? (
+                      <Field label="Notes">
+                        <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                          {latest.notes}
+                        </div>
                       </Field>
                     ) : null}
-                  </div>
 
-                  {latest.notes ? (
-                    <Field label="Notes">
-                      <div className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {latest.notes}
-                      </div>
-                    </Field>
-                  ) : null}
-
-                  <Field label="Attachments">
-                    {shownAttachments?.length ? (
-                      <ul className="space-y-2 text-sm text-slate-700">
-                        {shownAttachments.map((f, idx) => {
-                          const name =
-                            typeof f === "string"
-                              ? f
-                              : f?.name ||
-                                f?.filename ||
-                                f?.originalname ||
-                                f?.url ||
-                                `Attachment ${idx + 1}`;
-                          const url =
-                            typeof f === "object" ? f?.url || f?.path : null;
-                          const openUrl = url ? resolveUrl(url) : null;
-                          const id = typeof f === "object" ? f?.id : null;
-                          const key = String(id ?? `${name}-${idx}`);
-                          const isDownloading = !!downloadingMap[key];
-
-                          return (
-                            <li
-                              key={key}
-                              className="flex items-center justify-between gap-2"
+                    <Field label="Attachments">
+                      {shownAttachments?.length ? (
+                        <>
+                          <div className="mb-2 flex items-center justify-end">
+                            <button
+                              type="button"
+                              onClick={downloadAllLatest}
+                              disabled={downloadingAllLatest}
+                              className="inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs"
+                              style={ringStyle}
+                              title="Download all"
                             >
-                              <div className="min-w-0">
-                                {openUrl ? (
-                                  <a
-                                    className="text-sky-700 hover:underline break-all"
-                                    href={openUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    title="Open attachment"
-                                  >
-                                    {name}
-                                  </a>
-                                ) : (
-                                  <span className="break-all">{name}</span>
-                                )}
-                              </div>
-
-                              {openUrl ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    startDownload({ url: openUrl, name, id }, idx)
-                                  }
-                                  disabled={isDownloading}
-                                  className="inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs shrink-0"
-                                  style={ringStyle}
-                                  title="Download"
-                                >
-                                  {isDownloading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Download className="w-4 h-4" />
-                                  )}
-                                  Download
-                                </button>
-                              ) : null}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <span className="text-slate-500 text-sm">—</span>
-                    )}
-                  </Field>
-                </div>
-              )}
-            </section>
-
-            {!readOnly && (
-              <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={!latest || submitting}
-                  onClick={approve}
-                  className="h-11 px-4 rounded-xl text-white text-sm inline-flex items-center gap-2"
-                  style={{
-                    backgroundColor: T.primary,
-                    opacity: !latest || submitting ? 0.75 : 1,
-                  }}
-                  type="button"
-                >
-                  <Check className="w-4 h-4" /> Approve
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!latest || submitting || !canRequest}
-                  onClick={() => setRequesting((v) => !v)}
-                  className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm inline-flex items-center gap-2"
-                  style={ringStyle}
-                >
-                  <Undo2 className="w-4 h-4" /> Request changes
-                </button>
-              </div>
-
-              {requesting ? (
-                <div className="mt-3">
-                  <textarea
-                    value={requestText}
-                    onChange={(e) => setRequestText(e.target.value)}
-                    placeholder="Briefly describe what needs to be changed..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none min-h-[80px]"
-                    style={ringStyle}
-                  />
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      disabled={!requestText.trim() || submitting}
-                      onClick={request}
-                      className="h-10 px-3 rounded-xl text-white text-sm"
-                      style={{
-                        backgroundColor: T.dark,
-                        opacity: !requestText.trim() || submitting ? 0.75 : 1,
-                      }}
-                      type="button"
-                    >
-                      Send request
-                    </button>
-                    <button
-                      type="button"
-                      className="h-10 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
-                      style={ringStyle}
-                      onClick={() => setRequesting(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </section>
-
-            )}
-            {/* History */}
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
-              <div className="font-medium text-slate-800">History</div>
-              {historyVersions.length === 0 ? (
-                <div className="text-sm text-slate-500 mt-2">
-                  {loading ? "Loading..." : "No history yet."}
-                </div>
-              ) : (
-                <ol className="mt-3 space-y-3">
-                  {historyVersions.map((v) => {
-                    const list = filterAttachmentsForDisplay(v.attachments);
-                    return (
-                      <li
-                        key={v.id || v.at}
-                        className="rounded-xl bg-white p-3"
-                        style={ringStyle}
-                      >
-                        <div className="text-xs text-slate-500">
-                          {v.at ? new Date(v.at).toLocaleString() : "—"}
-                        </div>
-
-                        {v.notes ? (
-                          <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
-                            {v.notes}
+                              {downloadingAllLatest ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                              Download all
+                            </button>
                           </div>
-                        ) : null}
 
-                        <div className="mt-2 text-xs text-slate-500">
-                          Attachments
-                        </div>
-
-                        {list?.length ? (
-                          <ul className="mt-1 space-y-2 text-sm text-slate-700">
-                            {list.map((f, idx) => {
+                          <ul className="space-y-2 text-sm text-slate-700 max-h-56 overflow-y-auto pr-1">
+                            {shownAttachments.map((f, idx) => {
                               const name =
                                 typeof f === "string"
                                   ? f
@@ -1183,17 +1522,18 @@ function ClientReviewDrawer({
                                     `Attachment ${idx + 1}`;
 
                               const url =
-                                typeof f === "object" ? f?.url || f?.path : null;
-
+                                typeof f === "object"
+                                  ? f?.url || f?.path
+                                  : null;
                               const openUrl = url ? resolveUrl(url) : null;
-                              const fid = typeof f === "object" ? f?.id : null;
+                              const id = typeof f === "object" ? f?.id : null;
 
-                              const key = String(fid ?? `${name}-${idx}`);
+                              const key = String(id ?? `${name}-${idx}`);
                               const isDownloading = !!downloadingMap[key];
 
                               return (
                                 <li
-                                  key={`${v.id || v.at}-${key}`}
+                                  key={key}
                                   className="flex items-center justify-between gap-2"
                                 >
                                   <div className="min-w-0">
@@ -1217,7 +1557,7 @@ function ClientReviewDrawer({
                                       type="button"
                                       onClick={() =>
                                         startDownload(
-                                          { url: openUrl, name, id: fid },
+                                          { url: openUrl, name, id },
                                           idx
                                         )
                                       }
@@ -1238,15 +1578,238 @@ function ClientReviewDrawer({
                               );
                             })}
                           </ul>
-                        ) : (
-                          <div className="text-sm text-slate-500 mt-1">—</div>
+                        </>
+                      ) : (
+                        <span className="text-slate-500 text-sm">—</span>
+                      )}
+                    </Field>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {!isFilesMode && (
+              <section className="rounded-2xl bg-white p-4" style={ringStyle}>
+                {isRequestMode ? (
+                  <>
+                    <div className="text-sm text-slate-700 font-medium mb-2">
+                      Request changes
+                    </div>
+                    <textarea
+                      value={requestText}
+                      onChange={(e) => setRequestText(e.target.value)}
+                      placeholder="Briefly describe what needs to be changed..."
+                      className="w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none min-h-[100px]"
+                      style={ringStyle}
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        disabled={!requestText.trim() || submitting}
+                        onClick={request}
+                        className="h-10 px-3 rounded-xl text-white text-sm inline-flex items-center gap-2"
+                        style={{
+                          backgroundColor: T.dark,
+                          opacity: !requestText.trim() || submitting ? 0.75 : 1,
+                        }}
+                        type="button"
+                      >
+                        {submitting && (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         )}
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-            </section>
+                        Send request
+                      </button>
+                      <button
+                        type="button"
+                        className="h-10 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
+                        style={ringStyle}
+                        onClick={onClose}
+                        disabled={submitting}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={!latest || submitting}
+                        onClick={approve}
+                        className="h-11 px-4 rounded-xl text-white text-sm inline-flex items-center gap-2"
+                        style={{
+                          backgroundColor: T.primary,
+                          opacity: !latest || submitting ? 0.75 : 1,
+                        }}
+                        type="button"
+                      >
+                        <Check className="w-4 h-4" /> Approve
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={!latest || submitting || !canRequest}
+                        onClick={() => setRequesting((v) => !v)}
+                        className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm inline-flex items-center gap-2"
+                        style={ringStyle}
+                      >
+                        <Undo2 className="w-4 h-4" /> Request changes
+                      </button>
+                    </div>
+
+                    {requesting ? (
+                      <div className="mt-3">
+                        <textarea
+                          value={requestText}
+                          onChange={(e) => setRequestText(e.target.value)}
+                          placeholder="Briefly describe what needs to be changed..."
+                          className="w-full px-3 py-2.5 rounded-xl bg-white text-sm outline-none min-h-[80px]"
+                          style={ringStyle}
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            disabled={!requestText.trim() || submitting}
+                            onClick={request}
+                            className="h-10 px-3 rounded-xl text-white text-sm"
+                            style={{
+                              backgroundColor: T.dark,
+                              opacity:
+                                !requestText.trim() || submitting ? 0.75 : 1,
+                            }}
+                            type="button"
+                          >
+                            Send request
+                          </button>
+                          <button
+                            type="button"
+                            className="h-10 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm"
+                            style={ringStyle}
+                            onClick={() => setRequesting(false)}
+                            disabled={submitting}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </section>
+            )}
+            {/* History */}
+            {mode !== "request" && (
+              <section className="rounded-2xl bg-white p-4" style={ringStyle}>
+                <div className="font-medium text-slate-800">History</div>
+                {historyVersions.length === 0 ? (
+                  <div className="text-sm text-slate-500 mt-2">
+                    {loading ? "Loading..." : "No history yet."}
+                  </div>
+                ) : (
+                  <ol className="mt-3 space-y-3 max-h-[45vh] overflow-y-auto pr-1">
+                    {historyVersions.map((v) => {
+                      const list = filterAttachmentsForDisplay(v.attachments);
+                      return (
+                        <li
+                          key={v.id || v.at}
+                          className="rounded-xl bg-white p-3"
+                          style={ringStyle}
+                        >
+                          <div className="text-xs text-slate-500">
+                            {v.at ? new Date(v.at).toLocaleString() : "—"}
+                          </div>
+
+                          {v.notes ? (
+                            <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                              {v.notes}
+                            </div>
+                          ) : null}
+
+                          <div className="mt-2 text-xs text-slate-500">
+                            Attachments
+                          </div>
+
+                          {list?.length ? (
+                            <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                              {list.map((f, idx) => {
+                                const name =
+                                  typeof f === "string"
+                                    ? f
+                                    : f?.name ||
+                                      f?.filename ||
+                                      f?.originalname ||
+                                      f?.url ||
+                                      `Attachment ${idx + 1}`;
+
+                                const url =
+                                  typeof f === "object"
+                                    ? f?.url || f?.path
+                                    : null;
+
+                                const openUrl = url ? resolveUrl(url) : null;
+                                const fid =
+                                  typeof f === "object" ? f?.id : null;
+
+                                const key = String(fid ?? `${name}-${idx}`);
+                                const isDownloading = !!downloadingMap[key];
+
+                                return (
+                                  <li
+                                    key={`${v.id || v.at}-${key}`}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <div className="min-w-0">
+                                      {openUrl ? (
+                                        <a
+                                          className="text-sky-700 hover:underline break-all"
+                                          href={openUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          title="Open attachment"
+                                        >
+                                          {name}
+                                        </a>
+                                      ) : (
+                                        <span className="break-all">
+                                          {name}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {openUrl ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          startDownload(
+                                            { url: openUrl, name, id: fid },
+                                            idx
+                                          )
+                                        }
+                                        disabled={isDownloading}
+                                        className="inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs shrink-0"
+                                        style={ringStyle}
+                                        title="Download"
+                                      >
+                                        {isDownloading ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Download className="w-4 h-4" />
+                                        )}
+                                        Download
+                                      </button>
+                                    ) : null}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <div className="text-sm text-slate-500 mt-1">—</div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
+            )}
           </div>
         </div>
       </div>
@@ -1291,7 +1854,7 @@ function ClientApplicationsDrawer({
         onClick={onClose}
       />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="font-semibold text-slate-800">
@@ -1412,7 +1975,28 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
   const readOnlyCategory = !!project.category;
   const requiredOk = confirmed && files.length > 0;
 
-  const handleFile = (e) => setFiles(Array.from(e.target.files || []));
+  const MAX_FILES = 30;
+
+  const totalMb = useMemo(() => {
+    const bytes = files.reduce((s, f) => s + (f.size || 0), 0);
+    return bytes / (1024 * 1024);
+  }, [files]);
+
+  const onPickFiles = (e) => {
+    const picked = Array.from(e.target.files || []);
+
+    setFiles((prev) => {
+      const map = new Map(
+        (prev || []).map((f) => [`${f.name}-${f.size}-${f.lastModified}`, f])
+      );
+      picked.forEach((f) =>
+        map.set(`${f.name}-${f.size}-${f.lastModified}`, f)
+      );
+      return Array.from(map.values()).slice(0, MAX_FILES);
+    });
+
+    e.target.value = ""; // يسمح تختار نفس الملف مرة ثانية
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -1441,7 +2025,7 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
         onClick={onClose}
       />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
           {/* header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
@@ -1465,9 +2049,10 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
               <label className="text-sm text-slate-600">
                 Attachments (optional)
               </label>
-              <div className="mt-1.5 flex items-center gap-3">
+
+              <div className="mt-1.5 flex items-start gap-3">
                 <label
-                  className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm"
+                  className="inline-flex items-center gap-2 h-11 px-3 rounded-xl bg-white hover:bg-slate-50 cursor-pointer text-sm shrink-0"
                   style={ringStyle}
                 >
                   Upload files
@@ -1475,14 +2060,70 @@ function DeliverModal({ project, onClose, onSubmit, submitting }) {
                     type="file"
                     multiple
                     className="hidden"
-                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                    onChange={onPickFiles}
                   />
                 </label>
-                {files.length > 0 && (
-                  <div className="text-xs text-slate-600">
-                    {files.length} file{files.length > 1 ? "s" : ""} selected
-                  </div>
-                )}
+
+                {/* Summary + List */}
+                <div className="flex-1 min-w-0">
+                  {files.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="text-xs text-slate-600">
+                          <span className="font-semibold text-slate-800">
+                            {files.length}
+                          </span>{" "}
+                          files selected{" "}
+                          <span className="text-slate-400">•</span>{" "}
+                          <span className="font-semibold text-slate-800">
+                            {totalMb.toFixed(2)} MB
+                          </span>
+                          {files.length >= MAX_FILES ? (
+                            <span className="ml-2 text-[11px] text-amber-600">
+                              (max {MAX_FILES})
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setFiles([])}
+                          className="text-xs text-rose-600 hover:underline"
+                        >
+                          Remove all
+                        </button>
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto pr-1 space-y-1">
+                        {files.map((f, i) => (
+                          <div
+                            key={`${f.name}-${f.size}-${f.lastModified}`}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                          >
+                            <div className="min-w-0 text-xs text-slate-700 truncate">
+                              {f.name}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFiles((prev) =>
+                                  prev.filter((_, idx) => idx !== i)
+                                )
+                              }
+                              className="text-xs text-rose-600 hover:underline shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-xs text-slate-500 pt-2">
+                      You can upload multiple files.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
