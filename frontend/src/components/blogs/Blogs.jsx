@@ -112,7 +112,7 @@ export default function Blogs() {
                       alt={featured.title}
                       className="h-56 w-full object-cover"
                     />
-                    <span className="absolute top-3 left-3 px-3 py-1 text-[12px] rounded-full bg-[#028090] text-white shadow">
+                    <span className="absolute top-3 left-3 px-3 py-1 text-[12px] rounded-full bg-[#C2410C] text-white shadow">
                       Featured
                     </span>
                   </div>
@@ -139,7 +139,7 @@ export default function Blogs() {
                     <Link
                       to={`/blogs/${featured.id ?? featured._id}`}
                       state={featured}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[#028090] hover:bg-slate-50 transition"
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[#C2410C] hover:bg-slate-50 transition"
                     >
                       Read article <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -156,7 +156,7 @@ export default function Blogs() {
                   placeholder="Search articles, tags…"
                   value={q}
                   onChange={(e) => onSearch(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
+                  className="w-full pl-10 pr-3 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export default function Blogs() {
                       onClick={() => onCat(c)}
                       className={`px-3 py-1.5 rounded-full text-sm border transition ${
                         active
-                          ? "bg-[#028090]/5 text-[#028090] border-[#028090]"
+                          ? "bg-[#C2410C]/5 text-[#C2410C] border-[#C2410C]"
                           : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
                       }`}
                     >

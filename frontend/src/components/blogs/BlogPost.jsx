@@ -108,7 +108,7 @@ export default function BlogPost() {
     <div className="min-h-screen bg-white">
       {/* Progress Bar */}
       <div
-        className="fixed top-0 left-0 h-1 bg-[#028090] z-40 transition-[width] duration-150"
+        className="fixed top-0 left-0 h-1 bg-[#C2410C] z-40 transition-[width] duration-150"
         style={{ width: `${progress}%` }}
       />
 
@@ -153,7 +153,7 @@ export default function BlogPost() {
               {post.category && (
                 <span className="inline-flex items-center gap-1.5">
                   <Tag className="w-4 h-4" />
-                  <span className="px-2 py-0.5 rounded-full border border-[#028090] text-[#028090] text-xs">
+                  <span className="px-2 py-0.5 rounded-full border border-[#C2410C] text-[#C2410C] text-xs">
                     {post.category}
                   </span>
                 </span>

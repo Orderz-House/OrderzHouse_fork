@@ -6,7 +6,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PaymentMethodModal from "./PaymentMethodChooser.jsx";
 
-const THEME = "#028090";
 const API_URL = import.meta.env.VITE_APP_API_URL;
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -19,96 +18,100 @@ const useAuth = () => {
 };
 // =========================================
 
+function CheckIcon({ className = "" }) {
+  return (
+    <svg
+      className={className}
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function PlanCard({ plan, onSubscribe }) {
-  const isPopular = plan.plan_type === "popular";
+  const highlight = plan.plan_type === "popular";
+
+  const durationLabel =
+    plan.plan_type === "monthly"
+      ? `${plan.duration} Month`
+      : plan.plan_type === "yearly"
+      ? `${plan.duration} Year`
+      : plan.name;
 
   return (
     <div
       className={[
-        "group relative flex w-full max-w-sm flex-col justify-between rounded-2xl border bg-white",
-        "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl",
-        isPopular ? "border-[2px]" : "border",
+        "h-full rounded-3xl flex flex-col",
+        "bg-white/85 backdrop-blur-xl ",
+        "border border-slate-200/70",
+        "shadow-[0_25px_60px_-45px_rgba(2,6,23,0.25)]",
+        "hover:shadow-[0_35px_80px_-55px_rgba(2,6,23,0.28)]",
+        "transition-all duration-300 ease-out",
+        highlight
+          ? "ring-1 ring-violet-500/20 bg-gradient-to-b from-violet-50/70 to-indigo-50/40"
+          : "ring-1 ring-black/5",
       ].join(" ")}
-      style={{
-        borderColor: isPopular ? THEME : "rgba(2,128,144,0.15)",
-        boxShadow: isPopular
-          ? "0 8px 28px rgba(2,128,144,0.18)"
-          : "0 6px 18px rgba(0,0,0,0.06)",
-        minHeight: "470px",
-      }}
+      style={{ minHeight: 360 }}
     >
-      {/* CONTENT */}
-      <div className="flex-grow">
-        <div className="px-6 pt-6">
-          <div className="mb-2 flex items-center justify-between">
-            <span
-              className="rounded-full border px-3 py-1 text-xs font-semibold"
-              style={{ borderColor: "rgba(2,128,144,0.25)", color: THEME }}
-            >
-              {plan.name}
-            </span>
+      <div className="p-6 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">{plan.name}</p>
 
-            {isPopular && (
-              <span
-                className="rounded-full px-3 py-1 text-xs font-semibold"
-                style={{
-                  backgroundColor: "rgba(2,128,144,0.08)",
-                  color: THEME,
-                }}
-              >
-                Popular
-              </span>
-            )}
+            <p className="mt-2 text-3xl font-semibold text-slate-900">
+              {plan.price} <span className="text-sm font-normal text-slate-500">JD</span>
+            </p>
+
+            <p className="mt-1 text-sm text-slate-600">{durationLabel}</p>
           </div>
 
-          <h3
-            className="text-2xl font-extrabold tracking-tight"
-            style={{ color: THEME }}
-          >
-            {plan.plan_type === "monthly"
-              ? `${plan.duration} Month`
-              : plan.plan_type === "yearly"
-              ? `${plan.duration} Year`
-              : plan.name}
-          </h3>
-
-          <div className="mt-3 flex items-end gap-2">
-            <span className="text-4xl font-extrabold text-slate-900">
-              {plan.price}
+          {highlight ? (
+            <span className="inline-flex items-center rounded-full border border-violet-500/15 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-700">
+              Most popular
             </span>
-            <span className="mb-1 text-sm font-semibold text-slate-500">
-              JD
+          ) : (
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+              Plan
             </span>
-          </div>
+          )}
         </div>
 
-        <div
-          className="mx-6 my-5 h-px"
-          style={{ background: "rgba(2,128,144,0.12)" }}
-        />
+        <div className="mt-5 h-px bg-slate-200/70" />
 
-        <ul className="mx-6 mb-4 space-y-2 text-sm text-slate-600">
-          {plan.features?.map((item, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: THEME }}
-              />
-              {item}
+        <ul className="mt-5 space-y-2">
+          {plan.features?.map((b, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+              <span className="mt-0.5 grid h-5 w-5 place-items-center rounded-full border border-violet-500/15 bg-violet-500/10 text-violet-700">
+                <CheckIcon className="h-3 w-3" />
+              </span>
+              <span>{b}</span>
             </li>
           ))}
         </ul>
-      </div>
 
-      {/* SINGLE CTA */}
-      <div className="px-6 pb-6">
-        <button
-          onClick={() => onSubscribe(plan)}
-          className="w-full rounded-xl px-4 py-2 font-bold text-white"
-          style={{ background: THEME }}
-        >
-          Subscribe
-        </button>
+        <div className="mt-auto">
+    <button
+      onClick={() => onSubscribe(plan)}
+      className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:opacity-95 active:scale-[0.99] transition"
+    >
+      Subscribe
+    </button>
+
+    <p className="mt-2 text-xs text-slate-500">
+      Secure checkout — choose online or offline payment.
+    </p>
+  </div>
       </div>
     </div>
   );
@@ -135,16 +138,12 @@ export default function Plans() {
 
   const subscribeOnline = async () => {
     if (!user) return navigate("/login");
-
     await stripePromise;
 
-    const res = await axios.post(
-      `${API_URL}/stripe/create-checkout-session`,
-      {
-        plan_id: selectedPlan.id,
-        user_id: user.id,
-      }
-    );
+    const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, {
+      plan_id: selectedPlan.id,
+      user_id: user.id,
+    });
 
     window.location.href = res.data.url;
   };
@@ -163,42 +162,56 @@ export default function Plans() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="mx-auto max-w-6xl px-4 pt-10 text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">
-          Choose Your Plan
-        </h1>
+    <div className="relative isolate overflow-hidden bg-white">
+      {/* ✅ نفس Glows الموجودة في Pricing */}
+      <div className="pointer-events-none absolute -top-24 left-[-90px] h-[360px] w-[360px] rounded-full bg-violet-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -top-28 right-[-110px] h-[380px] w-[380px] rounded-full bg-indigo-500/18 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-160px] left-[10%] h-[420px] w-[420px] rounded-full bg-violet-400/14 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-170px] right-[10%] h-[440px] w-[440px] rounded-full bg-indigo-500/14 blur-3xl" />
+
+      {/* subtle dotted texture */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:radial-gradient(circle_at_1px_1px,black_1px,transparent_0)] [background-size:18px_18px]" />
+
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-32 md:px-8">
+        {/* Header نفس الستايل */}
+        <div className="max-w-2xl">
+          <p className="text-sm text-violet-700">Pricing</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+            Choose Your Plan
+          </h1>
+          <p className="mt-3 text-slate-600">
+            Pick a plan that fits your workflow — upgrade anytime.
+          </p>
+        </div>
+
+        {/* Grid نفس Pricing */}
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {plans.map((p) => (
+            <PlanCard key={p.id} plan={p} onSubscribe={setSelectedPlan} />
+          ))}
+        </div>
+
+        <PaymentMethodModal
+          open={!!selectedPlan}
+          onClose={() => setSelectedPlan(null)}
+          onOnline={subscribeOnline}
+          onOffline={subscribeOffline}
+        />
+
+        <p className="mt-10 text-center text-sm font-semibold text-slate-600">
+          * A contract is signed after subscription.
+        </p>
+
+        <div className="mt-4 flex justify-center">
+          <GradientButton
+            href="/contracts/contract.pdf"
+            className="text-sm px-4 py-2 rounded-lg"
+            style={{ width: "fit-content" }}
+          >
+            View Contract
+          </GradientButton>
+        </div>
       </div>
-
-      <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {plans.map((p) => (
-          <div key={p.id} className="flex justify-center">
-            <PlanCard plan={p} onSubscribe={setSelectedPlan} />
-          </div>
-        ))}
-      </div>
-
-      <PaymentMethodModal
-        open={!!selectedPlan}
-        onClose={() => setSelectedPlan(null)}
-        onOnline={subscribeOnline}
-        onOffline={subscribeOffline}
-      />
-
-      <p className="mt-10 text-center text-sm font-semibold text-slate-600">
-  * A contract is signed after subscription.
-</p>
-
-<div className="flex justify-center mt-4">
-  <GradientButton
-    href="/contracts/contract.pdf"
-    className="text-sm px-4 py-2 rounded-lg"
-    style={{ width: "fit-content" }}
-  >
-    View Contract
-  </GradientButton>
-</div>
-
     </div>
   );
 }

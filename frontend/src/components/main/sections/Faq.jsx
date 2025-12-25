@@ -90,6 +90,9 @@ function CategoryIcon({ cat }) {
 // Topic
 function TopicCard({ cat, count, onOpen }) {
   const handleMove = (e) => {
+    const isTouch = typeof window !== "undefined" && (window.matchMedia?.("(hover: none)")?.matches || window.innerWidth < 640);
+    if (isTouch) return;
+
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
@@ -98,6 +101,9 @@ function TopicCard({ cat, count, onOpen }) {
     e.currentTarget.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(0)`;
   };
   const handleLeave = (e) => {
+    const isTouch = typeof window !== "undefined" && (window.matchMedia?.("(hover: none)")?.matches || window.innerWidth < 640);
+    if (isTouch) return;
+
     e.currentTarget.style.transform = "perspective(900px) rotateX(0) rotateY(0) translateZ(0)";
   };
 
@@ -110,9 +116,9 @@ function TopicCard({ cat, count, onOpen }) {
         group relative rounded-2xl overflow-hidden
         border border-slate-200 bg-white
         will-change-transform transform-gpu
-        transition-transform duration-300 ease-[cubic-bezier(.22,.61,.36,1)]
-        shadow-[0_10px_30px_rgba(249,115,22,0.12)]
-        hover:shadow-[0_18px_44px_rgba(249,115,22,0.20)]
+        sm:transition-transform sm:duration-300 sm:ease-[cubic-bezier(.22,.61,.36,1)]
+        shadow-[0_8px_18px_rgba(17,24,39,0.06)] sm:shadow-[0_10px_30px_rgba(249,115,22,0.12)]
+        sm:hover:shadow-[0_18px_44px_rgba(249,115,22,0.20)]
         text-left
       "
       style={{ transform: "perspective(900px)" }}
@@ -123,10 +129,10 @@ function TopicCard({ cat, count, onOpen }) {
           background: `linear-gradient(90deg, #ffedd5 0%, ${THEME_LIGHT} 55%, #ffedd5 100%)`,
         }}
       /> */}
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center"
             style={{
               color: THEME_DARK,
               background: "rgba(249,115,22,0.12)",
@@ -136,17 +142,17 @@ function TopicCard({ cat, count, onOpen }) {
             <CategoryIcon cat={cat} />
           </div>
           <div>
-            <div className="text-lg font-semibold text-slate-900">{cat}</div>
-            <div className="text-xs text-slate-500">{count} articles</div>
+            <div className="text-base sm:text-lg font-semibold text-slate-900">{cat}</div>
+            <div className="text-[11px] sm:text-xs text-slate-500">{count} articles</div>
           </div>
         </div>
 
-        <div className="mt-4 text-sm text-slate-600">
+        <div className="mt-3 hidden sm:block text-sm text-slate-600">
           Explore curated answers and best practices for{" "}
           <span className="text-slate-900 font-medium">{cat}</span>.
         </div>
 
-        <div className="mt-4 inline-flex items-center gap-2 text-[13px] text-[color:var(--t)]">
+        <div className="mt-3 inline-flex items-center gap-2 text-[12px] sm:text-[13px] text-[color:var(--t)]">
           Read answers
           <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
             <path d="M7 5l5 5-5 5" />
@@ -171,7 +177,7 @@ function QAItem({ q, a }) {
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-orange-50/60 transition"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left active:bg-orange-50/70 sm:hover:bg-orange-50/60 transition"
       >
         <span className="font-medium text-slate-900 text-xs sm:text-sm">{q}</span>
         <span
@@ -212,12 +218,12 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
   const current = topics.find((t) => t.cat === openCat) || null;
 
   return (
-    <section className="relative bg-white overflow-hidden min-h-[80vh] flex items-center">
+    <section className="relative bg-white overflow-hidden min-h-screen sm:min-h-[80vh] flex items-start sm:items-center">
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Soft glow */}
-<div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 bg-gradient-to-b from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
+<div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-12 sm:h-16 bg-gradient-to-b from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-10 sm:h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
 
         {/* Dots */}
         <svg className="absolute top-10 left-10 w-32 h-32 opacity-20" viewBox="0 0 100 100">
@@ -250,7 +256,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
       </div>
 
       {/* Wrapper */}
-      <div className="relative z-10 max-w-screen-xl mx-auto px-6 sm:px-5 lg:px-8 py-14 flex-col items-center">
+      <div className="relative z-10 w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 flex-col items-center">
         {/* Badge */}
         <div className="text-center max-w-3xl mx-auto">
           <div
@@ -263,15 +269,17 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
         </div>
 
         {/* Heading */}
-        <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 text-center">
-          How can we help?
+        <h2 className="mt-4 text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 text-center">
+          <span className="sm:hidden">Help Center</span>
+          <span className="hidden sm:inline">How can we help?</span>
         </h2>
-        <p className="mt-3 text-slate-600 text-center">
-          Explore topics below. Each topic opens detailed answers in a sleek modal.
+        <p className="mt-2 sm:mt-3 text-sm sm:text-base text-slate-600 text-center px-2">
+          <span className="sm:hidden">Choose a topic to see answers.</span>
+          <span className="hidden sm:inline">Explore topics below. Each topic opens detailed answers in a sleek modal.</span>
         </p>
 
         {/* Grid */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {topics.map(({ cat, items }) => (
             <TopicCard key={cat} cat={cat} count={items.length} onOpen={() => setOpenCat(cat)} />
           ))}
@@ -283,11 +291,11 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
         <>
           <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[9999]" onClick={() => setOpenCat(null)} />
 
-          <div className="fixed inset-0 z-[99999] grid place-items-center p-4 sm:p-6" aria-modal="true" role="dialog">
+          <div className="fixed inset-0 z-[99999] grid place-items-center p-3 sm:p-6" aria-modal="true" role="dialog">
             <div
               className="
                 w-full max-w-3xl
-                bg-white rounded-2xl shadow-2xl border border-slate-200
+                bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl border border-slate-200
                 overflow-hidden
                 transform-gpu will-change-[transform,opacity]
                 transition-all duration-500 ease-[cubic-bezier(.22,.61,.36,1)]
@@ -295,10 +303,10 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
               "
             >
               {/* Header */}
-              <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-4 sm:px-5 py-3 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center"
                     style={{ color: THEME_DARK, background: "rgba(249,115,22,0.12)" }}
                   >
                     <CategoryIcon cat={current.cat} />
@@ -320,7 +328,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
 
               {/* Content */}
               <div className="max-h-[70vh] overflow-y-auto">
-                <div className="p-5 space-y-3">
+                <div className="p-4 sm:p-5 space-y-3">
                   {current.items.map((f, i) => (
                     <QAItem key={i} q={f.question} a={f.answer} />
                   ))}

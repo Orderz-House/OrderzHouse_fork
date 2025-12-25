@@ -35,7 +35,7 @@ const centerPop = {
 // communityImg: صورة الوسط (استبدلها بنفس متغيرك)
 export default function CommunitySection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-orange-50 py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-orange-50 py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
       {/* ✅ Seam fades (top/bottom) متناسقة مع الخلفية الجديدة */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 bg-gradient-to-b from-white to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
@@ -90,35 +90,116 @@ export default function CommunitySection() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-[420px] items-center justify-center sm:min-h-[520px] md:min-h-[620px]">
+        <div className="flex min-h-[340px] items-center justify-center sm:min-h-[520px] md:min-h-[620px]">
           <motion.div
             variants={sectionStagger}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.28 }}
-            className="max-w-5xl text-center space-y-6 sm:space-y-8"
+            className="max-w-5xl text-center space-y-5 sm:space-y-8"
           >
             {/* Title */}
             <div>
               <motion.h1
                 variants={fadeUp}
-                className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight"
+                className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-3 sm:mb-6 leading-tight tracking-tight"
               >
                 Join Our <span className="block text-slate-950">Community</span>
               </motion.h1>
 
               <motion.p
                 variants={fadeUp}
-                className="mx-auto max-w-2xl text-base sm:text-sm md:text-lg text-gray-700 leading-relaxed px-4"
+                className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg text-gray-700 leading-6 sm:leading-relaxed px-4"
               >
-                Connect with talented professionals, collaborate on exciting projects, and build lasting relationships
-                in our freelance ecosystem.
+                <span className="sm:hidden">Connect, collaborate, and grow together.</span>
+                <span className="hidden sm:inline">
+                  Connect with talented professionals, collaborate on exciting projects, and build lasting relationships
+                  in our freelance ecosystem.
+                </span>
               </motion.p>
             </div>
 
             {/* Content */}
-            <div className="mt-8 sm:mt-10 md:mt-12">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto items-start lg:items-center">
+            <div className="mt-6 sm:mt-10 md:mt-12">
+
+            {/* ✅ Mobile layout: 2 columns × 2 rows */}
+            <div className="sm:hidden grid grid-cols-2 gap-4 max-w-md mx-auto">
+              <FeatureCard
+                tone="violet"
+                Icon={Users}
+                title="Freelancer"
+                desc="Find work & get paid."
+                align="left"
+              />
+              <FeatureCard
+                tone="violet"
+                Icon={Briefcase}
+                title="Client"
+                desc="Post needs & hire fast."
+                align="left"
+              />
+              <FeatureCard
+                tone="orange"
+                Icon={Handshake}
+                title="Success"
+                desc="Work smoothly together."
+                align="right"
+              />
+              <FeatureCard
+                tone="orange"
+                Icon={ShieldCheck}
+                title="Payments"
+                desc="Protected & secure."
+                align="right"
+              />
+            </div>
+
+
+
+{/* ✅ Tablet / iPad layout (sm → <lg): image on top + 2×2 cards */}
+<div className="hidden sm:block lg:hidden max-w-5xl mx-auto">
+  <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/60 backdrop-blur-xl">
+    <img
+      src="/community.jpg"
+      alt="Community"
+      className="h-56 md:h-64 w-full object-cover"
+      draggable={false}
+    />
+  </div>
+
+  <div className="mt-7 grid grid-cols-2 gap-6">
+    <FeatureCard
+      tone="violet"
+      Icon={Users}
+      title="Freelancer"
+      desc="Apply to tasks, showcase skills, and get paid."
+      align="left"
+    />
+    <FeatureCard
+      tone="violet"
+      Icon={Briefcase}
+      title="Client"
+      desc="Post needs, review proposals, and hire."
+      align="right"
+    />
+    <FeatureCard
+      tone="orange"
+      Icon={Handshake}
+      title="Collaboration"
+      desc="Work smoothly and build trust."
+      align="left"
+    />
+    <FeatureCard
+      tone="orange"
+      Icon={ShieldCheck}
+      title="Secure"
+      desc="Protected payments and peace of mind."
+      align="right"
+    />
+  </div>
+</div>
+
+              <div className="hidden lg:grid lg:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto items-start lg:items-center">
                 {/* Left column (من اليسار) */}
                 <motion.div
                   variants={sectionStagger}
@@ -148,7 +229,7 @@ export default function CommunitySection() {
                 {/* Center Image (من النص) */}
                 <motion.div
                   variants={centerPop}
-                  className="lg:col-span-2 flex justify-center order-3 sm:order-2 lg:order-2"
+                  className="flex lg:col-span-2 justify-center order-3 lg:order-2"
                 >
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-0 -z-10 rounded-[36px] bg-white/35 blur-xl" />
@@ -223,8 +304,8 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
     <div
       className={[
         "rounded-3xl bg-white/70 backdrop-blur-md",
-        "ring-1 ring-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.08)]",
-        "p-5 sm:p-6",
+        "ring-1 ring-black/5 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:shadow-[0_18px_45px_rgba(0,0,0,0.08)]",
+        "p-4 sm:p-6",
         "transition-transform duration-300 hover:-translate-y-1",
       ].join(" ")}
     >
@@ -236,7 +317,7 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
       >
         <div
           className={[
-            "grid h-12 w-12 place-items-center rounded-2xl",
+            "grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl",
             iconWrap,
             "ring-1 ring-black/10",
             "relative",
@@ -249,14 +330,14 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
               badgeRing,
             ].join(" ")}
           />
-          <Icon className="h-6 w-6 text-white" />
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
         </div>
       </div>
 
       <h3
         className={[
-          "text-sm sm:text-lg font-extrabold text-gray-900 mb-3",
-          isRight ? "sm:text-right" : "sm:text-left",
+          "text-sm sm:text-lg font-extrabold text-gray-900 mb-2 sm:mb-3",
+          isRight ? "text-center sm:text-right" : "text-center sm:text-left",
         ].join(" ")}
       >
         {title}
@@ -264,8 +345,8 @@ function FeatureCard({ Icon, title, desc, align = "left", tone = "violet" }) {
 
       <p
         className={[
-          "text-gray-600 leading-relaxed text-xs sm:text-sm sm:text-base",
-          isRight ? "sm:text-right" : "sm:text-left",
+          "text-gray-600 leading-5 sm:leading-relaxed text-[11px] sm:text-sm sm:text-base",
+          isRight ? "text-center sm:text-right" : "text-center sm:text-left",
         ].join(" ")}
       >
         {desc}

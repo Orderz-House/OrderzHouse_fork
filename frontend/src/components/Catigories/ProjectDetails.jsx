@@ -520,10 +520,12 @@ export default function ProjectDetails({ mode: propMode }) {
           <aside className="hidden lg:block lg:sticky lg:top-24">
             <ProjectInfoCard
               item={item}
+              isTasks={mode === "tasks"}
               isClient={isClient}
               isFreelancer={isFreelancer}
               busy={busy}
               onContact={onContact}
+              onApplyToProject={isFreelancer ? onApplyToProject : undefined}
               acceptLabel={acceptLabel}
               contactLabel="Contact"
               acceptClasses={acceptClasses}

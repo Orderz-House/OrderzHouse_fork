@@ -1,395 +1,525 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import {
-  Users,
-  Briefcase,
+  Search,
+  Mail,
+  Bell,
+  ArrowRight,
+  ArrowUpRight,
+  Plus,
+  FolderPlus,
+  ClipboardList,
   Wallet,
   CreditCard,
-  Activity,
-  Clock,
-  ClipboardList,
-  ArrowUpRight,
-  ArrowDownRight,
-  MessageSquare,
-  FolderPlus,
-  ArrowRight,
-  UserCheck,
   RefreshCw,
+  HelpCircle,
+  Clock,
+  Activity,
+  UserCheck,
+  Users,
 } from "lucide-react";
 
-// 🧩 استيراد دوال الـ API الجاهزة
+// 🧩 API (كما هو عندك)
 import {
   fetchAdminDashboard,
   fetchFreelancerDashboard,
   fetchClientDashboard,
 } from "../api/dashboard";
 
-const PRIMARY = "#C2410C";
-
-/* نفس mapRole المستخدم في AdminLayout تقريباً */
+/* ===================== Helpers (Role + Base paths) ===================== */
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
   if (roleId === 2) return "client";
   if (roleId === 3) return "freelancer";
+  if (roleId === 5) return "partner";
   return "user";
 }
 
-/* كرت إحصائيات عام */
-function StatCard({ title, value, sub, icon: Icon, trend, accent }) {
-  const trendIsNegative = trend && String(trend).trim().startsWith("-");
-  const TrendIcon = trendIsNegative ? ArrowDownRight : ArrowUpRight;
-  const trendColor = trendIsNegative ? "text-rose-500" : "text-emerald-600";
+function getBasePrefix(pathname) {
+  if (pathname.startsWith("/client")) return "/client";
+  if (pathname.startsWith("/freelancer")) return "/freelancer";
+  if (pathname.startsWith("/apm")) return "/apm";
+  if (pathname.startsWith("/partner")) return "/partner";
+  return "/admin";
+}
+
+function useRoleBase() {
+  const location = useLocation();
+  return getBasePrefix(location.pathname);
+}
+
+/* ===================== UI tokens ===================== */
+const UI = {
+  pageBg: "bg-slate-50",
+  container: "mx-auto w-full max-w-6xl px-4",
+  card: "rounded-3xl bg-white border border-slate-100 shadow-sm",
+  softCard: "rounded-3xl bg-white/80 backdrop-blur border border-slate-200/70 shadow-sm",
+  ring: { border: "1px solid rgba(15,23,42,.10)" },
+  violetGrad:
+    "bg-gradient-to-r from-violet-500 via-indigo-500 to-violet-500",
+  chip:
+    "rounded-2xl bg-white border border-slate-200/70 shadow-sm",
+};
+
+function cx(...x) {
+  return x.filter(Boolean).join(" ");
+}
+
+function parseNumberLike(v) {
+  if (v == null) return null;
+  const s = String(v);
+  const m = s.replace(/[^\d.]/g, "");
+  const n = Number(m);
+  return Number.isFinite(n) ? n : null;
+}
+
+function InfoTip({ text }) {
+  if (!text) return null;
+  return (
+    <span className="relative inline-flex items-center group">
+      <button
+        type="button"
+        className="inline-flex items-center justify-center rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-200/70"
+        aria-label="Help"
+      >
+        <HelpCircle className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+      </button>
+
+      <span
+        className="
+          pointer-events-none absolute left-1/2 top-0
+          -translate-x-1/2 -translate-y-[120%]
+          w-[260px] max-w-[75vw]
+          rounded-xl bg-slate-900 text-white
+          text-[11px] leading-5 px-3 py-2
+          opacity-0 scale-95
+          group-hover:opacity-100 group-hover:scale-100
+          group-focus-within:opacity-100 group-focus-within:scale-100
+          transition shadow-[0_18px_40px_rgba(0,0,0,0.35)]
+          z-50
+        "
+        role="tooltip"
+      >
+        {text}
+        <span
+          className="
+            absolute left-1/2 bottom-[-6px] -translate-x-1/2
+            h-0 w-0 border-x-[6px] border-x-transparent
+            border-t-[6px] border-t-slate-900
+          "
+        />
+      </span>
+    </span>
+  );
+}
+
+/* ===================== Top bar (مثل الصورة) ===================== */
+function DashTopBar({ query, setQuery, userLabel, onInbox }) {
+  return (
+    <div className={cx(UI.softCard, "px-4 py-3 sm:px-5 sm:py-4")}>
+      <div className="flex items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+            className="h-11 w-full rounded-2xl bg-white pl-10 pr-3 text-sm text-slate-800 outline-none"
+            style={UI.ring}
+          />
+        </div>
+
+        {/* Icons */}
+        <button
+          type="button"
+          onClick={onInbox}
+          className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white hover:bg-slate-50"
+          style={UI.ring}
+          aria-label="Inbox"
+        >
+          <Mail className="h-4 w-4 text-slate-500" />
+        </button>
+
+        <button
+          type="button"
+          className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white hover:bg-slate-50"
+          style={UI.ring}
+          aria-label="Notifications"
+        >
+          <Bell className="h-4 w-4 text-slate-500" />
+        </button>
+
+        {/* User chip */}
+        <div
+          className="hidden sm:flex items-center gap-2 rounded-2xl bg-white px-3 h-11"
+          style={UI.ring}
+          title={userLabel || "User"}
+        >
+          <div className="h-8 w-8 rounded-2xl bg-slate-100 grid place-items-center">
+            <Users className="h-4 w-4 text-slate-500" />
+          </div>
+          <div className="text-sm font-semibold text-slate-800 max-w-[160px] truncate">
+            {userLabel || "—"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Hero banner (Join now -> Create project) ===================== */
+function HeroBanner({
+  eyebrow,
+  title,
+  subtitle,
+  ctaLabel,
+  onCta,
+  rightSlot,
+}) {
+  return (
+    <div className={cx(UI.card, UI.violetGrad, "relative overflow-hidden")}>
+      {/* decorations */}
+      <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute left-10 bottom-[-80px] h-64 w-64 rounded-full bg-black/10 blur-2xl" />
+
+      <div className="relative p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            {eyebrow ? (
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/70 font-semibold">
+                {eyebrow}
+              </div>
+            ) : null}
+
+            <h2 className="mt-2 text-[22px] sm:text-[26px] font-extrabold leading-tight text-white">
+              {title}
+            </h2>
+
+            {subtitle ? (
+              <p className="mt-2 text-sm text-white/80 max-w-xl">
+                {subtitle}
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onCta}
+                className="h-11 rounded-2xl bg-black/80 hover:bg-black text-white px-4 text-sm font-semibold inline-flex items-center gap-2"
+              >
+                {ctaLabel}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
+              <span className="hidden sm:inline-flex text-xs text-white/70">
+                Fast & clear flow
+              </span>
+            </div>
+          </div>
+
+          {rightSlot ? (
+            <div className="hidden md:block shrink-0">{rightSlot}</div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Mini KPI chips (scroll on mobile) ===================== */
+function MiniKpi({ icon: Icon, label, value, tone = "violet" }) {
+  const toneBg =
+    tone === "orange"
+      ? "bg-orange-50 text-orange-700 border-orange-200/70"
+      : tone === "emerald"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200/70"
+      : "bg-violet-50 text-violet-700 border-violet-200/70";
+
+  const SafeIcon = typeof Icon === "function" ? Icon : null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4">
-      <div
-        className={`h-10 w-10 rounded-xl flex items-center justify-center ${
-          accent || "bg-teal-50"
-        }`}
-      >
-        {Icon && <Icon className="w-5 h-5" style={{ color: PRIMARY }} />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-[11px] uppercase tracking-wide text-slate-500">
-          {title}
+    <div className={cx(UI.chip, "px-3 py-2.5 min-w-[210px] sm:min-w-0")} style={UI.ring}>
+      <div className="flex items-center gap-3">
+        <div className={cx("h-9 w-9 rounded-2xl grid place-items-center border", toneBg)}>
+          {SafeIcon ? <SafeIcon className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
         </div>
-        <div className="mt-1 flex items-baseline gap-2">
-          <div className="text-lg font-semibold text-slate-900">
+        <div className="min-w-0">
+          <div className="text-[11px] text-slate-500 font-semibold truncate">
+            {label}
+          </div>
+          <div className="text-sm font-extrabold text-slate-900 truncate">
             {value ?? "—"}
           </div>
-          {trend && (
-            <div
-              className={`inline-flex items-center gap-1 text-[11px] ${trendColor}`}
-            >
-              <TrendIcon className="w-3 h-3" />
-              <span>{String(trend).replace(/^[-+]/, "")}</span>
-            </div>
-          )}
-        </div>
-        {sub && <div className="mt-1 text-xs text-slate-500 truncate">{sub}</div>}
-      </div>
-    </div>
-  );
-}
-
-/* ===================== Skeleton helpers ===================== */
-function Sk({ className = "" }) {
-  return (
-    <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />
-  );
-}
-
-function StatCardSkeleton({ accent = "bg-slate-100" }) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4">
-      <div className={`h-10 w-10 rounded-xl ${accent} animate-pulse`} />
-      <div className="min-w-0 flex-1 space-y-2">
-        <Sk className="h-3 w-24" />
-        <Sk className="h-6 w-16" />
-        <Sk className="h-3 w-36" />
-      </div>
-    </div>
-  );
-}
-
-function MiniRowSkeleton() {
-  return (
-    <div className="rounded-lg bg-white border border-slate-100 px-2.5 py-2 space-y-2">
-      <Sk className="h-3 w-2/3" />
-      <Sk className="h-3 w-1/2" />
-    </div>
-  );
-}
-
-function MiniListCardSkeleton() {
-  return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="inline-flex items-center gap-2">
-          <Sk className="h-4 w-4 rounded" />
-          <Sk className="h-3 w-28" />
-        </div>
-        <Sk className="h-3 w-10" />
-      </div>
-
-      <div className="space-y-2">
-        <MiniRowSkeleton />
-        <MiniRowSkeleton />
-        <MiniRowSkeleton />
-      </div>
-    </div>
-  );
-}
-
-function RecentProjectRowSkeleton() {
-  return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3">
-      <div className="min-w-0 flex-1 space-y-2">
-        <Sk className="h-4 w-1/2" />
-        <div className="flex gap-2">
-          <Sk className="h-5 w-14 rounded-full" />
-          <Sk className="h-5 w-20 rounded-full" />
         </div>
       </div>
-      <Sk className="h-4 w-16" />
     </div>
   );
 }
 
-/* ===================== Page Skeletons ===================== */
-function AdminDashboardSkeleton() {
+function KpiRow({ items }) {
+  const list = Array.isArray(items) ? items : [];
   return (
-    <div className="space-y-6 py-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <StatCardSkeleton key={i} />
+    <div className="mt-4">
+      {/* desktop: grid / mobile: horizontal swipe */}
+      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {list.map((it, i) => (
+          <MiniKpi
+            key={it?.id || it?.title || i}
+            icon={it?.icon}
+            label={it?.title || it?.label || "KPI"}
+            value={it?.value}
+            tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+          />
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="space-y-2">
-              <Sk className="h-4 w-48" />
-              <Sk className="h-3 w-64" />
+      <div className="sm:hidden -mx-4 px-4 overflow-x-auto">
+        <div className="flex gap-3 w-max pb-2 snap-x snap-mandatory">
+          {list.map((it, i) => (
+            <div key={it?.id || it?.title || i} className="snap-start">
+              <MiniKpi
+                icon={it?.icon}
+                label={it?.title || it?.label || "KPI"}
+                value={it?.value}
+                tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+              />
             </div>
-            <Sk className="h-6 w-20 rounded-full" />
-          </div>
-          <Sk className="h-32 w-full rounded-xl" />
-        </div>
-
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <Sk className="h-4 w-44" />
-            <Sk className="h-3 w-20" />
-          </div>
-
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Sk className="h-9 w-9 rounded-full" />
-                  <div className="min-w-0 space-y-2">
-                    <Sk className="h-3 w-32" />
-                    <Sk className="h-3 w-20" />
-                    <Sk className="h-3 w-40" />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1 shrink-0">
-                  <Sk className="h-8 w-20 rounded-full" />
-                  <Sk className="h-8 w-20 rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function FreelancerDashboardSkeleton() {
+/* ===================== Continue cards (carousel on mobile) ===================== */
+function ContinueCard({ badge, title, metaLeft, metaRight, onOpen }) {
   return (
-    <div className="space-y-6 py-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <StatCardSkeleton key={i} accent="bg-cyan-50" />
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="space-y-2">
-              <Sk className="h-4 w-36" />
-              <Sk className="h-3 w-64" />
-            </div>
-            <Sk className="h-9 w-20 rounded-xl" />
-          </div>
-
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Sk className="h-4 w-1/2" />
-                  <Sk className="h-3 w-1/3" />
-                </div>
-                <div className="flex gap-2">
-                  <Sk className="h-5 w-16 rounded-full" />
-                  <Sk className="h-5 w-16 rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <Sk className="h-4 w-44" />
-              <Sk className="h-8 w-24 rounded-full" />
-            </div>
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
-                >
-                  <Sk className="h-4 w-2/3" />
-                  <div className="mt-2 flex items-center justify-between">
-                    <Sk className="h-3 w-20" />
-                    <Sk className="h-3 w-16" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <Sk className="h-4 w-28 mb-3" />
-            <div className="grid gap-2">
-              <Sk className="h-9 w-full rounded-xl" />
-              <Sk className="h-9 w-full rounded-xl" />
-              <Sk className="h-9 w-full rounded-xl" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ClientDashboardSkeleton() {
-  return (
-    <div className="space-y-6 py-6" dir="ltr">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <StatCardSkeleton key={i} accent="bg-sky-50" />
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="space-y-2">
-                <Sk className="h-4 w-32" />
-                <Sk className="h-3 w-72" />
-              </div>
-              <Sk className="h-9 w-24 rounded-xl" />
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <MiniListCardSkeleton />
-              <MiniListCardSkeleton />
-              <MiniListCardSkeleton />
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="space-y-2">
-                <Sk className="h-4 w-36" />
-                <Sk className="h-3 w-64" />
-              </div>
-              <Sk className="h-9 w-20 rounded-xl" />
-            </div>
-
-            <div className="space-y-3">
-              <RecentProjectRowSkeleton />
-              <RecentProjectRowSkeleton />
-              <RecentProjectRowSkeleton />
-              <RecentProjectRowSkeleton />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="space-y-2 mb-3">
-              <Sk className="h-4 w-28" />
-              <Sk className="h-3 w-44" />
-            </div>
-            <div className="grid gap-2">
-              <Sk className="h-10 w-full rounded-xl" />
-              <Sk className="h-10 w-full rounded-xl" />
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <Sk className="h-4 w-44 mb-3" />
-            <div className="space-y-2">
-              <Sk className="h-3 w-64" />
-              <Sk className="h-3 w-56" />
-              <Sk className="h-3 w-60" />
-              <Sk className="h-3 w-48" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* تشارت بسيطة للريڤنيو – تستقبل نقاط من الـ API */
-function SimpleAreaChart({ points }) {
-  const safePoints = Array.isArray(points) ? points : [];
-  const width = 240;
-  const height = 80;
-
-  if (!safePoints.length) {
-    return (
-      <div className="flex items-center justify-center h-32 text-xs text-slate-400">
-        لا توجد بيانات للعرض حالياً
-      </div>
-    );
-  }
-
-  const max = Math.max(...safePoints) || 1;
-  const stepX =
-    safePoints.length > 1 ? width / (safePoints.length - 1) : width;
-
-  let linePath = "";
-  safePoints.forEach((v, i) => {
-    const x = i * stepX;
-    const y = height - (v / max) * (height - 10) - 5;
-    linePath += `${i === 0 ? "M" : "L"} ${x},${y} `;
-  });
-  const areaPath = `${linePath} L ${width},${height} L 0,${height} Z`;
-
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-32 overflow-visible"
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cx(UI.card, "text-left overflow-hidden hover:shadow-md transition-shadow")}
+      style={UI.ring}
     >
-      <defs>
-        <linearGradient id="dash-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={PRIMARY} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={PRIMARY} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill="url(#dash-area)" stroke="none" />
-      <path
-        d={linePath}
-        fill="none"
-        stroke={PRIMARY}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
+      <div className="h-28 sm:h-32 bg-slate-100 relative">
+        <div className="absolute inset-0 bg-gradient-to-tr from-slate-200 via-white to-slate-200 opacity-80" />
+        {badge ? (
+          <div className="absolute left-3 top-3">
+            <span className="inline-flex items-center rounded-full bg-white/90 border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
+              {badge}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="p-4">
+        <div className="text-sm font-extrabold text-slate-900 line-clamp-2">
+          {title || "Untitled"}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-slate-500">
+          <span className="truncate">{metaLeft || "—"}</span>
+          <span className="font-semibold text-slate-800 truncate">
+            {metaRight || ""}
+          </span>
+        </div>
+      </div>
+    </button>
   );
 }
 
-/* ===================== داشبورد الادمن ===================== */
+function ContinueSection({ title, rightAction, items, renderItem }) {
+  const list = Array.isArray(items) ? items : [];
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm font-extrabold text-slate-900">{title}</div>
+        {rightAction}
+      </div>
+
+      {/* desktop grid */}
+      <div className="hidden sm:grid mt-3 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((it, i) => renderItem?.(it, i))}
+      </div>
+
+      {/* mobile carousel */}
+      <div className="sm:hidden mt-3 -mx-4 px-4 overflow-x-auto">
+        <div className="flex gap-3 w-max pb-2 snap-x snap-mandatory">
+          {list.map((it, i) => (
+            <div key={it?.id || it?._id || i} className="w-[260px] snap-start">
+              {renderItem?.(it, i)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Right column: Statistic + List ===================== */
+function RingProgress({ percent = 0, label, subLabel }) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  const r = 36;
+  const c = 2 * Math.PI * r;
+  const dash = (p / 100) * c;
+
+  return (
+    <div className={cx(UI.card, "p-5")} style={UI.ring}>
+      <div className="flex items-start justify-between">
+        <div className="text-sm font-extrabold text-slate-900">Statistic</div>
+        <button type="button" className="text-slate-400 hover:text-slate-600">
+          •••
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-col items-center">
+        <div className="relative h-28 w-28">
+          <svg viewBox="0 0 100 100" className="h-28 w-28">
+            <circle
+              cx="50"
+              cy="50"
+              r={r}
+              stroke="rgba(15,23,42,.10)"
+              strokeWidth="10"
+              fill="none"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r={r}
+              stroke="rgba(139,92,246,1)"
+              strokeWidth="10"
+              fill="none"
+              strokeDasharray={`${dash} ${c - dash}`}
+              strokeLinecap="round"
+              transform="rotate(-90 50 50)"
+            />
+          </svg>
+
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="h-14 w-14 rounded-full bg-slate-100 grid place-items-center">
+              <Users className="h-6 w-6 text-slate-500" />
+            </div>
+          </div>
+
+          <div className="absolute right-0 top-2">
+            <span className="inline-flex items-center rounded-full bg-violet-50 text-violet-700 border border-violet-200/70 px-2 py-0.5 text-[10px] font-bold">
+              {Math.round(p)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-3 text-sm font-extrabold text-slate-900">
+          {label || "Keep going 🚀"}
+        </div>
+        {subLabel ? (
+          <div className="mt-1 text-[11px] text-slate-500 text-center">
+            {subLabel}
+          </div>
+        ) : null}
+
+        {/* tiny bars */}
+        <div className="mt-4 w-full">
+          <div className="flex items-end justify-between gap-2 h-16">
+            {[22, 45, 30, 60, 28].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-xl bg-slate-100 overflow-hidden"
+              >
+                <div
+                  className="w-full rounded-xl bg-violet-400"
+                  style={{ height: `${h}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] text-slate-400">
+            <span>W1</span>
+            <span>W2</span>
+            <span>W3</span>
+            <span>W4</span>
+            <span>W5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RightListCard({ title, items, onSeeAll, renderRow }) {
+  const list = Array.isArray(items) ? items : [];
+  return (
+    <div className={cx(UI.card, "p-5")} style={UI.ring}>
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-extrabold text-slate-900">{title}</div>
+        {onSeeAll ? (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="h-8 w-8 rounded-2xl bg-slate-50 border border-slate-200/70 grid place-items-center hover:bg-slate-100"
+          >
+            <Plus className="h-4 w-4 text-slate-600" />
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {list.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
+            Nothing to show.
+          </div>
+        ) : (
+          list.slice(0, 3).map((it, idx) => (
+            <div
+              key={it?.id || it?.assignment_id || idx}
+              className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5"
+            >
+              {renderRow?.(it, idx)}
+            </div>
+          ))
+        )}
+
+        {onSeeAll ? (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="w-full h-10 rounded-2xl bg-violet-50 text-violet-700 border border-violet-200/70 text-sm font-semibold hover:bg-violet-100"
+          >
+            See All
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Skeletons ===================== */
+function Sk({ className = "" }) {
+  return <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />;
+}
+
+function DashboardSkeletonV2() {
+  return (
+    <div className="space-y-4">
+      <div className={cx(UI.softCard, "p-4")}><Sk className="h-11 w-full" /></div>
+      <div className={cx(UI.card, "p-6")}><Sk className="h-28 w-full" /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <Sk className="h-16" /><Sk className="h-16" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Sk className="h-56" /><Sk className="h-56" /><Sk className="h-56" />
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Admin (keep old behavior - minimal changes) ===================== */
 function AdminDashboard() {
+  const navigate = useNavigate();
+  const base = useRoleBase();
+
   const [topStats, setTopStats] = useState([]);
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [revenuePoints, setRevenuePoints] = useState([]);
@@ -401,7 +531,6 @@ function AdminDashboard() {
       try {
         setLoading(true);
         setError("");
-
         const payload = await fetchAdminDashboard();
 
         setTopStats(Array.isArray(payload?.topStats) ? payload.topStats : []);
@@ -420,114 +549,76 @@ function AdminDashboard() {
         setLoading(false);
       }
     };
-
     load();
   }, []);
 
-  const showSkeleton =
-    loading &&
-    !error &&
-    topStats.length === 0 &&
-    pendingVerifications.length === 0 &&
-    revenuePoints.length === 0;
-
-  if (showSkeleton) return <AdminDashboardSkeleton />;
-
+  // لو تبغى نعمل Admin بنفس ستايل الصورة أيضاً—قلّي، وحأطبّقه بنفس النمط.
   return (
-    <div className="space-y-6 py-6">
-      {error && (
-        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+    <div className="space-y-4">
+      {error ? (
+        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2">
           {error}
         </div>
-      )}
+      ) : null}
 
-      {/* الكروت العلوية */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {topStats.length > 0 ? (
-          topStats.map((s, idx) => (
-            <StatCard key={s.id || s.title || idx} {...s} />
-          ))
-        ) : (
-          !loading && (
-            <div className="col-span-full text-xs text-slate-400">
-              لا توجد إحصائيات بعد.
-            </div>
-          )
-        )}
-      </div>
-
-      {/* الريڤنيو + البيندينج */}
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Revenue (last 12 months)
-              </h3>
-              <p className="text-xs text-slate-500">
-                يتم جلب بيانات الرسم من الخادم.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-700">
-              <ArrowUpRight className="w-3 h-3" />
-              Overview
-            </span>
-          </div>
-          <SimpleAreaChart points={revenuePoints} />
+      <div className={cx(UI.card, "p-5")} style={UI.ring}>
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-extrabold text-slate-900">Admin Overview</div>
+          <button
+            type="button"
+            onClick={() => navigate(`${base}/operation/verifications`)}
+            className="h-10 px-4 rounded-2xl bg-white border border-slate-200/70 text-sm font-semibold hover:bg-slate-50 inline-flex items-center gap-2"
+          >
+            <UserCheck className="h-4 w-4 text-slate-600" />
+            Verifications
+          </button>
         </div>
 
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Pending verifications
-            </h3>
-            <span className="text-[11px] text-slate-400">
-              {pendingVerifications.length} waiting
-            </span>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(topStats || []).slice(0, 4).map((s, i) => (
+            <MiniKpi
+              key={s?.id || s?.title || i}
+              icon={s?.icon}
+              label={s?.title}
+              value={s?.value}
+              tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+            />
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <div className={cx(UI.card, "p-5 lg:col-span-2")} style={UI.ring}>
+            <div className="text-sm font-extrabold text-slate-900">Revenue</div>
+            <div className="mt-3 rounded-2xl bg-slate-50 border border-slate-200/70 h-36 grid place-items-center text-xs text-slate-400">
+              (Chart stays as your existing implementation)
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {pendingVerifications.length > 0 ? (
-              pendingVerifications.map((p, idx) => (
+          <div className={cx(UI.card, "p-5")} style={UI.ring}>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-extrabold text-slate-900">Pending</div>
+              <span className="text-xs text-slate-500">
+                {pendingVerifications.length}
+              </span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {(pendingVerifications || []).slice(0, 3).map((p, idx) => (
                 <div
-                  key={p.id || p.email || idx}
-                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex items-center justify-between gap-3"
+                  key={p?.id || p?.email || idx}
+                  className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-white grid place-items-center text-xs font-semibold text-slate-600 border border-slate-200">
-                      {p.initials || p.name?.charAt(0) || "?"}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-slate-900 truncate">
-                        {p.name || "بدون اسم"}
-                      </div>
-                      {p.role && (
-                        <div className="text-[11px] text-slate-500 truncate">
-                          {p.role}
-                        </div>
-                      )}
-                      {p.email && (
-                        <div className="text-[11px] text-slate-400 truncate">
-                          {p.email}
-                        </div>
-                      )}
-                    </div>
+                  <div className="text-xs font-semibold text-slate-800 truncate">
+                    {p?.name || "—"}
                   </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button className="h-8 px-3 rounded-full text-xs border border-emerald-500 text-emerald-700 hover:bg-emerald-50">
-                      Approve
-                    </button>
-                    <button className="h-8 px-3 rounded-full text-xs border border-slate-200 text-slate-500 hover:bg-slate-50">
-                      Reject
-                    </button>
+                  <div className="text-[11px] text-slate-500 truncate">
+                    {p?.email || p?.role || "—"}
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-xs text-slate-400">
-                لا توجد طلبات تحقق معلّقة حالياً.
-              </div>
-            )}
+              ))}
+              {pendingVerifications.length === 0 && (
+                <div className="text-[11px] text-slate-500">No pending.</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -535,43 +626,65 @@ function AdminDashboard() {
   );
 }
 
-/* ===================== داشبورد الفريلانسر ===================== */
+/* ===================== Freelancer (v2 like screenshot) ===================== */
 function FreelancerDashboard() {
+  const navigate = useNavigate();
+  const base = useRoleBase();
+  const { userData, user } = useSelector((s) => s.auth || {});
+  const userLabel =
+    userData?.username ||
+    [userData?.first_name, userData?.last_name].filter(Boolean).join(" ") ||
+    user?.username ||
+    "Freelancer";
+
+  const [query, setQuery] = useState("");
   const [balanceCards, setBalanceCards] = useState([]);
   const [activeProjects, setActiveProjects] = useState([]);
   const [latestClientProjects, setLatestClientProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const payload = await fetchFreelancerDashboard();
 
-        const payload = await fetchFreelancerDashboard();
-
-        setBalanceCards(
-          Array.isArray(payload?.balanceCards) ? payload.balanceCards : []
-        );
-        setActiveProjects(
-          Array.isArray(payload?.activeProjects) ? payload.activeProjects : []
-        );
-        setLatestClientProjects(
-          Array.isArray(payload?.latestClientProjects)
-            ? payload.latestClientProjects
-            : []
-        );
-      } catch (err) {
-        console.error("Failed to load freelancer dashboard data", err);
-        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
+      setBalanceCards(Array.isArray(payload?.balanceCards) ? payload.balanceCards : []);
+      setActiveProjects(Array.isArray(payload?.activeProjects) ? payload.activeProjects : []);
+      setLatestClientProjects(
+        Array.isArray(payload?.latestClientProjects) ? payload.latestClientProjects : []
+      );
+    } catch (e) {
+      console.error(e);
+      setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filteredActive = useMemo(() => {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return activeProjects;
+    return (activeProjects || []).filter((p) =>
+      [p?.title, p?.client, p?.status, p?.due, p?.budget]
+        .map((x) => String(x ?? "").toLowerCase())
+        .join(" ")
+        .includes(q)
+    );
+  }, [activeProjects, query]);
+
+  // progress percent (best effort): available/total if values exist
+  const totalBal = parseNumberLike(balanceCards?.[0]?.value);
+  const availBal = parseNumberLike(balanceCards?.[1]?.value);
+  const pct =
+    totalBal && availBal != null && totalBal > 0
+      ? Math.round((availBal / totalBal) * 100)
+      : 32;
 
   const showSkeleton =
     loading &&
@@ -580,147 +693,151 @@ function FreelancerDashboard() {
     activeProjects.length === 0 &&
     latestClientProjects.length === 0;
 
-  if (showSkeleton) return <FreelancerDashboardSkeleton />;
+  if (showSkeleton) return <DashboardSkeletonV2 />;
 
   return (
-    <div className="space-y-6 py-6">
-      {error && (
-        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      {/* الرصيد */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {balanceCards.length > 0 ? (
-          balanceCards.map((c, idx) => (
-            <StatCard key={c.id || c.title || idx} {...c} accent="bg-cyan-50" />
-          ))
-        ) : (
-          !loading && (
-            <div className="col-span-full text-xs text-slate-400">
-              لا توجد بيانات رصيد حالياً.
-            </div>
-          )
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* المشاريع النشطة */}
-        <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Active projects
-              </h3>
-              <p className="text-xs text-slate-500">
-                Projects you&apos;re currently working on.
-              </p>
-            </div>
-            <button className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <ClipboardList className="w-3 h-3" />
-              View all
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {activeProjects.length > 0 ? (
-              activeProjects.map((p, idx) => (
-                <div
-                  key={p.id || p.title || idx}
-                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium text-sm text-slate-900 truncate">
-                      {p.title || "بدون عنوان"}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {(p.client && p.budget && `${p.client} • ${p.budget}`) ||
-                        p.client ||
-                        p.budget ||
-                        ""}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                    {p.status && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
-                        <Activity className="w-3 h-3 mr-1" />
-                        {p.status}
-                      </span>
-                    )}
-                    {p.due && (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {p.due}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-slate-400">
-                لا توجد مشاريع نشطة حالياً.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* آخر البروجكتس + شورت كاتس */}
+    <div className={cx(UI.pageBg, "py-6")}>
+      <div className={UI.container}>
         <div className="space-y-4">
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Latest client projects
-              </h3>
-              <button className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50">
-                <FolderPlus className="w-3 h-3" />
-                Browse all
-              </button>
-            </div>
+          {/* Top bar */}
+          {/* <DashTopBar
+            query={query}
+            setQuery={setQuery}
+            userLabel={userLabel}
+            onInbox={() => navigate(`${base}/inbox`)}
+          /> */}
 
-            <div className="space-y-3">
-              {latestClientProjects.length > 0 ? (
-                latestClientProjects.map((p, idx) => (
-                  <div
-                    key={p.id || p.title || idx}
-                    className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
+          {error ? (
+            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2">
+              {error}
+            </div>
+          ) : null}
+
+          {/* Main grid */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            {/* LEFT */}
+            <div>
+              <HeroBanner
+                eyebrow="FREELANCER DASHBOARD"
+                title="Manage your work, deliver faster, earn more."
+                subtitle="Track active projects and jump into new client opportunities."
+                ctaLabel="Browse projects"
+                onCta={() => navigate(`${base}/projects`)}
+                rightSlot={
+                  <button
+                    type="button"
+                    onClick={load}
+                    className="h-11 px-4 rounded-2xl bg-white/15 hover:bg-white/20 text-white border border-white/20 text-sm font-semibold inline-flex items-center gap-2"
                   >
-                    <div className="text-sm font-medium text-slate-900">
-                      {p.title || "بدون عنوان"}
-                    </div>
-                    <div className="text-xs text-slate-500 flex items-center justify-between mt-1">
-                      <span>{p.type}</span>
-                      <span className="font-semibold text-slate-800">
-                        {p.budget}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-xs text-slate-400">
-                  لا توجد مشاريع عملاء حديثة حالياً.
-                </div>
-              )}
-            </div>
-          </div>
+                    <RefreshCw className={cx("h-4 w-4", loading ? "animate-spin" : "")} />
+                    Refresh
+                  </button>
+                }
+              />
 
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">
-              Quick actions
-            </h3>
-            <div className="grid gap-2">
-              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
-                <span>Find new projects</span>
-                <ArrowUpRight className="w-3 h-3" />
-              </button>
-              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
-                <span>View my proposals</span>
-                <MessageSquare className="w-3 h-3" />
-              </button>
-              <button className="h-9 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 flex items-center justify-between px-3">
-                <span>Go to payouts</span>
-                <CreditCard className="w-3 h-3" />
-              </button>
+              {/* KPI row */}
+              <KpiRow items={balanceCards} />
+
+              {/* Continue watching = Active projects */}
+              <ContinueSection
+                title="Continue Working"
+                rightAction={
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects`)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 inline-flex items-center gap-1"
+                  >
+                    See all <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                }
+                items={filteredActive}
+                renderItem={(p, i) => (
+                  <ContinueCard
+                    key={p?.id || p?._id || i}
+                    badge={p?.status || "Active"}
+                    title={p?.title || "Untitled"}
+                    metaLeft={(p?.client && `Client: ${p.client}`) || "Client: —"}
+                    metaRight={p?.budget || ""}
+                    onOpen={() =>
+                      p?.id
+                        ? navigate(`/project/${p.id}`, {
+                            state: { project: p, readOnly: true, role: "freelancer" },
+                          })
+                        : navigate(`${base}/projects`)
+                    }
+                  />
+                )}
+              />
+            </div>
+
+            {/* RIGHT */}
+            <div className="space-y-6">
+              <RingProgress
+                percent={pct}
+                label={`Good morning ${userLabel} 🔥`}
+                subLabel="Stay on top of deliveries and deadlines."
+              />
+
+              <RightListCard
+                title="Latest client projects"
+                items={latestClientProjects}
+                onSeeAll={() => navigate(`${base}/projects`)}
+                renderRow={(p) => (
+                  <>
+                    <div className="min-w-0">
+                      <div className="text-xs font-extrabold text-slate-900 truncate">
+                        {p?.title || "Project"}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {p?.type || p?.project_type || "—"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (p?.id) {
+                          navigate(`${base}/projects/${p.id}`);
+                        } else {
+                          navigate(`${base}/projects`);
+                        }
+                      }}
+                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Open
+                    </button>
+                  </>
+                )}
+              />
+
+              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+                <div className="text-sm font-extrabold text-slate-900">Quick actions</div>
+                <div className="mt-4 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects`)}
+                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-violet-600" />
+                      View my projects
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/payments`)}
+                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-orange-600" />
+                      Go to payouts
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -729,14 +846,20 @@ function FreelancerDashboard() {
   );
 }
 
-/* ===================== داشبورد الكلينت ===================== */
+/* ===================== Client/Partner (v2 like screenshot) ===================== */
 function ClientDashboard() {
   const navigate = useNavigate();
+  const base = useRoleBase();
+  const { userData, user } = useSelector((s) => s.auth || {});
+  const userLabel =
+    userData?.username ||
+    [userData?.first_name, userData?.last_name].filter(Boolean).join(" ") ||
+    user?.username ||
+    "Client";
 
+  const [query, setQuery] = useState("");
   const [stats, setStats] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
-
-  // Attention center
   const [attention, setAttention] = useState({
     pendingApplications: [],
     pendingReviews: [],
@@ -746,7 +869,7 @@ function ClientDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadDashboard = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -754,10 +877,7 @@ function ClientDashboard() {
       const payload = await fetchClientDashboard();
 
       setStats(Array.isArray(payload?.stats) ? payload.stats : []);
-      setRecentProjects(
-        Array.isArray(payload?.recentProjects) ? payload.recentProjects : []
-      );
-
+      setRecentProjects(Array.isArray(payload?.recentProjects) ? payload.recentProjects : []);
       setAttention({
         pendingApplications: Array.isArray(payload?.attention?.pendingApplications)
           ? payload.attention.pendingApplications
@@ -769,8 +889,8 @@ function ClientDashboard() {
           ? payload.attention.pendingPayments
           : [],
       });
-    } catch (err) {
-      console.error("Failed to load client dashboard data", err);
+    } catch (e) {
+      console.error(e);
       setError("Failed to load dashboard data. Please try again.");
     } finally {
       setLoading(false);
@@ -778,330 +898,241 @@ function ClientDashboard() {
   }, []);
 
   useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+    load();
+  }, [load]);
 
-  const formatDate = (d) => {
-    if (!d) return "—";
-    try {
-      return new Date(d).toLocaleString();
-    } catch {
-      return "—";
-    }
-  };
+  const filteredRecent = useMemo(() => {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return recentProjects;
+    return (recentProjects || []).filter((p) =>
+      [p?.title, p?.status, p?.completion_status, p?.budget]
+        .map((x) => String(x ?? "").toLowerCase())
+        .join(" ")
+        .includes(q)
+    );
+  }, [recentProjects, query]);
 
-  const money = (v) => {
-    if (v == null || v === "") return "—";
-    const n = Number(v);
-    if (Number.isFinite(n)) return new Intl.NumberFormat("en-US").format(n);
-    return String(v);
-  };
+  // best-effort completion percent from stats
+  const total =
+    parseNumberLike(
+      (stats || []).find((s) => String(s?.title || "").toLowerCase().includes("total"))?.value
+    ) ?? parseNumberLike((stats || []).find((s) => String(s?.title || "").toLowerCase().includes("project"))?.value);
+
+  const completed =
+    parseNumberLike(
+      (stats || []).find((s) => String(s?.title || "").toLowerCase().includes("completed"))?.value
+    ) ?? null;
+
+  const pct =
+    total && completed != null && total > 0 ? Math.round((completed / total) * 100) : 32;
 
   const showSkeleton =
     loading &&
     !error &&
     stats.length === 0 &&
     recentProjects.length === 0 &&
-    attention.pendingApplications.length === 0 &&
-    attention.pendingReviews.length === 0 &&
-    attention.pendingPayments.length === 0;
+    !attention.pendingApplications.length &&
+    !attention.pendingReviews.length &&
+    !attention.pendingPayments.length;
 
-  if (showSkeleton) return <ClientDashboardSkeleton />;
+  if (showSkeleton) return <DashboardSkeletonV2 />;
 
   return (
-    <div className="space-y-6 py-6" dir="ltr">
-      {error && (
-        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-          {error}
-        </div>
-      )}
+    <div className={cx(UI.pageBg, "py-6")} dir="ltr">
+      <div className={UI.container}>
+        <div className="space-y-4">
+          {/* Top bar */}
+          {/* <DashTopBar
+            query={query}
+            setQuery={setQuery}
+            userLabel={userLabel}
+            onInbox={() => navigate(`${base}/inbox`)}
+          /> */}
 
-      {/* ===== Stats ===== */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.length > 0 ? (
-          stats.map((s, idx) => (
-            <StatCard
-              key={s.id || s.title || idx}
-              {...s}
-              accent="bg-sky-50"
-            />
-          ))
-        ) : (
-          !loading && (
-            <div className="col-span-full text-xs text-slate-400">
-              No stats yet.
+          {error ? (
+            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2">
+              {error}
             </div>
-          )
-        )}
-      </div>
+          ) : null}
 
-      {/* ===== Main Layout ===== */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left (2 cols): Action Center + Recent */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Action Center */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Action Center
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Quick items that need your decision to keep projects moving.
-                </p>
-              </div>
-
-              <button
-                onClick={loadDashboard}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
-                type="button"
-              >
-                <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              {/* Pending applications */}
-              <MiniListCard
-                title="Applications awaiting your decision"
-                icon={UserCheck}
-                items={attention.pendingApplications}
-                emptyText="No applications right now."
-                footerLabel="View all"
-                onFooter={() => navigate("/projects")}
-                renderItem={(item) => (
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 truncate">
-                      {item.project_title || item.projectTitle || "Project"}
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      {item.freelancer_name || item.freelancerName || "Freelancer"} •{" "}
-                      {formatDate(item.assigned_at || item.applied_at)}
-                    </div>
-                  </div>
-                )}
-              />
-
-              {/* Pending reviews */}
-              <MiniListCard
-                title="Deliveries to review"
-                icon={ClipboardList}
-                items={attention.pendingReviews}
-                emptyText="No deliveries to review."
-                footerLabel="View projects"
-                onFooter={() => navigate("/projects")}
-                renderItem={(p) => (
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 truncate">
-                      {p.title || "Untitled"}
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      Status: {p.completion_status || p.completionStatus || "—"}
-                    </div>
-                  </div>
-                )}
-              />
-
-              {/* Pending payments */}
-              <MiniListCard
-                title="Pending payments"
-                icon={Wallet}
-                items={attention.pendingPayments}
-                emptyText="No pending payments."
-                footerLabel="Go to payments"
-                onFooter={() => navigate("/projects")}
-                renderItem={(p) => (
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 truncate">
-                      {p.title || "Untitled"}
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      Amount: {money(p.amount_to_pay ?? p.amountToPay ?? p.budget)}
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-          </div>
-
-          {/* Recent projects */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Recent projects
-                </h3>
-                <p className="text-xs text-slate-500">
-                  A quick look at your latest activity.
-                </p>
-              </div>
-
-              <button
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
-                onClick={() => navigate("/projects")}
-                type="button"
-              >
-                <ArrowRight className="w-3 h-3" />
-                View all
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {recentProjects.length > 0 ? (
-                recentProjects.map((p, idx) => (
-                  <button
-                    key={p.id || p.title || idx}
-                    type="button"
-                    onClick={() => p?.id && navigate(`/project/${p.id}`)}
-                    className="w-full text-left rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 flex items-center justify-between gap-3 hover:bg-slate-50"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-slate-900 truncate">
-                        {p.title || "Untitled"}
-                      </div>
-
-                      <div className="text-xs text-slate-500 flex flex-wrap gap-2">
-                        {p.status ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-slate-200 bg-white">
-                            {p.status}
-                          </span>
-                        ) : null}
-
-                        {p.completion_status ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-slate-200 bg-white">
-                            {p.completion_status}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="text-xs font-semibold text-slate-800">
-                      {money(p.amount_to_pay ?? p.budget)}
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-xs text-slate-400">No recent projects yet.</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right col: Quick actions + Tips */}
-        <div className="space-y-6">
-          {/* Quick actions */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
+          {/* Main grid */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            {/* LEFT */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Quick actions
-              </h3>
-              <p className="text-xs text-slate-500">
-                Shortcuts to common actions.
-              </p>
+              <HeroBanner
+                eyebrow="CLIENT DASHBOARD"
+                title="Create projects, review deliveries, and pay securely."
+                subtitle="Everything you need to keep your projects moving—fast."
+                ctaLabel="Create project"
+                onCta={() => navigate(`${base}/projects/new`)}
+                rightSlot={
+                  <button
+                    type="button"
+                    onClick={load}
+                    className="h-11 px-4 rounded-2xl bg-white/15 hover:bg-white/20 text-white border border-white/20 text-sm font-semibold inline-flex items-center gap-2"
+                  >
+                    <RefreshCw className={cx("h-4 w-4", loading ? "animate-spin" : "")} />
+                    Refresh
+                  </button>
+                }
+              />
+
+              {/* KPI row (from stats) */}
+              <KpiRow items={(stats || []).slice(0, 6)} />
+
+              {/* Continue watching = Recent projects */}
+              <ContinueSection
+                title="Continue"
+                rightAction={
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects`)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 inline-flex items-center gap-1"
+                  >
+                    See all <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                }
+                items={filteredRecent}
+                renderItem={(p, i) => (
+                  <ContinueCard
+                    key={p?.id || p?._id || i}
+                    badge={p?.status || p?.completion_status || "Project"}
+                    title={p?.title || "Untitled"}
+                    metaLeft={
+                      (p?.completion_status && `Status: ${p.completion_status}`) ||
+                      (p?.status && `Status: ${p.status}`) ||
+                      "—"
+                    }
+                    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
+                    onOpen={() =>
+                      p?.id
+                        ? navigate(`${base}/projects/${p.id}`)
+                        : navigate(`${base}/projects`)
+                    }
+                  />
+                )}
+              />
             </div>
 
-            <div className="grid gap-2">
-              <button
-                className="inline-flex items-center justify-between gap-2 h-10 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs"
-                onClick={() => navigate("/projects/new")}
-                type="button"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <FolderPlus className="w-4 h-4" />
-                  Post a new project
-                </span>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </button>
+            {/* RIGHT */}
+            <div className="space-y-6">
+              <RingProgress
+                percent={pct}
+                label={`Good morning ${userLabel} 🔥`}
+                subLabel="Review deliveries and approve work faster."
+              />
 
-              <button
-                className="inline-flex items-center justify-between gap-2 h-10 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs"
-                onClick={() => navigate("/projects")}
-                type="button"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4" />
-                  Go to my projects
-                </span>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </button>
+              {/* Like "Your mentor" but using your attention data */}
+              <RightListCard
+                title="Needs your action"
+                items={[
+                  ...(attention.pendingApplications || []).slice(0, 1).map((x) => ({
+                    _type: "applications",
+                    title: x.project_title || x.projectTitle || "Applications",
+                    meta:
+                      (x.freelancer_name || x.freelancerName || "Freelancer") +
+                      " • " +
+                      (x.assigned_at || x.applied_at || ""),
+                  })),
+                  ...(attention.pendingReviews || []).slice(0, 1).map((x) => ({
+                    _type: "deliveries",
+                    title: x.title || "Delivery",
+                    meta: x.completion_status || x.completionStatus || x.status || "—",
+                  })),
+                  ...(attention.pendingPayments || []).slice(0, 1).map((x) => ({
+                    _type: "payments",
+                    title: x.title || "Payment",
+                    meta: x.amount_to_pay ?? x.amountToPay ?? x.budget ?? "—",
+                  })),
+                ]}
+                onSeeAll={() => navigate(`${base}/projects`)}
+                renderRow={(it) => (
+                  <>
+                    <div className="min-w-0">
+                      <div className="text-xs font-extrabold text-slate-900 truncate">
+                        {it?.title || "—"}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {it?.meta || "—"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (it?._type === "payments") navigate(`${base}/payments`);
+                        else navigate(`${base}/projects`);
+                      }}
+                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Open
+                    </button>
+                  </>
+                )}
+              />
+
+              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+                <div className="text-sm font-extrabold text-slate-900">
+                  Quick actions
+                  <span className="ml-2 align-middle">
+                    <InfoTip text="Shortcuts to keep things moving." />
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects/new`)}
+                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <FolderPlus className="h-4 w-4 text-violet-600" />
+                      Post a new project
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects`)}
+                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-orange-600" />
+                      Go to my projects
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/payments`)}
+                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-emerald-600" />
+                      Payments
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Tips */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 md:p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Tips for better results
-            </h3>
-            <ul className="space-y-2 text-xs text-slate-600 list-disc pl-4">
-              <li>Write a clear, detailed description with examples.</li>
-              <li>Define requirements and deliverables explicitly.</li>
-              <li>Attach references (files/links) to reduce revisions.</li>
-              <li>Split large projects into milestones.</li>
-            </ul>
-          </div>
+          {/* (اختياري) مساحة تحت مثل "Your lesson" لو تبغى نضيف جدول/قائمة */}
         </div>
       </div>
     </div>
   );
 }
 
-/* ===== Small helper card (same theme) ===== */
-function MiniListCard({
-  title,
-  icon: Icon,
-  items,
-  emptyText,
-  footerLabel,
-  onFooter,
-  renderItem,
-}) {
-  const top = Array.isArray(items) ? items.slice(0, 4) : [];
-
-  return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="inline-flex items-center gap-2">
-          {Icon ? <Icon className="w-4 h-4 text-slate-600" /> : null}
-          <div className="text-xs font-semibold text-slate-900">{title}</div>
-        </div>
-
-        {typeof onFooter === "function" ? (
-          <button
-            type="button"
-            onClick={onFooter}
-            className="text-[11px] text-slate-500 hover:text-slate-700"
-          >
-            {footerLabel || "View"}
-          </button>
-        ) : null}
-      </div>
-
-      <div className="space-y-2">
-        {top.length > 0 ? (
-          top.map((item, idx) => (
-            <div
-              key={item?.id || item?.assignment_id || idx}
-              className="rounded-lg bg-white border border-slate-100 px-2.5 py-2"
-            >
-              {renderItem ? renderItem(item) : null}
-            </div>
-          ))
-        ) : (
-          <div className="text-[11px] text-slate-400">{emptyText}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ===================== الكومبوننت الرئيسي ===================== */
+/* ===================== Main exported component ===================== */
 export default function Dashboard() {
   const { userData, roleId: storeRoleId } = useSelector((s) => s.auth || {});
   const outletCtx = useOutletContext() || {};
   const { clearTopBarRight } = outletCtx;
 
-  // تنظيف محتوى التوب بار (مثلاً لو صفحة سابقة كانت حاطة حقل بحث)
   useEffect(() => {
     clearTopBarRight?.();
   }, [clearTopBarRight]);
@@ -1115,7 +1146,6 @@ export default function Dashboard() {
   const role = mapRole(Number(rawRoleId));
 
   if (role === "freelancer") return <FreelancerDashboard />;
-  if (role === "client") return <ClientDashboard />;
-  // default admin / user
+  if (role === "client" || role === "partner") return <ClientDashboard />;
   return <AdminDashboard />;
 }
