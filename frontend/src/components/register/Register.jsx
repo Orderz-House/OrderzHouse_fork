@@ -32,7 +32,7 @@ const roles = [
   { id: 5, label: "Partner" },
 ];
 
-const PRIMARY = "#028090";
+const PRIMARY = "#C2410C";
 const API_URL = import.meta.env.VITE_APP_API_URL;
 
 const Register = () => {
@@ -280,8 +280,8 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-28 -right-28 w-80 h-80 rounded-full bg-[#028090]/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-28 w-96 h-96 rounded-full bg-[#028090]/5 blur-3xl" />
+        <div className="absolute -top-28 -right-28 w-80 h-80 rounded-full bg-[#C2410C]/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-28 w-96 h-96 rounded-full bg-[#C2410C]/5 blur-3xl" />
       </div>
 
       <div className="flex min-h-screen items-center justify-center p-4 lg:px-8 pt-32">
@@ -314,7 +314,7 @@ const Register = () => {
                           value={role_id}
                           onChange={(e) => setRole_id(e.target.value)}
                           required
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         >
                           <option value="">Select Role</option>
                           {roles.map((role) => (
@@ -344,7 +344,7 @@ const Register = () => {
                           onChange={(e) => setFirst_name(e.target.value)}
                           required
                           placeholder="Your first name"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>
                     </div>
@@ -362,7 +362,7 @@ const Register = () => {
                           onChange={(e) => setLast_name(e.target.value)}
                           required
                           placeholder="Your last name"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>
                     </div>
@@ -380,7 +380,7 @@ const Register = () => {
                           onChange={(e) => setUsername(e.target.value)}
                           required
                           placeholder="Choose a username"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>
                     </div>
@@ -401,7 +401,7 @@ const Register = () => {
                           onChange={(e) => setEmail(e.target.value)}
                           required
                           placeholder="you@email.com"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>
                     </div>
@@ -419,12 +419,12 @@ const Register = () => {
                           onChange={(e) => setPassword(e.target.value)}
                           required
                           placeholder="••••••••"
-                          className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#028090]"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#C2410C]"
                         >
                           {showPassword ? (
                             <EyeOff className="w-5 h-5" />
@@ -460,7 +460,7 @@ const Register = () => {
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
                           required
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         >
                           <option value="">Select Country</option>
                           {countries.map((c) => (
@@ -485,7 +485,7 @@ const Register = () => {
                           onChange={(e) => setPhone_number(e.target.value)}
                           required
                           placeholder="Your phone number"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>
                     </div>
@@ -498,15 +498,15 @@ const Register = () => {
                     id="terms"
                     type="checkbox"
                     required
-                    className="h-4 w-4 text-[#028090] focus:ring-[#028090] border-slate-300 rounded mt-0.5"
+                    className="h-4 w-4 text-[#C2410C] focus:ring-[#C2410C] border-slate-300 rounded mt-0.5"
                   />
                   <label htmlFor="terms" className="ml-2 text-sm text-slate-700">
                     I agree to the{" "}
-                    <a href="#" className="text-[#028090] hover:underline">
+                    <a href="#" className="text-[#C2410C] hover:underline">
                       Terms and Conditions
                     </a>{" "}
                     and{" "}
-                    <a href="#" className="text-[#028090] hover:underline">
+                    <a href="#" className="text-[#C2410C] hover:underline">
                       Privacy Policy
                     </a>
                   </label>
@@ -561,7 +561,7 @@ const Register = () => {
                 </h2>
                 <p className="text-slate-500 text-sm">
                   We've sent a 6-digit code to{" "}
-                  <span className="font-medium text-[#028090]">{email}</span>.
+                  <span className="font-medium text-[#C2410C]">{email}</span>.
                 </p>
 
                 <div className="flex items-center justify-center">
@@ -573,7 +573,7 @@ const Register = () => {
                       onChange={(e) => setOtp(e.target.value)}
                       maxLength={6}
                       placeholder="Enter OTP"
-                      className="w-full pl-10 pr-3 py-3 text-center tracking-widest text-lg rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#028090]/20 focus:border-[#028090]/50"
+                      className="w-full pl-10 pr-3 py-3 text-center tracking-widest text-lg rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                     />
                   </div>
                 </div>
@@ -609,7 +609,7 @@ const Register = () => {
                 Already have an account?{" "}
                 <a
                   href="/login"
-                  className="font-medium text-[#028090] inline-flex items-center hover:underline"
+                  className="font-medium text-[#C2410C] inline-flex items-center hover:underline"
                 >
                   Sign in
                   <ArrowLeft className="ml-1 h-4 w-4 rotate-180" />

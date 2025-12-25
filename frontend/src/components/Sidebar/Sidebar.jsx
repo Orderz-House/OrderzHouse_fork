@@ -1,6 +1,10 @@
-// Sidebar.jsx
 import React from "react";
 import {
+  LayoutDashboard,
+  Inbox,
+  BookOpen,
+  ClipboardList,
+  Users,
   FolderKanban,
   CheckSquare,
   CreditCard,
@@ -11,10 +15,14 @@ import {
   Home,
   X,
   Settings,
+  Sparkles,
 } from "lucide-react";
-import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 
+/**
+ * Desktop: تصميم مشابه للصورة (Logo + أقسام: OVERVIEW / FRIENDS / SETTINGS)
+ * Mobile: نفس التصميم الحالي لكن تغيير الألوان فقط
+ */
 const Sidebar = ({
   activePage,
   setActivePage,
@@ -24,44 +32,44 @@ const Sidebar = ({
   bottomNavigation = [],
   onLogout,
   showDesktopSidebar = true,
+
+  // Optional (Desktop only)
+  appName = "Coursue",
+  friends = [], // [{ id, name, subtitle, avatarUrl }]
+  onFriendClick,
 }) => {
+  // Avoid undefined crashes
   const safeSetActivePage = setActivePage ?? (() => {});
   const safeSetIsMobileMenuOpen = setIsMobileMenuOpen ?? (() => {});
 
-  const userData = useSelector((state) => state.auth?.userData);
+  // Brand colors (غيرها مرة واحدة هنا)
+  const BRAND = {
+    primary: "#6D5FFD", // بنفسجي مثل الصورة
+    primarySoft: "#F2F1FF",
+    primaryRing: "#E6E2FF",
+    danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
+  };
+
   const location = useLocation();
   const pathname = location?.pathname || "/";
 
-  const getUserDisplayName = () => {
-    if (userData?.full_name) return userData.full_name;
-    if (userData?.username) return userData.username;
-    return "User";
-  };
-
-  const getUserRole = () => {
-    const roleId = userData?.role_id;
-    if (roleId === 1) return "Admin";
-    if (roleId === 2) return "Client";
-    if (roleId === 3) return "Freelancer";
-    if (roleId === 5) return "Partner";
-    return "Member";
-  };
-
-  const getUserAvatar = () => userData?.profile_picture || null;
-  const getUserInitial = () =>
-    (getUserDisplayName().charAt(0) || "U").toUpperCase();
-
-  const avatarUrl = getUserAvatar();
-  const hasValidAvatar = Boolean(avatarUrl && avatarUrl.trim() !== "");
-
+  // Default icons (يدعم IDs قديمة + IDs جديدة مثل الصورة)
   const defaultIcons = {
+    // new-like ids
+    dashboard: LayoutDashboard,
+    inbox: Inbox,
+    lesson: BookOpen,
+    task: ClipboardList,
+    group: Users,
+
+    // legacy ids (backwards compatible)
     projects: FolderKanban,
+    tasks: CheckSquare,
     payments: CreditCard,
     notifications: Bell,
     profile: User,
     logout: LogOut,
     overview: Home,
-    dashboard: Home,
     settings: Settings,
   };
 
@@ -80,8 +88,8 @@ const Sidebar = ({
     "data-active": dataActive,
   }) => {
     const handleClick = (event) => {
-      item?.onClick?.(event);
-      onClick?.(event);
+      if (typeof item?.onClick === "function") item.onClick(event);
+      if (typeof onClick === "function") onClick(event);
     };
 
     if (item?.path) {
@@ -113,143 +121,407 @@ const Sidebar = ({
 
   return (
     <>
-      {/* ===================== Desktop Sidebar ===================== */}
+      {/* ===================== Desktop Sidebar (NEW DESIGN) ===================== */}
       <aside
         className={`
-          hidden lg:flex lg:flex-col lg:h-screen lg:sticky lg:top-0
-          bg-white border-r border-slate-200 shadow-sm relative z-40
-          overflow-hidden transform transition-all duration-300 ease-in-out
-          ${showDesktopSidebar ? "lg:w-64 translate-x-0" : "lg:w-0 -translate-x-full"}
+          hidden lg:block lg:h-screen lg:sticky lg:top-0
+          transition-all duration-300 ease-in-out
+          ${showDesktopSidebar ? "lg:w-72" : "lg:w-0 overflow-hidden"}
         `}
       >
-        {/* Accent line */}
-        <span
-          aria-hidden="true"
-          className="absolute left-0 top-0 bottom-0 w-1
-          bg-gradient-to-b from-[#C2410C] via-[#A6360A] to-[#7A2807]"
-        />
-
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              {hasValidAvatar ? (
-                <img
-                  src={avatarUrl}
-                  alt={getUserDisplayName()}
-                  className="w-9 h-9 rounded-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-[#FAD9CC] text-[#C2410C] flex items-center justify-center text-sm font-semibold">
-                  {getUserInitial()}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  {getUserDisplayName()}
-                </p>
-                <p className="text-xs text-slate-500 truncate">
-                  {getUserRole()}
-                </p>
+        <div className="h-full">
+          <div className="h-full bg-white  border border-slate-100 shadow-sm px-5 py-6 flex flex-col">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: BRAND.primary }}
+                aria-hidden="true"
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-lg font-semibold text-slate-900">
+                {appName}
               </div>
             </div>
-          </div>
 
-          {/* Main Navigation */}
-          <nav className="sidebar-scroll flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const Icon = item.icon || defaultIcons[item.id] || User;
-              const active = isItemActive(item);
+            {/* OVERVIEW */}
+            <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-2">
+              OVERVIEW
+            </div>
 
-              const baseClasses =
-                "w-full flex items-center gap-3 rounded-md px-4 py-2.5 text-sm transition-colors";
-              const stateClasses = active
-                ? "bg-[#FCE7E0] text-[#C2410C]"
-                : "text-slate-600 hover:bg-slate-50";
-
-              return (
-                <Clickable
-                  key={item.id}
-                  item={item}
-                  onClick={() => safeSetActivePage(item.id)}
-                  className={`${baseClasses} ${stateClasses}`}
-                  data-active={active ? "true" : "false"}
-                >
-                  <>
-                    <Icon
-                      className={`w-5 h-5 ${
-                        active ? "text-[#C2410C]" : "text-slate-400"
-                      }`}
-                    />
-                    <span className="truncate">{item.name}</span>
-                  </>
-                </Clickable>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Navigation */}
-          {bottomNavigation.length > 0 && (
-            <div className="px-2 pb-4 pt-3 border-t border-slate-100 space-y-1">
-              {bottomNavigation.map((item) => {
+            <nav className="flex flex-col gap-1">
+              {navigation.map((item) => {
                 const Icon = item.icon || defaultIcons[item.id] || User;
                 const active = isItemActive(item);
-                const isLogout = item.id === "logout";
-
-                const baseClasses =
-                  "w-full flex items-center gap-3 rounded-md px-4 py-2.5 text-sm transition-colors";
-
-                const stateClasses = isLogout
-                  ? active
-                    ? "bg-red-50 text-red-600"
-                    : "text-red-600 hover:bg-red-50"
-                  : active
-                  ? "bg-[#FCE7E0] text-[#C2410C]"
-                  : "text-slate-600 hover:bg-slate-50";
-
-                const iconColor = isLogout
-                  ? "text-red-500"
-                  : active
-                  ? "text-[#C2410C]"
-                  : "text-slate-400";
 
                 return (
                   <Clickable
                     key={item.id}
                     item={item}
-                    onClick={() => {
-                      if (isLogout) {
-                        onLogout?.();
-                      } else {
-                        safeSetActivePage(item.id);
-                      }
-                    }}
-                    className={`${baseClasses} ${stateClasses}`}
+                    onClick={() => safeSetActivePage(item.id)}
                     data-active={active ? "true" : "false"}
+                    className={`
+                      flex items-center gap-3 rounded-xl px-3 py-2.5
+                      transition-colors
+                      ${active ? "bg-slate-50" : "hover:bg-slate-50"}
+                    `}
                   >
                     <>
-                      <Icon className={`w-5 h-5 ${iconColor}`} />
-                      <span className="truncate">{item.name}</span>
+                      <Icon
+                        className="w-5 h-5"
+                        style={{ color: active ? BRAND.primary : "#111827" }}
+                      />
+                      <span
+                        className={`text-sm ${
+                          active
+                            ? "font-semibold text-slate-900"
+                            : "font-medium text-slate-800"
+                        }`}
+                      >
+                        {item.name}
+                      </span>
                     </>
                   </Clickable>
                 );
               })}
+            </nav>
+
+            {/* FRIENDS */}
+            {friends?.length > 0 && (
+              <div className="mt-7">
+                <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-3">
+                  FRIENDS
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {friends.map((f) => (
+                    <button
+                      key={f.id ?? f.name}
+                      type="button"
+                      onClick={() => onFriendClick?.(f)}
+                      className="flex items-center gap-3 text-left"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                        style={{ background: BRAND.primarySoft }}
+                      >
+                        {f.avatarUrl ? (
+                          <img
+                            src={f.avatarUrl}
+                            alt={f.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: BRAND.primary }}
+                          >
+                            {(f.name?.charAt(0) || "U").toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-900 truncate">
+                          {f.name}
+                        </div>
+                        <div className="text-xs text-slate-400 truncate">
+                          {f.subtitle ?? ""}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Push bottom */}
+            <div className="flex-1" />
+
+            {/* SETTINGS */}
+            <div className="mt-8">
+              <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-3">
+                SETTINGS
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {bottomNavigation.map((item) => {
+                  const Icon = item.icon || defaultIcons[item.id] || User;
+                  const active = isItemActive(item);
+                  const isLogout = item.id === "logout";
+
+                  return (
+                    <Clickable
+                      key={item.id}
+                      item={item}
+                      onClick={() => {
+                        if (isLogout) onLogout?.();
+                        else safeSetActivePage(item.id);
+                      }}
+                      data-active={active ? "true" : "false"}
+                      className={`
+                        flex items-center gap-3 rounded-xl px-3 py-2.5
+                        transition-colors
+                        ${active ? "bg-slate-50" : "hover:bg-slate-50"}
+                      `}
+                    >
+                      <>
+                        <Icon
+                          className="w-5 h-5"
+                          style={{
+                            color: isLogout
+                              ? BRAND.danger
+                              : active
+                              ? BRAND.primary
+                              : "#111827",
+                          }}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            isLogout
+                              ? "text-orange-500"
+                              : active
+                              ? "text-slate-900"
+                              : "text-slate-800"
+                          }`}
+                        >
+                          {item.name}
+                        </span>
+                      </>
+                    </Clickable>
+                  );
+                })}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </aside>
 
-      {/* ===================== styles ===================== */}
+      {/* ===================== Mobile Bottom Tab Bar (SAME LAYOUT, NEW COLORS) ===================== */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)]">
+        <div className="mx-auto max-w-screen-sm">
+          <div className="relative">
+            {/* Bar */}
+            <div className="h-16 bg-white/95 backdrop-blur border-t border-slate-200 shadow-sm rounded-t-2xl"></div>
+
+            {/* Tabs */}
+            <div className="absolute inset-0 flex items-center justify-between px-6">
+              {/* Left */}
+              <div className="flex items-center gap-6">
+                {mobileNav.slice(0, 2).map((item) => {
+                  const Icon = item.icon || defaultIcons[item.id] || User;
+                  const active = isItemActive(item);
+                  return (
+                    <Clickable
+                      key={item.id}
+                      item={item}
+                      onClick={() => {
+                        safeSetActivePage(item.id);
+                        safeSetIsMobileMenuOpen(false);
+                      }}
+                      className="flex flex-col items-center justify-center"
+                    >
+                      <>
+                        <Icon
+                          className="w-6 h-6"
+                          style={{ color: active ? BRAND.primary : "#475569" }}
+                        />
+                        <span
+                          className="text-[11px] mt-1"
+                          style={{ color: active ? BRAND.primary : "#475569" }}
+                        >
+                          {item.name?.split(" ")[0] ?? item.name}
+                        </span>
+                      </>
+                    </Clickable>
+                  );
+                })}
+              </div>
+
+              {/* Fab */}
+              <div className="absolute left-1/2 -translate-x-1/2 -top-8 w-20 h-20 z-10">
+                <span className="absolute inset-1 rounded-full bg-slate-400/20 shadow-[0_4px_20px_rgba(0,0,0,0.06)] pointer-events-none" />
+                <button
+                  onClick={() => safeSetIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="absolute inset-0 m-auto w-14 h-14 rounded-full text-white shadow-lg ring-4 ring-white/60 flex items-center justify-center active:scale-95 transition"
+                  style={{ background: BRAND.primary }}
+                  aria-label="Open menu"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Right */}
+              <div className="flex items-center gap-6">
+                {mobileNav.slice(2, 4).map((item) => {
+                  const Icon = item.icon || defaultIcons[item.id] || User;
+                  const active = isItemActive(item);
+                  return (
+                    <Clickable
+                      key={item.id}
+                      item={item}
+                      onClick={() => {
+                        safeSetActivePage(item.id);
+                        safeSetIsMobileMenuOpen(false);
+                      }}
+                      className="flex flex-col items-center justify-center"
+                    >
+                      <>
+                        <Icon
+                          className="w-6 h-6"
+                          style={{ color: active ? BRAND.primary : "#475569" }}
+                        />
+                        <span
+                          className="text-[11px] mt-1"
+                          style={{ color: active ? BRAND.primary : "#475569" }}
+                        >
+                          {item.name?.split(" ")[0] ?? item.name}
+                        </span>
+                      </>
+                    </Clickable>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===================== Mobile Command Sheet (SAME LAYOUT, NEW COLORS) ===================== */}
+      <div
+        className={`
+          lg:hidden fixed inset-0 z-[60]
+          transition-opacity duration-300
+          ${
+            isMobileMenuOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }
+        `}
+      >
+        {/* Backdrop */}
+        <button
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+            isMobileMenuOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => safeSetIsMobileMenuOpen(false)}
+          aria-label="Close menu backdrop"
+        />
+
+        {/* Panel */}
+        <div
+          className={`
+            absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto
+            bg-white rounded-t-3xl shadow-xl p-4 pt-4
+            pb-[max(16px,env(safe-area-inset-bottom))]
+            transform transition-transform duration-300
+            ${isMobileMenuOpen ? "translate-y-0" : "translate-y-full"}
+          `}
+        >
+          {/* Close */}
+          <div className="flex justify-center mb-3">
+            <button
+              onClick={() => safeSetIsMobileMenuOpen(false)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 active:scale-95 transition"
+              aria-label="Close menu"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Grid main */}
+          <div className="grid grid-cols-4 gap-3">
+            {navigation.map((item) => {
+              const Icon = item.icon || defaultIcons[item.id] || User;
+              const active = isItemActive(item);
+              return (
+                <Clickable
+                  key={item.id}
+                  item={item}
+                  onClick={() => {
+                    safeSetActivePage(item.id);
+                    safeSetIsMobileMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center rounded-xl py-3"
+                  style={{
+                    background: active ? BRAND.primarySoft : "transparent",
+                  }}
+                >
+                  <>
+                    <Icon
+                      className="w-6 h-6"
+                      style={{ color: active ? BRAND.primary : "#334155" }}
+                    />
+                    <span className="text-[11px] mt-1 text-slate-700 text-center line-clamp-1">
+                      {item.name}
+                    </span>
+                  </>
+                </Clickable>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="mt-4 pt-3 border-t border-slate-200" />
+
+          {/* Bottom grid */}
+          <div className="grid grid-cols-4 gap-3 mt-2">
+            {bottomNavigation.map((item) => {
+              const Icon = item.icon || defaultIcons[item.id] || User;
+              const active = isItemActive(item);
+              const isLogout = item.id === "logout";
+
+              return (
+                <Clickable
+                  key={item.id}
+                  item={item}
+                  onClick={() => {
+                    if (isLogout) onLogout?.();
+                    else safeSetActivePage(item.id);
+                    safeSetIsMobileMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center rounded-xl py-3"
+                  style={{
+                    background: active ? BRAND.primarySoft : "transparent",
+                  }}
+                >
+                  <>
+                    <Icon
+                      className="w-6 h-6"
+                      style={{
+                        color: isLogout
+                          ? BRAND.danger
+                          : active
+                          ? BRAND.primary
+                          : "#334155",
+                      }}
+                    />
+                    <span className="text-[11px] mt-1 text-slate-700 text-center line-clamp-1">
+                      {item.name}
+                    </span>
+                  </>
+                </Clickable>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <style>{`
-        .sidebar-scroll::-webkit-scrollbar {
-          width: 6px;
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: ${BRAND.primaryRing} transparent;
         }
+        .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
         .sidebar-scroll::-webkit-scrollbar-thumb {
-          background-color: #FCE7E0;
+          background-color: ${BRAND.primaryRing};
           border-radius: 999px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: ${BRAND.primaryRing};
         }
       `}</style>
     </>

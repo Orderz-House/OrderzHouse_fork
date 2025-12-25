@@ -54,14 +54,14 @@ export default function ModernAboutPageRedesign() {
       title: "Empowering Innovation",
       description:
         "Fostering creativity and cutting-edge solutions that drive business growth.",
-      color: "from-emerald-500 to-teal-500",
+      color: " from-violet-500 to-indigo-600",
     },
     {
       icon: Heart,
       title: "Human-Centric Technology",
       description:
         "Technology that serves people, not the other way around - putting humanity first.",
-      color: "from-teal-500 to-emerald-400",
+      color: " from-violet-500 to-indigo-600",
     },
   ];
 
@@ -158,7 +158,7 @@ export default function ModernAboutPageRedesign() {
                 style={{ fontFamily: "'Merriweather', serif" }}
               >
                 Our{" "}
-                <span className="bg-gradient-to-r from-amber-500 to-emerald-500 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-b from-violet-500 to-indigo-600 bg-clip-text text-transparent">
                   Vision
                 </span>
               </h2>
@@ -173,7 +173,7 @@ export default function ModernAboutPageRedesign() {
               </p>
 
               <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-emerald-100/55 to-orange-100/45 rounded-2xl border border-orange-100/50">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-[0_12px_30px_rgba(16,185,129,0.16)]">
+                <div className="w-12 h-12 bg-gradient-to-b from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_12px_30px_rgba(16,185,129,0.16)]">
                   <Lightbulb className="w-6 h-6 text-white" />
                 </div>
                 <span
@@ -197,7 +197,7 @@ export default function ModernAboutPageRedesign() {
               style={{ fontFamily: "'Merriweather', serif" }}
             >
               Our Core{" "}
-              <span className="bg-gradient-to-r from-orange-600 to-emerald-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
                 Values
               </span>
             </h2>
@@ -264,7 +264,7 @@ export default function ModernAboutPageRedesign() {
               style={{ fontFamily: "'Merriweather', serif" }}
             >
               How We{" "}
-              <span className="bg-gradient-to-r from-orange-600 to-emerald-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
                 Work
               </span>
             </h2>
@@ -279,7 +279,7 @@ export default function ModernAboutPageRedesign() {
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-            <div className="absolute left-4 sm:left-1/2 transform sm:-translate-x-0.5 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 via-amber-500 to-emerald-500 rounded-full" />
+            <div className="absolute left-4 sm:left-1/2 transform sm:-translate-x-0.5 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 via-amber-500 to-violet-500 rounded-full" />
 
             <div className="space-y-12 sm:space-y-16">
               {[
@@ -302,14 +302,14 @@ export default function ModernAboutPageRedesign() {
                   title: "Submit the Work",
                   desc: "Complete the project and deliver high-quality work on time.",
                   icon: CheckCircle,
-                  color: "from-emerald-500 to-teal-500",
+                  color: "from-violet-500 to-indigo-600",
                 },
                 {
                   step: "4",
                   title: "Earn Money",
                   desc: "Get paid securely once the client approves your completed work.",
                   icon: Award,
-                  color: "from-teal-500 to-emerald-400",
+                  color: "from-violet-500 to-indigo-600",
                 },
               ].map((item, index) => (
                 <div

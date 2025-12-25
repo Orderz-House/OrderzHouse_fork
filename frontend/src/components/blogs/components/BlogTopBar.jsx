@@ -211,12 +211,12 @@ export default function BlogTopBar({
               <button
                 onClick={toggleFav}
                 className={`w-9 h-9 grid place-items-center rounded-full border hover:bg-slate-50 ${
-                  fav ? "border-[#028090]" : "border-slate-200"
+                  fav ? "border-[#C2410C]" : "border-slate-200"
                 }`}
                 title={fav ? "Remove favorite" : "Add to favorites"}
               >
                 <Bookmark
-                  className={`w-4 h-4 ${fav ? "text-[#028090] fill-[#028090]" : "text-slate-700"}`}
+                  className={`w-4 h-4 ${fav ? "text-[#C2410C] fill-[#C2410C]" : "text-slate-700"}`}
                 />
               </button>
             )}
@@ -242,7 +242,7 @@ export default function BlogTopBar({
             {enableNew && (
               <button
                 onClick={() => setOpen(true)}
-                className="h-9 px-3 rounded-full border border-[#028090] text-[#028090] hover:bg-[#028090]/5 inline-flex items-center gap-2"
+                className="h-9 px-3 rounded-full border border-[#C2410C] text-[#C2410C] hover:bg-[#C2410C]/5 inline-flex items-center gap-2"
                 title="New Blog"
               >
                 <Plus className="w-4 h-4" />
@@ -326,7 +326,7 @@ export default function BlogTopBar({
                           name="title"
                           value={form.title}
                           onChange={onChange}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20"
                           placeholder="Blog title"
                           required
                         />
@@ -338,7 +338,7 @@ export default function BlogTopBar({
                           name="category"
                           value={form.category}
                           onChange={onChange}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#028090]/20"
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20"
                           placeholder="e.g. Tutorial"
                           required
                         />
@@ -352,7 +352,7 @@ export default function BlogTopBar({
                         value={form.excerpt}
                         onChange={onChange}
                         rows={2}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#C2410C]/20"
                         placeholder="Short summary"
                       />
                     </div>
@@ -363,7 +363,7 @@ export default function BlogTopBar({
                         name="tags"
                         value={form.tags}
                         onChange={onChange}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#C2410C]/20"
                         placeholder="React, JavaScript"
                       />
                     </div>
@@ -378,7 +378,7 @@ export default function BlogTopBar({
                     value={form.content}
                     onChange={onChange}
                     rows={6}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#028090]/20"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-[#C2410C]/20"
                     placeholder="Write your article..."
                     required
                   />
@@ -445,7 +445,7 @@ export default function BlogTopBar({
                   <button
                     type="submit"
                     disabled={creating}
-                    className="h-10 px-4 rounded-xl bg-[#028090] border border-[#028090] text-white hover:bg-[#028090]/90 disabled:opacity-50"
+                    className="h-10 px-4 rounded-xl bg-[#C2410C] border border-[#C2410C] text-white hover:bg-[#C2410C]/90 disabled:opacity-50"
                   >
                     {creating ? "Creating..." : "Create"}
                   </button>

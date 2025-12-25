@@ -26,34 +26,27 @@ import Pagination from "../../components/Catigories/Pagination.jsx";
 const PRIMARY = "#C2410C";
 const DEBOUNCE_DELAY = 300;
 
-
 /* ====================== Skeletons ====================== */
 const Sk = ({ className = "" }) => (
   <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />
 );
 
-const TableSkeleton = ({
-  columnsCount = 6,
-  rowsCount = 6,
-  showExpand = false,
-}) => {
+const TableSkeleton = ({ columnsCount = 6, rowsCount = 6, showExpand = false }) => {
   const cols = Math.max(1, columnsCount);
   const rows = Math.max(3, rowsCount);
 
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-<thead className="border-b border-slate-200 bg-[#FCE7E0]">
+        <thead className="border-b border-slate-200 bg-[#FCE7E0]">
           <tr>
-            {showExpand && <th className="w-10 px-3 py-2"></th>}
-
+            {showExpand && <th className="w-10 px-3 py-2" />}
             {Array.from({ length: cols }).map((_, i) => (
               <th key={i} className="px-3 py-2">
                 <Sk className={`h-3 ${i === 0 ? "w-24" : "w-16"} mx-auto md:mx-0`} />
               </th>
             ))}
-
-            <th className="w-28 px-3 py-2"></th>
+            <th className="w-28 px-3 py-2" />
           </tr>
         </thead>
 
@@ -94,7 +87,6 @@ const CardsSkeleton = ({ count = 8, className = "" }) => (
         className="rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden"
       >
         <Sk className="h-32 w-full rounded-none" />
-
         <div className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-2">
@@ -103,12 +95,10 @@ const CardsSkeleton = ({ count = 8, className = "" }) => (
             </div>
             <Sk className="h-5 w-16 rounded-full" />
           </div>
-
           <div className="grid grid-cols-2 gap-2">
             <Sk className="h-7 rounded-xl" />
             <Sk className="h-7 rounded-xl" />
           </div>
-
           <div className="pt-1 flex items-center justify-between gap-2">
             <Sk className="h-9 w-24 rounded-full" />
             <div className="flex items-center gap-2">
@@ -129,14 +119,12 @@ const MobileListSkeleton = ({ count = 6 }) => (
         key={idx}
         className="w-full rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
       >
-        <div className="flex items-center gap-3 min-h[56px]">
+        <div className="flex items-center gap-3 min-h-[56px]">
           <Sk className="w-10 h-10 rounded-full shrink-0" />
-
           <div className="flex-1 min-w-0 space-y-2">
             <Sk className="h-3 w-40" />
             <Sk className="h-3 w-28" />
           </div>
-
           <div className="flex items-center gap-2 shrink-0">
             <Sk className="w-8 h-8 rounded-full" />
             <Sk className="w-14 h-8 rounded-full" />
@@ -147,38 +135,22 @@ const MobileListSkeleton = ({ count = 6 }) => (
   </div>
 );
 
-
 /* ====================== Drawer ====================== */
 const Drawer = ({ open, onClose, title, subtitle, children }) => {
   return (
-    <div
-      className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`}
-      aria-hidden={!open}
-    >
-      {/* Overlay */}
+    <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
       <div
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
       />
-      {/* Panel */}
       <div
         className={`absolute inset-y-0 right-0 w-full sm:max-w-[520px] bg-white shadow-2xl ring-1 ring-slate-200
-        transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+        transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200">
           <div className="min-w-0">
-            <div className="text-base font-semibold text-slate-800 truncate">
-              {title}
-            </div>
-            {subtitle && (
-              <div className="text-[12.5px] text-slate-500 truncate">
-                {subtitle}
-              </div>
-            )}
+            <div className="text-base font-semibold text-slate-800 truncate">{title}</div>
+            {subtitle && <div className="text-[12.5px] text-slate-500 truncate">{subtitle}</div>}
           </div>
           <button
             onClick={onClose}
@@ -188,9 +160,7 @@ const Drawer = ({ open, onClose, title, subtitle, children }) => {
             <FiX />
           </button>
         </div>
-        <div className="h-[calc(100%-56px)] overflow-y-auto p-4">
-          {children}
-        </div>
+        <div className="h-[calc(100%-56px)] overflow-y-auto p-4">{children}</div>
       </div>
     </div>
   );
@@ -209,8 +179,7 @@ function useApi(token) {
   return useMemo(
     () =>
       axios.create({
-        // use VITE_APP_API_URL if available, otherwise route via vite dev proxy at /api
-        baseURL: import.meta.env.VITE_APP_API_URL || " ",
+        baseURL: import.meta.env.VITE_APP_API_URL || "",
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -220,7 +189,7 @@ function useApi(token) {
   );
 }
 
-/* ====================== Data Hook (بدون بحث/فلترة) ====================== */
+/* ====================== Data Hook ====================== */
 function useTableData({ endpoint, api, refreshKey }) {
   const dispatch = useDispatch();
   const [localRows, setLocalRows] = useState([]);
@@ -237,7 +206,7 @@ function useTableData({ endpoint, api, refreshKey }) {
 
     const params = {};
 
-    // ===== Mock short-circuit =====
+    // Mock
     if (MOCK_ENABLED) {
       const mockList = mockFetch(endpoint, params);
       if (Array.isArray(mockList)) {
@@ -261,14 +230,10 @@ function useTableData({ endpoint, api, refreshKey }) {
         return;
       }
     }
-    // ==============================
 
     const timeoutId = setTimeout(async () => {
       try {
-        const { data } = await api.get(endpoint, {
-          params,
-          signal: controller.signal,
-        });
+        const { data } = await api.get(endpoint, { params, signal: controller.signal });
 
         const list = Array.isArray(data)
           ? data
@@ -329,29 +294,26 @@ function renderPrettyCell(col, row, idx) {
   const raw = col.render ? col.render(row, idx) : row[col.key];
   const label = String(col.label || col.key || "").toLowerCase();
 
-  if (raw == null || raw === "")
-    return <span className="text-slate-400">—</span>;
+  if (raw == null || raw === "") return <span className="text-slate-400">—</span>;
   const val = String(raw);
   const key = val.toLowerCase();
 
   if (label.includes("appointment status") || label.includes("status")) {
-  const chipMap = {
-    completed: "bg-emerald-50 text-emerald-700 ring-emerald-200", // ✅ pale green
-    done: "bg-emerald-50 text-emerald-700 ring-emerald-200",       // ✅ optional
-
-    confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    rescheduled: "bg-amber-50 text-amber-700 ring-amber-200",
-    cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
-    unknown: "bg-slate-100 text-slate-600 ring-slate-200",
-  };
-
-  const cls = chipMap[key] || "bg-slate-100 text-slate-600 ring-slate-200";
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}>
-      {val}
-    </span>
-  );
-}
+    const chipMap = {
+      completed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+      done: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+      confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+      rescheduled: "bg-amber-50 text-amber-700 ring-amber-200",
+      cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
+      unknown: "bg-slate-100 text-slate-600 ring-slate-200",
+    };
+    const cls = chipMap[key] || "bg-slate-100 text-slate-600 ring-slate-200";
+    return (
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}>
+        {val}
+      </span>
+    );
+  }
 
   if (label.includes("call status") || label.includes("state")) {
     const color = {
@@ -362,9 +324,7 @@ function renderPrettyCell(col, row, idx) {
       scheduled: "text-sky-600",
       missed: "text-rose-600",
     }[key];
-    return (
-      <span className={`font-medium ${color || "text-slate-700"}`}>{val}</span>
-    );
+    return <span className={`font-medium ${color || "text-slate-700"}`}>{val}</span>;
   }
 
   return val;
@@ -373,8 +333,7 @@ function renderPrettyCell(col, row, idx) {
 function pickColumn(columns, keywords = []) {
   const lower = (s) => String(s || "").toLowerCase();
   const byLabel = (kw) =>
-    columns.find((c) => lower(c.label).includes(kw)) ||
-    columns.find((c) => lower(c.key).includes(kw));
+    columns.find((c) => lower(c.label).includes(kw)) || columns.find((c) => lower(c.key).includes(kw));
   for (const k of keywords) {
     const c = byLabel(k);
     if (c) return c;
@@ -402,14 +361,7 @@ function initialsFrom(name) {
   return parts.map((p) => p[0]?.toUpperCase()).join("");
 }
 function pickAvatar(row) {
-  return (
-    row?.avatar ||
-    row?.image ||
-    row?.profile_image ||
-    row?.photoUrl ||
-    row?.photoURL ||
-    ""
-  );
+  return row?.avatar || row?.image || row?.profile_image || row?.photoUrl || row?.photoURL || "";
 }
 
 /* ====================== Mobile List ====================== */
@@ -431,26 +383,11 @@ const MobileCards = ({
   onCancelEdit,
   onOpenDrawer,
 }) => {
-  if (loading) {
-    return <MobileListSkeleton count={6} />;
-  }
-  if (error) {
-    return (
-      <div className="block md:hidden text-center text-red-600 py-8">
-        {error}
-      </div>
-    );
-  }
-  if (!rows.length) {
-    return (
-      <div className="block md:hidden text-center text-slate-500 py-8">
-        No {title} found
-      </div>
-    );
-  }
+  if (loading) return <MobileListSkeleton count={6} />;
+  if (error) return <div className="block md:hidden text-center text-red-600 py-8">{error}</div>;
+  if (!rows.length) return <div className="block md:hidden text-center text-slate-500 py-8">No {title} found</div>;
 
-  const nameCol =
-    pickColumn(columns, ["name", "full name", "username"]) || columns[0];
+  const nameCol = pickColumn(columns, ["name", "full name", "username"]) || columns[0];
   const emailCol = pickColumn(columns, ["email"]);
   const countryCol = pickColumn(columns, ["country", "city"]);
   const roleCol = pickColumn(columns, ["role", "type"]);
@@ -474,16 +411,22 @@ const MobileCards = ({
         const state = onlineState(statusVal);
         const isVerified = truthyYes(verifiedVal);
 
-        const secondary =
-          email ??
-          (country ? String(country) : role ? String(role) : undefined);
+        const secondary = email ?? (country ? String(country) : role ? String(role) : undefined);
 
         return (
-          <div
-            key={idx}
-            className="w-full rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
-          >
-            <div className="flex items-center gap-3 min-h[56px]">
+          <div key={idx} className="w-full rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+            <div className="flex items-center gap-3 min-h-[56px]">
+              {/* Expand */}
+              {crudConfig.showExpand && (
+                <button
+                  onClick={() => onToggleExpand?.(idx)}
+                  className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 shrink-0"
+                  title="Toggle"
+                >
+                  {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+                </button>
+              )}
+
               {/* Avatar */}
               <div className="shrink-0 w-10 h-10 rounded-full bg-slate-100 overflow-hidden grid place-items-center text-[12px] text-slate-600">
                 {avatarUrl ? (
@@ -496,16 +439,12 @@ const MobileCards = ({
               {/* Texts */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <div className="text-[14px] font-medium text-slate-800 truncate">
-                    {primary}
-                  </div>
+                  <div className="text-[14px] font-medium text-slate-800 truncate">{primary}</div>
 
                   {state && (
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] ${
-                        state === "online"
-                          ? "text-emerald-600"
-                          : "text-slate-500"
+                        state === "online" ? "text-emerald-600" : "text-slate-500"
                       }`}
                     >
                       <span
@@ -517,18 +456,10 @@ const MobileCards = ({
                     </span>
                   )}
 
-                  {isVerified && (
-                    <span className="text-[11px] text-emerald-600">
-                      ✓ Verified
-                    </span>
-                  )}
+                  {isVerified && <span className="text-[11px] text-emerald-600">✓ Verified</span>}
                 </div>
 
-                {secondary && (
-                  <div className="text-[12px] text-slate-600 truncate">
-                    {secondary}
-                  </div>
-                )}
+                {secondary && <div className="text-[12px] text-slate-600 truncate">{secondary}</div>}
               </div>
 
               {/* Actions */}
@@ -543,30 +474,35 @@ const MobileCards = ({
                   </button>
                 )}
 
-                {crudConfig.showRowEdit && (
-                  <button
-                    onClick={() => onOpenDrawer?.(row, idx)}
-                    className="h-8 px-3 rounded-full border inline-flex items-center gap-1.5 text-[12px]"
-                    style={{ borderColor: PRIMARY, color: PRIMARY }}
-                    title="Edit"
-                  >
-                    <FiEdit2 />
-                  </button>
-                )}
+                {renderActions ? (
+                  renderActions(row, helpers)
+                ) : !hideCrudActions ? (
+                  <>
+                    {crudConfig.showRowEdit && (
+                      <button
+                        onClick={() => onOpenDrawer?.(row, idx)}
+                        className="h-8 px-3 rounded-full border inline-flex items-center gap-1.5 text-[12px]"
+                        style={{ borderColor: PRIMARY, color: PRIMARY }}
+                        title="Edit"
+                      >
+                        <FiEdit2 />
+                      </button>
+                    )}
 
-                {crudConfig.showDelete && (
-                  <button
-                    onClick={() => helpers.handleDelete(idx)}
-                    className="h-8 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-1.5 text-[12px] text-red-600"
-                    title="Delete"
-                  >
-                    <FiTrash2 />
-                  </button>
-                )}
+                    {crudConfig.showDelete && (
+                      <button
+                        onClick={() => helpers.handleDelete(idx)}
+                        className="h-8 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-1.5 text-[12px] text-red-600"
+                        title="Delete"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    )}
+                  </>
+                ) : null}
               </div>
             </div>
 
-            {/* (Optional) inline expand */}
             {isExpanded && (
               <div className="mt-2">
                 <ExpandedRow
@@ -628,14 +564,12 @@ const DesktopTable = ({
     <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
         <thead className="border-b border-slate-200 bg-[#FCE7E0]">
-
           <tr>
-            {crudConfig.showExpand && <th className="w-10 px-3 py-2"></th>}
+            {crudConfig.showExpand && <th className="w-10 px-3 py-2" />}
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#C2410C]
-"
+                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#C2410C]"
               >
                 {col.label}
               </th>
@@ -645,6 +579,7 @@ const DesktopTable = ({
             </th>
           </tr>
         </thead>
+
         <tbody className="divide-y divide-slate-200">
           {!rows.length ? (
             <tr>
@@ -661,12 +596,8 @@ const DesktopTable = ({
               const isEditing = editingRowId === helpers.getId(row);
 
               return (
-                <React.Fragment key={idx}>
-                  <tr
-                    className={`hover:bg-slate-50 ${
-                      isExpanded ? "bg-slate-50" : ""
-                    }`}
-                  >
+                <React.Fragment key={helpers.getId(row) ?? idx}>
+                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
                     {crudConfig.showExpand && (
                       <td className="px-3 py-2 text-center">
                         <button
@@ -730,9 +661,7 @@ const DesktopTable = ({
                   {isExpanded && (
                     <tr>
                       <td
-                        colSpan={
-                          columns.length + (crudConfig.showExpand ? 2 : 1)
-                        }
+                        colSpan={columns.length + (crudConfig.showExpand ? 2 : 1)}
                         className="px-0 py-0"
                       >
                         <ExpandedRow
@@ -802,9 +731,7 @@ const DesktopCards = ({
     );
   }
 
-  const nameCol =
-    pickColumn(columns, ["title", "name", "full name", "username"]) ||
-    columns[0];
+  const nameCol = pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
   const dueCol = pickColumn(columns, ["due", "date"]);
@@ -826,23 +753,18 @@ const DesktopCards = ({
 
         return (
           <div
-            key={idx}
+            key={helpers.getId(row) ?? idx}
             className="group relative rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
-                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#9ae2ea]"
+                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#F59E0B]/30"
           >
-            {/* الجزء العلوي (أفاتار / حرف أول) */}
             <div
               role="button"
               tabIndex={0}
               onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && onCardClick?.(row, helpers)
-              }
+              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
               className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
-              {/* خلفية متدرجة بلون #028090 */}
-              {/* إذا ما في صورة → اعرض الخلفية */}
               {!avatarUrl && (
                 <>
                   <div className="absolute inset-0 bg-gradient-to-br from-[#C2410C] via-[#E25822] to-[#FCE7E0]" />
@@ -863,61 +785,54 @@ const DesktopCards = ({
               )}
             </div>
 
-            {/* المحتوى */}
             <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">
-                    {titleVal}
-                  </div>
+                  <div className="font-semibold text-slate-900 truncate">{titleVal}</div>
 
                   {typeof renderSubtitle === "function" && (
-                    <div className="mt-0.5 text-[12px] text-slate-500">
-                      {renderSubtitle(row, helpers)}
-                    </div>
+                    <div className="mt-0.5 text-[12px] text-slate-500">{renderSubtitle(row, helpers)}</div>
                   )}
 
-                  {subVal && (
-                    <div className="text-xs text-slate-500 truncate">
-                      {String(subVal)}
+                  {subVal && <div className="text-xs text-slate-500 truncate">{String(subVal)}</div>}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {crudConfig.showExpand && (
+                    <button
+                      onClick={() => onToggleExpand?.(idx)}
+                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+                      title="Toggle"
+                    >
+                      {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+                    </button>
+                  )}
+
+                  {status && (
+                    <div className="shrink-0">
+                      {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
                     </div>
                   )}
                 </div>
-
-                {status && (
-                  <div className="shrink-0">
-                    {renderPrettyCell(
-                      { label: "Status", key: "status" },
-                      { status },
-                      idx
-                    )}
-                  </div>
-                )}
               </div>
 
-              {/* Badges صغيرة للـ due / budget */}
               {(due || (budget != null && budget !== "")) && (
                 <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
                   {due && (
                     <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
                       <span className="text-slate-400">Due:</span>{" "}
-                      <span className="font-medium text-slate-700">
-                        {String(due)}
-                      </span>
+                      <span className="font-medium text-slate-700">{String(due)}</span>
                     </div>
                   )}
                   {budget != null && budget !== "" && (
                     <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
                       <span className="text-slate-400">Budget:</span>{" "}
-                      <span className="font-medium text-slate-700">
-                        {String(budget)}
-                      </span>
+                      <span className="font-medium text-slate-700">{String(budget)}</span>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* الأزرار */}
               <div className="pt-1 flex items-center justify-between gap-1.5">
                 {crudConfig.showDetails && (
                   <button
@@ -930,8 +845,7 @@ const DesktopCards = ({
                 )}
 
                 <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" &&
-                    renderActions(row, helpers)}
+                  {typeof renderActions === "function" && renderActions(row, helpers)}
 
                   {!hideCrudActions && (
                     <>
@@ -960,7 +874,6 @@ const DesktopCards = ({
                 </div>
               </div>
 
-              {/* (اختياري) توسيع داخلي */}
               {isExpanded && (
                 <div className="mt-2">
                   <ExpandedRow
@@ -1004,11 +917,7 @@ const CardsGrid = ({
   renderSubtitle,
   onOpenDrawer,
 }) => {
-  if (loading) {
-    return (
-      <CardsSkeleton count={4} className="grid md:hidden grid-cols-1 gap-3" />
-    );
-  }
+  if (loading) return <CardsSkeleton count={4} className="grid md:hidden grid-cols-1 gap-3" />;
   if (error) {
     return (
       <div className="block md:hidden rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-red-600">
@@ -1024,9 +933,7 @@ const CardsGrid = ({
     );
   }
 
-  const nameCol =
-    pickColumn(columns, ["title", "name", "full name", "username"]) ||
-    columns[0];
+  const nameCol = pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
   const dueCol = pickColumn(columns, ["due", "date"]);
@@ -1048,17 +955,15 @@ const CardsGrid = ({
 
         return (
           <div
-            key={idx}
+            key={helpers.getId(row) ?? idx}
             className="rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
-                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#9ae2ea]"
+                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#F59E0B]/30"
           >
             <div
               role="button"
               tabIndex={0}
               onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && onCardClick?.(row, helpers)
-              }
+              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
               className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
@@ -1066,11 +971,7 @@ const CardsGrid = ({
               <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
 
               {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="relative z-10 w-full h-full object-cover mix-blend-multiply"
-                />
+                <img src={avatarUrl} alt="" className="relative z-10 w-full h-full object-cover mix-blend-multiply" />
               ) : (
                 <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
@@ -1081,30 +982,32 @@ const CardsGrid = ({
             <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">
-                    {titleVal}
-                  </div>
+                  <div className="font-semibold text-slate-900 truncate">{titleVal}</div>
+
                   {typeof renderSubtitle === "function" && (
-                    <div className="mt-0.5 text-[12px] text-slate-500">
-                      {renderSubtitle(row, helpers)}
-                    </div>
+                    <div className="mt-0.5 text-[12px] text-slate-500">{renderSubtitle(row, helpers)}</div>
                   )}
 
-                  {subVal && (
-                    <div className="text-xs text-slate-500 truncate">
-                      {String(subVal)}
+                  {subVal && <div className="text-xs text-slate-500 truncate">{String(subVal)}</div>}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {crudConfig.showExpand && (
+                    <button
+                      onClick={() => onToggleExpand?.(idx)}
+                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+                      title="Toggle"
+                    >
+                      {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+                    </button>
+                  )}
+
+                  {status && (
+                    <div className="shrink-0">
+                      {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
                     </div>
                   )}
                 </div>
-                {status && (
-                  <div className="shrink-0">
-                    {renderPrettyCell(
-                      { label: "Status", key: "status" },
-                      { status },
-                      idx
-                    )}
-                  </div>
-                )}
               </div>
 
               {(due || (budget != null && budget !== "")) && (
@@ -1112,17 +1015,13 @@ const CardsGrid = ({
                   {due && (
                     <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
                       <span className="text-slate-400">Due:</span>{" "}
-                      <span className="font-medium text-slate-700">
-                        {String(due)}
-                      </span>
+                      <span className="font-medium text-slate-700">{String(due)}</span>
                     </div>
                   )}
                   {budget != null && budget !== "" && (
                     <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
                       <span className="text-slate-400">Budget:</span>{" "}
-                      <span className="font-medium text-slate-700">
-                        {String(budget)}
-                      </span>
+                      <span className="font-medium text-slate-700">{String(budget)}</span>
                     </div>
                   )}
                 </div>
@@ -1140,8 +1039,7 @@ const CardsGrid = ({
                 )}
 
                 <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" &&
-                    renderActions(row, helpers)}
+                  {typeof renderActions === "function" && renderActions(row, helpers)}
 
                   {!hideCrudActions && (
                     <>
@@ -1191,6 +1089,7 @@ const CardsGrid = ({
     </div>
   );
 };
+
 /* ====================== Main ====================== */
 export default function PeopleTable({
   title = "People",
@@ -1213,19 +1112,12 @@ export default function PeopleTable({
   const api = useApi(token);
   const { editingRowId } = useSelector((s) => s.users);
 
-  const mergedCrudConfig = useMemo(
-    () => ({ ...DEFAULT_CRUD_CONFIG, ...crudConfig }),
-    [crudConfig]
-  );
+  const mergedCrudConfig = useMemo(() => ({ ...DEFAULT_CRUD_CONFIG, ...crudConfig }), [crudConfig]);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [expandedRow, setExpandedRow] = useState(null);
 
-  const { rows, setRows, loading, error } = useTableData({
-    endpoint,
-    api,
-    refreshKey,
-  });
+  const { rows, setRows, loading, error } = useTableData({ endpoint, api, refreshKey });
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -1236,35 +1128,28 @@ export default function PeopleTable({
     return rows.slice(start, start + pageSize);
   }, [rows, page, pageSize]);
 
+  // reset expand on page change
+  useEffect(() => {
+    setExpandedRow(null);
+  }, [page]);
+
   useEffect(() => {
     setPage(1);
   }, [refreshKey]);
 
-  const tableColumns = columns?.length
-    ? columns
-    : [
-        { label: "Name", key: "name" },
-        { label: "Role", key: "role" },
-      ];
+  const tableColumns = columns?.length ? columns : [{ label: "Name", key: "name" }, { label: "Role", key: "role" }];
 
   const getId = useCallback((row) => row.id ?? row._id, []);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  const startEdit = useCallback(
-    (rowId) => dispatch(setEditingRowId(rowId)),
-    [dispatch]
-  );
+  const startEdit = useCallback((rowId) => dispatch(setEditingRowId(rowId)), [dispatch]);
 
   const handleSaveEdit = useCallback(
     async (formData) => {
       try {
         if (!endpoint) {
-          setRows((prev) =>
-            prev.map((row) =>
-              row.id === formData.id ? { ...row, ...formData } : row
-            )
-          );
+          setRows((prev) => prev.map((row) => (row.id === formData.id ? { ...row, ...formData } : row)));
           dispatch(updateUser(formData));
           dispatch(setEditingRowId(null));
           return;
@@ -1281,20 +1166,27 @@ export default function PeopleTable({
     [endpoint, api, dispatch, refresh, setRows]
   );
 
-  const handleCancelEdit = useCallback(
-    () => dispatch(setEditingRowId(null)),
-    [dispatch]
-  );
+  const handleCancelEdit = useCallback(() => dispatch(setEditingRowId(null)), [dispatch]);
 
+  // ✅ Important fix: delete by paged index -> global index
   const handleDelete = useCallback(
-    async (idx) => {
-      const row = rows[idx];
+    async (pagedIdxOrRow) => {
+      let row = null;
+
+      if (typeof pagedIdxOrRow === "number") {
+        const globalIdx = (page - 1) * pageSize + pagedIdxOrRow;
+        row = rows[globalIdx];
+      } else if (pagedIdxOrRow && typeof pagedIdxOrRow === "object") {
+        row = pagedIdxOrRow;
+      }
+
       if (!row || !window.confirm("Do you want to delete this record?")) return;
+
+      const id = getId(row);
+
       try {
-        // Parent override: if the parent provided a custom onDelete handler, delegate to it
         if (typeof onDelete === "function") {
-          // Provide helpful helpers similar to the built-in helpers
-          await onDelete(row, idx, {
+          await onDelete(row, pagedIdxOrRow, {
             rows,
             setRows,
             getId,
@@ -1307,9 +1199,9 @@ export default function PeopleTable({
           return;
         }
 
-        if (endpoint && row?.id != null) {
-          await api.delete(`${endpoint}/${row.id}`);
-          dispatch(removeUser(row.id));
+        if (endpoint && id != null) {
+          await api.delete(`${endpoint}/${id}`);
+          dispatch(removeUser(id));
         }
         refresh();
       } catch (err) {
@@ -1317,18 +1209,7 @@ export default function PeopleTable({
         dispatch(setError("Failed to delete this record"));
       }
     },
-    [
-      rows,
-      endpoint,
-      api,
-      dispatch,
-      refresh,
-      onDelete,
-      setRows,
-      getId,
-      startEdit,
-      token,
-    ]
+    [rows, endpoint, api, dispatch, refresh, onDelete, setRows, getId, startEdit, token, page, pageSize]
   );
 
   const handleToggleExpand = useCallback(
@@ -1355,8 +1236,7 @@ export default function PeopleTable({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerIndex, setDrawerIndex] = useState(null);
 
-  const selectedRow =
-    drawerIndex != null && drawerIndex >= 0 ? pagedRows[drawerIndex] : null;
+  const selectedRow = drawerIndex != null && drawerIndex >= 0 ? pagedRows[drawerIndex] : null;
 
   const openDrawer = useCallback(
     (row, idx) => {
@@ -1395,7 +1275,7 @@ export default function PeopleTable({
           helpers={helpers}
           crudConfig={mergedCrudConfig}
           expandedRow={expandedRow}
-          onToggleExpand={setExpandedRow}
+          onToggleExpand={handleToggleExpand}
           formFields={formFields}
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
@@ -1416,7 +1296,7 @@ export default function PeopleTable({
           helpers={helpers}
           crudConfig={mergedCrudConfig}
           expandedRow={expandedRow}
-          onToggleExpand={setExpandedRow}
+          onToggleExpand={handleToggleExpand}
           formFields={formFields}
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
@@ -1437,7 +1317,7 @@ export default function PeopleTable({
           helpers={helpers}
           crudConfig={mergedCrudConfig}
           expandedRow={expandedRow}
-          onToggleExpand={setExpandedRow}
+          onToggleExpand={handleToggleExpand}
           formFields={formFields}
           editingRowId={editingRowId}
           onSaveEdit={handleSaveEdit}
@@ -1453,7 +1333,7 @@ export default function PeopleTable({
           loading={loading}
           error={error}
           expandedRow={expandedRow}
-          onToggleExpand={setExpandedRow}
+          onToggleExpand={handleToggleExpand}
           renderActions={renderActions}
           hideCrudActions={hideCrudActions}
           helpers={helpers}
@@ -1466,22 +1346,13 @@ export default function PeopleTable({
         />
       )}
 
-      <Pagination
-        page={page}
-        total={rows.length}
-        pageSize={pageSize}
-        onPageChange={setPage}
-      />
+      <Pagination page={page} total={rows.length} pageSize={pageSize} onPageChange={setPage} />
 
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
         title={`Edit ${title}`}
-        subtitle={
-          selectedRow
-            ? selectedRow.email || selectedRow.name || selectedRow.title || ""
-            : ""
-        }
+        subtitle={selectedRow ? selectedRow.email || selectedRow.name || selectedRow.title || "" : ""}
       >
         {selectedRow && (
           <ExpandedRow

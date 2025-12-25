@@ -19,6 +19,8 @@ import {
   Code,
   Palette,
   Link2,
+  Download,
+  FolderOpen,
 } from "lucide-react";
 
 /* ---------- Theme ---------- */
@@ -254,9 +256,7 @@ function ClientProjects() {
     if (!token) return;
     setAppsSubmitting(true);
     try {
-      await api.post(
-        "/projects/applications/decision",
-        { assignmentId, action },
+      await api.post("/projects/applications/decision", { assignmentId, id: assignmentId, projectId, action },
         {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
           timeout: 15000, // 15s
@@ -322,6 +322,10 @@ function ClientProjects() {
       (a) => String(a.status || "").toLowerCase() === "pending_client_approval"
     ).length;
 
+    const statusKey = String(row.completion_status || row.status || "").toLowerCase();
+    const isCompleted = statusKey === "completed" || statusKey === "done";
+
+
     return (
       <div className="flex flex-wrap gap-2 w-full">
         <button
@@ -332,10 +336,14 @@ function ClientProjects() {
           }}
           className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
           style={{ backgroundColor: T.primary }}
-          title="Review & receive delivery"
+          title={isCompleted ? "View project files" : "Review & receive delivery"}
         >
-          <SendHorizontal className="w-3 h-3" />
-          Receive
+          {isCompleted ? (
+            <FolderOpen className="w-3 h-3" />
+          ) : (
+            <SendHorizontal className="w-3 h-3" />
+          )}
+          {isCompleted ? "Files" : "Receive"}
         </button>
 
         <button
@@ -421,6 +429,7 @@ function ClientProjects() {
       {reviewOpen && reviewFor && (
         <ClientReviewDrawer
           project={reviewFor}
+          readOnly={String(reviewFor?.completion_status || reviewFor?.status || "").toLowerCase() === "completed"}
           onClose={() => {
             setReviewOpen(false);
             setReviewFor(null);
@@ -588,8 +597,18 @@ function ClientReviewDrawer({
   onApprove,
   onRequestChanges,
   token,
+  readOnly = false,
 }) {
   const toast = useToast(); // ✅
+
+  const { userData } = useSelector((s) => s.auth);
+  const myId = userData?.id ?? userData?.userId ?? userData?.user_id;
+
+  const freelancerId =
+    project?.freelancer_id ??
+    project?.freelancerId ??
+    project?.assigned_freelancer_id ??
+    project?.assignedFreelancerId;
 
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -598,6 +617,99 @@ function ClientReviewDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requestText, setRequestText] = useState("");
+
+  const canRequest = typeof onRequestChanges === "function";
+
+  /* ---------- Download attachments ---------- */
+  const [downloadingMap, setDownloadingMap] = useState({});
+
+  const isAbsoluteUrl = (u) => /^https?:\/\//i.test(String(u || ""));
+
+  const resolveUrl = (u) => {
+    if (!u) return null;
+    const raw = String(u);
+    if (isAbsoluteUrl(raw)) return raw;
+
+    // If api.baseURL is empty, keep it relative (browser will use current origin).
+    const base = String(api.defaults.baseURL || "").trim();
+    if (!base) return raw;
+
+    const cleanBase = base.replace(/\/$/, "");
+    const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${cleanBase}${cleanPath}`;
+  };
+
+  const fileNameFromContentDisposition = (cd) => {
+    if (!cd) return null;
+    // filename*=UTF-8''... OR filename="..."
+    const m = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(cd);
+    const v = m?.[1] || m?.[2];
+    if (!v) return null;
+    try {
+      return decodeURIComponent(v);
+    } catch {
+      return v;
+    }
+  };
+
+  const fileNameFromUrl = (u) => {
+    try {
+      const urlObj = new URL(u, window.location.href);
+      const last = urlObj.pathname.split("/").filter(Boolean).pop();
+      return last || null;
+    } catch {
+      const parts = String(u || "").split("?")[0].split("/");
+      return parts.filter(Boolean).pop() || null;
+    }
+  };
+
+  const startDownload = async ({ url, name, id }, idx) => {
+    const target = resolveUrl(url);
+    if (!target) return;
+
+    const key = String(id ?? `${name || "file"}-${idx}`);
+    setDownloadingMap((m) => ({ ...m, [key]: true }));
+
+    try {
+      const absolute = isAbsoluteUrl(target);
+      const client = absolute ? axios : api;
+      const headers = !absolute && token ? { authorization: `Bearer ${token}` } : undefined;
+
+      const res = await client.get(target, {
+        responseType: "blob",
+        headers,
+      });
+
+      const cd = res?.headers?.["content-disposition"];
+      const fromHeader = fileNameFromContentDisposition(cd);
+      const fromUrl = fileNameFromUrl(target);
+      const fileName = fromHeader || name || fromUrl || `attachment-${idx + 1}`;
+
+      const blob = res?.data instanceof Blob ? res.data : new Blob([res.data]);
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download failed:", err);
+      toast?.error?.("Failed to download attachment.");
+      // Fallback: open in new tab (some servers block blob downloads / CORS)
+      try {
+        window.open(target, "_blank", "noopener,noreferrer");
+      } catch {}
+    } finally {
+      setDownloadingMap((m) => {
+        const next = { ...m };
+        delete next[key];
+        return next;
+      });
+    }
+  };
 
   // lock scroll
   useEffect(() => {
@@ -608,37 +720,102 @@ function ClientReviewDrawer({
     };
   }, []);
 
-  const groupDeliveries = (files) => {
-    const map = new Map();
+  
+  // Backend returns deliveries already grouped:
+  // { id, sent_at, files: [ { file_name, file_url, file_size, id, ... } ] }
+  const normalizeDelivery = (d, idx) => {
+    const at = d?.sent_at ?? d?.sentAt ?? d?.at ?? null;
 
-    for (const f of files) {
-      const at = f.sent_at || f.sentAt;
-      const key = at ? new Date(at).toISOString() : "unknown";
-      if (!map.has(key)) {
-        map.set(key, { id: key, at, notes: "", links: {}, attachments: [] });
-      }
-      map.get(key).attachments.push({
-        name: f.file_name,
-        url: f.file_url,
-        size: f.file_size,
-        id: f.id,
-      });
+    const arr = Array.isArray(d?.files)
+      ? d.files
+      : Array.isArray(d?.attachments)
+      ? d.attachments
+      : [];
+
+    const attachments = arr.map((f, i) => ({
+      id: f?.id ?? `${idx}-${i}`,
+      name:
+        f?.file_name ??
+        f?.name ??
+        f?.filename ??
+        f?.originalname ??
+        `Attachment ${i + 1}`,
+      url: f?.file_url ?? f?.url ?? f?.path ?? null,
+      size: f?.file_size ?? f?.size ?? 0,
+      senderId: f?.sender_id ?? f?.senderId ?? null,
+    }));
+
+    return {
+      id: d?.id ?? (at ? new Date(at).toISOString() : `delivery-${idx}`),
+      at,
+      // optional fields (if you later add them in backend)
+      notes: d?.notes ?? "",
+      links: d?.links ?? {},
+      attachments,
+    };
+  };
+
+  const versions = (Array.isArray(deliveries) ? deliveries : [])
+    .map(normalizeDelivery)
+    .sort((a, b) => {
+      const ta = a.at ? new Date(a.at).getTime() : 0;
+      const tb = b.at ? new Date(b.at).getTime() : 0;
+      return tb - ta;
+    });
+
+  const latest = (() => {
+    if (!versions.length) return null;
+
+    // If we know the freelancer id for this project, always prefer the latest delivery from that freelancer.
+    if (freelancerId != null) {
+      const fromFreelancer = versions.find((v) =>
+        (v.attachments || []).some(
+          (a) =>
+            a?.senderId != null &&
+            String(a.senderId) === String(freelancerId)
+        )
+      );
+      if (fromFreelancer) return fromFreelancer;
     }
 
-    return Array.from(map.values()).sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
-    );
+    if (myId != null) {
+      // Otherwise, prefer the most recent delivery that contains files NOT sent by me.
+      const other = versions.find((v) =>
+        (v.attachments || []).some(
+          (a) => a?.senderId != null && String(a.senderId) !== String(myId)
+        )
+      );
+      if (other) return other;
+    }
+
+    return versions[0] || null;
+  })();
+
+  const filterAttachmentsForDisplay = (atts) => {
+    const arr = Array.isArray(atts) ? atts : [];
+    if (freelancerId != null) {
+      return arr.filter(
+        (a) => !a?.senderId || String(a.senderId) === String(freelancerId)
+      );
+    }
+    if (myId != null) {
+      return arr.filter(
+        (a) => !a?.senderId || String(a.senderId) !== String(myId)
+      );
+    }
+    return arr;
   };
 
-  const toTime = (x) => {
-    const dt = x?.at ? new Date(x.at) : null;
-    const t = dt && !Number.isNaN(dt.getTime()) ? dt.getTime() : 0;
-    return t;
-  };
+  const shownAttachments = latest
+    ? filterAttachmentsForDisplay(latest.attachments)
+    : [];
 
-  const versions = groupDeliveries(deliveries);
-  const latest = versions[0] || null;
-  // ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
+  const latestKey = latest ? String(latest.id ?? latest.at ?? "") : "";
+  const historyVersions = latest
+    ? versions.filter((v) => String(v.id ?? v.at ?? "") !== latestKey)
+    : versions;
+
+// ✅ fetch حقيقي (زر Refresh كان بس يعمل spinner بدون fetch)
   useEffect(() => {
     if (!project?.id || !token) return;
     let alive = true;
@@ -678,7 +855,7 @@ function ClientReviewDrawer({
     try {
       setLoading(true);
       const { data } = await api.get(
-        `/api/client/projects/${project.id}/deliveries`,
+        `/projects/${project.id}/deliveries`,
         {
           headers: { authorization: `Bearer ${token}` },
         }
@@ -717,6 +894,10 @@ function ClientReviewDrawer({
   const request = async () => {
     const msg = requestText.trim();
     if (!msg) return;
+    if (!canRequest) {
+      toast?.error?.("Request changes endpoint is not configured.");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -744,7 +925,7 @@ function ClientReviewDrawer({
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
             <div className="font-semibold text-slate-800">
-              Receive Project — {project.title}
+              {readOnly ? "Project Files" : "Receive Project"} — {project.title}
             </div>
             <button
               onClick={onClose}
@@ -825,9 +1006,9 @@ function ClientReviewDrawer({
                   ) : null}
 
                   <Field label="Attachments">
-                    {latest.attachments?.length ? (
-                      <ul className="list-disc ml-4 text-sm text-slate-700">
-                        {latest.attachments.map((f, idx) => {
+                    {shownAttachments?.length ? (
+                      <ul className="space-y-2 text-sm text-slate-700">
+                        {shownAttachments.map((f, idx) => {
                           const name =
                             typeof f === "string"
                               ? f
@@ -838,21 +1019,51 @@ function ClientReviewDrawer({
                                 `Attachment ${idx + 1}`;
                           const url =
                             typeof f === "object" ? f?.url || f?.path : null;
+                          const openUrl = url ? resolveUrl(url) : null;
+                          const id = typeof f === "object" ? f?.id : null;
+                          const key = String(id ?? `${name}-${idx}`);
+                          const isDownloading = !!downloadingMap[key];
 
                           return (
-                            <li key={`${name}-${idx}`}>
-                              {url ? (
-                                <a
-                                  className="text-sky-700 hover:underline break-all"
-                                  href={url}
-                                  target="_blank"
-                                  rel="noreferrer"
+                            <li
+                              key={key}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <div className="min-w-0">
+                                {openUrl ? (
+                                  <a
+                                    className="text-sky-700 hover:underline break-all"
+                                    href={openUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Open attachment"
+                                  >
+                                    {name}
+                                  </a>
+                                ) : (
+                                  <span className="break-all">{name}</span>
+                                )}
+                              </div>
+
+                              {openUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    startDownload({ url: openUrl, name, id }, idx)
+                                  }
+                                  disabled={isDownloading}
+                                  className="inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs shrink-0"
+                                  style={ringStyle}
+                                  title="Download"
                                 >
-                                  {name}
-                                </a>
-                              ) : (
-                                name
-                              )}
+                                  {isDownloading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                  Download
+                                </button>
+                              ) : null}
                             </li>
                           );
                         })}
@@ -865,8 +1076,8 @@ function ClientReviewDrawer({
               )}
             </section>
 
-            {/* Actions */}
-            <section className="rounded-2xl bg-white p-4" style={ringStyle}>
+            {!readOnly && (
+              <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="flex items-center gap-2">
                 <button
                   disabled={!latest || submitting}
@@ -883,7 +1094,7 @@ function ClientReviewDrawer({
 
                 <button
                   type="button"
-                  disabled={!latest || submitting}
+                  disabled={!latest || submitting || !canRequest}
                   onClick={() => setRequesting((v) => !v)}
                   className="h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm inline-flex items-center gap-2"
                   style={ringStyle}
@@ -927,30 +1138,112 @@ function ClientReviewDrawer({
               ) : null}
             </section>
 
+            )}
             {/* History */}
             <section className="rounded-2xl bg-white p-4" style={ringStyle}>
               <div className="font-medium text-slate-800">History</div>
-              {versions.length === 0 ? (
+              {historyVersions.length === 0 ? (
                 <div className="text-sm text-slate-500 mt-2">
                   {loading ? "Loading..." : "No history yet."}
                 </div>
               ) : (
                 <ol className="mt-3 space-y-3">
-                  {versions.map((v) => (
-                    <li
-                      key={v.id || v.at}
-                      className="rounded-xl bg-white p-3"
-                      style={ringStyle}
-                    >
-                      <div className="text-xs text-slate-500">
-                        {v.at ? new Date(v.at).toLocaleString() : "—"} —{" "}
-                        {v.id || "—"}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-700">
-                        {v.notes || "—"}
-                      </div>
-                    </li>
-                  ))}
+                  {historyVersions.map((v) => {
+                    const list = filterAttachmentsForDisplay(v.attachments);
+                    return (
+                      <li
+                        key={v.id || v.at}
+                        className="rounded-xl bg-white p-3"
+                        style={ringStyle}
+                      >
+                        <div className="text-xs text-slate-500">
+                          {v.at ? new Date(v.at).toLocaleString() : "—"}
+                        </div>
+
+                        {v.notes ? (
+                          <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                            {v.notes}
+                          </div>
+                        ) : null}
+
+                        <div className="mt-2 text-xs text-slate-500">
+                          Attachments
+                        </div>
+
+                        {list?.length ? (
+                          <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                            {list.map((f, idx) => {
+                              const name =
+                                typeof f === "string"
+                                  ? f
+                                  : f?.name ||
+                                    f?.filename ||
+                                    f?.originalname ||
+                                    f?.url ||
+                                    `Attachment ${idx + 1}`;
+
+                              const url =
+                                typeof f === "object" ? f?.url || f?.path : null;
+
+                              const openUrl = url ? resolveUrl(url) : null;
+                              const fid = typeof f === "object" ? f?.id : null;
+
+                              const key = String(fid ?? `${name}-${idx}`);
+                              const isDownloading = !!downloadingMap[key];
+
+                              return (
+                                <li
+                                  key={`${v.id || v.at}-${key}`}
+                                  className="flex items-center justify-between gap-2"
+                                >
+                                  <div className="min-w-0">
+                                    {openUrl ? (
+                                      <a
+                                        className="text-sky-700 hover:underline break-all"
+                                        href={openUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="Open attachment"
+                                      >
+                                        {name}
+                                      </a>
+                                    ) : (
+                                      <span className="break-all">{name}</span>
+                                    )}
+                                  </div>
+
+                                  {openUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        startDownload(
+                                          { url: openUrl, name, id: fid },
+                                          idx
+                                        )
+                                      }
+                                      disabled={isDownloading}
+                                      className="inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs shrink-0"
+                                      style={ringStyle}
+                                      title="Download"
+                                    >
+                                      {isDownloading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Download className="w-4 h-4" />
+                                      )}
+                                      Download
+                                    </button>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="text-sm text-slate-500 mt-1">—</div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               )}
             </section>
