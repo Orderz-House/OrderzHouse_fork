@@ -767,7 +767,7 @@ const DesktopCards = ({
             >
               {!avatarUrl && (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#C2410C] via-[#E25822] to-[#FCE7E0]" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-indigo-500 to-violet-600" />
                   <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
                 </>
               )}
@@ -973,6 +973,7 @@ const CardsGrid = ({
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="relative z-10 w-full h-full object-cover mix-blend-multiply" />
               ) : (
+                
                 <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
                   {initialsFrom(String(titleVal))}
                 </div>

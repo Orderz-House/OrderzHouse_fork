@@ -16,6 +16,8 @@ import {
   X,
   Settings,
   Sparkles,
+  FolderPlus,
+  ListPlus,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -33,6 +35,11 @@ const Sidebar = ({
   onLogout,
   showDesktopSidebar = true,
 
+  // Role based mobile behavior
+  role = "admin",
+  onCreateProject,
+  onCreateTask,
+
   // Optional (Desktop only)
   appName = "Coursue",
   friends = [], // [{ id, name, subtitle, avatarUrl }]
@@ -41,6 +48,41 @@ const Sidebar = ({
   // Avoid undefined crashes
   const safeSetActivePage = setActivePage ?? (() => {});
   const safeSetIsMobileMenuOpen = setIsMobileMenuOpen ?? (() => {});
+
+  const isAdmin = role === "admin";
+  const isFreelancer = role === "freelancer";
+
+  const findItemById = (id) =>
+    [...navigation, ...bottomNavigation].find((it) => it?.id === id);
+
+  // Bottom bar items (client/freelancer): Overview, Projects, Payments, Profile
+  const mobileNav = (() => {
+    if (!isAdmin) {
+      const desired = ["overview", "projects", "payments", "profile"];
+      const picked = desired.map(findItemById).filter(Boolean);
+      if (picked.length === 4) return picked;
+    }
+    return navigation.slice(0, 4);
+  })();
+
+  const FabIcon = isAdmin ? Menu : isFreelancer ? ListPlus : FolderPlus;
+  const fabAriaLabel = isAdmin
+    ? "Open menu"
+    : isFreelancer
+    ? "Create task"
+    : "Create project";
+
+  const handleFabClick = () => {
+    if (isAdmin) {
+      safeSetIsMobileMenuOpen(!isMobileMenuOpen);
+      return;
+    }
+    if (isFreelancer) {
+      if (typeof onCreateTask === "function") onCreateTask();
+      return;
+    }
+    if (typeof onCreateProject === "function") onCreateProject();
+  };
 
   // Brand colors (غيرها مرة واحدة هنا)
   const BRAND = {
@@ -116,8 +158,6 @@ const Sidebar = ({
       </button>
     );
   };
-
-  const mobileNav = navigation.slice(0, 4);
 
   return (
     <>
@@ -343,12 +383,12 @@ const Sidebar = ({
               <div className="absolute left-1/2 -translate-x-1/2 -top-8 w-20 h-20 z-10">
                 <span className="absolute inset-1 rounded-full bg-slate-400/20 shadow-[0_4px_20px_rgba(0,0,0,0.06)] pointer-events-none" />
                 <button
-                  onClick={() => safeSetIsMobileMenuOpen(!isMobileMenuOpen)}
+                  onClick={handleFabClick}
                   className="absolute inset-0 m-auto w-14 h-14 rounded-full text-white shadow-lg ring-4 ring-white/60 flex items-center justify-center active:scale-95 transition"
                   style={{ background: BRAND.primary }}
-                  aria-label="Open menu"
+                  aria-label={fabAriaLabel}
                 >
-                  <Menu className="w-6 h-6" />
+                  <FabIcon className="w-6 h-6" />
                 </button>
               </div>
 
@@ -389,6 +429,7 @@ const Sidebar = ({
       </div>
 
       {/* ===================== Mobile Command Sheet (SAME LAYOUT, NEW COLORS) ===================== */}
+      {isAdmin && (
       <div
         className={`
           lg:hidden fixed inset-0 z-[60]
@@ -508,6 +549,7 @@ const Sidebar = ({
           </div>
         </div>
       </div>
+      )}
 
       <style>{`
         .sidebar-scroll {

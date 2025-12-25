@@ -1509,6 +1509,22 @@ export const submitProjectDelivery = async (req, res) => {
 
       uploadedFiles.push(rows[0]);
     }
+await pool.query(
+  `UPDATE project_change_requests
+      SET is_resolved = true
+    WHERE project_id = $1
+      AND freelancer_id = $2
+      AND is_resolved = false`,
+  [projectId, freelancerId]
+);
+await pool.query(
+  `UPDATE projects
+      SET status = 'pending_review',
+          completion_status = 'pending_review',
+          updated_at = NOW()
+    WHERE id = $1`,
+  [projectId]
+);
 
     return res.status(201).json({
       success: true,
@@ -1624,6 +1640,69 @@ export const getProjectDeliveries = async (req, res) => {
     });
   } catch (err) {
     console.error("getProjectDeliveries error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const requestProjectChanges = async (req, res) => {
+  const clientId = req.token?.userId;
+  const { projectId } = req.params;
+  const { message } = req.body;
+
+  if (!clientId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!projectId) return res.status(400).json({ success: false, message: "Missing projectId" });
+  if (!String(message || "").trim()) {
+    return res.status(400).json({ success: false, message: "Message is required" });
+  }
+
+  try {
+    // project + owner check
+    const { rows: pr } = await pool.query(
+      `SELECT id, user_id AS client_id
+         FROM projects
+        WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!pr.length) return res.status(404).json({ success: false, message: "Project not found" });
+    if (String(pr[0].client_id) !== String(clientId)) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    // get active freelancer assignment
+    const { rows: ar } = await pool.query(
+      `SELECT freelancer_id
+         FROM project_assignments
+        WHERE project_id = $1 AND status = 'active'
+        LIMIT 1`,
+      [projectId]
+    );
+    if (!ar.length) {
+      return res.status(400).json({ success: false, message: "No active freelancer assignment" });
+    }
+    const freelancerId = ar[0].freelancer_id;
+
+    // 1) change status back to in_progress
+   await pool.query(
+  `UPDATE projects
+      SET status = 'in_progress',
+          completion_status = 'in_progress',
+          updated_at = NOW()
+    WHERE id = $1`,
+  [projectId]
+);
+
+
+    // 2) store change request message
+    const { rows: cr } = await pool.query(
+      `INSERT INTO project_change_requests (project_id, client_id, freelancer_id, message)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, project_id, freelancer_id, message, created_at`,
+      [projectId, clientId, freelancerId, message.trim()]
+    );
+
+    return res.json({ success: true, change_request: cr[0] });
+  } catch (err) {
+    console.error("requestProjectChanges error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

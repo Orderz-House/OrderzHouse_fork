@@ -25,10 +25,9 @@ function getBasePrefix(pathname) {
   if (pathname.startsWith("/client")) return "/client";
   if (pathname.startsWith("/freelancer")) return "/freelancer";
   if (pathname.startsWith("/apm")) return "/apm";
-  if (pathname.startsWith("/partner")) return "/partner"; 
+  if (pathname.startsWith("/partner")) return "/partner";
   return "/admin";
 }
-
 
 function getActiveFromPath(pathname) {
   const base = getBasePrefix(pathname);
@@ -53,8 +52,6 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/analytics")) return "analytics";
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    // if (p.startsWith("/tasks")) return "tasks";
-    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -62,24 +59,19 @@ function getActiveFromPath(pathname) {
   if (base === "/client") {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    // if (p.startsWith("/tasks")) return "tasks";
-    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
+
   if (base === "/partner") {
-      if (p.startsWith("/projects")) return "projects";
-      if (p.startsWith("/payments")) return "payments";
-      // if (p.startsWith("/tasks")) return "tasks";
-      // if (p.startsWith("/courses")) return "courses";
-      if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/projects")) return "projects";
+    if (p.startsWith("/payments")) return "payments";
+    if (p.startsWith("/profile")) return "profile";
   }
 
   // ===== freelancer =====
   if (base === "/freelancer") {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
-    // if (p.startsWith("/tasks")) return "tasks";
-    // if (p.startsWith("/courses")) return "courses";
     if (p.startsWith("/profile")) return "profile";
   }
 
@@ -93,7 +85,6 @@ function getActiveFromPath(pathname) {
 
   return "overview";
 }
-
 
 function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
@@ -121,15 +112,15 @@ function getNav(role, navigate, base, onLogout) {
 
   if (role === "apm") {
     const navigation = [
-      { id: "overview",    name: "Overview",    icon: Home,        onClick: () => navigate(`${base}/`) },
-      { id: "history",     name: "History",     icon: History,      onClick: () => navigate(`${base}/history`) },
-      { id: "questions",   name: "Questions",   icon: HelpCircle,   onClick: () => navigate(`${base}/questions`) },
-      { id: "survey",      name: "Survey",      icon: SurveyIcon,   onClick: () => navigate(`${base}/survey`) },
-      { id: "videos",      name: "Videos",      icon: PlaySquare,   onClick: () => navigate(`${base}/videos`) },
+      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
+      { id: "history", name: "History", icon: History, onClick: () => navigate(`${base}/history`) },
+      { id: "questions", name: "Questions", icon: HelpCircle, onClick: () => navigate(`${base}/questions`) },
+      { id: "survey", name: "Survey", icon: SurveyIcon, onClick: () => navigate(`${base}/survey`) },
+      { id: "videos", name: "Videos", icon: PlaySquare, onClick: () => navigate(`${base}/videos`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout",  name: "Logout",  icon: LogOut, onClick: onLogout || (() => {}) },
+      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
     ];
     return { navigation, bottomNavigation };
   }
@@ -139,7 +130,6 @@ function getNav(role, navigate, base, onLogout) {
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
-      // { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
@@ -153,8 +143,6 @@ function getNav(role, navigate, base, onLogout) {
       { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
       { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
       { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
-      // { id: "tasks", name: "Tasks", icon: ListChecks, onClick: () => navigate(`${base}/tasks`) },
-      // { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/courses`) },
     ];
     const bottomNavigation = [
       { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
@@ -197,6 +185,17 @@ export default function AdminLayout() {
     handleLogout
   );
 
+  // Center FAB action (mobile bottom bar) for client/freelancer
+  const handleCreateProject = useCallback(() => {
+    // عدّل المسار حسب الراوت عندك
+    navigate(`${base}/projects/create`);
+  }, [navigate, base]);
+
+  const handleCreateTask = useCallback(() => {
+    // عدّل المسار حسب الراوت عندك
+    navigate(`${base}/tasks/create`);
+  }, [navigate, base]);
+
   const [activePage, setActivePage] = useState(
     () => getActiveFromPath(location.pathname)
   );
@@ -208,9 +207,8 @@ export default function AdminLayout() {
   const [topBarRight, setTopBarRight] = useState(null);
 
   const clearTopBarRight = useCallback(() => {
-  setTopBarRight(null);
-}, []);
-
+    setTopBarRight(null);
+  }, []);
 
   // تحديث الصفحة النشطة من الـ path
   useEffect(() => {
@@ -227,8 +225,8 @@ export default function AdminLayout() {
   // زر إظهار/إخفاء السايدبار
   const handleToggleSidebar = () => {
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      // موبايل → افتح/اغلق منيو الموبايل
-      setIsMobileMenuOpen((prev) => !prev);
+      // موبايل: افتح/اغلق المنيو فقط في رول الادمن (لأن باقي الرولات عندها زر إنشاء بالمنتصف)
+      if (role === "admin") setIsMobileMenuOpen((prev) => !prev);
     } else {
       // ديسكتوب → اخفي/اظهر السايدبار
       setShowDesktopSidebar((prev) => !prev);
@@ -252,32 +250,28 @@ export default function AdminLayout() {
         bottomNavigation={bottomNavigation}
         onLogout={handleLogout}
         showDesktopSidebar={showDesktopSidebar} // 👈 جديد
+        role={role}
+        onCreateProject={handleCreateProject}
+        onCreateTask={handleCreateTask}
       />
 
       <main
-  className="flex-1 px-3 md:px-6  relative"
-  style={{
-    backgroundColor: "#f8fafc",
-    backgroundImage:
-      "radial-gradient(circle at top right, rgba(2, 128, 144, 0.05), transparent 60%), radial-gradient(circle at bottom left, rgba(2, 128, 144, 0.05), transparent 60%)",
-    backgroundRepeat: "no-repeat",
-  }}
->
-  <TopBar
-    title={pageTitle}
-    onToggleSidebar={handleToggleSidebar}
-    rightContent={topBarRight}
-  />
+        className="flex-1 px-3 md:px-6  relative"
+        style={{ backgroundColor: "#f8fafc" }}
+      >
+        <TopBar
+          title={pageTitle}
+          onToggleSidebar={handleToggleSidebar}
+          rightContent={topBarRight}
+        />
 
-    <Outlet
-  context={{
-    setTopBarRight,
-    clearTopBarRight,
-  }}
-/>
-
-</main>
-
+        <Outlet
+          context={{
+            setTopBarRight,
+            clearTopBarRight,
+          }}
+        />
+      </main>
     </div>
   );
 }
