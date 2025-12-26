@@ -56,7 +56,7 @@ export default function CategoriesShowcase() {
   return (
     <div
       ref={sectionRef}
-      className="relative isolate overflow-hidden bg-slate-50 sm:bg-white min-h-screen sm:h-screen"
+      className="relative isolate overflow-hidden bg-slate-50 sm:bg-white min-h-[60vh] sm:h-screen"
     >
       {/* ✅ FIX: إزالة clip-path لأنه يقص الشادو */}
       <style>{`
@@ -115,7 +115,7 @@ export default function CategoriesShowcase() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-12 sm:h-16 bg-gradient-to-b from-white to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-10 sm:h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
         <h1
           className={[
             "text-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-4xl",

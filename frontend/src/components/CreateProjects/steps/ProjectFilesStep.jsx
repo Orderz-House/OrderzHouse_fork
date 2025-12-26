@@ -1,7 +1,7 @@
 // components/CreateProjects/steps/ProjectFilesStep.jsx
 import React, { useState } from "react";
 
-const THEME = "#028090";
+const THEME = "#6d5ffd";
 
 export default function ProjectFilesStep({
   files,
@@ -61,8 +61,8 @@ export default function ProjectFilesStep({
       <div
         className={`rounded-2xl p-10 text-center border-2 border-dashed transition-all ${
           dragActive
-            ? "border-[#028090] bg-[#E6F7F6]"
-            : "border-slate-300 hover:border-[#028090]/50"
+            ? "border-[#6d5ffd] bg-[#E6F7F6]"
+            : "border-slate-300 hover:border-[#6d5ffd]/50"
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}

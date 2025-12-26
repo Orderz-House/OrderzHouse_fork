@@ -76,7 +76,7 @@ export default function CreateProjectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <div className="min-h-screen bg-slate-50 py-12 pt-28">
       <div className="max-w-5xl mx-auto px-4">
 
         {/* STEP 1 */}

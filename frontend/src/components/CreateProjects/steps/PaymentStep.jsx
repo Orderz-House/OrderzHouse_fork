@@ -1,6 +1,6 @@
 import React from "react";
 
-const THEME = "#028090";
+const THEME = "#6d5ffd";
 
 export default function PaymentStep({
   onBack,
