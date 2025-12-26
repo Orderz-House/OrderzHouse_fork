@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   Inbox,
@@ -15,11 +15,12 @@ import {
   Home,
   X,
   Settings,
-  Sparkles,
   FolderPlus,
   ListPlus,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import axios from "axios";
 
 /**
  * Desktop: تصميم مشابه للصورة (Logo + أقسام: OVERVIEW / FRIENDS / SETTINGS)
@@ -92,8 +93,58 @@ const Sidebar = ({
     danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
   };
 
+  const API_BASE = import.meta.env.VITE_APP_API_URL;
+
   const location = useLocation();
   const pathname = location?.pathname || "/";
+
+  // ===== User profile (same endpoint used in Nav.jsx) =====
+  const { token, userData } = useSelector((s) => s.auth || {});
+  const [profile, setProfile] = useState(userData || null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  useEffect(() => {
+    if (userData) setProfile(userData);
+  }, [userData]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (profile?.email) return;
+
+    setProfileLoading(true);
+    axios
+      .get(`${API_BASE}/users/getUserdata`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const u =
+          res?.data?.user ||
+          res?.data?.data?.user ||
+          res?.data?.data ||
+          res?.data?.result ||
+          null;
+        if (u) setProfile(u);
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, profile?.email]);
+
+  const displayName = useMemo(() => {
+    const name =
+      profile?.username ||
+      profile?.user_name ||
+      profile?.name ||
+      [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+      "";
+    return name || appName || "User";
+  }, [profile, appName]);
+
+  const avatarChar = useMemo(() => {
+    const c = (displayName || "U").trim().charAt(0);
+    return (c || "U").toUpperCase();
+  }, [displayName]);
+
 
   // Default icons (يدعم IDs قديمة + IDs جديدة مثل الصورة)
   const defaultIcons = {
@@ -171,17 +222,35 @@ const Sidebar = ({
       >
         <div className="h-full">
           <div className="h-full bg-white  border border-slate-100 shadow-sm px-5 py-6 flex flex-col">
-            {/* Logo */}
-            <div className="flex items-center gap-3 mb-6">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: BRAND.primary }}
-                aria-hidden="true"
-              >
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-lg font-semibold text-slate-900">
-                {appName}
+            
+{/* User */} 
+            <div className="mb-6">
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-3">
+                <div
+                  className="relative w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                  style={{ background: BRAND.primary }}
+                  aria-hidden="true"
+                >
+                  <span className="text-white font-extrabold text-lg uppercase">
+                    {avatarChar}
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-slate-900 truncate">
+                      {displayName}
+                    </div>
+                    {profileLoading && (
+                      <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                        Loading…
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 truncate">
+                    {profile?.email || "—"}
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -62,7 +62,7 @@ function useRoleBase() {
 /* ===================== UI tokens ===================== */
 const UI = {
   pageBg: "bg-slate-50",
-  container: "mx-auto w-full max-w-6xl ",
+  container: "mx-auto w-full",
   card: "rounded-3xl bg-white border border-slate-100 shadow-sm",
   softCard:
     "rounded-3xl bg-white/80 backdrop-blur border border-slate-200/70 shadow-sm",
@@ -887,7 +887,7 @@ function FreelancerDashboard() {
   if (showSkeleton) return <DashboardSkeletonV2 />;
 
   return (
-    <div className={cx(UI.pageBg, "py-6")}>
+    <div className={cx(UI.pageBg)}>
       <div className={UI.container}>
         <div className="space-y-4">
           {/* Top bar */}
@@ -1159,7 +1159,7 @@ function ClientDashboard() {
   if (showSkeleton) return <DashboardSkeletonV2 />;
 
   return (
-    <div className={cx(UI.pageBg, "py-6")} dir="ltr">
+    <div className={cx(UI.pageBg)} dir="ltr">
       <div className={UI.container}>
         <div className="space-y-4">
           {/* Top bar */}
@@ -1317,7 +1317,7 @@ function ClientDashboard() {
                 <div className="mt-4 grid gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate(`${base}/projects/new`)}
+                    onClick={() => navigate(`/create-project`)}
                     className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
                   >
                     <span className="inline-flex items-center gap-2">

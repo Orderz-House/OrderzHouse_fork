@@ -218,7 +218,7 @@ export default function FAQVisualGrid({ faqs = DEFAULT_FAQS }) {
   const current = topics.find((t) => t.cat === openCat) || null;
 
   return (
-    <section className="relative bg-white overflow-hidden min-h-screen sm:min-h-[80vh] flex items-start sm:items-center">
+    <section className="relative bg-white overflow-hidden min-h-[60vh] sm:min-h-[80vh] flex items-start sm:items-center">
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Soft glow */}

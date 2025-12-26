@@ -79,7 +79,7 @@ export default function Pagination({
           className={
             "h-8 min-w-8 px-3 rounded-full ring-1 ring-slate-200 transition " +
             (active
-              ? "bg-[#F97316] text-white font-medium shadow-sm"
+              ? "bg-[#6d5ffd] text-white font-medium shadow-sm"
               : "bg-white text-slate-700 hover:shadow")
           }
         >

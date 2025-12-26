@@ -5,7 +5,7 @@ import {
   fetchSubSubCategoriesByCategoryId,
 } from "../api/category";
 
-const THEME = "#028090";
+const THEME = "#6d5ffd";
 
 export default function ProjectDetailsStep({
   onNext,
@@ -214,7 +214,7 @@ export default function ProjectDetailsStep({
   };
 
   const inputBase =
-    "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent transition";
+    "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#6d5ffd] focus:border-transparent transition";
 
   const titleLength = form.title.trim().length;
   const descLength = form.description.trim().length;
@@ -225,7 +225,7 @@ export default function ProjectDetailsStep({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-6 bg-gradient-to-r from-[#02C39A]/10 via-[#028090]/10 to-[#05668D]/10 border-b border-slate-100">
+      <div className="p-6 bg-gradient-to-r from-[#02C39A]/10 via-[#6d5ffd]/10 to-[#05668D]/10 border-b border-slate-100">
         <h2 className="text-2xl font-black tracking-tight text-slate-800">
           {isTask ? "Task Details" : "Project Details"}
         </h2>
@@ -467,8 +467,8 @@ export default function ProjectDetailsStep({
                     }
                     className={`p-4 rounded-xl border-2 transition-all text-center ${
                       active
-                        ? "border-[#028090] bg-[#E6F7F6] shadow-sm"
-                        : "border-slate-200 hover:border-[#028090]/50"
+                        ? "border-[#6d5ffd] bg-[#E6F7F6] shadow-sm"
+                        : "border-slate-200 hover:border-[#6d5ffd]/50"
                     }`}
                   >
                     <div className="text-2xl mb-1">{type.icon}</div>

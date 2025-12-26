@@ -1,7 +1,7 @@
 // components/CreateProjects/steps/ProjectCoverStep.jsx
 import React, { useState } from "react";
 
-const THEME = "#028090";
+const THEME = "#6d5ffd";
 
 export default function ProjectCoverStep({
   coverPic,
@@ -40,7 +40,7 @@ export default function ProjectCoverStep({
         </p>
       </div>
 
-      <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-[#028090]/50 transition-all">
+      <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-[#6d5ffd]/50 transition-all">
         {!preview ? (
           <>
             <input

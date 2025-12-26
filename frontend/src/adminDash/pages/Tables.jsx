@@ -247,6 +247,8 @@ function useTableData({ endpoint, api, refreshKey }) {
           ? data.data
           : Array.isArray(data?.projects)
           ? data.projects
+          : Array.isArray(data?.payments)
+          ? data.payments
           : Array.isArray(data?.tasks)
           ? data.tasks
           : [];
@@ -967,7 +969,7 @@ const CardsGrid = ({
               className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
               title="Open"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#C2410C] via-[#E25822] to-[#FCE7E0]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-indigo-500 to-violet-600" />
               <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
 
               {avatarUrl ? (

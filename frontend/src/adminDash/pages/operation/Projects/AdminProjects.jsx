@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
@@ -230,6 +230,11 @@ export default function Projects() {
 /* ===================== Admin ===================== */
 function AdminProjects() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const roleBase = useMemo(() => {
+    const seg = (pathname.split("/")[1] || "").toLowerCase();
+    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+  }, [pathname]);
   const { token } = useSelector((s) => s.auth);
   const { stats, loading } = useProjectsStats("/projects/admin/projects", token);
 
@@ -281,7 +286,7 @@ function AdminProjects() {
   ];
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="space-y-5">
       <ProjectsHero
         eyebrow="ADMIN"
         title="Projects"
@@ -311,7 +316,7 @@ function AdminProjects() {
             /* Admin wants default CRUD inside cards */
             crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
             /* open details (admin route غالباً نسبي) */
-            onCardClick={(row, h) => navigate(`${h.getId(row)}`)}
+            onCardClick={(row, h) => navigate(`${roleBase}/project/${h.getId(row)}`)}
           />
     </div>
   );
@@ -321,6 +326,11 @@ function AdminProjects() {
 /* ===================== Client ===================== */
 function ClientProjects() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const roleBase = useMemo(() => {
+    const seg = (pathname.split("/")[1] || "").toLowerCase();
+    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+  }, [pathname]);
   const { token } = useSelector((s) => s.auth);
   const { stats, loading } = useProjectsStats("/projects/myprojects", token);
 
@@ -328,6 +338,12 @@ function ClientProjects() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState(null);
   const [offersMap, setOffersMap] = useState({});
+  const [offersListMap, setOffersListMap] = useState({});
+
+  // عروض المشاريع (Offers) — Drawer
+  const [offersProject, setOffersProject] = useState(null);
+  const [offersOpen, setOffersOpen] = useState(false);
+  const [offersSubmitting, setOffersSubmitting] = useState(false);
 
   // طلبات الفريلانسَر (applications)
   const [applicationsMap, setApplicationsMap] = useState({});
@@ -355,6 +371,7 @@ function ClientProjects() {
           : [];
 
         const map = {};
+        const listMap = {};
         for (const o of list) {
           const pid = o.project_id ?? o.projectId;
           if (!pid) continue;
@@ -365,9 +382,15 @@ function ClientProjects() {
           const status = String(o.offer_status || "").toLowerCase();
           if (status === "pending") map[pid].pending += 1;
           if (status === "accepted") map[pid].accepted += 1;
+
+          if (!listMap[pid]) listMap[pid] = [];
+          listMap[pid].push(o);
         }
 
-        if (!cancelled) setOffersMap(map);
+        if (!cancelled) {
+          setOffersMap(map);
+          setOffersListMap(listMap);
+        }
       } catch (e) {
         console.error("Failed to fetch offers for client projects", e);
       }
@@ -377,6 +400,118 @@ function ClientProjects() {
       cancelled = true;
     };
   }, [token]);
+
+  const fetchOffersForProject = async (projectId) => {
+    if (!token) return;
+    try {
+      const { data } = await api.get("/offers/my-projects/offers", {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      const list = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.offers)
+        ? data.offers
+        : [];
+
+      const filtered = list.filter((o) => {
+        const pid = o.project_id ?? o.projectId;
+        return String(pid) === String(projectId);
+      });
+
+      const stats = { total: 0, pending: 0, accepted: 0 };
+      for (const o of filtered) {
+        stats.total += 1;
+        const status = String(o.offer_status || "").toLowerCase();
+        if (status === "pending") stats.pending += 1;
+        if (status === "accepted") stats.accepted += 1;
+      }
+
+      setOffersListMap((prev) => ({ ...prev, [projectId]: filtered }));
+      setOffersMap((prev) => ({ ...prev, [projectId]: stats }));
+    } catch (e) {
+      console.error("Failed to fetch offers for project", projectId, e);
+    }
+  };
+
+  // تحديث حالة Offer (accept / reject)
+  const handleOfferAction = async (offerId, projectId, action) => {
+    if (!token) return;
+    setOffersSubmitting(true);
+    try {
+      await api.post(
+        "/offers/offers/approve-reject",
+        { offerId, action },
+        {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+          timeout: 15000,
+        }
+      );
+
+      setOffersListMap((prev) => {
+        const next = { ...prev };
+        const list = next[projectId] ? [...next[projectId]] : [];
+
+        if (action === "accept") {
+          next[projectId] = list.map((o) => {
+            const oid = o.offer_id ?? o.offerId ?? o.id;
+            if (String(oid) === String(offerId)) {
+              return { ...o, offer_status: "accepted" };
+            }
+            const st = String(o.offer_status || "").toLowerCase();
+            if (st === "pending") return { ...o, offer_status: "rejected" };
+            return o;
+          });
+        } else {
+          next[projectId] = list.map((o) => {
+            const oid = o.offer_id ?? o.offerId ?? o.id;
+            if (String(oid) === String(offerId)) {
+              return { ...o, offer_status: "rejected" };
+            }
+            return o;
+          });
+        }
+
+        // sync stats
+        const updated = next[projectId] || [];
+        const stats = { total: 0, pending: 0, accepted: 0 };
+        for (const o of updated) {
+          stats.total += 1;
+          const st = String(o.offer_status || "").toLowerCase();
+          if (st === "pending") stats.pending += 1;
+          if (st === "accepted") stats.accepted += 1;
+        }
+        setOffersMap((m) => ({ ...m, [projectId]: stats }));
+
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to update offer status", err);
+
+      // لو العرض منتهي (expired) خلي UI يحدث
+      const msg = err?.response?.data?.message || "";
+      if (String(msg).toLowerCase().includes("expired")) {
+        setOffersListMap((prev) => {
+          const next = { ...prev };
+          const list = next[projectId] ? [...next[projectId]] : [];
+          next[projectId] = list.map((o) => {
+            const oid = o.offer_id ?? o.offerId ?? o.id;
+            if (String(oid) === String(offerId)) {
+              return { ...o, offer_status: "expired" };
+            }
+            return o;
+          });
+          return next;
+        });
+      }
+
+      try {
+        alert(msg || "Failed to update offer. Please try again.");
+      } catch {}
+    } finally {
+      setOffersSubmitting(false);
+    }
+  };
 
   // // جلب طلبات التقديم (applications) لكل مشاريع الكلينت
   // useEffect(() => {
@@ -520,6 +655,7 @@ function ClientProjects() {
       row.completion_status || row.status || ""
     ).toLowerCase();
     const isCompleted = statusKey === "completed" || statusKey === "done";
+    const pendingOffers = offersMap[pid]?.pending || 0;
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
@@ -560,6 +696,21 @@ function ClientProjects() {
             <Undo2 className="w-3 h-3" />
             Request changes
           </button>
+        ) : isBidding ? (
+          <button
+            type="button"
+            onClick={async () => {
+              setOffersProject({ id: pid, title: row.title });
+              // ✅ خذ نفس endpoint اللي تستعمله صفحة OffersReceived (نفس مصدر البيانات هنا)
+              await fetchOffersForProject(pid);
+              setOffersOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
+            style={ringStyle}
+          >
+            <Eye className="w-3 h-3" />
+            Offers{pendingOffers ? ` (${pendingOffers})` : ""}
+          </button>
         ) : (
           <button
             type="button"
@@ -572,7 +723,7 @@ function ClientProjects() {
             style={ringStyle}
           >
             <Eye className="w-3 h-3" />
-            Applicants
+            Applicants{pendingCount ? ` (${pendingCount})` : ""}
           </button>
         )}
       </div>
@@ -584,9 +735,14 @@ function ClientProjects() {
       ? applicationsMap[appsProject.id]
       : [];
 
+  const currentOffers =
+    offersProject && offersListMap[offersProject.id]
+      ? offersListMap[offersProject.id]
+      : [];
+
   return (
     <>
-      <div className="space-y-5 min-w-0">
+      <div className="space-y-5">
         <ProjectsHero
           eyebrow="CLIENT"
           title="My projects"
@@ -628,6 +784,7 @@ function ClientProjects() {
                   showRowEdit: false,
                   showDelete: false,
                 }}
+                mobileAsCards
                 renderActions={renderActions}
                 renderSubtitle={(row) => {
                   const pid = row.id ?? row._id;
@@ -644,7 +801,7 @@ function ClientProjects() {
                   );
                 }}
                 onCardClick={(row, h) =>
-                  navigate(`/project/${h.getId(row)}`, {
+                  navigate(`${roleBase}/project/${h.getId(row)}`, {
                     state: { project: row, readOnly: true, role: "client" },
                   })
                 }
@@ -735,6 +892,19 @@ function ClientProjects() {
           submitting={appsSubmitting}
         />
       )}
+
+      {offersOpen && offersProject && (
+        <ClientOffersDrawer
+          project={offersProject}
+          offers={currentOffers}
+          onClose={() => {
+            setOffersOpen(false);
+            setOffersProject(null);
+          }}
+          onAction={handleOfferAction}
+          submitting={offersSubmitting}
+        />
+      )}
     </>
   );
 }
@@ -743,6 +913,11 @@ function ClientProjects() {
 /* ===================== Freelancer ===================== */
 function FreelancerProjects() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const roleBase = useMemo(() => {
+    const seg = (pathname.split("/")[1] || "").toLowerCase();
+    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+  }, [pathname]);
   const { token } = useSelector((s) => s.auth);
   const { stats, loading } = useProjectsStats("/projects/myprojects", token);
   const tableHelpersRef = useRef(null);
@@ -924,7 +1099,7 @@ function FreelancerProjects() {
 
   return (
     <>
-      <div className="space-y-5 min-w-0">
+      <div className="space-y-5">
         <ProjectsHero
           eyebrow="FREELANCER"
           title="My assigned projects"
@@ -956,6 +1131,11 @@ function FreelancerProjects() {
                   showDelete: false,
                 }}
                 renderSubtitle={() => null}
+                onCardClick={(row, h) =>
+                  navigate(`${roleBase}/project/${h.getId(row)}`, {
+                    state: { project: row, readOnly: true, role: "freelancer" },
+                  })
+                }
               />
       </div>
       {deliverOpen && deliverFor && (
@@ -1949,6 +2129,136 @@ function ClientApplicationsDrawer({
                           <X className="w-3 h-3" />
                           Reject
                         </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* ===================== Client Offers Drawer ===================== */
+function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) {
+  const formatStatus = (status) => {
+    const key = String(status || "").toLowerCase();
+    if (key === "pending") return "Pending";
+    if (key === "accepted") return "Accepted";
+    if (key === "rejected") return "Rejected";
+    if (key === "expired") return "Expired";
+    return status || "Unknown";
+  };
+
+  const statusClasses = (status) => {
+    const key = String(status || "").toLowerCase();
+    if (key === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
+    if (key === "accepted")
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (key === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
+    if (key === "expired") return "bg-slate-100 text-slate-700 border-slate-300";
+    return "bg-slate-50 text-slate-600 border-slate-200";
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999]">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+            <div className="font-semibold text-slate-800">
+              Offers — {project.title}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100"
+            >
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="p-5 space-y-4">
+            {offers.length === 0 ? (
+              <div className="text-sm text-slate-500">
+                No offers submitted for this project yet.
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {offers.map((o) => {
+                  const offerId = o.offer_id ?? o.offerId ?? o.id;
+                  const freelancerId =
+                    o.freelancer_id ?? o.freelancerId ?? o.user_id ?? o.userId;
+                  const statusKey = String(o.offer_status || "").toLowerCase();
+                  const isPending = statusKey === "pending";
+
+                  return (
+                    <li
+                      key={offerId ?? `${freelancerId}-${o.submitted_at}`}
+                      className="rounded-xl border border-slate-200 bg-white p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        {/* ✅ لا تعرض اسم الفريلانسَر — اعرض ID فقط */}
+                        <div className="font-medium text-slate-800">
+                          Freelancer ID: <span className="font-semibold"># {freelancerId ?? "—"}</span>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Submitted: {o.submitted_at ? new Date(o.submitted_at).toLocaleString() : "—"}
+                        </div>
+                        <div className="mt-1">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusClasses(
+                              o.offer_status
+                            )}`}
+                          >
+                            {formatStatus(o.offer_status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:items-end gap-2">
+                        <div className="text-sm text-slate-700">
+                          Offer: <span className="font-semibold">${o.bid_amount ?? "—"}</span>
+                        </div>
+                        <div className="flex gap-2 sm:justify-end">
+                          <button
+                            type="button"
+                            disabled={!isPending || submitting}
+                            onClick={() => onAction(offerId, project.id, "accept")}
+                            className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
+                              isPending && !submitting
+                                ? "hover:shadow"
+                                : "opacity-60 cursor-not-allowed"
+                            }`}
+                            style={{ backgroundColor: T.primary }}
+                          >
+                            {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
+                            <Check className="w-3 h-3" />
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!isPending || submitting}
+                            onClick={() => onAction(offerId, project.id, "reject")}
+                            className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
+                              isPending && !submitting
+                                ? "hover:bg-slate-50"
+                                : "opacity-60 cursor-not-allowed"
+                            }`}
+                            style={ringStyle}
+                          >
+                            <X className="w-3 h-3" />
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     </li>
                   );

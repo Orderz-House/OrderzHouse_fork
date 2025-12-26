@@ -3,9 +3,26 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import {
-  Home, Users, BookOpen, FolderKanban, Calendar, Shield, Clipboard, FileText,
-  CreditCard, DollarSign, BarChart2, User, LogOut, ListChecks, Star,
-  CalendarDays, History, HelpCircle, ListChecks as SurveyIcon, PlaySquare
+  Home,
+  Users,
+  BookOpen,
+  FolderKanban,
+  Calendar,
+  Shield,
+  Clipboard,
+  FileText,
+  CreditCard,
+  DollarSign,
+  BarChart2,
+  User,
+  LogOut,
+  ListChecks,
+  Star,
+  CalendarDays,
+  History,
+  HelpCircle,
+  ListChecks as SurveyIcon,
+  PlaySquare,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { setLogout } from "../../slice/auth/authSlice";
@@ -89,72 +106,239 @@ function getActiveFromPath(pathname) {
 function getNav(role, navigate, base, onLogout) {
   if (role === "admin") {
     const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
-      { id: "admins", name: "Admins", icon: Users, onClick: () => navigate(`${base}/people/admins`) },
-      { id: "clients", name: "Clients", icon: Users, onClick: () => navigate(`${base}/people/clients`) },
-      { id: "freelancers", name: "Freelancers", icon: Users, onClick: () => navigate(`${base}/people/freelancers`) },
+      {
+        id: "overview",
+        name: "Overview",
+        icon: Home,
+        onClick: () => navigate(`${base}/`),
+      },
+      {
+        id: "admins",
+        name: "Admins",
+        icon: Users,
+        onClick: () => navigate(`${base}/people/admins`),
+      },
+      {
+        id: "clients",
+        name: "Clients",
+        icon: Users,
+        onClick: () => navigate(`${base}/people/clients`),
+      },
+      {
+        id: "freelancers",
+        name: "Freelancers",
+        icon: Users,
+        onClick: () => navigate(`${base}/people/freelancers`),
+      },
       // { id: "courses", name: "Courses", icon: BookOpen, onClick: () => navigate(`${base}/learning/courses`) },
-      { id: "categories", name: "Categories", icon: FolderKanban, onClick: () => navigate(`${base}/learning/categories`) },
-      { id: "verifications", name: "Verifications", icon: Shield, onClick: () => navigate(`${base}/operation/verifications`) },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/operation/projects`) },
+      {
+        id: "categories",
+        name: "Categories",
+        icon: FolderKanban,
+        onClick: () => navigate(`${base}/learning/categories`),
+      },
+      {
+        id: "verifications",
+        name: "Verifications",
+        icon: Shield,
+        onClick: () => navigate(`${base}/operation/verifications`),
+      },
+      {
+        id: "projects",
+        name: "Projects",
+        icon: Clipboard,
+        onClick: () => navigate(`${base}/operation/projects`),
+      },
       // { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
-      { id: "blogs", name: "Blogs", icon: FileText, onClick: () => navigate(`${base}/community/blogs`) },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/finance/payments`) },
-      { id: "plans", name: "Plans", icon: DollarSign, onClick: () => navigate(`${base}/finance/plans`) },
-      { id: "analytics", name: "Analytics", icon: BarChart2, onClick: () => navigate(`${base}/analytics`) },
+      {
+        id: "blogs",
+        name: "Blogs",
+        icon: FileText,
+        onClick: () => navigate(`${base}/community/blogs`),
+      },
+      {
+        id: "payments",
+        name: "Payments",
+        icon: CreditCard,
+        onClick: () => navigate(`${base}/finance/payments`),
+      },
+      {
+        id: "plans",
+        name: "Plans",
+        icon: DollarSign,
+        onClick: () => navigate(`${base}/finance/plans`),
+      },
+      {
+        id: "analytics",
+        name: "Analytics",
+        icon: BarChart2,
+        onClick: () => navigate(`${base}/analytics`),
+      },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+      {
+        id: "profile",
+        name: "Profile",
+        icon: User,
+        onClick: () => navigate(`${base}/profile`),
+      },
+      {
+        id: "logout",
+        name: "Logout",
+        icon: LogOut,
+        onClick: onLogout || (() => {}),
+      },
     ];
     return { navigation, bottomNavigation };
   }
 
   if (role === "apm") {
     const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
-      { id: "history", name: "History", icon: History, onClick: () => navigate(`${base}/history`) },
-      { id: "questions", name: "Questions", icon: HelpCircle, onClick: () => navigate(`${base}/questions`) },
-      { id: "survey", name: "Survey", icon: SurveyIcon, onClick: () => navigate(`${base}/survey`) },
-      { id: "videos", name: "Videos", icon: PlaySquare, onClick: () => navigate(`${base}/videos`) },
+      {
+        id: "overview",
+        name: "Overview",
+        icon: Home,
+        onClick: () => navigate(`${base}/`),
+      },
+      {
+        id: "history",
+        name: "History",
+        icon: History,
+        onClick: () => navigate(`${base}/history`),
+      },
+      {
+        id: "questions",
+        name: "Questions",
+        icon: HelpCircle,
+        onClick: () => navigate(`${base}/questions`),
+      },
+      {
+        id: "survey",
+        name: "Survey",
+        icon: SurveyIcon,
+        onClick: () => navigate(`${base}/survey`),
+      },
+      {
+        id: "videos",
+        name: "Videos",
+        icon: PlaySquare,
+        onClick: () => navigate(`${base}/videos`),
+      },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+      {
+        id: "profile",
+        name: "Profile",
+        icon: User,
+        onClick: () => navigate(`${base}/profile`),
+      },
+      {
+        id: "logout",
+        name: "Logout",
+        icon: LogOut,
+        onClick: onLogout || (() => {}),
+      },
     ];
     return { navigation, bottomNavigation };
   }
 
   if (role === "client" || role === "partner") {
     const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
+      {
+        id: "overview",
+        name: "Overview",
+        icon: Home,
+        onClick: () => navigate(`${base}/`),
+      },
+      {
+        id: "projects",
+        name: "Projects",
+        icon: Clipboard,
+        onClick: () => navigate(`${base}/projects`),
+      },
+      {
+        id: "payments",
+        name: "Payments",
+        icon: CreditCard,
+        onClick: () => navigate(`${base}/payments`),
+      },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+      {
+        id: "profile",
+        name: "Profile",
+        icon: User,
+        onClick: () => navigate(`${base}/profile`),
+      },
+      {
+        id: "logout",
+        name: "Logout",
+        icon: LogOut,
+        onClick: onLogout || (() => {}),
+      },
     ];
     return { navigation, bottomNavigation };
   }
 
   if (role === "freelancer") {
     const navigation = [
-      { id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) },
-      { id: "projects", name: "Projects", icon: Clipboard, onClick: () => navigate(`${base}/projects`) },
-      { id: "payments", name: "Payments", icon: CreditCard, onClick: () => navigate(`${base}/payments`) },
+      {
+        id: "overview",
+        name: "Overview",
+        icon: Home,
+        onClick: () => navigate(`${base}/`),
+      },
+      {
+        id: "projects",
+        name: "Projects",
+        icon: Clipboard,
+        onClick: () => navigate(`${base}/projects`),
+      },
+      {
+        id: "payments",
+        name: "Payments",
+        icon: CreditCard,
+        onClick: () => navigate(`${base}/payments`),
+      },
     ];
     const bottomNavigation = [
-      { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`${base}/profile`) },
-      { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+      {
+        id: "profile",
+        name: "Profile",
+        icon: User,
+        onClick: () => navigate(`${base}/profile`),
+      },
+      {
+        id: "logout",
+        name: "Logout",
+        icon: LogOut,
+        onClick: onLogout || (() => {}),
+      },
     ];
     return { navigation, bottomNavigation };
   }
 
-  const navigation = [{ id: "overview", name: "Overview", icon: Home, onClick: () => navigate(`${base}/`) }];
+  const navigation = [
+    {
+      id: "overview",
+      name: "Overview",
+      icon: Home,
+      onClick: () => navigate(`${base}/`),
+    },
+  ];
   const bottomNavigation = [
-    { id: "profile", name: "Profile", icon: User, onClick: () => navigate(`/profile`) },
-    { id: "logout", name: "Logout", icon: LogOut, onClick: onLogout || (() => {}) },
+    {
+      id: "profile",
+      name: "Profile",
+      icon: User,
+      onClick: () => navigate(`/profile`),
+    },
+    {
+      id: "logout",
+      name: "Logout",
+      icon: LogOut,
+      onClick: onLogout || (() => {}),
+    },
   ];
   return { navigation, bottomNavigation };
 }
@@ -169,10 +353,14 @@ export default function AdminLayout() {
   const role = mapRole(roleId);
 
   const handleLogout = () => {
-    try { disconnectSocket(); } catch (_) {}
+    try {
+      disconnectSocket();
+    } catch (_) {}
     Cookies.remove("userData");
     dispatch(setLogout());
-    try { localStorage.removeItem("roled"); } catch (_) {}
+    try {
+      localStorage.removeItem("roled");
+    } catch (_) {}
     navigate("/");
     window.location.reload();
   };
@@ -196,8 +384,8 @@ export default function AdminLayout() {
     navigate(`${base}/tasks/create`);
   }, [navigate, base]);
 
-  const [activePage, setActivePage] = useState(
-    () => getActiveFromPath(location.pathname)
+  const [activePage, setActivePage] = useState(() =>
+    getActiveFromPath(location.pathname)
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -256,7 +444,7 @@ export default function AdminLayout() {
       />
 
       <main
-        className="flex-1 px-3 md:px-6  relative"
+        className="flex-1 relative"
         style={{ backgroundColor: "#f8fafc" }}
       >
         <TopBar
@@ -264,13 +452,14 @@ export default function AdminLayout() {
           onToggleSidebar={handleToggleSidebar}
           rightContent={topBarRight}
         />
-
-        <Outlet
-          context={{
-            setTopBarRight,
-            clearTopBarRight,
-          }}
-        />
+        <div className="p-3 md:p-5  ">
+          <Outlet
+            context={{
+              setTopBarRight,
+              clearTopBarRight,
+            }}
+          />
+        </div>
       </main>
     </div>
   );

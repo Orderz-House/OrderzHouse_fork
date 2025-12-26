@@ -14,7 +14,7 @@ import Verifications from "../pages/operation/Verifications.jsx";
 import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
 import ClientsProjects from "../pages/operation/Projects/ClientsProjects.jsx";
 import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
-import ProjectDetails from "../pages/operation/Projects/ProjectDetails.jsx";
+import ProjectDetails from "../pages/operation/Projects/ProjectDetailsDash.jsx";
 
 import Blogs from "../pages/community/Blogs.jsx";
 import Payments from "../pages/finance/Payments.jsx";
@@ -69,6 +69,7 @@ export default function AdminRouter() {
         <Route path="operation/verifications" element={<Verifications />} />
 
         <Route path="operation/projects" element={<AdminProjects />} />
+        <Route path="operation/projects/:projectId" element={<ProjectDetails />} />
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
         {/* <Route path="operation/tasks" element={<Tasks />} /> */}
