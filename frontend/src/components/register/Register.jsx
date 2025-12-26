@@ -24,7 +24,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
-import FreelancerCategorySelector from "./FreelancerCategorySelector.jsx";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -78,6 +77,20 @@ const Register = () => {
   useEffect(() => {
     setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
   }, []);
+
+  useEffect(() => {
+  axios
+    .get(`${API_URL}/category`)
+    .then((res) => {
+      if (res.data.success) {
+        setCategories(res.data.data);
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to load categories", err);
+    });
+}, []);
+
 
   // ========= password strength checker =========//
   useEffect(() => {
@@ -208,11 +221,18 @@ const Register = () => {
       profile_pic_url,
     };
 
-    // Updated to use the new category structure
-    if (role_id === "3") {
-      userData.category_id = freelancerCategories.mainCategory?.id || null;
-      userData.sub_category_ids = freelancerCategories.subCategories.map(sc => sc.id);
-    }
+  if (role_id === "3") {
+  if (selectedCategories.length === 0) {
+    setStatus(false);
+    setMessage("Please select at least one category.");
+    setIsLoading(false);
+    return;
+  }
+
+  userData.category_ids = selectedCategories;
+}
+
+
 
     axios
       .post(`${API_URL}/users/register`, userData)
@@ -324,13 +344,35 @@ const Register = () => {
                           ))}
                         </select>
                       </div>
+                      
                     </div>
-
-                    {/* Freelancer Categories with Sub-Categories */}
                     {role_id === "3" && (
-                      <FreelancerCategorySelector onCategoryChange={handleCategoryChange} />
-                    )}
+  <div>
+    <label className="block text-sm text-slate-700 mb-2">
+      Select your categories
+    </label>
 
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {categories.map((cat) => (
+        <label
+          key={cat.id}
+          className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50"
+        >
+          <input
+            type="checkbox"
+            checked={selectedCategories.includes(cat.id)}
+            onChange={() => handleCategoryToggle(cat.id)}
+            className="h-4 w-4 text-[#C2410C]"
+          />
+          <span className="text-sm text-slate-700">{cat.name}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+)}
+
+
+                   
                     {/* First Name */}
                     <div>
                       <label className="block text-sm text-slate-700 mb-1.5">

@@ -6,6 +6,8 @@ import { useToast } from "../../components/toast/ToastProvider";
 import ProjectDetailsStep from "./steps/ProjectDetailsStep";
 import ProjectFilesStep from "./steps/ProjectFilesStep";
 import PaymentStep from "./steps/PaymentStep";
+import ProjectCoverStep from "./steps/ProjectCoverStep";
+import DevelopmentNoticeModal from "./steps/popUp";
 
 import {
   createProjectApi,
@@ -13,15 +15,20 @@ import {
   createProjectCheckoutSessionApi,
 } from "./api/projects";
 
+const DEVELOPMENT_CATEGORY_ID = 3;
+
 export default function CreateProjectPage() {
   const token = useSelector((state) => state.auth.token);
   const navigate = useNavigate();
   const { showToast } = useToast();
 
   const [step, setStep] = useState(1);
+  const [coverPic, setCoverPic] = useState(null);
   const [projectData, setProjectData] = useState({});
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [showDevPopup, setShowDevPopup] = useState(false);
 
   const nextStep = () => setStep((p) => p + 1);
   const prevStep = () => setStep((p) => p - 1);
@@ -35,7 +42,7 @@ export default function CreateProjectPage() {
     setIsSubmitting(true);
 
     try {
-      // 1️⃣ Create project (status depends on type)
+      // 1️⃣ Create project
       const project = await createProjectApi(projectData, token);
       const projectId = project.id;
 
@@ -72,20 +79,39 @@ export default function CreateProjectPage() {
     <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-5xl mx-auto px-4">
 
+        {/* STEP 1 */}
         {step === 1 && (
           <ProjectDetailsStep
-            onNext={nextStep}
             projectData={projectData}
             setProjectData={setProjectData}
+            onNext={() => {
+              if (
+                Number(projectData.category_id) === DEVELOPMENT_CATEGORY_ID
+              ) {
+                setShowDevPopup(true);
+              } else {
+                nextStep();
+              }
+            }}
           />
         )}
 
+        {/* STEP 2 */}
         {step === 2 && (
+          <ProjectCoverStep
+            coverPic={coverPic}
+            setCoverPic={setCoverPic}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        )}
+
+        {/* STEP 3 */}
+        {step === 3 && (
           <ProjectFilesStep
             files={files}
             setFiles={setFiles}
             onNext={() => {
-              // 🚀 Skip payment for bidding
               if (projectData.project_type === "bidding") {
                 handleFinalSubmit();
               } else {
@@ -96,7 +122,8 @@ export default function CreateProjectPage() {
           />
         )}
 
-        {step === 3 && projectData.project_type !== "bidding" && (
+        {/* STEP 4 */}
+        {step === 4 && projectData.project_type !== "bidding" && (
           <PaymentStep
             projectData={projectData}
             onBack={prevStep}
@@ -106,6 +133,16 @@ export default function CreateProjectPage() {
         )}
 
       </div>
+
+      {showDevPopup && (
+        <DevelopmentNoticeModal
+          onClose={() => setShowDevPopup(false)}
+          onConfirm={() => {
+            setShowDevPopup(false);
+            nextStep();
+          }}
+        />
+      )}
     </div>
   );
 }

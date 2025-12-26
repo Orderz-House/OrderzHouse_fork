@@ -33,7 +33,6 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
     stream.pipe(uploadStream);
   });
 };
-
 /* ======================================================================
    1) CREATE PROJECT
 ====================================================================== */
@@ -109,11 +108,13 @@ export const createProject = async (req, res) => {
       });
     }
 
-    // ------------ Project status logic ------------
-    let projectStatus = "pending";
-    if (project_type === "bidding") projectStatus = "bidding";
-    else if (["fixed", "hourly"].includes(project_type))
-      projectStatus = "pending_payment";
+    // ------------ Project status logic (UPDATED) ------------
+    let projectStatus;
+    if (project_type === "bidding") {
+      projectStatus = "bidding";
+    } else {
+      projectStatus = "active"; // fixed & hourly → already paid
+    }
 
     const durationDaysValue = duration_type === "days" ? duration_days : null;
     const durationHoursValue = duration_type === "hours" ? duration_hours : null;
@@ -167,7 +168,6 @@ export const createProject = async (req, res) => {
       project = updatedProject[0];
     }
 
-
     // ------------ Step 3: logs & notifications ------------
     await LogCreators.projectOperation(
       userId,
@@ -194,6 +194,7 @@ export const createProject = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Admin approve project after payment
 

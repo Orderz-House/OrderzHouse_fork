@@ -443,19 +443,12 @@ style={{ color: ORANGE }}
                     className={`flex items-center gap-2 p-2 text-gray-700 ${ACCENT_HOVER} transition-colors duration-150`}
                   >
 <div
-  className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center"
+  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold uppercase"
   style={{ backgroundColor: ORANGE }}
 >
-                      {userData.profile_pic_url ? (
-                        <img
-                          src={userData.profile_pic_url}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-4 w-4 text-white" />
-                      )}
-                    </div>
+  {`${userData.first_name?.[0] || ""}${userData.last_name?.[0] || ""}`}
+</div>
+
                     <ChevronDown
                       className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
                     />
@@ -463,12 +456,20 @@ style={{ color: ORANGE }}
 
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b">
-                        <p className="font-medium text-gray-900">
-                          {userData.first_name} {userData.last_name}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">{userData.email}</p>
-                      </div>
+                      <div className="p-4 border-b space-y-1">
+  <p className="font-medium text-gray-900">
+    {userData.first_name} {userData.last_name}
+  </p>
+
+  <p className="text-xs text-gray-500">
+    ID: #{userData.id}
+  </p>
+
+  <p className="text-sm text-gray-500">
+    {userData.email}
+  </p>
+</div>
+
 
                       <div className="py-2">
                         <Link
@@ -559,25 +560,26 @@ style={{ color: ORANGE }}
             {IsAuthenticated && userData && (
               <div className="flex items-center gap-3 mb-6">
 <div
-  className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center"
+  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base font-bold uppercase"
   style={{ backgroundColor: ORANGE }}
 >
-                  {userData.profile_pic_url ? (
-                    <img
-                      src={userData.profile_pic_url}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-5 w-5 text-white" />
-                  )}
-                </div>
+  {`${userData.first_name?.[0] || ""}${userData.last_name?.[0] || ""}`}
+</div>
+
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {userData.first_name} {userData.last_name}
-                  </p>
-                  <p className="text-xs text-gray-500">{userData.email}</p>
-                </div>
+  <p className="text-sm font-medium text-gray-900">
+    {userData.first_name} {userData.last_name}
+  </p>
+
+  <p className="text-xs text-gray-500">
+    ID: #{userData.id}
+  </p>
+
+  <p className="text-xs text-gray-500">
+    {userData.email}
+  </p>
+</div>
+
               </div>
             )}
 

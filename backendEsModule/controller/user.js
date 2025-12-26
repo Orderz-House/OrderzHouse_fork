@@ -107,8 +107,9 @@ const register = async (req, res) => {
       phone_number,
       country,
       username,
-      category_id,
-      sub_category_ids = [],
+
+      // ✅ NEW: freelancer chooses multiple main categories
+      category_ids = [],
     } = req.body;
 
     /* =========================
@@ -161,31 +162,25 @@ const register = async (req, res) => {
        FREELANCER VALIDATION
     ========================= */
     if (roleId === 3) {
-      if (!category_id) {
+      if (!Array.isArray(category_ids)) {
         return res.status(400).json({
           success: false,
-          message: "Main category is required for freelancers",
+          message: "category_ids must be an array",
         });
       }
 
-      if (!Array.isArray(sub_category_ids)) {
+      if (category_ids.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "sub_category_ids must be an array",
+          message: "At least one category is required for freelancers",
         });
       }
 
-      if (sub_category_ids.length === 0) {
+      // optional safety limit
+      if (category_ids.length > 5) {
         return res.status(400).json({
           success: false,
-          message: "At least one sub-category is required",
-        });
-      }
-
-      if (sub_category_ids.length > 3) {
-        return res.status(400).json({
-          success: false,
-          message: "Maximum 3 sub-categories allowed",
+          message: "Maximum 5 categories allowed",
         });
       }
     }
@@ -196,7 +191,7 @@ const register = async (req, res) => {
     await client.query("BEGIN");
 
     /* =========================
-       UNIQUE CHECK
+       UNIQUE USER CHECK
     ========================= */
     const existingUser = await client.query(
       "SELECT id FROM users WHERE email = $1 OR username = $2",
@@ -212,34 +207,23 @@ const register = async (req, res) => {
     }
 
     /* =========================
-       CATEGORY VALIDATION
+       CATEGORY VALIDATION (MAIN ONLY)
     ========================= */
     if (roleId === 3) {
       const categoryCheck = await client.query(
-        "SELECT id FROM categories WHERE id = $1",
-        [category_id]
+        `SELECT id
+         FROM categories
+         WHERE is_deleted = false
+           AND level = 0
+           AND id = ANY($1::int[])`,
+        [category_ids]
       );
 
-      if (categoryCheck.rows.length === 0) {
+      if (categoryCheck.rows.length !== category_ids.length) {
         await client.query("ROLLBACK");
         return res.status(400).json({
           success: false,
-          message: "Invalid category_id",
-        });
-      }
-
-      const subCheck = await client.query(
-        `SELECT id FROM sub_categories
-         WHERE id = ANY($1) AND category_id = $2`,
-        [sub_category_ids, category_id]
-      );
-
-      if (subCheck.rows.length !== sub_category_ids.length) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          success: false,
-          message:
-            "One or more sub-categories do not belong to the selected category",
+          message: "One or more category_ids are invalid",
         });
       }
     }
@@ -269,22 +253,14 @@ const register = async (req, res) => {
     const user = userResult.rows[0];
 
     /* =========================
-       FREELANCER RELATIONS
+       FREELANCER → MULTI CATEGORIES
     ========================= */
     if (roleId === 3) {
       await client.query(
         `INSERT INTO freelancer_categories (freelancer_id, category_id)
-         VALUES ($1, $2)`,
-        [user.id, category_id]
+         SELECT $1, unnest($2::int[])`,
+        [user.id, category_ids]
       );
-
-      for (const subCatId of sub_category_ids) {
-        await client.query(
-          `INSERT INTO freelancer_sub_categories (freelancer_id, sub_category_id)
-           VALUES ($1, $2)`,
-          [user.id, subCatId]
-        );
-      }
     }
 
     /* =========================
@@ -322,7 +298,6 @@ const register = async (req, res) => {
       message: "Registered successfully. OTP sent ✅",
       user_id: user.id,
     });
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("REGISTER ERROR:", err);
@@ -335,6 +310,7 @@ const register = async (req, res) => {
     client.release();
   }
 };
+
 /* ======================================================
    VERIFY EMAIL OTP
 ====================================================== */
