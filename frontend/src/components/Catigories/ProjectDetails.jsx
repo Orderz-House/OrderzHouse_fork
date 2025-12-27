@@ -5,10 +5,9 @@ import {
   getProjectByIdApi,
   getProjectFilesApi,
   applyToProjectApi,
-  checkIfAssignedApi,
-  checkMyPendingOfferApi ,
+  checkIfAssignedApi ,
 } from "./api/projects";
-import { sendOfferApi, getOffersForProjectApi } from "./api/offers";
+import { sendOfferApi, getOffersForProjectApi , checkMyPendingOfferApi } from "./api/offers";
 import { useSelector } from "react-redux";
 import { useToast } from "../../components/toast/ToastProvider";
 import AttachmentList from "../Attachments/AttachmentList";
