@@ -36,10 +36,13 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
 /* ======================================================================
    1) CREATE PROJECT
 ====================================================================== */
-
 export const createProject = async (req, res) => {
+  const client = await pool.connect();
   try {
     const userId = req.token?.userId;
+
+    await client.query("SELECT pg_advisory_xact_lock($1)", [userId]);
+
     const {
       category_id,
       sub_category_id,
@@ -108,16 +111,30 @@ export const createProject = async (req, res) => {
       });
     }
 
-    // ------------ Project status logic (UPDATED) ------------
     let projectStatus;
     if (project_type === "bidding") {
       projectStatus = "bidding";
     } else {
-      projectStatus = "active"; // fixed & hourly → already paid
+      projectStatus = "active";
     }
 
-    const durationDaysValue = duration_type === "days" ? duration_days : null;
-    const durationHoursValue = duration_type === "hours" ? duration_hours : null;
+    const durationDaysValue =
+      duration_type === "days" ? Number(duration_days) : null;
+
+    const durationHoursValue =
+      duration_type === "hours" ? Number(duration_hours) : null;
+
+    const normalizedBudget =
+      project_type === "fixed" ? Number(budget) : null;
+
+    const normalizedBudgetMin =
+      project_type === "bidding" ? Number(budget_min) : null;
+
+    const normalizedBudgetMax =
+      project_type === "bidding" ? Number(budget_max) : null;
+
+    const normalizedHourlyRate =
+      project_type === "hourly" ? Number(hourly_rate) : null;
 
     // ------------ Step 1: Insert project ------------
     const insertQuery = `
@@ -132,20 +149,20 @@ export const createProject = async (req, res) => {
       ) RETURNING *;
     `;
 
-    const { rows } = await pool.query(insertQuery, [
+    const { rows } = await client.query(insertQuery, [
       userId,
       category_id,
       sub_category_id,
       sub_sub_category_id,
       title.trim(),
       description.trim(),
-      budget || null,
+      normalizedBudget,        
       durationDaysValue,
       durationHoursValue,
       project_type,
-      budget_min || null,
-      budget_max || null,
-      hourly_rate || null,
+      normalizedBudgetMin,    
+      normalizedBudgetMax,     
+      normalizedHourlyRate,    
       preferred_skills || [],
       projectStatus,
     ]);
@@ -159,11 +176,10 @@ export const createProject = async (req, res) => {
         coverPicFile.buffer,
         `projects/${project.id}/cover`
       );
-      const coverPicUrl = coverPicResult.secure_url;
 
-      const { rows: updatedProject } = await pool.query(
+      const { rows: updatedProject } = await client.query(
         `UPDATE projects SET cover_pic = $1 WHERE id = $2 RETURNING *`,
-        [coverPicUrl, project.id]
+        [coverPicResult.secure_url, project.id]
       );
       project = updatedProject[0];
     }
@@ -192,6 +208,8 @@ export const createProject = async (req, res) => {
   } catch (error) {
     console.error("createProject error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
   }
 };
 
