@@ -86,14 +86,13 @@ function useProjectsStats(endpoint, token) {
           headers: { authorization: `Bearer ${token}` },
         });
 
-        const list =
-          Array.isArray(data?.data)
-            ? data.data
-            : Array.isArray(data?.projects)
-            ? data.projects
-            : Array.isArray(data)
-            ? data
-            : [];
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.projects)
+          ? data.projects
+          : Array.isArray(data)
+          ? data
+          : [];
 
         if (!cancelled) setStats(statFromProjects(list));
       } catch (e) {
@@ -202,7 +201,6 @@ function ProjectsKPIs({ stats, loading }) {
   );
 }
 
-
 /* ---------- Role map ---------- */
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
@@ -233,10 +231,15 @@ function AdminProjects() {
   const { pathname } = useLocation();
   const roleBase = useMemo(() => {
     const seg = (pathname.split("/")[1] || "").toLowerCase();
-    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+    return ["admin", "client", "freelancer", "partner"].includes(seg)
+      ? `/${seg}`
+      : "/admin";
   }, [pathname]);
   const { token } = useSelector((s) => s.auth);
-  const { stats, loading } = useProjectsStats("/projects/admin/projects", token);
+  const { stats, loading } = useProjectsStats(
+    "/projects/admin/projects",
+    token
+  );
 
   // columns
   const columns = [
@@ -294,34 +297,35 @@ function AdminProjects() {
       />
       <ProjectsKPIs stats={stats} loading={loading} />
       <PeopleTable
-            /* header */
-            title="Projects"
-            addLabel="Add Project"
-            /* data */
-            endpoint="/projects/admin/projects"
-            token={token}
-            columns={columns}
-            formFields={formFields}
-            chips={chips}
-            chipField="status"
-            filters={[
-              {
-                key: "status",
-                label: "Status",
-                options: chips.slice(1).map((c) => c.value),
-              },
-            ]}
-            /* UI */
-            desktopAsCards
-            /* Admin wants default CRUD inside cards */
-            crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
-            /* open details (admin route غالباً نسبي) */
-            onCardClick={(row, h) => navigate(`${roleBase}/project/${h.getId(row)}`)}
-          />
+        /* header */
+        title="Projects"
+        addLabel="Add Project"
+        /* data */
+        endpoint="/projects/admin/projects"
+        token={token}
+        columns={columns}
+        formFields={formFields}
+        chips={chips}
+        chipField="status"
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            options: chips.slice(1).map((c) => c.value),
+          },
+        ]}
+        /* UI */
+        desktopAsCards
+        /* Admin wants default CRUD inside cards */
+        crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
+        /* open details (admin route غالباً نسبي) */
+        onCardClick={(row, h) =>
+          navigate(`${roleBase}/project/${h.getId(row)}`)
+        }
+      />
     </div>
   );
 }
-
 
 /* ===================== Client ===================== */
 function ClientProjects() {
@@ -329,7 +333,9 @@ function ClientProjects() {
   const { pathname } = useLocation();
   const roleBase = useMemo(() => {
     const seg = (pathname.split("/")[1] || "").toLowerCase();
-    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+    return ["admin", "client", "freelancer", "partner"].includes(seg)
+      ? `/${seg}`
+      : "/admin";
   }, [pathname]);
   const { token } = useSelector((s) => s.auth);
   const { stats, loading } = useProjectsStats("/projects/myprojects", token);
@@ -750,62 +756,62 @@ function ClientProjects() {
         />
         <ProjectsKPIs stats={stats} loading={loading} />
         <PeopleTable
-                /* header */
-                title="My Projects"
-                /* data */
-                endpoint="/projects/myprojects"
-                token={token}
-                columns={[
-                  { label: "Title", key: "title" },
-                  { label: "Freelancer", key: "assignee" },
-                  { label: "Due", key: "due" },
-                  { label: "Budget", key: "budget" },
-                  { label: "Progress", key: "progress" },
-                  { label: "Status", key: "completion_status" },
-                  {
-                    label: "Offers",
-                    key: "offers",
-                    render: (row) => {
-                      const pid = row.id ?? row._id;
-                      const stats = offersMap[pid];
-                      if (!stats) return "0";
-                      const parts = [`${stats.total}`];
-                      if (stats.pending) parts.push(`pending: ${stats.pending}`);
-                      if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
-                      return parts.join(" | ");
-                    },
-                  },
-                ]}
-                formFields={[]}
-                /* UI */
-                desktopAsCards
-                crudConfig={{
-                  showDetails: false,
-                  showRowEdit: false,
-                  showDelete: false,
-                }}
-                mobileAsCards
-                renderActions={renderActions}
-                renderSubtitle={(row) => {
-                  const pid = row.id ?? row._id;
-                  const stats = offersMap[pid];
-                  if (!stats) {
-                    return <span className="text-xs text-slate-400">Offers: 0</span>;
-                  }
-                  return (
-                    <span className="text-xs text-slate-600">
-                      Offers: <span className="font-semibold">{stats.total}</span>
-                      {stats.pending ? ` • Pending: ${stats.pending}` : ""}
-                      {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
-                    </span>
-                  );
-                }}
-                onCardClick={(row, h) =>
-                  navigate(`${roleBase}/project/${h.getId(row)}`, {
-                    state: { project: row, readOnly: true, role: "client" },
-                  })
-                }
-              />
+          /* header */
+          title="My Projects"
+          /* data */
+          endpoint="/projects/myprojects"
+          token={token}
+          columns={[
+            { label: "Title", key: "title" },
+            { label: "Freelancer", key: "assignee" },
+            { label: "Due", key: "due" },
+            { label: "Budget", key: "budget" },
+            { label: "Progress", key: "progress" },
+            { label: "Status", key: "completion_status" },
+            {
+              label: "Offers",
+              key: "offers",
+              render: (row) => {
+                const pid = row.id ?? row._id;
+                const stats = offersMap[pid];
+                if (!stats) return "0";
+                const parts = [`${stats.total}`];
+                if (stats.pending) parts.push(`pending: ${stats.pending}`);
+                if (stats.accepted) parts.push(`accepted: ${stats.accepted}`);
+                return parts.join(" | ");
+              },
+            },
+          ]}
+          formFields={[]}
+          /* UI */
+          desktopAsCards
+          crudConfig={{
+            showDetails: false,
+            showRowEdit: false,
+            showDelete: false,
+          }}
+          mobileAsCards
+          renderActions={renderActions}
+          renderSubtitle={(row) => {
+            const pid = row.id ?? row._id;
+            const stats = offersMap[pid];
+            if (!stats) {
+              return <span className="text-xs text-slate-400">Offers: 0</span>;
+            }
+            return (
+              <span className="text-xs text-slate-600">
+                Offers: <span className="font-semibold">{stats.total}</span>
+                {stats.pending ? ` • Pending: ${stats.pending}` : ""}
+                {stats.accepted ? ` • Accepted: ${stats.accepted}` : ""}
+              </span>
+            );
+          }}
+          onCardClick={(row, h) =>
+            navigate(`${roleBase}/project/${h.getId(row)}`, {
+              state: { project: row, readOnly: true, role: "client" },
+            })
+          }
+        />
       </div>
       {reviewOpen && reviewFor && (
         <ClientReviewDrawer
@@ -909,14 +915,15 @@ function ClientProjects() {
   );
 }
 
-
 /* ===================== Freelancer ===================== */
 function FreelancerProjects() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const roleBase = useMemo(() => {
     const seg = (pathname.split("/")[1] || "").toLowerCase();
-    return ["admin", "client", "freelancer", "partner"].includes(seg) ? `/${seg}` : "/admin";
+    return ["admin", "client", "freelancer", "partner"].includes(seg)
+      ? `/${seg}`
+      : "/admin";
   }, [pathname]);
   const { token } = useSelector((s) => s.auth);
   const { stats, loading } = useProjectsStats("/projects/myprojects", token);
@@ -1019,7 +1026,7 @@ function FreelancerProjects() {
         {/* ✅ Completed */}
         {isCompleted ? (
           <div className="inline-flex items-center justify-center h-10 px-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold">
-            ✅ تم اعتماد العمل بنجاح
+            ✅ Work has been successfully approved{" "}
           </div>
         ) : isWaiting ? (
           /* ✅ Waiting */
@@ -1107,36 +1114,36 @@ function FreelancerProjects() {
         />
         <ProjectsKPIs stats={stats} loading={loading} />
         <PeopleTable
-                title="My Assigned Projects"
-                endpoint="/projects/myprojects"
-                token={token}
-                renderActions={renderActions}
-                columns={[
-                  { label: "Title", key: "title" },
-                  { label: "Client", key: "client" },
-                  { label: "Due", key: "due" },
-                  { label: "Budget", key: "budget" },
-                  { label: "Progress", key: "progress" },
-                  {
-                    label: "Status",
-                    key: "status",
-                    render: (row) => row?.completion_status || row?.status,
-                  },
-                ]}
-                formFields={[]}
-                desktopAsCards
-                crudConfig={{
-                  showDetails: false,
-                  showRowEdit: false,
-                  showDelete: false,
-                }}
-                renderSubtitle={() => null}
-                onCardClick={(row, h) =>
-                  navigate(`${roleBase}/project/${h.getId(row)}`, {
-                    state: { project: row, readOnly: true, role: "freelancer" },
-                  })
-                }
-              />
+          title="My Assigned Projects"
+          endpoint="/projects/myprojects"
+          token={token}
+          renderActions={renderActions}
+          columns={[
+            { label: "Title", key: "title" },
+            { label: "Client", key: "client" },
+            { label: "Due", key: "due" },
+            { label: "Budget", key: "budget" },
+            { label: "Progress", key: "progress" },
+            {
+              label: "Status",
+              key: "status",
+              render: (row) => row?.completion_status || row?.status,
+            },
+          ]}
+          formFields={[]}
+          desktopAsCards
+          crudConfig={{
+            showDetails: false,
+            showRowEdit: false,
+            showDelete: false,
+          }}
+          renderSubtitle={() => null}
+          onCardClick={(row, h) =>
+            navigate(`${roleBase}/project/${h.getId(row)}`, {
+              state: { project: row, readOnly: true, role: "freelancer" },
+            })
+          }
+        />
       </div>
       {deliverOpen && deliverFor && (
         <DeliverModal
@@ -1158,8 +1165,10 @@ function FreelancerProjects() {
             className="absolute inset-0 bg-black/40"
             onClick={() => setNotifOpen(false)}
           />
-          <div className="absolute left-1/2 top-[35%] -translate-x-1/2 w-[min(520px,90vw)] max-w-none bg-white rounded-2xl shadow-2xl border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-4">
+
+          <div className="absolute left-1/2 top-[35%] -translate-x-1/2 w-[min(520px,90vw)] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            {/* header ثابت */}
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-slate-900">
                   Notifications
@@ -1168,6 +1177,7 @@ function FreelancerProjects() {
                   {notifFor?.title || ""}
                 </div>
               </div>
+
               <button
                 className="h-9 w-9 rounded-full border border-slate-200 hover:bg-slate-50 grid place-items-center"
                 onClick={() => setNotifOpen(false)}
@@ -1177,38 +1187,50 @@ function FreelancerProjects() {
               </button>
             </div>
 
-            {notifLoading ? (
-              <div className="text-sm text-slate-500">Loading…</div>
-            ) : notifItems.length === 0 ? (
-              <div className="text-sm text-slate-500">No messages</div>
-            ) : (
-              <div className="max-h-[60vh] overflow-y-auto pr-1">
+            {/* body قابل للسكرول */}
+            <div className="p-4 max-h-[60vh] overflow-y-auto min-h-0">
+              {notifLoading ? (
+                <div className="text-sm text-slate-500">Loading…</div>
+              ) : notifItems.length === 0 ? (
+                <div className="text-sm text-slate-500">No messages</div>
+              ) : (
                 <div className="space-y-3">
                   {notifItems.map((it) => (
                     <div
                       key={it.id}
                       className="rounded-xl border border-slate-200 p-3"
                     >
-                      <div className="text-xs text-slate-500 mb-1">
-                        {it.created_at
-                          ? new Date(it.created_at).toLocaleString()
-                          : ""}
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="text-xs text-slate-500">
+                          {it.created_at
+                            ? new Date(it.created_at).toLocaleString()
+                            : ""}
+                        </div>
+                        {it.is_resolved ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
+                            Resolved
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
+                            New
+                          </span>
+                        )}
                       </div>
+
                       <div className="text-sm text-slate-800 whitespace-pre-wrap">
                         {it.message}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
     </>
   );
 }
-
 
 /* ===================== Client Drawer (استلام التسليم) ===================== */
 function ClientReviewDrawer({
@@ -2144,7 +2166,13 @@ function ClientApplicationsDrawer({
 }
 
 /* ===================== Client Offers Drawer ===================== */
-function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) {
+function ClientOffersDrawer({
+  project,
+  offers,
+  onClose,
+  onAction,
+  submitting,
+}) {
   const formatStatus = (status) => {
     const key = String(status || "").toLowerCase();
     if (key === "pending") return "Pending";
@@ -2160,7 +2188,8 @@ function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) 
     if (key === "accepted")
       return "bg-emerald-50 text-emerald-700 border-emerald-200";
     if (key === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
-    if (key === "expired") return "bg-slate-100 text-slate-700 border-slate-300";
+    if (key === "expired")
+      return "bg-slate-100 text-slate-700 border-slate-300";
     return "bg-slate-50 text-slate-600 border-slate-200";
   };
 
@@ -2208,10 +2237,16 @@ function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) 
                       <div className="space-y-1">
                         {/* ✅ لا تعرض اسم الفريلانسَر — اعرض ID فقط */}
                         <div className="font-medium text-slate-800">
-                          Freelancer ID: <span className="font-semibold"># {freelancerId ?? "—"}</span>
+                          Freelancer ID:{" "}
+                          <span className="font-semibold">
+                            # {freelancerId ?? "—"}
+                          </span>
                         </div>
                         <div className="text-xs text-slate-500">
-                          Submitted: {o.submitted_at ? new Date(o.submitted_at).toLocaleString() : "—"}
+                          Submitted:{" "}
+                          {o.submitted_at
+                            ? new Date(o.submitted_at).toLocaleString()
+                            : "—"}
                         </div>
                         <div className="mt-1">
                           <span
@@ -2226,13 +2261,18 @@ function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) 
 
                       <div className="flex flex-col sm:items-end gap-2">
                         <div className="text-sm text-slate-700">
-                          Offer: <span className="font-semibold">${o.bid_amount ?? "—"}</span>
+                          Offer:{" "}
+                          <span className="font-semibold">
+                            ${o.bid_amount ?? "—"}
+                          </span>
                         </div>
                         <div className="flex gap-2 sm:justify-end">
                           <button
                             type="button"
                             disabled={!isPending || submitting}
-                            onClick={() => onAction(offerId, project.id, "accept")}
+                            onClick={() =>
+                              onAction(offerId, project.id, "accept")
+                            }
                             className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs text-white ${
                               isPending && !submitting
                                 ? "hover:shadow"
@@ -2240,14 +2280,18 @@ function ClientOffersDrawer({ project, offers, onClose, onAction, submitting }) 
                             }`}
                             style={{ backgroundColor: T.primary }}
                           >
-                            {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
+                            {submitting && (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            )}
                             <Check className="w-3 h-3" />
                             Accept
                           </button>
                           <button
                             type="button"
                             disabled={!isPending || submitting}
-                            onClick={() => onAction(offerId, project.id, "reject")}
+                            onClick={() =>
+                              onAction(offerId, project.id, "reject")
+                            }
                             className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs bg-white text-slate-700 ${
                               isPending && !submitting
                                 ? "hover:bg-slate-50"

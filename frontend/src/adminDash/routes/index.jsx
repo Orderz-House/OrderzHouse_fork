@@ -25,6 +25,7 @@ import Profile from "../pages/Profile.jsx";
 
 // 👇 استيراد صفحة الإعدادات
 import AccountSettings from "../../components/profile/AccountSettings.jsx";
+import EditProfile from "../pages/EditProfile.jsx";
 
 function ProjectsSwitch() {
   const { pathname } = useLocation();
@@ -80,6 +81,7 @@ export default function AdminRouter() {
 
         {/* Profile & Settings */}
         <Route path="profile" element={<Profile />} />
+        <Route path="editprofile" element={<EditProfile />} />
         <Route path="settings" element={<AccountSettings />} /> {/* 👈 هون الإضافة */}
 
         {/* generic sections —  /admin  /client  /freelancer */}

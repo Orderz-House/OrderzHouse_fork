@@ -15,10 +15,9 @@ import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL
+const API_BASE = import.meta.env.VITE_APP_API_URL;
 const ORANGE = "#C2410C";
 const ORANGE_DARK = "#9A3412";
-
 
 // نفس ستايل روابط الهيدر
 const TOP_LINK_BASE =
@@ -43,26 +42,25 @@ export default function Header() {
 
   const navigate = useNavigate();
   const location = useLocation();
- const pathname = (location.pathname || "").toLowerCase();
+  const pathname = (location.pathname || "").toLowerCase();
 
-const isDashboardRoute =
-  /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(pathname);
+  const isDashboardRoute =
+    /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(pathname);
 
-// ✅ خلي Projects + Blogs نفس منطق الداشبورد
-const isDashboardLike =
-  isDashboardRoute || /^\/(projectspage|projects|blogs)(\/|$)/.test(pathname);
+  // ✅ خلي Projects + Blogs نفس منطق الداشبورد
+  const isDashboardLike =
+    isDashboardRoute || /^\/(projectspage|projects|blogs)(\/|$)/.test(pathname);
 
+  const [dashExpanded, setDashExpanded] = useState(false);
 
-const [dashExpanded, setDashExpanded] = useState(false);
-
-useEffect(() => {
-  if (!isDashboardLike) {
+  useEffect(() => {
+    if (!isDashboardLike) {
+      setDashExpanded(false);
+      return;
+    }
     setDashExpanded(false);
-    return;
-  }
-  setDashExpanded(false);
-  requestAnimationFrame(() => setDashExpanded(true));
-}, [isDashboardLike]);
+    requestAnimationFrame(() => setDashExpanded(true));
+  }, [isDashboardLike]);
 
   // ===== Active link (نفس منطق ملفك) =====
   useEffect(() => {
@@ -132,7 +130,9 @@ useEffect(() => {
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
-      setNotifications((list) => list.map((n) => ({ ...n, read_status: true })));
+      setNotifications((list) =>
+        list.map((n) => ({ ...n, read_status: true }))
+      );
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all as read:", error);
@@ -176,7 +176,10 @@ useEffect(() => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target))
         setIsUserMenuOpen(false);
-      if (notificationsRef.current && !notificationsRef.current.contains(e.target))
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target)
+      )
         setIsNotificationsOpen(false);
       if (exploreRef.current && !exploreRef.current.contains(e.target))
         setIsExploreOpen(false);
@@ -210,7 +213,9 @@ useEffect(() => {
       path: "/projectsPage",
       condition:
         userData &&
-        (userData.role_id === 1 || userData.role_id === 2 || userData.role_id === 3),
+        (userData.role_id === 1 ||
+          userData.role_id === 2 ||
+          userData.role_id === 3),
     },
   ];
 
@@ -221,7 +226,9 @@ useEffect(() => {
     { label: "PLANS", path: "/plans" },
   ];
 
-  const isExploreActive = exploreItems.some((item) => item.label === activeLink);
+  const isExploreActive = exploreItems.some(
+    (item) => item.label === activeLink
+  );
 
   // ✅ ألوان الثيم البرتقالي
   const ACCENT = "text-gray-900";
@@ -229,302 +236,321 @@ useEffect(() => {
   const ACCENT_BORDER = "border-gray-600";
 
   return (
-<header
-  className={[
-    "z-[9999]",
-    isDashboardLike ? "relative" : "fixed inset-x-0 top-0",
-  ].join(" ")}
->
-<div
-  className={[
-    isDashboardLike
-      ? "w-full px-0 transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
-      : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6",
-    isDashboardLike ? (dashExpanded ? "pt-0" : "pt-6") : "",
-  ].join(" ")}
->
-       <nav
-  className={[
-    "mx-auto bg-white/95 backdrop-blur ring-1 ring-black/10",
-    "transition-[max-width,border-radius,box-shadow,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)]",
-    isDashboardLike
-      ? "w-full py-3"
-      : "max-w-[980px] rounded-full py-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)]",
-    isDashboardLike && (dashExpanded ? "rounded-none shadow-sm" : "rounded-full"),
-  ].join(" ")}
-  style={
-    isDashboardLike
-      ? { maxWidth: dashExpanded ? "100%" : "980px" }
-      : undefined
-  }
-  aria-label="Primary"
->
- <div
-    className={[
-      "mx-auto w-full max-w-[1265px] flex items-center justify-between",
-      isDashboardLike ? "px-6" : "px-5 sm:px-6",
-    ].join(" ")}
-  >
+    <header
+      className={[
+        "z-[9999]",
+        isDashboardLike ? "relative" : "fixed inset-x-0 top-0",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          isDashboardLike
+            ? "w-full px-0 transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
+            : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6",
+          isDashboardLike ? (dashExpanded ? "pt-0" : "pt-6") : "",
+        ].join(" ")}
+      >
+        <nav
+          className={[
+            "mx-auto bg-white/95 backdrop-blur ring-1 ring-black/10",
+            "transition-[max-width,border-radius,box-shadow,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)]",
+            isDashboardLike
+              ? "w-full py-3"
+              : "max-w-[980px] rounded-full py-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)]",
+            isDashboardLike &&
+              (dashExpanded ? "rounded-none shadow-sm" : "rounded-full"),
+          ].join(" ")}
+          style={
+            isDashboardLike
+              ? { maxWidth: dashExpanded ? "100%" : "980px" }
+              : undefined
+          }
+          aria-label="Primary"
+        >
+          <div
+            className={[
+              "mx-auto w-full max-w-[1265px] flex items-center justify-between",
+              isDashboardLike ? "px-6" : "px-5 sm:px-6",
+            ].join(" ")}
+          >
+            {/* Left */}
+            <div className="flex items-center gap-4 sm:gap-8">
+              <button
+                onClick={() => handleNavigation("/", "HOME")}
+                className="text-[15px] font-extrabold tracking-tight text-gray-900"
+              >
+                OrderzHouse
+              </button>
 
-          {/* Left */}
-          <div className="flex items-center gap-4 sm:gap-8">
-            <button
-              onClick={() => handleNavigation("/", "HOME")}
-              className="text-[15px] font-extrabold tracking-tight text-gray-900"
-            >
-              OrderzHouse
-            </button>
+              {/* Desktop links (lg+) */}
+              <div className="hidden lg:flex items-center gap-1">
+                {navLinks.map(
+                  (item) =>
+                    item.condition && (
+                      <button
+                        key={item.label}
+                        onClick={() => handleNavigation(item.path, item.label)}
+                        className={[
+                          TOP_LINK_BASE,
+                          activeLink === item.label
+                            ? ACCENT
+                            : `text-gray-600 ${ACCENT_HOVER}`,
+                        ].join(" ")}
+                      >
+                        {item.label}
+                      </button>
+                    )
+                )}
 
-            {/* Desktop links (lg+) */}
-            <div className="hidden lg:flex items-center gap-1">
-              {navLinks.map(
-                (item) =>
-                  item.condition && (
+                {/* EXPLORE */}
+                <div className="relative" ref={exploreRef}>
+                  <button
+                    onClick={() => setIsExploreOpen((v) => !v)}
+                    className={[
+                      TOP_LINK_BASE,
+                      isExploreActive
+                        ? ACCENT
+                        : `text-gray-600 ${ACCENT_HOVER}`,
+                    ].join(" ")}
+                  >
+                    Explore
+                    <ChevronDown
+                      className={`ml-1 h-4 w-4 inline transition-transform ${
+                        isExploreOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {isExploreOpen && (
+                    <div className="absolute left-0 mt-2 w-52 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden">
+                      {exploreItems.map((it) => (
+                        <button
+                          key={it.label}
+                          onClick={() => handleNavigation(it.path, it.label)}
+                          className={`w-full text-left px-4 py-2.5 text-sm text-gray-700 ${ACCENT_HOVER} hover:bg-gray-50`}
+                        >
+                          {it.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Categories Mega Menu */}
+                <CategoryMegaMenu
+                  activeLink={activeLink}
+                  onSetActiveLink={setActiveLink}
+                />
+              </div>
+            </div>
+
+            {/* Right */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Mobile menu button ( < lg ) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className={`inline-flex lg:hidden p-2 rounded-full text-gray-700 ${ACCENT_HOVER}`}
+                aria-label="Open main menu"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-7 w-7"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+
+              {/* Desktop right (lg+) */}
+              <div className="hidden lg:flex items-center gap-3">
+                {/* Add project (client role) */}
+                {userData?.role_id === 2 && (
+                  <Link
+                    to="/create-project"
+                    className={[
+                      "inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border text-gray-600",
+                      ACCENT_BORDER,
+                      "hover:text-gray-900 hover:border-gray-900 transition-colors",
+                    ].join(" ")}
+                  >
+                    <Plus className="h-4 w-4" /> Add project
+                  </Link>
+                )}
+
+                {/* Notifications */}
+                {IsAuthenticated && (
+                  <div className="relative" ref={notificationsRef}>
                     <button
-                      key={item.label}
-                      onClick={() => handleNavigation(item.path, item.label)}
+                      onClick={() => {
+                        setIsNotificationsOpen(!isNotificationsOpen);
+                        if (!isNotificationsOpen) fetchNotifications();
+                      }}
+                      className={`p-2 text-gray-600 ${ACCENT_HOVER} relative transition-colors duration-150`}
+                      aria-label="Notifications"
+                    >
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {isNotificationsOpen && (
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                        <div className="p-4 border-b flex justify-between items-center">
+                          <h3 className="font-semibold text-gray-900">
+                            Notifications
+                          </h3>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs"
+                              style={{ color: ORANGE }}
+                            >
+                              Mark all as read
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-96 overflow-y-auto">
+                          {notifications.length > 0 ? (
+                            notifications.map((n) => (
+                              <div
+                                key={n.id}
+                                className={`p-4 cursor-pointer ${
+                                  !n.read_status ? "bg-orange-50/60" : ""
+                                } hover:bg-gray-50`}
+                                onClick={() => markAsRead(n.id)}
+                              >
+                                <p className="text-sm text-gray-900">
+                                  {n.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {new Date(n.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-8 text-center text-gray-500 text-sm">
+                              No notifications yet
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-4 border-t text-center">
+                          <Link
+                            to="/notifications"
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="text-sm"
+                            style={{ color: ORANGE }}
+                          >
+                            View all notifications
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* User menu */}
+                {IsAuthenticated && userData ? (
+                  <div className="relative" ref={userMenuRef}>
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className={`flex items-center gap-2 p-2 text-gray-700 ${ACCENT_HOVER} transition-colors duration-150`}
+                    >
+                      <div
+                        className="relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm text-white font-bold text-sm uppercase"
+                        style={{ backgroundColor: ORANGE }}
+                      >
+                        {`${userData.first_name?.[0]}`}
+                      </div>
+
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          isUserMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                        <div className="p-4 border-b space-y-1">
+                          <p className="font-medium text-gray-900">
+                            {userData.first_name} {userData.last_name}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            ID: #{userData.id}
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            {userData.email}
+                          </p>
+                        </div>
+
+                        <div className="py-2">
+                          <Link
+                            to={getDashboardPath(userData.role_id)}
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className={`flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50`}
+                          >
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Dashboard
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
+                          >
+                            <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Guest
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => navigate("/login")}
+                      className={`hidden sm:inline-flex text-sm font-semibold text-gray-700 ${ACCENT_HOVER}`}
+                    >
+                      Sign in
+                    </button>
+
+                    <button
+                      onClick={() => navigate("/register")}
                       className={[
-                        TOP_LINK_BASE,
-                        activeLink === item.label ? ACCENT : `text-gray-600 ${ACCENT_HOVER}`,
+                        "inline-flex items-center justify-center rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white hover:bg-black/90",
+
+                        ACCENT_BORDER,
+                        ACCENT,
                       ].join(" ")}
                     >
-                      {item.label}
+                      Get Started
                     </button>
-                  )
-              )}
-
-              {/* EXPLORE */}
-              <div className="relative" ref={exploreRef}>
-                <button
-                  onClick={() => setIsExploreOpen((v) => !v)}
-                  className={[
-                    TOP_LINK_BASE,
-                    isExploreActive ? ACCENT : `text-gray-600 ${ACCENT_HOVER}`,
-                  ].join(" ")}
-                >
-                  Explore
-                  <ChevronDown
-                    className={`ml-1 h-4 w-4 inline transition-transform ${
-                      isExploreOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {isExploreOpen && (
-                  <div className="absolute left-0 mt-2 w-52 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden">
-                    {exploreItems.map((it) => (
-                      <button
-                        key={it.label}
-                        onClick={() => handleNavigation(it.path, it.label)}
-                        className={`w-full text-left px-4 py-2.5 text-sm text-gray-700 ${ACCENT_HOVER} hover:bg-gray-50`}
-                      >
-                        {it.label}
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Categories Mega Menu */}
-              <CategoryMegaMenu activeLink={activeLink} onSetActiveLink={setActiveLink} />
-            </div>
-          </div>
-
-          {/* Right */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Mobile menu button ( < lg ) */}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className={`inline-flex lg:hidden p-2 rounded-full text-gray-700 ${ACCENT_HOVER}`}
-              aria-label="Open main menu"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-
-            {/* Desktop right (lg+) */}
-            <div className="hidden lg:flex items-center gap-3">
-              {/* Add project (client role) */}
-              {userData?.role_id === 2 && (
-                <Link
-                  to="/create-project"
-                  className={[
-                    "inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border text-gray-600",
-                    ACCENT_BORDER,
-                    "hover:text-gray-900 hover:border-gray-900 transition-colors",
-                  ].join(" ")}
-                >
-                  <Plus className="h-4 w-4" /> Add project
-                </Link>
-              )}
-
-              {/* Notifications */}
-              {IsAuthenticated && (
-                <div className="relative" ref={notificationsRef}>
-                  <button
-                    onClick={() => {
-                      setIsNotificationsOpen(!isNotificationsOpen);
-                      if (!isNotificationsOpen) fetchNotifications();
-                    }}
-                    className={`p-2 text-gray-600 ${ACCENT_HOVER} relative transition-colors duration-150`}
-                    aria-label="Notifications"
-                  >
-                    <Bell className="h-5 w-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-900">Notifications</h3>
-                        {unreadCount > 0 && (
-<button
-  onClick={markAllAsRead}
-  className="text-xs"
-  style={{ color: ORANGE }}
->
-                            Mark all as read
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="max-h-96 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                          notifications.map((n) => (
-                            <div
-                              key={n.id}
-                              className={`p-4 cursor-pointer ${
-!n.read_status ? "bg-orange-50/60" : ""
-                              } hover:bg-gray-50`}
-                              onClick={() => markAsRead(n.id)}
-                            >
-                              <p className="text-sm text-gray-900">{n.message}</p>
-                              <p className="text-xs text-gray-400 mt-2">
-                                {new Date(n.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-8 text-center text-gray-500 text-sm">No notifications yet</div>
-                        )}
-                      </div>
-
-                      <div className="p-4 border-t text-center">
-                        <Link
-                          to="/notifications"
-                          onClick={() => setIsNotificationsOpen(false)}
-className="text-sm"
-style={{ color: ORANGE }}
-                        >
-                          View all notifications
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* User menu */}
-              {IsAuthenticated && userData ? (
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className={`flex items-center gap-2 p-2 text-gray-700 ${ACCENT_HOVER} transition-colors duration-150`}
-                  >
-<div
-  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold uppercase"
-  style={{ backgroundColor: ORANGE }}
->
-  {`${userData.first_name?.[0] || ""}${userData.last_name?.[0] || ""}`}
-</div>
-
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b space-y-1">
-  <p className="font-medium text-gray-900">
-    {userData.first_name} {userData.last_name}
-  </p>
-
-  <p className="text-xs text-gray-500">
-    ID: #{userData.id}
-  </p>
-
-  <p className="text-sm text-gray-500">
-    {userData.email}
-  </p>
-</div>
-
-
-                      <div className="py-2">
-                        <Link
-                          to={getDashboardPath(userData.role_id)}
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className={`flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50`}
-                        >
-                          <LayoutDashboard className="h-4 w-4 mr-2" />
-                          Dashboard
-                        </Link>
-
-                        <button
-                          onClick={handleLogout}
-                          className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
-                        >
-                          <LogOut className="h-4 w-4 mr-2 text-red-500" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Guest
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => navigate("/login")}
-                    className={`hidden sm:inline-flex text-sm font-semibold text-gray-700 ${ACCENT_HOVER}`}
-                  >
-                    Sign in
-                  </button>
-
-                  <button
-                    onClick={() => navigate("/register")}
-                    className={[
-                      "inline-flex items-center justify-center rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white hover:bg-black/90",
-                      
-                      ACCENT_BORDER,
-                      ACCENT,
-                    ].join(" ")}
-                  >
-                    Get Started
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* CTA (مثل ناف بارك الأصلي) */}
-            {/* <a
+              {/* CTA (مثل ناف بارك الأصلي) */}
+              {/* <a
               href="#demo"
               className="hidden sm:inline-flex items-center justify-center rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white hover:bg-black/90"
             >
               Request a Demo
             </a> */}
-          </div>
+            </div>
           </div>
         </nav>
       </div>
@@ -559,43 +585,46 @@ style={{ color: ORANGE }}
             {/* user info */}
             {IsAuthenticated && userData && (
               <div className="flex items-center gap-3 mb-6">
-<div
-  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base font-bold uppercase"
-  style={{ backgroundColor: ORANGE }}
->
-  {`${userData.first_name?.[0] || ""}${userData.last_name?.[0] || ""}`}
-</div>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base font-bold uppercase"
+                  style={{ backgroundColor: ORANGE }}
+                >
+                  {`${userData.first_name?.[0] || ""}${
+                    userData.last_name?.[0] || ""
+                  }`}
+                </div>
 
                 <div>
-  <p className="text-sm font-medium text-gray-900">
-    {userData.first_name} {userData.last_name}
-  </p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {userData.first_name} {userData.last_name}
+                  </p>
 
-  <p className="text-xs text-gray-500">
-    ID: #{userData.id}
-  </p>
+                  <p className="text-xs text-gray-500">ID: #{userData.id}</p>
 
-  <p className="text-xs text-gray-500">
-    {userData.email}
-  </p>
-</div>
-
+                  <p className="text-xs text-gray-500">{userData.email}</p>
+                </div>
               </div>
             )}
 
             <div className="space-y-6">
               {/* Main */}
               <div>
-                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Main</p>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+                  Main
+                </p>
                 <div className="flex flex-col">
                   {navLinks.map(
                     (item) =>
                       item.condition && (
                         <button
                           key={item.label}
-                          onClick={() => handleNavigation(item.path, item.label)}
+                          onClick={() =>
+                            handleNavigation(item.path, item.label)
+                          }
                           className={`w-full text-left py-2 text-base ${
-                            activeLink === item.label ? "text-orange-600" : `text-gray-800 ${ACCENT_HOVER}`
+                            activeLink === item.label
+                              ? "text-orange-600"
+                              : `text-gray-800 ${ACCENT_HOVER}`
                           }`}
                         >
                           {item.label}
@@ -607,14 +636,18 @@ style={{ color: ORANGE }}
 
               {/* Explore */}
               <div className="pt-4 border-t">
-                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Explore</p>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+                  Explore
+                </p>
                 <div className="flex flex-col">
                   {exploreItems.map((it) => (
                     <button
                       key={it.label}
                       onClick={() => handleNavigation(it.path, it.label)}
                       className={`w-full text-left py-2 text-base ${
-                        activeLink === it.label ? "text-orange-600" : `text-gray-800 ${ACCENT_HOVER}`
+                        activeLink === it.label
+                          ? "text-orange-600"
+                          : `text-gray-800 ${ACCENT_HOVER}`
                       }`}
                     >
                       {it.label}
@@ -631,8 +664,8 @@ style={{ color: ORANGE }}
                       setIsMobileMenuOpen(false);
                       navigate("/create-project");
                     }}
-className="flex items-center text-base"
-style={{ color: ORANGE }}
+                    className="flex items-center text-base"
+                    style={{ color: ORANGE }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add project
@@ -702,8 +735,8 @@ style={{ color: ORANGE }}
                       setIsMobileMenuOpen(false);
                       navigate("/register");
                     }}
-className="w-full text-left py-2 text-base font-semibold"
-style={{ color: ORANGE }}
+                    className="w-full text-left py-2 text-base font-semibold"
+                    style={{ color: ORANGE }}
                   >
                     Get Started
                   </button>

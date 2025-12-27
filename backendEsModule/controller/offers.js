@@ -191,14 +191,12 @@ export const approveOrRejectOffer = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
 
     if (!["accept", "reject"].includes(action))
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid action" });
+      return res.status(400).json({ success: false, message: "Invalid action" });
 
     const { rows: offerRows } = await client.query(
-      `SELECT o.*, p.user_id AS client_id, p.title AS project_title 
-       FROM offers o 
-       JOIN projects p ON o.project_id = p.id 
+      `SELECT o.*, p.user_id AS client_id, p.title AS project_title, p.project_type
+       FROM offers o
+       JOIN projects p ON o.project_id = p.id
        WHERE o.id = $1`,
       [offerId]
     );
@@ -207,7 +205,7 @@ export const approveOrRejectOffer = async (req, res) => {
       return res.status(404).json({ success: false, message: "Offer not found" });
 
     const offer = offerRows[0];
-    if (offer.client_id !== clientId)
+    if (String(offer.client_id) !== String(clientId))
       return res.status(403).json({ success: false, message: "Not authorized" });
 
     await client.query("BEGIN");
@@ -249,10 +247,10 @@ export const approveOrRejectOffer = async (req, res) => {
       }
 
       const activeAssignment = await client.query(
-        `SELECT id 
-         FROM project_assignments 
-         WHERE freelancer_id = $1 
-           AND status IN ('active', 'pending_acceptance', 'in_progress')`,
+        `SELECT id
+           FROM project_assignments
+          WHERE freelancer_id = $1
+            AND status IN ('active', 'pending_acceptance', 'in_progress')`,
         [offer.freelancer_id]
       );
 
@@ -267,10 +265,10 @@ export const approveOrRejectOffer = async (req, res) => {
 
       const { rows: otherPendingOffers } = await client.query(
         `SELECT id, freelancer_id
-         FROM offers
-         WHERE project_id = $1
-           AND id <> $2
-           AND offer_status = 'pending'`,
+           FROM offers
+          WHERE project_id = $1
+            AND id <> $2
+            AND offer_status = 'pending'`,
         [offer.project_id, offerId]
       );
 
@@ -280,21 +278,23 @@ export const approveOrRejectOffer = async (req, res) => {
       );
 
       await client.query(
-        `UPDATE offers 
-         SET offer_status = 'rejected' 
-         WHERE project_id = $1 
-           AND id <> $2 
-           AND offer_status = 'pending'`,
+        `UPDATE offers
+            SET offer_status = 'rejected'
+          WHERE project_id = $1
+            AND id <> $2
+            AND offer_status = 'pending'`,
         [offer.project_id, offerId]
       );
 
-      // ✅ PROJECT STATUS UPDATE (bidding → in_progress)
+      // ✅ FIX: status != 'bidding' (bidding is project_type)
       await client.query(
         `UPDATE projects
-         SET status = 'in_progress',
-             updated_at = NOW()
-         WHERE id = $1
-           AND status = 'bidding'`,
+            SET status = 'in_progress',
+                completion_status = 'in_progress',
+                updated_at = NOW()
+          WHERE id = $1
+            AND is_deleted = false
+            AND project_type = 'bidding'`,
         [offer.project_id]
       );
 
@@ -307,9 +307,9 @@ export const approveOrRejectOffer = async (req, res) => {
       } catch (assignErr) {
         if (assignErr.code === "23505") {
           await client.query(
-            `UPDATE project_assignments 
-             SET status = 'active', assigned_at = NOW() 
-             WHERE project_id = $1 AND freelancer_id = $2`,
+            `UPDATE project_assignments
+                SET status = 'active', assigned_at = NOW()
+              WHERE project_id = $1 AND freelancer_id = $2`,
             [offer.project_id, offer.freelancer_id]
           );
         } else {
@@ -319,27 +319,17 @@ export const approveOrRejectOffer = async (req, res) => {
 
       try {
         await client.query(
-          `INSERT INTO escrow (project_id, client_id, freelancer_id, amount, status) 
+          `INSERT INTO escrow (project_id, client_id, freelancer_id, amount, status)
            VALUES ($1, $2, $3, $4, 'held')`,
-          [
-            offer.project_id,
-            offer.client_id,
-            offer.freelancer_id,
-            offer.bid_amount,
-          ]
+          [offer.project_id, offer.client_id, offer.freelancer_id, offer.bid_amount]
         );
       } catch (escrowErr) {
         if (escrowErr.code === "23505") {
           await client.query(
-            `UPDATE escrow 
-             SET amount = $4, status = 'held' 
-             WHERE project_id = $1`,
-            [
-              offer.project_id,
-              offer.client_id,
-              offer.freelancer_id,
-              offer.bid_amount,
-            ]
+            `UPDATE escrow
+                SET amount = $2, status = 'held'
+              WHERE project_id = $1`,
+            [offer.project_id, offer.bid_amount]
           );
         } else {
           throw escrowErr;

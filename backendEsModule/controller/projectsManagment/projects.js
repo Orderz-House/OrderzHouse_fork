@@ -1692,7 +1692,7 @@ export const requestProjectChanges = async (req, res) => {
       `SELECT freelancer_id
          FROM project_assignments
         WHERE project_id = $1 AND status = 'active'
-        LIMIT 1`,
+        `,
       [projectId]
     );
     if (!ar.length) {
