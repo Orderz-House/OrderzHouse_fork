@@ -28,7 +28,6 @@ import { sendOfferApi, getOffersForProjectApi } from "../../../../components/Cat
 import { useSelector } from "react-redux";
 import { useToast } from "../../../../components/toast/ToastProvider";
 import AttachmentList from "../../../../components/Attachments/AttachmentList";
-import OffersReceived from "../../../../components/OffersReceived";
 
 
 
@@ -533,14 +532,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onContact}
-                  className="h-11 px-4 rounded-2xl bg-black/70 hover:bg-black text-white font-semibold inline-flex items-center gap-2"
-                >
-                  <MessageSquareText className="h-4 w-4" />
-                  Contact
-                </button>
+               
               </div>
             </div>
           </div>
@@ -687,16 +679,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
               </SectionCard>
             ) : null}
 
-            {/* Offers (client owner) */}
-            {isOwnerClient ? (
-              <SectionCard title="Offers received" icon={SendHorizontal}>
-                <OffersReceived
-                  item={item}
-                  offersForProject={offersForProject}
-                  setOffersForProject={setOffersForProject}
-                />
-              </SectionCard>
-            ) : null}
+          
           </div>
 
           {/* Right */}
