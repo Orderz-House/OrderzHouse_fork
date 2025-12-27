@@ -1190,7 +1190,7 @@ function ClientDashboard() {
                 title="Create projects, review deliveries, and pay securely."
                 subtitle="Everything you need to keep your projects moving—fast."
                 ctaLabel="Create project"
-                onCta={() => navigate(`${base}/projects/new`)}
+                onCta={() => navigate(`/create-project`)}
                 rightSlot={
                   <button
                     type="button"
