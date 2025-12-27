@@ -221,8 +221,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen py-5 sm:py-6" style={{ background: THEME.BG }}>
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
+    <div className="min-h-screen " style={{ background: THEME.BG }}>
+      <div className="mx-auto w-full">
         {/* Hero مثل الداشبورد */}
         <div className="rounded-[26px] overflow-hidden mb-5 sm:mb-6">
           <div className="relative bg-gradient-to-br from-violet-500 via-indigo-500 to-fuchsia-500 px-5 sm:px-6 py-5 sm:py-6 text-white">

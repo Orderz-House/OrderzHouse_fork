@@ -178,16 +178,18 @@ function HeroBanner({
             </h2>
 
             {/* ✅ خلي النسخة القصيرة إلى lg */}
-            {subtitle || subtitleMobile ? (
-              <>
-                <p className="mt-2 text-[12px] sm:text-sm text-white/80 max-w-xl lg:hidden">
-                  {subtitleMobile ?? subtitle}
-                </p>
-                <p className="mt-2 hidden lg:block text-sm text-white/80 max-w-xl">
-                  {subtitle}
-                </p>
-              </>
-            ) : null}
+            <div className="hidden sm:block">
+              {subtitle || subtitleMobile ? (
+                <>
+                  <p className="mt-2 text-[12px] sm:text-sm text-white/80 max-w-xl lg:hidden">
+                    {subtitleMobile ?? subtitle}
+                  </p>
+                  <p className="mt-2 hidden lg:block text-sm text-white/80 max-w-xl">
+                    {subtitle}
+                  </p>
+                </>
+              ) : null}
+            </div>
 
             <div className="mt-3 sm:mt-4 flex items-center gap-2">
               <button
@@ -392,7 +394,7 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
 
         {/* bottom overlay text (compact like streaming cards) */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 via-black/10 to-transparent">
-          <div className="text-white text-sm sm:text-[15px] font-extrabold leading-snug line-clamp-2">
+          <div className="text-gray-600 text-sm sm:text-[15px] font-extrabold leading-snug line-clamp-2">
             {title || "Untitled"}
           </div>
 
@@ -624,7 +626,6 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
     <div className={cx(UI.card, "p-5")} style={UI.ring}>
       <div className="flex items-center justify-between">
         <div className="text-sm font-extrabold text-slate-900">{title}</div>
-        
       </div>
 
       <div className="mt-4 space-y-3">
@@ -1059,7 +1060,7 @@ function ClientDashboard() {
     pendingReviews: [],
     pendingPayments: [],
   });
-const { pathname } = useLocation();
+  const { pathname } = useLocation();
   const roleBase = useMemo(() => {
     const seg = (pathname.split("/")[1] || "").toLowerCase();
     return ["admin", "client", "freelancer", "partner"].includes(seg)
@@ -1067,14 +1068,14 @@ const { pathname } = useLocation();
       : "/admin";
   }, [pathname]);
   const openProjectDetails = (p) => {
-  const pid = p?.id ?? p?._id ?? p?.project_id;
-  if (!pid) return navigate(`${roleBase}/projects`);
+    const pid = p?.id ?? p?._id ?? p?.project_id;
+    if (!pid) return navigate(`${roleBase}/projects`);
 
-  const role = roleBase.replace("/", ""); // "client" | "freelancer" | "admin" ...
-  navigate(`${roleBase}/project/${pid}`, {
-    state: { project: p, readOnly: true, role },
-  });
-};
+    const role = roleBase.replace("/", ""); // "client" | "freelancer" | "admin" ...
+    navigate(`${roleBase}/project/${pid}`, {
+      state: { project: p, readOnly: true, role },
+    });
+  };
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1245,8 +1246,7 @@ const { pathname } = useLocation();
                       "—"
                     }
                     metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
-                 onOpen={() => openProjectDetails(p)}
-
+                    onOpen={() => openProjectDetails(p)}
                   />
                 )}
               />

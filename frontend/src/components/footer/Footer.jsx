@@ -142,7 +142,7 @@ export default function CleanFooter() {
 
             <div className="flex items-center gap-4">
               <div className="text-xs text-gray-400">
-                © 2025 - All rights reserved to orderzhouse.com
+                © 2025 - OrderzHouse Powered by Faz3at Powered by Battechno. 
               </div>
               <button
                 onClick={scrollToTop}

@@ -400,8 +400,7 @@ export default function ProjectDetails({ mode: propMode }) {
       ? "hover:shadow-lg"
       : "opacity-40 grayscale cursor-not-allowed hover:shadow-none");
 
-  const contactClasses =
-    "w-full h-11 rounded-xl border text-slate-700 font-semibold transition hover:bg-slate-50";
+  
 
   const description = item.description || "No description provided.";
   const shortDesc =
@@ -546,7 +545,6 @@ export default function ProjectDetails({ mode: propMode }) {
               acceptLabel={acceptLabel}
               contactLabel="Contact"
               acceptClasses={acceptClasses}
-              contactClasses={contactClasses}
               // لو عندك payment فعلاً داخل ProjectInfoCard اتركها، وإلا احذفها من ProjectInfoCard نفسه
               triggerPaymentUpload={() => paymentInputRef.current?.click()}
               onPaymentSelected={() => {}}
