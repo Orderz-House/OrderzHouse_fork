@@ -2,7 +2,6 @@ import axios from "axios";
 import { store } from "../../../store/store";
 
 const API_BASE = `${import.meta.env.VITE_APP_API_URL}/projects`;
-const STRIPE_BASE = `${import.meta.env.VITE_APP_API_URL}/stripe`;
 
 // -------------------- UTILITY --------------------
 /**
@@ -97,27 +96,20 @@ export const assignFreelancerApi = async (projectId, freelancerId, token) => {
 };
 
 // -------------------- CREATE STRIPE PROJECT CHECKOUT --------------------
-export const createProjectCheckoutSessionApi = async (projectId, token) => {
-  if (!projectId) throw new Error("Project ID is required");
-
+export const createProjectCheckoutSessionApi = async (projectData, token) => {
   const authToken = token || getAuthToken();
 
   const { data } = await axios.post(
-    `${STRIPE_BASE}/project-checkout-session`,
-    { project_id: projectId },
+    `${import.meta.env.VITE_APP_API_URL}/stripe/project-checkout-session`,
+    projectData,
     {
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
       },
     }
   );
 
-  if (!data?.url) {
-    throw new Error("Failed to create Stripe checkout session");
-  }
-
-  return data; // { url }
+  return data;
 };
 
 // -------------------- CREATE PROJECT DRAFT --------------------
