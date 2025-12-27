@@ -14,7 +14,6 @@ import {
   XCircle,
 } from "lucide-react";
 import PeopleTable from "../Tables";
-import { MOCK_ENABLED, mockFetch } from "../mockData"; // 👈 موك
 
 /* ---------- theme tokens (keep yours) ---------- */
 const T = {
@@ -123,11 +122,14 @@ export default function Payments() {
 
   // IMPORTANT: these match PaymentsRouter routes: /payments/user/:user_id and /payments/admin/all
   const endpoint =
-    role === "admin"
-      ? "/payments/admin/all"
-      : userId
-      ? `/payments/user/${userId}`
-      : "/payments/user/0";
+  role === "admin"
+    ? "/payments/admin/payments"
+    : role === "client"
+    ? "/payments/client/history"
+    : role === "freelancer"
+    ? "/payments/freelancer/wallet/transactions"
+    : null;
+
 
 
   const [rows, setRows] = useState([]);
@@ -154,12 +156,6 @@ export default function Payments() {
     setLoading(true);
     try {
       let data;
-
-      // 1) mock
-      if (MOCK_ENABLED) {
-        const mock = mockFetch(endpoint);
-        if (mock) data = mock;
-      }
 
       // 2) api
       if (!data) {
