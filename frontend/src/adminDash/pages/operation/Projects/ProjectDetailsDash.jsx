@@ -517,9 +517,9 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
                   </span>
                 </div>
 
-                <p className="mt-3 text-white/85 text-sm max-w-3xl line-clamp-2">
+                {/* <p className="mt-3 text-white/85 text-sm max-w-3xl line-clamp-2">
                   {description}
-                </p>
+                </p> */}
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
@@ -590,7 +590,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
             </div>
 
 
-            {/* Key details */}
+            {/* Key details
             <SectionCard title="Key details" icon={ClipboardList}>
               <div className="grid sm:grid-cols-2 gap-3 text-sm">
                 <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
@@ -643,7 +643,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
                   </div>
                 </div>
               </div>
-            </SectionCard>
+            </SectionCard> */}
 
             {/* About */}
             <SectionCard title="About this project" icon={Tag}>

@@ -80,3 +80,14 @@ export const getOffersForProjectApi = async (projectId, token) => {
   }
 };
 
+export const checkMyPendingOfferApi = async (projectId, token) => {
+  if (!projectId) throw new Error("Missing projectId");
+
+  const { data } = await axios.get(
+    `${API_BASE}/my/${projectId}/pending`,
+    authHeaders(token)
+  );
+
+  if (data?.success) return data;
+  throw new Error(data?.message || "Failed to check pending offer");
+};

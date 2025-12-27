@@ -6,6 +6,7 @@ import {
   getProjectFilesApi,
   applyToProjectApi,
   checkIfAssignedApi,
+  checkMyPendingOfferApi ,
 } from "./api/projects";
 import { sendOfferApi, getOffersForProjectApi } from "./api/offers";
 import { useSelector } from "react-redux";
@@ -204,17 +205,29 @@ export default function ProjectDetails({ mode: propMode }) {
   }, [id, mode, toast]);
 
   // =============================== Applied/Assigned
-  useEffect(() => {
-    if (!isFreelancer || mode !== "projects" || !id) return;
-    (async () => {
-      try {
+ useEffect(() => {
+  if (!isFreelancer || mode !== "projects" || !id) return;
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const projectType = item?.project_type ?? item?.type;
+
+      if (projectType === "bidding") {
+        const r = await checkMyPendingOfferApi(id, token); // endpoint الجديد
+        setHasApplied(!!r?.hasPendingOffer); // مهم: true/false
+      } else {
         const isAssigned = await checkIfAssignedApi(id);
-        if (isAssigned) setHasApplied(true);
-      } catch (e) {
-        console.error(e);
+        setHasApplied(!!isAssigned); // مهم: true/false
       }
-    })();
-  }, [id, isFreelancer, mode]);
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+}, [id, isFreelancer, mode, item]);
+
 
   // =============================== Offers
   const currentUserId =

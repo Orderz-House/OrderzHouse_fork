@@ -607,3 +607,31 @@ export const getAcceptedOffers = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const checkMyPendingOffer = async (req, res) => {
+  try {
+    const freelancerId = req.token?.userId;
+    const { projectId } = req.params;
+
+    if (!freelancerId)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const { rows } = await pool.query(
+      `SELECT id
+       FROM offers
+       WHERE project_id = $1
+         AND freelancer_id = $2
+         AND offer_status = 'pending'
+       LIMIT 1`,
+      [projectId, freelancerId]
+    );
+
+    return res.json({
+      success: true,
+      hasPendingOffer: rows.length > 0,
+    });
+  } catch (err) {
+    console.error("checkMyPendingOffer error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
