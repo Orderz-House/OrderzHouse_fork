@@ -259,7 +259,7 @@ function EditProfile() {
         .animate-slide-down { animation: slideDown 0.5s ease-out; }
       `}</style>
 
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6 py-5 sm:py-6">
+      <div className="mx-auto w-full">
         {/* Hero */}
         <div className="rounded-[26px] overflow-hidden" style={{ boxShadow: THEME.CARD_SHADOW }}>
           <div className="relative bg-gradient-to-br from-violet-500 via-indigo-500 to-fuchsia-500 px-5 sm:px-6 py-5 sm:py-6 text-white">
