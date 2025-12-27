@@ -209,7 +209,9 @@ function HeroBanner({
           </div>
 
           {/* ✅ rightSlot يظهر فقط على lg عشان ما يضغط المحتوى */}
-          {rightSlot ? <div className="hidden lg:block shrink-0">{rightSlot}</div> : null}
+          {rightSlot ? (
+            <div className="hidden lg:block shrink-0">{rightSlot}</div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -377,7 +379,7 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
         {/* badge (top-left) */}
         {badge ? (
           <div className="absolute left-3 top-3">
-            <span className="inline-flex items-center rounded-full bg-white/85 border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-700 max-w-[70%] truncate">
+            <span className="inline-flex items-center rounded-full bg-white/85 border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-700 truncate">
               {badge}
             </span>
           </div>
@@ -405,9 +407,6 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
     </button>
   );
 }
-
-
-
 
 function ContinueSection({ title, rightAction, items, renderItem }) {
   const list = Array.isArray(items) ? items : [];
@@ -439,18 +438,20 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
     };
   }, [update]);
 
- const scrollByStep = (dir) => {
-  const el = scrollerRef.current;
-  if (!el) return;
+  const scrollByStep = (dir) => {
+    const el = scrollerRef.current;
+    if (!el) return;
 
-  const first = el.querySelector("[data-carousel-item]");
-  const cardW = first ? first.getBoundingClientRect().width : el.clientWidth * 0.9;
+    const first = el.querySelector("[data-carousel-item]");
+    const cardW = first
+      ? first.getBoundingClientRect().width
+      : el.clientWidth * 0.9;
 
-  const styles = window.getComputedStyle(el);
-  const gap = parseFloat(styles.gap || styles.columnGap || "16") || 16;
+    const styles = window.getComputedStyle(el);
+    const gap = parseFloat(styles.gap || styles.columnGap || "16") || 16;
 
-  el.scrollBy({ left: dir * (cardW + gap), behavior: "smooth" });
-};
+    el.scrollBy({ left: dir * (cardW + gap), behavior: "smooth" });
+  };
 
   return (
     <div className="mt-6 overflow-hidden">
@@ -508,9 +509,9 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
       >
         {list.map((it, i) => (
           <div
-  key={it?.id || it?._id || i}
-  data-carousel-item
-  className="
+            key={it?.id || it?._id || i}
+            data-carousel-item
+            className="
     snap-start flex-none min-w-0
     w-[82%]          /* phone: كارد + جزء واضح من التالي */
     sm:w-[70%]       /* small */
@@ -518,10 +519,9 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
     lg:w-[calc((100%-1rem)/2.5)]  /* desktop: 2 كارد كاملين + نص الثالث */
     xl:w-[calc((100%-1rem)/2.6)]  /* شاشات أكبر: يظل فيه peek لطيف */
   "
->
-  {renderItem?.(it, i)}
-</div>
-
+          >
+            {renderItem?.(it, i)}
+          </div>
         ))}
       </div>
     </div>
@@ -539,9 +539,9 @@ function RingProgress({ percent = 0, label, subLabel }) {
     <div className={cx(UI.card, "p-5")} style={UI.ring}>
       <div className="flex items-start justify-between">
         <div className="text-sm font-extrabold text-slate-900">Statistic</div>
-        <button type="button" className="text-slate-400 hover:text-slate-600">
+        {/* <button type="button" className="text-slate-400 hover:text-slate-600">
           •••
-        </button>
+        </button> */}
       </div>
 
       <div className="mt-4 flex flex-col items-center">
@@ -624,15 +624,7 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
     <div className={cx(UI.card, "p-5")} style={UI.ring}>
       <div className="flex items-center justify-between">
         <div className="text-sm font-extrabold text-slate-900">{title}</div>
-        {onSeeAll ? (
-          <button
-            type="button"
-            onClick={onSeeAll}
-            className="h-8 w-8 rounded-2xl bg-slate-50 border border-slate-200/70 grid place-items-center hover:bg-slate-100"
-          >
-            <Plus className="h-4 w-4 text-slate-600" />
-          </button>
-        ) : null}
+        
       </div>
 
       <div className="mt-4 space-y-3">
@@ -948,26 +940,30 @@ function FreelancerDashboard() {
                   </button>
                 }
                 items={filteredActive}
-               renderItem={(p, i) => (
-  <ContinueCarouselCard
-    key={p?.id || p?._id || i}
-    badge={p?.status || p?.completion_status || "Project"}
-    title={p?.title || "Untitled"}
-    metaLeft={
-      (p?.completion_status && `Status: ${p.completion_status}`) ||
-      (p?.status && `Status: ${p.status}`) ||
-      "—"
-    }
-    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
-    onOpen={() => (p?.id ? navigate(`${base}/projects/${p.id}`) : navigate(`${base}/projects`))}
-  />
-)}
-
+                renderItem={(p, i) => (
+                  <ContinueCarouselCard
+                    key={p?.id || p?._id || i}
+                    badge={p?.status || p?.completion_status || "Project"}
+                    title={p?.title || "Untitled"}
+                    metaLeft={
+                      (p?.completion_status &&
+                        `Status: ${p.completion_status}`) ||
+                      (p?.status && `Status: ${p.status}`) ||
+                      "—"
+                    }
+                    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
+                    onOpen={() =>
+                      p?.id
+                        ? navigate(`${base}/project/${p.id}`)
+                        : navigate(`${base}/projects`)
+                    }
+                  />
+                )}
               />
             </div>
 
             {/* RIGHT */}
-  <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
+            <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
               <RingProgress
                 percent={pct}
                 label={`Good morning ${userLabel} 🔥`}
@@ -1063,6 +1059,22 @@ function ClientDashboard() {
     pendingReviews: [],
     pendingPayments: [],
   });
+const { pathname } = useLocation();
+  const roleBase = useMemo(() => {
+    const seg = (pathname.split("/")[1] || "").toLowerCase();
+    return ["admin", "client", "freelancer", "partner"].includes(seg)
+      ? `/${seg}`
+      : "/admin";
+  }, [pathname]);
+  const openProjectDetails = (p) => {
+  const pid = p?.id ?? p?._id ?? p?.project_id;
+  if (!pid) return navigate(`${roleBase}/projects`);
+
+  const role = roleBase.replace("/", ""); // "client" | "freelancer" | "admin" ...
+  navigate(`${roleBase}/project/${pid}`, {
+    state: { project: p, readOnly: true, role },
+  });
+};
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1221,26 +1233,27 @@ function ClientDashboard() {
                   </button>
                 }
                 items={filteredRecent}
-             renderItem={(p, i) => (
-  <ContinueCarouselCard
-    key={p?.id || p?._id || i}
-    badge={p?.status || p?.completion_status || "Project"}
-    title={p?.title || "Untitled"}
-    metaLeft={
-      (p?.completion_status && `Status: ${p.completion_status}`) ||
-      (p?.status && `Status: ${p.status}`) ||
-      "—"
-    }
-    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
-    onOpen={() => (p?.id ? navigate(`${base}/projects/${p.id}`) : navigate(`${base}/projects`))}
-  />
-)}
+                renderItem={(p, i) => (
+                  <ContinueCarouselCard
+                    key={p?.id || p?._id || i}
+                    badge={p?.status || p?.completion_status || "Project"}
+                    title={p?.title || "Untitled"}
+                    metaLeft={
+                      (p?.completion_status &&
+                        `Status: ${p.completion_status}`) ||
+                      (p?.status && `Status: ${p.status}`) ||
+                      "—"
+                    }
+                    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
+                 onOpen={() => openProjectDetails(p)}
 
+                  />
+                )}
               />
             </div>
 
             {/* RIGHT */}
-  <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
+            <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
               <RingProgress
                 percent={pct}
                 label={`Good morning ${userLabel} 🔥`}
