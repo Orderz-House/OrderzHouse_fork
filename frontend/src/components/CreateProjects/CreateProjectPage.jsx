@@ -1,3 +1,4 @@
+// CreateProjectPage.jsx
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -42,33 +43,40 @@ export default function CreateProjectPage() {
     setIsSubmitting(true);
 
     try {
-      // 1️⃣ Create project
-      const project = await createProjectApi(projectData, token);
-      const projectId = project.id;
+      // ============================
+      // 1️⃣ BIDDING PROJECT → CREATE IMMEDIATELY
+      // ============================
+      if (projectData.project_type === "bidding") {
+        const project = await createProjectApi(projectData, token);
+        const projectId = project.id;
 
-      // 2️⃣ Upload files (optional)
-      if (files.length > 0) {
-        await uploadProjectFilesApi(projectId, files, token);
-      }
+        if (files.length > 0) {
+          await uploadProjectFilesApi(projectId, files, token);
+        }
 
-      // 3️⃣ BIDDING → NO PAYMENT
-      if (project.project_type === "bidding") {
         showToast(
           "Project submitted successfully and is waiting for admin approval",
           "success"
         );
+
         navigate("/", { replace: true });
         return;
       }
 
-      // 4️⃣ FIXED / HOURLY → STRIPE PAYMENT
-      const { url } = await createProjectCheckoutSessionApi(projectId, token);
+      // ============================
+      // 2️⃣ PAID PROJECT → STRIPE FIRST
+      // ============================
+      const { url } = await createProjectCheckoutSessionApi(
+        projectData,
+        token
+      );
+
       window.location.href = url;
 
     } catch (err) {
       console.error(err);
       showToast(
-        err.response?.data?.message || "Failed to create project",
+        err.response?.data?.message || "Failed to proceed",
         "error"
       );
       setIsSubmitting(false);
@@ -79,15 +87,12 @@ export default function CreateProjectPage() {
     <div className="min-h-screen bg-slate-50 py-12 pt-28">
       <div className="max-w-5xl mx-auto px-4">
 
-        {/* STEP 1 */}
         {step === 1 && (
           <ProjectDetailsStep
             projectData={projectData}
             setProjectData={setProjectData}
             onNext={() => {
-              if (
-                Number(projectData.category_id) === DEVELOPMENT_CATEGORY_ID
-              ) {
+              if (Number(projectData.category_id) === DEVELOPMENT_CATEGORY_ID) {
                 setShowDevPopup(true);
               } else {
                 nextStep();
@@ -96,7 +101,6 @@ export default function CreateProjectPage() {
           />
         )}
 
-        {/* STEP 2 */}
         {step === 2 && (
           <ProjectCoverStep
             coverPic={coverPic}
@@ -106,7 +110,6 @@ export default function CreateProjectPage() {
           />
         )}
 
-        {/* STEP 3 */}
         {step === 3 && (
           <ProjectFilesStep
             files={files}
@@ -122,7 +125,6 @@ export default function CreateProjectPage() {
           />
         )}
 
-        {/* STEP 4 */}
         {step === 4 && projectData.project_type !== "bidding" && (
           <PaymentStep
             projectData={projectData}
