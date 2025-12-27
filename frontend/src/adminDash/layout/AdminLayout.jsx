@@ -376,7 +376,7 @@ export default function AdminLayout() {
   // Center FAB action (mobile bottom bar) for client/freelancer
   const handleCreateProject = useCallback(() => {
     // عدّل المسار حسب الراوت عندك
-    navigate(`${base}/projects/create`);
+    navigate(`/create-project`);
   }, [navigate, base]);
 
   const handleCreateTask = useCallback(() => {
