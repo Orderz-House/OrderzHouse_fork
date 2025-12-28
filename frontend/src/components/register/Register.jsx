@@ -16,12 +16,7 @@ import {
   CheckCircle,
   Briefcase,
   ArrowLeft,
-  X,
   Shield,
-  Check,
-  KeyRound,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 
@@ -62,35 +57,21 @@ const Register = () => {
   const [profile_pic_url, setProfile_pic_url] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // ===== States for sub-categories =====
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [subCategories, setSubCategories] = useState({});
-  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
-
-  // ===== OTP states =====
-  const [showOtpField, setShowOtpField] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-
   //========= countries api =========//
-
   useEffect(() => {
     setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
   }, []);
 
   useEffect(() => {
-  axios
-    .get(`${API_URL}/category`)
-    .then((res) => {
-      if (res.data.success) {
-        setCategories(res.data.data);
-      }
-    })
-    .catch((err) => {
-      console.error("Failed to load categories", err);
-    });
-}, []);
-
+    axios
+      .get(`${API_URL}/category`)
+      .then((res) => {
+        if (res.data.success) {
+          setCategories(res.data.data);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   // ========= password strength checker =========//
   useEffect(() => {
@@ -102,70 +83,12 @@ const Register = () => {
     });
   }, [password]);
 
-  // ========= freelancer categories =========//
-  useEffect(() => {
-    // This useEffect can be simplified since we're using the new component
-    // The new component handles its own category fetching
-  }, []);
-
   const handleCategoryToggle = (categoryId) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
         : [...prev, categoryId]
     );
-  };
-
-  const removeCategory = (categoryId) => {
-    setSelectedCategories((prev) => prev.filter((id) => id !== categoryId));
-  };
-
-  // ========= Fetch sub-categories when category is expanded =========//
-  const toggleCategoryExpand = async (categoryId) => {
-    const isExpanded = expandedCategories[categoryId];
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [categoryId]: !isExpanded,
-    }));
-
-    // Fetch sub-categories if not already fetched
-    if (!isExpanded && !subCategories[categoryId]) {
-      try {
-        const res = await axios.get(
-          `${API_URL}/category/${categoryId}/sub-categories`
-        );
-        setSubCategories((prev) => ({
-          ...prev,
-          [categoryId]: res.data.subCategories || [],
-        }));
-      } catch (error) {
-        console.error("Error fetching sub-categories:", error);
-      }
-    }
-  };
-
-  // ========= Handle sub-category selection =========//
-  const handleSubCategoryToggle = (subCategoryId) => {
-    setSelectedSubCategories((prev) =>
-      prev.includes(subCategoryId)
-        ? prev.filter((id) => id !== subCategoryId)
-        : [...prev, subCategoryId]
-    );
-  };
-
-  const removeSubCategory = (subCategoryId) => {
-    setSelectedSubCategories((prev) =>
-      prev.filter((id) => id !== subCategoryId)
-    );
-  };
-
-  // Helper function to get sub-category name by ID
-  const getSubCategoryName = (subCategoryId) => {
-    for (const catId in subCategories) {
-      const subCat = subCategories[catId]?.find((sc) => sc.id === subCategoryId);
-      if (subCat) return subCat.name;
-    }
-    return "";
   };
 
   /* ===================== Upload Profile Image to Cloudinary ===================== */
@@ -177,8 +100,14 @@ const Register = () => {
     try {
       const formDataCloud = new FormData();
       formDataCloud.append("file", file);
-      formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-      formDataCloud.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+      formDataCloud.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+      );
+      formDataCloud.append(
+        "cloud_name",
+        import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+      );
       formDataCloud.append("folder", "users/profile_pics");
 
       const res = await fetch(
@@ -221,57 +150,31 @@ const Register = () => {
       profile_pic_url,
     };
 
-  if (role_id === "3") {
-  if (selectedCategories.length === 0) {
-    setStatus(false);
-    setMessage("Please select at least one category.");
-    setIsLoading(false);
-    return;
-  }
-
-  userData.category_ids = selectedCategories;
-}
-
-
+    if (role_id === "3") {
+      if (selectedCategories.length === 0) {
+        setStatus(false);
+        setMessage("Please select at least one category.");
+        setIsLoading(false);
+        return;
+      }
+      userData.category_ids = selectedCategories;
+    }
 
     axios
       .post(`${API_URL}/users/register`, userData)
       .then((result) => {
         setStatus(true);
         setMessage(
-          result.data.message ||
-            "User registered successfully. OTP sent to email for verification."
+          result.data.message || "Registered successfully ✅ Redirecting..."
         );
-        setShowOtpField(true);
         setIsLoading(false);
+        setTimeout(() => navigate("/login"), 1500);
       })
       .catch((error) => {
         setStatus(false);
         setMessage(error.response?.data?.message || "Registration failed");
         setIsLoading(false);
       });
-  };
-
-  // =============== VERIFY OTP =============== //
-  const handleVerifyOtp = () => {
-    if (!otp) {
-      setMessage("Please enter the OTP sent to your email.");
-      setStatus(false);
-      return;
-    }
-    setIsVerifying(true);
-    axios
-      .post(`${API_URL}/users/verify-email`, { email, otp })
-      .then(() => {
-        setStatus(true);
-        setMessage("Email verified successfully ✅ Redirecting...");
-        setTimeout(() => navigate("/login"), 2000);
-      })
-      .catch((err) => {
-        setStatus(false);
-        setMessage(err.response?.data?.message || "Invalid or expired OTP ❌");
-      })
-      .finally(() => setIsVerifying(false));
   };
 
   const getPasswordStrengthText = () => {
@@ -286,16 +189,11 @@ const Register = () => {
 
   const passwordStrengthInfo = getPasswordStrengthText();
 
-  // State for the new category selector
-  const [freelancerCategories, setFreelancerCategories] = useState({
-    mainCategory: null,
-    subCategories: []
-  });
-
-  // Handler for category changes from the new component
-  const handleCategoryChange = (categoryData) => {
-    setFreelancerCategories(categoryData);
-  };
+  // ===== OTP fields (commented) =====
+  // const [showOtpField, setShowOtpField] = useState(false);
+  // const [otp, setOtp] = useState("");
+  // const [isVerifying, setIsVerifying] = useState(false);
+  // const handleVerifyOtp = () => {};
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
@@ -308,357 +206,273 @@ const Register = () => {
         <div className="w-full max-w-5xl">
           <div className="text-center mb-6">
             <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              {showOtpField ? "Verify your email" : "Create your account"}
+              Create your account
             </h1>
-            <p className="text-slate-500 mt-2">
-              {showOtpField
-                ? `We've sent a 6-digit code to ${email}`
-                : "Join ORDERZHOUSE in seconds"}
-            </p>
+            <p className="text-slate-500 mt-2">Join ORDERZHOUSE in seconds</p>
           </div>
 
           <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
-            {!showOtpField ? (
-              <form onSubmit={register} className="space-y-6">
-              
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* LEFT SIDE */}
-                  <div className="space-y-5">
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        I want to register as
-                      </label>
-                      <div className="relative">
-                        <Briefcase className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <select
-                          value={role_id}
-                          onChange={(e) => setRole_id(e.target.value)}
-                          required
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        >
-                          <option value="">Select Role</option>
-                          {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                              {role.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                    </div>
-                    {role_id === "3" && (
-  <div>
-    <label className="block text-sm text-slate-700 mb-2">
-      Select your categories
-    </label>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {categories.map((cat) => (
-        <label
-          key={cat.id}
-          className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50"
-        >
-          <input
-            type="checkbox"
-            checked={selectedCategories.includes(cat.id)}
-            onChange={() => handleCategoryToggle(cat.id)}
-            className="h-4 w-4 text-[#C2410C]"
-          />
-          <span className="text-sm text-slate-700">{cat.name}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-)}
-
-
-                   
-                    {/* First Name */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        First Name
-                      </label>
-                      <div className="relative">
-                        <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={first_name}
-                          onChange={(e) => setFirst_name(e.target.value)}
-                          required
-                          placeholder="Your first name"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Last Name */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Last Name
-                      </label>
-                      <div className="relative">
-                        <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={last_name}
-                          onChange={(e) => setLast_name(e.target.value)}
-                          required
-                          placeholder="Your last name"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Username */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Username
-                      </label>
-                      <div className="relative">
-                        <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          required
-                          placeholder="Choose a username"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                      </div>
+            <form onSubmit={register} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* LEFT SIDE */}
+                <div className="space-y-5">
+                  {/* Role */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      I want to register as
+                    </label>
+                    <div className="relative">
+                      <Briefcase className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <select
+                        value={role_id}
+                        onChange={(e) => setRole_id(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      >
+                        <option value="">Select Role</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  {/* RIGHT SIDE */}
-                  <div className="space-y-5">
-                    {/* Email */}
+                  {/* Freelancer Categories */}
+                  {role_id === "3" && (
                     <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Email Address
+                      <label className="block text-sm text-slate-700 mb-2">
+                        Select your categories
                       </label>
-                      <div className="relative">
-                        <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                          placeholder="you@email.com"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          placeholder="••••••••"
-                          className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#C2410C]"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Strength */}
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs text-slate-600">
-                            Password Strength:
-                          </span>
-                          <span
-                            className={`text-xs font-medium ${passwordStrengthInfo.color}`}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {categories.map((cat) => (
+                          <label
+                            key={cat.id}
+                            className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50"
                           >
-                            {passwordStrengthInfo.text}
-                          </span>
-                        </div>
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(cat.id)}
+                              onChange={() => handleCategoryToggle(cat.id)}
+                              className="h-4 w-4 text-[#C2410C]"
+                            />
+                            <span className="text-sm text-slate-700">{cat.name}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
+                  )}
 
-                    {/* Country */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Country
-                      </label>
-                      <div className="relative">
-                        <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <select
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                          required
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                  {/* First Name */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      First Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={first_name}
+                        onChange={(e) => setFirst_name(e.target.value)}
+                        required
+                        placeholder="Your first name"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Last Name */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      Last Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={last_name}
+                        onChange={(e) => setLast_name(e.target.value)}
+                        required
+                        placeholder="Your last name"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Username */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        placeholder="Choose a username"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT SIDE */}
+                <div className="space-y-5">
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder="you@email.com"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#C2410C]"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between mb-1.5">
+                      <span className="text-xs text-slate-600">Password Strength:</span>
+                      <span className={`text-xs font-medium ${passwordStrengthInfo.color}`}>
+                        {passwordStrengthInfo.text}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Country */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">Country</label>
+                    <div className="relative">
+                      <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <select
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      >
+                        <option value="">Select Country</option>
+                        {countries.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-1.5">Phone Number</label>
+                    <div className="relative">
+                      <Phone className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        value={phone_number}
+                        onChange={(e) => setPhone_number(e.target.value)}
+                        required
+                        placeholder="Your phone number"
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="flex items-start">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  required
+                  className="h-4 w-4 text-[#C2410C] focus:ring-[#C2410C] border-slate-300 rounded mt-0.5"
+                />
+                <label htmlFor="terms" className="ml-2 text-sm text-slate-700">
+                  I agree to the{" "}
+                  <a href="#" className="text-[#C2410C] hover:underline">Terms and Conditions</a> and{" "}
+                  <a href="#" className="text-[#C2410C] hover:underline">Privacy Policy</a>
+                </label>
+              </div>
+
+              {/* Submit */}
+              <div className="flex items-center justify-center">
+                <GradientButton className="px-14 flex items-center justify-center" disabled={isLoading}>
+                  <div className="relative z-10 flex items-center">
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
                         >
-                          <option value="">Select Country</option>
-                          {countries.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-sm text-slate-700 mb-1.5">
-                        Phone Number
-                      </label>
-                      <div className="relative">
-                        <Phone className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="tel"
-                          value={phone_number}
-                          onChange={(e) => setPhone_number(e.target.value)}
-                          required
-                          placeholder="Your phone number"
-                          className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                        />
-                      </div>
-                    </div>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating secure account...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="w-5 h-5 mr-2" />
+                        Create Secure Account
+                      </>
+                    )}
                   </div>
-                </div>
-
-                {/* Terms */}
-                <div className="flex items-start">
-                  <input
-                    id="terms"
-                    type="checkbox"
-                    required
-                    className="h-4 w-4 text-[#C2410C] focus:ring-[#C2410C] border-slate-300 rounded mt-0.5"
-                  />
-                  <label htmlFor="terms" className="ml-2 text-sm text-slate-700">
-                    I agree to the{" "}
-                    <a href="#" className="text-[#C2410C] hover:underline">
-                      Terms and Conditions
-                    </a>{" "}
-                    and{" "}
-                    <a href="#" className="text-[#C2410C] hover:underline">
-                      Privacy Policy
-                    </a>
-                  </label>
-                </div>
-
-                {/* Submit */}
-                <div className="flex items-center justify-center">
-                  <GradientButton
-                    className="px-14 flex items-center justify-center"
-                    disabled={isLoading}
-                  >
-                    <div className="relative z-10 flex items-center">
-                      {isLoading ? (
-                        <>
-                          <svg
-                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Creating secure account...
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="w-5 h-5 mr-2" />
-                          Create Secure Account
-                        </>
-                      )}
-                    </div>
-                  </GradientButton>
-                </div>
-              </form>
-            ) : (
-              // =================== OTP Section =================== //
-              <div className="space-y-6 text-center">
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Verify your email
-                </h2>
-                <p className="text-slate-500 text-sm">
-                  We've sent a 6-digit code to{" "}
-                  <span className="font-medium text-[#C2410C]">{email}</span>.
-                </p>
-
-                <div className="flex items-center justify-center">
-                  <div className="relative w-64">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      maxLength={6}
-                      placeholder="Enter OTP"
-                      className="w-full pl-10 pr-3 py-3 text-center tracking-widest text-lg rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
-                    />
-                  </div>
-                </div>
-
-                <GradientButton onClick={handleVerifyOtp} disabled={isVerifying}>
-                  {isVerifying ? "Verifying..." : "Verify OTP"}
                 </GradientButton>
               </div>
-            )}
+            </form>
 
             {/* Message */}
             {message && (
               <div
                 className={`mt-6 p-4 rounded-xl flex items-start border ${
-                  status
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                    : "bg-rose-50 text-rose-800 border-rose-200"
+                  status ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"
                 }`}
               >
-                {status ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-rose-600" />
-                )}
+                {status ? <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-emerald-600" /> :
+                <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-rose-600" />}
                 <p className="text-sm">{message}</p>
               </div>
             )}
           </div>
 
-          {!showOtpField && (
-            <div className="mt-6 text-center pt-4 border-t border-slate-200">
-              <p className="text-sm text-slate-600">
-                Already have an account?{" "}
-                <a
-                  href="/login"
-                  className="font-medium text-[#C2410C] inline-flex items-center hover:underline"
-                >
-                  Sign in
-                  <ArrowLeft className="ml-1 h-4 w-4 rotate-180" />
-                </a>
-              </p>
-            </div>
-          )}
+          <div className="mt-6 text-center pt-4 border-t border-slate-200">
+            <p className="text-sm text-slate-600">
+              Already have an account?{" "}
+              <a href="/login" className="font-medium text-[#C2410C] inline-flex items-center hover:underline">
+                Sign in
+                <ArrowLeft className="ml-1 h-4 w-4 rotate-180" />
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
