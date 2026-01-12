@@ -64,7 +64,7 @@ export default function ContactUsPage() {
       <div className="relative z-10 pt-16">
         <section className="py-16 text-center">
           <h1 className="text-5xl font-bold mb-4 text-slate-900" style={{ fontFamily: "'Merriweather', serif" }}>
-            Get in <span className="text-orange-600">Touch</span>
+            Get in <span className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-transparent">Touch</span>
           </h1>
           <p
             className="text-slate-600 max-w-xl mx-auto"

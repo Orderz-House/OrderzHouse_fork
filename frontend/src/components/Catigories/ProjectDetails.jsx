@@ -128,12 +128,7 @@ function MobileBottomBar({
             {acceptLabel}
           </button>
 
-          <button
-            onClick={onContact}
-            className="flex-1 h-12 rounded-2xl border border-slate-300 bg-white text-slate-800 font-semibold transition active:scale-[0.99]"
-          >
-            {contactLabel}
-          </button>
+        
         </div>
       </div>
     </div>

@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        generate_for:
+          - lib/core/models/**
+        options:
+          union_value_case: pascal
+      json_serializable:
+        generate_for:
+          - lib/core/models/**
+        options:
+          explicit_to_json: true
