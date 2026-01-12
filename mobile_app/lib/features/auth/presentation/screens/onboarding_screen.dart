@@ -1,0 +1,381 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_radius.dart';
+
+/// Onboarding page model
+class OnboardingPage {
+  final String title;
+  final String description;
+  final String imageAsset;
+
+  const OnboardingPage({
+    required this.title,
+    required this.description,
+    required this.imageAsset,
+  });
+}
+
+/// Onboarding Screen with PageView
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  // Onboarding pages data
+  static const List<OnboardingPage> _pages = [
+    OnboardingPage(
+      title: 'Connect Talent\nwith Opportunity',
+      description:
+          'Find the perfect projects that match your skills, or hire talented freelancers who bring your vision to life.',
+      imageAsset: '', // Using icon placeholder instead
+    ),
+    OnboardingPage(
+      title: 'Seamless\nCollaboration',
+      description:
+          'Work together smoothly with built-in communication tools and smart workflow management for successful projects.',
+      imageAsset: '', // Using icon placeholder instead
+    ),
+    OnboardingPage(
+      title: 'Secure & Smart\nPayments',
+      description:
+          'Trust in our secure payment system that protects both freelancers and clients, ensuring fair and timely transactions.',
+      imageAsset: '', // Using icon placeholder instead
+    ),
+    OnboardingPage(
+      title: 'Start Your\nJourney',
+      description:
+          'Join thousands of freelancers and businesses creating amazing work together. Your next opportunity is just a tap away.',
+      imageAsset: '', // Using icon placeholder instead
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F7FF), // Very light purple tint
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                // Spacer to reserve space where Skip button was (maintains exact layout)
+                // Height calculation: Padding (AppSpacing.md = 16px on all sides) + TextButton (~40px) = ~72px total
+                // Using 72px to match: top padding (16px) + button height (~40px) + bottom padding (16px)
+                const SizedBox(
+                  height: 72,
+                ),
+
+                // PageView with illustrations and content
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _pages.length,
+                    itemBuilder: (context, index) {
+                      return _OnboardingPageContent(
+                        page: _pages[index],
+                        pageIndex: index,
+                      );
+                    },
+                  ),
+                ),
+
+                // Dots indicator
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: _DotsIndicator(
+                    currentPage: _currentPage,
+                    pageCount: _pages.length,
+                  ),
+                ),
+
+                // Bottom buttons
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Register button (filled)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            context.go('/register');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6D5DFB),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
+                          ),
+                          child: Text(
+                            'Register',
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      // Sign in button (outlined)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            context.go('/login');
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF6D5DFB),
+                            side: const BorderSide(
+                              color: Color(0xFF6D5DFB),
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
+                          ),
+                          child: Text(
+                            'Sign in',
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: const Color(0xFF6D5DFB),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Individual onboarding page content
+class _OnboardingPageContent extends StatefulWidget {
+  final OnboardingPage page;
+  final int pageIndex;
+
+  const _OnboardingPageContent({
+    required this.page,
+    required this.pageIndex,
+  });
+
+  @override
+  State<_OnboardingPageContent> createState() =>
+      _OnboardingPageContentState();
+}
+
+class _OnboardingPageContentState extends State<_OnboardingPageContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildIllustrationPlaceholder(int pageIndex) {
+    // Placeholder illustrations with icons matching the theme
+    final icons = [
+      Icons.handshake_outlined, // Connect Talent
+      Icons.chat_bubble_outline, // Collaboration
+      Icons.security_outlined, // Secure Payments
+      Icons.rocket_launch_outlined, // Start Journey
+    ];
+
+    // Ensure pageIndex is within bounds
+    final safeIndex = pageIndex.clamp(0, icons.length - 1);
+
+    return Container(
+      color: Colors.transparent,
+      child: Center(
+        child: Icon(
+          icons[safeIndex],
+          size: 140,
+          color: Colors.white.withOpacity(0.9),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: AppSpacing.xl),
+            // Illustration card with gradient
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(
+                width: double.infinity,
+                height: 320,
+                margin: const EdgeInsets.only(bottom: AppSpacing.xl),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF7C6BFF),
+                      Color(0xFFB7B0FF),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7C6BFF).withOpacity(0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: _buildIllustrationPlaceholder(widget.pageIndex),
+                ),
+              ),
+            ),
+
+            // Title with animation
+            SlideTransition(
+              position: _slideAnimation,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  widget.page.title,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.displayMedium.copyWith(
+                    color: const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
+
+            // Description with animation
+            SlideTransition(
+              position: _slideAnimation,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  widget.page.description,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: const Color(0xFF6B7280),
+                    height: 1.6,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.xxl),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Animated dots indicator
+class _DotsIndicator extends StatelessWidget {
+  final int currentPage;
+  final int pageCount;
+
+  const _DotsIndicator({
+    required this.currentPage,
+    required this.pageCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(pageCount, (index) {
+        final isActive = index == currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: isActive ? 24 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isActive
+                ? const Color(0xFF6D5DFB)
+                : const Color(0xFF6D5DFB).withOpacity(0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        );
+      }),
+    );
+  }
+}

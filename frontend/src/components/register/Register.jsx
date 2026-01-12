@@ -247,7 +247,11 @@ const Register = () => {
       })
       .catch((error) => {
         setStatus(false);
-        setMessage(error.response?.data?.message || "Registration failed");
+setMessage(
+  error.response?.data?.error ||
+  error.response?.data?.message ||
+  "Registration failed"
+);
         setIsLoading(false);
       });
   };

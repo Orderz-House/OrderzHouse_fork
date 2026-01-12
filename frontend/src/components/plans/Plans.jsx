@@ -59,11 +59,12 @@ function PlanCard({ plan, onSubscribe }) {
         "hover:shadow-[0_35px_80px_-55px_rgba(2,6,23,0.28)]",
         "transition-all duration-300 ease-out",
         highlight
-          ? "ring-1 ring-violet-500/20 bg-gradient-to-b from-violet-50/70 to-indigo-50/40"
+          ? "ring-1 ring-orange-500/20 bg-gradient-to-b from-orange-50/70 to-indigo-50/40"
           : "ring-1 ring-black/5",
       ].join(" ")}
       style={{ minHeight: 360 }}
     >
+      
       <div className="p-6 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -77,7 +78,7 @@ function PlanCard({ plan, onSubscribe }) {
           </div>
 
           {highlight ? (
-            <span className="inline-flex items-center rounded-full border border-violet-500/15 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-700">
+            <span className="inline-flex items-center rounded-full border border-orange-500/15 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600">
               Most popular
             </span>
           ) : (
@@ -92,7 +93,7 @@ function PlanCard({ plan, onSubscribe }) {
         <ul className="mt-5 space-y-2">
           {plan.features?.map((b, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-              <span className="mt-0.5 grid h-5 w-5 place-items-center rounded-full border border-violet-500/15 bg-violet-500/10 text-violet-700">
+              <span className="mt-0.5 grid h-5 w-5 place-items-center rounded-full border border-orange-500/15 bg-orange-500/10 text-orange-700">
                 <CheckIcon className="h-3 w-3" />
               </span>
               <span>{b}</span>
@@ -164,18 +165,16 @@ export default function Plans() {
   return (
     <div className="relative isolate overflow-hidden bg-white">
       {/* ✅ نفس Glows الموجودة في Pricing */}
-      <div className="pointer-events-none absolute -top-24 left-[-90px] h-[360px] w-[360px] rounded-full bg-violet-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -top-28 right-[-110px] h-[380px] w-[380px] rounded-full bg-indigo-500/18 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-160px] left-[10%] h-[420px] w-[420px] rounded-full bg-violet-400/14 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-170px] right-[10%] h-[440px] w-[440px] rounded-full bg-indigo-500/14 blur-3xl" />
-
+           <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
+ 
       {/* subtle dotted texture */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:radial-gradient(circle_at_1px_1px,black_1px,transparent_0)] [background-size:18px_18px]" />
 
       <div className="mx-auto max-w-6xl px-4 py-16 sm:py-32 md:px-8">
         {/* Header نفس الستايل */}
         <div className="max-w-2xl">
-          <p className="text-sm text-violet-700">Pricing</p>
+          <p className="text-sm text-orange-700">Pricing</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
             Choose Your Plan
           </h1>

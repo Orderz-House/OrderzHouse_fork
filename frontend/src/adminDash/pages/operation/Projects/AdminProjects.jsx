@@ -148,7 +148,7 @@ function ProjectsHero({ title, subtitle, eyebrow = "PROJECTS" }) {
   return (
     <div
       className="relative overflow-hidden rounded-3xl p-4 sm:p-5 lg:p-6 text-white shadow-sm"
-      style={{ background: "linear-gradient(135deg,#7C3AED,#6366F1,#8B5CF6)" }}
+      style={{ background: "linear-gradient(135deg,#7C3AED,#6d5ffd,#8B5CF6)" }}
     >
       <div className="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
       <div className="absolute left-6 -bottom-24 h-56 w-56 rounded-full bg-black/10 blur-2xl" />

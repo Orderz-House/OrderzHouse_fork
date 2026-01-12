@@ -1,0 +1,138 @@
+import 'package:dio/dio.dart';
+import '../storage/secure_storage_service.dart';
+import '../config/app_config.dart';
+
+class AuthInterceptor extends Interceptor {
+  @override
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final token = await SecureStorageService.getToken();
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
+  }
+}
+
+class LoggingInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (AppConfig.isDevelopment) {
+      // Never log full tokens or sensitive data
+      final safeHeaders = Map<String, dynamic>.from(options.headers);
+      String? tokenPrefix;
+      if (safeHeaders.containsKey('Authorization')) {
+        final authHeader = safeHeaders['Authorization'] as String?;
+        if (authHeader != null && authHeader.startsWith('Bearer ')) {
+          final token = authHeader.substring(7);
+          tokenPrefix = token.length > 10 ? token.substring(0, 10) : token;
+          safeHeaders['Authorization'] = 'Bearer ${tokenPrefix}...';
+        } else {
+          safeHeaders['Authorization'] = 'Bearer ***';
+        }
+      }
+      // ignore: avoid_print
+      print('REQUEST[${options.method}] => PATH: ${options.path}');
+      // ignore: avoid_print
+      print('REQUEST[${options.method}] => Final URL: ${options.uri}');
+      // ignore: avoid_print
+      print('REQUEST[${options.method}] => Headers: $safeHeaders');
+      if (tokenPrefix != null) {
+        // ignore: avoid_print
+        print('REQUEST[${options.method}] => Token prefix: $tokenPrefix');
+      }
+      if (options.data != null) {
+        // ignore: avoid_print
+        print('REQUEST[${options.method}] => Data: ${options.data}');
+      }
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (AppConfig.isDevelopment) {
+      // ignore: avoid_print
+      print(
+        'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
+      );
+      // ignore: avoid_print
+      print(
+        'RESPONSE[${response.statusCode}] => URI: ${response.requestOptions.uri}',
+      );
+      if (response.data != null) {
+        // ignore: avoid_print
+        print('RESPONSE[${response.statusCode}] => Data: ${response.data}');
+      }
+    }
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (AppConfig.isDevelopment) {
+      // ignore: avoid_print
+      print('ERROR[${err.response?.statusCode ?? 'null'}] => PATH: ${err.requestOptions.path}');
+      // ignore: avoid_print
+      print('ERROR => Type: ${err.type}');
+      // ignore: avoid_print
+      print('ERROR => URI: ${err.requestOptions.uri}');
+      // ignore: avoid_print
+      print('ERROR => Message: ${err.message}');
+      if (err.error != null) {
+        // ignore: avoid_print
+        print('ERROR => Error: ${err.error}');
+      }
+      if (err.response != null) {
+        // ignore: avoid_print
+        print('ERROR => Status Code: ${err.response?.statusCode}');
+        // ignore: avoid_print
+        print('ERROR => Response Data: ${err.response?.data}');
+      }
+      // ignore: avoid_print
+      print('ERROR => Stack Trace: ${err.stackTrace}');
+    }
+    handler.next(err);
+  }
+}
+
+class ErrorInterceptor extends Interceptor {
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    // Handle 401 globally (token expired/invalid)
+    // Don't clear on 403 as it might be role-based permission issue
+    if (err.response?.statusCode == 401) {
+      SecureStorageService.clearAll();
+    }
+    handler.next(err);
+  }
+}
+
+class RetryInterceptor extends Interceptor {
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (_shouldRetry(err)) {
+      await Future.delayed(const Duration(seconds: 1));
+      try {
+        final dio = Dio();
+        final response = await dio.fetch(err.requestOptions);
+        handler.resolve(response);
+        return;
+      } catch (e) {
+        handler.next(err);
+        return;
+      }
+    }
+    handler.next(err);
+  }
+
+  bool _shouldRetry(DioException err) {
+    return err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        (err.response?.statusCode != null &&
+            err.response!.statusCode! >= 500);
+  }
+}

@@ -531,7 +531,7 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
 }
 
 /* ===================== Right column: Statistic + List ===================== */
-function RingProgress({ percent = 0, label, subLabel }) {
+function RingProgress({ percent = 0, label, subLabel, extra }) {
   const p = Math.max(0, Math.min(100, Number(percent) || 0));
   const r = 36;
   const c = 2 * Math.PI * r;
@@ -592,29 +592,12 @@ function RingProgress({ percent = 0, label, subLabel }) {
           </div>
         ) : null}
 
-        {/* tiny bars */}
-        <div className="mt-4 w-full">
-          <div className="flex items-end justify-between gap-2 h-16">
-            {[22, 45, 30, 60, 28].map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-xl bg-slate-100 overflow-hidden"
-              >
-                <div
-                  className="w-full rounded-xl bg-violet-400"
-                  style={{ height: `${h}%` }}
-                />
-              </div>
-            ))}
+
+        {extra ? (
+          <div className="mt-4 pt-4 b">
+            {extra}
           </div>
-          <div className="mt-2 flex justify-between text-[10px] text-slate-400">
-            <span>W1</span>
-            <span>W2</span>
-            <span>W3</span>
-            <span>W4</span>
-            <span>W5</span>
-          </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
@@ -657,6 +640,209 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
     </div>
   );
 }
+
+
+/* ===================== Activation steps (embedded) ===================== */
+function ActivationStepperCard({
+  title,
+  stepsLeft,
+  steps,
+  ctaLabel = "Continue",
+  onCta,
+  onStep,
+  embedded = false,
+}) {
+  const list = Array.isArray(steps) ? steps : [];
+
+  const stepsLeftLabel =
+    stepsLeft == null
+      ? ""
+      : stepsLeft <= 0
+      ? "All set"
+      : `${stepsLeft} step${stepsLeft > 1 ? "s" : ""} left`;
+
+  const nodeStyle = (status) => {
+    if (status === "done") return "bg-violet-600 ring-1 ring-violet-200";
+    if (status === "current") return "bg-violet-50 ring-1 ring-violet-200";
+    return "bg-white ring-1 ring-slate-200";
+  };
+
+  const lineStyle = (status) => {
+    if (status === "done") return "bg-violet-600/70";
+    if (status === "current") return "bg-violet-500/25";
+    return "bg-slate-200";
+  };
+
+  const nodeInner = (status) => {
+    if (status === "done") return <Check className="h-4 w-4 text-white" />;
+    if (status === "current")
+      return <span className="h-3 w-3 rounded-md bg-violet-600" />;
+    return <span className="h-3 w-3 rounded-md bg-slate-300" />;
+  };
+
+  const Header = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="text-[13px] font-extrabold text-slate-900">{title}</div>
+      {stepsLeftLabel ? (
+        <div className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+          {stepsLeftLabel}
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const Body = (
+    <div className="mt-3">
+      {list.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
+          Nothing to show.
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {list.map((s, idx) => {
+            const status = s?.status || "pending";
+            const clickable = Boolean(s?.href) && typeof onStep === "function";
+
+            return (
+              <button
+                key={s?.id || idx}
+                type="button"
+                disabled={!clickable}
+                onClick={() => clickable && onStep(s.href)}
+                className={cx(
+                  "w-full text-left group",
+                  clickable ? "cursor-pointer" : "cursor-default"
+                )}
+              >
+                <div
+                  className={cx(
+                    "rounded-2xl px-2.5 py-2.5 transition",
+                    clickable ? "hover:bg-white/70" : ""
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* left rail */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div
+                        className={cx(
+                          "h-6 w-6 rounded-2xl grid place-items-center",
+                          nodeStyle(status)
+                        )}
+                      >
+                        {nodeInner(status)}
+                      </div>
+
+                      {idx !== list.length - 1 ? (
+                        <div
+                          className={cx("mt-2 h-10 w-1 rounded-full", lineStyle(status))}
+                        />
+                      ) : null}
+                    </div>
+
+                    {/* content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-extrabold text-slate-900 truncate">
+                            {s?.title || "Step"}
+                          </div>
+                          <div className="mt-0.5 text-[11px] text-slate-500 break-words">
+                            {s?.description || s?.meta || "—"}
+                          </div>
+                        </div>
+
+                        {clickable ? (
+                          <span className="shrink-0 mt-0.5 inline-flex items-center text-[11px] font-semibold text-slate-400 group-hover:text-slate-600">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  const Footer =
+    onCta && list.length > 0 ? (
+      <button
+        type="button"
+        onClick={onCta}
+        className={cx(
+          "mt-3 w-full h-10 rounded-2xl text-sm font-semibold transition",
+          "bg-violet-50 text-violet-700 border border-violet-200/70 hover:bg-violet-100"
+        )}
+      >
+        {ctaLabel}
+      </button>
+    ) : null;
+
+  if (embedded) {
+    return (
+      <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3">
+        {Header}
+        {Body}
+        {Footer}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cx(UI.card, "p-5")} style={UI.ring}>
+      {Header}
+      {Body}
+      {Footer}
+    </div>
+  );
+}
+
+/* ===================== Helpers: verification/profile ===================== */
+function isAccountVerified(u) {
+  const raw =
+    u?.is_verified ??
+    u?.verified ??
+    u?.isVerified ??
+    u?.verification_status ??
+    u?.verificationStatus ??
+    u?.account_status ??
+    u?.accountStatus ??
+    u?.status;
+
+  if (raw === true) return true;
+  if (raw === false || raw == null) return false;
+  if (typeof raw === "number") return raw === 1;
+
+  const s = String(raw).trim().toLowerCase();
+  if (!s) return false;
+
+  if (
+    ["pending", "rejected", "declined", "unverified", "not_verified", "not verified"].some(
+      (k) => s.includes(k)
+    )
+  ) {
+    return false;
+  }
+
+  return ["verified", "approved", "active", "done", "completed", "success"].some((k) =>
+    s.includes(k)
+  );
+}
+
+function isProfileComplete(u) {
+  const first = u?.first_name ?? u?.firstName;
+  const last = u?.last_name ?? u?.lastName;
+  const username = u?.username ?? u?.user_name ?? u?.userName;
+  const phone = u?.phone_number ?? u?.phoneNumber;
+  const country = u?.country ?? u?.location;
+
+  return Boolean(((first && last) || username) && phone && country);
+}
+
 
 /* ===================== Skeletons ===================== */
 function Sk({ className = "" }) {
@@ -870,6 +1056,43 @@ function FreelancerDashboard() {
       ? Math.round((availBal / totalBal) * 100)
       : 32;
 
+  // ✅ Account activation steps (inside Statistic for Freelancer only)
+  // Edit route if you have a dedicated verification page
+  const verifyHref = `${base}/contract-terms`;
+  const accountVerified = isAccountVerified(userData);
+
+  const _stepsRaw = [
+    {
+      id: "verify",
+      title: "Verify your account",
+      description: "Verify your identity to unlock full features.",
+      href: verifyHref,
+      done: accountVerified,
+    },
+  ];
+
+  let _foundCurrent = false;
+  const activationSteps = _stepsRaw.map((s) => {
+    if (s.done) return { ...s, status: "done" };
+    if (_stepsRaw.length === 1) return { ...s, status: "pending" }; // grey
+    if (!_foundCurrent) {
+      _foundCurrent = true;
+      return { ...s, status: "current" };
+    }
+    return { ...s, status: "pending" };
+  });
+
+  const stepsLeft = activationSteps.filter((s) => s.status !== "done").length;
+  const currentStep =
+    activationSteps.find((s) => s.status === "current") || activationSteps[0];
+
+  const activationCtaHref = currentStep?.href || verifyHref;
+  const activationCtaLabel = accountVerified
+    ? "View profile"
+    : currentStep?.id === "verify"
+    ? "Start verification"
+    : "Continue";
+
   const showSkeleton =
     loading &&
     !error &&
@@ -969,6 +1192,17 @@ function FreelancerDashboard() {
                 percent={pct}
                 label={`Good morning ${userLabel} 🔥`}
                 subLabel="Stay on top of deliveries and deadlines."
+                extra={
+                  <ActivationStepperCard
+                    embedded
+                    title="Account activation"
+                    stepsLeft={stepsLeft}
+                    steps={activationSteps}
+                    ctaLabel={activationCtaLabel}
+                    onCta={() => navigate(activationCtaHref)}
+                    onStep={(href) => href && navigate(href)}
+                  />
+                }
               />
 
               <RightListCard
