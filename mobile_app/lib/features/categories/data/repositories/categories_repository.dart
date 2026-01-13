@@ -135,6 +135,128 @@ class CategoriesRepository {
     );
   }
 
+  /// Fetch sub-categories by category ID
+  /// Endpoint: GET /category/:categoryId/sub-categories
+  Future<ApiResponse<List<Map<String, dynamic>>>> fetchSubCategories(
+    int categoryId,
+  ) async {
+    try {
+      final response = await _dio.get('/category/$categoryId/sub-categories');
+      final data = response.data as Map<String, dynamic>;
+
+      List<dynamic>? subCategoriesList;
+      if (data['subCategories'] != null && data['subCategories'] is List) {
+        subCategoriesList = data['subCategories'] as List<dynamic>;
+      } else if (data['data'] != null && data['data'] is List) {
+        subCategoriesList = data['data'] as List<dynamic>;
+      }
+
+      final subCategories = (subCategoriesList ?? [])
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+
+      return ApiResponse(
+        success: true,
+        data: subCategories,
+        message: 'Sub-categories fetched successfully',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch sub-categories',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch sub-categories: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Fetch sub-sub-categories by sub-category ID
+  /// Endpoint: GET /category/sub-category/:subCategoryId/sub-sub-categories
+  Future<ApiResponse<List<Map<String, dynamic>>>> fetchSubSubCategories(
+    int subCategoryId,
+  ) async {
+    try {
+      final response = await _dio.get(
+        '/category/sub-category/$subCategoryId/sub-sub-categories',
+      );
+      final data = response.data as Map<String, dynamic>;
+
+      List<dynamic>? subSubCategoriesList;
+      if (data['subSubCategories'] != null && data['subSubCategories'] is List) {
+        subSubCategoriesList = data['subSubCategories'] as List<dynamic>;
+      } else if (data['data'] != null && data['data'] is List) {
+        subSubCategoriesList = data['data'] as List<dynamic>;
+      }
+
+      final subSubCategories = (subSubCategoriesList ?? [])
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+
+      return ApiResponse(
+        success: true,
+        data: subSubCategories,
+        message: 'Sub-sub-categories fetched successfully',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch sub-sub-categories',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch sub-sub-categories: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Fetch sub-sub-categories by category ID (all sub-sub-categories under a category)
+  /// Endpoint: GET /category/:categoryId/sub-sub-categories
+  Future<ApiResponse<List<Map<String, dynamic>>>> fetchSubSubCategoriesByCategoryId(
+    int categoryId,
+  ) async {
+    try {
+      final response = await _dio.get('/category/$categoryId/sub-sub-categories');
+      final data = response.data as Map<String, dynamic>;
+
+      List<dynamic>? subSubCategoriesList;
+      if (data['subSubCategories'] != null && data['subSubCategories'] is List) {
+        subSubCategoriesList = data['subSubCategories'] as List<dynamic>;
+      } else if (data['data'] != null && data['data'] is List) {
+        subSubCategoriesList = data['data'] as List<dynamic>;
+      }
+
+      final subSubCategories = (subSubCategoriesList ?? [])
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+
+      return ApiResponse(
+        success: true,
+        data: subSubCategories,
+        message: 'Sub-sub-categories fetched successfully',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch sub-sub-categories',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch sub-sub-categories: ${e.toString()}',
+      );
+    }
+  }
+
   String _getErrorMessage(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:

@@ -6,8 +6,10 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_scaffold.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/category.dart';
 
@@ -19,10 +21,8 @@ class ClientHomeScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F3FF), // Light lavender background
-      body: SafeArea(
-        child: SingleChildScrollView(
+    return AppScaffold(
+      body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -48,7 +48,6 @@ class ClientHomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: const [
@@ -102,14 +101,51 @@ class ClientHomeScreen extends ConsumerWidget {
                       // TODO: Navigate to favorites
                     },
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      color: Color(0xFF111827),
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      // TODO: Navigate to notifications
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final unreadCountAsync = ref.watch(unreadCountProvider);
+                      final unreadCount = unreadCountAsync.valueOrNull ?? 0;
+                      
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.notifications_none,
+                              color: Color(0xFF111827),
+                              size: 24,
+                            ),
+                            onPressed: () {
+                              context.push('/client/notifications');
+                            },
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  unreadCount > 9 ? '9+' : '$unreadCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
                     },
                   ),
                 ],
@@ -317,9 +353,8 @@ class ClientHomeScreen extends ConsumerWidget {
               ),
             ),
             data: (categories) {
-              // Show only first 3 categories
-              final displayCategories = categories.take(3).toList();
-              if (displayCategories.isEmpty) {
+              // Show all categories in horizontal scroll
+              if (categories.isEmpty) {
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -333,11 +368,33 @@ class ClientHomeScreen extends ConsumerWidget {
                 );
               }
 
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: displayCategories.map((category) {
-                  return _buildCategoryChip(category);
-                }).toList(),
+              return SizedBox(
+                height: 100,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const double itemGap = 18;
+                    return Align(
+                      alignment: Alignment.center,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              for (int i = 0; i < categories.length; i++) ...[
+                                if (i > 0) SizedBox(width: itemGap),
+                                _buildCategoryChip(context, categories[i]),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -346,50 +403,60 @@ class ClientHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryChip(Category category) {
-    return Column(
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE9E6FF),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: category.imageUrl != null &&
-                  category.imageUrl!.isNotEmpty &&
-                  AppConfig.baseUrl.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: CachedNetworkImage(
-                    imageUrl: category.imageUrl!.startsWith('http')
-                        ? category.imageUrl!
-                        : '${AppConfig.baseUrl}${category.imageUrl}',
-                    fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => _buildCategoryIcon(category.name),
+  Widget _buildCategoryChip(BuildContext context, Category category) {
+    return Consumer(
+      builder: (context, ref, child) {
+        return GestureDetector(
+          onTap: () {
+            // Set selected category in shared provider
+            ref.read(exploreSelectedCategoryIdProvider.notifier).state = category.id;
+            context.go('/client/explore');
+          },
+          child: IntrinsicWidth(
+            child: Column(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9E6FF),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
+                      width: 1,
+                    ),
                   ),
-                )
-              : _buildCategoryIcon(category.name),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          width: 70,
-          child: Text(
-            category.name,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: const Color(0xFF111827),
-              fontSize: 11,
+                  child: category.imageUrl != null &&
+                          category.imageUrl!.isNotEmpty &&
+                          AppConfig.baseUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: CachedNetworkImage(
+                            imageUrl: category.imageUrl!.startsWith('http')
+                                ? category.imageUrl!
+                                : '${AppConfig.baseUrl}${category.imageUrl}',
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) => _buildCategoryIcon(category.name),
+                          ),
+                        )
+                      : _buildCategoryIcon(category.name),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  category.name,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: const Color(0xFF111827),
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

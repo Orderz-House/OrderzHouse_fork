@@ -810,6 +810,299 @@ class ProjectsRepository {
     }
   }
 
+  /// Check if freelancer is assigned/applied to a project
+  /// Endpoint: GET /assignments/:projectId/check
+  /// Response: { success: true, is_assigned: boolean }
+  Future<ApiResponse<bool>> checkIfAssigned(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => PATH: /assignments/$projectId/check');
+      }
+
+      final response = await _dio.get('/assignments/$projectId/check');
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /assignments/$projectId/check');
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => Data: ${response.data}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final isAssigned = data['is_assigned'] as bool? ?? false;
+
+      return ApiResponse(
+        success: true,
+        data: isAssigned,
+        message: 'Check completed',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /assignments/$projectId/check');
+        // ignore: avoid_print
+        print('❌ ERROR => Response Data: ${e.response?.data}');
+      }
+
+      // If 404 or other error, assume not assigned
+      return ApiResponse(
+        success: true,
+        data: false,
+        message: e.response?.data?['message'] as String?,
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /assignments/$projectId/check: $e');
+      }
+
+      return ApiResponse(
+        success: true,
+        data: false,
+        message: 'Failed to check assignment',
+      );
+    }
+  }
+
+  /// Create a new project
+  /// Endpoint: POST /projects
+  /// Content-Type: multipart/form-data
+  Future<ApiResponse<Map<String, dynamic>>> createProject({
+    required int categoryId,
+    int? subCategoryId,
+    required int subSubCategoryId,
+    required String title,
+    required String description,
+    required String projectType,
+    double? budget,
+    double? hourlyRate,
+    double? budgetMin,
+    double? budgetMax,
+    required String durationType,
+    int? durationDays,
+    int? durationHours,
+    List<String>? preferredSkills,
+    String? coverPicPath, // File path for multipart
+  }) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /projects');
+      }
+
+      final formData = FormData();
+      
+      // Add text fields
+      formData.fields.addAll([
+        MapEntry('category_id', categoryId.toString()),
+        if (subCategoryId != null) MapEntry('sub_category_id', subCategoryId.toString()),
+        MapEntry('sub_sub_category_id', subSubCategoryId.toString()),
+        MapEntry('title', title),
+        MapEntry('description', description),
+        MapEntry('project_type', projectType),
+        if (budget != null) MapEntry('budget', budget.toString()),
+        if (hourlyRate != null) MapEntry('hourly_rate', hourlyRate.toString()),
+        if (budgetMin != null) MapEntry('budget_min', budgetMin.toString()),
+        if (budgetMax != null) MapEntry('budget_max', budgetMax.toString()),
+        MapEntry('duration_type', durationType),
+        if (durationDays != null) MapEntry('duration_days', durationDays.toString()),
+        if (durationHours != null) MapEntry('duration_hours', durationHours.toString()),
+      ]);
+      
+      // Add preferred_skills as array (each skill as separate entry)
+      if (preferredSkills != null && preferredSkills.isNotEmpty) {
+        for (final skill in preferredSkills) {
+          formData.fields.add(MapEntry('preferred_skills[]', skill));
+        }
+      }
+      
+      // Add cover pic file
+      if (coverPicPath != null) {
+        formData.files.add(
+          MapEntry(
+            'cover_pic',
+            await MultipartFile.fromFile(coverPicPath, filename: 'cover.jpg'),
+          ),
+        );
+      }
+
+      final response = await _dio.post('/projects', data: formData);
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return ApiResponse(
+          success: true,
+          data: data['project'] as Map<String, dynamic>? ?? data,
+          message: 'Project created successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: {},
+        message: data['message'] as String? ?? 'Failed to create project',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects');
+        // ignore: avoid_print
+        print('❌ ERROR => Message: ${e.message}');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: {},
+        message: e.response?.data?['message'] as String? ?? 'Failed to create project',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: {},
+        message: 'Failed to create project: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Upload project files
+  /// Endpoint: POST /projects/:projectId/files
+  Future<ApiResponse<void>> uploadProjectFiles(
+    int projectId,
+    List<String> filePaths,
+  ) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /projects/$projectId/files');
+      }
+
+      final formData = FormData();
+      for (var i = 0; i < filePaths.length; i++) {
+        formData.files.add(
+          MapEntry(
+            'project_files',
+            await MultipartFile.fromFile(filePaths[i], filename: 'file_$i'),
+          ),
+        );
+      }
+
+      final response = await _dio.post('/projects/$projectId/files', data: formData);
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/files');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return ApiResponse(
+          success: true,
+          data: null,
+          message: 'Files uploaded successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to upload files',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/files');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to upload files',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/files: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to upload files: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Create Stripe checkout session for project
+  /// Endpoint: POST /stripe/project-checkout-session
+  Future<ApiResponse<String>> createProjectCheckoutSession(
+    Map<String, dynamic> projectData,
+  ) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /stripe/project-checkout-session');
+      }
+
+      final response = await _dio.post('/stripe/project-checkout-session', data: projectData);
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /stripe/project-checkout-session');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['url'] != null) {
+        return ApiResponse(
+          success: true,
+          data: data['url'] as String,
+          message: 'Checkout session created',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: '',
+        message: data['error'] as String? ?? 'Failed to create checkout session',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /stripe/project-checkout-session');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: '',
+        message: e.response?.data?['error'] as String? ?? 'Failed to create checkout session',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /stripe/project-checkout-session: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: '',
+        message: 'Failed to create checkout session: ${e.toString()}',
+      );
+    }
+  }
+
   String _getErrorMessage(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:

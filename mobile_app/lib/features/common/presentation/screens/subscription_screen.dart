@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/app_scaffold.dart';
 import '../../../plans/presentation/providers/plans_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/models/plan.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
@@ -22,14 +25,74 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     final plansAsync = ref.watch(plansProvider);
+    final authState = ref.watch(authStateProvider);
+    final user = authState.user;
+    final primaryColor = const Color(0xFF6D5FFD);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F3FF), // Soft lavender background
-      appBar: _buildAppBar(),
-      body: SafeArea(
-        child: Column(
+    return AppScaffold(
+      body: Column(
           children: [
-            // B) Pill Segmented Control (centered, under AppBar)
+            // Custom Header
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    // Back button in circle
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        color: primaryColor,
+                        onPressed: () {
+                          // Safe back navigation
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            // Fallback: navigate to home/profile based on role
+                            final userRoleId = user?.roleId ?? 0;
+                            if (userRoleId == 2) {
+                              context.go('/client');
+                            } else if (userRoleId == 3) {
+                              context.go('/freelancer');
+                            } else {
+                              context.go('/client');
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    const Spacer(),
+                    // Title
+                    const Text(
+                      'Plans',
+                      style: TextStyle(
+                        color: Color(0xFF111827),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 40), // Balance the back button
+                  ],
+                ),
+              ),
+            ),
+
+            // B) Pill Segmented Control (centered, under header)
             _buildPillSegmentedControl(),
 
             // C) Section Header Row
@@ -66,46 +129,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 
-  // A) Top AppBar (exactly like reference)
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_rounded,
-          color: Color(0xFF111827),
-          size: 20,
-        ),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: Text(
-        'Subscriptions',
-        style: AppTextStyles.headlineMedium.copyWith(
-          color: const Color(0xFF111827),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(
-            Icons.more_vert_rounded,
-            color: Color(0xFF111827),
-            size: 24,
-          ),
-          onPressed: () {
-            // TODO: Show menu options
-          },
-        ),
-      ],
-      backgroundColor: const Color(0xFFF6F3FF), // Very light lavender/white
-      elevation: 0, // Flat, no shadow
-      automaticallyImplyLeading: false,
-    );
-  }
 
   // B) Pill Segmented Control (centered, compact)
   Widget _buildPillSegmentedControl() {

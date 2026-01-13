@@ -19,10 +19,11 @@ import '../../features/common/presentation/screens/profile_screen.dart';
 import '../../features/common/presentation/screens/edit_profile_screen.dart';
 import '../../features/common/presentation/screens/settings_screen.dart';
 import '../../features/common/presentation/screens/subscription_screen.dart';
-import '../../features/common/presentation/screens/create_project_screen.dart';
+import '../../features/projects/presentation/pages/create_project_wizard_page.dart';
 import '../../features/common/presentation/screens/talent_details_screen.dart';
 import '../../features/common/presentation/screens/health_check_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -83,6 +84,11 @@ final GoRouter appRouter = GoRouter(
           path: 'profile',
           builder: (context, state) => const ProfileScreen(),
         ),
+        GoRoute(
+          path: 'notifications',
+          name: 'freelancerNotifications',
+          builder: (context, state) => const NotificationsPage(),
+        ),
       ],
     ),
     // Client Routes
@@ -107,6 +113,11 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: 'profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: 'notifications',
+          name: 'clientNotifications',
+          builder: (context, state) => const NotificationsPage(),
         ),
       ],
     ),
@@ -151,7 +162,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/create-project',
-      builder: (context, state) => const CreateProjectScreen(),
+      builder: (context, state) => const CreateProjectWizardPage(),
     ),
     GoRoute(
       path: '/talent/:id',
