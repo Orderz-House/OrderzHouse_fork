@@ -11,6 +11,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_scaffold.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -55,10 +56,8 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
       }).toList();
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F3FF), // Light lavender background
-      body: SafeArea(
-        child: Column(
+    return AppScaffold(
+      body: Column(
           children: [
             // 1) Top Bar
             _buildTopBar(context, user),
@@ -104,8 +103,6 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
             ),
           ],
         ),
-      ),
-      // 5) Floating Action Button
       floatingActionButton: _buildFloatingActionButton(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: AppBottomNavBar(
@@ -381,7 +378,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.75, // Adjust for card proportions
+        childAspectRatio: 0.85, // Adjusted for shorter cards after removing stats row
       ),
       itemCount: projects.length,
       itemBuilder: (context, index) {
@@ -451,11 +448,6 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final budget = project.budget ??
-        project.budgetMax ??
-        project.budgetMin ??
-        0.0;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -472,37 +464,56 @@ class _ProjectCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Image with favorite icon overlay
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    topRight: Radius.circular(18),
-                  ),
-                  child: project.coverPic != null &&
-                          project.coverPic!.isNotEmpty &&
-                          AppConfig.baseUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: project.coverPic!.startsWith('http')
-                              ? project.coverPic!
-                              : '${AppConfig.baseUrl}${project.coverPic}',
-                          height: 140,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            height: 140,
-                            color: const Color(0xFFE9E6FF),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+            SizedBox(
+              height: 120,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                    child: project.coverPic != null &&
+                            project.coverPic!.isNotEmpty &&
+                            AppConfig.baseUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: project.coverPic!.startsWith('http')
+                                ? project.coverPic!
+                                : '${AppConfig.baseUrl}${project.coverPic}',
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              height: 120,
+                              width: double.infinity,
+                              color: const Color(0xFFE9E6FF),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+                                ),
                               ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            height: 140,
+                            errorWidget: (context, url, error) => Container(
+                              height: 120,
+                              width: double.infinity,
+                              color: const Color(0xFFE9E6FF),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.work_outline_rounded,
+                                  color: Color(0xFF6D5FFD),
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            height: 120,
+                            width: double.infinity,
                             color: const Color(0xFFE9E6FF),
                             child: const Center(
                               child: Icon(
@@ -512,137 +523,91 @@ class _ProjectCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        )
-                      : Container(
-                          height: 140,
-                          color: const Color(0xFFE9E6FF),
-                          child: const Center(
-                            child: Icon(
-                              Icons.work_outline_rounded,
-                              color: Color(0xFF6D5FFD),
-                              size: 40,
-                            ),
+                  ),
+                  // Favorite icon overlay (top-left)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                ),
-                // Favorite icon overlay (top-left)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.star_outline_rounded,
-                      color: Color(0xFF111827),
-                      size: 18,
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.star_outline_rounded,
+                        color: Color(0xFF111827),
+                        size: 16,
+                      ),
                     ),
                   ),
-                ),
-                // 3-dots menu (bottom-right)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.more_vert_rounded,
-                      color: Color(0xFF111827),
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
 
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      project.title,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: const Color(0xFF111827),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    
-                    // Description
-                    Expanded(
-                      child: Text(
-                        project.description,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: const Color(0xFF6B7280),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.sm),
-                    
-                    // Stats Row
-                    Row(
-                      children: [
-                        _buildStatItem(
-                          Icons.visibility_outlined,
-                          '0', // Placeholder - can be replaced with actual views if available
-                          size: 14,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        _buildStatItem(
-                          Icons.star_outline_rounded,
-                          '0', // Placeholder - can be replaced with actual favorites if available
-                          size: 14,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        _buildStatItem(
-                          Icons.share_outlined,
-                          '0', // Placeholder - can be replaced with actual shares if available
-                          size: 14,
-                        ),
-                        const Spacer(),
-                        Text(
-                          '\$${budget.toStringAsFixed(0)}',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: const Color(0xFF6D5FFD),
+            // Content section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title and Price row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title (left, flexible)
+                      Expanded(
+                        child: Text(
+                          project.title,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: const Color(0xFF111827),
                             fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            height: 1.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 8),
+                      // Price (right) - only show if not "Negotiable"
+                      if (project.budgetDisplay != 'Negotiable')
+                        Text(
+                          project.budgetDisplay,
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: const Color(0xFF6D5FFD),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 6),
+                  
+                  // Description (1-2 lines)
+                  Text(
+                    project.description,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF6B7280),
+                      fontSize: 11,
+                      height: 1.3,
                     ),
-                  ],
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],
@@ -651,26 +616,6 @@ class _ProjectCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, {double size = 16}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: size,
-          color: const Color(0xFF6B7280),
-        ),
-        const SizedBox(width: 2),
-        Text(
-          value,
-          style: AppTextStyles.labelSmall.copyWith(
-            color: const Color(0xFF6B7280),
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // Loading Grid

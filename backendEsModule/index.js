@@ -51,6 +51,7 @@ import emailVerificationRoutes from "./router/emailVerification.js";
 import chatsRouter from "./router/chats.js";
 import StripeRouter from "./router/Stripe/stripe.js";
 import webhookRouter from "./router/Stripe/stripeWebhook.js";
+import searchRouter from "./router/search.js";
 
 
 // DB connection
@@ -119,6 +120,7 @@ app.use("/payments", paymentsRoutes);
 app.use("/chat", chatsRouter);
 app.use("/api", liveScreenRoutes);
 app.use("/stripe", StripeRouter);
+app.use("/search", searchRouter);
 
 let server, io;
 

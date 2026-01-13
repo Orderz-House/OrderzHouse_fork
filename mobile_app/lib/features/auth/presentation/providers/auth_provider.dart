@@ -108,4 +108,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _repository.logout();
     state = const AuthState();
   }
+
+  Future<void> refreshUser() async {
+    final response = await _repository.getUserData();
+    if (response.success && response.data != null) {
+      state = AuthState(user: response.data);
+    }
+  }
 }

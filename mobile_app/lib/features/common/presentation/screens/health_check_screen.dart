@@ -5,7 +5,6 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/widgets/error_state.dart';
 
 class HealthCheckScreen extends ConsumerStatefulWidget {
   const HealthCheckScreen({super.key});

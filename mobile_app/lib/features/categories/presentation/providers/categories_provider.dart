@@ -22,3 +22,7 @@ final exploreCategoriesProvider =
 /// null means "All" (no category filter)
 final selectedExploreCategoryIdProvider =
     StateProvider.autoDispose<int?>((ref) => null);
+
+/// Shared state for selected category when navigating from Dashboard/Home
+/// This provider persists across navigation and is used to set the initial filter
+final exploreSelectedCategoryIdProvider = StateProvider<int?>((ref) => null);

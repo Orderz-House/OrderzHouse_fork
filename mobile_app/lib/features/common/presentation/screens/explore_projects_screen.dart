@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/category.dart';
 import '../../../../core/models/user.dart';
+import '../../../../core/models/search_result.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/config/app_config.dart';
@@ -12,10 +13,14 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/explore_project_card.dart';
+import '../../../../core/widgets/app_scaffold.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../subscriptions/presentation/providers/subscription_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../search/presentation/providers/search_provider.dart';
+import 'dart:async';
 
 class ExploreProjectsScreen extends ConsumerStatefulWidget {
   final bool readOnly;
@@ -33,11 +38,22 @@ class ExploreProjectsScreen extends ConsumerStatefulWidget {
 class _ExploreProjectsScreenState
     extends ConsumerState<ExploreProjectsScreen> {
   final _searchController = TextEditingController();
+  final _categoryScrollController = ScrollController();
+  Timer? _debounceTimer;
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
+  }
+
+  bool _hasSyncedSharedCategory = false;
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   void _refresh() {
@@ -46,191 +62,39 @@ class _ExploreProjectsScreenState
     ref.invalidate(subscriptionStatusProvider);
   }
 
-  Future<void> _handleApply(Project project) async {
-    // Check subscription status
-    final subscriptionAsync = ref.read(subscriptionStatusProvider);
-    
-    SubscriptionStatus subscriptionStatus;
-    if (subscriptionAsync.hasValue) {
-      subscriptionStatus = subscriptionAsync.value!;
-    } else if (subscriptionAsync.isLoading) {
-      // Wait for subscription status
-      subscriptionStatus = await subscriptionAsync.when(
-        data: (status) => status,
-        loading: () => SubscriptionStatus(isSubscribed: false),
-        error: (_, __) => SubscriptionStatus(isSubscribed: false),
-      );
-    } else {
-      // Error or no data - assume not subscribed
-      subscriptionStatus = SubscriptionStatus(isSubscribed: false);
-    }
-
-    if (!subscriptionStatus.isSubscribed) {
-      // Show paywall
-      _showPaywallModal(context, project);
-      return;
-    }
-
-    // User is subscribed, proceed with apply
-    await _applyToProject(project);
-  }
-
-  Future<void> _applyToProject(Project project) async {
-    final repository = ref.read(projectsRepositoryProvider);
-    
-    // Show loading
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      final response = await repository.applyForProject(
-        projectId: project.id,
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
-
-      if (response.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.message ?? 'Application submitted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        // Check if error is subscription-related
-        final errorData = response.error;
-        final isSubscriptionError = errorData?['isSubscriptionError'] == true;
-
-        if (isSubscriptionError) {
-          // Show paywall even if subscription check passed (server-side validation)
-          _showPaywallModal(context, project);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.message ?? 'Failed to apply to project'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to apply: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _showPaywallModal(BuildContext context, Project project) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.lock_outline,
-                    size: 32,
-                    color: Color(0xFF6D5FFD),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'Subscription Required',
-                      style: AppTextStyles.headlineMedium,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'To apply for projects, you need an active subscription.',
-                style: AppTextStyles.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Subscribe now to unlock the ability to apply for projects and access premium features.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close modal
-                  context.push('/subscription');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6D5FFD),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.md,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.subscriptions, size: 20),
-                    SizedBox(width: AppSpacing.sm),
-                    Text('Subscribe Now'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Maybe Later'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final searchQuery = ref.watch(searchQueryProvider);
+    final searchResultsAsync = ref.watch(searchResultsProvider);
     final projectsAsync = ref.watch(exploreProjectsProvider);
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
+    final sharedCategoryId = ref.watch(exploreSelectedCategoryIdProvider);
+    
+    // Show search results if query is not empty, otherwise show normal content
+    final isSearching = searchQuery.trim().isNotEmpty;
+    
+    // Sync shared provider to local provider on first build
+    if (!_hasSyncedSharedCategory && sharedCategoryId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Set the local provider to match shared state
+          ref.read(selectedExploreCategoryIdProvider.notifier).state = sharedCategoryId;
+          // Clear shared state after syncing (so it doesn't persist on next visit)
+          ref.read(exploreSelectedCategoryIdProvider.notifier).state = null;
+          _hasSyncedSharedCategory = true;
+        }
+      });
+    }
+    
+    // Debug log
+    debugPrint("Explore selectedCategoryId=${selectedCategoryId}, sharedCategoryId=${sharedCategoryId}");
+    
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F3FF), // Light lavender background
-      body: SafeArea(
-        child: Column(
+    return AppScaffold(
+      body: Column(
           children: [
             // 1) Top Row
             _buildTopRow(context, user),
@@ -238,51 +102,57 @@ class _ExploreProjectsScreenState
             // 2) Search + Actions Row
             _buildSearchRow(context),
             
-            // 3) Horizontal Chips Row
-            _buildCategoryChips(categoriesAsync, selectedCategoryId),
-            
-            // 4) Projects Grid
+            // 3) Content (Search Results OR Normal Content)
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  _refresh();
-                  await ref.read(exploreProjectsProvider.future);
-                },
-                child: projectsAsync.when(
-                  data: (projects) {
-                    if (projects.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.explore_outlined,
-                        title: 'No projects found',
-                        message: selectedCategoryId == null
-                            ? 'Try selecting a category or adjusting your search'
-                            : 'No projects in this category. Try another category.',
-                      );
-                    }
+              child: isSearching
+                  ? _buildSearchResults(context, searchResultsAsync)
+                  : Column(
+                      children: [
+                        // Horizontal Chips Row
+                        _buildCategoryChips(categoriesAsync, selectedCategoryId),
+                        // Projects Grid
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () async {
+                              _refresh();
+                              await ref.read(exploreProjectsProvider.future);
+                            },
+                            child: projectsAsync.when(
+                              data: (projects) {
+                                if (projects.isEmpty) {
+                                  return EmptyState(
+                                    icon: Icons.explore_outlined,
+                                    title: 'No projects found',
+                                    message: selectedCategoryId == null
+                                        ? 'Try selecting a category or adjusting your search'
+                                        : 'No projects in this category. Try another category.',
+                                  );
+                                }
 
-                    return _buildProjectsGrid(context, projects);
-                  },
-                  loading: () => const _LoadingGrid(),
-                  error: (error, stackTrace) {
-                    final errorMessage = error.toString().replaceAll('Exception: ', '');
-                    final is403 = errorMessage.toLowerCase().contains('permission') ||
-                        errorMessage.toLowerCase().contains('access denied') ||
-                        errorMessage.toLowerCase().contains('forbidden');
-                    
-                    return ErrorState(
-                      message: is403
-                          ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
-                          : errorMessage,
-                      onRetry: _refresh,
-                    );
-                  },
-                ),
-              ),
+                                return _buildProjectsGrid(context, projects);
+                              },
+                              loading: () => const _LoadingGrid(),
+                              error: (error, stackTrace) {
+                                final errorMessage = error.toString().replaceAll('Exception: ', '');
+                                final is403 = errorMessage.toLowerCase().contains('permission') ||
+                                    errorMessage.toLowerCase().contains('access denied') ||
+                                    errorMessage.toLowerCase().contains('forbidden');
+                                
+                                return ErrorState(
+                                  message: is403
+                                      ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
+                                      : errorMessage,
+                                  onRetry: _refresh,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ],
         ),
-      ),
-      // 5) Floating Action Button
       floatingActionButton: _buildFloatingActionButton(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomNav(context),
@@ -291,68 +161,88 @@ class _ExploreProjectsScreenState
 
   // 1) Top Row
   Widget _buildTopRow(BuildContext context, User? user) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left: Grid/Menu Icon
-          IconButton(
-            icon: Container(
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Left: Back Arrow Button
+            Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF111827),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.grid_view_rounded,
                 color: Colors.white,
-                size: 20,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.chevron_left_rounded),
+                color: const Color(0xFF6D5FFD), // Primary lavender
+                onPressed: () {
+                  // Safe back navigation
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    // Fallback: navigate to home based on role
+                    final location = GoRouterState.of(context).uri.path;
+                    if (location.contains('/client')) {
+                      context.go('/client');
+                    } else if (location.contains('/freelancer')) {
+                      context.go('/freelancer');
+                    } else {
+                      context.go('/client');
+                    }
+                  }
+                },
               ),
             ),
-            onPressed: () {
-              // TODO: Open menu/drawer
-            },
-          ),
           
-          // Center: Title
-          Text(
-            'Explore',
-            style: AppTextStyles.headlineMedium.copyWith(
-              color: const Color(0xFF111827),
-              fontWeight: FontWeight.bold,
+            // Center: Title
+            Text(
+              'Explore',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: const Color(0xFF111827),
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
           
-          // Right: Avatar
-          GestureDetector(
-            onTap: () {
-              final location = GoRouterState.of(context).uri.path;
-              if (location.contains('/client')) {
-                context.go('/client/profile');
-              } else {
-                context.go('/freelancer/profile');
-              }
-            },
-            child: user?.profilePicUrl != null && user!.profilePicUrl!.isNotEmpty
-                ? ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: user.profilePicUrl!.startsWith('http')
-                          ? user.profilePicUrl!
-                          : '${AppConfig.baseUrl}${user.profilePicUrl}',
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
-                    ),
-                  )
-                : _buildAvatarPlaceholder(),
-          ),
-        ],
+            // Right: Avatar
+            GestureDetector(
+              onTap: () {
+                final location = GoRouterState.of(context).uri.path;
+                if (location.contains('/client')) {
+                  context.go('/client/profile');
+                } else {
+                  context.go('/freelancer/profile');
+                }
+              },
+              child: user?.profilePicUrl != null && user!.profilePicUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: user.profilePicUrl!.startsWith('http')
+                            ? user.profilePicUrl!
+                            : '${AppConfig.baseUrl}${user.profilePicUrl}',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                      ),
+                    )
+                  : _buildAvatarPlaceholder(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -400,11 +290,16 @@ class _ExploreProjectsScreenState
               child: TextField(
                 controller: _searchController,
                 onChanged: (value) {
-                  // TODO: Implement search with debounce
-                  ref.invalidate(exploreProjectsProvider);
+                  // Debounce search input
+                  _debounceTimer?.cancel();
+                  _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+                    if (mounted) {
+                      ref.read(searchQueryProvider.notifier).state = value;
+                    }
+                  });
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search Projects',
+                  hintText: 'Search projects, categories',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF9CA3AF),
                   ),
@@ -500,7 +395,34 @@ class _ExploreProjectsScreenState
               ? ['All', ...categories.map((c) => c.name)]
               : ['All', 'Design', 'Writing', 'Development', 'Marketing', 'Video'];
 
+          // Find the index of the selected category chip
+          int? selectedIndex;
+          if (selectedCategoryId != null && categories.isNotEmpty) {
+            try {
+              final selectedCategory = categories.firstWhere((c) => c.id == selectedCategoryId);
+              selectedIndex = chipLabels.indexOf(selectedCategory.name);
+            } catch (e) {
+              selectedIndex = null;
+            }
+          }
+
+          // Scroll to selected chip after build
+          if (selectedIndex != null && selectedIndex >= 0) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_categoryScrollController.hasClients && mounted) {
+                // Calculate approximate position (each chip is ~100px wide + spacing)
+                final double estimatedPosition = selectedIndex! * 110.0;
+                _categoryScrollController.animateTo(
+                  estimatedPosition,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
+            });
+          }
+
           return ListView.separated(
+            controller: _categoryScrollController,
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             itemCount: chipLabels.length,
@@ -586,36 +508,152 @@ class _ExploreProjectsScreenState
   }
 
   // 4) Projects Grid (2-column masonry-like)
-  Widget _buildProjectsGrid(BuildContext context, List<Project> projects) {
+  Widget _buildProjectsGrid(BuildContext context, List<Project> projects, {bool shrinkWrap = false}) {
     return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+      padding: shrinkWrap ? EdgeInsets.zero : const EdgeInsets.all(AppSpacing.lg),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.65, // Adjusted for compact cards matching reference
+        childAspectRatio: 0.85, // Adjusted for shorter cards after removing stats row
       ),
       itemCount: projects.length,
       itemBuilder: (context, index) {
         final project = projects[index];
-        return _ProjectCard(
+        return ExploreProjectCard(
           project: project,
-          readOnly: widget.readOnly,
           onTap: () {
             context.push(
               '/project/${project.id}',
               extra: project,
             );
           },
-          onApply: widget.readOnly
-              ? null
-              : () => _handleApply(project),
+          onFavorite: () {
+            // TODO: Implement favorite functionality
+          },
         );
       },
     );
   }
 
   // 5) Floating Action Button
+  // Search Results UI
+  Widget _buildSearchResults(
+    BuildContext context,
+    AsyncValue<SearchResult> searchResultsAsync,
+  ) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(searchResultsProvider);
+        await ref.read(searchResultsProvider.future);
+      },
+      child: searchResultsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+          ),
+        ),
+        error: (error, stackTrace) => ErrorState(
+          message: error.toString().replaceAll('Exception: ', ''),
+          onRetry: () => ref.invalidate(searchResultsProvider),
+        ),
+        data: (searchResult) {
+          if (searchResult.isEmpty) {
+            return EmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'No results found',
+              message: 'Try different keywords or check your spelling.',
+            );
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                // Categories Section
+                if (searchResult.categories.isNotEmpty) ...[
+                  Text(
+                    'Categories',
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    height: 50,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: searchResult.categories.length,
+                      separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (context, index) {
+                        final category = searchResult.categories[index];
+                        return GestureDetector(
+                          onTap: () {
+                            // Set category filter and clear search
+                            ref.read(exploreSelectedCategoryIdProvider.notifier).state = category.id;
+                            ref.read(selectedExploreCategoryIdProvider.notifier).state = category.id;
+                            _searchController.clear();
+                            ref.read(searchQueryProvider.notifier).state = '';
+                            ref.invalidate(exploreProjectsProvider);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6D5FFD),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                category.name,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+                // Projects Section
+                if (searchResult.projects.isNotEmpty) ...[
+                  Text(
+                    'Projects',
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildProjectsGrid(context, searchResult.projects, shrinkWrap: true),
+                ],
+                const SizedBox(height: AppSpacing.xl),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildFloatingActionButton(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     final isClient = location.contains('/client');
@@ -719,243 +757,6 @@ class _ExploreProjectsScreenState
   }
 }
 
-// Project Card (2-column grid style - matches reference image)
-// FIXED: No overflow, compact design matching reference
-class _ProjectCard extends StatelessWidget {
-  final Project project;
-  final bool readOnly;
-  final VoidCallback onTap;
-  final VoidCallback? onApply;
-
-  const _ProjectCard({
-    required this.project,
-    required this.readOnly,
-    required this.onTap,
-    this.onApply,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Fixed image height for consistency (no varying heights to prevent overflow)
-    const double imageHeight = 140.0;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Image with favorite icon overlay (FIXED HEIGHT)
-            SizedBox(
-              height: imageHeight,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
-                    child: project.coverPic != null &&
-                            project.coverPic!.isNotEmpty &&
-                            AppConfig.baseUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: project.coverPic!.startsWith('http')
-                                ? project.coverPic!
-                                : '${AppConfig.baseUrl}${project.coverPic}',
-                            height: imageHeight,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              height: imageHeight,
-                              width: double.infinity,
-                              color: const Color(0xFFE9E6FF),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              height: imageHeight,
-                              width: double.infinity,
-                              color: const Color(0xFFE9E6FF),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.work_outline_rounded,
-                                  color: Color(0xFF6D5FFD),
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-                          )
-                        : Container(
-                            height: imageHeight,
-                            width: double.infinity,
-                            color: const Color(0xFFE9E6FF),
-                            child: const Center(
-                              child: Icon(
-                                Icons.work_outline_rounded,
-                                color: Color(0xFF6D5FFD),
-                                size: 40,
-                              ),
-                            ),
-                          ),
-                  ),
-                  // Favorite icon overlay (top-left)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.star_outline_rounded,
-                        color: Color(0xFF111827),
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content section (FIXED STRUCTURE - no overflow)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title (bold, 1 line) - FIXED HEIGHT
-                  SizedBox(
-                    height: 18, // Fixed height for single line
-                    child: Text(
-                      project.title,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: const Color(0xFF111827),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        height: 1.0,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Description (small grey, 2 lines) - FIXED HEIGHT
-                  SizedBox(
-                    height: 28, // Fixed height for 2 lines (11px * 1.3 * 2)
-                    child: Text(
-                      project.description,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
-                        fontSize: 11,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  // Stats Row (FIXED HEIGHT - no overflow)
-                  SizedBox(
-                    height: 16, // Fixed height for stats row
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildStatItem(
-                          Icons.visibility_outlined,
-                          '0',
-                          size: 12,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatItem(
-                          Icons.favorite_outline_rounded,
-                          '0',
-                          size: 12,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatItem(
-                          Icons.share_outlined,
-                          '0',
-                          size: 12,
-                        ),
-                        const Spacer(),
-                        // 3-dots menu
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: Show menu options
-                          },
-                          child: const Icon(
-                            Icons.more_vert_rounded,
-                            color: Color(0xFF6B7280),
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(IconData icon, String value, {double size = 12}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: size,
-          color: const Color(0xFF6B7280),
-        ),
-        const SizedBox(width: 3),
-        Text(
-          value,
-          style: AppTextStyles.labelSmall.copyWith(
-            color: const Color(0xFF6B7280),
-            fontSize: 10,
-            height: 1.0,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}
 
 // Loading Grid
 class _LoadingGrid extends StatelessWidget {
