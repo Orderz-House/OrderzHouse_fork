@@ -28,7 +28,7 @@ class LoggingInterceptor extends Interceptor {
         if (authHeader != null && authHeader.startsWith('Bearer ')) {
           final token = authHeader.substring(7);
           tokenPrefix = token.length > 10 ? token.substring(0, 10) : token;
-          safeHeaders['Authorization'] = 'Bearer ${tokenPrefix}...';
+          safeHeaders['Authorization'] = 'Bearer $tokenPrefix...';
         } else {
           safeHeaders['Authorization'] = 'Bearer ***';
         }

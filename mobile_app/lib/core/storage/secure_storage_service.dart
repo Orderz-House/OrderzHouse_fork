@@ -10,7 +10,7 @@ class SecureStorageService {
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
     ),
-    iOptions: const IOSOptions(),
+    iOptions: IOSOptions(),
   );
 
   static const String _tokenKey = 'jwt_token';

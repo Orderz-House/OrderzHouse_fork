@@ -3,6 +3,7 @@
     "@adminjs/themes": "^1.0.1",
     "@emailjs/browser": "^4.4.1",
     "@stripe/stripe-js": "^8.5.3",
+    "flutter": "^0.0.5",
     "lucide-react": "^0.544.0",
     "react-slick": "^0.31.0",
     "slick-carousel": "^1.8.1",

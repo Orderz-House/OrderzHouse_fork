@@ -67,13 +67,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.email,
                 size: 64,
                 color: AppColors.primary,
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text(
+              const Text(
                 'Verify Your Email',
                 style: AppTextStyles.headlineLarge,
               ),

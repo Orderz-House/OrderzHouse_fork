@@ -33,19 +33,19 @@ class LoadingCardShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return const Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const LoadingShimmer(width: 200, height: 20),
-            const SizedBox(height: AppSpacing.sm),
-            const LoadingShimmer(width: 150, height: 16),
-            const SizedBox(height: AppSpacing.md),
-            const LoadingShimmer(height: 16),
-            const SizedBox(height: AppSpacing.xs),
-            const LoadingShimmer(height: 16),
+            LoadingShimmer(width: 200, height: 20),
+            SizedBox(height: AppSpacing.sm),
+            LoadingShimmer(width: 150, height: 16),
+            SizedBox(height: AppSpacing.md),
+            LoadingShimmer(height: 16),
+            SizedBox(height: AppSpacing.xs),
+            LoadingShimmer(height: 16),
           ],
         ),
       ),

@@ -48,9 +48,9 @@ class ClientHomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      bottomNavigationBar: AppBottomNavBar(
+      bottomNavigationBar: const AppBottomNavBar(
         currentIndex: 0,
-        items: const [
+        items: [
           NavItem(icon: Icons.home_rounded, title: 'Home', route: '/client'),
           NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/client/projects'),
           NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/client/explore'),
@@ -385,7 +385,7 @@ class ClientHomeScreen extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.max,
                             children: [
                               for (int i = 0; i < categories.length; i++) ...[
-                                if (i > 0) SizedBox(width: itemGap),
+                                if (i > 0) const SizedBox(width: itemGap),
                                 _buildCategoryChip(context, categories[i]),
                               ],
                             ],

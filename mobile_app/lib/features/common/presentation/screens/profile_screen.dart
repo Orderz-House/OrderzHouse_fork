@@ -468,13 +468,13 @@ class _MenuDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Divider(
         height: 1,
         thickness: 1,
         indent: 44 + AppSpacing.md, // Align with content (icon + spacing)
-        color: const Color(0xFFF1F2FB), // Ultra light divider
+        color: Color(0xFFF1F2FB), // Ultra light divider
       ),
     );
   }

@@ -12,7 +12,7 @@ class ApplicantsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Applicants'),
       ),
-      body: EmptyState(
+      body: const EmptyState(
         icon: Icons.people_outline,
         title: 'No applicants yet',
         message: 'Applicants will appear here when freelancers apply',

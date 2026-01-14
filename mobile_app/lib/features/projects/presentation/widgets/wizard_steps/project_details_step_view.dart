@@ -45,16 +45,21 @@ class _ProjectDetailsStepViewState
     _titleController.text = draft.title ?? '';
     _descriptionController.text = draft.description ?? '';
     if (draft.budget != null) _budgetController.text = draft.budget.toString();
-    if (draft.hourlyRate != null)
+    if (draft.hourlyRate != null) {
       _hourlyRateController.text = draft.hourlyRate.toString();
-    if (draft.budgetMin != null)
+    }
+    if (draft.budgetMin != null) {
       _budgetMinController.text = draft.budgetMin.toString();
-    if (draft.budgetMax != null)
+    }
+    if (draft.budgetMax != null) {
       _budgetMaxController.text = draft.budgetMax.toString();
-    if (draft.durationDays != null)
+    }
+    if (draft.durationDays != null) {
       _durationDaysController.text = draft.durationDays.toString();
-    if (draft.durationHours != null)
+    }
+    if (draft.durationHours != null) {
       _durationHoursController.text = draft.durationHours.toString();
+    }
     if (draft.preferredSkills.isNotEmpty) {
       _skillsController.text = draft.preferredSkills.join(', ');
     }
@@ -188,7 +193,7 @@ class _ProjectDetailsStepViewState
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 DropdownButtonFormField<int>(
-                  value: draft.categoryId,
+                  initialValue: draft.categoryId,
                   decoration: InputDecoration(
                     hintText: 'Select category',
                     border: OutlineInputBorder(
@@ -237,7 +242,7 @@ class _ProjectDetailsStepViewState
                 _loadingSubSubCategories
                     ? const Center(child: CircularProgressIndicator())
                     : DropdownButtonFormField<int>(
-                        value: draft.subSubCategoryId,
+                        initialValue: draft.subSubCategoryId,
                         decoration: InputDecoration(
                           hintText: 'Select sub-sub-category',
                           border: OutlineInputBorder(
@@ -280,7 +285,7 @@ class _ProjectDetailsStepViewState
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: draft.projectType,
+                initialValue: draft.projectType,
                 decoration: InputDecoration(
                   hintText: 'Select project type',
                   border: OutlineInputBorder(
@@ -402,7 +407,7 @@ class _ProjectDetailsStepViewState
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: draft.durationType,
+                initialValue: draft.durationType,
                 decoration: InputDecoration(
                   hintText: 'Select duration type',
                   border: OutlineInputBorder(

@@ -105,9 +105,9 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
         ),
       floatingActionButton: _buildFloatingActionButton(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      bottomNavigationBar: AppBottomNavBar(
+      bottomNavigationBar: const AppBottomNavBar(
         currentIndex: 1,
-        items: const [
+        items: [
           NavItem(icon: Icons.home_rounded, title: 'Home', route: '/client'),
           NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/client/projects'),
           NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/client/explore'),
@@ -639,10 +639,10 @@ class _LoadingGrid extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LoadingShimmer(
+              LoadingShimmer(
                 height: 140,
                 width: double.infinity,
                 borderRadius: BorderRadius.only(
@@ -651,17 +651,17 @@ class _LoadingGrid extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const LoadingShimmer(width: 120, height: 16),
-                    const SizedBox(height: AppSpacing.xs),
-                    const LoadingShimmer(width: 100, height: 12),
-                    const SizedBox(height: AppSpacing.xs),
-                    const LoadingShimmer(width: 80, height: 12),
-                    const Spacer(),
-                    const LoadingShimmer(width: 60, height: 12),
+                    LoadingShimmer(width: 120, height: 16),
+                    SizedBox(height: AppSpacing.xs),
+                    LoadingShimmer(width: 100, height: 12),
+                    SizedBox(height: AppSpacing.xs),
+                    LoadingShimmer(width: 80, height: 12),
+                    Spacer(),
+                    LoadingShimmer(width: 60, height: 12),
                   ],
                 ),
               ),

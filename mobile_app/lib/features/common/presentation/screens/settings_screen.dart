@@ -14,7 +14,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = const Color(0xFF6D5FFD);
+    const primaryColor = Color(0xFF6D5FFD);
     final notificationsEnabled = ref.watch(notificationsEnabledProvider);
     final twoFactorEnabled = ref.watch(twoFactorEnabledProvider);
     final authState = ref.watch(authStateProvider);
@@ -115,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
                         onChanged: (value) {
                           ref.read(notificationsEnabledProvider.notifier).state = value;
                         },
-                        activeColor: primaryColor,
+                        activeThumbColor: primaryColor,
                       ),
                     ),
                     
@@ -138,7 +138,7 @@ class SettingsScreen extends ConsumerWidget {
                         onChanged: (value) {
                           ref.read(twoFactorEnabledProvider.notifier).state = value;
                         },
-                        activeColor: primaryColor,
+                        activeThumbColor: primaryColor,
                       ),
                     ),
                     
@@ -192,7 +192,7 @@ class SettingsScreen extends ConsumerWidget {
     required Widget trailing,
     VoidCallback? onTap,
   }) {
-    final primaryColor = const Color(0xFF6D5FFD);
+    const primaryColor = Color(0xFF6D5FFD);
 
     return InkWell(
       onTap: onTap,

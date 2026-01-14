@@ -92,7 +92,7 @@ class CategoriesRepository {
         // ignore: avoid_print
         print('⚠️ RESPONSE: No categories found in response');
       }
-      return ApiResponse(
+      return const ApiResponse(
         success: true,
         data: [],
         message: 'No categories available',

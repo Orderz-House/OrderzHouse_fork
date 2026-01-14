@@ -27,7 +27,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     final plansAsync = ref.watch(plansProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
-    final primaryColor = const Color(0xFF6D5FFD);
+    const primaryColor = Color(0xFF6D5FFD);
 
     return AppScaffold(
       body: Column(
@@ -249,10 +249,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 14,
-                  color: const Color(0xFF6D5FFD),
+                  color: Color(0xFF6D5FFD),
                 ),
                 const SizedBox(width: 5),
                 Text(

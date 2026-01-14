@@ -21,10 +21,10 @@ class ExploreTalentsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Column(
+      body: const Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.all(AppSpacing.md),
             child: AppTextField(
               label: 'Search freelancers',
               prefixIcon: Icons.search,

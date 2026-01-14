@@ -35,7 +35,7 @@ class AuthRepository {
       }
 
       // OTP required
-      return ApiResponse(
+      return const ApiResponse(
         success: false,
         message: 'OTP required',
       );

@@ -71,7 +71,7 @@ class ProjectsRepository {
           // ignore: avoid_print
           print('⚠️ RESPONSE: No projects found in response');
         }
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No projects found',
@@ -183,7 +183,7 @@ class ProjectsRepository {
       final isClient = roleId == 2;
 
       String? endpoint;
-      Map<String, dynamic> queryParams = {
+      final Map<String, dynamic> queryParams = {
         'page': page,
         'limit': limit,
       };
@@ -261,7 +261,7 @@ class ProjectsRepository {
           // ignore: avoid_print
           print('📊 Explore projects count: 0');
         }
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No projects found',
@@ -471,7 +471,7 @@ class ProjectsRepository {
         // ignore: avoid_print
         print('⚠️ RESPONSE: No projects found in response');
       }
-      return ApiResponse(
+      return const ApiResponse(
         success: true,
         data: [],
         message: 'No projects found',
@@ -551,7 +551,7 @@ class ProjectsRepository {
           // ignore: avoid_print
           print('⚠️ EXPLORE: No categories found');
         }
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No categories available',
@@ -577,7 +577,7 @@ class ProjectsRepository {
       }
 
       if (categoryIds.isEmpty) {
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No valid categories found',
@@ -606,7 +606,7 @@ class ProjectsRepository {
         // ignore: avoid_print
         print('❌ EXPLORE ERROR: $e');
       }
-      return ApiResponse(
+      return const ApiResponse(
         success: false,
         data: [],
         message: 'Failed to fetch projects. Please try selecting a specific category.',
@@ -857,7 +857,7 @@ class ProjectsRepository {
         print('❌ UNEXPECTED ERROR => /assignments/$projectId/check: $e');
       }
 
-      return ApiResponse(
+      return const ApiResponse(
         success: true,
         data: false,
         message: 'Failed to check assignment',
@@ -1008,7 +1008,7 @@ class ProjectsRepository {
       final data = response.data as Map<String, dynamic>;
 
       if (data['success'] == true) {
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: null,
           message: 'Files uploaded successfully',

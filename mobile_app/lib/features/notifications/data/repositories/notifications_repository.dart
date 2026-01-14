@@ -65,7 +65,7 @@ class NotificationsRepository {
       }
 
       if (notificationsList == null || notificationsList.isEmpty) {
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No notifications found',

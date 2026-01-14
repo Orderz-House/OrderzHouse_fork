@@ -121,7 +121,7 @@ class OffersRepository {
         print('❌ UNEXPECTED ERROR => /offers/my/$projectId/pending: $e');
       }
 
-      return ApiResponse(
+      return const ApiResponse(
         success: true,
         data: false,
         message: 'Failed to check pending offer',

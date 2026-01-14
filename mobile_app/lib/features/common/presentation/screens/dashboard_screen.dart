@@ -437,7 +437,7 @@ class DashboardScreen extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.max,
                             children: [
                               for (int i = 0; i < categories.length; i++) ...[
-                                if (i > 0) SizedBox(width: itemGap),
+                                if (i > 0) const SizedBox(width: itemGap),
                                 _buildCategoryChip(context, categories[i]),
                               ],
                             ],

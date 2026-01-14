@@ -14,8 +14,8 @@ class TalentDetailsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Freelancer Profile'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(AppSpacing.md),
         child: Column(
           children: [
             AppCard(
@@ -23,22 +23,22 @@ class TalentDetailsScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    child: const Icon(Icons.person, size: 50),
+                    child: Icon(Icons.person, size: 50),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   Text('Freelancer Name', style: AppTextStyles.headlineLarge),
-                  const Text('Rating: 4.5 ⭐'),
+                  Text('Rating: 4.5 ⭐'),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('About', style: AppTextStyles.headlineMedium),
-                  const SizedBox(height: AppSpacing.sm),
-                  const Text('Freelancer description placeholder...'),
+                  SizedBox(height: AppSpacing.sm),
+                  Text('Freelancer description placeholder...'),
                 ],
               ),
             ),

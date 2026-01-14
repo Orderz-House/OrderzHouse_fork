@@ -369,7 +369,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     final shouldShowButton = isFreelancer && hasValidProjectType;
     
     // DEBUG: Log values to check condition
-    debugPrint("ProjectDetails roleId=${user?.roleId}, projectType=${widget.project.projectType}, shouldShowButton=$shouldShowButton, buttonLabel=$buttonLabel, hasApplied=$_hasApplied");
+    debugPrint('ProjectDetails roleId=${user?.roleId}, projectType=${widget.project.projectType}, shouldShowButton=$shouldShowButton, buttonLabel=$buttonLabel, hasApplied=$_hasApplied');
 
     return Scaffold(
       backgroundColor: Colors.white,

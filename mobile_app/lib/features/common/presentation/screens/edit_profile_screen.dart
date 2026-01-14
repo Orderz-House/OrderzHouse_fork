@@ -30,7 +30,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   // Original data for comparison
   Map<String, dynamic> _originalData = {};
-  Map<String, String> _validationErrors = {};
+  final Map<String, String> _validationErrors = {};
   bool _isLoading = false;
   bool _isFetching = true;
   File? _selectedImage;
@@ -347,12 +347,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF6D5FFD);
+    const primaryColor = Color(0xFF6D5FFD);
     final fullName = '${_firstNameController.text} ${_lastNameController.text}'.trim();
 
     if (_isFetching) {
-      return AppScaffold(
-        body: const Center(
+      return const AppScaffold(
+        body: Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
           ),
@@ -395,7 +395,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const Spacer(),
                     // Title
-                    Text(
+                    const Text(
                       'Edit Profile',
                       style: TextStyle(
                         color: Colors.black,
@@ -632,7 +632,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         : (_profilePicUrl != null && _profilePicUrl!.isNotEmpty
             ? (_profilePicUrl!.startsWith('http')
                 ? _profilePicUrl!
-                : '${AppConfig.baseUrl}${_profilePicUrl}')
+                : '${AppConfig.baseUrl}$_profilePicUrl')
             : null);
 
     return Center(
@@ -687,7 +687,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                   )
-                : Icon(
+                : const Icon(
                     Icons.person_rounded,
                     size: 55,
                     color: Colors.white,

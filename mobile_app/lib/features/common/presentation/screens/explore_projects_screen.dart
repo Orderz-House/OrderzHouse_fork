@@ -88,7 +88,7 @@ class _ExploreProjectsScreenState
     }
     
     // Debug log
-    debugPrint("Explore selectedCategoryId=${selectedCategoryId}, sharedCategoryId=${sharedCategoryId}");
+    debugPrint('Explore selectedCategoryId=$selectedCategoryId, sharedCategoryId=$sharedCategoryId');
     
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
@@ -561,7 +561,7 @@ class _ExploreProjectsScreenState
         ),
         data: (searchResult) {
           if (searchResult.isEmpty) {
-            return EmptyState(
+            return const EmptyState(
               icon: Icons.search_off_rounded,
               title: 'No results found',
               message: 'Try different keywords or check your spelling.',
@@ -779,10 +779,10 @@ class _LoadingGrid extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const LoadingShimmer(
+              LoadingShimmer(
                 height: 180,
                 width: double.infinity,
                 borderRadius: BorderRadius.only(
@@ -791,17 +791,17 @@ class _LoadingGrid extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const LoadingShimmer(width: 120, height: 16),
-                    const SizedBox(height: AppSpacing.xs),
-                    const LoadingShimmer(width: 100, height: 12),
-                    const SizedBox(height: AppSpacing.xs),
-                    const LoadingShimmer(width: 80, height: 12),
-                    const Spacer(),
-                    const LoadingShimmer(width: 60, height: 12),
+                    LoadingShimmer(width: 120, height: 16),
+                    SizedBox(height: AppSpacing.xs),
+                    LoadingShimmer(width: 100, height: 12),
+                    SizedBox(height: AppSpacing.xs),
+                    LoadingShimmer(width: 80, height: 12),
+                    Spacer(),
+                    LoadingShimmer(width: 60, height: 12),
                   ],
                 ),
               ),

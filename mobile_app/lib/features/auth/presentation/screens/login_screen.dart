@@ -78,8 +78,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Container(
                     width: 100,
                     height: 100,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8E9E9), // Light pink
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8E9E9), // Light pink
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -251,6 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+
                     ),
                   ],
                 ),
@@ -475,4 +476,6 @@ class _SocialIconButton extends StatelessWidget {
     );
   }
 }
+
+
 

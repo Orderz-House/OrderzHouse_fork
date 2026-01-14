@@ -12,7 +12,7 @@ class DeliveriesScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Deliveries'),
       ),
-      body: EmptyState(
+      body: const EmptyState(
         icon: Icons.delivery_dining_outlined,
         title: 'No deliveries yet',
         message: 'Project deliveries will appear here',

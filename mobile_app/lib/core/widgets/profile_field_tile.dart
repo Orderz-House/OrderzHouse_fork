@@ -96,14 +96,14 @@ class ProfileFieldTile extends StatelessWidget {
                         fontWeight: FontWeight.w400,
                         height: 1.2,
                       ),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         errorBorder: InputBorder.none,
                         focusedErrorBorder: InputBorder.none,
                         disabledBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         isDense: true,
                         hintText: '',
                       ),

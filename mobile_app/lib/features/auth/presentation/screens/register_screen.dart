@@ -269,8 +269,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: Container(
                           width: 100,
                           height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8E9E9), // Light pink
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF8E9E9), // Light pink
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(

@@ -151,13 +151,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Progress indicator (3 bars)
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _ProgressBar(isActive: true),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _ProgressBar(isActive: true),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _ProgressBar(isActive: false),
                     ],
                   ),
@@ -176,8 +176,8 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                     Container(
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8E9E9), // Light pink
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8E9E9), // Light pink
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

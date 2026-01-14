@@ -61,7 +61,7 @@ class PlansRepository {
           // ignore: avoid_print
           print('⚠️ RESPONSE: No plans found in response.plans');
         }
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: [],
           message: 'No plans available',

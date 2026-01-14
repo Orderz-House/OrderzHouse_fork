@@ -51,7 +51,7 @@ class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'API Configuration',
                       style: AppTextStyles.titleLarge,
                     ),
@@ -117,15 +117,15 @@ class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen> {
                 ),
               )
             else
-              Column(
+              const Column(
                 children: [
-                  const Icon(Icons.health_and_safety, size: 64),
-                  const SizedBox(height: AppSpacing.lg),
+                  Icon(Icons.health_and_safety, size: 64),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     'API Health Check',
                     style: AppTextStyles.headlineLarge,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   Text(
                     'Test connectivity to the API server',
                     style: AppTextStyles.bodyMedium,

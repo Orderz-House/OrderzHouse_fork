@@ -16,9 +16,9 @@ class CreateProjectScreen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           children: [
-            AppTextField(label: 'Project Title'),
+            const AppTextField(label: 'Project Title'),
             const SizedBox(height: AppSpacing.md),
-            AppTextField(label: 'Description', maxLines: 5),
+            const AppTextField(label: 'Description', maxLines: 5),
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Project Type'),
@@ -30,7 +30,7 @@ class CreateProjectScreen extends StatelessWidget {
               onChanged: (value) {},
             ),
             const SizedBox(height: AppSpacing.md),
-            AppTextField(
+            const AppTextField(
               label: 'Budget',
               keyboardType: TextInputType.number,
             ),
