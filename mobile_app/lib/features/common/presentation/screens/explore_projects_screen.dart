@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/category.dart';
 import '../../../../core/models/user.dart';
@@ -171,39 +172,33 @@ class _ExploreProjectsScreenState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Left: Back Arrow Button
+            // Left: Menu/Grid Icon Button (rounded square, like screenshot)
+            // If Explore is opened from navigation stack, show back arrow
+            // If Explore is a main bottom-nav tab, show menu/grid icon
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
                 color: Colors.white,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12), // Rounded square
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 4,
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: IconButton(
-                icon: const Icon(Icons.chevron_left_rounded),
-                color: const Color(0xFF6D5FFD), // Primary lavender
+                icon: context.canPop()
+                    ? const Icon(Icons.chevron_left_rounded)
+                    : const Icon(Icons.grid_view_rounded), // Menu/grid icon for main tab
+                color: const Color(0xFF111827), // Near-black
                 onPressed: () {
-                  // Safe back navigation
                   if (context.canPop()) {
                     context.pop();
-                  } else {
-                    // Fallback: navigate to home based on role
-                    final location = GoRouterState.of(context).uri.path;
-                    if (location.contains('/client')) {
-                      context.go('/client');
-                    } else if (location.contains('/freelancer')) {
-                      context.go('/freelancer');
-                    } else {
-                      context.go('/client');
-                    }
                   }
+                  // If it's a main tab, do nothing (just show the icon)
                 },
               ),
             ),
@@ -252,16 +247,12 @@ class _ExploreProjectsScreenState
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E6FF),
+        color: const Color(0xFFE5E7EB), // Light gray background
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-          width: 1,
-        ),
       ),
       child: const Icon(
         Icons.person_rounded,
-        color: Color(0xFF6D5FFD),
+        color: Color(0xFF6B7280), // Gray icon
         size: 24,
       ),
     );
@@ -299,7 +290,7 @@ class _ExploreProjectsScreenState
                   });
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search projects, categories',
+                  hintText: 'Search Projects',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF9CA3AF),
                   ),
@@ -451,32 +442,32 @@ class _ExploreProjectsScreenState
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF6D5FFD)
-                        : Colors.white,
+                        ? const Color(0xFF111827) // Near-black for active
+                        : Colors.white, // White for inactive
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFF6D5FFD)
-                          : const Color(0xFF6D5FFD).withValues(alpha: 0.3),
-                      width: 1,
-                    ),
+                    border: isSelected
+                        ? null
+                        : Border.all(
+                            color: const Color(0xFFE5E7EB), // Light gray border
+                            width: 1,
+                          ),
                     boxShadow: isSelected
-                        ? [
+                        ? null
+                        : [
                             BoxShadow(
-                              color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                              blurRadius: 8,
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
-                          ]
-                        : null,
+                          ],
                   ),
                   child: Center(
                     child: Text(
                       label,
                       style: AppTextStyles.labelMedium.copyWith(
                         color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF6D5FFD),
+                            ? Colors.white // White text on black
+                            : const Color(0xFF111827), // Near-black text on white
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
@@ -507,18 +498,15 @@ class _ExploreProjectsScreenState
     );
   }
 
-  // 4) Projects Grid (2-column masonry-like)
+  // 4) Projects Grid (2-column masonry/staggered grid like Pinterest)
   Widget _buildProjectsGrid(BuildContext context, List<Project> projects, {bool shrinkWrap = false}) {
-    return GridView.builder(
+    return MasonryGridView.count(
       shrinkWrap: shrinkWrap,
-      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
       padding: shrinkWrap ? EdgeInsets.zero : const EdgeInsets.all(AppSpacing.lg),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.85, // Adjusted for shorter cards after removing stats row
-      ),
+      crossAxisCount: 2,
+      mainAxisSpacing: AppSpacing.md,
+      crossAxisSpacing: AppSpacing.md,
       itemCount: projects.length,
       itemBuilder: (context, index) {
         final project = projects[index];
@@ -552,7 +540,7 @@ class _ExploreProjectsScreenState
       child: searchResultsAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4D57)), // Coral-red
           ),
         ),
         error: (error, stackTrace) => ErrorState(
@@ -607,15 +595,8 @@ class _ExploreProjectsScreenState
                               vertical: AppSpacing.sm,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6D5FFD),
+                              color: const Color(0xFF111827), // Near-black for active
                               borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: Center(
                               child: Text(
@@ -663,24 +644,32 @@ class _ExploreProjectsScreenState
       return const SizedBox.shrink();
     }
 
+    // Calculate proper spacing: bottom nav base height (85) + safe area + gap (12px)
+    // Reduced total margin significantly to move button DOWN (closer to bottom nav)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomNavHeight = 85.0 + bottomPadding;
+    final buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
+    // Significantly reduce margin to move button DOWN - position it closer to bottom nav
+    final totalBottomMargin = bottomNavHeight + buttonSpacing - 120.0; // Reduced by 50px to move DOWN significantly
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 80), // Space above bottom nav
+      margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav
       child: ElevatedButton(
         onPressed: () {
           context.go('/create-project');
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6D5FFD),
+          backgroundColor: const Color(0xFFFF4D57), // Coral-red
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xl,
             vertical: AppSpacing.md,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(30), // Pill shape
           ),
           elevation: 4,
-          shadowColor: const Color(0xFF6D5FFD).withValues(alpha: 0.3),
+          shadowColor: const Color(0xFFFF4D57).withValues(alpha: 0.3),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -778,6 +767,13 @@ class _LoadingGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

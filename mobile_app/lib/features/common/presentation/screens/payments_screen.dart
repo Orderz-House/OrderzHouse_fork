@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/error_state.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/models/payment.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../payments/data/repositories/payments_repository.dart';
@@ -60,7 +61,7 @@ class PaymentsScreen extends ConsumerWidget {
       body: paymentsAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
         error: (error, stack) => ErrorState(
@@ -71,7 +72,7 @@ class PaymentsScreen extends ConsumerWidget {
           return balanceAsync.when(
             loading: () => const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             ),
             error: (_, __) => _buildContent(
@@ -150,7 +151,7 @@ class PaymentsScreen extends ConsumerWidget {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chevron_left_rounded),
-                        color: const Color(0xFF6D5FFD), // Primary lavender
+                        color: AppColors.primary, // Coral-red
                         onPressed: () {
                           // Safe back navigation
                           if (context.canPop()) {
@@ -320,7 +321,7 @@ class PaymentsScreen extends ConsumerWidget {
                 ),
                 child: const Icon(
                   Icons.verified_user_rounded,
-                  color: Color(0xFF6D5FFD),
+                  color: AppColors.primary,
                   size: 28,
                 ),
               ),
@@ -378,7 +379,7 @@ class PaymentsScreen extends ConsumerWidget {
                   icon: const Icon(
                     Icons.copy_rounded,
                     size: 18,
-                    color: Color(0xFF6D5FFD),
+                    color: AppColors.primary,
                   ),
                   onPressed: () {
                     if (userEmail.isNotEmpty) {
@@ -476,7 +477,7 @@ class PaymentsScreen extends ConsumerWidget {
                   Text(
                     'View Details',
                     style: TextStyle(
-                      color: Color(0xFF6D5FFD),
+                      color: AppColors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -485,7 +486,7 @@ class PaymentsScreen extends ConsumerWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: Color(0xFF6D5FFD),
+                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -570,14 +571,14 @@ class PaymentsScreen extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 initials,
                 style: const TextStyle(
-                  color: Color(0xFF6D5FFD),
+                  color: AppColors.primary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

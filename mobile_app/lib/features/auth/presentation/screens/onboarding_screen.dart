@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Onboarding page model
 class OnboardingPage {
@@ -72,7 +73,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F7FF), // Very light purple tint
+      backgroundColor: AppColors.background, // Pure white
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

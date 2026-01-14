@@ -26,7 +26,7 @@ class ExploreProjectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double imageHeight = 120.0; // Reduced from 140 to make card shorter
-    const double cardRadius = 18.0;
+    const double cardRadius = 16.0; // Rounded corners matching screenshot (16-20px range)
 
     return GestureDetector(
       onTap: onTap,
@@ -71,22 +71,22 @@ class ExploreProjectCard extends StatelessWidget {
                             placeholder: (context, url) => Container(
                               height: imageHeight,
                               width: double.infinity,
-                              color: const Color(0xFFE9E6FF),
+                              color: const Color(0xFFE5E7EB), // Light gray
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4D57)), // Coral-red
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
                               height: imageHeight,
                               width: double.infinity,
-                              color: const Color(0xFFE9E6FF),
+                              color: const Color(0xFFE5E7EB), // Light gray placeholder
                               child: const Center(
                                 child: Icon(
                                   Icons.work_outline_rounded,
-                                  color: Color(0xFF6D5FFD),
+                                  color: Color(0xFF6B7280), // Gray icon
                                   size: 40,
                                 ),
                               ),
@@ -95,11 +95,11 @@ class ExploreProjectCard extends StatelessWidget {
                         : Container(
                             height: imageHeight,
                             width: double.infinity,
-                            color: const Color(0xFFE9E6FF),
+                            color: const Color(0xFFE5E7EB), // Light gray placeholder
                             child: const Center(
                               child: Icon(
                                 Icons.work_outline_rounded,
-                                color: Color(0xFF6D5FFD),
+                                color: Color(0xFF6B7280), // Gray icon
                                 size: 40,
                               ),
                             ),
@@ -167,7 +167,7 @@ class ExploreProjectCard extends StatelessWidget {
                       Text(
                         project.budgetDisplay,
                         style: AppTextStyles.labelMedium.copyWith(
-                          color: const Color(0xFF6D5FFD),
+                          color: const Color(0xFF111827), // Near-black, matching screenshot
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),

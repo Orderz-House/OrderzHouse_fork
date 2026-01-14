@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projects/data/repositories/projects_repository.dart';
@@ -290,7 +291,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6D5FFD),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -384,7 +385,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF6D5FFD).withValues(alpha: 0.12),
+                    AppColors.primary.withValues(alpha: 0.12),
                     Colors.white,
                   ],
                   stops: const [0.0, 0.25],
@@ -421,7 +422,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                           ),
                           child: IconButton(
                             icon: const Icon(Icons.chevron_left_rounded),
-                            color: const Color(0xFF6D5FFD), // Primary lavender
+                            color: AppColors.primary, // Coral-red
                             onPressed: () {
                               // Safe back navigation
                               if (context.canPop()) {
@@ -485,8 +486,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                         colors: [
-                                          const Color(0xFF6D5FFD).withValues(alpha: 0.8),
-                                          const Color(0xFF6D5FFD).withValues(alpha: 0.6),
+                                          AppColors.primary.withValues(alpha: 0.8),
+                                          AppColors.primary.withValues(alpha: 0.6),
                                         ],
                                       ),
                                     ),
@@ -567,11 +568,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6D5FFD),
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF6D5FFD).withValues(alpha: 0.3),
+                                color: AppColors.primary.withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -603,17 +604,17 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF6D5FFD).withValues(alpha: 0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
                         child: Text(
                           widget.project.projectType.toUpperCase(),
                           style: AppTextStyles.labelSmall.copyWith(
-                            color: const Color(0xFF6D5FFD),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
@@ -693,7 +694,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                           children: [
                             const Icon(
                               Icons.description_rounded,
-                              color: Color(0xFF6D5FFD),
+                              color: AppColors.primary,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -757,8 +758,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF6D5FFD).withValues(alpha: 0.8),
-            const Color(0xFF6D5FFD).withValues(alpha: 0.6),
+            AppColors.primary.withValues(alpha: 0.8),
+            AppColors.primary.withValues(alpha: 0.6),
           ],
         ),
       ),
@@ -783,7 +784,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
@@ -800,7 +801,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         children: [
           Icon(
             icon,
-            color: const Color(0xFF6D5FFD),
+            color: AppColors.primary,
             size: 24,
           ),
           Column(
@@ -838,7 +839,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         return Colors.orange;
       case 'in_progress':
       case 'active':
-        return const Color(0xFF6D5FFD); // Use primary color for active
+        return AppColors.primary; // Use primary color for active
       case 'completed':
         return Colors.green;
       case 'cancelled':
@@ -879,8 +880,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF6D5FFD), // Primary lavender
-                    Color(0xFF8B7FFD), // Slightly lighter lavender
+                    AppColors.primary, // Coral-red
+                    AppColors.primaryLight, // Lighter coral-red
                   ],
                 ),
           color: isDisabled ? Colors.grey.shade300 : null,
@@ -889,7 +890,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               ? null
               : [
                   BoxShadow(
-                    color: const Color(0xFF6D5FFD).withValues(alpha: 0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

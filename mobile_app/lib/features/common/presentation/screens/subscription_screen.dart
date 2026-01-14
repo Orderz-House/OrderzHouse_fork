@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -27,7 +28,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     final plansAsync = ref.watch(plansProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
-    final primaryColor = const Color(0xFF6D5FFD);
+    final primaryColor = AppColors.primary;
 
     return AppScaffold(
       body: Column(
@@ -176,12 +177,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF6D5FFD) // Filled lavender/purple
+              ? AppColors.primary // Coral-red
               : Colors.white, // White background
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF6D5FFD)
+                ? AppColors.primary
                 : const Color(0xFFE9E6FF), // Light border
             width: 1,
           ),
@@ -252,13 +253,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 14,
-                  color: const Color(0xFF6D5FFD),
+                  color: AppColors.primary,
                 ),
                 const SizedBox(width: 5),
                 Text(
                   '0', // Placeholder number
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: const Color(0xFF6D5FFD),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -286,7 +287,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               borderRadius: BorderRadius.circular(26),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6D5FFD).withValues(alpha: 0.06),
+                  color: AppColors.primary.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -348,7 +349,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6D5FFD).withValues(alpha: 0.04),
+              color: AppColors.primary.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -427,7 +428,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   child: Text(
                     durationLabel,
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFF6D5FFD),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
