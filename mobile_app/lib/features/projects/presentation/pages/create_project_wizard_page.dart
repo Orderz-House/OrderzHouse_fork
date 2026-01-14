@@ -32,6 +32,23 @@ class _CreateProjectWizardPageState
   }
 
   void _nextStep() {
+    final draft = ref.read(projectWizardProvider);
+    
+    // Validate current step before proceeding
+    final errors = draft.validateStep(_currentStep);
+    if (errors.isNotEmpty) {
+      // Show first error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errors.values.first),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return; // Block navigation
+    }
+    
+    // Only proceed if validation passes
     if (_currentStep < _getTotalSteps() - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -64,11 +81,23 @@ class _CreateProjectWizardPageState
     final draft = ref.read(projectWizardProvider);
     final repository = ProjectsRepository();
 
-    if (!draft.isStep1Valid) {
+    // Validate all steps before final submission
+    final step1Errors = draft.validateStep1();
+    final step2Errors = draft.validateStep2();
+    final step3Errors = draft.validateStep3();
+    
+    if (step1Errors.isNotEmpty || step2Errors.isNotEmpty || step3Errors.isNotEmpty) {
+      // Show first error found
+      final allErrors = <String, String>{};
+      allErrors.addAll(step1Errors);
+      allErrors.addAll(step2Errors);
+      allErrors.addAll(step3Errors);
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields'),
+        SnackBar(
+          content: Text(allErrors.values.first),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -303,23 +332,11 @@ class _CreateProjectWizardPageState
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 ProjectDetailsStepView(
-                  onNext: () {
-                    final errors = draft.validateStep1();
-                    if (errors.isNotEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(errors.values.first),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-                    _nextStep();
-                  },
+                  onNext: _nextStep, // _nextStep now validates internally
                 ),
-                ProjectCoverStepView(onNext: _nextStep),
+                ProjectCoverStepView(onNext: _nextStep), // _nextStep now validates internally
                 ProjectFilesStepView(
-                  onNext: draft.needsPayment ? _nextStep : null,
+                  onNext: draft.needsPayment ? _nextStep : null, // _nextStep now validates internally
                 ),
                 if (draft.needsPayment)
                   PaymentStepView(onSubmit: _handleSubmit),
@@ -384,7 +401,7 @@ class _CreateProjectWizardPageState
                           ? null
                           : (_currentStep == totalSteps - 1
                               ? _handleSubmit
-                              : _nextStep),
+                              : _nextStep), // _nextStep now validates internally
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: const Color(0xFF6D5FFD),

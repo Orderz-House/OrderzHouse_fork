@@ -116,6 +116,47 @@ class ProjectDraft {
   
   bool get isStep1Valid => validateStep1().isEmpty;
   
+  // Validation for Step 2 (Cover Image) - Optional, so always valid
+  Map<String, String> validateStep2() {
+    // Cover image is optional, so no validation errors
+    return {};
+  }
+  
+  bool get isStep2Valid => validateStep2().isEmpty;
+  
+  // Validation for Step 3 (Project Files) - Optional, but check file count limit
+  Map<String, String> validateStep3() {
+    final errors = <String, String>{};
+    
+    // Check file count limit (max 5 files)
+    if (projectFiles.length > 5) {
+      errors['projectFiles'] = 'Maximum 5 files allowed';
+    }
+    
+    return errors;
+  }
+  
+  bool get isStep3Valid => validateStep3().isEmpty;
+  
+  // Generic validation method for any step
+  Map<String, String> validateStep(int step) {
+    switch (step) {
+      case 0:
+        return validateStep1();
+      case 1:
+        return validateStep2();
+      case 2:
+        return validateStep3();
+      default:
+        return {};
+    }
+  }
+  
+  // Check if a step is valid
+  bool isStepValid(int step) {
+    return validateStep(step).isEmpty;
+  }
+  
   // Check if payment step is needed
   bool get needsPayment => projectType != 'bidding';
   
