@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 // Settings state providers
@@ -14,7 +15,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = const Color(0xFF6D5FFD);
+    final primaryColor = AppColors.primary;
     final notificationsEnabled = ref.watch(notificationsEnabledProvider);
     final twoFactorEnabled = ref.watch(twoFactorEnabledProvider);
     final authState = ref.watch(authStateProvider);
@@ -192,7 +193,7 @@ class SettingsScreen extends ConsumerWidget {
     required Widget trailing,
     VoidCallback? onTap,
   }) {
-    final primaryColor = const Color(0xFF6D5FFD);
+    final primaryColor = AppColors.primary;
 
     return InkWell(
       onTap: onTap,

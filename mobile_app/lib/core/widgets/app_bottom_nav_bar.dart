@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_spacing.dart';
 
 /// Navigation item for bottom navigation bar
 class NavItem {
@@ -15,23 +14,28 @@ class NavItem {
   });
 }
 
-/// Custom bottom navigation bar matching the reference image design
-/// - Floating rounded container with soft shadow
-/// - Icons in circles
-/// - Selected tab has pill background
-/// - Labels under icons
-/// - Purple color scheme
-/// - Supports Light/Dark theme
+/// Custom bottom navigation bar - full-width, edge-to-edge, docked at bottom
+/// - Full-width container (edge-to-edge) across the phone screen
+/// - Attached to the very bottom (no gap, no floating)
+/// - Only top corners rounded (big radius), bottom corners = 0
+/// - Soft top shadow only
+/// - Active item: near-black icon + label, NO background pill
+/// - Inactive items: light grey icon + label
 class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final List<NavItem> items;
   final ValueChanged<int>? onTap;
 
-  // Color constants matching the reference image
-  static const Color primaryPurple = Color(0xFF6D5DF6);
-  static const Color selectedPillBg = Color(0xFFE9E6FF);
-  static const Color selectedIconCircleBg = Color(0xFFD9D4FF);
-  static const Color unselectedGray = Color(0xFFB0B0B0);
+  // Color constants
+  static const Color activeIconColor = Color(0xFF1A1A1A); // Near-black
+  static const Color activeLabelColor = Color(0xFF1A1A1A); // Near-black
+  static const Color inactiveColor = Color(0xFFB0B0B0); // Light grey
+  static const Color barBackground = Colors.white;
+
+  // Base height for the navigation bar (without safe area padding)
+  static const double baseHeight = 85.0;
+  // Top corner radius (big rounded corners)
+  static const double topCornerRadius = 24.0;
 
   const AppBottomNavBar({
     super.key,
@@ -42,85 +46,71 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = colorScheme.brightness == Brightness.dark;
+    // Get bottom padding (safe area / gesture area)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final totalHeight = baseHeight + bottomPadding;
 
-    // Use theme-aware colors
-    final barBackground = isDark ? colorScheme.surface : Colors.white;
-    const selectedColor = primaryPurple;
-    // ignore: deprecated_member_use
-    final unselectedColor = isDark
-        ? colorScheme.onSurface.withOpacity(0.6)
-        : unselectedGray;
-
-    return SafeArea(
-      bottom: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+    return Container(
+      width: double.infinity, // Full-width, edge-to-edge
+      height: totalHeight,
+      decoration: BoxDecoration(
+        color: barBackground,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(topCornerRadius),
+          topRight: Radius.circular(topCornerRadius),
+          bottomLeft: Radius.zero, // No bottom corner radius
+          bottomRight: Radius.zero, // No bottom corner radius
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          // Very soft top shadow only (subtle elevation)
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2), // Top shadow (negative Y)
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false, // Don't add top padding
+        bottom: false, // We handle bottom padding manually
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: bottomPadding, // Add bottom padding to fill safe area
+          ),
           child: Container(
-            height: 78,
-            decoration: BoxDecoration(
-              color: barBackground,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                // ignore: deprecated_member_use
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                  spreadRadius: 0,
-                ),
-                // ignore: deprecated_member_use
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                  spreadRadius: 0,
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isSelected = index == currentIndex;
+            height: baseHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isSelected = index == currentIndex;
 
-                  return Expanded(
-                    child: _NavItemWidget(
-                      item: item,
-                      isSelected: isSelected,
-                      selectedColor: selectedColor,
-                      unselectedColor: unselectedColor,
-                      selectedPillBg: selectedPillBg,
-                      selectedIconCircleBg: selectedIconCircleBg,
-                      onTap: () {
-                        // Avoid double navigation if user taps the currently selected tab
-                        if (index == currentIndex) {
-                          return;
-                        }
+                return Expanded(
+                  child: _NavItemWidget(
+                    item: item,
+                    isSelected: isSelected,
+                    onTap: () {
+                      // Avoid double navigation if user taps the currently selected tab
+                      if (index == currentIndex) {
+                        return;
+                      }
 
-                        // Call custom onTap if provided, otherwise use default navigation
-                        if (onTap != null) {
-                          onTap!(index);
-                        } else {
-                          // Default navigation using routes
-                          final route = item.route;
-                          if (route.isNotEmpty) {
-                            context.go(route);
-                          }
+                      // Call custom onTap if provided, otherwise use default navigation
+                      if (onTap != null) {
+                        onTap!(index);
+                      } else {
+                        // Default navigation using routes
+                        final route = item.route;
+                        if (route.isNotEmpty) {
+                          context.go(route);
                         }
-                      },
-                    ),
-                  );
-                }),
-              ),
+                      }
+                    },
+                  ),
+                );
+              }),
             ),
           ),
         ),
@@ -129,71 +119,59 @@ class AppBottomNavBar extends StatelessWidget {
   }
 }
 
-/// Individual navigation item widget
+/// Individual navigation item widget with smooth animation
 class _NavItemWidget extends StatelessWidget {
   final NavItem item;
   final bool isSelected;
-  final Color selectedColor;
-  final Color unselectedColor;
-  final Color selectedPillBg;
-  final Color selectedIconCircleBg;
   final VoidCallback onTap;
 
   const _NavItemWidget({
     required this.item,
     required this.isSelected,
-    required this.selectedColor,
-    required this.unselectedColor,
-    required this.selectedPillBg,
-    required this.selectedIconCircleBg,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = isSelected ? selectedColor : unselectedColor;
-    final labelColor = isSelected ? selectedColor : unselectedColor;
-    final labelWeight = isSelected ? FontWeight.w600 : FontWeight.w400;
+    final iconColor = isSelected
+        ? AppBottomNavBar.activeIconColor
+        : AppBottomNavBar.inactiveColor;
+    final labelColor = isSelected
+        ? AppBottomNavBar.activeLabelColor
+        : AppBottomNavBar.inactiveColor;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedPillBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 8,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon in a circle
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? selectedIconCircleBg
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                item.icon,
-                color: iconColor,
-                size: 22,
-              ),
+            // Icon - NO background pill/circle
+            Icon(
+              item.icon,
+              color: iconColor,
+              size: 27,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 5),
             // Label
             Text(
               item.title,
               style: TextStyle(
                 color: labelColor,
-                fontSize: 11,
-                fontWeight: labelWeight,
-                letterSpacing: 0.2,
+                fontSize: 13,
+                fontWeight: isSelected
+                    ? FontWeight.w500
+                    : FontWeight.w400,
+                letterSpacing: 0.1,
                 height: 1.0,
               ),
               maxLines: 1,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_app/core/models/user.dart';
 
@@ -522,7 +523,7 @@ class _UpgradeCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onViewPlans,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6D5FFD), // Primary purple
+                backgroundColor: AppColors.primary, // Coral-red
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xl,

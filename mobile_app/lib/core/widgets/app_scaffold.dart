@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'top_glow_background.dart';
 
 /// Reusable scaffold wrapper with white background and subtle top gradient glow
-/// This is the ONLY place where the background gradient is defined
+/// Uses TopGlowBackground for consistent styling across the app
 class AppScaffold extends StatelessWidget {
   final Widget body;
   final String? title;
@@ -40,30 +41,9 @@ class AppScaffold extends StatelessWidget {
                 elevation: 0,
               ))
           : null,
-      body: Stack(
-        children: [
-          // Background gradient layer (top glow only)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF6D5FFD).withValues(alpha: 0.12), // Light lavender at top
-                    Colors.white, // Pure white at bottom
-                  ],
-                  stops: const [0.0, 0.25], // Fades to white within ~25% of height
-                ),
-              ),
-            ),
-          ),
-          // Content layer
-          if (useSafeArea)
-            SafeArea(child: body)
-          else
-            body,
-        ],
+      body: TopGlowBackground(
+        useSafeArea: useSafeArea,
+        child: body,
       ),
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
