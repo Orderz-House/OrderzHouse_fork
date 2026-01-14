@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/profile_field_tile.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_storage_service.dart';
@@ -274,7 +275,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile updated successfully!'),
-              backgroundColor: Color(0xFF6D5FFD),
+              backgroundColor: AppColors.primary,
             ),
           );
           // Delay pop to avoid Navigator lock assertion
@@ -354,7 +355,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       return const AppScaffold(
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
       );
@@ -673,7 +674,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         child: const Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                           ),
                         ),
                       ),

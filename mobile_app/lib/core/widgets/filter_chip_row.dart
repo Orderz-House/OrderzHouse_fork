@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/app_colors.dart';
 
 /// Reusable filter chip row widget
 class FilterChipRow extends StatelessWidget {
@@ -25,7 +26,7 @@ class FilterChipRow extends StatelessWidget {
           Text(
             '$label:',
             style: AppTextStyles.labelMedium.copyWith(
-              color: const Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -39,8 +40,8 @@ class FilterChipRow extends StatelessWidget {
                   option == 'all' ? 'All' : option.toUpperCase(),
                   style: AppTextStyles.labelSmall.copyWith(
                     color: isSelected
-                        ? Colors.white
-                        : const Color(0xFF6D5FFD),
+                        ? AppColors.chipActiveText
+                        : AppColors.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -49,12 +50,12 @@ class FilterChipRow extends StatelessWidget {
                 onSelected: (selected) {
                   if (selected) onSelected(option);
                 },
-                selectedColor: const Color(0xFF6D5FFD),
-                backgroundColor: Colors.white,
+                selectedColor: AppColors.chipActiveBg,
+                backgroundColor: AppColors.chipBg,
                 side: BorderSide(
                   color: isSelected
-                      ? const Color(0xFF6D5FFD)
-                      : const Color(0xFFE5E7EB),
+                      ? AppColors.chipActiveBg
+                      : AppColors.chipBorder,
                   width: 1.5,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
@@ -252,7 +253,7 @@ class DashboardScreen extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF6D5FFD),
+                    AppColors.primary,
                     Color(0xFF8B5CF6),
                   ],
                 ),
@@ -311,7 +312,7 @@ class DashboardScreen extends ConsumerWidget {
                               const SizedBox(width: AppSpacing.xs),
                               const Icon(
                                 Icons.arrow_forward_rounded,
-                                color: Color(0xFF6D5FFD),
+                                color: AppColors.primary,
                                 size: 16,
                               ),
                             ],

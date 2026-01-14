@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
 
 class VerifyOtpScreen extends ConsumerStatefulWidget {
@@ -130,7 +131,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1FF), // Very light lavender
+      backgroundColor: AppColors.background, // Pure white
       body: SafeArea(
         child: Column(
           children: [
@@ -183,7 +184,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       child: const Icon(
                         Icons.send_rounded,
                         size: 50,
-                        color: Color(0xFF6D5FFD), // Primary purple
+                        color: AppColors.primary, // Coral-red
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -277,7 +278,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                             child: Text(
                               'Resend OTP',
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: const Color(0xFF6D5FFD),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -315,7 +316,7 @@ class _ProgressBar extends StatelessWidget {
       width: isActive ? 40 : 20,
       height: 4,
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF6D5FFD) : const Color(0xFFE5E7EB),
+        color: isActive ? AppColors.primary : AppColors.border,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -344,14 +345,14 @@ class _OtpInputField extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(
           color: focusNode.hasFocus
-              ? const Color(0xFF6D5FFD)
+              ? AppColors.primary
               : const Color(0xFFE5E7EB),
           width: focusNode.hasFocus ? 2 : 1,
         ),
         boxShadow: focusNode.hasFocus
             ? [
                 BoxShadow(
-                  color: const Color(0xFF6D5FFD).withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

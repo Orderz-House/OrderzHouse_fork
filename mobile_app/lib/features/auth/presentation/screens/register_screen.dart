@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/models/category.dart';
 import '../providers/auth_provider.dart';
@@ -216,7 +217,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1FF), // Very light lavender
+      backgroundColor: AppColors.background, // Pure white
       body: SafeArea(
         child: Column(
           children: [
@@ -244,7 +245,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: isActive ? 40 : 20,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: isActive ? const Color(0xFF6D5FFD) : const Color(0xFFE5E7EB),
+                            color: isActive ? AppColors.primary : AppColors.border,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -276,7 +277,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: const Icon(
                             Icons.send_rounded,
                             size: 50,
-                            color: Color(0xFF6D5FFD), // Primary purple
+                            color: AppColors.primary, // Coral-red
                           ),
                         ),
                       ),
@@ -315,7 +316,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -347,7 +348,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Text(
                             'Sign In',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: const Color(0xFF6D5FFD),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -379,7 +380,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: Text(
                                 'Back',
                                 style: AppTextStyles.labelLarge.copyWith(
-                                  color: const Color(0xFF6D5FFD),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
@@ -398,13 +399,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 ? null
                                 : (_currentStep == _totalSteps - 1 ? _handleRegister : _nextStep),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6D5FFD),
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
-                              elevation: 0,
+                              elevation: 4,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(26),
+                                borderRadius: BorderRadius.circular(30), // Pill shape
                               ),
-                              shadowColor: const Color(0xFF6D5FFD).withOpacity(0.3),
+                              shadowColor: AppColors.primary.withValues(alpha: 0.3),
                             ),
                             child: authState.isLoading
                                 ? const SizedBox(
@@ -606,7 +607,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ref.invalidate(exploreCategoriesProvider);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6D5FFD),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Retry'),
@@ -757,13 +758,13 @@ class _RoleCard extends StatelessWidget {
           color: isSelected ? const Color(0xFFF8F6FF) : const Color(0xFFFAFAFA),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6D5FFD) : const Color(0xFFF0F0F0),
+            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF6D5FFD).withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -771,7 +772,7 @@ class _RoleCard extends StatelessWidget {
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withValues(alpha: 0.02),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                     spreadRadius: 0,
@@ -786,7 +787,7 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? const Color(0xFF6D5FFD) : const Color(0xFFB0B0B0),
+              color: isSelected ? AppColors.primary : AppColors.iconGray,
             ),
             const SizedBox(height: 8),
             // Role title
@@ -860,7 +861,7 @@ class _CategoryCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF6D5FFD).withOpacity(0.1),
+                    color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -868,7 +869,7 @@ class _CategoryCard extends StatelessWidget {
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                     spreadRadius: 0,
@@ -932,7 +933,7 @@ class _StyledTextField extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
