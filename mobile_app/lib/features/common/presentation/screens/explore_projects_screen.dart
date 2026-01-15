@@ -650,7 +650,7 @@ class _ExploreProjectsScreenState
     final bottomNavHeight = 85.0 + bottomPadding;
     final buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
     // Significantly reduce margin to move button DOWN - position it closer to bottom nav
-    final totalBottomMargin = bottomNavHeight + buttonSpacing - 120.0; // Reduced by 50px to move DOWN significantly
+    final totalBottomMargin = bottomNavHeight + buttonSpacing - 120 ; // Reduced by 50px to move DOWN significantly
 
     return Container(
       margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav
@@ -659,7 +659,7 @@ class _ExploreProjectsScreenState
           context.go('/create-project');
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF4D57), // Coral-red
+          backgroundColor: const Color(0xFFFF3B5C), // Secondary red
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xl,
@@ -669,7 +669,7 @@ class _ExploreProjectsScreenState
             borderRadius: BorderRadius.circular(30), // Pill shape
           ),
           elevation: 4,
-          shadowColor: const Color(0xFFFF4D57).withValues(alpha: 0.3),
+          shadowColor: const Color(0xFFFF3B5C).withValues(alpha: 0.3),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
