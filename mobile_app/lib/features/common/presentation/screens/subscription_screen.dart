@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -11,6 +10,8 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../plans/presentation/providers/plans_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../subscriptions/presentation/providers/subscription_provider.dart';
+import '../../../subscriptions/presentation/widgets/stripe_checkout_webview.dart';
 import '../../../../core/models/plan.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
@@ -22,12 +23,32 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   int _selectedTab = 0; // 0 = Plans, 1 = FAQ (UI only)
+  bool _isProcessingPayment = false;
 
   @override
   Widget build(BuildContext context) {
     final plansAsync = ref.watch(plansProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final isFreelancer = user?.roleId == 3;
+    
+    // Guard: Only freelancers can access this screen
+    if (!isFreelancer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Plans are available for freelancers only.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          context.go(user?.roleId == 2 ? '/client/profile' : '/freelancer/profile');
+        }
+      });
+      // Return empty widget while redirecting
+      return const SizedBox.shrink();
+    }
 
     return AppScaffold(
       body: Column(
@@ -348,6 +369,124 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     );
   }
 
+  Future<void> _handlePlanSelection(Plan plan) async {
+    final authState = ref.read(authStateProvider);
+    final user = authState.user;
+    
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please log in to subscribe'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_isProcessingPayment) {
+      return; // Prevent multiple taps
+    }
+
+    setState(() => _isProcessingPayment = true);
+
+    try {
+      final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
+      
+      // Create Stripe checkout session
+      final checkoutResponse = await subscriptionRepo.createCheckoutSession(
+        planId: plan.id,
+        userId: user.id,
+      );
+
+      if (!checkoutResponse.success || checkoutResponse.data == null) {
+        throw Exception(checkoutResponse.message ?? 'Failed to create checkout session');
+      }
+
+      final checkoutUrl = checkoutResponse.data!;
+
+      if (!mounted) return;
+
+      // Show WebView for Stripe checkout
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => StripeCheckoutWebView(
+            checkoutUrl: checkoutUrl,
+            onSuccess: (sessionId) async {
+              // Close WebView
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+
+              // Confirm payment with backend
+              final confirmResponse = await subscriptionRepo.confirmCheckoutSession(sessionId);
+
+              if (!mounted) return;
+
+              if (confirmResponse.success) {
+                // Refresh plans to show updated subscription status
+                ref.invalidate(plansProvider);
+                
+                // Refresh user data to update verification status if applicable
+                await ref.read(authStateProvider.notifier).refreshUser();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Payment successful! Subscription activated.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(confirmResponse.message ?? 'Payment received. Finalizing subscription...'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            onCancel: () {
+              if (mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Payment cancelled'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            onError: (error) {
+              if (mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Payment error: $error'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessingPayment = false);
+      }
+    }
+  }
+
   Widget _buildPlanRow(Plan plan) {
     final durationLabel = plan.planType == 'monthly'
         ? '${plan.duration} Month'
@@ -356,34 +495,28 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             : plan.planType;
 
     return InkWell(
-      onTap: () {
-        // Keep the same onTap action as before
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('You chose the ${plan.name} plan! (Placeholder)'),
-          ),
-        );
-        // TODO: Implement actual subscription logic/navigation
-      },
+      onTap: _isProcessingPayment ? null : () => _handlePlanSelection(plan),
       borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: const Color(0xFFE6E6E6), // Light gray border
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), // Subtle shadow
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: Opacity(
+        opacity: _isProcessingPayment ? 0.6 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: const Color(0xFFE6E6E6), // Light gray border
+              width: 1,
             ),
-          ],
-        ),
-        child: Row(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04), // Subtle shadow
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Left Side: Name + Description
@@ -464,6 +597,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

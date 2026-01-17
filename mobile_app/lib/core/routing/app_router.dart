@@ -181,6 +181,11 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/subscription',
+      redirect: (context, state) {
+        // Guard: Check user role - redirect handled in SubscriptionScreen
+        // This allows the screen to handle the check with proper provider access
+        return null;
+      },
       builder: (context, state) => const SubscriptionScreen(),
     ),
     GoRoute(

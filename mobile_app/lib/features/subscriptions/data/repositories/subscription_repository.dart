@@ -3,127 +3,149 @@ import '../../../../core/models/api_response.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/config/app_config.dart';
 
-class SubscriptionStatus {
-  final bool isSubscribed;
-  final int? planId;
-  final DateTime? expiresAt;
-  final String? planName;
-  final String? status;
-
-  SubscriptionStatus({
-    required this.isSubscribed,
-    this.planId,
-    this.expiresAt,
-    this.planName,
-    this.status,
-  });
-}
-
 class SubscriptionRepository {
   final Dio _dio = DioClient.instance;
 
-  /// Get freelancer's subscription status
-  /// Endpoint: GET /plans/subscription/me (based on web frontend usage)
-  /// If endpoint doesn't exist, returns not subscribed
-  Future<ApiResponse<SubscriptionStatus>> getSubscriptionStatus() async {
+  /// Create Stripe checkout session for subscription
+  /// Endpoint: POST /stripe/create-checkout-session
+  /// Body: { plan_id: number, user_id: number }
+  /// Response: { url: string }
+  Future<ApiResponse<String>> createCheckoutSession({
+    required int planId,
+    required int userId,
+  }) async {
     try {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => PATH: /plans/subscription/me');
+        print('📡 REQUEST[POST] => PATH: /stripe/create-checkout-session');
+        print('📡 REQUEST[POST] => Body: { plan_id: $planId, user_id: $userId }');
       }
 
-      final response = await _dio.get('/plans/subscription/me');
+      final response = await _dio.post(
+        '/stripe/create-checkout-session',
+        data: {
+          'plan_id': planId,
+          'user_id': userId,
+        },
+      );
 
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /plans/subscription/me');
-        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /stripe/create-checkout-session');
         print('✅ RESPONSE[${response.statusCode}] => Data: ${response.data}');
       }
 
       final data = response.data as Map<String, dynamic>;
-      
-      // Handle response format: { success: true, subscription: {...} } or { subscription: {...} }
-      final subscriptionData = data['subscription'] as Map<String, dynamic>? ?? data;
-      
-      final status = subscriptionData['status'] as String? ?? 'inactive';
-      final isActive = status.toLowerCase() == 'active';
-      
-      DateTime? expiresAt;
-      if (subscriptionData['end_date'] != null) {
-        try {
-          expiresAt = DateTime.parse(subscriptionData['end_date'] as String);
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
+      final checkoutUrl = data['url'] as String?;
 
-      final subscriptionStatus = SubscriptionStatus(
-        isSubscribed: isActive && expiresAt != null && expiresAt.isAfter(DateTime.now()),
-        planId: subscriptionData['plan_id'] as int?,
-        expiresAt: expiresAt,
-        planName: subscriptionData['plan_name'] as String?,
-        status: status,
-      );
-
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📊 Subscription Status: isSubscribed=${subscriptionStatus.isSubscribed}, planId=${subscriptionStatus.planId}');
+      if (checkoutUrl == null || checkoutUrl.isEmpty) {
+        return ApiResponse(
+          success: false,
+          data: '',
+          message: 'No checkout URL received from server',
+        );
       }
 
       return ApiResponse(
         success: true,
-        data: subscriptionStatus,
-        message: 'Subscription status fetched successfully',
+        data: checkoutUrl,
+        message: 'Checkout session created successfully',
       );
     } on DioException catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /plans/subscription/me');
-        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /stripe/create-checkout-session');
         print('❌ ERROR => Type: ${e.type}');
-        // ignore: avoid_print
-        print('❌ ERROR => URI: ${e.requestOptions.uri}');
-        // ignore: avoid_print
         print('❌ ERROR => Message: ${e.message}');
         if (e.response != null) {
-          // ignore: avoid_print
           print('❌ ERROR => Status Code: ${e.response?.statusCode}');
-          // ignore: avoid_print
           print('❌ ERROR => Response Data: ${e.response?.data}');
         }
       }
 
-      // If 404, endpoint doesn't exist or no subscription - assume not subscribed
-      if (e.response?.statusCode == 404) {
-        if (AppConfig.isDevelopment) {
-          // ignore: avoid_print
-          print('⚠️ Subscription endpoint not found or no subscription - assuming not subscribed');
-        }
-        return ApiResponse(
-          success: true,
-          data: SubscriptionStatus(isSubscribed: false),
-          message: 'No active subscription',
-        );
-      }
-
-      // For other errors, return not subscribed (safe default)
       return ApiResponse(
-        success: true,
-        data: SubscriptionStatus(isSubscribed: false),
-        message: 'Unable to check subscription status',
+        success: false,
+        data: '',
+        message: e.response?.data is Map
+            ? (e.response?.data as Map<String, dynamic>)['error'] as String?
+            : null ?? 'Failed to create checkout session',
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ UNEXPECTED ERROR => /plans/subscription/me: $e');
+        print('❌ UNEXPECTED ERROR => /stripe/create-checkout-session: $e');
       }
 
-      // Safe default: assume not subscribed
       return ApiResponse(
-        success: true,
-        data: SubscriptionStatus(isSubscribed: false),
-        message: 'Unable to check subscription status',
+        success: false,
+        data: '',
+        message: 'Failed to create checkout session: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Confirm Stripe checkout session
+  /// Endpoint: GET /stripe/confirm?session_id=...
+  /// Response: { ok: true } or { ok: false, error: string }
+  Future<ApiResponse<bool>> confirmCheckoutSession(String sessionId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        print('📡 REQUEST[GET] => PATH: /stripe/confirm?session_id=$sessionId');
+      }
+
+      final response = await _dio.get(
+        '/stripe/confirm',
+        queryParameters: {'session_id': sessionId},
+      );
+
+      if (AppConfig.isDevelopment) {
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /stripe/confirm');
+        print('✅ RESPONSE[${response.statusCode}] => Data: ${response.data}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final ok = data['ok'] as bool? ?? false;
+
+      if (ok) {
+        return ApiResponse(
+          success: true,
+          data: true,
+          message: 'Payment confirmed successfully',
+        );
+      } else {
+        final error = data['error'] as String? ?? 'Payment confirmation failed';
+        return ApiResponse(
+          success: false,
+          data: false,
+          message: error,
+        );
+      }
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /stripe/confirm');
+        print('❌ ERROR => Type: ${e.type}');
+        print('❌ ERROR => Message: ${e.message}');
+        if (e.response != null) {
+          print('❌ ERROR => Status Code: ${e.response?.statusCode}');
+          print('❌ ERROR => Response Data: ${e.response?.data}');
+        }
+      }
+
+      String? errorMessage;
+      if (e.response?.data is Map) {
+        errorMessage = (e.response?.data as Map<String, dynamic>)['error'] as String?;
+      }
+
+      return ApiResponse(
+        success: false,
+        data: false,
+        message: errorMessage ?? 'Failed to confirm payment',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ UNEXPECTED ERROR => /stripe/confirm: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: false,
+        message: 'Failed to confirm payment: ${e.toString()}',
       );
     }
   }

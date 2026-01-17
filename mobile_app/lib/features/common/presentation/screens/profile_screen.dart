@@ -13,6 +13,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
+    final isFreelancer = user?.roleId == 3;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -48,6 +49,7 @@ class ProfileScreen extends ConsumerWidget {
                       onEditProfile: () => context.go('/edit-profile'),
                       onSettings: () => context.go('/settings'),
                       onSubscription: () => context.go('/subscription'),
+                      showSubscription: isFreelancer,
                     ),
                     const SizedBox(height: 18),
 
@@ -82,10 +84,11 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
 
-                    // 5) Bottom CTA Card (View Plans / Buy Package)
-                    _UpgradeCard(
-                      onViewPlans: () => context.go('/subscription'),
-                    ),
+                    // 5) Bottom CTA Card (View Plans / Buy Package) - Only for freelancers
+                    if (isFreelancer)
+                      _UpgradeCard(
+                        onViewPlans: () => context.go('/subscription'),
+                      ),
 
                     // Bottom padding for safe area
                     SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
@@ -307,11 +310,13 @@ class _SettingsListCard extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onSettings;
   final VoidCallback onSubscription;
+  final bool showSubscription;
 
   const _SettingsListCard({
     required this.onEditProfile,
     required this.onSettings,
     required this.onSubscription,
+    this.showSubscription = true,
   });
 
   @override
@@ -341,12 +346,14 @@ class _SettingsListCard extends StatelessWidget {
             label: 'Settings',
             onTap: onSettings,
           ),
-          const _SettingsDivider(),
-          _SettingsListItem(
-            icon: Icons.subscriptions_rounded,
-            label: 'Subscription',
-            onTap: onSubscription,
-          ),
+          if (showSubscription) ...[
+            const _SettingsDivider(),
+            _SettingsListItem(
+              icon: Icons.subscriptions_rounded,
+              label: 'Subscription',
+              onTap: onSubscription,
+            ),
+          ],
         ],
       ),
     );

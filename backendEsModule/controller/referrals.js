@@ -91,6 +91,7 @@ async function ensureReferralCode(userId, client = null) {
 /**
  * GET /referrals/me
  * Get current user's referral information
+ * Returns: { code, invitedCount, successfulCount, earnedAmount, weeklyRemaining }
  */
 export const getMyReferrals = async (req, res) => {
   // Safe extraction of userId from token
@@ -149,18 +150,23 @@ export const getMyReferrals = async (req, res) => {
     });
     return res.json({
       success: true,
-      referralCode: null,
+      code: null,
+      referralCode: null, // Legacy field for frontend compatibility
       link: '',
-      stats: { invited: 0, completed: 0, earned: 0 },
+      invitedCount: 0,
+      successfulCount: 0,
+      earnedAmount: 0,
+      weeklyRemaining: 3,
+      stats: {
+        invited: 0,
+        completed: 0,
+        earned: 0,
+      },
       rules: {
         referrerReward: 5.0,
         friendReward: 5.0,
         currency: "JOD",
       },
-      list: [],
-      ...(process.env.NODE_ENV !== 'production' ? {
-        _migrationHint: 'Database migration required. Run: node migrations/run_migration.js'
-      } : {})
     });
   }
   
@@ -207,8 +213,9 @@ export const getMyReferrals = async (req, res) => {
     const referralLink = `${domain}/app?ref=${referralCode}`;
     
     // Get stats - handle missing tables gracefully
-    let stats = { invited: 0, completed: 0, earned: 0 };
+    let stats = { invited: 0, completed: 0, earned: 0, weeklyRemaining: 3 };
     try {
+      // Get total counts and earned amount
       const statsResult = await client.query(`
         SELECT 
           COALESCE(COUNT(*) FILTER (WHERE status = 'pending'), 0)::INTEGER as invited,
@@ -219,13 +226,28 @@ export const getMyReferrals = async (req, res) => {
         WHERE r.referrer_user_id = $1
       `, [userId]);
       
+      // Get weekly referral count (last 7 days)
+      const weeklyCountResult = await client.query(`
+        SELECT COUNT(*)::INTEGER as weekly_count
+        FROM referrals
+        WHERE referrer_user_id = $1
+          AND created_at >= NOW() - INTERVAL '7 days'
+      `, [userId]);
+      
       if (statsResult.rows && statsResult.rows.length > 0) {
         const row = statsResult.rows[0];
+        const weeklyCount = weeklyCountResult.rows[0]?.weekly_count || 0;
+        const weeklyRemaining = Math.max(0, 3 - weeklyCount);
+        
         stats = {
           invited: parseInt(row.invited || 0, 10),
           completed: parseInt(row.completed || 0, 10),
           earned: parseFloat(row.earned || 0),
+          weeklyRemaining,
         };
+      } else if (weeklyCountResult.rows && weeklyCountResult.rows.length > 0) {
+        const weeklyCount = weeklyCountResult.rows[0]?.weekly_count || 0;
+        stats.weeklyRemaining = Math.max(0, 3 - weeklyCount);
       }
     } catch (statsErr) {
       // If tables don't exist, rollback and use default zero stats
@@ -245,15 +267,23 @@ export const getMyReferrals = async (req, res) => {
         // Return early with default values
         return res.json({
           success: true,
-          referralCode,
+          code: referralCode,
+          referralCode: referralCode, // Legacy field for frontend compatibility
           link: referralLink,
-          stats: { invited: 0, completed: 0, earned: 0 },
+          invitedCount: 0,
+          successfulCount: 0,
+          earnedAmount: 0,
+          weeklyRemaining: 3,
+          stats: {
+            invited: 0,
+            completed: 0,
+            earned: 0,
+          },
           rules: {
             referrerReward: 5.0,
             friendReward: 5.0,
             currency: "JOD",
           },
-          list: [],
         });
       } else {
         // Re-throw if it's a different error
@@ -324,13 +354,28 @@ export const getMyReferrals = async (req, res) => {
       }
     }
     
+    // Return format matching frontend requirements
+    // Include both new format (for future use) and legacy format (for current frontend)
     return res.json({
       success: true,
-      referralCode,
+      code: referralCode,
+      referralCode: referralCode, // Legacy field for frontend compatibility
       link: referralLink,
-      stats,
-      rules,
-      list: referralsList,
+      invitedCount: stats.invited || 0,
+      successfulCount: stats.completed || 0,
+      earnedAmount: stats.earned || 0,
+      weeklyRemaining: stats.weeklyRemaining || 3,
+      // Legacy format for current frontend
+      stats: {
+        invited: stats.invited || 0,
+        completed: stats.completed || 0,
+        earned: stats.earned || 0,
+      },
+      rules: {
+        referrerReward: 5.0,
+        friendReward: 5.0,
+        currency: "JOD",
+      },
     });
   } catch (err) {
     try {
@@ -357,8 +402,71 @@ export const getMyReferrals = async (req, res) => {
 };
 
 /**
+ * POST /referrals/code
+ * Create or get referral code for current user
+ * Always returns the same code for the same user
+ */
+export const createOrGetReferralCode = async (req, res) => {
+  const userId = req.token?.userId || req.token?.id || req.user?.id || req.user?.userId;
+  
+  if (!userId) {
+    return res.status(401).json({ 
+      success: false, 
+      message: "Unauthorized: missing user in token" 
+    });
+  }
+  
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Ensure user exists
+    const userCheck = await client.query(
+      'SELECT id FROM users WHERE id = $1 AND is_deleted = false',
+      [userId]
+    );
+    
+    if (userCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+    
+    // Ensure referral code exists (generate if missing)
+    const referralCode = await ensureReferralCode(userId, client);
+    
+    await client.query('COMMIT');
+    
+    return res.json({
+      success: true,
+      code: referralCode,
+    });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('createOrGetReferralCode ROLLBACK ERROR:', rollbackErr);
+    }
+    console.error('createOrGetReferralCode error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error",
+      error: process.env.NODE_ENV !== 'production' ? err.message : undefined
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * POST /referrals/apply
  * Apply referral code during signup
+ * Business Rules:
+ * - User cannot apply their own code
+ * - User can apply a referral code only once
+ * - Referrer must not exceed 3 referrals within the last 7 days (weekly limit)
  */
 export const applyReferralCode = async (req, res) => {
   const { code } = req.body;
@@ -378,7 +486,7 @@ export const applyReferralCode = async (req, res) => {
     // Find referrer by code
     const referrerResult = await client.query(
       'SELECT id FROM users WHERE referral_code = $1 AND id != $2',
-      [code.toUpperCase(), referredUserId]
+      [code.toUpperCase().trim(), referredUserId]
     );
     
     if (referrerResult.rows.length === 0) {
@@ -391,7 +499,16 @@ export const applyReferralCode = async (req, res) => {
     
     const referrerUserId = referrerResult.rows[0].id;
     
-    // Check if referral already exists
+    // Check if user is trying to refer themselves (additional check)
+    if (referrerUserId === referredUserId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        message: "You cannot refer yourself." 
+      });
+    }
+    
+    // Check if referral already exists (user can only apply one referral code)
     const existingResult = await client.query(
       'SELECT id FROM referrals WHERE referred_user_id = $1',
       [referredUserId]
@@ -401,11 +518,29 @@ export const applyReferralCode = async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        message: "Referral code already applied" 
+        message: "Referral code already used." 
       });
     }
     
-    // Create referral record
+    // MANDATORY: Check weekly limit - count referrals in last 7 days for referrer
+    const weeklyCountResult = await client.query(`
+      SELECT COUNT(*)::INTEGER as weekly_count
+      FROM referrals
+      WHERE referrer_user_id = $1
+        AND created_at >= NOW() - INTERVAL '7 days'
+    `, [referrerUserId]);
+    
+    const weeklyCount = weeklyCountResult.rows[0]?.weekly_count || 0;
+    
+    if (weeklyCount >= 3) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        message: "You have reached the weekly referral limit (3)." 
+      });
+    }
+    
+    // Create referral record with status 'pending' (becomes 'completed' when payment happens)
     await client.query(`
       INSERT INTO referrals (referrer_user_id, referred_user_id, status)
       VALUES ($1, $2, 'pending')
@@ -418,9 +553,16 @@ export const applyReferralCode = async (req, res) => {
       message: "Referral code applied successfully",
     });
   } catch (err) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('applyReferralCode ROLLBACK ERROR:', rollbackErr);
+    }
     console.error('applyReferralCode error:', err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
   } finally {
     client.release();
   }
