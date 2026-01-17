@@ -17,7 +17,6 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/explore_project_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
-import '../../../subscriptions/presentation/providers/subscription_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../search/presentation/providers/search_provider.dart';
@@ -60,7 +59,6 @@ class _ExploreProjectsScreenState
   void _refresh() {
     ref.invalidate(exploreProjectsProvider);
     ref.invalidate(exploreCategoriesProvider);
-    ref.invalidate(subscriptionStatusProvider);
   }
 
   @override
