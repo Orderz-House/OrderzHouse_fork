@@ -25,7 +25,7 @@ class DeliverModal extends StatefulWidget {
 }
 
 class _DeliverModalState extends State<DeliverModal> {
-  List<String> _selectedFiles = [];
+  final List<String> _selectedFiles = [];
 
   Future<void> _pickFiles() async {
     try {

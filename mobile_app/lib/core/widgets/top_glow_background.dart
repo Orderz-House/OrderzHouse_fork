@@ -21,7 +21,7 @@ class TopGlowBackground extends StatelessWidget {
         // Background gradient layer (subtle top glow - very light pinkish tint)
         Positioned.fill(
           child: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -29,7 +29,7 @@ class TopGlowBackground extends StatelessWidget {
                   AppColors.topGlowStart, // Very subtle pinkish tint
                   AppColors.topGlowEnd, // Pure white at bottom
                 ],
-                stops: const [0.0, 0.15], // Fades to white within ~15% of height
+                stops: [0.0, 0.15], // Fades to white within ~15% of height
               ),
             ),
           ),

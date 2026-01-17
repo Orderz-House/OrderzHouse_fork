@@ -55,7 +55,7 @@ class AppBottomNavBar extends StatelessWidget {
       height: totalHeight,
       decoration: BoxDecoration(
         color: barBackground,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(topCornerRadius),
           topRight: Radius.circular(topCornerRadius),
           bottomLeft: Radius.zero, // No bottom corner radius

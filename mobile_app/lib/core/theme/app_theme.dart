@@ -68,7 +68,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        hintStyle: TextStyle(
+        hintStyle: const TextStyle(
           color: AppColors.textTertiary, // Gray hint text
         ),
         contentPadding: const EdgeInsets.symmetric(
