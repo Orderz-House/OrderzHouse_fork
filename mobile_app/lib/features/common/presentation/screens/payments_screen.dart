@@ -356,7 +356,7 @@ class PaymentsScreen extends ConsumerWidget {
         final currency = rules['currency'] as String? ?? 'JOD';
         
         // Handle case where migration hasn't been run or code is null
-        final isMigrationNeeded = referralCode == null || referralCode == 'N/A' || (referralCode.isEmpty && link.isEmpty);
+        final isMigrationNeeded = referralCode == 'N/A' || (referralCode.isEmpty && link.isEmpty);
         
         return Container(
           padding: const EdgeInsets.all(20),
@@ -435,10 +435,10 @@ class PaymentsScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Your code',
                             style: TextStyle(
-                              color: const Color(0xFF6B7280),
+                              color: Color(0xFF6B7280),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -538,8 +538,8 @@ class PaymentsScreen extends ConsumerWidget {
                 ),
                 child: Text(
                   'Earn $referrerReward $currency when your friend buys a plan. Friend gets $friendReward $currency discount.',
-                  style: TextStyle(
-                    color: const Color(0xFF6B7280),
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -567,8 +567,8 @@ class PaymentsScreen extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            color: const Color(0xFF6B7280),
+          style: const TextStyle(
+            color: Color(0xFF6B7280),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),

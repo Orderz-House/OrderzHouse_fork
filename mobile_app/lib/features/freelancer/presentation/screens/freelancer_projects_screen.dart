@@ -261,8 +261,8 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB), // Light gray
+      decoration: const BoxDecoration(
+        color: Color(0xFFE5E7EB), // Light gray
         shape: BoxShape.circle,
       ),
       child: const Icon(

@@ -21,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
         child: Column(
           children: [
             // Standard AppBar/Header (like My Projects)
-            _ProfileTopBar(),
+            const _ProfileTopBar(),
             
             // Scrollable content
             Expanded(
@@ -240,8 +240,8 @@ class _ProfileHeader extends StatelessWidget {
     return Container(
       width: 76,
       height: 76,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB), // Light gray
+      decoration: const BoxDecoration(
+        color: Color(0xFFE5E7EB), // Light gray
         shape: BoxShape.circle,
       ),
       child: const Icon(
@@ -257,7 +257,7 @@ class _ProfileHeader extends StatelessWidget {
 class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _StatItem(number: '0', label: 'Projects'),
@@ -392,9 +392,9 @@ class _SettingsListItem extends StatelessWidget {
               ),
             ),
             // Right: Chevron (near-black)
-            Icon(
+            const Icon(
               Icons.chevron_right_rounded,
-              color: const Color(0xFF0F1115), // Near-black primary
+              color: Color(0xFF0F1115), // Near-black primary
               size: 22,
             ),
           ],
@@ -446,9 +446,9 @@ class _LogoutCard extends StatelessWidget {
           child: Row(
             children: [
               // Left: Red icon (no background)
-              Icon(
+              const Icon(
                 Icons.logout_rounded,
-                color: const Color(0xFFFF3B30), // Secondary red
+                color: Color(0xFFFF3B30), // Secondary red
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -464,9 +464,9 @@ class _LogoutCard extends StatelessWidget {
                 ),
               ),
               // Right: Chevron (red)
-              Icon(
+              const Icon(
                 Icons.chevron_right_rounded,
-                color: const Color(0xFFFF3B30), // Secondary red
+                color: Color(0xFFFF3B30), // Secondary red
                 size: 22,
               ),
             ],

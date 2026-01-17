@@ -246,8 +246,8 @@ class _ExploreProjectsScreenState
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB), // Light gray background
+      decoration: const BoxDecoration(
+        color: Color(0xFFE5E7EB), // Light gray background
         shape: BoxShape.circle,
       ),
       child: const Icon(
@@ -648,7 +648,7 @@ class _ExploreProjectsScreenState
     // Reduced total margin significantly to move button DOWN (closer to bottom nav)
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final bottomNavHeight = 85.0 + bottomPadding;
-    final buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
+    const buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
     // Significantly reduce margin to move button DOWN - position it closer to bottom nav
     final totalBottomMargin = bottomNavHeight + buttonSpacing - 120 ; // Reduced by 50px to move DOWN significantly
 
