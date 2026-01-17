@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/models/project.dart';
+import '../../../../core/widgets/gradient_button.dart';
 
 /// Bottom sheet for client to review delivery and approve/request changes
 class ReviewDeliveryBottomSheet extends StatefulWidget {
@@ -366,7 +367,7 @@ class _ReviewDeliveryBottomSheetState extends State<ReviewDeliveryBottomSheet> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFFF3B5C), width: 2),
+                        borderSide: const BorderSide(color: Color(0xFFFB923C), width: 2),
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -407,27 +408,12 @@ class _ReviewDeliveryBottomSheetState extends State<ReviewDeliveryBottomSheet> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton(
+                  child: GradientButton(
                     onPressed: _isSubmitting ? null : _handleApprove,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF3B5C), // Red accent
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text('Approve'),
+                    label: 'Approve',
+                    isLoading: _isSubmitting,
+                    height: 48,
+                    borderRadius: 12,
                   ),
                 ),
               ],

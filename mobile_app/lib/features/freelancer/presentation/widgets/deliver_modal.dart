@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/models/project.dart';
+import '../../../../core/widgets/gradient_button.dart';
 
 /// Modal for delivering project files
 class DeliverModal extends StatefulWidget {
@@ -279,27 +280,13 @@ class _DeliverModalState extends State<DeliverModal> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton(
+                    child: PrimaryGradientButton(
                       onPressed: widget.isSubmitting ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF3B5C), // Red accent
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: widget.isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text('Submit Delivery'),
+                      label: 'Submit Delivery',
+                      isLoading: widget.isSubmitting,
+                      height: 48,
+                      borderRadius: 12,
+                      width: double.infinity,
                     ),
                   ),
                 ],

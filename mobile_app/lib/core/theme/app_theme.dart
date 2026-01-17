@@ -78,7 +78,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary, // Coral-red
+          backgroundColor: AppColors.primary, // Orange
           foregroundColor: Colors.white,
           elevation: 4,
           shadowColor: AppColors.primary.withValues(alpha: 0.3),
