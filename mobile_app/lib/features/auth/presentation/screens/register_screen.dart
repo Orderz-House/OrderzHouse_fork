@@ -6,8 +6,12 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/models/category.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
+
+// Alias for backward compatibility
+typedef GradientButton = PrimaryGradientButton;
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -250,7 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: isActive ? 40 : 20,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: isActive ? const Color(0xFF0B0B0F) : const Color(0xFFE8E8EE), // Near-black active, light gray inactive
+                            color: isActive ? const Color(0xFFFB923C) : const Color(0xFFE8E8EE), // Orange active, light gray inactive
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -276,7 +280,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                      color: const Color(0xFFF8E9E9), // Light pink
+                      color: const Color.fromARGB(255, 255, 215, 182), // Light pink
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -289,7 +293,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: const Icon(
                             Icons.send_rounded,
                             size: 50,
-                      color: AppColors.primary, // Coral-red
+                      color: Color(0xFFEF4444), // Coral-red
                           ),
                         ),
                       ),
@@ -360,7 +364,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Text(
                             'Sign In',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: const Color(0xFFFF3B5C), // Red accent
+                              color: const Color(0xFFFB923C), // Red accent
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -380,9 +384,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             child: OutlinedButton(
                               onPressed: _previousStep,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFFF3B5C), // Red accent
+                                foregroundColor: const Color(0xFFFB923C), // Red accent
                                 side: const BorderSide(
-                                  color: Color(0xFFFF3B5C), // Red accent
+                                  color: Color(0xFFFB923C), // Orange accent
                                   width: 2,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -392,7 +396,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: Text(
                                 'Back',
                                 style: AppTextStyles.labelLarge.copyWith(
-                                  color: const Color(0xFFFF3B5C), // Red accent
+                                  color: const Color(0xFFFB923C), // Red accent
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
@@ -404,40 +408,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       // Next/Sign Up button
                       Expanded(
                         flex: _currentStep > 0 ? 1 : 1,
-                        child: SizedBox(
+                        child: GradientButton(
+                          onPressed: authState.isLoading
+                              ? null
+                              : (_currentStep == _totalSteps - 1 ? _handleRegister : _nextStep),
+                          label: _currentStep == _totalSteps - 1 ? 'Sign Up' : 'Next',
+                          isLoading: authState.isLoading,
                           height: 52,
-                          child: ElevatedButton(
-                            onPressed: authState.isLoading
-                                ? null
-                                : (_currentStep == _totalSteps - 1 ? _handleRegister : _nextStep),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF3B5C), // Red accent
-                              foregroundColor: Colors.white,
-                              elevation: 4,
-                              disabledBackgroundColor: const Color(0xFFFF3B5C).withOpacity(0.7), // Reduced opacity when disabled
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30), // Pill shape
-                              ),
-                              shadowColor: const Color(0xFFFF3B5C).withValues(alpha: 0.3),
-                            ),
-                            child: authState.isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : Text(
-                                    _currentStep == _totalSteps - 1 ? 'Sign Up' : 'Next',
-                                    style: AppTextStyles.labelLarge.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                          ),
+                          borderRadius: 30, // Pill shape
                         ),
                       ),
                     ],
@@ -599,7 +577,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xl),
           child: CircularProgressIndicator(
-            color: Color(0xFFFF3B5C), // Red accent
+            color: Color(0xFFFB923C), // Orange accent
           ),
         ),
       ),
@@ -611,19 +589,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Text(
                 'Failed to load categories',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFFFF3B5C), // Red accent for errors
+                  color: const Color(0xFFFB923C), // Red accent for errors
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              ElevatedButton(
+              PrimaryGradientButton(
                 onPressed: () {
                   ref.invalidate(exploreCategoriesProvider);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF3B5C), // Red accent
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Retry'),
+                label: 'Retry',
               ),
             ],
           ),
@@ -780,13 +754,13 @@ class _RoleCard extends StatelessWidget {
           color: isSelected ? Colors.white : Colors.white, // White background
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
+            color: isSelected ? const Color(0xFFFB923C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF3B5C).withValues(alpha: 0.08),
+                    color: const Color(0xFFFB923C).withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -809,7 +783,7 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFF8A8A95), // Red accent when selected, neutral gray when not
+              color: isSelected ? const Color(0xFFFB923C) : const Color(0xFF8A8A95), // Red accent when selected, neutral gray when not
             ),
             const SizedBox(height: 8),
             // Role title
@@ -829,10 +803,10 @@ class _RoleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFD1D5DB), // Red accent when selected
+                  color: isSelected ? const Color(0xFFFB923C) : const Color(0xFFD1D5DB), // Red accent when selected
                   width: 1.5,
                 ),
-                color: isSelected ? const Color(0xFFFF3B5C) : Colors.transparent, // Red accent when selected
+                color: isSelected ? const Color(0xFFFB923C) : Colors.transparent, // Red accent when selected
               ),
               child: isSelected
                   ? const Center(
@@ -877,13 +851,13 @@ class _CategoryCard extends StatelessWidget {
           color: Colors.white, // White background
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
+            color: isSelected ? const Color(0xFFFB923C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF3B5C).withValues(alpha: 0.1),
+                    color: const Color(0xFFFB923C).withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -916,7 +890,7 @@ class _CategoryCard extends StatelessWidget {
                 padding: EdgeInsets.only(left: AppSpacing.sm),
                 child: Icon(
                   Icons.check_circle,
-                  color: Color(0xFFFF3B5C), // Red accent
+                  color: Color(0xFFFB923C), // Orange accent
                   size: 20,
                 ),
               ),
@@ -972,7 +946,7 @@ class _StyledTextField extends StatelessWidget {
         style: AppTextStyles.bodyLarge.copyWith(
           color: const Color(0xFF0B0B0F), // Near-black primary
         ),
-        cursorColor: const Color(0xFFFF3B5C), // Red accent for cursor
+        cursorColor: const Color(0xFFFB923C), // Red accent for cursor
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: AppTextStyles.bodyMedium.copyWith(
@@ -1001,21 +975,21 @@ class _StyledTextField extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: Color(0xFFFF3B5C), // Red accent for focus
+              color: Color(0xFFFB923C), // Orange accent for focus
               width: 2,
             ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: Color(0xFFFF3B5C), // Red accent for errors
+              color: Color(0xFFFB923C), // Orange accent for errors
               width: 2,
             ),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: Color(0xFFFF3B5C), // Red accent for focused errors
+              color: Color(0xFFFB923C), // Orange accent for focused errors
               width: 2,
             ),
           ),

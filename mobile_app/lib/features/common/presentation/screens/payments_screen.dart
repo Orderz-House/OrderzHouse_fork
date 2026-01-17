@@ -381,12 +381,12 @@ class PaymentsScreen extends ConsumerWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF3B5C).withValues(alpha: 0.1),
+                      color: const Color(0xFFFB923C).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.card_giftcard_rounded,
-                      color: Color(0xFFFF3B5C),
+                      color: Color(0xFFFB923C),
                       size: 24,
                     ),
                   ),
@@ -491,7 +491,7 @@ class PaymentsScreen extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isMigrationNeeded 
                         ? const Color(0xFF9CA3AF) 
-                        : const Color(0xFFFF3B5C),
+                        : const Color(0xFFFB923C),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

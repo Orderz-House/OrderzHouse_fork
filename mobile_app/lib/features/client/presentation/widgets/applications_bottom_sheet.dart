@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/models/project.dart';
+import '../../../../core/widgets/gradient_button.dart';
 
 /// Bottom sheet showing applications for a project (client - fixed/hourly)
 class ApplicationsBottomSheet extends StatelessWidget {
@@ -222,7 +223,7 @@ class ApplicationsBottomSheet extends StatelessWidget {
                                       ),
                                       const SizedBox(width: AppSpacing.sm),
                                       Expanded(
-                                        child: ElevatedButton(
+                                        child: GradientButton(
                                           onPressed: isSubmitting
                                               ? null
                                               : () async {
@@ -247,25 +248,10 @@ class ApplicationsBottomSheet extends StatelessWidget {
                                                     }
                                                   }
                                                 },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFFF3B5C), // Red accent
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(vertical: 10),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          child: isSubmitting
-                                              ? const SizedBox(
-                                                  height: 16,
-                                                  width: 16,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                  ),
-                                                )
-                                              : const Text('Accept'),
+                                          label: 'Accept',
+                                          isLoading: isSubmitting,
+                                          height: 40,
+                                          borderRadius: 8,
                                         ),
                                       ),
                                     ],

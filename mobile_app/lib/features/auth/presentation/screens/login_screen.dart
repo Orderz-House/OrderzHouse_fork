@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -66,200 +67,185 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.background, // Pure white
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppSpacing.xxl),
-                // Top circle with icon
-                Center(
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8E9E9), // Light pink
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      size: 50,
-                      color: AppColors.primary, // Coral-red
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                // Title
-                Text(
-                  'Sign In',
-                  style: AppTextStyles.displayMedium.copyWith(
-                    color: const Color(0xFF111827),
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                // Subtitle
-                Text(
-                  'Please enter the code we just sent to email.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: const Color(0xFF6B7280),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                // Email input
-                _StyledTextField(
-                  controller: _emailController,
-                  hint: 'Username',
-                  prefixIcon: Icons.lock_outline,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Password input
-                _StyledTextField(
-                  controller: _passwordController,
-                  hint: 'Password',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: _obscurePassword,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF9CA3AF),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                  validator: Validators.required,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                // Forget Password link
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // Keep existing forget password logic if exists
-                      // For now, just a placeholder
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'Forget Password?',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // Sign In button
-                SizedBox(
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30), // Pill shape
-                      ),
-                      shadowColor: AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                    child: authState.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 16),
+                        // Top circle with icon
+                        Center(
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: const BoxDecoration(
+                              color: Color.fromARGB(255, 255, 215, 182), // Light pink
+                              shape: BoxShape.circle,
                             ),
-                          )
-                        : Text(
-                            'Sign In',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                            child: const Icon(
+                              Icons.send_rounded,
+                              size: 50,
+                              color: Color(0xFFEF4444), // Coral-red
                             ),
                           ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        // Title
+                        Text(
+                          'Sign In',
+                          style: AppTextStyles.displayMedium.copyWith(
+                            color: const Color(0xFF111827),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        // Subtitle
+                        Text(
+                          'Please enter the code we just sent to email.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: const Color(0xFF6B7280),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        // Email input
+                        _StyledTextField(
+                          controller: _emailController,
+                          hint: 'Username',
+                          prefixIcon: Icons.lock_outline,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: Validators.email,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        // Password input
+                        _StyledTextField(
+                          controller: _passwordController,
+                          hint: 'Password',
+                          prefixIcon: Icons.lock_outline,
+                          obscureText: _obscurePassword,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                          validator: Validators.required,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        // Forget Password link
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              // Keep existing forget password logic if exists
+                              // For now, just a placeholder
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Forget Password?',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // Sign In button
+                        GradientButton(
+                          onPressed: authState.isLoading ? null : _handleLogin,
+                          label: 'Sign In',
+                          isLoading: authState.isLoading,
+                          height: 52,
+                          borderRadius: 30, // Pill shape
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // Or sign up with divider
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: const Color(0xFFE5E7EB),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                              child: Text(
+                                'or sign up with',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: const Color(0xFF6B7280),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: const Color(0xFFE5E7EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // Social login buttons row (Google, Apple, Facebook)
+                        _buildSocialButtonsRow(),
+                        const SizedBox(height: AppSpacing.xl),
+                        // Bottom link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Don\'t have account? ',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                context.go('/register');
+                              },
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Sign Up',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color:const Color(0xFFFB923C),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                // Or sign up with divider
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        color: const Color(0xFFE5E7EB),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(
-                        'or sign up with',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: const Color(0xFF6B7280),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        color: const Color(0xFFE5E7EB),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // Social login buttons row (Google, Apple, Facebook)
-                _buildSocialButtonsRow(),
-                const SizedBox(height: AppSpacing.xl),
-                // Bottom link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Don\'t have account? ',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context.go('/register');
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Sign Up',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

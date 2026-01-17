@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Custom project card for Client MyProjects screen
 /// Clean list view - actions moved to Project Details
@@ -67,7 +68,7 @@ class ClientProjectCard extends StatelessWidget {
                           child: const Center(
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4D57)),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                             ),
                           ),
                         ),

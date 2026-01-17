@@ -298,7 +298,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 14,
-                  color: Color(0xFFFF3B5C), // Accent color for icon
+                  color: Color(0xFFFB923C), // Accent color for icon
                 ),
                 const SizedBox(width: 5),
                 Text(
@@ -583,13 +583,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF3B5C).withOpacity(0.15), // Accent color with 15% opacity
+                    color: const Color(0xFFFB923C).withOpacity(0.15), // Accent color with 15% opacity
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     durationLabel,
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFFFF3B5C), // Accent color for text
+                      color: const Color(0xFFFB923C), // Accent color for text
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -7,7 +7,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projects/data/repositories/projects_repository.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
@@ -550,47 +552,23 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
+              GradientButton(
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        if (formKey.currentState!.validate()) {
+                          final bidAmount = double.parse(bidAmountController.text);
+                          final proposal = proposalController.text.trim().isEmpty
+                              ? null
+                              : proposalController.text.trim();
+                          Navigator.pop(context);
+                          _handleSendOffer(bidAmount, proposal);
+                        }
+                      },
+                label: 'Send Offer',
+                isLoading: _isLoading,
                 height: 54,
-                child: ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          if (formKey.currentState!.validate()) {
-                            final bidAmount = double.parse(bidAmountController.text);
-                            final proposal = proposalController.text.trim().isEmpty
-                                ? null
-                                : proposalController.text.trim();
-                            Navigator.pop(context);
-                            _handleSendOffer(bidAmount, proposal);
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Send Offer',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+                borderRadius: 18,
               ),
               const SizedBox(height: 16),
             ],
@@ -1103,19 +1081,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             const SizedBox(width: 12),
             // Approve button (right, filled)
             Expanded(
-              child: ElevatedButton.icon(
+              child: PrimaryGradientButton(
                 onPressed: () => _handleApproveDelivery(context),
-                icon: const Icon(Icons.check_circle_rounded, size: 20),
-                label: const Text('Approve'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF3B5C),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
+                label: 'Approve',
+                icon: Icons.check_circle_rounded,
+                height: 48,
+                borderRadius: 12,
+                width: double.infinity,
               ),
             ),
           ],
@@ -1142,19 +1114,12 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           ],
         ),
         child: _shouldShowFreelancerDeliver
-            ? ElevatedButton.icon(
+            ? GradientButton(
                 onPressed: () => _openDeliverModal(context),
-                icon: const Icon(Icons.send_rounded, size: 20),
-                label: const Text('Deliver Work'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF3B5C),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
+                label: 'Deliver Work',
+                icon: Icons.send_rounded,
+                height: 48,
+                borderRadius: 12,
               )
             : _shouldShowFreelancerWaiting
                 ? Container(
@@ -1898,16 +1863,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          gradient: isDisabled
-              ? null
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary, // Coral-red
-                    AppColors.primaryLight, // Lighter coral-red
-                  ],
-                ),
+          gradient: isDisabled ? null : AppGradients.primaryButton,
           color: isDisabled ? Colors.grey.shade300 : null,
           borderRadius: BorderRadius.circular(20),
           boxShadow: isDisabled

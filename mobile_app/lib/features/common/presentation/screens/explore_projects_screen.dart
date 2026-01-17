@@ -9,6 +9,7 @@ import '../../../../core/models/user.dart';
 import '../../../../core/models/search_result.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
@@ -16,6 +17,7 @@ import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/explore_project_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -538,7 +540,7 @@ class _ExploreProjectsScreenState
       child: searchResultsAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4D57)), // Coral-red
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
         error: (error, stackTrace) => ErrorState(
@@ -652,37 +654,15 @@ class _ExploreProjectsScreenState
 
     return Container(
       margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav
-      child: ElevatedButton(
+      child: PrimaryGradientButton(
         onPressed: () {
           context.go('/create-project');
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF3B5C), // Secondary red
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30), // Pill shape
-          ),
-          elevation: 4,
-          shadowColor: const Color(0xFFFF3B5C).withValues(alpha: 0.3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add_rounded, size: 20),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Add Project',
-              style: AppTextStyles.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        label: 'Add Project',
+        icon: Icons.add_rounded,
+        width: null, // Use intrinsic width (pill shape)
+        height: 48,
+        borderRadius: 30, // Pill shape
       ),
     );
   }
