@@ -83,7 +83,7 @@ export default function HoverCardsBackground({
       <ellipse cx="254" cy="296" rx="20" ry="6" fill="#fff" stroke="#111827" stroke-opacity="0.08"/>
       <!-- dollar -->
       <path d="M300 286c-8 0-14 4-14 10 0 14 26 6 26 18 0 6-6 10-14 10"
-            fill="none" stroke="${accent}" stroke-opacity="0.28" stroke-width="3" stroke-linecap="round"/>
+            fill="none" stroke="${accent}" stroke -opacity="0.28" stroke-width="3" stroke-linecap="round"/>
       <path d="M299 280v42" stroke="${accent}" stroke-opacity="0.20" stroke-width="3" stroke-linecap="round"/>
 
       <!-- ===== Subtle connectors (client ⇄ freelancer) ===== -->

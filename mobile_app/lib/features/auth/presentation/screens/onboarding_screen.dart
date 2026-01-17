@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/gradient_button.dart';
 
 /// Onboarding page model
 class OnboardingPage {
@@ -120,26 +121,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       SizedBox(
                         width: double.infinity,
                         height: 56,
-                        child: ElevatedButton(
+                        child: PrimaryGradientButton(
                           onPressed: () {
                             context.go('/register');
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF3B5C),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                          ),
-                          child: Text(
-                            'Register',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
+                          label: 'Register',
+                          height: 56,
+                          borderRadius: AppRadius.lg,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -152,9 +140,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             context.go('/login');
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFF3B5C),
+                            foregroundColor: const Color(0xFFFB923C),
                             side: const BorderSide(
-                              color: Color(0xFFFF3B5C),
+                              color: Color(0xFFFB923C),
                               width: 2,
                             ),
                             shape: RoundedRectangleBorder(
@@ -164,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Text(
                             'Sign in',
                             style: AppTextStyles.labelLarge.copyWith(
-                              color: const Color(0xFFFF3B5C),
+                              color: const Color(0xFFFB923C),
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
                             ),
@@ -283,8 +271,8 @@ class _OnboardingPageContentState extends State<_OnboardingPageContent>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFFFF3B5C),
-                      Color.fromARGB(255, 254, 179, 190),
+                      Color(0xFFFB923C),
+                      Color(0xFFEF4444),
                     ],
                   ),
                   boxShadow: [
@@ -371,8 +359,8 @@ class _DotsIndicator extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(
             color: isActive
-                ? const Color(0xFFFF3B5C)
-                : const Color(0xFFFF3B5C).withOpacity(0.3),
+                ? const Color(0xFFFB923C)
+                : const Color(0xFFFB923C).withOpacity(0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         );

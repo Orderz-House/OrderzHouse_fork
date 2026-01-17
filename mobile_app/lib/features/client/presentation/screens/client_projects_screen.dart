@@ -12,6 +12,7 @@ import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/client_project_card.dart';
@@ -488,37 +489,15 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
   Widget _buildFloatingActionButton(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 80), // Space above bottom nav
-      child: ElevatedButton(
+      child: PrimaryGradientButton(
         onPressed: () {
           context.go('/create-project');
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF3B5C), // Secondary red
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          elevation: 4,
-          shadowColor: const Color(0xFFFF3B5C).withValues(alpha: 0.3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add_rounded, size: 20),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Add Project',
-              style: AppTextStyles.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        label: 'Add Project',
+        icon: Icons.add_rounded,
+        width: null, // Use intrinsic width (pill shape)
+        height: 48,
+        borderRadius: 30,
       ),
     );
   }

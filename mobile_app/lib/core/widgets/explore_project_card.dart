@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/project.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Explore Project Card - Matches reference design exactly
 /// - Top image with rounded corners
@@ -75,7 +76,7 @@ class ExploreProjectCard extends StatelessWidget {
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4D57)), // Coral-red
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                                 ),
                               ),
                             ),
