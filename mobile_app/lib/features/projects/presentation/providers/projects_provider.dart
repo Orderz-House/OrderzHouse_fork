@@ -8,8 +8,9 @@ final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
   return ProjectsRepository(ref: ref);
 });
 
+// Changed from autoDispose to prevent refetch on rebuilds
 final myProjectsProvider =
-    FutureProvider.autoDispose<List<Project>>((ref) async {
+    FutureProvider<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
   final response = await repository.getMyProjects();
 

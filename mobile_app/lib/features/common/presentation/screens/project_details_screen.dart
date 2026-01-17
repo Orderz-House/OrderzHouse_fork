@@ -10,7 +10,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projects/data/repositories/projects_repository.dart';
+import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../offers/data/repositories/offers_repository.dart';
+import '../../../freelancer/presentation/widgets/change_requests_bottom_sheet.dart';
+import '../../../freelancer/presentation/widgets/deliver_modal.dart';
+import '../../../client/presentation/widgets/review_delivery_bottom_sheet.dart';
+import '../../../client/presentation/widgets/offers_bottom_sheet.dart';
+import '../../../client/presentation/widgets/applications_bottom_sheet.dart';
 
 // Providers
 final offersRepositoryProvider = Provider<OffersRepository>((ref) {
@@ -37,11 +43,275 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   bool _hasApplied = false;
   bool _isLoading = false;
   bool _isCheckingApplied = true;
+  
+  // Store raw project data for additional fields
+  Map<String, dynamic>? _projectData;
+  
+  // Assignment data
+  Map<String, dynamic>? _assignment;
+  bool _isLoadingAssignment = true;
+  
+  // Local state for pending deliveries (freelancer)
+  bool _pendingLocal = false;
+  
+  // Store offers and applications data (client)
+  List<Map<String, dynamic>> _offers = [];
+  List<Map<String, dynamic>> _applications = [];
+  Map<String, int>? _offersStats; // pending/accepted/rejected counts
+  
+  // Deliveries data
+  List<Map<String, dynamic>> _deliveries = [];
+  bool _isLoadingDeliveries = false;
 
   @override
   void initState() {
     super.initState();
     _checkIfApplied();
+    _fetchRawProjectData();
+    _fetchAssignment(); // This will call _fetchDeliveriesIfNeeded() after assignment loads
+  }
+  
+  // Fetch deliveries if user is owner or assigned freelancer
+  Future<void> _fetchDeliveriesIfNeeded() async {
+    // Check ownership and assignment
+    final authState = ref.read(authStateProvider);
+    final currentUserId = authState.user?.id;
+    final isOwnerCheck = currentUserId != null && widget.project.userId == currentUserId;
+    
+    // Check if assigned (need to check assignment data)
+    bool isAssignedCheck = false;
+    if (_assignment != null && currentUserId != null) {
+      final assignmentFreelancerId = _assignment!['freelancer_id'] as int?;
+      final assignmentStatus = (_assignment!['assignment_status'] ?? _assignment!['status'] ?? '').toString().toLowerCase();
+      isAssignedCheck = assignmentFreelancerId == currentUserId && ['active', 'assigned', 'accepted'].contains(assignmentStatus);
+    }
+    
+    if (!isOwnerCheck && !isAssignedCheck) {
+      return;
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (_isLoadingDeliveries) {
+      return;
+    }
+    
+    setState(() {
+      _isLoadingDeliveries = true;
+    });
+    
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getProjectDeliveries(widget.project.id);
+      
+      if (mounted && response.success && response.data != null) {
+        setState(() {
+          _deliveries = response.data!;
+          _isLoadingDeliveries = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _isLoadingDeliveries = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingDeliveries = false;
+        });
+      }
+    }
+  }
+  
+  // Normalize status key (completion_status takes precedence, fallback to status)
+  String get _statusKey {
+    final completionStatus = (_projectData?['completion_status'] ?? '').toString().toLowerCase();
+    final status = (_projectData?['status'] ?? widget.project.status ?? '').toString().toLowerCase();
+    return completionStatus.isNotEmpty ? completionStatus : status;
+  }
+  
+  // Fetch assignment details
+  Future<void> _fetchAssignment() async {
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getMyAssignment(widget.project.id);
+      
+      if (mounted) {
+        setState(() {
+          _assignment = response.data;
+          _isLoadingAssignment = false;
+        });
+        
+        // Fetch deliveries after assignment is loaded
+        _fetchDeliveriesIfNeeded();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _assignment = null;
+          _isLoadingAssignment = false;
+        });
+        
+        // Still try to fetch deliveries (might be owner)
+        _fetchDeliveriesIfNeeded();
+      }
+    }
+  }
+  
+  // Compute visibility booleans
+  bool get _isOwner {
+    final authState = ref.read(authStateProvider);
+    final currentUserId = authState.user?.id;
+    return currentUserId != null && widget.project.userId == currentUserId;
+  }
+  
+  bool get _isFreelancerRole {
+    final authState = ref.read(authStateProvider);
+    return authState.user?.roleId == 3; // FREELANCER_ROLE_ID
+  }
+  
+  bool get _isClientRole {
+    final authState = ref.read(authStateProvider);
+    return authState.user?.roleId == 2; // CLIENT_ROLE_ID
+  }
+  
+  bool get _isAssignedToMe {
+    if (_assignment == null) return false;
+    final authState = ref.read(authStateProvider);
+    final currentUserId = authState.user?.id;
+    if (currentUserId == null) return false;
+    
+    final assignmentFreelancerId = _assignment!['freelancer_id'] as int?;
+    final assignmentStatus = (_assignment!['assignment_status'] ?? _assignment!['status'] ?? '').toString().toLowerCase();
+    
+    final isMyAssignment = assignmentFreelancerId == currentUserId;
+    final isActiveStatus = ['active', 'assigned', 'accepted'].contains(assignmentStatus);
+    
+    return isMyAssignment && isActiveStatus;
+  }
+  
+  bool get _isAssignedToSomeone {
+    if (_assignment == null) return false;
+    final assignmentStatus = (_assignment!['assignment_status'] ?? _assignment!['status'] ?? '').toString().toLowerCase();
+    return ['active', 'assigned', 'accepted'].contains(assignmentStatus);
+  }
+  
+  // Should show freelancer actions section
+  bool get _shouldShowFreelancerActions {
+    return _isFreelancerRole && !_isOwner && _isAssignedToMe;
+  }
+  
+  // Should show client actions section
+  bool get _shouldShowClientActions {
+    return _isOwner;
+  }
+  
+  // Should show sticky Apply/Send Offer CTA
+  bool get _shouldShowStickyCTA {
+    if (!_isFreelancerRole || _isOwner || _isAssignedToMe || _isAssignedToSomeone) {
+      return false;
+    }
+    
+    final projectStatus = widget.project.status.toLowerCase();
+    final isOpen = ['open', 'active', 'pending', 'in_progress'].contains(projectStatus);
+    
+    return isOpen;
+  }
+  
+  // Fetch raw project data for additional fields
+  Future<void> _fetchRawProjectData() async {
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getMyProjectsRaw();
+      
+      if (response.success && response.data != null) {
+        final project = response.data!.firstWhere(
+          (p) => (p['id'] as int?) == widget.project.id,
+          orElse: () => {},
+        );
+        if (project.isNotEmpty) {
+          setState(() {
+            _projectData = project;
+          });
+        }
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+  
+  // Check if project has notifications (freelancer/owner)
+  bool _hasNotifications() {
+    final changeRequestMessage = _projectData?['change_request_message'] as String? ?? '';
+    final unresolvedCount = _projectData?['change_requests_unresolved_count'] as int? ?? 0;
+    return changeRequestMessage.trim().isNotEmpty || unresolvedCount > 0;
+  }
+  
+  // Should show client review actions (Approve + Request Change)
+  bool get _shouldShowClientReviewActions {
+    if (!_isOwner) return false;
+    return _statusKey == 'pending_review' || _deliveries.isNotEmpty;
+  }
+  
+  // Should show freelancer deliver button
+  bool get _shouldShowFreelancerDeliver {
+    if (!_isAssignedToMe) return false;
+    return ['in_progress', 'not_started'].contains(_statusKey);
+  }
+  
+  // Should show freelancer waiting status
+  bool get _shouldShowFreelancerWaiting {
+    if (!_isAssignedToMe) return false;
+    return _statusKey == 'pending_review' || (_pendingLocal && _statusKey != 'completed');
+  }
+  
+  // Fetch offers for a project (client)
+  Future<void> _fetchOffers() async {
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getProjectOffers(widget.project.id);
+      
+      if (response.success && response.data != null) {
+        setState(() {
+          _offers = response.data!;
+          // Calculate stats
+          int pending = 0, accepted = 0, rejected = 0;
+          for (var offer in response.data!) {
+            final status = (offer['status'] ?? 'pending').toString().toLowerCase();
+            if (status == 'pending' || status == 'pending_client_approval') {
+              pending++;
+            } else if (status == 'accepted' || status == 'approved') {
+              accepted++;
+            } else if (status == 'rejected' || status == 'declined') {
+              rejected++;
+            }
+          }
+          _offersStats = {
+            'pending': pending,
+            'accepted': accepted,
+            'rejected': rejected,
+            'total': response.data!.length,
+          };
+        });
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  // Fetch applications for a project (client)
+  Future<void> _fetchApplications() async {
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getProjectApplications(widget.project.id);
+      
+      if (response.success && response.data != null) {
+        setState(() {
+          _applications = response.data!;
+        });
+      }
+    } catch (e) {
+      // Silently fail
+    }
   }
 
   Future<void> _checkIfApplied() async {
@@ -108,6 +378,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             _hasApplied = true;
             _isLoading = false;
           });
+          
+          // Refresh assignment after sending offer
+          _fetchAssignment();
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -159,6 +432,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             _hasApplied = true;
             _isLoading = false;
           });
+          
+          // Refresh assignment after applying
+          _fetchAssignment();
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -367,10 +643,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     
     // Show button only for freelancers, and only if project type is known (bidding/fixed/hourly)
     final hasValidProjectType = isBidding || isFixed || isHourly;
+    // Note: Actual visibility is controlled by _shouldShowStickyCTA which checks assignment
     final shouldShowButton = isFreelancer && hasValidProjectType;
-    
-    // DEBUG: Log values to check condition
-    debugPrint('ProjectDetails roleId=${user?.roleId}, projectType=${widget.project.projectType}, shouldShowButton=$shouldShowButton, buttonLabel=$buttonLabel, hasApplied=$_hasApplied');
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -722,29 +996,779 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                // Add bottom padding to prevent content from being hidden under bottom bar
+                SizedBox(
+                  height: MediaQuery.of(context).padding.bottom + 80, // Space for bottom bar
+                ),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: shouldShowButton && buttonLabel != null
-          ? SafeArea(
-              top: false,
-              bottom: true,
-              child: Builder(
-                builder: (context) {
-                  final label = buttonLabel!;
-                  return _buildBottomActionButton(
-                    context,
-                    label,
-                    isBidding,
-                    widget.project.id,
-                  );
+      bottomNavigationBar: _buildBottomBar(context, isFreelancer, isBidding, shouldShowButton, buttonLabel),
+    );
+  }
+  
+  // Build Actions Section (role-based, with assignment check) - DEPRECATED: Actions moved to bottom bar
+  Widget _buildActionsSection(BuildContext context, bool isFreelancer, bool isBidding) {
+    // This method is no longer used - actions are in bottom bar
+    return const SizedBox.shrink();
+  }
+  
+  // Build bottom bar (Actions or Apply/Send Offer CTA)
+  Widget? _buildBottomBar(BuildContext context, bool isFreelancer, bool isBidding, bool shouldShowButton, String? buttonLabel) {
+    // Wait for assignment and deliveries to load
+    if (_isLoadingAssignment || _isLoadingDeliveries) {
+      return null;
+    }
+    
+    // Debug logs
+    if (AppConfig.isDevelopment) {
+      debugPrint('🔍 ProjectDetails Bottom Bar Visibility:');
+      debugPrint('  isOwner: $_isOwner');
+      debugPrint('  isFreelancerRole: $_isFreelancerRole');
+      debugPrint('  isAssignedToMe: $_isAssignedToMe');
+      debugPrint('  statusKey: $_statusKey');
+      debugPrint('  deliveries.length: ${_deliveries.length}');
+      debugPrint('  shouldShowClientReviewActions: $_shouldShowClientReviewActions');
+      debugPrint('  shouldShowFreelancerActions: $_shouldShowFreelancerActions');
+      debugPrint('  shouldShowFreelancerDeliver: $_shouldShowFreelancerDeliver');
+      debugPrint('  shouldShowFreelancerWaiting: $_shouldShowFreelancerWaiting');
+      debugPrint('  shouldShowStickyCTA: $_shouldShowStickyCTA');
+    }
+    
+    // Show Client Actions (Approve + Request Change) if owner and pending_review
+    if (_shouldShowClientReviewActions) {
+      return _buildClientReviewBottomBar(context);
+    }
+    
+    // Show Freelancer Actions (Deliver or Waiting status) if assigned
+    if (_shouldShowFreelancerActions) {
+      return _buildFreelancerActionsBottomBar(context);
+    }
+    
+    // Show Apply/Send Offer CTA if applicable (not owner, not assigned)
+    if (_shouldShowStickyCTA) {
+      final label = isBidding ? 'Send Offer' : 'Apply';
+      return SafeArea(
+        top: false,
+        bottom: true,
+        child: _buildBottomActionButton(
+          context,
+          label,
+          isBidding,
+          widget.project.id,
+        ),
+      );
+    }
+    
+    return null;
+  }
+  
+  // Build Client Review Bottom Bar (Approve + Request Change)
+  Widget _buildClientReviewBottomBar(BuildContext context) {
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Request Change button (left, outlined)
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _openRequestChangesModal(context),
+                icon: const Icon(Icons.edit_rounded, size: 20),
+                label: const Text('Request Change'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF111827),
+                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Approve button (right, filled)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _handleApproveDelivery(context),
+                icon: const Icon(Icons.check_circle_rounded, size: 20),
+                label: const Text('Approve'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF3B5C),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Build Freelancer Actions Bottom Bar (Deliver or Waiting status)
+  Widget _buildFreelancerActionsBottomBar(BuildContext context) {
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: _shouldShowFreelancerDeliver
+            ? ElevatedButton.icon(
+                onPressed: () => _openDeliverModal(context),
+                icon: const Icon(Icons.send_rounded, size: 20),
+                label: const Text('Deliver Work'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF3B5C),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              )
+            : _shouldShowFreelancerWaiting
+                ? Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.hourglass_empty_rounded,
+                          color: Color(0xFFF59E0B),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Waiting for client review',
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: const Color(0xFFF59E0B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : _statusKey == 'completed'
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF10B981),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Approved ✅',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: const Color(0xFF10B981),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+      ),
+    );
+  }
+  
+  // Open change requests (freelancer)
+  Future<void> _openChangeRequests(BuildContext context) async {
+    final repository = ref.read(projectsRepositoryProvider);
+    List<Map<String, dynamic>> requests = [];
+    bool isLoading = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          if (isLoading && requests.isEmpty) {
+            repository.getChangeRequests(widget.project.id).then((response) {
+              if (response.success && response.data != null) {
+                setModalState(() {
+                  requests = response.data!;
+                  isLoading = false;
+                });
+              } else {
+                final changeRequestMessage = _projectData?['change_request_message'] as String?;
+                final changeRequestAt = _projectData?['change_request_at'];
+                if (changeRequestMessage != null && changeRequestMessage.isNotEmpty) {
+                  setModalState(() {
+                    requests = [
+                      {
+                        'id': 'local',
+                        'message': changeRequestMessage,
+                        'created_at': changeRequestAt,
+                      }
+                    ];
+                    isLoading = false;
+                  });
+                } else {
+                  setModalState(() {
+                    isLoading = false;
+                  });
+                }
+              }
+            }).catchError((e) {
+              final changeRequestMessage = _projectData?['change_request_message'] as String?;
+              final changeRequestAt = _projectData?['change_request_at'];
+              if (changeRequestMessage != null && changeRequestMessage.isNotEmpty) {
+                setModalState(() {
+                  requests = [
+                    {
+                      'id': 'local',
+                      'message': changeRequestMessage,
+                      'created_at': changeRequestAt,
+                    }
+                  ];
+                  isLoading = false;
+                });
+              } else {
+                setModalState(() {
+                  isLoading = false;
+                });
+              }
+            });
+          }
+
+          return ChangeRequestsBottomSheet(
+            requests: requests,
+            isLoading: isLoading,
+          );
+        },
+      ),
+    );
+  }
+  
+  // Open deliver modal (freelancer)
+  Future<void> _openDeliverModal(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (context) => DeliverModal(
+        project: widget.project,
+        onClose: () => Navigator.pop(context),
+        onSubmit: (project, filePaths) async {
+          final repository = ref.read(projectsRepositoryProvider);
+          final response = await repository.deliverProject(project.id, filePaths);
+
+          if (!response.success) {
+            throw Exception(response.message ?? 'Failed to deliver project');
+          }
+
+          // Update local state immediately
+          setState(() {
+            _pendingLocal = true;
+            _projectData = {
+              ...?_projectData,
+              'completion_status': 'pending_review',
+              'status': 'pending_review',
+            };
+          });
+
+          // Refresh deliveries
+          await _fetchDeliveriesIfNeeded();
+
+          // Refresh projects list
+          ref.invalidate(myProjectsProvider);
+          await ref.read(myProjectsProvider.future);
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Delivery submitted successfully ✅'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context);
+          }
+        },
+        isSubmitting: false,
+      ),
+    );
+  }
+  
+  // Handle Approve Delivery (client)
+  Future<void> _handleApproveDelivery(BuildContext context) async {
+    if (_isLoading) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.approveDelivery(widget.project.id);
+      
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to approve delivery');
+      }
+      
+      // Update local state
+      setState(() {
+        _projectData = {
+          ...?_projectData,
+          'completion_status': 'completed',
+          'status': 'completed',
+        };
+        _isLoading = false;
+      });
+      
+      // Refresh deliveries
+      await _fetchDeliveriesIfNeeded();
+      
+      // Refresh projects list
+      ref.invalidate(myProjectsProvider);
+      await ref.read(myProjectsProvider.future);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Project approved successfully ✅'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  // Open Request Changes Modal (client)
+  Future<void> _openRequestChangesModal(BuildContext context) async {
+    final messageController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Request Changes',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: messageController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: 'Message',
+                  hintText: 'Describe what changes are needed...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Message is required';
+                  }
+                  return null;
                 },
               ),
-            )
-          : null,
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            Navigator.pop(context);
+                            await _handleRequestChanges(context, messageController.text.trim());
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Send Request',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Handle Request Changes (client)
+  Future<void> _handleRequestChanges(BuildContext context, String message) async {
+    if (_isLoading) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.requestChanges(widget.project.id, message);
+      
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to send change request');
+      }
+      
+      // Update local state
+      setState(() {
+        _projectData = {
+          ...?_projectData,
+          'status': 'in_progress',
+          'completion_status': 'in_progress',
+        };
+        _isLoading = false;
+      });
+      
+      // Refresh deliveries
+      await _fetchDeliveriesIfNeeded();
+      
+      // Refresh projects list
+      ref.invalidate(myProjectsProvider);
+      await ref.read(myProjectsProvider.future);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Change request sent successfully ✅'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send request: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  // Open review delivery (client) - for viewing deliveries only
+  Future<void> _openReviewDelivery(BuildContext context) async {
+    final repository = ref.read(projectsRepositoryProvider);
+    List<Map<String, dynamic>> deliveries = [];
+    bool isLoading = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          if (isLoading && deliveries.isEmpty) {
+            repository.getProjectDeliveries(widget.project.id).then((response) {
+              setModalState(() {
+                if (response.success && response.data != null) {
+                  deliveries = response.data!;
+                }
+                isLoading = false;
+              });
+            }).catchError((e) {
+              setModalState(() {
+                isLoading = false;
+              });
+            });
+          }
+
+          return ReviewDeliveryBottomSheet(
+            project: widget.project,
+            deliveries: deliveries,
+            isLoading: isLoading,
+            onClose: () => Navigator.pop(context),
+            onApprove: (projectId) async {
+              final repository = ref.read(projectsRepositoryProvider);
+              final response = await repository.approveDelivery(projectId);
+              if (!response.success) {
+                throw Exception(response.message ?? 'Failed to approve delivery');
+              }
+              setState(() {
+                _projectData = {
+                  ...?_projectData,
+                  'completion_status': 'completed',
+                  'status': 'completed',
+                };
+              });
+              
+              // Refresh deliveries
+              await _fetchDeliveriesIfNeeded();
+              
+              ref.invalidate(myProjectsProvider);
+              await ref.read(myProjectsProvider.future);
+            },
+            onRequestChanges: (projectId, message) async {
+              final repository = ref.read(projectsRepositoryProvider);
+              final response = await repository.requestChanges(projectId, message);
+              if (!response.success) {
+                throw Exception(response.message ?? 'Failed to send change request');
+              }
+              setState(() {
+                _projectData = {
+                  ...?_projectData,
+                  'status': 'in_progress',
+                  'completion_status': 'in_progress',
+                };
+              });
+              
+              // Refresh deliveries
+              await _fetchDeliveriesIfNeeded();
+              
+              ref.invalidate(myProjectsProvider);
+              await ref.read(myProjectsProvider.future);
+            },
+            onRefresh: () {
+              setModalState(() {
+                isLoading = true;
+                deliveries = [];
+              });
+              repository.getProjectDeliveries(widget.project.id).then((response) {
+                setModalState(() {
+                  if (response.success && response.data != null) {
+                    deliveries = response.data!;
+                  }
+                  isLoading = false;
+                });
+              }).catchError((e) {
+                setModalState(() {
+                  isLoading = false;
+                });
+              });
+            },
+          );
+        },
+      ),
+    );
+  }
+  
+  // Open offers (client)
+  Future<void> _openOffers(BuildContext context) async {
+    if (_offers.isEmpty) {
+      await _fetchOffers();
+    }
+
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return OffersBottomSheet(
+            project: widget.project,
+            offers: _offers,
+            isLoading: false,
+            isSubmitting: isSubmitting,
+            onClose: () => Navigator.pop(context),
+            onAction: (offerId, action) async {
+              setModalState(() => isSubmitting = true);
+              try {
+                final repository = ref.read(projectsRepositoryProvider);
+                final response = await repository.approveRejectOffer(offerId, action);
+                if (!response.success) {
+                  throw Exception(response.message ?? 'Failed to process offer');
+                }
+                setModalState(() {
+                  isSubmitting = false;
+                  final updatedOffers = _offers.map((offer) {
+                    if ((offer['id'] ?? offer['offer_id']) == offerId) {
+                      return {...offer, 'status': action == 'accept' ? 'accepted' : 'rejected'};
+                    }
+                    return offer;
+                  }).toList();
+                  setState(() {
+                    _offers = updatedOffers;
+                    int pending = 0, accepted = 0, rejected = 0;
+                    for (var offer in updatedOffers) {
+                      final status = (offer['status'] ?? 'pending').toString().toLowerCase();
+                      if (status == 'pending' || status == 'pending_client_approval') {
+                        pending++;
+                      } else if (status == 'accepted' || status == 'approved') {
+                        accepted++;
+                      } else if (status == 'rejected' || status == 'declined') {
+                        rejected++;
+                      }
+                    }
+                    _offersStats = {
+                      'pending': pending,
+                      'accepted': accepted,
+                      'rejected': rejected,
+                      'total': updatedOffers.length,
+                    };
+                  });
+                });
+                ref.invalidate(myProjectsProvider);
+                await ref.read(myProjectsProvider.future);
+              } catch (e) {
+                setModalState(() => isSubmitting = false);
+                rethrow;
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+  
+  // Open applications (client)
+  Future<void> _openApplications(BuildContext context) async {
+    if (_applications.isEmpty) {
+      await _fetchApplications();
+    }
+
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return ApplicationsBottomSheet(
+            project: widget.project,
+            applications: _applications,
+            isLoading: false,
+            isSubmitting: isSubmitting,
+            onClose: () => Navigator.pop(context),
+            onAction: (assignmentId, projectId, action) async {
+              setModalState(() => isSubmitting = true);
+              try {
+                final repository = ref.read(projectsRepositoryProvider);
+                final response = await repository.acceptRejectApplication(assignmentId, projectId, action);
+                if (!response.success) {
+                  throw Exception(response.message ?? 'Failed to process application');
+                }
+                setModalState(() {
+                  isSubmitting = false;
+                  final updatedApplications = _applications.map((app) {
+                    final appId = app['assignment_id'] ?? app['assignmentId'] ?? app['id'];
+                    if (appId == assignmentId) {
+                      return {...app, 'status': action == 'accept' ? 'active' : 'rejected'};
+                    } else if (action == 'accept') {
+                      return {...app, 'status': 'not_chosen'};
+                    }
+                    return app;
+                  }).toList();
+                  setState(() {
+                    _applications = updatedApplications;
+                  });
+                });
+                ref.invalidate(myProjectsProvider);
+                await ref.read(myProjectsProvider.future);
+              } catch (e) {
+                setModalState(() => isSubmitting = false);
+                rethrow;
+              }
+            },
+          );
+        },
+      ),
     );
   }
 

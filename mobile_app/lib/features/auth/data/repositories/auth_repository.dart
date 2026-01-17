@@ -88,6 +88,7 @@ class AuthRepository {
     required String country,
     required String username,
     List<int>? categoryIds,
+    String? referralCode,
   }) async {
     try {
       final data = {
@@ -103,6 +104,10 @@ class AuthRepository {
 
       if (categoryIds != null && categoryIds.isNotEmpty) {
         data['category_ids'] = categoryIds;
+      }
+      
+      if (referralCode != null && referralCode.trim().isNotEmpty) {
+        data['referral_code'] = referralCode.trim().toUpperCase();
       }
 
       final response = await _dio.post('/users/register', data: data);

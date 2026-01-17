@@ -26,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _countryController = TextEditingController();
   final _usernameController = TextEditingController();
+  final _referralCodeController = TextEditingController();
 
   int? _selectedRole;
   bool _obscurePassword = true;
@@ -43,6 +44,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _phoneController.dispose();
     _countryController.dispose();
     _usernameController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -186,6 +188,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     final authNotifier = ref.read(authStateProvider.notifier);
+    final referralCode = _referralCodeController.text.trim().toUpperCase();
+    
     final success = await authNotifier.register(
       roleId: _selectedRole!,
       firstName: _firstNameController.text.trim(),
@@ -196,6 +200,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       country: _countryController.text.trim(),
       username: _usernameController.text.trim(),
       categoryIds: _selectedRole == 3 ? _selectedCategories : null,
+      referralCode: referralCode.isNotEmpty ? referralCode : null,
     );
 
     if (!mounted) return;
@@ -230,7 +235,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Text(
                     'Step ${_currentStep + 1} of $_totalSteps',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: const Color(0xFF6B7280),
+                      color: const Color(0xFF8A8A95), // Muted gray
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -245,7 +250,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: isActive ? 40 : 20,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: isActive ? AppColors.primary : AppColors.border,
+                            color: isActive ? const Color(0xFF0B0B0F) : const Color(0xFFE8E8EE), // Near-black active, light gray inactive
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -270,14 +275,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: Container(
                           width: 100,
                           height: 100,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF8E9E9), // Light pink
+                          decoration: BoxDecoration(
+                      color: Color(0xFFF8E9E9), // Light pink
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.send_rounded,
                             size: 50,
-                            color: AppColors.primary, // Coral-red
+                      color: AppColors.primary, // Coral-red
                           ),
                         ),
                       ),
@@ -286,7 +298,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Text(
                         'Sign Up',
                         style: AppTextStyles.displayMedium.copyWith(
-                          color: const Color(0xFF111827),
+                          color: const Color(0xFF0B0B0F), // Near-black primary
                           fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,
@@ -296,7 +308,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Text(
                         _getStepSubtitle(),
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: const Color(0xFF6B7280),
+                          color: const Color(0xFF8A8A95), // Neutral gray
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -342,13 +354,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Text(
                             'Already have an account? ',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: const Color(0xFF6B7280),
+                              color: const Color(0xFF8A8A95), // Neutral gray
                             ),
                           ),
                           Text(
                             'Sign In',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
+                              color: const Color(0xFFFF3B5C), // Red accent
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -368,9 +380,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             child: OutlinedButton(
                               onPressed: _previousStep,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF6D5FFD),
+                                foregroundColor: const Color(0xFFFF3B5C), // Red accent
                                 side: const BorderSide(
-                                  color: Color(0xFF6D5FFD),
+                                  color: Color(0xFFFF3B5C), // Red accent
                                   width: 2,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -380,7 +392,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: Text(
                                 'Back',
                                 style: AppTextStyles.labelLarge.copyWith(
-                                  color: AppColors.primary,
+                                  color: const Color(0xFFFF3B5C), // Red accent
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
@@ -399,13 +411,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 ? null
                                 : (_currentStep == _totalSteps - 1 ? _handleRegister : _nextStep),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: const Color(0xFFFF3B5C), // Red accent
                               foregroundColor: Colors.white,
                               elevation: 4,
+                              disabledBackgroundColor: const Color(0xFFFF3B5C).withOpacity(0.7), // Reduced opacity when disabled
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30), // Pill shape
                               ),
-                              shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                              shadowColor: const Color(0xFFFF3B5C).withValues(alpha: 0.3),
                             ),
                             child: authState.isLoading
                                 ? const SizedBox(
@@ -530,7 +543,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Text(
                 'No categories available',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFF6B7280),
+                  color: const Color(0xFF8A8A95), // Neutral gray
                 ),
               ),
             ),
@@ -546,7 +559,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Text(
                 'Select at least one category',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: const Color(0xFF6B7280),
+                  color: const Color(0xFF8A8A95), // Neutral gray
                 ),
               ),
             ),
@@ -586,7 +599,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xl),
           child: CircularProgressIndicator(
-            color: Color(0xFF6D5FFD),
+            color: Color(0xFFFF3B5C), // Red accent
           ),
         ),
       ),
@@ -598,7 +611,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Text(
                 'Failed to load categories',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFFEF4444),
+                  color: const Color(0xFFFF3B5C), // Red accent for errors
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -607,7 +620,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ref.invalidate(exploreCategoriesProvider);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: const Color(0xFFFF3B5C), // Red accent
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Retry'),
@@ -665,7 +678,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           suffixIcon: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility_off : Icons.visibility,
-              color: const Color(0xFF9CA3AF),
+              color: const Color(0xFF8A8A95), // Neutral gray
             ),
             onPressed: () {
               setState(() {
@@ -684,7 +697,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           suffixIcon: IconButton(
             icon: Icon(
               _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-              color: const Color(0xFF9CA3AF),
+              color: const Color(0xFF8A8A95), // Neutral gray
             ),
             onPressed: () {
               setState(() {
@@ -718,6 +731,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           hint: 'Country',
           prefixIcon: Icons.location_on_outlined,
           validator: (v) => Validators.required(v, fieldName: 'Country'),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Optional referral code field
+        _StyledTextField(
+          controller: _referralCodeController,
+          hint: 'Referral Code (Optional)',
+          prefixIcon: Icons.card_giftcard_outlined,
+          textCapitalization: TextCapitalization.characters,
+          validator: null, // Optional field
         ),
       ],
     );
@@ -755,16 +777,16 @@ class _RoleCard extends StatelessWidget {
           vertical: 14,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF8F6FF) : const Color(0xFFFAFAFA),
+          color: isSelected ? Colors.white : Colors.white, // White background
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+            color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: const Color(0xFFFF3B5C).withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -787,7 +809,7 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? AppColors.primary : AppColors.iconGray,
+              color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFF8A8A95), // Red accent when selected, neutral gray when not
             ),
             const SizedBox(height: 8),
             // Role title
@@ -795,7 +817,7 @@ class _RoleCard extends StatelessWidget {
               role,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 14.5,
-                color: isSelected ? const Color(0xFF111827) : const Color(0xFF6B7280),
+                color: isSelected ? const Color(0xFF0B0B0F) : const Color(0xFF8A8A95), // Near-black when selected, neutral gray when not
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -807,10 +829,10 @@ class _RoleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF6D5FFD) : const Color(0xFFD1D5DB),
+                  color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFD1D5DB), // Red accent when selected
                   width: 1.5,
                 ),
-                color: isSelected ? const Color(0xFF6D5FFD) : Colors.transparent,
+                color: isSelected ? const Color(0xFFFF3B5C) : Colors.transparent, // Red accent when selected
               ),
               child: isSelected
                   ? const Center(
@@ -852,16 +874,16 @@ class _CategoryCard extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF8F6FF) : Colors.white,
+          color: Colors.white, // White background
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6D5FFD) : const Color(0xFFE5E7EB),
+            color: isSelected ? const Color(0xFFFF3B5C) : const Color(0xFFE8E8EE), // Red accent when selected, light gray when not
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
+                    color: const Color(0xFFFF3B5C).withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -882,7 +904,7 @@ class _CategoryCard extends StatelessWidget {
               child: Text(
                 category.name,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: isSelected ? const Color(0xFF111827) : const Color(0xFF6B7280),
+                  color: isSelected ? const Color(0xFF0B0B0F) : const Color(0xFF8A8A95), // Near-black when selected, neutral gray when not
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
                 maxLines: 2,
@@ -894,7 +916,7 @@ class _CategoryCard extends StatelessWidget {
                 padding: EdgeInsets.only(left: AppSpacing.sm),
                 child: Icon(
                   Icons.check_circle,
-                  color: Color(0xFF6D5FFD),
+                  color: Color(0xFFFF3B5C), // Red accent
                   size: 20,
                 ),
               ),
@@ -914,6 +936,7 @@ class _StyledTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final TextCapitalization? textCapitalization;
 
   const _StyledTextField({
     required this.controller,
@@ -923,6 +946,7 @@ class _StyledTextField extends StatelessWidget {
     this.suffixIcon,
     this.keyboardType,
     this.validator,
+    this.textCapitalization,
   });
 
   @override
@@ -944,32 +968,54 @@ class _StyledTextField extends StatelessWidget {
         obscureText: obscureText,
         keyboardType: keyboardType,
         validator: validator,
+        textCapitalization: textCapitalization ?? TextCapitalization.none,
         style: AppTextStyles.bodyLarge.copyWith(
-          color: const Color(0xFF111827),
+          color: const Color(0xFF0B0B0F), // Near-black primary
         ),
+        cursorColor: const Color(0xFFFF3B5C), // Red accent for cursor
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: const Color(0xFF9CA3AF),
+            color: const Color(0xFF9A9AA4), // Gray hint text
           ),
           prefixIcon: Icon(
             prefixIcon,
-            color: const Color(0xFF9CA3AF),
+            color: const Color(0xFF8A8A95), // Neutral gray for icons
             size: 20,
           ),
           suffixIcon: suffixIcon,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(
+              color: Color(0xFFE8E8EE), // Very light gray border
+              width: 1,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(
+              color: Color(0xFFE8E8EE), // Very light gray border
+              width: 1,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: Color(0xFF6D5FFD),
+              color: Color(0xFFFF3B5C), // Red accent for focus
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFFF3B5C), // Red accent for errors
+              width: 2,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFFF3B5C), // Red accent for focused errors
               width: 2,
             ),
           ),

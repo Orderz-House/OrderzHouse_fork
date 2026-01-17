@@ -12,21 +12,15 @@ class ProjectsRepository {
 
   ProjectsRepository({Ref? ref}) : _ref = ref;
 
-  /// Get user's projects (client or freelancer)
+  /// Get user's projects as raw JSON (for additional fields)
   /// Endpoint: GET /projects/myprojects
-  /// Response: { success: true, projects: [...] } or { projects: [...] } or { data: [...] }
-  Future<ApiResponse<List<Project>>> getMyProjects({
+  /// Returns raw project data including completion_status, change_request_message, etc.
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyProjectsRaw({
     int page = 1,
     int limit = 20,
   }) async {
     try {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => PATH: /projects/myprojects');
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => Query: page=$page, limit=$limit');
-      }
-
+      // Logging is handled by LoggingInterceptor, no need to duplicate here
       final response = await _dio.get(
         '/projects/myprojects',
         queryParameters: {
@@ -35,12 +29,73 @@ class ProjectsRepository {
         },
       );
 
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/myprojects');
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => Data length: ${response.data?.toString().length ?? 0} chars');
+      final data = response.data as Map<String, dynamic>;
+      List<dynamic>? projectsList;
+
+      if (data['projects'] != null && data['projects'] is List) {
+        projectsList = data['projects'] as List<dynamic>;
+      } else if (data['data'] != null) {
+        if (data['data'] is List) {
+          projectsList = data['data'] as List<dynamic>;
+        } else if (data['data'] is Map && data['data']['projects'] is List) {
+          projectsList = (data['data'] as Map<String, dynamic>)['projects'] as List<dynamic>;
+        }
+      } else if (data['rows'] != null && data['rows'] is List) {
+        projectsList = data['rows'] as List<dynamic>;
+      } else if (response.data is List) {
+        projectsList = response.data as List<dynamic>;
       }
+
+      if (projectsList == null || projectsList.isEmpty) {
+        return const ApiResponse(
+          success: true,
+          data: [],
+          message: 'No projects found',
+        );
+      }
+
+      final rawProjects = projectsList
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+
+      return ApiResponse(
+        success: true,
+        data: rawProjects,
+        message: 'Projects fetched successfully',
+      );
+    } on DioException catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch projects',
+      );
+    } catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch projects: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get user's projects (client or freelancer)
+  /// Endpoint: GET /projects/myprojects
+  /// Response: { success: true, projects: [...] } or { projects: [...] } or { data: [...] }
+  Future<ApiResponse<List<Project>>> getMyProjects({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      // Logging is handled by LoggingInterceptor, no need to duplicate here
+      final response = await _dio.get(
+        '/projects/myprojects',
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+        },
+      );
 
       final data = response.data as Map<String, dynamic>;
 
@@ -106,27 +161,7 @@ class ProjectsRepository {
         message: 'Projects fetched successfully',
       );
     } on DioException catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/myprojects');
-        // ignore: avoid_print
-        print('❌ ERROR => Type: ${e.type}');
-        // ignore: avoid_print
-        print('❌ ERROR => Final URL: ${e.requestOptions.uri}');
-        // ignore: avoid_print
-        print('❌ ERROR => Message: ${e.message}');
-        if (e.error != null) {
-          // ignore: avoid_print
-          print('❌ ERROR => Error: ${e.error}');
-        }
-        if (e.response != null) {
-          // ignore: avoid_print
-          print('❌ ERROR => Status Code: ${e.response?.statusCode}');
-          // ignore: avoid_print
-          print('❌ ERROR => Response Data: ${e.response?.data}');
-        }
-      }
-
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
       return ApiResponse(
         success: false,
         data: [],
@@ -135,11 +170,7 @@ class ProjectsRepository {
         error: e.response?.data as Map<String, dynamic>?,
       );
     } catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ UNEXPECTED ERROR => /projects/myprojects: $e');
-      }
-
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
       return ApiResponse(
         success: false,
         data: [],
@@ -810,6 +841,65 @@ class ProjectsRepository {
     }
   }
 
+  /// Get assignment details for freelancer on a specific project
+  /// Endpoint: GET /assignments/:projectId/my-assignment
+  /// Response: { success: true, assignment: {...} }
+  Future<ApiResponse<Map<String, dynamic>?>> getMyAssignment(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => PATH: /assignments/$projectId/my-assignment');
+      }
+
+      final response = await _dio.get('/assignments/$projectId/my-assignment');
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /assignments/$projectId/my-assignment');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final assignment = data['assignment'] as Map<String, dynamic>?;
+
+      return ApiResponse(
+        success: true,
+        data: assignment,
+        message: 'Assignment fetched successfully',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /assignments/$projectId/my-assignment');
+      }
+
+      // If 404, no assignment exists
+      if (e.response?.statusCode == 404) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'No assignment found',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch assignment',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /assignments/$projectId/my-assignment: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to fetch assignment: ${e.toString()}',
+      );
+    }
+  }
+
   /// Check if freelancer is assigned/applied to a project
   /// Endpoint: GET /assignments/:projectId/check
   /// Response: { success: true, is_assigned: boolean }
@@ -1099,6 +1189,473 @@ class ProjectsRepository {
         success: false,
         data: '',
         message: 'Failed to create checkout session: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get change requests for a project (freelancer notifications)
+  /// Endpoint: GET /projects/{projectId}/change-requests
+  Future<ApiResponse<List<Map<String, dynamic>>>> getChangeRequests(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => PATH: /projects/$projectId/change-requests');
+      }
+
+      final response = await _dio.get('/projects/$projectId/change-requests');
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/change-requests');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final items = data['requests'] ?? data['items'] ?? [];
+      final list = (items is List) ? items : [];
+
+      return ApiResponse(
+        success: true,
+        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        message: 'Change requests fetched successfully',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/change-requests');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch change requests',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/change-requests: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch change requests: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Deliver project (freelancer)
+  /// Endpoint: POST /projects/{projectId}/deliver
+  /// FormData key: "project_files" (multiple files)
+  Future<ApiResponse<void>> deliverProject(int projectId, List<String> filePaths) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /projects/$projectId/deliver');
+      }
+
+      final formData = FormData();
+      for (var i = 0; i < filePaths.length; i++) {
+        formData.files.add(
+          MapEntry(
+            'project_files',
+            await MultipartFile.fromFile(filePaths[i], filename: 'file_$i'),
+          ),
+        );
+      }
+
+      final response = await _dio.post('/projects/$projectId/deliver', data: formData);
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/deliver');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Project delivered successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to deliver project',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/deliver');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to deliver project',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/deliver: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to deliver project: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get project deliveries (for client review)
+  /// Endpoint: GET /projects/{projectId}/deliveries
+  Future<ApiResponse<List<Map<String, dynamic>>>> getProjectDeliveries(int projectId) async {
+    try {
+      // Logging is handled by LoggingInterceptor, no need to duplicate here
+      final response = await _dio.get('/projects/$projectId/deliveries');
+
+      final data = response.data as Map<String, dynamic>;
+      final items = data['deliveries'] ?? data['data'] ?? [];
+      final list = (items is List) ? items : [];
+
+      return ApiResponse(
+        success: true,
+        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        message: 'Deliveries fetched successfully',
+      );
+    } on DioException catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch deliveries',
+      );
+    } catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch deliveries: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Approve delivery (client)
+  /// Endpoint: PUT /projects/{projectId}/approve
+  Future<ApiResponse<void>> approveDelivery(int projectId) async {
+    try {
+      // Logging is handled by LoggingInterceptor, no need to duplicate here
+      final response = await _dio.put(
+        '/projects/$projectId/approve',
+        data: {'action': 'approve'},
+      );
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Delivery approved successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to approve delivery',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/approve');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to approve delivery',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/approve: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to approve delivery: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Request changes (client)
+  /// Endpoint: POST /projects/{projectId}/request-changes
+  Future<ApiResponse<void>> requestChanges(int projectId, String message) async {
+    try {
+      // Logging is handled by LoggingInterceptor, no need to duplicate here
+      final response = await _dio.post(
+        '/projects/$projectId/request-changes',
+        data: {'message': message},
+      );
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Change request sent successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to send change request',
+      );
+    } on DioException catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to send change request',
+      );
+    } catch (e) {
+      // Error logging is handled by LoggingInterceptor, no need to duplicate here
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to send change request: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get offers for a project (client - bidding projects)
+  /// Endpoint: GET /offers/project/{projectId}/offers
+  Future<ApiResponse<List<Map<String, dynamic>>>> getProjectOffers(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => PATH: /offers/project/$projectId/offers');
+      }
+
+      final response = await _dio.get('/offers/project/$projectId/offers');
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /offers/project/$projectId/offers');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final items = data['offers'] ?? data['data'] ?? [];
+      final list = (items is List) ? items : [];
+
+      return ApiResponse(
+        success: true,
+        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        message: 'Offers fetched successfully',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /offers/project/$projectId/offers');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch offers',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /offers/project/$projectId/offers: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch offers: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Approve or reject an offer (client)
+  /// Endpoint: POST /offers/offers/approve-reject
+  Future<ApiResponse<void>> approveRejectOffer(int offerId, String action) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /offers/offers/approve-reject');
+      }
+
+      final response = await _dio.post(
+        '/offers/offers/approve-reject',
+        data: {
+          'offer_id': offerId,
+          'action': action, // 'accept' or 'reject'
+        },
+      );
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /offers/offers/approve-reject');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Offer action completed successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to process offer',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /offers/offers/approve-reject');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to process offer',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /offers/offers/approve-reject: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to process offer: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get applications for a project (client - fixed/hourly projects)
+  /// Endpoint: GET /projects/project/{projectId}/applications
+  Future<ApiResponse<List<Map<String, dynamic>>>> getProjectApplications(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => PATH: /projects/project/$projectId/applications');
+      }
+
+      final response = await _dio.get('/projects/project/$projectId/applications');
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/project/$projectId/applications');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final items = data['applications'] ?? data['data'] ?? [];
+      final list = (items is List) ? items : [];
+
+      return ApiResponse(
+        success: true,
+        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        message: 'Applications fetched successfully',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/project/$projectId/applications');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: e.response?.data?['message'] as String? ?? 'Failed to fetch applications',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/project/$projectId/applications: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: [],
+        message: 'Failed to fetch applications: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Accept or reject an application (client)
+  /// Endpoint: POST /projects/applications/decision
+  Future<ApiResponse<void>> acceptRejectApplication(int assignmentId, int projectId, String action) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /projects/applications/decision');
+      }
+
+      final response = await _dio.post(
+        '/projects/applications/decision',
+        data: {
+          'assignmentId': assignmentId,
+          'projectId': projectId,
+          'action': action, // 'accept' or 'reject'
+        },
+      );
+
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/applications/decision');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Application action completed successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to process application',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/applications/decision');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to process application',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/applications/decision: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to process application: ${e.toString()}',
       );
     }
   }

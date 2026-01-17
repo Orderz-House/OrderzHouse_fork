@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/models/payment.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../payments/data/repositories/payments_repository.dart';
+import '../../../referrals/presentation/providers/referrals_provider.dart';
 
 // Provider for payments repository
 final paymentsRepositoryProvider = Provider<PaymentsRepository>((ref) {
@@ -199,10 +201,10 @@ class PaymentsScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  // Action/Info Card (Gradient Card)
+                  // Refer & Earn Card
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildGradientCard(context, userEmail),
+                    child: _buildReferAndEarnCard(context, ref),
                   ),
 
                   const SizedBox(height: 32),
@@ -284,162 +286,311 @@ class PaymentsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGradientCard(BuildContext context, String userEmail) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF3E5F5), // Light lavender
-            Color(0xFFFFE0B2), // Light orange
+  Widget _buildReferAndEarnCard(BuildContext context, WidgetRef ref) {
+    final referralsAsync = ref.watch(myReferralsProvider);
+    
+    return referralsAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
-        ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon + Title row
-          Row(
-            children: [
-              // Decorative circle with icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.verified_user_rounded,
-                  color: AppColors.primary,
-                  size: 28,
-                ),
+      error: (error, stack) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              'Failed to load referrals',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontSize: 14,
               ),
-              const SizedBox(width: 16),
-              // Title + Subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Secure your account',
-                      style: TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Keep your payment information safe',
-                      style: TextStyle(
-                        color: const Color(0xFF111827).withValues(alpha: 0.7),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => ref.invalidate(myReferralsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (data) {
+        final referralCode = data['referralCode'] as String? ?? 'N/A';
+        final link = data['link'] as String? ?? '';
+        final stats = data['stats'] as Map<String, dynamic>? ?? {};
+        final rules = data['rules'] as Map<String, dynamic>? ?? {};
+        
+        final invited = stats['invited'] as int? ?? 0;
+        final completed = stats['completed'] as int? ?? 0;
+        final earned = (stats['earned'] as num?)?.toDouble() ?? 0.0;
+        
+        final referrerReward = (rules['referrerReward'] as num?)?.toDouble() ?? 5.0;
+        final friendReward = (rules['friendReward'] as num?)?.toDouble() ?? 5.0;
+        final currency = rules['currency'] as String? ?? 'JOD';
+        
+        // Handle case where migration hasn't been run or code is null
+        final isMigrationNeeded = referralCode == null || referralCode == 'N/A' || (referralCode.isEmpty && link.isEmpty);
+        
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          // Address/Email pill row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    userEmail.isNotEmpty ? userEmail : 'No email available',
-                    style: const TextStyle(
-                      color: Color(0xFF111827),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(
-                    Icons.copy_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  onPressed: () {
-                    if (userEmail.isNotEmpty) {
-                      Clipboard.setData(ClipboardData(text: userEmail));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Email copied to clipboard'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // CTA Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // Navigate to subscription/plans screen if exists
-                // For now, just show a message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('View Plans feature coming soon'),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6D5FFD),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title + Subtitle
+              Row(
                 children: [
-                  Icon(Icons.share_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'View Plans',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF3B5C).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.card_giftcard_rounded,
+                      color: Color(0xFFFF3B5C),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Refer & Earn',
+                          style: TextStyle(
+                            color: Color(0xFF111827),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Invite friends and earn rewards',
+                          style: TextStyle(
+                            color: const Color(0xFF111827).withValues(alpha: 0.6),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 20),
+              
+              // Code box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFE5E7EB),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your code',
+                            style: TextStyle(
+                              color: const Color(0xFF6B7280),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isMigrationNeeded ? 'Loading...' : referralCode,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isMigrationNeeded)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.copy_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: referralCode));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Code copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Share button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: isMigrationNeeded ? null : () => _shareReferralLink(context, referralCode, link),
+                  icon: const Icon(Icons.share_rounded, size: 20),
+                  label: const Text('Share Invite'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isMigrationNeeded 
+                        ? const Color(0xFF9CA3AF) 
+                        : const Color(0xFFFF3B5C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Stats row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Invited', invited.toString()),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: _buildStatItem('Successful', completed.toString()),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: _buildStatItem('Earned', '$earned $currency'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Rules text
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Earn $referrerReward $currency when your friend buys a plan. Friend gets $friendReward $currency discount.',
+                  style: TextStyle(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
+  }
+  
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF111827),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: const Color(0xFF6B7280),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Future<void> _shareReferralLink(BuildContext context, String code, String link) async {
+    try {
+      final message = 'Join me on OrderzHouse. Use my code $code to get a reward when you subscribe. Link: $link';
+      await Share.share(message);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildRecentActivitySection(

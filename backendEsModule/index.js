@@ -52,6 +52,7 @@ import chatsRouter from "./router/chats.js";
 import StripeRouter from "./router/Stripe/stripe.js";
 import webhookRouter from "./router/Stripe/stripeWebhook.js";
 import searchRouter from "./router/search.js";
+import referralsRouter from "./router/referrals.js";
 
 
 // DB connection
@@ -121,6 +122,7 @@ app.use("/chat", chatsRouter);
 app.use("/api", liveScreenRoutes);
 app.use("/stripe", StripeRouter);
 app.use("/search", searchRouter);
+app.use("/referrals", referralsRouter);
 
 let server, io;
 

@@ -125,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             context.go('/register');
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6D5DFB),
+                            backgroundColor: const Color(0xFFFF3B5C),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -152,9 +152,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             context.go('/login');
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF6D5DFB),
+                            foregroundColor: const Color(0xFFFF3B5C),
                             side: const BorderSide(
-                              color: Color(0xFF6D5DFB),
+                              color: Color(0xFFFF3B5C),
                               width: 2,
                             ),
                             shape: RoundedRectangleBorder(
@@ -164,7 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Text(
                             'Sign in',
                             style: AppTextStyles.labelLarge.copyWith(
-                              color: const Color(0xFF6D5DFB),
+                              color: const Color(0xFFFF3B5C),
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
                             ),
@@ -283,13 +283,13 @@ class _OnboardingPageContentState extends State<_OnboardingPageContent>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF7C6BFF),
-                      Color(0xFFB7B0FF),
+                      Color(0xFFFF3B5C),
+                      Color.fromARGB(255, 254, 179, 190),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7C6BFF).withOpacity(0.3),
+                      color: const Color.fromARGB(255, 251, 119, 141).withOpacity(0.3),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                       spreadRadius: 0,
@@ -371,8 +371,8 @@ class _DotsIndicator extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(
             color: isActive
-                ? const Color(0xFF6D5DFB)
-                : const Color(0xFF6D5DFB).withOpacity(0.3),
+                ? const Color(0xFFFF3B5C)
+                : const Color(0xFFFF3B5C).withOpacity(0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         );
