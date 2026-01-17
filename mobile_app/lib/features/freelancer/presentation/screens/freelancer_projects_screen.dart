@@ -12,9 +12,9 @@ import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
-import '../../../../core/widgets/explore_project_card.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../widgets/freelancer_project_card.dart';
 
 class FreelancerProjectsScreen extends ConsumerStatefulWidget {
   const FreelancerProjectsScreen({super.key});
@@ -26,12 +26,20 @@ class FreelancerProjectsScreen extends ConsumerStatefulWidget {
 class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedStatus;
+  
+  // Store raw project data for additional fields (for future use if needed)
+  final Map<int, Map<String, dynamic>> _projectDataMap = {};
+  
+  // Guard to prevent multiple simultaneous calls
+  bool _isFetchingRawData = false;
+  bool _hasFetchedRawData = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
+
 
   // Check if project matches selected status
   bool _matchesStatus(Project project, String? selectedTabStatus) {
@@ -50,6 +58,49 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
       default:
         return project.status == selectedTabStatus;
     }
+  }
+
+  // Fetch and store raw project data (only once per data load)
+  Future<void> _fetchRawProjectDataForProjects(List<Project> projects) async {
+    // Prevent multiple simultaneous calls
+    if (_isFetchingRawData || _hasFetchedRawData) {
+      return;
+    }
+    
+    _isFetchingRawData = true;
+    
+    try {
+      final repository = ref.read(projectsRepositoryProvider);
+      final response = await repository.getMyProjectsRaw();
+      
+      if (response.success && response.data != null && mounted) {
+        setState(() {
+          // Store raw data by project ID
+          for (var rawProject in response.data!) {
+            final projectId = rawProject['id'] as int?;
+            if (projectId != null) {
+              _projectDataMap[projectId] = rawProject;
+            }
+          }
+          _hasFetchedRawData = true;
+        });
+      }
+    } catch (e) {
+      // Silently fail - we'll use fallback logic
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetchingRawData = false;
+        });
+      }
+    }
+  }
+  
+  // Reset raw data fetch flag when refreshing
+  void _onRefresh() {
+    setState(() {
+      _hasFetchedRawData = false;
+    });
   }
 
   @override
@@ -86,11 +137,15 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
+                _onRefresh();
                 ref.invalidate(myProjectsProvider);
                 await ref.read(myProjectsProvider.future);
               },
               child: projectsAsync.when(
                 data: (projects) {
+                  // Fetch and store raw project data (only once)
+                  _fetchRawProjectDataForProjects(projects);
+
                   if (filteredProjects == null || filteredProjects.isEmpty) {
                     return EmptyState(
                       icon: Icons.work_outline,
@@ -414,7 +469,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
     );
   }
 
-  // 4) Projects Grid (using ExploreProjectCard)
+  // 4) Projects Grid (clean list - actions moved to Project Details)
   Widget _buildProjectsGrid(BuildContext context, List<Project> projects) {
     return GridView.builder(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -427,8 +482,9 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
       itemCount: projects.length,
       itemBuilder: (context, index) {
         final project = projects[index];
-        return ExploreProjectCard(
+        return FreelancerProjectCard(
           project: project,
+          projectData: _projectDataMap[project.id],
           onTap: () {
             context.push(
               '/project/${project.id}',
@@ -439,6 +495,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
       },
     );
   }
+
 }
 
 // Removed _ProjectCard - now using ExploreProjectCard widget

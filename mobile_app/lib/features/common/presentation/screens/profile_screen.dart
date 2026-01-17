@@ -7,98 +7,159 @@ import '../../../../core/config/app_config.dart';
 import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_app/core/models/user.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  // Local state for dark mode toggle (TODO: connect to actual theme state if available)
-  bool _isDarkMode = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            top: 18,
-            left: 20,
-            right: 20,
-            bottom: 24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1) Top Profile Header
-              _ProfileHeader(user: user),
-              const SizedBox(height: 18),
+        child: Column(
+          children: [
+            // Standard AppBar/Header (like My Projects)
+            _ProfileTopBar(),
+            
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  top: 18,
+                  left: 20,
+                  right: 20,
+                  bottom: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1) Top Profile Header
+                    _ProfileHeader(user: user),
+                    const SizedBox(height: 18),
 
-              // 2) Stats Row
-              _StatsRow(),
-              const SizedBox(height: 18),
+                    // 2) Stats Row (placeholder stats - can be replaced with real data)
+                    _StatsRow(),
+                    const SizedBox(height: 18),
 
-              // 3) Two Action Buttons
-              _ActionButtonsRow(),
-              const SizedBox(height: 18),
-
-              // 4) Dark Mode Toggle Card
-              _DarkModeCard(
-                isDarkMode: _isDarkMode,
-                onToggle: (value) {
-                  setState(() {
-                    _isDarkMode = value;
-                  });
-                  // TODO: Connect to actual theme state management
-                },
-              ),
-              const SizedBox(height: 18),
-
-              // 5) Settings List Card
-              _SettingsListCard(),
-              const SizedBox(height: 18),
-
-              // 6) Logout Card
-              _LogoutCard(
-                onLogout: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Logout'),
-                        ),
-                      ],
+                    // 3) Settings List Card (original items)
+                    _SettingsListCard(
+                      onEditProfile: () => context.go('/edit-profile'),
+                      onSettings: () => context.go('/settings'),
+                      onSubscription: () => context.go('/subscription'),
                     ),
-                  );
+                    const SizedBox(height: 18),
 
-                  if (confirm == true && context.mounted) {
-                    await ref.read(authStateProvider.notifier).logout();
-                    if (context.mounted) {
-                      context.go('/login');
-                    }
+                    // 4) Logout Card (separate card, red accent)
+                    _LogoutCard(
+                      onLogout: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Logout'),
+                            content: const Text('Are you sure you want to logout?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Logout'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true && context.mounted) {
+                          await ref.read(authStateProvider.notifier).logout();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 18),
+
+                    // 5) Bottom CTA Card (View Plans / Buy Package)
+                    _UpgradeCard(
+                      onViewPlans: () => context.go('/subscription'),
+                    ),
+
+                    // Bottom padding for safe area
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Standard Top Bar (matching My Projects style)
+class _ProfileTopBar extends StatelessWidget {
+  const _ProfileTopBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 12,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Back arrow in white circle button
+          if (context.canPop())
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.chevron_left_rounded,
+                  color: Color(0xFF0B0B0F), // Near-black primary
+                  size: 20,
+                ),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
                   }
                 },
+                padding: EdgeInsets.zero,
               ),
-
-              // Bottom padding for safe area
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
-            ],
+            )
+          else
+            const SizedBox(width: 40), // Spacer if no back button
+          
+          // Center: Title
+          const Text(
+            'Profile',
+            style: TextStyle(
+              color: Color(0xFF0B0B0F), // Near-black primary
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
-        ),
+          
+          // Right: Spacer (no avatar button since we're on Profile page)
+          const SizedBox(width: 40), // Balance the left button
+        ],
       ),
     );
   }
@@ -130,7 +191,7 @@ class _ProfileHeader extends StatelessWidget {
               : _buildAvatarPlaceholder(),
         ),
         const SizedBox(width: 16),
-        // Right: Name, Username, Email, Bio
+        // Right: Name, Username, Email
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,17 +229,6 @@ class _ProfileHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
-              // Bio (short line, gray) - using placeholder since User model doesn't have bio field
-              Text(
-                'Creative designer passionate about digital art', // TODO: Add bio field to User model if needed
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: const Color(0xFF8B8F97), // Secondary gray
-                  fontSize: 13,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
             ],
           ),
         ),
@@ -203,16 +253,16 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-// 2) Stats Row
+// 2) Stats Row (placeholder - can be replaced with real user stats)
 class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatItem(number: '24', label: 'Post'),
-        _StatItem(number: '12', label: 'Collections'),
-        _StatItem(number: '8', label: 'Shares'),
+        _StatItem(number: '0', label: 'Projects'),
+        _StatItem(number: '0', label: 'Completed'),
+        _StatItem(number: '0', label: 'Active'),
       ],
     );
   }
@@ -252,115 +302,18 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// 3) Two Action Buttons Row
-class _ActionButtonsRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            label: 'Import Post',
-            onTap: () {
-              // TODO: Implement import post functionality
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(
-            label: 'Export Post',
-            onTap: () {
-              // TODO: Implement export post functionality
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFFEEF0F3), // Very light gray border
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: AppTextStyles.labelMedium.copyWith(
-              color: const Color(0xFF0F1115), // Near-black primary
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// 4) Dark Mode Toggle Card
-class _DarkModeCard extends StatelessWidget {
-  final bool isDarkMode;
-  final ValueChanged<bool> onToggle;
-
-  const _DarkModeCard({
-    required this.isDarkMode,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8), // Very light gray background
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Dark Mode',
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: const Color(0xFF0F1115), // Near-black primary
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
-            ),
-          ),
-          Switch(
-            value: isDarkMode,
-            onChanged: onToggle,
-            activeColor: const Color(0xFFFF3B30), // Secondary red
-            activeTrackColor: const Color(0xFFFF3B30).withOpacity(0.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 5) Settings List Card
+// 3) Settings List Card (original items: Edit Profile, Settings, Subscription)
 class _SettingsListCard extends StatelessWidget {
+  final VoidCallback onEditProfile;
+  final VoidCallback onSettings;
+  final VoidCallback onSubscription;
+
+  const _SettingsListCard({
+    required this.onEditProfile,
+    required this.onSettings,
+    required this.onSubscription,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -378,50 +331,21 @@ class _SettingsListCard extends StatelessWidget {
       child: Column(
         children: [
           _SettingsListItem(
-            icon: Icons.recommend_rounded,
-            label: 'Recommend to a Friend',
-            onTap: () {
-              // TODO: Implement recommend functionality
-            },
+            icon: Icons.edit_rounded,
+            label: 'Edit Profile',
+            onTap: onEditProfile,
           ),
           const _SettingsDivider(),
           _SettingsListItem(
-            icon: Icons.school_rounded,
-            label: 'App Tutorial',
-            onTap: () {
-              // TODO: Navigate to app tutorial
-            },
+            icon: Icons.settings_rounded,
+            label: 'Settings',
+            onTap: onSettings,
           ),
           const _SettingsDivider(),
           _SettingsListItem(
-            icon: Icons.privacy_tip_rounded,
-            label: 'Privacy Policy',
-            onTap: () {
-              // TODO: Navigate to privacy policy
-            },
-          ),
-          const _SettingsDivider(),
-          _SettingsListItem(
-            icon: Icons.description_rounded,
-            label: 'Terms and Conditions',
-            onTap: () {
-              // TODO: Navigate to terms and conditions
-            },
-          ),
-          const _SettingsDivider(),
-          _SettingsListItem(
-            icon: Icons.help_outline_rounded,
-            label: 'Frequently Asked Questions',
-            onTap: () {
-              // TODO: Navigate to FAQ
-            },
-          ),
-          const _SettingsDivider(),
-          _SettingsListItem(
-            icon: Icons.info_outline_rounded,
-            label: 'Version 1.2',
-            onTap: null, // No action for version
-            showChevron: false, // No chevron for version
+            icon: Icons.subscriptions_rounded,
+            label: 'Subscription',
+            onTap: onSubscription,
           ),
         ],
       ),
@@ -432,14 +356,12 @@ class _SettingsListCard extends StatelessWidget {
 class _SettingsListItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
-  final bool showChevron;
+  final VoidCallback onTap;
 
   const _SettingsListItem({
     required this.icon,
     required this.label,
-    this.onTap,
-    this.showChevron = true,
+    required this.onTap,
   });
 
   @override
@@ -451,10 +373,10 @@ class _SettingsListItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // Left: Red icon (no background)
+            // Left: Gray/neutral icon (no background)
             Icon(
               icon,
-              color: const Color(0xFFFF3B30), // Secondary red
+              color: const Color(0xFF8B8F97), // Neutral gray
               size: 22,
             ),
             const SizedBox(width: 16),
@@ -470,12 +392,11 @@ class _SettingsListItem extends StatelessWidget {
               ),
             ),
             // Right: Chevron (near-black)
-            if (showChevron)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: const Color(0xFF0F1115), // Near-black primary
-                size: 22,
-              ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: const Color(0xFF0F1115), // Near-black primary
+              size: 22,
+            ),
           ],
         ),
       ),
@@ -497,7 +418,7 @@ class _SettingsDivider extends StatelessWidget {
   }
 }
 
-// 6) Logout Card
+// 4) Logout Card (separate card, red accent)
 class _LogoutCard extends StatelessWidget {
   final VoidCallback onLogout;
 
@@ -531,26 +452,93 @@ class _LogoutCard extends StatelessWidget {
                 size: 22,
               ),
               const SizedBox(width: 16),
-              // Middle: Label
+              // Middle: Label (red)
               Expanded(
                 child: Text(
-                  'Log Out',
+                  'Logout',
                   style: AppTextStyles.bodyLarge.copyWith(
-                    color: const Color(0xFF0F1115), // Near-black primary
+                    color: const Color(0xFFFF3B30), // Secondary red
                     fontWeight: FontWeight.w400,
                     fontSize: 16,
                   ),
                 ),
               ),
-              // Right: Chevron (near-black)
+              // Right: Chevron (red)
               Icon(
                 Icons.chevron_right_rounded,
-                color: const Color(0xFF0F1115), // Near-black primary
+                color: const Color(0xFFFF3B30), // Secondary red
                 size: 22,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// 5) Upgrade/Plans CTA Card
+class _UpgradeCard extends StatelessWidget {
+  final VoidCallback onViewPlans;
+
+  const _UpgradeCard({required this.onViewPlans});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Text
+          Text(
+            'Want to access more features?',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: const Color(0xFF0F1115), // Near-black primary
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          // Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onViewPlans,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF3B30), // Secondary red
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30), // Pill shape
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'View Plans',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

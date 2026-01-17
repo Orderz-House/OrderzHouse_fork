@@ -80,6 +80,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String country,
     required String username,
     List<int>? categoryIds,
+    String? referralCode,
   }) async {
     state = const AuthState(isLoading: true);
     final response = await _repository.register(
@@ -92,6 +93,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       country: country,
       username: username,
       categoryIds: categoryIds,
+      referralCode: referralCode,
     );
     state = AuthState(error: response.message);
     return response.success;

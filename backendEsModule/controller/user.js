@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { NotificationCreators } from "../services/notificationService.js"; // تركته زي ما هو
 import eventBus from "../events/eventBus.js"; // ✅ ADDED
@@ -329,6 +330,9 @@ const register = async (req, res) => {
 
       // freelancer main categories
       category_ids = [],
+      
+      // optional referral code
+      referral_code,
     } = req.body;
 
     /* =========================
@@ -465,6 +469,40 @@ const register = async (req, res) => {
     const user = userResult.rows[0];
 
     /* =========================
+       GENERATE REFERRAL CODE
+    ========================= */
+    function generateReferralCode(userId) {
+      const randomPart = crypto.randomBytes(4).toString('hex').toUpperCase().substring(0, 4);
+      const userIdPart = userId.toString().padStart(3, '0').substring(0, 3);
+      return `${randomPart}${userIdPart}`.substring(0, 7);
+    }
+    
+    let referralCode = generateReferralCode(user.id);
+    let attempts = 0;
+    let isUnique = false;
+    
+    while (!isUnique && attempts < 10) {
+      const checkResult = await client.query(
+        'SELECT id FROM users WHERE referral_code = $1',
+        [referralCode]
+      );
+      
+      if (checkResult.rows.length === 0) {
+        isUnique = true;
+      } else {
+        referralCode = generateReferralCode(user.id);
+        attempts++;
+      }
+    }
+    
+    if (isUnique) {
+      await client.query(
+        'UPDATE users SET referral_code = $1 WHERE id = $2',
+        [referralCode, user.id]
+      );
+    }
+
+    /* =========================
        FREELANCER → MULTI CATEGORIES
     ========================= */
     if (roleId === 3) {
@@ -473,6 +511,40 @@ const register = async (req, res) => {
          SELECT $1, unnest($2::int[])`,
         [user.id, category_ids]
       );
+    }
+
+    /* =========================
+       APPLY REFERRAL CODE (if provided)
+    ========================= */
+    if (referral_code && referral_code.trim().length > 0) {
+      try {
+        // Find referrer by code
+        const referrerResult = await client.query(
+          'SELECT id FROM users WHERE referral_code = $1 AND id != $2',
+          [referral_code.toUpperCase().trim(), user.id]
+        );
+        
+        if (referrerResult.rows.length > 0) {
+          const referrerUserId = referrerResult.rows[0].id;
+          
+          // Check if referral already exists
+          const existingResult = await client.query(
+            'SELECT id FROM referrals WHERE referred_user_id = $1',
+            [user.id]
+          );
+          
+          if (existingResult.rows.length === 0) {
+            // Create referral record
+            await client.query(`
+              INSERT INTO referrals (referrer_user_id, referred_user_id, status)
+              VALUES ($1, $2, 'pending')
+            `, [referrerUserId, user.id]);
+          }
+        }
+      } catch (err) {
+        // Silently fail - referral code is optional
+        console.error('Referral code application error:', err);
+      }
     }
 
     /* =========================

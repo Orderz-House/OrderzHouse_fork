@@ -28,7 +28,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     final plansAsync = ref.watch(plansProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
-    final primaryColor = const Color(0xFF6D5FFD);
 
     return AppScaffold(
       body: Column(
@@ -57,7 +56,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chevron_left_rounded),
-                        color: primaryColor,
+                        color: const Color(0xFF0B0B0F), // Near-black primary
                         onPressed: () {
                           // Safe back navigation
                           if (context.canPop()) {
@@ -81,7 +80,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     const Text(
                       'Plans',
                       style: TextStyle(
-                        color: Color(0xFF111827),
+                        color: Color(0xFF0B0B0F), // Near-black primary
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
                       ),
@@ -177,36 +176,61 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary // Coral-red
+              ? const Color(0xFF0B0B0F) // Near-black primary
               : Colors.white, // White background
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
-                : const Color(0xFFE9E6FF), // Light border
+                ? const Color(0xFF0B0B0F)
+                : const Color(0xFFE6E6E6), // Light gray border
             width: 1,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? Colors.white
-                  : const Color(0xFF6B7280),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: isSelected
-                    ? Colors.white
-                    : const Color(0xFF6B7280),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 13,
+            // Subtle top-right soft white highlight (iOS gloss effect)
+            if (isSelected)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: RadialGradient(
+                        center: Alignment.topRight,
+                        radius: 1.1,
+                        colors: [
+                          Colors.white.withOpacity(0.12), // Subtle white highlight
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.55],
+                      ),
+                    ),
+                  ),
+                ),
               ),
+            // Content
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color(0xFF0B0B0F), // Near-black for inactive
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: isSelected
+                        ? Colors.white
+                        : const Color(0xFF0B0B0F), // Near-black for inactive
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -229,21 +253,21 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           Text(
             'Plans',
             style: AppTextStyles.titleLarge.copyWith(
-              color: const Color(0xFF111827),
+              color: const Color(0xFF0B0B0F), // Near-black primary
               fontWeight: FontWeight.w600,
             ),
           ),
-          // Small rounded chip with icon + number
+          // Small rounded chip with icon + number (balance pill)
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 10,
               vertical: 5,
             ),
             decoration: BoxDecoration(
-              color: const Color(0xFFF6F3FF), // Light lavender
+              color: Colors.white, // White background
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: const Color(0xFFE9E6FF),
+                color: const Color(0xFFE6E6E6), // Light gray border
                 width: 1,
               ),
             ),
@@ -253,13 +277,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 14,
-                  color: const Color(0xFF6D5FFD),
+                  color: Color(0xFFFF3B5C), // Accent color for icon
                 ),
                 const SizedBox(width: 5),
                 Text(
                   '0', // Placeholder number
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.primary,
+                    color: const Color(0xFF0B0B0F), // Near-black primary
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -278,18 +302,18 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: [
-          // Big Rounded Container with Soft Lavender Background
+          // Big Rounded Container with White/Subtle Background
           Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.xl),
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: const Color(0xFFF6F3FF), // Soft lavender
+              color: const Color(0xFFF7F7F9), // Very light gray OR white
               borderRadius: BorderRadius.circular(26),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.04), // Subtle shadow
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -307,7 +331,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                       if (!isLast) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Divider(
-                          color: const Color(0xFFE9E6FF).withValues(alpha: 0.5),
+                          color: const Color(0xFFE6E6E6).withValues(alpha: 0.5), // Light gray divider
                           height: 1,
                           thickness: 1,
                         ),
@@ -347,9 +371,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFE6E6E6), // Light gray border
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.04), // Subtle shadow
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -366,7 +394,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   Text(
                     plan.name,
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: const Color(0xFF111827),
+                      color: const Color(0xFF0B0B0F), // Near-black primary
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -375,7 +403,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     Text(
                       plan.description!,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
+                        color: const Color(0xFF8B8F97), // Gray secondary
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -399,7 +427,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     Text(
                       '${plan.price}',
                       style: AppTextStyles.headlineSmall.copyWith(
-                        color: const Color(0xFF111827),
+                        color: const Color(0xFF0B0B0F), // Near-black primary (bold)
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -407,7 +435,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     Text(
                       'JD',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
+                        color: const Color(0xFF8B8F97), // Gray for currency
                       ),
                     ),
                   ],
@@ -415,20 +443,20 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
                 const SizedBox(height: 6),
 
-                // Badge (Duration/Plan Type)
+                // Badge (Duration/Plan Type) - accent color with low opacity
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE9E6FF),
+                    color: const Color(0xFFFF3B5C).withOpacity(0.15), // Accent color with 15% opacity
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     durationLabel,
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.primary,
+                      color: const Color(0xFFFF3B5C), // Accent color for text
                       fontWeight: FontWeight.w600,
                     ),
                   ),
