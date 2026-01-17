@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/models/referral_info.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/models/payment.dart';
@@ -17,50 +18,79 @@ final paymentsRepositoryProvider = Provider<PaymentsRepository>((ref) {
   return PaymentsRepository();
 });
 
-// Provider for payments data
-final paymentsProvider = FutureProvider.family<List<Payment>, int>((ref, roleId) async {
+// Provider for filter selection (All / Plans / Projects / Wallet)
+final _selectedFilterProvider = StateProvider<String>((ref) => 'all');
+
+// Provider for unified payment history
+final paymentHistoryProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, type) async {
   final repository = ref.read(paymentsRepositoryProvider);
+  final response = await repository.getPaymentHistory(type: type);
   
-  if (roleId == 2) {
-    // Client
-    final response = await repository.getClientPayments();
-    return response.data ?? [];
-  } else if (roleId == 3) {
-    // Freelancer
-    final response = await repository.getFreelancerTransactions();
-    return response.data ?? [];
+  if (response.success && response.data != null) {
+    return response.data!;
   }
   
-  return [];
+  return {
+    'balance': 0.0,
+    'currency': 'JOD',
+    'transactions': <Payment>[],
+  };
 });
 
-// Provider for freelancer balance
+// Legacy provider for backward compatibility (still used for freelancer balance)
 final freelancerBalanceProvider = FutureProvider<double>((ref) async {
   final repository = ref.read(paymentsRepositoryProvider);
   final response = await repository.getFreelancerBalance();
   return response.data ?? 0.0;
 });
 
-class PaymentsScreen extends ConsumerWidget {
+class PaymentsScreen extends ConsumerStatefulWidget {
   const PaymentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaymentsScreen> createState() => _PaymentsScreenState();
+}
+
+class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
+  final _scrollController = ScrollController();
+  final _referAndEarnKey = GlobalKey();
+  bool _showReferAndEarn = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToReferAndEarn() {
+    final context = _referAndEarnKey.currentContext;
+    if (context != null && _scrollController.hasClients) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).user;
     final roleId = user?.roleId ?? 0;
     final isClient = roleId == 2;
     final isFreelancer = roleId == 3;
 
-    // Fetch payments/transactions
-    final paymentsAsync = ref.watch(paymentsProvider(roleId));
+    // Fetch unified payment history (all transactions)
+    final historyAsync = ref.watch(paymentHistoryProvider('all'));
+    final selectedFilter = ref.watch(_selectedFilterProvider);
     
-    // Fetch freelancer balance if needed
-    final balanceAsync = isFreelancer
-        ? ref.watch(freelancerBalanceProvider)
-        : const AsyncValue<double>.data(0.0);
+    // Use filter-specific history if filter is not 'all'
+    final filteredHistoryAsync = selectedFilter == 'all'
+        ? historyAsync
+        : ref.watch(paymentHistoryProvider(selectedFilter));
 
     return AppScaffold(
-      body: paymentsAsync.when(
+      body: filteredHistoryAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -68,35 +98,28 @@ class PaymentsScreen extends ConsumerWidget {
         ),
         error: (error, stack) => ErrorState(
           message: error.toString(),
-          onRetry: () => ref.invalidate(paymentsProvider(roleId)),
+          onRetry: () {
+            ref.invalidate(paymentHistoryProvider(selectedFilter));
+            if (selectedFilter != 'all') {
+              ref.invalidate(paymentHistoryProvider('all'));
+            }
+          },
         ),
-        data: (transactions) {
-          return balanceAsync.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
-            ),
-            error: (_, __) => _buildContent(
-              context,
-              ref,
-              transactions,
-              0.0,
-              isClient,
-              isFreelancer,
-              roleId,
-              user?.email ?? '',
-            ),
-            data: (balance) => _buildContent(
-              context,
-              ref,
-              transactions,
-              isFreelancer ? balance : transactions.fold(0.0, (sum, tx) => sum + tx.amount),
-              isClient,
-              isFreelancer,
-              roleId,
-              user?.email ?? '',
-            ),
+        data: (historyData) {
+          final transactions = (historyData['transactions'] as List<dynamic>)
+              .cast<Payment>()
+              .toList();
+          final balance = (historyData['balance'] as num?)?.toDouble() ?? 0.0;
+          
+          return _buildContent(
+            context,
+            ref,
+            transactions,
+            balance,
+            isClient,
+            isFreelancer,
+            roleId,
+            user?.email ?? '',
           );
         },
       ),
@@ -113,18 +136,20 @@ class PaymentsScreen extends ConsumerWidget {
     int roleId,
     String userEmail,
   ) {
-    // Get recent transactions (limit to 10)
-    final recentTransactions = transactions.take(10).toList();
-
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(paymentsProvider(roleId));
+        final filter = ref.read(_selectedFilterProvider);
+        ref.invalidate(paymentHistoryProvider(filter));
+        if (filter != 'all') {
+          ref.invalidate(paymentHistoryProvider('all'));
+        }
         if (isFreelancer) {
           ref.invalidate(freelancerBalanceProvider);
         }
       },
       color: const Color(0xFF6D5FFD),
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,21 +226,66 @@ class PaymentsScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  // Refer & Earn Card
+                  // Filter chips (optional)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildReferAndEarnCard(context, ref),
+                    child: _buildFilterChips(context, ref, isFreelancer),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
                   // Recent Activity Section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildRecentActivitySection(
                       context,
-                      recentTransactions,
+                      transactions,
                       isClient,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Refer & Earn Card (hidden by default)
+                  if (_showReferAndEarn)
+                    Padding(
+                      key: _referAndEarnKey,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildReferAndEarnCard(context, ref),
+                    ),
+
+                  if (_showReferAndEarn) const SizedBox(height: 24),
+
+                  // Toggle button for Refer & Earn
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showReferAndEarn = !_showReferAndEarn;
+                        });
+                        // Auto-scroll to Refer & Earn when showing
+                        if (_showReferAndEarn) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _scrollToReferAndEarn();
+                          });
+                        }
+                      },
+                      icon: Icon(
+                        _showReferAndEarn ? Icons.expand_less : Icons.card_giftcard_rounded,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _showReferAndEarn ? 'Hide Refer & Earn' : 'Refer & Earn',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF6B7280),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
                     ),
                   ),
 
@@ -341,22 +411,9 @@ class PaymentsScreen extends ConsumerWidget {
           ],
         ),
       ),
-      data: (data) {
-        final referralCode = data['referralCode'] as String? ?? 'N/A';
-        final link = data['link'] as String? ?? '';
-        final stats = data['stats'] as Map<String, dynamic>? ?? {};
-        final rules = data['rules'] as Map<String, dynamic>? ?? {};
-        
-        final invited = stats['invited'] as int? ?? 0;
-        final completed = stats['completed'] as int? ?? 0;
-        final earned = (stats['earned'] as num?)?.toDouble() ?? 0.0;
-        
-        final referrerReward = (rules['referrerReward'] as num?)?.toDouble() ?? 5.0;
-        final friendReward = (rules['friendReward'] as num?)?.toDouble() ?? 5.0;
-        final currency = rules['currency'] as String? ?? 'JOD';
-        
-        // Handle case where migration hasn't been run or code is null
-        final isMigrationNeeded = referralCode == 'N/A' || (referralCode.isEmpty && link.isEmpty);
+      data: (referralInfo) {
+        // Use the cleaned ReferralInfo model
+        final hasValidCode = referralInfo.hasValidCode;
         
         return Container(
           padding: const EdgeInsets.all(20),
@@ -445,7 +502,7 @@ class PaymentsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            isMigrationNeeded ? 'Loading...' : referralCode,
+                            hasValidCode ? referralInfo.code : '—',
                             style: const TextStyle(
                               color: Color(0xFF111827),
                               fontSize: 18,
@@ -456,7 +513,7 @@ class PaymentsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    if (!isMigrationNeeded)
+                    if (hasValidCode)
                       IconButton(
                         icon: const Icon(
                           Icons.copy_rounded,
@@ -464,7 +521,7 @@ class PaymentsScreen extends ConsumerWidget {
                           size: 20,
                         ),
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: referralCode));
+                          Clipboard.setData(ClipboardData(text: referralInfo.code));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Code copied to clipboard'),
@@ -485,13 +542,15 @@ class PaymentsScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: isMigrationNeeded ? null : () => _shareReferralLink(context, referralCode, link),
+                  onPressed: hasValidCode
+                      ? () => _handleShareInvite(context, referralInfo)
+                      : null,
                   icon: const Icon(Icons.share_rounded, size: 20),
                   label: const Text('Share Invite'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isMigrationNeeded 
-                        ? const Color(0xFF9CA3AF) 
-                        : const Color(0xFFFB923C),
+                    backgroundColor: hasValidCode 
+                        ? const Color(0xFFFB923C) 
+                        : const Color(0xFF9CA3AF),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -507,7 +566,7 @@ class PaymentsScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Invited', invited.toString()),
+                    child: _buildStatItem('Invited', referralInfo.invited.toString()),
                   ),
                   Container(
                     width: 1,
@@ -515,7 +574,7 @@ class PaymentsScreen extends ConsumerWidget {
                     color: const Color(0xFFE5E7EB),
                   ),
                   Expanded(
-                    child: _buildStatItem('Successful', completed.toString()),
+                    child: _buildStatItem('Successful', referralInfo.successful.toString()),
                   ),
                   Container(
                     width: 1,
@@ -523,7 +582,7 @@ class PaymentsScreen extends ConsumerWidget {
                     color: const Color(0xFFE5E7EB),
                   ),
                   Expanded(
-                    child: _buildStatItem('Earned', '$earned $currency'),
+                    child: _buildStatItem('Earned', '${referralInfo.earned.toStringAsFixed(1)} ${referralInfo.currency}'),
                   ),
                 ],
               ),
@@ -537,7 +596,7 @@ class PaymentsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Earn $referrerReward $currency when your friend buys a plan. Friend gets $friendReward $currency discount.',
+                  'Earn ${referralInfo.referrerReward.toStringAsFixed(1)} ${referralInfo.currency} when your friend buys a plan. Friend gets ${referralInfo.friendReward.toStringAsFixed(1)} ${referralInfo.currency} discount.',
                   style: const TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 12,
@@ -551,6 +610,44 @@ class PaymentsScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Handle share invite action
+  Future<void> _handleShareInvite(BuildContext context, ReferralInfo referralInfo) async {
+    if (!referralInfo.hasValidCode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Referral code not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Build share message
+      String message = 'Join me on OrderzHouse! Use my referral code: ${referralInfo.code} to sign up and get a discount!';
+      
+      // Append link if available
+      if (referralInfo.link != null && referralInfo.link!.isNotEmpty) {
+        message += '\n\n${referralInfo.link}';
+      }
+
+      // Use Share.share to trigger native share sheet
+      await Share.share(message);
+    } catch (e) {
+      // Fallback to copying code if share fails
+      if (context.mounted) {
+        Clipboard.setData(ClipboardData(text: referralInfo.code));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Referral code copied: ${referralInfo.code}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
   
   Widget _buildStatItem(String label, String value) {
@@ -576,21 +673,48 @@ class PaymentsScreen extends ConsumerWidget {
       ],
     );
   }
-  
-  Future<void> _shareReferralLink(BuildContext context, String code, String link) async {
-    try {
-      final message = 'Join me on OrderzHouse. Use my code $code to get a reward when you subscribe. Link: $link';
-      await Share.share(message);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+
+  Widget _buildFilterChips(BuildContext context, WidgetRef ref, bool isFreelancer) {
+    final selectedFilter = ref.watch(_selectedFilterProvider);
+    
+    final filters = isFreelancer
+        ? ['all', 'plan', 'project', 'wallet']
+        : ['all', 'plan', 'project'];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((filter) {
+          final isSelected = selectedFilter == filter;
+          final label = filter == 'all'
+              ? 'All'
+              : filter == 'plan'
+                  ? 'Plans'
+                  : filter == 'project'
+                      ? 'Projects'
+                      : 'Wallet';
+          
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(label),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  ref.read(_selectedFilterProvider.notifier).state = filter;
+                }
+              },
+              selectedColor: AppColors.primary.withValues(alpha: 0.2),
+              checkmarkColor: AppColors.primary,
+              labelStyle: TextStyle(
+                color: isSelected ? AppColors.primary : const Color(0xFF6B7280),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   Widget _buildRecentActivitySection(
@@ -669,24 +793,42 @@ class PaymentsScreen extends ConsumerWidget {
 
   Widget _buildTransactionCard(Payment payment, bool isClient) {
     final dateFormat = DateFormat('MMM dd, yyyy');
+    final timeFormat = DateFormat('hh:mm a');
+    
+    // Determine if income (for freelancers: wallet credit or escrow released)
+    final source = payment.source ?? payment.purpose ?? '';
+    final statusLower = payment.status.toLowerCase();
     final isIncome = isClient
         ? false // Client always pays (expense)
-        : (payment.type?.toLowerCase() == 'credit');
-    
+        : (payment.type?.toLowerCase() == 'credit' || 
+           statusLower == 'released' ||
+           source == 'wallet');
+
     final amountColor = isIncome ? Colors.green : Colors.red;
     final amountPrefix = isIncome ? '+' : '-';
 
-    // Get display name/title
-    String displayName = 'Transaction';
-    if (isClient) {
-      displayName = payment.projectTitle ?? 
-                   (payment.purpose != null ? payment.purpose!.toUpperCase() : 'Payment');
-    } else {
-      displayName = payment.note ?? 
-                   (payment.type != null ? payment.type!.toUpperCase() : 'Transaction');
+    // Get enriched display name/title (use new enriched fields if available)
+    String displayName = payment.title ?? 
+                        payment.projectTitle ?? 
+                        payment.note ?? 
+                        'Transaction';
+    
+    // Get description/subtitle
+    String subtitle = payment.description ?? 
+                     (payment.source == 'plan' ? 'Plan Subscription' : 
+                      payment.source == 'project' ? 'Project Payment' :
+                      payment.source == 'wallet' ? 'Wallet Transaction' : '');
+    
+    // Add status to subtitle if available
+    if (payment.status != 'paid' && payment.status.isNotEmpty) {
+      final statusLabel = payment.status == 'held' ? 'Held' :
+                         payment.status == 'released' ? 'Released' :
+                         payment.status == 'refunded' ? 'Refunded' :
+                         payment.status == 'failed' ? 'Failed' : payment.status;
+      subtitle = subtitle.isNotEmpty ? '$subtitle • $statusLabel' : statusLabel;
     }
 
-    // Get initials for avatar
+    // Get initials for avatar (use title or source icon)
     String initials = 'T';
     if (displayName.isNotEmpty) {
       final words = displayName.split(' ');
@@ -696,6 +838,9 @@ class PaymentsScreen extends ConsumerWidget {
         initials = words[0][0].toUpperCase();
       }
     }
+    
+    // Format date + time
+    final dateTimeStr = '${dateFormat.format(payment.createdAt)} • ${timeFormat.format(payment.createdAt)}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -753,12 +898,24 @@ class PaymentsScreen extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
-                  dateFormat.format(payment.createdAt),
+                  dateTimeStr,
                   style: const TextStyle(
                     color: Color(0xFF9CA3AF),
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -766,13 +923,36 @@ class PaymentsScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           // Amount
-          Text(
-            '$amountPrefix${payment.amount.toStringAsFixed(2)} JOD',
-            style: TextStyle(
-              color: amountColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$amountPrefix${payment.amount.toStringAsFixed(2)} ${payment.currency}',
+                style: TextStyle(
+                  color: amountColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (payment.source != null) ...[
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    payment.source!.toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

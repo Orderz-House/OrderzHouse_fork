@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/referrals_repository.dart';
+import '../../../../core/models/referral_info.dart';
 
 // Provider for referrals repository
 final referralsRepositoryProvider = Provider<ReferralsRepository>((ref) {
@@ -8,7 +9,7 @@ final referralsRepositoryProvider = Provider<ReferralsRepository>((ref) {
 
 // Provider for referrals data
 // Using FutureProvider (not autoDispose) to prevent repeated calls on rebuild
-final myReferralsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final myReferralsProvider = FutureProvider<ReferralInfo>((ref) async {
   final repository = ref.read(referralsRepositoryProvider);
   final response = await repository.getMyReferrals();
   

@@ -1,11 +1,12 @@
 -- Migration: Add referral_code to users and create referrals/referral_rewards tables
--- Run this migration if the JS migration doesn't work or for direct SQL execution
+-- Run this migration manually using: psql -d your_database -f 002_create_referrals_tables.sql
+-- OR connect to DB and run this SQL directly
 
 BEGIN;
 
--- Add referral_code column to users table
+-- Add referral_code column to users table (VARCHAR(32) to match controller expectations)
 ALTER TABLE public.users
-ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20);
+ADD COLUMN IF NOT EXISTS referral_code VARCHAR(32);
 
 -- Add unique constraint if it doesn't exist
 DO $$
@@ -20,14 +21,16 @@ BEGIN
 END $$;
 
 -- Create referrals table
+-- Status values: 'pending' (for invited) or 'completed' (matching controller queries)
 CREATE TABLE IF NOT EXISTS public.referrals (
   id SERIAL PRIMARY KEY,
   referrer_user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   referred_user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',  -- Controller queries for 'pending' as invited status
   created_at TIMESTAMP DEFAULT now(),
   completed_at TIMESTAMP NULL,
-  UNIQUE(referred_user_id)
+  CONSTRAINT referrals_referred_unique UNIQUE(referred_user_id),
+  CONSTRAINT referrals_pair_unique UNIQUE(referrer_user_id, referred_user_id)  -- Prevent duplicate referrals
 );
 
 -- Create indexes on referrals for faster lookups

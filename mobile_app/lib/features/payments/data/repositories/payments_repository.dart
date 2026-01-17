@@ -118,4 +118,56 @@ class PaymentsRepository {
       );
     }
   }
+
+  /// Get unified payment history (all transactions)
+  /// Endpoint: GET /payments/history?type=all|plan|project|wallet&page=1&limit=50
+  Future<ApiResponse<Map<String, dynamic>>> getPaymentHistory({
+    String type = 'all',
+    int page = 1,
+    int limit = 50,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/payments/history',
+        queryParameters: {
+          'type': type,
+          'page': page,
+          'limit': limit,
+        },
+      );
+      
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data as Map<String, dynamic>;
+        
+        // Parse transactions array
+        List<dynamic> items = [];
+        if (data['transactions'] != null && data['transactions'] is List) {
+          items = data['transactions'] as List;
+        }
+
+        final transactions = items
+            .map((item) => Payment.fromJson(item as Map<String, dynamic>))
+            .toList();
+
+        return ApiResponse(
+          success: true,
+          data: {
+            'balance': (data['balance'] as num?)?.toDouble() ?? 0.0,
+            'currency': data['currency'] as String? ?? 'JOD',
+            'transactions': transactions,
+          },
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        message: response.data['message'] as String? ?? 'Failed to fetch payment history',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Failed to fetch payment history',
+      );
+    }
+  }
 }
