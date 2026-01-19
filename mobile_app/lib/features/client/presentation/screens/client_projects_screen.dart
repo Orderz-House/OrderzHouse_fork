@@ -13,6 +13,7 @@ import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/client_project_card.dart';
@@ -107,59 +108,81 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
       }).toList();
     }
 
+    // Calculate bottom offset for floating button
+    // Note: Scaffold body already stops above bottomNavigationBar, so we don't add nav bar height
+    final safe = MediaQuery.of(context).padding.bottom; // iPhone safe area
+    const gap = 0.0; // Very small gap above the bottom edge (almost touching nav bar)
+    final buttonBottomOffset = safe + gap;
+
+    // Calculate bottom padding for content (to prevent overlap with button)
+    final contentBottomPadding = safe + 80.0;
+
     return AppScaffold(
-      body: Column(
-          children: [
-            // 1) Top Bar
-            _buildTopBar(context, user),
-            
-            // 2) Search + Actions Row
-            _buildSearchRow(context),
-            
-            // 3) Category Chips Row
-            _buildCategoryChips(allStatuses),
-            
-            // 4) Projects Grid
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  _onRefresh();
-                  ref.invalidate(myProjectsProvider);
-                  await ref.read(myProjectsProvider.future);
-                },
-                child: projectsAsync.when(
-                  data: (projects) {
-                    // Fetch and store raw project data (only once)
-                    _fetchRawProjectDataForProjects(projects);
-
-                    if (filteredProjects == null || filteredProjects.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.work_outline,
-                        title: _searchController.text.isNotEmpty || _selectedStatus != null
-                            ? 'No projects found'
-                            : 'No projects yet',
-                        message: _searchController.text.isNotEmpty || _selectedStatus != null
-                            ? 'Try adjusting your search or filters'
-                            : 'Create your first project to get started',
-                      );
-                    }
-
-                    return _buildProjectsGrid(context, filteredProjects);
+      body: Stack(
+        children: [
+          // Main content
+          Column(
+            children: [
+              // 1) Top Bar
+              _buildTopBar(context, user),
+              
+              // 2) Search + Actions Row
+              _buildSearchRow(context),
+              
+              // 3) Category Chips Row
+              _buildCategoryChips(allStatuses),
+              
+              // 4) Projects Grid
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    _onRefresh();
+                    ref.invalidate(myProjectsProvider);
+                    await ref.read(myProjectsProvider.future);
                   },
-                  loading: () => const _LoadingGrid(),
-                  error: (error, stackTrace) => ErrorState(
-                    message: error.toString().replaceAll('Exception: ', ''),
-                    onRetry: () {
-                      ref.invalidate(myProjectsProvider);
+                  child: projectsAsync.when(
+                    data: (projects) {
+                      // Fetch and store raw project data (only once)
+                      _fetchRawProjectDataForProjects(projects);
+
+                      if (filteredProjects == null || filteredProjects.isEmpty) {
+                        return EmptyState(
+                          icon: Icons.work_outline,
+                          title: _searchController.text.isNotEmpty || _selectedStatus != null
+                              ? 'No projects found'
+                              : 'No projects yet',
+                          message: _searchController.text.isNotEmpty || _selectedStatus != null
+                              ? 'Try adjusting your search or filters'
+                              : 'Create your first project to get started',
+                        );
+                      }
+
+                      return _buildProjectsGrid(context, filteredProjects, bottomPadding: contentBottomPadding);
                     },
+                    loading: () => _LoadingGrid(bottomPadding: contentBottomPadding),
+                    error: (error, stackTrace) => ErrorState(
+                      message: error.toString().replaceAll('Exception: ', ''),
+                      onRetry: () {
+                        ref.invalidate(myProjectsProvider);
+                      },
+                    ),
                   ),
                 ),
               ),
+            ],
+          ),
+          
+          // Floating button positioned near bottom navigation bar
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: buttonBottomOffset,
+            child: Center(
+              child: _buildFloatingActionButton(context),
             ),
-          ],
-        ),
-      floatingActionButton: _buildFloatingActionButton(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          ),
+        ],
+      ),
       bottomNavigationBar: const AppBottomNavBar(
         currentIndex: 1,
         items: [
@@ -383,75 +406,14 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
           final status = statuses[index];
           final isSelected = _selectedStatus == status || (_selectedStatus == null && status == 'All');
           
-          return GestureDetector(
+          return AppGradientFilterChip(
+            label: status,
+            selected: isSelected,
             onTap: () {
               setState(() {
                 _selectedStatus = status == 'All' ? null : status;
               });
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF111827) // Near-black for active
-                    : Colors.white, // White for inactive
-                borderRadius: BorderRadius.circular(20),
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: const Color(0xFFE5E7EB), // Light gray border
-                        width: 1,
-                      ),
-                boxShadow: isSelected
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: Stack(
-                children: [
-                  // Very subtle white highlight overlay (only for active chip)
-                  if (isSelected)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: RadialGradient(
-                              center: Alignment.topRight,
-                              radius: 1.1,
-                              colors: [
-                                Colors.white.withOpacity(0.12), // Subtle white touch
-                                Colors.transparent,
-                              ],
-                              stops: const [0.0, 0.55],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Chip content (text)
-                  Center(
-                    child: Text(
-                      status,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: isSelected
-                            ? Colors.white // White text on dark
-                            : const Color(0xFF111827), // Near-black text on white
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
@@ -459,9 +421,14 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
   }
 
   // 4) Projects Grid (clean list - actions moved to Project Details)
-  Widget _buildProjectsGrid(BuildContext context, List<Project> projects) {
+  Widget _buildProjectsGrid(BuildContext context, List<Project> projects, {double bottomPadding = 0}) {
     return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.only(
+        top: AppSpacing.lg,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: bottomPadding,
+      ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.md,
@@ -485,20 +452,17 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     );
   }
 
-  // 5) Floating Action Button (secondary red)
+  // 5) Floating Action Button (positioned near bottom navigation bar)
   Widget _buildFloatingActionButton(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 80), // Space above bottom nav
-      child: PrimaryGradientButton(
-        onPressed: () {
-          context.go('/create-project');
-        },
-        label: 'Add Project',
-        icon: Icons.add_rounded,
-        width: null, // Use intrinsic width (pill shape)
-        height: 48,
-        borderRadius: 30,
-      ),
+    return PrimaryGradientButton(
+      onPressed: () {
+        context.go('/create-project');
+      },
+      label: 'Add Project',
+      icon: Icons.add_rounded,
+      width: null, // Use intrinsic width (pill shape)
+      height: 48,
+      borderRadius: 30,
     );
   }
 }
@@ -507,12 +471,19 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
 // Loading Grid
 class _LoadingGrid extends StatelessWidget {
-  const _LoadingGrid();
+  final double bottomPadding;
+  
+  const _LoadingGrid({this.bottomPadding = 0});
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.only(
+        top: AppSpacing.lg,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: bottomPadding,
+      ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.md,

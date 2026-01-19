@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/project_wizard_provider.dart';
 import '../widgets/wizard_steps/project_details_step_view.dart';
 import '../widgets/wizard_steps/project_cover_step_view.dart';
@@ -41,7 +42,7 @@ class _CreateProjectWizardPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errors.values.first),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -96,7 +97,7 @@ class _CreateProjectWizardPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(allErrors.values.first),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -150,7 +151,7 @@ class _CreateProjectWizardPageState
                 SnackBar(
                   content: Text(
                       'Project created but failed to upload files: ${uploadResponse.message}'),
-                  backgroundColor: Colors.orange,
+                  backgroundColor: AppColors.accentOrange,
                 ),
               );
             }
@@ -208,7 +209,7 @@ class _CreateProjectWizardPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -248,50 +249,38 @@ class _CreateProjectWizardPageState
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
+                horizontal: AppSpacing.md,
                 vertical: AppSpacing.md,
               ),
               child: Row(
                 children: [
                   // Back button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.chevron_left_rounded,
+                      size: 28,
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded),
-                      color: const Color(0xFF6D5FFD),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/client');
-                        }
-                      },
-                    ),
+                    color: AppColors.accentOrange,
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/client');
+                      }
+                    },
                   ),
                   const Spacer(),
                   // Title
                   const Text(
                     'Create Project',
                     style: TextStyle(
-                      color: Color(0xFF111827),
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 18,
                     ),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 40), // Balance
+                  const SizedBox(width: 48), // Balance
                 ],
               ),
             ),
@@ -299,7 +288,7 @@ class _CreateProjectWizardPageState
 
           // Progress Indicator
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(totalSteps, (index) {
@@ -313,8 +302,8 @@ class _CreateProjectWizardPageState
                     height: 4,
                     decoration: BoxDecoration(
                       color: isActive || isCompleted
-                          ? const Color(0xFF6D5FFD)
-                          : Colors.grey.shade300,
+                          ? AppColors.accentOrange
+                          : AppColors.borderLight,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -347,64 +336,75 @@ class _CreateProjectWizardPageState
           // Bottom Action Bar
           Container(
             padding: EdgeInsets.only(
-              left: AppSpacing.lg,
-              right: AppSpacing.lg,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
               top: AppSpacing.md,
-              bottom: AppSpacing.md + MediaQuery.of(context).viewInsets.bottom,
+              bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: AppColors.shadowColorLight,
                   blurRadius: 8,
-                  offset: const Offset(0, -2),
+                  offset: Offset(0, -2),
                 ),
               ],
             ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  // Back Button
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _currentStep > 0 && !_isSubmitting
-                          ? _previousStep
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        side: BorderSide(
-                          color: _currentStep > 0
-                              ? const Color(0xFF6D5FFD)
-                              : Colors.grey.shade300,
-                        ),
+            child: Row(
+              children: [
+                // Back Button
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _currentStep > 0 && !_isSubmitting
+                        ? _previousStep
+                        : null,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Text(
-                        'Back',
-                        style: TextStyle(
-                          color: Color(0xFF6D5FFD),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      side: BorderSide(
+                        color: _currentStep > 0
+                            ? AppColors.border
+                            : AppColors.borderLight,
+                      ),
+                      foregroundColor: AppColors.textPrimary,
+                    ),
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  // Continue/Create/Pay Button
-                  Expanded(
-                    flex: 2,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                // Continue/Create/Pay Button
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.gradientStart,
+                          AppColors.gradientEnd,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: ElevatedButton(
                       onPressed: _isSubmitting
                           ? null
                           : (_currentStep == totalSteps - 1
                               ? _handleSubmit
-                              : _nextStep), // _nextStep now validates internally
+                              : _nextStep),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF6D5FFD),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -430,8 +430,8 @@ class _CreateProjectWizardPageState
                             ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

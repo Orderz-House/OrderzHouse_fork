@@ -12,6 +12,7 @@ import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/freelancer_project_card.dart';
@@ -394,75 +395,14 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
           final tab = tabs[index];
           final isSelected = _selectedStatus == tab || (_selectedStatus == null && tab == 'All');
           
-          return GestureDetector(
+          return AppGradientFilterChip(
+            label: tab,
+            selected: isSelected,
             onTap: () {
               setState(() {
                 _selectedStatus = tab == 'All' ? null : tab;
               });
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF111827) // Near-black for active
-                    : Colors.white, // White for inactive
-                borderRadius: BorderRadius.circular(20),
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: const Color(0xFFE5E7EB), // Light gray border
-                        width: 1,
-                      ),
-                boxShadow: isSelected
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: Stack(
-                children: [
-                  // Very subtle white highlight overlay (only for active chip)
-                  if (isSelected)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: RadialGradient(
-                              center: Alignment.topRight,
-                              radius: 1.1,
-                              colors: [
-                                Colors.white.withOpacity(0.12), // Subtle white touch
-                                Colors.transparent,
-                              ],
-                              stops: const [0.0, 0.55],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Chip content (text)
-                  Center(
-                    child: Text(
-                      tab,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: isSelected
-                            ? Colors.white // White text on dark
-                            : const Color(0xFF111827), // Near-black text on white
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),

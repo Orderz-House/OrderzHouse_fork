@@ -19,6 +19,15 @@ import '../../features/common/presentation/screens/profile_screen.dart';
 import '../../features/common/presentation/screens/edit_profile_screen.dart';
 import '../../features/common/presentation/screens/settings_screen.dart';
 import '../../features/common/presentation/screens/subscription_screen.dart';
+import '../../features/common/presentation/screens/help_faq_screen.dart';
+import '../../features/common/presentation/screens/privacy_policy_screen.dart';
+import '../../features/common/presentation/screens/terms_conditions_screen.dart';
+import '../../features/common/presentation/screens/delete_account_screen.dart';
+import '../../features/auth/presentation/screens/change_password_screen.dart';
+import '../../features/common/presentation/screens/my_content_screen.dart';
+import '../../features/common/presentation/screens/support_screen.dart';
+import '../../features/common/presentation/screens/notifications_settings_screen.dart';
+import '../../features/common/presentation/screens/security_center_screen.dart';
 import '../../features/projects/presentation/pages/create_project_wizard_page.dart';
 import '../../features/common/presentation/screens/talent_details_screen.dart';
 import '../../features/common/presentation/screens/health_check_screen.dart';
@@ -176,6 +185,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const EditProfileScreen(),
     ),
     GoRoute(
+      path: '/change-password',
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
+    GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
     ),
@@ -191,6 +204,38 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/health-check',
       builder: (context, state) => const HealthCheckScreen(),
+    ),
+    GoRoute(
+      path: '/help-faq',
+      builder: (context, state) => const HelpFaqScreen(),
+    ),
+    GoRoute(
+      path: '/privacy-policy',
+      builder: (context, state) => const PrivacyPolicyScreen(),
+    ),
+    GoRoute(
+      path: '/terms-conditions',
+      builder: (context, state) => const TermsConditionsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/delete-account',
+      builder: (context, state) => const DeleteAccountScreen(),
+    ),
+    GoRoute(
+      path: '/settings/my-content',
+      builder: (context, state) => const MyContentScreen(),
+    ),
+    GoRoute(
+      path: '/support',
+      builder: (context, state) => const SupportScreen(),
+    ),
+    GoRoute(
+      path: '/settings/notifications',
+      builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/security',
+      builder: (context, state) => const SecurityCenterScreen(),
     ),
   ],
 );

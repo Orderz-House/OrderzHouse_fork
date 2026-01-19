@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/profile_field_tile.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
@@ -348,7 +349,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF6D5FFD);
     final fullName = '${_firstNameController.text} ${_lastNameController.text}'.trim();
 
     if (_isFetching) {
@@ -361,7 +361,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
     }
 
-    return AppScaffold(
+    return Scaffold(
+      backgroundColor: AppColors.background,
       body: Form(
         key: _formKey,
         child: Column(
@@ -378,29 +379,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         shape: BoxShape.circle,
-                        boxShadow: [
+                        border: Border.all(color: AppColors.border, width: 1),
+                        boxShadow: const [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
+                            color: AppColors.shadowColorLight,
                             blurRadius: 4,
-                            offset: const Offset(0, 2),
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chevron_left_rounded),
-                        color: primaryColor,
+                        color: AppColors.textPrimary,
                         onPressed: () => _handleBackNavigation(context),
                       ),
                     ),
                     const Spacer(),
                     // Title
-                    const Text(
+                    Text(
                       'Edit Profile',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -420,7 +421,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 24),
 
                     // Avatar Section
-                    _buildAvatarSection(primaryColor),
+                    _buildAvatarSection(),
 
                     const SizedBox(height: 32),
 
@@ -534,13 +535,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 top: 16,
                 bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              decoration: BoxDecoration(
-                color: Colors.white,
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: AppColors.shadowColorLight,
                     blurRadius: 8,
-                    offset: const Offset(0, -2),
+                    offset: Offset(0, -2),
                   ),
                 ],
               ),
@@ -554,19 +555,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         onPressed: _isLoading ? null : _discardChanges,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: Colors.white,
+                          backgroundColor: AppColors.surface,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),
                           side: const BorderSide(
-                            color: Color(0xFFE5E7EB),
+                            color: AppColors.border,
                             width: 1.5,
                           ),
                         ),
                         child: Text(
                           'Discard',
                           style: AppTextStyles.labelLarge.copyWith(
-                            color: const Color(0xFF374151),
+                            color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -577,44 +578,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Save Button
                     Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              primaryColor,
-                              primaryColor.withValues(alpha: 0.85),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  'Save',
-                                  style: AppTextStyles.labelLarge.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
+                      child: PrimaryGradientButton(
+                        onPressed: _isLoading ? null : _saveProfile,
+                        label: 'Save',
+                        isLoading: _isLoading,
+                        height: 52,
+                        borderRadius: 18,
                       ),
                     ),
                   ],
@@ -627,7 +596,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildAvatarSection(Color primaryColor) {
+  Widget _buildAvatarSection() {
     final imageUrl = _selectedImage != null
         ? null
         : (_profilePicUrl != null && _profilePicUrl!.isNotEmpty
@@ -642,16 +611,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         height: 110,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: imageUrl == null && _selectedImage == null
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    primaryColor.withValues(alpha: 0.8),
-                    primaryColor.withValues(alpha: 0.6),
-                  ],
-                )
-              : null,
+          border: Border.all(
+            color: AppColors.accentOrange.withOpacity(0.25),
+            width: 1,
+          ),
         ),
         child: _selectedImage != null
             ? ClipOval(
@@ -670,28 +633,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       height: 110,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: primaryColor.withValues(alpha: 0.1),
+                        color: AppColors.accentOrange.withOpacity(0.10),
                         child: const Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
                           ),
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: primaryColor.withValues(alpha: 0.1),
-                        child: Icon(
+                        color: AppColors.accentOrange.withOpacity(0.10),
+                        child: const Icon(
                           Icons.person_rounded,
                           size: 55,
-                          color: primaryColor,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
                   )
-                : const Icon(
-                    Icons.person_rounded,
-                    size: 55,
-                    color: Colors.white,
+                : Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.accentOrange.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      size: 55,
+                      color: AppColors.primary,
+                    ),
                   ),
       ),
     );

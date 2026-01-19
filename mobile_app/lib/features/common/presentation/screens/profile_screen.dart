@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_app/core/models/user.dart';
 
@@ -16,7 +18,7 @@ class ProfileScreen extends ConsumerWidget {
     final isFreelancer = user?.roleId == 3;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -50,6 +52,14 @@ class ProfileScreen extends ConsumerWidget {
                       onSettings: () => context.go('/settings'),
                       onSubscription: () => context.go('/subscription'),
                       showSubscription: isFreelancer,
+                    ),
+                    const SizedBox(height: 18),
+
+                    // 3.5) Help & Legal List Card
+                    _HelpLegalListCard(
+                      onHelp: () => context.push('/help-faq'),
+                      onPrivacy: () => context.push('/privacy-policy'),
+                      onTerms: () => context.push('/terms-conditions'),
                     ),
                     const SizedBox(height: 18),
 
@@ -123,20 +133,21 @@ class _ProfileTopBar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 shape: BoxShape.circle,
-                boxShadow: [
+                border: Border.all(color: AppColors.border, width: 1),
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.shadowColorLight,
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
               child: IconButton(
                 icon: const Icon(
                   Icons.chevron_left_rounded,
-                  color: Color(0xFF0B0B0F), // Near-black primary
+                  color: AppColors.accentOrange,
                   size: 20,
                 ),
                 onPressed: () {
@@ -151,12 +162,11 @@ class _ProfileTopBar extends StatelessWidget {
             const SizedBox(width: 40), // Spacer if no back button
           
           // Center: Title
-          const Text(
+          Text(
             'Profile',
-            style: TextStyle(
-              color: Color(0xFF0B0B0F), // Near-black primary
+            style: AppTextStyles.headlineSmall.copyWith(
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
-              fontSize: 18,
             ),
           ),
           
@@ -180,18 +190,29 @@ class _ProfileHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Left: Circular Avatar
-        ClipOval(
-          child: user?.profilePicUrl != null && user!.profilePicUrl!.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: user!.profilePicUrl!.startsWith('http')
-                      ? user!.profilePicUrl!
-                      : '${AppConfig.baseUrl}${user!.profilePicUrl}',
-                  width: 76,
-                  height: 76,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
-                )
-              : _buildAvatarPlaceholder(),
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.accentOrange.withOpacity(0.25),
+              width: 1,
+            ),
+          ),
+          child: ClipOval(
+            child: user?.profilePicUrl != null && user!.profilePicUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: user!.profilePicUrl!.startsWith('http')
+                        ? user!.profilePicUrl!
+                        : '${AppConfig.baseUrl}${user!.profilePicUrl}',
+                    width: 76,
+                    height: 76,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                  )
+                : _buildAvatarPlaceholder(),
+          ),
         ),
         const SizedBox(width: 16),
         // Right: Name, Username, Email
@@ -203,7 +224,7 @@ class _ProfileHeader extends StatelessWidget {
               Text(
                 user?.displayName ?? 'User Name',
                 style: AppTextStyles.headlineMedium.copyWith(
-                  color: const Color(0xFF0F1115), // Near-black primary
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),
@@ -215,7 +236,7 @@ class _ProfileHeader extends StatelessWidget {
               Text(
                 '@${user?.username ?? 'username'}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFF8B8F97), // Secondary gray
+                  color: AppColors.textSecondary,
                   fontSize: 14,
                 ),
                 maxLines: 1,
@@ -226,7 +247,7 @@ class _ProfileHeader extends StatelessWidget {
               Text(
                 user?.email ?? 'user@example.com',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFF8B8F97), // Secondary gray
+                  color: AppColors.textSecondary,
                   fontSize: 14,
                 ),
                 maxLines: 1,
@@ -243,13 +264,13 @@ class _ProfileHeader extends StatelessWidget {
     return Container(
       width: 76,
       height: 76,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE5E7EB), // Light gray
+      decoration: BoxDecoration(
+        color: AppColors.accentOrange.withOpacity(0.10),
         shape: BoxShape.circle,
       ),
       child: const Icon(
         Icons.person_rounded,
-        color: Color(0xFF8B8F97), // Gray icon
+        color: AppColors.primary,
         size: 40,
       ),
     );
@@ -287,7 +308,7 @@ class _StatItem extends StatelessWidget {
         Text(
           number,
           style: AppTextStyles.headlineMedium.copyWith(
-            color: const Color(0xFF0F1115), // Near-black primary
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
@@ -296,7 +317,7 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: const Color(0xFF8B8F97), // Secondary gray
+            color: AppColors.textSecondary,
             fontSize: 14,
           ),
         ),
@@ -323,13 +344,14 @@ class _SettingsListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadowColorLight,
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -380,10 +402,10 @@ class _SettingsListItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // Left: Gray/neutral icon (no background)
+            // Left: Accent orange icon
             Icon(
               icon,
-              color: const Color(0xFF8B8F97), // Neutral gray
+              color: AppColors.accentOrange,
               size: 22,
             ),
             const SizedBox(width: 16),
@@ -392,16 +414,16 @@ class _SettingsListItem extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: const Color(0xFF0F1115), // Near-black primary
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w400,
                   fontSize: 16,
                 ),
               ),
             ),
-            // Right: Chevron (near-black)
+            // Right: Chevron
             const Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF0F1115), // Near-black primary
+              color: AppColors.iconGray,
               size: 22,
             ),
           ],
@@ -420,7 +442,59 @@ class _SettingsDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       indent: 54, // Icon (22) + spacing (16) + padding (16) = 54
-      color: Color(0xFFEEF0F3), // Light gray divider
+      color: AppColors.borderLight,
+    );
+  }
+}
+
+// Help & Legal List Card
+class _HelpLegalListCard extends StatelessWidget {
+  final VoidCallback onHelp;
+  final VoidCallback onPrivacy;
+  final VoidCallback onTerms;
+
+  const _HelpLegalListCard({
+    required this.onHelp,
+    required this.onPrivacy,
+    required this.onTerms,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _SettingsListItem(
+            icon: Icons.help_outline_rounded,
+            label: 'Help / FAQ',
+            onTap: onHelp,
+          ),
+          const _SettingsDivider(),
+          _SettingsListItem(
+            icon: Icons.privacy_tip_outlined,
+            label: 'Privacy Policy',
+            onTap: onPrivacy,
+          ),
+          const _SettingsDivider(),
+          _SettingsListItem(
+            icon: Icons.description_outlined,
+            label: 'Terms & Conditions',
+            onTap: onTerms,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -435,13 +509,14 @@ class _LogoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadowColorLight,
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -452,10 +527,10 @@ class _LogoutCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              // Left: Red icon (no background)
+              // Left: Red icon
               const Icon(
                 Icons.logout_rounded,
-                color: Color(0xFFFF3B30), // Secondary red
+                color: AppColors.error,
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -464,7 +539,7 @@ class _LogoutCard extends StatelessWidget {
                 child: Text(
                   'Logout',
                   style: AppTextStyles.bodyLarge.copyWith(
-                    color: const Color(0xFFFF3B30), // Secondary red
+                    color: AppColors.error,
                     fontWeight: FontWeight.w400,
                     fontSize: 16,
                   ),
@@ -473,7 +548,7 @@ class _LogoutCard extends StatelessWidget {
               // Right: Chevron (red)
               const Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFFFF3B30), // Secondary red
+                color: AppColors.error,
                 size: 22,
               ),
             ],
@@ -495,13 +570,14 @@ class _UpgradeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadowColorLight,
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -511,7 +587,7 @@ class _UpgradeCard extends StatelessWidget {
           Text(
             'Want to access more features?',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: const Color(0xFF0F1115), // Near-black primary
+              color: AppColors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w500,
             ),
@@ -519,31 +595,11 @@ class _UpgradeCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onViewPlans,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF3B30), // Secondary red
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30), // Pill shape
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'View Plans',
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
+          PrimaryGradientButton(
+            onPressed: onViewPlans,
+            label: 'View Plans',
+            height: 48,
+            borderRadius: 30,
           ),
         ],
       ),

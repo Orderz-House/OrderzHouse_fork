@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 /// Reusable profile field tile widget matching the reference design
-class ProfileFieldTile extends StatelessWidget {
+class ProfileFieldTile extends StatefulWidget {
   final String label;
   final String? value;
   final TextEditingController? controller;
@@ -26,28 +27,53 @@ class ProfileFieldTile extends StatelessWidget {
   });
 
   @override
+  State<ProfileFieldTile> createState() => _ProfileFieldTileState();
+}
+
+class _ProfileFieldTileState extends State<ProfileFieldTile> {
+  late FocusNode _focusNode;
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final displayValue = controller?.text.isNotEmpty == true
-        ? controller!.text
-        : (value ?? '');
+    final displayValue = widget.controller?.text.isNotEmpty == true
+        ? widget.controller!.text
+        : (widget.value ?? '');
 
     return IntrinsicHeight(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: errorText != null
-                ? Colors.red.withValues(alpha: 0.3)
-                : const Color(0xFFE5E7EB),
-            width: 1,
+            color: widget.errorText != null
+                ? AppColors.error.withOpacity(0.3)
+                : (_isFocused ? AppColors.accentOrange : AppColors.border),
+            width: _isFocused ? 2 : 1,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: AppColors.shadowColorLight,
               blurRadius: 4,
-              offset: const Offset(0, 1),
+              offset: Offset(0, 1),
             ),
           ],
         ),
@@ -61,9 +87,9 @@ class ProfileFieldTile extends StatelessWidget {
                 children: [
                   // Label
                   Text(
-                    label,
+                    widget.label,
                     style: const TextStyle(
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textTertiary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       height: 1.2,
@@ -71,13 +97,13 @@ class ProfileFieldTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   // Value/Input
-                  if (readOnly || controller == null)
+                  if (widget.readOnly || widget.controller == null)
                     Text(
                       displayValue.isEmpty ? '—' : displayValue,
                       style: TextStyle(
                         color: displayValue.isEmpty
-                            ? const Color(0xFF9CA3AF)
-                            : const Color(0xFF111827),
+                            ? AppColors.textTertiary
+                            : AppColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         height: 1.2,
@@ -85,13 +111,15 @@ class ProfileFieldTile extends StatelessWidget {
                     )
                   else
                     TextFormField(
-                      controller: controller,
-                      readOnly: readOnly,
-                      keyboardType: keyboardType,
-                      validator: validator,
-                      onChanged: onChanged,
+                      controller: widget.controller,
+                      focusNode: _focusNode,
+                      readOnly: widget.readOnly,
+                      keyboardType: widget.keyboardType,
+                      validator: widget.validator,
+                      onChanged: widget.onChanged,
+                      cursorColor: AppColors.accentOrange,
                       style: const TextStyle(
-                        color: Color(0xFF111827),
+                        color: AppColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         height: 1.2,
@@ -109,12 +137,12 @@ class ProfileFieldTile extends StatelessWidget {
                       ),
                     ),
                   // Error text
-                  if (errorText != null) ...[
+                  if (widget.errorText != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      errorText!,
+                      widget.errorText!,
                       style: const TextStyle(
-                        color: Colors.red,
+                        color: AppColors.error,
                         fontSize: 11,
                         height: 1.2,
                       ),
@@ -128,8 +156,8 @@ class ProfileFieldTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Icon(
-                icon,
-                color: const Color(0xFF9CA3AF), // Neutral grey for all icons
+                widget.icon,
+                color: AppColors.iconGray,
                 size: 24,
               ),
             ),

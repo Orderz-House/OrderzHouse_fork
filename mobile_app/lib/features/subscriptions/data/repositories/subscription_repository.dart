@@ -37,7 +37,7 @@ class SubscriptionRepository {
       final checkoutUrl = data['url'] as String?;
 
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
-        return ApiResponse(
+        return const ApiResponse(
           success: false,
           data: '',
           message: 'No checkout URL received from server',
@@ -65,7 +65,7 @@ class SubscriptionRepository {
         data: '',
         message: e.response?.data is Map
             ? (e.response?.data as Map<String, dynamic>)['error'] as String?
-            : null ?? 'Failed to create checkout session',
+            : 'Failed to create checkout session',
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
@@ -103,7 +103,7 @@ class SubscriptionRepository {
       final ok = data['ok'] as bool? ?? false;
 
       if (ok) {
-        return ApiResponse(
+        return const ApiResponse(
           success: true,
           data: true,
           message: 'Payment confirmed successfully',

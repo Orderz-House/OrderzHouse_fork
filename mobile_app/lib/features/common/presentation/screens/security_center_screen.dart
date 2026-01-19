@@ -1,0 +1,306 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/gradient_button.dart';
+import 'settings_screen.dart'; // Import for twoFactorEnabledProvider
+
+class SecurityCenterScreen extends ConsumerWidget {
+  const SecurityCenterScreen({super.key});
+
+  void _handleBack(BuildContext context) {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      context.pop();
+    } else {
+      context.go('/settings');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final twoFactorEnabled = ref.watch(twoFactorEnabledProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            AppHeader(
+              title: 'Security',
+              onBack: () => _handleBack(context),
+            ),
+
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  children: [
+                    // Two-Factor Authentication Card
+                    _TwoFactorCard(
+                      enabled: twoFactorEnabled,
+                      onToggle: () {
+                        ref.read(twoFactorEnabledProvider.notifier).state = !twoFactorEnabled;
+                        if (!twoFactorEnabled) {
+                          // Show enable 2FA flow
+                          _showEnable2FADialog(context, ref);
+                        } else {
+                          // Show disable 2FA confirmation
+                          _showDisable2FADialog(context, ref);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Change Password Card
+                    _ChangePasswordCard(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Change password feature coming soon')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEnable2FADialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Enable Two-Factor Authentication'),
+        content: const Text(
+          'Two-factor authentication adds an extra layer of security to your account. You\'ll receive a code via email to verify your identity when signing in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement 2FA enable flow
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('2FA enable flow coming soon')),
+              );
+            },
+            child: const Text('Enable', style: TextStyle(color: AppColors.accentOrange)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDisable2FADialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Disable Two-Factor Authentication?'),
+        content: const Text(
+          'This will make your account less secure. Are you sure you want to disable 2FA?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(twoFactorEnabledProvider.notifier).state = false;
+              Navigator.pop(context);
+              // TODO: Implement 2FA disable API call
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TwoFactorCard extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback onToggle;
+
+  const _TwoFactorCard({
+    required this.enabled,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.accentOrange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.security_rounded,
+                  color: AppColors.accentOrange,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Two-Factor Authentication',
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: enabled
+                            ? AppColors.success.withOpacity(0.1)
+                            : AppColors.textTertiary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        enabled ? 'Enabled' : 'Disabled',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: enabled ? AppColors.success : AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            enabled
+                ? 'Your account is protected with two-factor authentication. You\'ll receive a verification code via email when signing in.'
+                : 'Add an extra layer of security to your account. Enable 2FA to receive verification codes via email when signing in.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          PrimaryGradientButton(
+            onPressed: onToggle,
+            label: enabled ? 'Manage 2FA' : 'Enable 2FA',
+            height: 48,
+            borderRadius: 12,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangePasswordCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ChangePasswordCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.accentOrange.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: AppColors.accentOrange,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Change Password',
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Update your account password',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
