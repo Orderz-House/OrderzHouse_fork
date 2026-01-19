@@ -53,7 +53,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 roleRoute: '/client',
               ),
 
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: 8),
 
               // B) SEARCH BAR
               HomeSearchBar(
@@ -141,29 +141,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     WidgetRef ref,
     AsyncValue<List<Project>> myProjectsAsync,
   ) {
-    // Calculate KPIs from myProjects data
-    final activeProjects = myProjectsAsync.when(
-      data: (projects) =>
-          projects.where((p) => p.status == 'in_progress').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    // Count projects with pending proposals (status = 'pending')
-    final newProposals = myProjectsAsync.when(
-      data: (projects) => projects.where((p) => p.status == 'pending').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    // Count projects awaiting review (status = 'pending_review')
-    final pendingReview = myProjectsAsync.when(
-      data: (projects) =>
-          projects.where((p) => p.status == 'pending_review').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
     return HomeHeroCardV2(
       chipLabel: 'Action Center',
       iconData: Icons.work_outline_rounded,
@@ -172,11 +149,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       },
       title: 'Manage your projects',
       subtitle: 'Track offers, deliveries and payments',
-      kpis: [
-        HeroKpiV2(value: activeProjects, label: 'Active'),
-        HeroKpiV2(value: newProposals, label: 'Proposals'),
-        HeroKpiV2(value: pendingReview, label: 'Reviews'),
-      ],
       ctaLabel: 'Post a Project',
       ctaIcon: Icons.add_rounded,
       onCtaTap: () {

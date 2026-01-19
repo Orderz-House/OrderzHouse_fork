@@ -49,7 +49,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
                 roleRoute: '/freelancer',
               ),
 
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: 8),
 
               // B) SEARCH BAR
               HomeSearchBar(
@@ -127,24 +127,6 @@ class FreelancerHomeScreen extends ConsumerWidget {
       error: (_, __) => 0.0,
     );
 
-    // Calculate KPIs from myProjects data
-    final activeProjects = myProjectsAsync.when(
-      data: (projects) =>
-          projects.where((p) => p.status == 'in_progress').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    final pendingReviews = myProjectsAsync.when(
-      data: (projects) =>
-          projects.where((p) => p.status == 'pending_review').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    // Unread messages count (placeholder, should come from messages provider if available)
-    const unreadMessages = 0;
-
     return HomeHeroCardV2(
       chipLabel: 'This Month',
       iconData: Icons.account_balance_wallet_outlined,
@@ -154,11 +136,6 @@ class FreelancerHomeScreen extends ConsumerWidget {
       title: 'Your Balance',
       bigNumber: 'JOD ${balance.toStringAsFixed(2)}',
       subtitle: 'Available to withdraw',
-      kpis: [
-        HeroKpiV2(value: activeProjects, label: 'Active'),
-        HeroKpiV2(value: pendingReviews, label: 'Reviews'),
-        const HeroKpiV2(value: unreadMessages, label: 'Messages'),
-      ],
       ctaLabel: 'View Earnings',
       onCtaTap: () {
         context.go('/freelancer/payments');

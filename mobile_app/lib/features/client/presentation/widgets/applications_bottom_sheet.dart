@@ -182,79 +182,88 @@ class ApplicationsBottomSheet extends StatelessWidget {
                                 ],
                                 if (isPending) ...[
                                   const SizedBox(height: AppSpacing.md),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: isSubmitting
-                                              ? null
-                                              : () async {
-                                                  try {
-                                                    await onAction(assignmentId, project.id, 'reject');
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text('Application rejected'),
-                                                          backgroundColor: Colors.orange,
-                                                        ),
-                                                      );
-                                                    }
-                                                  } catch (e) {
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text('Failed: $e'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                },
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: const Color(0xFF111827),
-                                            side: const BorderSide(color: Color(0xFFE5E7EB)),
-                                            padding: const EdgeInsets.symmetric(vertical: 10),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 44,
+                                            child: OutlinedButton(
+                                              onPressed: isSubmitting
+                                                  ? null
+                                                  : () async {
+                                                      try {
+                                                        await onAction(assignmentId, project.id, 'reject');
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text('Application rejected'),
+                                                              backgroundColor: Colors.orange,
+                                                            ),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Failed: $e'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: const Color(0xFF111827),
+                                                side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              child: const Text('Reject'),
                                             ),
                                           ),
-                                          child: const Text('Reject'),
                                         ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.sm),
-                                      Expanded(
-                                        child: GradientButton(
-                                          onPressed: isSubmitting
-                                              ? null
-                                              : () async {
-                                                  try {
-                                                    await onAction(assignmentId, project.id, 'accept');
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text('Application accepted ✅'),
-                                                          backgroundColor: Colors.green,
-                                                        ),
-                                                      );
-                                                    }
-                                                  } catch (e) {
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text('Failed: $e'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                },
-                                          label: 'Accept',
-                                          isLoading: isSubmitting,
-                                          height: 40,
-                                          borderRadius: 8,
+                                        const SizedBox(width: AppSpacing.sm),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 44,
+                                            child: GradientButton(
+                                              onPressed: isSubmitting
+                                                  ? null
+                                                  : () async {
+                                                      try {
+                                                        await onAction(assignmentId, project.id, 'accept');
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text('Application accepted ✅'),
+                                                              backgroundColor: Colors.green,
+                                                            ),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Failed: $e'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                              label: 'Accept',
+                                              isLoading: isSubmitting,
+                                              height: 44,
+                                              borderRadius: 8,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ],

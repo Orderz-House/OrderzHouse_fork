@@ -807,10 +807,11 @@ export const approveWorkCompletion = async (req, res) => {
     const newStatus =
       action === "approve" ? "completed" : "revision_requested";
 
-    // 3) Update ONLY the column you have
+    // 3) Update BOTH status fields to ensure UI consistency
     await pool.query(
       `UPDATE projects
-       SET completion_status = $1,
+       SET status = $1,
+           completion_status = $1,
            updated_at = NOW()
        WHERE id = $2`,
       [newStatus, projectId]

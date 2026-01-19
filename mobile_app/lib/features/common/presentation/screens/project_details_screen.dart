@@ -1,15 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projects/data/repositories/projects_repository.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
@@ -202,9 +207,21 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     return _isFreelancerRole && !_isOwner && _isAssignedToMe;
   }
   
-  // Should show client actions section
+  // Should show client actions section (Receive + Applicants buttons)
   bool get _shouldShowClientActions {
-    return _isOwner;
+    return _isOwner && _isClientRole;
+  }
+  
+  // Should show client action bar (Receive + Applicants)
+  bool get _shouldShowClientActionBar {
+    return _isOwner && _isClientRole;
+  }
+  
+  // Check if project is completed
+  bool get _isProjectCompleted {
+    final status = widget.project.status.toLowerCase();
+    final completionStatus = _statusKey.toLowerCase();
+    return status == 'completed' || completionStatus == 'completed';
   }
   
   // Should show sticky Apply/Send Offer CTA
@@ -1004,20 +1021,19 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     if (AppConfig.isDevelopment) {
       debugPrint('🔍 ProjectDetails Bottom Bar Visibility:');
       debugPrint('  isOwner: $_isOwner');
+      debugPrint('  isClientRole: $_isClientRole');
       debugPrint('  isFreelancerRole: $_isFreelancerRole');
       debugPrint('  isAssignedToMe: $_isAssignedToMe');
       debugPrint('  statusKey: $_statusKey');
       debugPrint('  deliveries.length: ${_deliveries.length}');
-      debugPrint('  shouldShowClientReviewActions: $_shouldShowClientReviewActions');
+      debugPrint('  shouldShowClientActionBar: $_shouldShowClientActionBar');
       debugPrint('  shouldShowFreelancerActions: $_shouldShowFreelancerActions');
-      debugPrint('  shouldShowFreelancerDeliver: $_shouldShowFreelancerDeliver');
-      debugPrint('  shouldShowFreelancerWaiting: $_shouldShowFreelancerWaiting');
       debugPrint('  shouldShowStickyCTA: $_shouldShowStickyCTA');
     }
     
-    // Show Client Actions (Approve + Request Change) if owner and pending_review
-    if (_shouldShowClientReviewActions) {
-      return _buildClientReviewBottomBar(context);
+    // Show Client Action Bar (Receive + Applicants) for all client-owned projects
+    if (_shouldShowClientActionBar) {
+      return _buildClientActionBar(context);
     }
     
     // Show Freelancer Actions (Deliver or Waiting status) if assigned
@@ -1043,7 +1059,103 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     return null;
   }
   
-  // Build Client Review Bottom Bar (Approve + Request Change)
+  // Build Client Action Bar (Receive + Applicants OR Files + Request Changes)
+  Widget _buildClientActionBar(BuildContext context) {
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: _isProjectCompleted
+            ? _buildCompletedActionsRow(context)
+            : _buildActiveActionsRow(context),
+      ),
+    );
+  }
+  
+  // Build Active Actions Row (Applicants + Receive) - for in-progress projects
+  Widget _buildActiveActionsRow(BuildContext context) {
+    return Row(
+      children: [
+        // Applicants button (left, outlined)
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _openApplications(context),
+            icon: const Icon(Icons.people_outline_rounded, size: 20),
+            label: const Text('Applicants'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textPrimary,
+              side: BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Receive button (right, gradient)
+        Expanded(
+          child: PrimaryGradientButton(
+            onPressed: () => _openReceivePanel(context),
+            label: 'Receive',
+            icon: Icons.download_rounded,
+            height: 48,
+            borderRadius: 12,
+            width: double.infinity,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Build Completed Actions Row (Request Changes + Files) - for completed projects
+  Widget _buildCompletedActionsRow(BuildContext context) {
+    return Row(
+      children: [
+        // Request Changes button (left, outlined) - optional for post-completion changes
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _openRequestChangesModal(context),
+            icon: const Icon(Icons.edit_rounded, size: 20),
+            label: const Text('Request Changes'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textPrimary,
+              side: BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Files button (right, gradient primary)
+        Expanded(
+          child: PrimaryGradientButton(
+            onPressed: () => _openFilesView(context),
+            label: 'Files',
+            icon: Icons.folder_outlined,
+            height: 52,
+            borderRadius: 28,
+            width: double.infinity,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Build Client Review Bottom Bar (Approve + Request Change) - DEPRECATED: Now shown in Receive panel
   Widget _buildClientReviewBottomBar(BuildContext context) {
     return SafeArea(
       top: false,
@@ -1317,7 +1429,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         throw Exception(response.message ?? 'Failed to approve delivery');
       }
       
-      // Update local state
+      // Update local state immediately
       setState(() {
         _projectData = {
           ...?_projectData,
@@ -1334,13 +1446,26 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       ref.invalidate(myProjectsProvider);
       await ref.read(myProjectsProvider.future);
       
+      // Refresh raw project data
+      await _fetchRawProjectData();
+      
       if (context.mounted) {
+        // Close the receive sheet if it's open
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Project approved successfully ✅'),
+            content: Text('Project approved and marked as completed ✅'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
+        
+        // Force rebuild to show new buttons
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
@@ -1515,7 +1640,812 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     }
   }
   
-  // Open review delivery (client) - for viewing deliveries only
+  // Open Files View (client) - read-only view of delivered files for completed projects
+  Future<void> _openFilesView(BuildContext context) async {
+    // Fetch deliveries first if not already loaded
+    if (_deliveries.isEmpty) {
+      await _fetchDeliveriesIfNeeded();
+    }
+    
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => _buildFilesSheet(context),
+    );
+  }
+  
+  // Build Files Sheet UI (read-only, no actions)
+  Widget _buildFilesSheet(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.border,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Project Files — ${widget.project.title}',
+                    style: AppTextStyles.titleLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+          
+          // Content
+          Expanded(
+            child: _deliveries.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.folder_open_rounded,
+                          size: 64,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No files available',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _deliveries.length,
+                    itemBuilder: (context, index) {
+                      final delivery = _deliveries[index];
+                      return _buildDeliveryFileCard(delivery, index);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build Delivery File Card
+  Widget _buildDeliveryFileCard(Map<String, dynamic> delivery, int index) {
+    final files = delivery['files'] as List<dynamic>? ?? [];
+    final note = delivery['note'] as String? ?? '';
+    final createdAt = delivery['created_at'];
+    final status = delivery['status'] as String? ?? 'submitted';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Delivery #${index + 1}',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getHistoryColor(status).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: _getHistoryColor(status),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (note.isNotEmpty) ...[
+            Text(
+              'Note:',
+              style: AppTextStyles.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              note,
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (files.isNotEmpty) ...[
+            Text(
+              'Files (${files.length}):',
+              style: AppTextStyles.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...files.map((file) => _buildFileItem(file)),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'Submitted: ${_formatDeliveryDate(createdAt)}',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Open Receive Panel (client) - new UI for viewing/approving deliveries
+  Future<void> _openReceivePanel(BuildContext context) async {
+    // Fetch deliveries first if not already loaded
+    if (_deliveries.isEmpty) {
+      await _fetchDeliveriesIfNeeded();
+    }
+    
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => _buildReceiveSheet(context),
+    );
+  }
+  
+  // Build Receive Sheet UI
+  Widget _buildReceiveSheet(BuildContext context) {
+    final latestDelivery = _deliveries.isNotEmpty ? _deliveries.first : null;
+    
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.border,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Receive Project — ${widget.project.title}',
+                    style: AppTextStyles.titleLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+          
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Latest Delivery Card
+                  _buildLatestDeliveryCard(latestDelivery),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Actions Card
+                  _buildActionsCard(latestDelivery),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // History Card
+                  _buildHistoryCard(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build Latest Delivery Card
+  Widget _buildLatestDeliveryCard(Map<String, dynamic>? latestDelivery) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Latest delivery',
+                style: AppTextStyles.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _fetchDeliveriesIfNeeded,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Refresh'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accentOrange,
+                  side: BorderSide(color: AppColors.border),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 32),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (latestDelivery == null)
+            Text(
+              'No deliveries yet.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            )
+          else
+            _buildDeliveryContent(latestDelivery),
+        ],
+      ),
+    );
+  }
+  
+  // Build Delivery Content
+  Widget _buildDeliveryContent(Map<String, dynamic> delivery) {
+    final files = delivery['files'] as List<dynamic>? ?? [];
+    final note = delivery['note'] as String? ?? '';
+    final createdAt = delivery['created_at'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (note.isNotEmpty) ...[
+          Text(
+            'Note:',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: AppTextStyles.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (files.isNotEmpty) ...[
+          Text(
+            'Files:',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...files.map((file) => _buildFileItem(file)),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          'Submitted: ${_formatDeliveryDate(createdAt)}',
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Build File Item
+  Widget _buildFileItem(dynamic file) {
+    final fileName = file is Map ? (file['filename'] ?? file['name'] ?? 'File') : file.toString();
+    final fileUrl = file is Map ? (file['url'] ?? file['file_url'] ?? file['path']) : null;
+    final fileSize = file is Map ? (file['size'] ?? file['size_bytes']) : null;
+    
+    // Check if URL is valid
+    final hasValidUrl = fileUrl != null && 
+                       fileUrl.toString().isNotEmpty && 
+                       fileUrl.toString() != 'null' && 
+                       fileUrl.toString() != 'N/A';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.insert_drive_file_rounded,
+            color: AppColors.accentOrange,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: AppTextStyles.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (fileSize != null)
+                  Text(
+                    _formatFileSize(fileSize),
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textTertiary,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.download_rounded,
+              size: 20,
+              color: hasValidUrl ? AppColors.accentOrange : AppColors.textTertiary,
+            ),
+            onPressed: hasValidUrl ? () => _downloadFile(fileUrl.toString(), fileName) : null,
+            tooltip: hasValidUrl ? 'Download' : 'File not available',
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper: Format file size
+  String _formatFileSize(dynamic size) {
+    try {
+      final bytes = size is int ? size : int.tryParse(size.toString()) ?? 0;
+      if (bytes < 1024) return '$bytes B';
+      if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+      if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    } catch (e) {
+      return '';
+    }
+  }
+  
+  // Build Actions Card
+  Widget _buildActionsCard(Map<String, dynamic>? latestDelivery) {
+    final hasDelivery = latestDelivery != null;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Actions',
+            style: AppTextStyles.titleMedium.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: hasDelivery ? () {
+                      Navigator.pop(context);
+                      _openRequestChangesModal(context);
+                    } : null,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: BorderSide(color: hasDelivery ? AppColors.border : AppColors.borderLight),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Request changes'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: PrimaryGradientButton(
+                    onPressed: hasDelivery ? () async {
+                      Navigator.pop(context);
+                      await _handleApproveDelivery(context);
+                    } : null,
+                    label: 'Approve',
+                    isEnabled: hasDelivery,
+                    height: 48,
+                    borderRadius: 12,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build History Card
+  Widget _buildHistoryCard() {
+    final history = _deliveries.skip(1).toList();
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'History',
+            style: AppTextStyles.titleMedium.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (history.isEmpty)
+            Text(
+              'No history yet.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            )
+          else
+            ...history.map((delivery) => _buildHistoryItem(delivery)),
+        ],
+      ),
+    );
+  }
+  
+  // Build History Item
+  Widget _buildHistoryItem(Map<String, dynamic> delivery) {
+    final status = delivery['status'] as String? ?? 'submitted';
+    final createdAt = delivery['created_at'];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _getHistoryIcon(status),
+            color: _getHistoryColor(status),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getHistoryTitle(status),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  _formatDeliveryDate(createdAt),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper: Download file with authorization (no permissions needed)
+  Future<void> _downloadFile(String url, String fileName) async {
+    // Validate URL
+    if (url.isEmpty || url == 'N/A' || url == 'null') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No downloadable file available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    try {
+      // Show downloading snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloading: $fileName'),
+          backgroundColor: AppColors.accentOrange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Get app documents directory (no permissions needed on any platform)
+      final directory = await getApplicationDocumentsDirectory();
+      
+      // Create OrderzHouse folder inside app documents
+      final orderzHouseDir = Directory('${directory.path}/OrderzHouse');
+      if (!await orderzHouseDir.exists()) {
+        await orderzHouseDir.create(recursive: true);
+      }
+      
+      final savePath = '${orderzHouseDir.path}/$fileName';
+      
+      // Get auth token from secure storage
+      final token = await SecureStorageService.getToken();
+      
+      // Create Dio instance with auth headers
+      final dio = Dio();
+      final options = Options(
+        headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status < 500,
+      );
+      
+      // Download file
+      await dio.download(
+        url,
+        savePath,
+        options: options,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            debugPrint('Download progress: $progress%');
+          }
+        },
+      );
+      
+      // Verify file exists
+      final file = File(savePath);
+      if (!await file.exists()) {
+        throw Exception('File download failed');
+      }
+      
+      // Print saved path to console
+      debugPrint('✅ File saved to: $savePath');
+      
+      if (mounted) {
+        // Show success message with full path
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Downloaded: $fileName',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Saved: $savePath',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white70,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Open',
+              textColor: Colors.white,
+              onPressed: () async {
+                try {
+                  final result = await OpenFilex.open(savePath);
+                  if (result.type != ResultType.done) {
+                    debugPrint('Could not open file: ${result.message}');
+                  }
+                } catch (e) {
+                  debugPrint('Error opening file: $e');
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Download error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+  
+  // Helper: Format delivery date
+  String _formatDeliveryDate(dynamic date) {
+    if (date == null) return 'Just now';
+    try {
+      DateTime dateTime;
+      if (date is DateTime) {
+        dateTime = date;
+      } else if (date is String) {
+        // Try multiple date formats
+        try {
+          dateTime = DateTime.parse(date);
+        } catch (_) {
+          // Try ISO format with timezone
+          dateTime = DateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(date, true).toLocal();
+        }
+      } else {
+        return 'Just now';
+      }
+      
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inSeconds < 60) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        final minutes = difference.inMinutes;
+        return '$minutes ${minutes == 1 ? "minute" : "minutes"} ago';
+      } else if (difference.inHours < 24) {
+        final hours = difference.inHours;
+        return '$hours ${hours == 1 ? "hour" : "hours"} ago';
+      } else if (difference.inDays < 7) {
+        final days = difference.inDays;
+        return '$days ${days == 1 ? "day" : "days"} ago';
+      } else {
+        return DateFormat('MMM dd, yyyy').format(dateTime);
+      }
+    } catch (e) {
+      debugPrint('Date formatting error: $e for date: $date');
+      return 'Recently';
+    }
+  }
+  
+  // Helper: Get history icon
+  IconData _getHistoryIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'completed':
+        return Icons.check_circle_rounded;
+      case 'changes_requested':
+      case 'rejected':
+        return Icons.edit_rounded;
+      default:
+        return Icons.upload_rounded;
+    }
+  }
+  
+  // Helper: Get history color
+  Color _getHistoryColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'completed':
+        return Colors.green;
+      case 'changes_requested':
+      case 'rejected':
+        return Colors.orange;
+      default:
+        return AppColors.accentOrange;
+    }
+  }
+  
+  // Helper: Get history title
+  String _getHistoryTitle(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'completed':
+        return 'Delivery approved';
+      case 'changes_requested':
+      case 'rejected':
+        return 'Changes requested';
+      default:
+        return 'Delivery submitted';
+    }
+  }
+  
+  // Open review delivery (client) - DEPRECATED: Use _openReceivePanel instead
   Future<void> _openReviewDelivery(BuildContext context) async {
     final repository = ref.read(projectsRepositoryProvider);
     List<Map<String, dynamic>> deliveries = [];

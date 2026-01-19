@@ -9,9 +9,19 @@ final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
 });
 
 // Changed from autoDispose to prevent refetch on rebuilds
+// Now watches userId to automatically refetch when user changes
 final myProjectsProvider =
     FutureProvider<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
+  
+  // Watch userId to trigger refetch when user changes (login/logout/switch account)
+  final userId = ref.watch(authStateProvider.select((state) => state.userId));
+  
+  // If no user, return empty list (logged out state)
+  if (userId == null) {
+    return [];
+  }
+  
   final response = await repository.getMyProjects();
 
   if (response.success && response.data != null) {
@@ -25,9 +35,17 @@ final exploreProjectsProvider =
     FutureProvider.autoDispose<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
   
+  // Watch userId to trigger refetch when user changes
+  final userId = ref.watch(authStateProvider.select((state) => state.userId));
+  
   // Get user role from auth state
   final authState = ref.read(authStateProvider);
   final userRoleId = authState.user?.roleId;
+  
+  // If no user, return empty list
+  if (userId == null) {
+    return [];
+  }
   
   // Get selected category ID (null means "All")
   final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
@@ -116,9 +134,17 @@ final latestProjectsProvider =
     FutureProvider.autoDispose<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
   
+  // Watch userId to trigger refetch when user changes
+  final userId = ref.watch(authStateProvider.select((state) => state.userId));
+  
   // Get user role from auth state
   final authState = ref.read(authStateProvider);
   final userRoleId = authState.user?.roleId;
+  
+  // If no user, return empty list
+  if (userId == null) {
+    return [];
+  }
   
   // Fetch all projects (no category filter) with limit 2, sorted by created_at DESC
   final response = await repository.fetchExploreProjects(

@@ -559,7 +559,7 @@ class _LogoutCard extends StatelessWidget {
   }
 }
 
-// 5) Upgrade/Plans CTA Card
+// 5) Upgrade/Plans CTA Card (Full Width)
 class _UpgradeCard extends StatelessWidget {
   final VoidCallback onViewPlans;
 
@@ -568,6 +568,7 @@ class _UpgradeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity, // ✅ Explicit full width
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -582,6 +583,7 @@ class _UpgradeCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // ✅ Align content to start
         children: [
           // Text
           Text(
@@ -589,17 +591,21 @@ class _UpgradeCard extends StatelessWidget {
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textPrimary,
               fontSize: 15,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600, // ✅ Slightly bolder
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          // Button
-          PrimaryGradientButton(
-            onPressed: onViewPlans,
-            label: 'View Plans',
+          // Button (Full Width)
+          SizedBox(
+            width: double.infinity, // ✅ Full width button
             height: 48,
-            borderRadius: 30,
+            child: PrimaryGradientButton(
+              onPressed: onViewPlans,
+              label: 'View Plans',
+              height: 48,
+              borderRadius: 30,
+              width: double.infinity, // ✅ Explicit width for button
+            ),
           ),
         ],
       ),
