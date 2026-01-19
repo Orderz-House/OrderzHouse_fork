@@ -15,7 +15,6 @@ class HomeHeroCardV2 extends StatelessWidget {
   final String title;
   final String? bigNumber; // For freelancer balance (optional)
   final String subtitle;
-  final List<HeroKpiV2>? kpis; // KPI mini row (optional)
   
   // CTA button
   final String ctaLabel;
@@ -31,7 +30,6 @@ class HomeHeroCardV2 extends StatelessWidget {
     required this.title,
     this.bigNumber,
     required this.subtitle,
-    this.kpis,
     required this.ctaLabel,
     this.ctaIcon,
     required this.onCtaTap,
@@ -95,7 +93,7 @@ class HomeHeroCardV2 extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min, // Let content define size
                 children: [
                   // Top Row: Chip + Icon
@@ -153,6 +151,7 @@ class HomeHeroCardV2 extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     softWrap: true,
+                    textAlign: TextAlign.center,
                   ),
                   
                   // Big Number (for freelancer balance)
@@ -167,6 +166,7 @@ class HomeHeroCardV2 extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ],
                   
@@ -181,20 +181,8 @@ class HomeHeroCardV2 extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     softWrap: true,
+                    textAlign: TextAlign.center,
                   ),
-                  
-                  // KPIs Row (if provided)
-                  if (kpis != null && kpis!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        for (int i = 0; i < kpis!.length; i++) ...[
-                          if (i > 0) const SizedBox(width: AppSpacing.lg),
-                          Flexible(child: _buildKpi(kpis![i])),
-                        ],
-                      ],
-                    ),
-                  ],
                   
                   const SizedBox(height: AppSpacing.lg),
                   
@@ -252,36 +240,4 @@ class HomeHeroCardV2 extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildKpi(HeroKpiV2 kpi) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${kpi.value}',
-          style: AppTextStyles.titleLarge.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          kpi.label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 11,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}
-
-class HeroKpiV2 {
-  final int value;
-  final String label;
-
-  const HeroKpiV2({required this.value, required this.label});
 }

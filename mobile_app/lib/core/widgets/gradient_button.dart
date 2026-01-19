@@ -48,7 +48,7 @@ class PrimaryGradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(radius),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              vertical: 14,
+              vertical: height < 48 ? 8 : 14,
               horizontal: width == null ? AppSpacing.xl : AppSpacing.md,
             ),
             child: isLoading

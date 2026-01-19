@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/utils/validators.dart';
 import '../providers/auth_provider.dart';
@@ -93,10 +93,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 validator: Validators.required,
               ),
               const SizedBox(height: AppSpacing.lg),
-              PrimaryButton(
+              PrimaryGradientButton(
                 label: 'Verify',
                 onPressed: _handleVerify,
                 isLoading: authState.isLoading,
+                width: double.infinity,
+                height: 54,
+                borderRadius: 999,
               ),
             ],
           ),

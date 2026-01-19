@@ -6,6 +6,7 @@ import {
   verifyTwoFactorToken,
   disableTwoFactor,
   verifyTwoFactorLogin,
+  changePassword,
 } from "../controller/auth.js";
 
 const authRouter = express.Router();
@@ -19,5 +20,8 @@ authRouter.use(authentication);
 authRouter.post("/2fa/generate", generateTwoFactorSecret);
 authRouter.post("/2fa/verify", verifyTwoFactorToken);
 authRouter.post("/2fa/disable", disableTwoFactor);
+
+// Change password (requires authentication)
+authRouter.patch("/change-password", changePassword);
 
 export default authRouter;
