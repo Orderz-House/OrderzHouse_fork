@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -15,13 +14,11 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const primaryColor = Color(0xFF6D5FFD);
-    final notificationsEnabled = ref.watch(notificationsEnabledProvider);
-    final twoFactorEnabled = ref.watch(twoFactorEnabledProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
-    return AppScaffold(
+    return Scaffold(
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,19 +35,20 @@ class SettingsScreen extends ConsumerWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         shape: BoxShape.circle,
-                        boxShadow: [
+                        border: Border.all(color: AppColors.border, width: 1),
+                        boxShadow: const [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
+                            color: AppColors.shadowColorLight,
                             blurRadius: 4,
-                            offset: const Offset(0, 2),
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chevron_left_rounded),
-                        color: primaryColor,
+                        color: AppColors.textPrimary,
                         onPressed: () {
                           // Safe back navigation
                           if (context.canPop()) {
@@ -71,12 +69,11 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     // Title
-                    const Text(
+                    Text(
                       'Settings',
-                      style: TextStyle(
-                        color: Color(0xFF111827),
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 18,
                       ),
                     ),
                     const Spacer(),
@@ -93,13 +90,14 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
+                  border: Border.all(color: AppColors.border, width: 1),
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: AppColors.shadowColorLight,
                       blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      offset: Offset(0, 4),
                     ),
                   ],
                 ),
@@ -110,44 +108,46 @@ class SettingsScreen extends ConsumerWidget {
                       context: context,
                       icon: Icons.notifications_outlined,
                       title: 'Notifications',
-                      subtitle: 'Receive push notifications',
-                      trailing: Switch(
-                        value: notificationsEnabled,
-                        onChanged: (value) {
-                          ref.read(notificationsEnabledProvider.notifier).state = value;
-                        },
-                        activeThumbColor: primaryColor,
+                      subtitle: 'Manage notification preferences',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
                       ),
+                      onTap: () {
+                        context.push('/settings/notifications');
+                      },
                     ),
                     
                     // Divider
-                    Divider(
+                    const Divider(
                       height: 1,
                       thickness: 1,
-                      color: Colors.grey.shade200,
+                      color: AppColors.borderLight,
                       indent: 72,
                     ),
 
-                    // Two-Factor Authentication Setting
+                    // Security Center
                     _buildSettingTile(
                       context: context,
                       icon: Icons.security_outlined,
-                      title: 'Two-Factor Authentication',
-                      subtitle: 'Add an extra layer of security',
-                      trailing: Switch(
-                        value: twoFactorEnabled,
-                        onChanged: (value) {
-                          ref.read(twoFactorEnabledProvider.notifier).state = value;
-                        },
-                        activeThumbColor: primaryColor,
+                      title: 'Security',
+                      subtitle: 'Manage security settings',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
                       ),
+                      onTap: () {
+                        context.push('/settings/security');
+                      },
                     ),
                     
                     // Divider
-                    Divider(
+                    const Divider(
                       height: 1,
                       thickness: 1,
-                      color: Colors.grey.shade200,
+                      color: AppColors.borderLight,
                       indent: 72,
                     ),
 
@@ -157,21 +157,94 @@ class SettingsScreen extends ConsumerWidget {
                       icon: Icons.lock_outline_rounded,
                       title: 'Change Password',
                       subtitle: 'Update your account password',
-                      trailing: Icon(
+                      trailing: const Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.grey.shade400,
+                        color: AppColors.iconGray,
                         size: 24,
                       ),
                       onTap: () {
-                        // Navigate to change password screen
-                        // TODO: Replace with actual route when implemented
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Change password feature coming soon'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        context.push('/change-password');
                       },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Account & Security Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border, width: 1),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadowColorLight,
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.folder_outlined,
+                      title: 'My Content',
+                      subtitle: 'Manage your uploaded content',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/settings/my-content');
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Colors.grey.shade200,
+                      indent: 72,
+                    ),
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.help_outline_rounded,
+                      title: 'Support',
+                      subtitle: 'Get help and contact us',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/support');
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Colors.grey.shade200,
+                      indent: 72,
+                    ),
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.delete_outline_rounded,
+                      title: 'Delete Account',
+                      subtitle: 'Permanently delete your account',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/settings/delete-account');
+                      },
+                      isDeleteAccount: true,
                     ),
                   ],
                 ),
@@ -192,9 +265,10 @@ class SettingsScreen extends ConsumerWidget {
     String? subtitle,
     required Widget trailing,
     VoidCallback? onTap,
+    bool isDeleteAccount = false,
   }) {
-    const primaryColor = Color(0xFF6D5FFD);
-
+    final isDelete = isDeleteAccount || title.toLowerCase().contains('delete');
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -207,12 +281,18 @@ class SettingsScreen extends ConsumerWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: primaryColor.withValues(alpha: 0.1),
+                color: isDelete
+                    ? AppColors.error.withOpacity(0.12)
+                    : AppColors.gradientStart.withOpacity(0.15),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.borderLight,
+                  width: 1,
+                ),
               ),
               child: Icon(
                 icon,
-                color: primaryColor,
+                color: isDelete ? AppColors.error : AppColors.accentOrange,
                 size: 24,
               ),
             ),
@@ -225,7 +305,7 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     title,
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: const Color(0xFF111827),
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -235,7 +315,7 @@ class SettingsScreen extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.grey.shade600,
+                        color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),

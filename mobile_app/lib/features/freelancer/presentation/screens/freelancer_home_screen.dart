@@ -1,725 +1,357 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/widgets/home_header.dart';
+import '../../../../core/widgets/home_search_bar.dart';
+import '../../../../core/widgets/home_hero_card_v2.dart';
+import '../../../../core/widgets/quick_actions_row.dart';
+import '../../../../core/widgets/home_project_card.dart';
+import '../../../../core/widgets/section_title_row.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
-import '../../../categories/presentation/providers/categories_provider.dart';
-import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../../core/models/project.dart';
-import '../../../../core/models/category.dart';
+import '../../../common/presentation/screens/payments_screen.dart';
 
+/// Premium Freelancer Home Dashboard
+/// Data sources:
+/// - User info: authStateProvider
+/// - Projects: myProjectsProvider (for counts), exploreProjectsProvider (for recommendations)
+/// - Latest projects: latestProjectsProvider
+/// - Balance: freelancerBalanceProvider (from payments API)
 class FreelancerHomeScreen extends ConsumerWidget {
   const FreelancerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(exploreCategoriesProvider);
+    final myProjectsAsync = ref.watch(myProjectsProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
+    final balanceAsync = ref.watch(freelancerBalanceProvider);
 
     return AppScaffold(
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(myProjectsProvider);
+          ref.invalidate(latestProjectsProvider);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1) TOP BAR
-              _buildTopBar(context),
+              const SizedBox(height: AppSpacing.md),
+
+              // A) TOP HEADER
+              const HomeHeader(
+                roleRoute: '/freelancer',
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // B) SEARCH BAR
+              HomeSearchBar(
+                hintText: 'Search projects, categories',
+                onFilterTap: () {
+                  // TODO: Show filter dialog
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // C) HERO ACTION CARD
+              _buildHeroCard(context, ref, myProjectsAsync, balanceAsync),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // D) QUICK ACTIONS ROW
+              _buildQuickActions(context),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // F) MAIN LIST SECTION: Recommended Projects
+              SectionTitleRow(
+                title: 'Recommended Projects',
+                onSeeAllTap: () {
+                  context.go('/freelancer/explore');
+                },
+              ),
 
               const SizedBox(height: AppSpacing.md),
 
-              // 2) SECTION 1: Featured Banner
-              _buildFeaturedBanner(context),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // 3) SECTION 2: Popular Categories
-              _buildCategoriesSection(context, categoriesAsync),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // 4) SECTION 3: Latest Projects
-              _buildLatestProjectsSection(context, latestProjectsAsync),
+              _buildRecommendedProjects(context, latestProjectsAsync),
 
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
+      ),
       bottomNavigationBar: const AppBottomNavBar(
         currentIndex: 0,
         items: [
-          NavItem(icon: Icons.home_rounded, title: 'Home', route: '/freelancer'),
-          NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/freelancer/projects'),
-          NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/freelancer/explore'),
-          NavItem(icon: Icons.payment_rounded, title: 'Payments', route: '/freelancer/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: 'Profile', route: '/freelancer/profile'),
+          NavItem(
+              icon: Icons.home_rounded, title: 'Home', route: '/freelancer'),
+          NavItem(
+              icon: Icons.work_outline_rounded,
+              title: 'My Projects',
+              route: '/freelancer/projects'),
+          NavItem(
+              icon: Icons.explore_rounded,
+              title: 'Explore',
+              route: '/freelancer/explore'),
+          NavItem(
+              icon: Icons.payment_rounded,
+              title: 'Payments',
+              route: '/freelancer/payments'),
+          NavItem(
+              icon: Icons.person_outline_rounded,
+              title: 'Profile',
+              route: '/freelancer/profile'),
         ],
       ),
     );
   }
 
-  // 1) TOP BAR
-  Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Column(
-        children: [
-          // Logo + Icons Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Logo/Icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6D5FFD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.work_outline_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              // Right Icons
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.favorite_outline_rounded,
-                      color: Color(0xFF111827),
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      // TODO: Navigate to favorites
-                    },
-                  ),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final unreadCountAsync = ref.watch(unreadCountProvider);
-                      final unreadCount = unreadCountAsync.valueOrNull ?? 0;
-                      
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.notifications_none,
-                              color: Color(0xFF111827),
-                              size: 24,
-                            ),
-                            onPressed: () {
-                              context.push('/freelancer/notifications');
-                            },
-                          ),
-                          if (unreadCount > 0)
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                child: Text(
-                                  unreadCount > 9 ? '9+' : '$unreadCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Search Field
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search projects, categories',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.search_rounded,
-                        color: Color(0xFF9CA3AF),
-                        size: 20,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.tune_rounded,
-                          color: Color(0xFF9CA3AF),
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          // TODO: Show filter dialog
-                        },
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.md,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 2) SECTION 1: Featured Banner
-  Widget _buildFeaturedBanner(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner Card
-          GestureDetector(
-            onTap: () {
-              context.go('/freelancer/explore');
-            },
-            child: Container(
-              width: double.infinity,
-              height: 160,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF6D5FFD),
-                    Color(0xFF8B5CF6),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Left Content
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Find top projects fast',
-                          style: AppTextStyles.headlineSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'Browse projects and apply now',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Browse Projects',
-                                style: AppTextStyles.labelLarge.copyWith(
-                                  color: const Color(0xFF6D5FFD),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                color: Color(0xFF6D5FFD),
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Right Illustration (Placeholder)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.work_rounded,
-                          color: Colors.white,
-                          size: 60,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 3) SECTION 2: Popular Categories
-  Widget _buildCategoriesSection(
+  Widget _buildHeroCard(
     BuildContext context,
-    AsyncValue<List<Category>> categoriesAsync,
+    WidgetRef ref,
+    AsyncValue<List<Project>> myProjectsAsync,
+    AsyncValue<double> balanceAsync,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Categories Row
-          categoriesAsync.when(
-            loading: () => _buildCategoriesSkeleton(),
-            error: (err, stack) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Text(
-                  'Failed to load categories',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-              ),
-            ),
-            data: (categories) {
-              // Show all categories in horizontal scroll
-              if (categories.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Text(
-                      'No categories available',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return SizedBox(
-                height: 100,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    const double itemGap = 18;
-                    return Align(
-                      alignment: Alignment.center,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              for (int i = 0; i < categories.length; i++) ...[
-                                if (i > 0) const SizedBox(width: itemGap),
-                                _buildCategoryChip(context, categories[i]),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+    // Get balance from API
+    final balance = balanceAsync.when(
+      data: (bal) => bal,
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
     );
-  }
 
-  Widget _buildCategoryChip(BuildContext context, Category category) {
-    return Consumer(
-      builder: (context, ref, child) {
-        return GestureDetector(
-          onTap: () {
-            // Set selected category in shared provider
-            ref.read(exploreSelectedCategoryIdProvider.notifier).state = category.id;
-            context.go('/freelancer/explore');
-          },
-          child: IntrinsicWidth(
-            child: Column(
-              children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE9E6FF),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: category.imageUrl != null &&
-                          category.imageUrl!.isNotEmpty &&
-                          AppConfig.baseUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: CachedNetworkImage(
-                            imageUrl: category.imageUrl!.startsWith('http')
-                                ? category.imageUrl!
-                                : '${AppConfig.baseUrl}${category.imageUrl}',
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => _buildCategoryIcon(category.name),
-                          ),
-                        )
-                      : _buildCategoryIcon(category.name),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  category.name,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: const Color(0xFF111827),
-                    fontSize: 11,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
-                ),
-              ],
-            ),
-          ),
-        );
+    // Calculate KPIs from myProjects data
+    final activeProjects = myProjectsAsync.when(
+      data: (projects) =>
+          projects.where((p) => p.status == 'in_progress').length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+
+    final pendingReviews = myProjectsAsync.when(
+      data: (projects) =>
+          projects.where((p) => p.status == 'pending_review').length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+
+    // Unread messages count (placeholder, should come from messages provider if available)
+    const unreadMessages = 0;
+
+    return HomeHeroCardV2(
+      chipLabel: 'This Month',
+      iconData: Icons.account_balance_wallet_outlined,
+      onIconTap: () {
+        context.go('/freelancer/payments');
+      },
+      title: 'Your Balance',
+      bigNumber: 'JOD ${balance.toStringAsFixed(2)}',
+      subtitle: 'Available to withdraw',
+      kpis: [
+        HeroKpiV2(value: activeProjects, label: 'Active'),
+        HeroKpiV2(value: pendingReviews, label: 'Reviews'),
+        const HeroKpiV2(value: unreadMessages, label: 'Messages'),
+      ],
+      ctaLabel: 'View Earnings',
+      onCtaTap: () {
+        context.go('/freelancer/payments');
       },
     );
   }
 
-  Widget _buildCategoryIcon(String categoryName) {
-    IconData icon;
-    final nameLower = categoryName.toLowerCase();
-    if (nameLower.contains('design')) {
-      icon = Icons.palette_rounded;
-    } else if (nameLower.contains('development') ||
-        nameLower.contains('programming') ||
-        nameLower.contains('code')) {
-      icon = Icons.code_rounded;
-    } else if (nameLower.contains('writing') ||
-        nameLower.contains('content')) {
-      icon = Icons.edit_rounded;
-    } else if (nameLower.contains('marketing')) {
-      icon = Icons.trending_up_rounded;
-    } else {
-      icon = Icons.category_rounded;
-    }
+  Widget _buildQuickActions(BuildContext context) {
+    return QuickActionsRow(
+      actions: [
+        QuickAction(
+          icon: Icons.search_rounded,
+          label: 'Browse',
+          onTap: () {
+            context.go('/freelancer/explore');
+          },
+        ),
+        QuickAction(
+          icon: Icons.description_outlined,
+          label: 'Proposals',
+          onTap: () {
+            context.go('/freelancer/projects');
+          },
+        ),
+        QuickAction(
+          icon: Icons.chat_bubble_outline_rounded,
+          label: 'Messages',
+          onTap: () {
+            // TODO: Navigate to messages screen when available
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Messages coming soon')),
+            );
+          },
+        ),
+        QuickAction(
+          icon: Icons.file_upload_outlined,
+          label: 'Deliveries',
+          onTap: () {
+            // Navigate to deliveries (via projects screen)
+            context.go('/freelancer/projects');
+          },
+        ),
+        QuickAction(
+          icon: Icons.more_horiz_rounded,
+          label: 'More',
+          onTap: () {
+            _showMoreBottomSheet(context);
+          },
+        ),
+      ],
+    );
+  }
 
-    return Center(
-      child: Icon(
-        icon,
-        color: const Color(0xFF6D5FFD),
-        size: 32,
+  void _showMoreBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
-    );
-  }
-
-  Widget _buildCategoriesSkeleton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(3, (index) {
-        return Column(
-          children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              width: 70,
-              height: 12,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-
-  // 4) SECTION 3: Latest Projects
-  Widget _buildLatestProjectsSection(
-    BuildContext context,
-    AsyncValue<List<Project>> projectsAsync,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Latest Projects',
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: const Color(0xFF111827),
+                'More Actions',
+                style: AppTextStyles.titleLarge.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  context.go('/freelancer/explore');
+              const SizedBox(height: AppSpacing.lg),
+              ListTile(
+                leading: const Icon(Icons.payment_rounded,
+                    color: AppColors.accentOrange),
+                title: const Text('Payments'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/freelancer/payments');
                 },
-                child: Text(
-                  'See All >',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: const Color(0xFF6D5FFD),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ),
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined,
+                    color: AppColors.accentOrange),
+                title: const Text('Notifications'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/freelancer/notifications');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined,
+                    color: AppColors.accentOrange),
+                title: const Text('Settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
             ],
           ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(height: AppSpacing.md),
+  Widget _buildRecommendedProjects(
+    BuildContext context,
+    AsyncValue<List<Project>> projectsAsync,
+  ) {
+    return projectsAsync.when(
+      loading: () => _buildLoadingSkeleton(),
+      error: (err, stack) => _buildErrorState(context),
+      data: (projects) {
+        if (projects.isEmpty) {
+          return _buildEmptyState(context);
+        }
 
-          // Projects Grid
-          projectsAsync.when(
-            loading: () => _buildProjectsSkeleton(),
-            error: (err, stack) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  children: [
-                    Text(
-                      'Failed to load projects',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Consumer(
-                      builder: (context, ref, child) {
-                        return TextButton(
-                          onPressed: () {
-                            ref.invalidate(latestProjectsProvider);
-                          },
-                          child: const Text('Retry'),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            data: (projects) {
-              if (projects.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      'No projects available',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              // Show only first 2 projects
-              final displayProjects = projects.take(2).toList();
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildProjectCard(context, displayProjects[0]),
-                  ),
-                  if (displayProjects.length > 1) ...[
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _buildProjectCard(context, displayProjects[1]),
-                    ),
-                  ] else ...[
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Container(), // Empty space for second card
-                    ),
-                  ],
-                ],
+        return SizedBox(
+          height: 220,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            scrollDirection: Axis.horizontal,
+            itemCount: projects.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, index) {
+              final project = projects[index];
+              return HomeProjectCard(
+                project: project,
+                onTap: () {
+                  context.push('/project/${project.id}', extra: project);
+                },
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProjectCard(BuildContext context, Project project) {
-    final budget = project.budget ??
-        project.budgetMax ??
-        project.budgetMin ??
-        0.0;
-
-    return GestureDetector(
-      onTap: () {
-        context.push('/project/${project.id}', extra: project);
+        );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-              ),
-              child: project.coverPic != null &&
-                      project.coverPic!.isNotEmpty &&
-                      AppConfig.baseUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: project.coverPic!.startsWith('http')
-                          ? project.coverPic!
-                          : '${AppConfig.baseUrl}${project.coverPic}',
-                      height: 120,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => Container(
-                        height: 120,
-                        color: const Color(0xFFE9E6FF),
-                        child: const Center(
-                          child: Icon(
-                            Icons.work_outline_rounded,
-                            color: Color(0xFF6D5FFD),
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      height: 120,
-                      color: const Color(0xFFE9E6FF),
-                      child: const Center(
-                        child: Icon(
-                          Icons.work_outline_rounded,
-                          color: Color(0xFF6D5FFD),
-                          size: 40,
-                        ),
-                      ),
-                    ),
-            ),
+    );
+  }
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    project.title,
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: const Color(0xFF111827),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Text(
-                        '\$${budget.toStringAsFixed(2)}',
-                        style: AppTextStyles.titleSmall.copyWith(
-                          color: const Color(0xFF6D5FFD),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+  Widget _buildLoadingSkeleton() {
+    return SizedBox(
+      height: 220,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: (context, index) {
+          return Container(
+            width: 280,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(18),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Failed to load projects',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
               ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Consumer(
+              builder: (context, ref, child) {
+                return ElevatedButton(
+                  onPressed: () {
+                    ref.invalidate(latestProjectsProvider);
+                  },
+                  child: const Text('Retry'),
+                );
+              },
             ),
           ],
         ),
@@ -727,29 +359,34 @@ class FreelancerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProjectsSkeleton() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
-              borderRadius: BorderRadius.circular(18),
+  Widget _buildEmptyState(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.work_outline_rounded,
+              size: 48,
+              color: AppColors.iconGray,
             ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
-              borderRadius: BorderRadius.circular(18),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'No projects available',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/freelancer/explore');
+              },
+              child: const Text('Explore Projects'),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

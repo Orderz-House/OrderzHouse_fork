@@ -18,6 +18,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/explore_project_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -425,7 +426,9 @@ class _ExploreProjectsScreenState
                   : categories.isNotEmpty &&
                       categories.any((c) => c.name == label && c.id == selectedCategoryId);
 
-              return GestureDetector(
+              return AppGradientFilterChip(
+                label: label,
+                selected: isSelected,
                 onTap: () {
                   if (label == 'All') {
                     ref.read(selectedExploreCategoryIdProvider.notifier).state = null;
@@ -435,44 +438,6 @@ class _ExploreProjectsScreenState
                   }
                   ref.invalidate(exploreProjectsProvider);
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF111827) // Near-black for active
-                        : Colors.white, // White for inactive
-                    borderRadius: BorderRadius.circular(20),
-                    border: isSelected
-                        ? null
-                        : Border.all(
-                            color: const Color(0xFFE5E7EB), // Light gray border
-                            width: 1,
-                          ),
-                    boxShadow: isSelected
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      label,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: isSelected
-                            ? Colors.white // White text on black
-                            : const Color(0xFF111827), // Near-black text on white
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
               );
             },
           );
@@ -650,7 +615,7 @@ class _ExploreProjectsScreenState
     final bottomNavHeight = 85.0 + bottomPadding;
     const buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
     // Significantly reduce margin to move button DOWN - position it closer to bottom nav
-    final totalBottomMargin = bottomNavHeight + buttonSpacing - 120 ; // Reduced by 50px to move DOWN significantly
+    final totalBottomMargin = bottomNavHeight + buttonSpacing - 113 ; // Reduced by 50px to move DOWN significantly
 
     return Container(
       margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav

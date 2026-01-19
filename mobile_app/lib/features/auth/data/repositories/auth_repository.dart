@@ -165,6 +165,53 @@ class AuthRepository {
     }
   }
 
+  Future<ApiResponse<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final token = await SecureStorageService.getToken();
+      if (token == null) {
+        return const ApiResponse(
+          success: false,
+          message: 'Authentication required. Please login.',
+        );
+      }
+
+      final response = await _dio.patch(
+        '/auth/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      return ApiResponse(
+        success: response.statusCode == 200,
+        message: response.data['message'] as String? ?? 'Password changed successfully',
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      String message = 'Failed to change password';
+      
+      if (statusCode == 400 || statusCode == 401) {
+        message = e.response?.data['message'] as String? ?? 'Current password is incorrect';
+      } else if (statusCode == 500) {
+        message = e.response?.data['message'] as String? ?? 'Server error. Please try again.';
+      }
+      
+      return ApiResponse(
+        success: false,
+        message: message,
+      );
+    }
+  }
+
   Future<void> logout() async {
     await SecureStorageService.clearAll();
   }

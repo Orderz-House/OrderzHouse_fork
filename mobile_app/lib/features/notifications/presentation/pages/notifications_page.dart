@@ -25,58 +25,45 @@ class NotificationsPage extends ConsumerWidget {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
+                horizontal: AppSpacing.md,
                 vertical: AppSpacing.md,
               ),
               child: Row(
                 children: [
                   // Back button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.chevron_left_rounded,
+                      size: 28,
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded),
-                      color: const Color(0xFF6D5FFD), // Primary lavender
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
+                    color: AppColors.accentOrange,
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        // Fallback: navigate to home based on role
+                        final location = GoRouterState.of(context).uri.path;
+                        if (location.contains('/client')) {
+                          context.go('/client');
+                        } else if (location.contains('/freelancer')) {
+                          context.go('/freelancer');
                         } else {
-                          // Fallback: navigate to home based on role
-                          final location = GoRouterState.of(context).uri.path;
-                          if (location.contains('/client')) {
-                            context.go('/client');
-                          } else if (location.contains('/freelancer')) {
-                            context.go('/freelancer');
-                          } else {
-                            context.go('/client');
-                          }
+                          context.go('/client');
                         }
-                      },
-                    ),
+                      }
+                    },
                   ),
                   const Spacer(),
                   // Title
-                  const Text(
+                  Text(
                     'Notifications',
-                    style: TextStyle(
-                      color: Color(0xFF111827),
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 18,
                     ),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 40), // Balance the back button
+                  const SizedBox(width: 48), // Balance the back button
                 ],
               ),
             ),
@@ -86,7 +73,7 @@ class NotificationsPage extends ConsumerWidget {
             child: notificationsAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6D5FFD)),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
                 ),
               ),
               error: (error, stackTrace) => ErrorState(
@@ -107,14 +94,14 @@ class NotificationsPage extends ConsumerWidget {
                     ref.invalidate(notificationsProvider);
                     ref.invalidate(unreadCountProvider);
                   },
-                  color: const Color(0xFF6D5FFD),
+                  color: AppColors.accentOrange,
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
+                      horizontal: AppSpacing.md,
                       vertical: AppSpacing.md,
                     ),
                     itemCount: notifications.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final notification = notifications[index];
                       return _buildNotificationCard(context, ref, notification);
@@ -136,40 +123,40 @@ class NotificationsPage extends ConsumerWidget {
   ) {
     return InkWell(
       onTap: () => _handleNotificationTap(context, ref, notification),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: notification.isRead 
+                ? AppColors.borderLight 
+                : AppColors.accentOrange.withOpacity(0.3),
+            width: 1,
+          ),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.shadowColorLight,
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
-          border: notification.isRead
-              ? null
-              : Border.all(
-                  color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                  width: 1,
-                ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon
+            // Icon container
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 notification.iconData,
-                color: const Color(0xFF6D5FFD),
+                color: AppColors.accentOrange,
                 size: 24,
               ),
             ),
@@ -188,21 +175,23 @@ class NotificationsPage extends ConsumerWidget {
                             fontWeight: notification.isRead
                                 ? FontWeight.normal
                                 : FontWeight.w600,
-                            color: const Color(0xFF111827),
+                            color: AppColors.textPrimary,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (!notification.isRead)
+                      if (!notification.isRead) ...[
+                        const SizedBox(width: 8),
                         Container(
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF6D5FFD),
+                            color: AppColors.accentOrange,
                             shape: BoxShape.circle,
                           ),
                         ),
+                      ],
                     ],
                   ),
                   if (notification.body != null && notification.body!.isNotEmpty) ...[
