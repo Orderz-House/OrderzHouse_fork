@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/project.dart';
+import '../../../../core/config/app_config.dart';
 import '../../data/repositories/projects_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
+import '../../../search/presentation/providers/search_provider.dart';
 
 final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
   return ProjectsRepository(ref: ref);
@@ -50,19 +52,32 @@ final exploreProjectsProvider =
   // Get selected category ID (null means "All")
   final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
   
-  // Note: Search query can be added later via a separate provider if needed
+  // Get sortBy option (defaults to 'newest')
+  final String sortBy = ref.watch(exploreSortByProvider);
+  
+  // Get search query from search provider
+  final searchQuery = ref.watch(searchQueryProvider);
+  final query = searchQuery.trim().isNotEmpty ? searchQuery.trim() : null;
+  
+  if (AppConfig.isDevelopment) {
+    print('🔍 [exploreProjectsProvider] Fetching with: categoryId=$selectedCategoryId, query=$query, sortBy=$sortBy');
+  }
   
   final response = await repository.fetchExploreProjects(
-    query: null, // TODO: Add search query support via provider
+    query: query,
     categoryId: selectedCategoryId,
     subCategoryId: null,
     subSubCategoryId: null,
     page: 1,
     limit: 20,
     userRoleId: userRoleId,
+    sortBy: sortBy,
   );
 
   if (response.success && response.data != null) {
+    if (AppConfig.isDevelopment) {
+      print('✅ [exploreProjectsProvider] Fetched ${response.data!.length} projects');
+    }
     return response.data!;
   }
 

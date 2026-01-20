@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:open_filex/open_filex.dart' as open_filex;
 import '../../../../core/models/project.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -2335,8 +2335,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               textColor: Colors.white,
               onPressed: () async {
                 try {
-                  final result = await OpenFilex.open(savePath);
-                  if (result.type != ResultType.done) {
+                  final result = await open_filex.OpenFilex.open(savePath);
+                  if (result.type != open_filex.ResultType.done) {
                     debugPrint('Could not open file: ${result.message}');
                   }
                 } catch (e) {

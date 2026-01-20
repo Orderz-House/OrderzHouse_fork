@@ -644,15 +644,16 @@ const login = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      "SELECT * FROM users WHERE email=$1",
+      "SELECT * FROM users WHERE email=$1 AND is_deleted = FALSE",
       [email.toLowerCase()]
     );
     const user = rows[0];
 
     if (!user) {
+      // Return generic message to avoid revealing if email exists
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(401)
+        .json({ success: false, message: "No account found for these credentials" });
     }
 
     // لو الإيميل مش مفاعَل
@@ -663,54 +664,9 @@ const login = async (req, res) => {
       });
     }
 
-    // لو الأكاونت معطّل
-    if (user.is_deleted) {
-      if (user.deactivated_at) {
-        const deactivatedAt = new Date(user.deactivated_at);
-        const now = new Date();
-        const diffMs = now - deactivatedAt;
-        const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-        // خلّص فترة السماح
-        if (diffDays > DEACTIVATION_GRACE_DAYS) {
-          return res.status(410).json({
-            success: false,
-            message:
-              "Your account has been permanently deleted after 30 days of deactivation.",
-          });
-        }
-        // أقل من 30 يوم → ممكن نرجّعه Active بعد ما نتأكد من الباسورد
-      } else {
-        // is_deleted = TRUE بدون deactivated_at → احتمال حظر أدمن
-        return res.status(403).json({
-          success: false,
-          message:
-            "Your account is suspended. Please contact support.",
-        });
-      }
-    }
-
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (validPassword) {
-      // لو الأكاونت كان معطَّل ضمن فترة السماح → رجعه Active
-      if (user.is_deleted && user.deactivated_at) {
-        await pool.query(
-          `
-          UPDATE users
-          SET 
-            is_deleted = FALSE,
-            deactivated_at = NULL,
-            reason_for_disruption = NULL
-          WHERE id = $1
-          `,
-          [user.id]
-        );
-        user.is_deleted = false;
-        user.deactivated_at = null;
-        user.reason_for_disruption = null;
-      }
-
       // لو مافي محاولات فاشلة → Login مباشر بدون OTP
       if ((user.failed_login_attempts || 0) === 0) {
         await pool.query(
@@ -765,7 +721,7 @@ const login = async (req, res) => {
       if (newAttempts < 3) {
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials",
+          message: "No account found for these credentials",
         });
       }
     }
@@ -810,15 +766,15 @@ const verifyOTP = async (req, res) => {
         .json({ success: false, message: "Email and OTP are required" });
     }
 
-    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1", [
+    const { rows } = await pool.query("SELECT * FROM users WHERE email=$1 AND is_deleted = FALSE", [
       email.toLowerCase(),
     ]);
     const user = rows[0];
 
     if (!user) {
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(401)
+        .json({ success: false, message: "No account found for these credentials" });
     }
 
     if (user.otp_code !== otp) {
@@ -1131,14 +1087,14 @@ const getUserdata = async (req, res) => {
          created_at,
          updated_at
        FROM users 
-       WHERE id = $1`,
+       WHERE id = $1 AND is_deleted = FALSE`,
       [userId]
     );
 
     if (!user.rows.length) {
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(401)
+        .json({ success: false, message: "Account has been deleted" });
     }
 
     return res.json({
@@ -1271,7 +1227,7 @@ const deactivateAccount = async (req, res) => {
   const { reason } = req.body; 
   try {
     const userCheck = await pool.query(
-      "SELECT id, is_deleted FROM users WHERE id = $1",
+      "SELECT id, is_deleted FROM users WHERE id = $1 AND is_deleted = FALSE",
       [userId]
     );
 
@@ -1281,27 +1237,30 @@ const deactivateAccount = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    if (userCheck.rows[0].is_deleted) {
-      return res.status(400).json({
-        success: false,
-        message: "Account is already deactivated",
-      });
-    }
-
     const finalReason =
-      (reason && reason.trim()) || "Deactivated by user";
+      (reason && reason.trim()) || "Deleted by user";
 
-    await pool.query(
+    const result = await pool.query(
       `
       UPDATE users
       SET 
         is_deleted = TRUE,
-        deactivated_at = NOW(),
+        updated_at = NOW(),
         reason_for_disruption = $2
       WHERE id = $1
+      RETURNING id
       `,
       [userId, finalReason]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete account",
+      });
+    }
+
+    console.log(`✅ Account deleted: userId=${userId}, affectedRows=${result.rowCount}`);
 
     await LogCreators.userAuth(
       userId,
@@ -1315,14 +1274,13 @@ const deactivateAccount = async (req, res) => {
 
     return res.json({
       success: true,
-      message:
-        "Account deactivated successfully. You have 30 days to reactivate by logging in.",
+      message: "Account deleted successfully",
     });
   } catch (error) {
-    console.error("Deactivate Account Error:", error);
+    console.error("Delete Account Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error during account deactivation",
+      message: "Server error during account deletion",
     });
   }
 };

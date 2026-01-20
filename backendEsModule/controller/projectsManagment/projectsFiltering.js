@@ -23,10 +23,57 @@ const buildStatusCondition = () => {
 export const getProjectsByCategory = async (req, res) => {
   const { category_id } = req.params;
   const userId = req.token?.userId;
+  
+  // Log FULL query object to debug
+  console.log('🔍 [getProjectsByCategory] FULL req.query:', JSON.stringify(req.query, null, 2));
+  console.log('🔍 [getProjectsByCategory] req.params:', JSON.stringify(req.params, null, 2));
+  
+  const { search, sortBy } = req.query;
 
   try {
-    const { rows } = await pool.query(
-      `
+    // Build WHERE conditions
+    let whereConditions = `p.category_id = $1 ${buildStatusCondition()}`;
+    const params = [category_id];
+    let paramIndex = 2;
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search.trim()}%`);
+      paramIndex++;
+      console.log('✅ [getProjectsByCategory] Applied search filter:', search.trim());
+    }
+
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'p.created_at DESC'; // Default: newest first
+    if (sortBy) {
+      switch (sortBy.toLowerCase()) {
+        case 'newest':
+          orderBy = 'p.created_at DESC';
+          break;
+        case 'price_low_to_high':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_min IS NOT NULL THEN p.budget_min
+            ELSE 999999
+          END ASC`;
+          break;
+        case 'price_high_to_low':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_max IS NOT NULL THEN p.budget_max
+            ELSE 0
+          END DESC`;
+          break;
+        default:
+          orderBy = 'p.created_at DESC';
+      }
+      console.log('✅ [getProjectsByCategory] Applied sortBy:', sortBy, '-> ORDER BY:', orderBy);
+    }
+
+    const query = `
       SELECT 
         p.*, 
         c.name AS category_name,
@@ -40,12 +87,13 @@ export const getProjectsByCategory = async (req, res) => {
       LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
-      WHERE p.category_id = $1
-      ${buildStatusCondition()}
-      ORDER BY p.created_at DESC
-      `,
-      [category_id]
-    );
+      WHERE ${whereConditions}
+      ORDER BY ${orderBy}
+    `;
+
+    console.log('🔍 [getProjectsByCategory] Final query params:', { category_id, search, sortBy, userId });
+
+    const { rows } = await pool.query(query, params);
 
     return res.status(200).json({
       success: true,
@@ -174,6 +222,7 @@ export const getPublicCategories = async (req, res) => {
 export const getProjectsByCategoryId = async (req, res) => {
   try {
     const { categoryId } = req.params;
+    const { search, sortBy } = req.query;
 
     if (!categoryId || isNaN(categoryId)) {
       return res
@@ -181,8 +230,53 @@ export const getProjectsByCategoryId = async (req, res) => {
         .json({ success: false, message: "Invalid category ID" });
     }
 
-    const result = await pool.query(
-      `
+    // Build WHERE conditions
+    let whereConditions = `
+      p.category_id = $1 
+      AND p.is_deleted = false
+      AND p.status = 'bidding'
+    `;
+    const params = [categoryId];
+    let paramIndex = 2;
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search.trim()}%`);
+      paramIndex++;
+    }
+
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'p.created_at DESC'; // Default: newest first
+    if (sortBy) {
+      switch (sortBy.toLowerCase()) {
+        case 'newest':
+          orderBy = 'p.created_at DESC';
+          break;
+        case 'price_low_to_high':
+          // Sort by budget (fixed) or hourly_rate (hourly), or budget_min (bidding)
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_min IS NOT NULL THEN p.budget_min
+            ELSE 999999
+          END ASC`;
+          break;
+        case 'price_high_to_low':
+          // Sort by budget (fixed) or hourly_rate (hourly), or budget_max (bidding)
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_max IS NOT NULL THEN p.budget_max
+            ELSE 0
+          END DESC`;
+          break;
+        default:
+          orderBy = 'p.created_at DESC';
+      }
+    }
+
+    const query = `
       SELECT 
         p.*, 
         u.username AS client_username, 
@@ -193,14 +287,16 @@ export const getProjectsByCategoryId = async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.user_id
       JOIN categories c ON c.id = p.category_id
-      WHERE 
-        p.category_id = $1 
-        AND p.is_deleted = false
-        AND p.status = 'bidding'
-      ORDER BY p.created_at DESC
-      `,
-      [categoryId]
-    );
+      WHERE ${whereConditions}
+      ORDER BY ${orderBy}
+    `;
+
+    console.log('🔍 [getProjectsByCategoryId] Query params:', { categoryId, search, sortBy });
+    console.log('🔍 [getProjectsByCategoryId] SQL ORDER BY:', orderBy);
+
+    const result = await pool.query(query, params);
+
+    console.log(`✅ [getProjectsByCategoryId] Found ${result.rows.length} projects with filters: search="${search}", sortBy="${sortBy}"`);
 
     return res.json({ success: true, projects: result.rows });
   } catch (error) {
@@ -212,6 +308,7 @@ export const getProjectsByCategoryId = async (req, res) => {
 export const getProjectsBySubCategoryId = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
+    const { search, sortBy } = req.query;
 
     if (!subCategoryId || isNaN(subCategoryId)) {
       return res
@@ -219,8 +316,51 @@ export const getProjectsBySubCategoryId = async (req, res) => {
         .json({ success: false, message: "Invalid subcategory ID" });
     }
 
-    const result = await pool.query(
-      `
+    // Build WHERE conditions
+    let whereConditions = `
+      p.sub_category_id = $1 
+      AND p.is_deleted = false
+      AND p.status = 'bidding'
+    `;
+    const params = [subCategoryId];
+    let paramIndex = 2;
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search.trim()}%`);
+      paramIndex++;
+    }
+
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'p.created_at DESC'; // Default: newest first
+    if (sortBy) {
+      switch (sortBy.toLowerCase()) {
+        case 'newest':
+          orderBy = 'p.created_at DESC';
+          break;
+        case 'price_low_to_high':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_min IS NOT NULL THEN p.budget_min
+            ELSE 999999
+          END ASC`;
+          break;
+        case 'price_high_to_low':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_max IS NOT NULL THEN p.budget_max
+            ELSE 0
+          END DESC`;
+          break;
+        default:
+          orderBy = 'p.created_at DESC';
+      }
+    }
+
+    const query = `
       SELECT 
         p.*, 
         u.username AS client_username, 
@@ -233,14 +373,13 @@ export const getProjectsBySubCategoryId = async (req, res) => {
       JOIN users u ON u.id = p.user_id
       JOIN categories c ON c.id = p.category_id
       LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
-      WHERE 
-        p.sub_category_id = $1 
-        AND p.is_deleted = false
-        AND p.status = 'bidding'
-      ORDER BY p.created_at DESC;
-      `,
-      [subCategoryId]
-    );
+      WHERE ${whereConditions}
+      ORDER BY ${orderBy}
+    `;
+
+    console.log('🔍 [getProjectsBySubCategoryId] Query params:', { subCategoryId, search, sortBy });
+
+    const result = await pool.query(query, params);
 
     return res.json({ success: true, projects: result.rows });
   } catch (error) {
@@ -252,6 +391,7 @@ export const getProjectsBySubCategoryId = async (req, res) => {
 export const getProjectsBySubSubCategoryId = async (req, res) => {
   try {
     const { subSubCategoryId } = req.params;
+    const { search, sortBy } = req.query;
 
     if (!subSubCategoryId || isNaN(subSubCategoryId)) {
       return res
@@ -259,8 +399,51 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
         .json({ success: false, message: "Invalid sub-subcategory ID" });
     }
 
-    const { rows } = await pool.query(
-      `
+    // Build WHERE conditions
+    let whereConditions = `
+      p.sub_sub_category_id = $1 
+      AND p.is_deleted = false
+      AND p.status = 'bidding'
+    `;
+    const params = [subSubCategoryId];
+    let paramIndex = 2;
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search.trim()}%`);
+      paramIndex++;
+    }
+
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'p.created_at DESC'; // Default: newest first
+    if (sortBy) {
+      switch (sortBy.toLowerCase()) {
+        case 'newest':
+          orderBy = 'p.created_at DESC';
+          break;
+        case 'price_low_to_high':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_min IS NOT NULL THEN p.budget_min
+            ELSE 999999
+          END ASC`;
+          break;
+        case 'price_high_to_low':
+          orderBy = `CASE 
+            WHEN p.project_type = 'fixed' AND p.budget IS NOT NULL THEN p.budget
+            WHEN p.project_type = 'hourly' AND p.hourly_rate IS NOT NULL THEN p.hourly_rate
+            WHEN p.project_type = 'bidding' AND p.budget_max IS NOT NULL THEN p.budget_max
+            ELSE 0
+          END DESC`;
+          break;
+        default:
+          orderBy = 'p.created_at DESC';
+      }
+    }
+
+    const query = `
       SELECT 
         p.*,
         u.username AS client_username,
@@ -275,14 +458,13 @@ export const getProjectsBySubSubCategoryId = async (req, res) => {
       LEFT JOIN categories c ON c.id = p.category_id
       LEFT JOIN sub_categories sc ON sc.id = p.sub_category_id
       LEFT JOIN sub_sub_categories ssc ON ssc.id = p.sub_sub_category_id
-      WHERE 
-        p.sub_sub_category_id = $1 
-        AND p.is_deleted = false
-        AND p.status = 'bidding'
-      ORDER BY p.created_at DESC;
-      `,
-      [subSubCategoryId]
-    );
+      WHERE ${whereConditions}
+      ORDER BY ${orderBy}
+    `;
+
+    console.log('🔍 [getProjectsBySubSubCategoryId] Query params:', { subSubCategoryId, search, sortBy });
+
+    const { rows } = await pool.query(query, params);
 
     return res.json({ success: true, projects: rows });
   } catch (err) {

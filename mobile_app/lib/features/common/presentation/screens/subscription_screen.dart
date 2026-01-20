@@ -175,7 +175,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             label: 'FAQ',
             icon: Icons.help_outline_rounded,
             isSelected: _selectedTab == 1,
-            onTap: () => setState(() => _selectedTab = 1),
+            onTap: () {
+              // Navigate to FAQ screen
+              context.push('/help-faq');
+            },
           ),
         ],
       ),

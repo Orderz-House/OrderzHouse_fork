@@ -26,3 +26,11 @@ final selectedExploreCategoryIdProvider =
 /// Shared state for selected category when navigating from Dashboard/Home
 /// This provider persists across navigation and is used to set the initial filter
 final exploreSelectedCategoryIdProvider = StateProvider<int?>((ref) => null);
+
+/// Sort option for explore projects
+/// Values: 'newest', 'price_low_to_high', 'price_high_to_low', 'deadline_soonest'
+/// Default: 'newest'
+/// IMPORTANT: Must be String (non-nullable) to match all usages
+final exploreSortByProvider = StateProvider.autoDispose<String>((ref) {
+  return 'newest';
+});

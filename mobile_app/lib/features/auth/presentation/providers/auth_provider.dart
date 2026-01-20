@@ -139,4 +139,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // For now, we just clear the state. Individual screens will refresh
     // their data when they detect the user has changed via authStateProvider.watch
   }
+
+  Future<bool> deleteAccount({String? reason}) async {
+    state = const AuthState(isLoading: true);
+    final response = await _repository.deleteAccount(reason: reason);
+    if (response.success) {
+      // Clear tokens and logout
+      await logout();
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
 }

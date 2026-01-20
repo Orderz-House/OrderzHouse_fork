@@ -44,6 +44,20 @@ final freelancerBalanceProvider = FutureProvider<double>((ref) async {
   return response.data ?? 0.0;
 });
 
+// Derived provider for balance from payment history (reuses paymentHistoryProvider cache)
+final balanceFromHistoryProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  try {
+    final historyData = await ref.watch(paymentHistoryProvider('all').future);
+    return {
+      'balance': (historyData['balance'] as num?)?.toDouble() ?? 0.0,
+      'currency': historyData['currency'] as String? ?? 'JOD',
+    };
+  } catch (e) {
+    // Fallback on error
+    return {'balance': 0.0, 'currency': 'JOD'};
+  }
+});
+
 class PaymentsScreen extends ConsumerStatefulWidget {
   const PaymentsScreen({super.key});
 

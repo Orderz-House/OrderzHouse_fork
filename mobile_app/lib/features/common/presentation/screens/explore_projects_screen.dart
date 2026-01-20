@@ -57,6 +57,15 @@ class _ExploreProjectsScreenState
   @override
   void initState() {
     super.initState();
+    // Sync search controller with provider on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentQuery = ref.read(searchQueryProvider);
+        if (currentQuery.isNotEmpty && _searchController.text != currentQuery) {
+          _searchController.text = currentQuery;
+        }
+      }
+    });
   }
 
   void _refresh() {
@@ -64,17 +73,82 @@ class _ExploreProjectsScreenState
     ref.invalidate(exploreCategoriesProvider);
   }
 
+  void _showSortDialog(BuildContext context, WidgetRef ref) {
+    final String currentSort = ref.read(exploreSortByProvider);
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sort By',
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SortOption(
+              label: 'Newest First',
+              value: 'newest',
+              isSelected: currentSort == 'newest',
+              onTap: () {
+                ref.read(exploreSortByProvider.notifier).state = 'newest';
+                Navigator.pop(context);
+                ref.invalidate(exploreProjectsProvider);
+              },
+            ),
+            _SortOption(
+              label: 'Price: Low to High',
+              value: 'price_low_to_high',
+              isSelected: currentSort == 'price_low_to_high',
+              onTap: () {
+                ref.read(exploreSortByProvider.notifier).state = 'price_low_to_high';
+                Navigator.pop(context);
+                ref.invalidate(exploreProjectsProvider);
+              },
+            ),
+            _SortOption(
+              label: 'Price: High to Low',
+              value: 'price_high_to_low',
+              isSelected: currentSort == 'price_high_to_low',
+              onTap: () {
+                ref.read(exploreSortByProvider.notifier).state = 'price_high_to_low';
+                Navigator.pop(context);
+                ref.invalidate(exploreProjectsProvider);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final searchQuery = ref.watch(searchQueryProvider);
-    final searchResultsAsync = ref.watch(searchResultsProvider);
     final projectsAsync = ref.watch(exploreProjectsProvider);
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
     final sharedCategoryId = ref.watch(exploreSelectedCategoryIdProvider);
+    final String sortBy = ref.watch(exploreSortByProvider);
     
-    // Show search results if query is not empty, otherwise show normal content
-    final isSearching = searchQuery.trim().isNotEmpty;
+    // Debug: Log current state
+    if (AppConfig.isDevelopment) {
+      final String sortByValue = ref.read(exploreSortByProvider);
+      debugPrint('🔍 [ExploreScreen] State: categoryId=$selectedCategoryId, searchQuery="$searchQuery", sortBy=$sortBy');
+      debugPrint('🔍 [ExploreScreen] searchQueryProvider value: "${ref.read(searchQueryProvider)}"');
+      debugPrint('🔍 [ExploreScreen] exploreSortByProvider value: "$sortByValue"');
+      print("sortBy=${ref.watch(exploreSortByProvider)}");
+    }
     
     // Sync shared provider to local provider on first build
     if (!_hasSyncedSharedCategory && sharedCategoryId != null) {
@@ -104,54 +178,54 @@ class _ExploreProjectsScreenState
             // 2) Search + Actions Row
             _buildSearchRow(context),
             
-            // 3) Content (Search Results OR Normal Content)
+            // 3) Content (Always use exploreProjectsProvider, which includes search/sort filtering)
             Expanded(
-              child: isSearching
-                  ? _buildSearchResults(context, searchResultsAsync)
-                  : Column(
-                      children: [
-                        // Horizontal Chips Row
-                        _buildCategoryChips(categoriesAsync, selectedCategoryId),
-                        // Projects Grid
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: () async {
-                              _refresh();
-                              await ref.read(exploreProjectsProvider.future);
-                            },
-                            child: projectsAsync.when(
-                              data: (projects) {
-                                if (projects.isEmpty) {
-                                  return EmptyState(
-                                    icon: Icons.explore_outlined,
-                                    title: 'No projects found',
-                                    message: selectedCategoryId == null
-                                        ? 'Try selecting a category or adjusting your search'
-                                        : 'No projects in this category. Try another category.',
-                                  );
-                                }
+              child: Column(
+                children: [
+                  // Horizontal Chips Row
+                  _buildCategoryChips(categoriesAsync, selectedCategoryId),
+                  // Projects Grid
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        _refresh();
+                        await ref.read(exploreProjectsProvider.future);
+                      },
+                      child: projectsAsync.when(
+                        data: (projects) {
+                          if (projects.isEmpty) {
+                            return EmptyState(
+                              icon: Icons.explore_outlined,
+                              title: 'No projects found',
+                              message: selectedCategoryId == null
+                                  ? 'Try selecting a category or adjusting your search'
+                                  : searchQuery.trim().isNotEmpty
+                                      ? 'No projects match your search. Try different keywords.'
+                                      : 'No projects in this category. Try another category.',
+                            );
+                          }
 
-                                return _buildProjectsGrid(context, projects);
-                              },
-                              loading: () => const _LoadingGrid(),
-                              error: (error, stackTrace) {
-                                final errorMessage = error.toString().replaceAll('Exception: ', '');
-                                final is403 = errorMessage.toLowerCase().contains('permission') ||
-                                    errorMessage.toLowerCase().contains('access denied') ||
-                                    errorMessage.toLowerCase().contains('forbidden');
-                                
-                                return ErrorState(
-                                  message: is403
-                                      ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
-                                      : errorMessage,
-                                  onRetry: _refresh,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
+                          return _buildProjectsGrid(context, projects);
+                        },
+                        loading: () => const _LoadingGrid(),
+                        error: (error, stackTrace) {
+                          final errorMessage = error.toString().replaceAll('Exception: ', '');
+                          final is403 = errorMessage.toLowerCase().contains('permission') ||
+                              errorMessage.toLowerCase().contains('access denied') ||
+                              errorMessage.toLowerCase().contains('forbidden');
+                          
+                          return ErrorState(
+                            message: is403
+                                ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
+                                : errorMessage,
+                            onRetry: _refresh,
+                          );
+                        },
+                      ),
                     ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -286,9 +360,27 @@ class _ExploreProjectsScreenState
                   _debounceTimer?.cancel();
                   _debounceTimer = Timer(const Duration(milliseconds: 350), () {
                     if (mounted) {
+                      if (AppConfig.isDevelopment) {
+                        debugPrint('🔍 [ExploreScreen] Search text changed: "$value"');
+                        debugPrint('🔍 [ExploreScreen] Will update searchQueryProvider and invalidate exploreProjectsProvider');
+                      }
+                      // Update search query provider (provider watches this and will auto-refetch)
                       ref.read(searchQueryProvider.notifier).state = value;
+                      // Explicitly invalidate to ensure refetch happens immediately
+                      ref.invalidate(exploreProjectsProvider);
                     }
                   });
+                },
+                onSubmitted: (value) {
+                  // On submit, update immediately without debounce
+                  _debounceTimer?.cancel();
+                  if (mounted) {
+                    if (AppConfig.isDevelopment) {
+                      debugPrint('🔍 [ExploreScreen] Search submitted: "$value"');
+                    }
+                    ref.read(searchQueryProvider.notifier).state = value;
+                    ref.invalidate(exploreProjectsProvider);
+                  }
                 },
                 decoration: InputDecoration(
                   hintText: 'Search Projects',
@@ -363,7 +455,7 @@ class _ExploreProjectsScreenState
                 size: 20,
               ),
               onPressed: () {
-                // TODO: Show sort dialog
+                _showSortDialog(context, ref);
               },
             ),
           ),
@@ -689,6 +781,38 @@ class _ExploreProjectsScreenState
   }
 }
 
+
+// Sort Option Widget
+class _SortOption extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SortOption({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        label,
+        style: AppTextStyles.bodyLarge.copyWith(
+          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check_rounded, color: AppColors.primary)
+          : null,
+      onTap: onTap,
+    );
+  }
+}
 
 // Loading Grid
 class _LoadingGrid extends StatelessWidget {
