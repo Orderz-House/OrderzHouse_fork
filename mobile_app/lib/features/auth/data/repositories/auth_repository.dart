@@ -165,6 +165,29 @@ class AuthRepository {
     }
   }
 
+  Future<ApiResponse<void>> deleteAccount({String? reason}) async {
+    try {
+      print('🔍 [DeleteAccount] Request: PUT /users/deactivate, reason=$reason');
+      final response = await _dio.put(
+        '/users/deactivate',
+        data: reason != null ? {'reason': reason} : {},
+      );
+      
+      print('✅ [DeleteAccount] Response[${response.statusCode}]: ${response.data}');
+      
+      return ApiResponse(
+        success: response.statusCode == 200 && response.data['success'] == true,
+        message: response.data['message'] as String? ?? 'Account deleted successfully',
+      );
+    } on DioException catch (e) {
+      print('❌ [DeleteAccount] Error[${e.response?.statusCode}]: ${e.response?.data}');
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Failed to delete account',
+      );
+    }
+  }
+
   Future<ApiResponse<void>> changePassword({
     required String currentPassword,
     required String newPassword,

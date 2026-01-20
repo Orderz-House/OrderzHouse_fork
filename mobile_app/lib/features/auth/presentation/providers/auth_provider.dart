@@ -117,4 +117,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState(user: response.data);
     }
   }
+
+  Future<bool> deleteAccount({String? reason}) async {
+    state = const AuthState(isLoading: true);
+    final response = await _repository.deleteAccount(reason: reason);
+    if (response.success) {
+      // Clear tokens and logout
+      await logout();
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
 }

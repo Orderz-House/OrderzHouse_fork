@@ -21,7 +21,7 @@ import '../../../common/presentation/screens/payments_screen.dart';
 /// - User info: authStateProvider
 /// - Projects: myProjectsProvider (for counts), exploreProjectsProvider (for recommendations)
 /// - Latest projects: latestProjectsProvider
-/// - Balance: freelancerBalanceProvider (from payments API)
+/// - Balance: balanceFromHistoryProvider (from payments history API)
 class FreelancerHomeScreen extends ConsumerWidget {
   const FreelancerHomeScreen({super.key});
 
@@ -29,13 +29,14 @@ class FreelancerHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final myProjectsAsync = ref.watch(myProjectsProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
-    final balanceAsync = ref.watch(freelancerBalanceProvider);
+    final balanceAsync = ref.watch(balanceFromHistoryProvider);
 
     return AppScaffold(
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(myProjectsProvider);
           ref.invalidate(latestProjectsProvider);
+          ref.invalidate(balanceFromHistoryProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -118,14 +119,16 @@ class FreelancerHomeScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<Project>> myProjectsAsync,
-    AsyncValue<double> balanceAsync,
+    AsyncValue<Map<String, dynamic>> balanceAsync,
   ) {
-    // Get balance from API
-    final balance = balanceAsync.when(
-      data: (bal) => bal,
-      loading: () => 0.0,
-      error: (_, __) => 0.0,
+    // Get balance and currency from payment history
+    final balanceData = balanceAsync.when(
+      data: (data) => data,
+      loading: () => {'balance': 0.0, 'currency': 'JOD'},
+      error: (_, __) => {'balance': 0.0, 'currency': 'JOD'},
     );
+    final balance = balanceData['balance'] as double;
+    final currency = balanceData['currency'] as String;
 
     // Calculate KPIs from myProjects data
     final activeProjects = myProjectsAsync.when(
@@ -152,7 +155,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
         context.go('/freelancer/payments');
       },
       title: 'Your Balance',
-      bigNumber: 'JOD ${balance.toStringAsFixed(2)}',
+      bigNumber: '$currency ${balance.toStringAsFixed(2)}',
       subtitle: 'Available to withdraw',
       kpis: [
         HeroKpiV2(value: activeProjects, label: 'Active'),

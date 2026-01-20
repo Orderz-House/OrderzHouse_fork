@@ -19,6 +19,9 @@ class HomeProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug log for price display (temporary)
+    _debugPriceDisplay();
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -82,7 +85,7 @@ class HomeProjectCard extends StatelessWidget {
                     runSpacing: AppSpacing.xs,
                     children: [
                       _buildChip(
-                        _getBudgetDisplay(),
+                        project.budgetDisplay,
                         AppColors.accentOrange,
                       ),
                       _buildChip(
@@ -143,12 +146,13 @@ class HomeProjectCard extends StatelessWidget {
     );
   }
 
-  String _getBudgetDisplay() {
-    final budget = project.budget ??
-        project.budgetMax ??
-        project.budgetMin ??
-        0.0;
-    return '\$${budget.toStringAsFixed(0)}';
+  // Removed _getBudgetDisplay() - now using project.budgetDisplay extension
+  // Debug log for price display (temporary - remove after verification)
+  void _debugPriceDisplay() {
+    print('🔍 [HomeProjectCard] Project ID: ${project.id}, Title: ${project.title}');
+    print('   Raw fields: budget=${project.budget}, budgetMin=${project.budgetMin}, budgetMax=${project.budgetMax}, hourlyRate=${project.hourlyRate}');
+    print('   Project type: ${project.projectType}');
+    print('   Final display text: ${project.budgetDisplay}');
   }
 
   String _getTypeDisplay() {

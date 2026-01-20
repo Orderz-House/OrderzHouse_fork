@@ -70,21 +70,41 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     setState(() => _isDeleting = true);
 
     try {
-      // TODO: Implement API call
-      // await ref.read(authStateProvider.notifier).deleteAccount();
-      
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      print('🔍 [DeleteAccountScreen] Calling deleteAccount API...');
+      final success = await ref.read(authStateProvider.notifier).deleteAccount(
+        reason: 'Deleted by user via app',
+      );
 
       if (!mounted) return;
 
-      // Clear tokens and navigate to login
-      await ref.read(authStateProvider.notifier).logout();
-      
-      if (mounted) {
-        context.go('/login');
+      if (success) {
+        print('✅ [DeleteAccountScreen] Account deleted successfully');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account deleted successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Navigate to login (logout already cleared tokens)
+          context.go('/login');
+        }
+      } else {
+        print('❌ [DeleteAccountScreen] Failed to delete account');
+        setState(() => _isDeleting = false);
+        final error = ref.read(authStateProvider).error;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Failed to delete account'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     } catch (e) {
+      print('❌ [DeleteAccountScreen] Exception: $e');
       if (mounted) {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(

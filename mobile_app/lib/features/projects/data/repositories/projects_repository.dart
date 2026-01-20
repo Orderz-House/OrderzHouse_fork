@@ -206,6 +206,7 @@ class ProjectsRepository {
     int page = 1,
     int limit = 20,
     int? userRoleId,
+    String sortBy = 'newest',
   }) async {
     try {
       // Determine user role
@@ -221,6 +222,24 @@ class ProjectsRepository {
 
       if (query != null && query.isNotEmpty) {
         queryParams['search'] = query;
+        if (AppConfig.isDevelopment) {
+          print('✅ [fetchExploreProjects] Added search param: "$query"');
+        }
+      } else {
+        if (AppConfig.isDevelopment) {
+          print('⚠️ [fetchExploreProjects] No search query (query=$query)');
+        }
+      }
+
+      // Always send sortBy (defaults to 'newest' if empty)
+      final finalSortBy = sortBy.trim().isNotEmpty ? sortBy : 'newest';
+      queryParams['sortBy'] = finalSortBy;
+      if (AppConfig.isDevelopment) {
+        print('✅ [fetchExploreProjects] Added sortBy param: "$finalSortBy"');
+      }
+
+      if (AppConfig.isDevelopment) {
+        print('📊 [fetchExploreProjects] Final queryParams before request: $queryParams');
       }
 
       // Use authenticated endpoint first (with token if available), fallback to public
@@ -236,6 +255,7 @@ class ProjectsRepository {
       } else {
         // No category specified (user selected "All")
         // Fetch from all categories and combine
+        // Note: search and sortBy are already in queryParams
         return await _fetchAllCategoriesProjects(queryParams);
       }
 
@@ -385,19 +405,51 @@ class ProjectsRepository {
     int categoryId,
     Map<String, dynamic> queryParams,
   ) async {
+    if (AppConfig.isDevelopment) {
+      print('📡 [fetchExploreProjects] Query params: $queryParams');
+    }
     // Try authenticated endpoint first
     try {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
         print('📡 REQUEST[GET] => PATH: /projects/category/$categoryId (authenticated)');
         // ignore: avoid_print
-        print('📡 REQUEST[GET] => Final URL: ${_dio.options.baseUrl}/projects/category/$categoryId');
+        print('📡 REQUEST[GET] => Query params: $queryParams');
+        final fullUrl = '${_dio.options.baseUrl}/projects/category/$categoryId?${Uri(queryParameters: queryParams.map((k, v) => MapEntry(k.toString(), v.toString()))).query}';
+        // ignore: avoid_print
+        print('📡 REQUEST[GET] => Final URL: $fullUrl');
+      }
+
+      // Build full URL for logging
+      final uri = Uri(
+        path: '/projects/category/$categoryId',
+        queryParameters: queryParams.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+      );
+      
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 [fetchProjectsByCategoryWithFallback] About to send request');
+        // ignore: avoid_print
+        print('📡 Query params map: $queryParams');
+        // ignore: avoid_print
+        print('📡 Full URL would be: ${_dio.options.baseUrl}$uri');
       }
 
       final response = await _dio.get(
         '/projects/category/$categoryId',
         queryParameters: queryParams,
       );
+      
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ REQUEST SENT => Actual URL: ${response.requestOptions.uri}');
+        // ignore: avoid_print
+        print('✅ REQUEST SENT => Query params in request: ${response.requestOptions.queryParameters}');
+        // ignore: avoid_print
+        print('✅ REQUEST SENT => Has search: ${response.requestOptions.queryParameters.containsKey('search')}');
+        // ignore: avoid_print
+        print('✅ REQUEST SENT => Has sortBy: ${response.requestOptions.queryParameters.containsKey('sortBy')}');
+      }
 
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
@@ -424,13 +476,42 @@ class ProjectsRepository {
             // ignore: avoid_print
             print('📡 REQUEST[GET] => PATH: /projects/public/category/$categoryId (public fallback)');
             // ignore: avoid_print
-            print('📡 REQUEST[GET] => Final URL: ${_dio.options.baseUrl}/projects/public/category/$categoryId');
+            print('📡 REQUEST[GET] => Query params: $queryParams');
+            final fullUrl = '${_dio.options.baseUrl}/projects/public/category/$categoryId?${Uri(queryParameters: queryParams.map((k, v) => MapEntry(k.toString(), v.toString()))).query}';
+            // ignore: avoid_print
+            print('📡 REQUEST[GET] => Final URL: $fullUrl');
+          }
+
+          // Build full URL for logging
+          final fallbackUri = Uri(
+            path: '/projects/public/category/$categoryId',
+            queryParameters: queryParams.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+          
+          if (AppConfig.isDevelopment) {
+            // ignore: avoid_print
+            print('📡 [fetchProjectsByCategoryWithFallback] About to send fallback request');
+            // ignore: avoid_print
+            print('📡 Query params map: $queryParams');
+            // ignore: avoid_print
+            print('📡 Full URL would be: ${_dio.options.baseUrl}$fallbackUri');
           }
 
           final fallbackResponse = await _dio.get(
             '/projects/public/category/$categoryId',
             queryParameters: queryParams,
           );
+          
+          if (AppConfig.isDevelopment) {
+            // ignore: avoid_print
+            print('✅ REQUEST SENT => Actual URL: ${fallbackResponse.requestOptions.uri}');
+            // ignore: avoid_print
+            print('✅ REQUEST SENT => Query params in request: ${fallbackResponse.requestOptions.queryParameters}');
+            // ignore: avoid_print
+            print('✅ REQUEST SENT => Has search: ${fallbackResponse.requestOptions.queryParameters.containsKey('search')}');
+            // ignore: avoid_print
+            print('✅ REQUEST SENT => Has sortBy: ${fallbackResponse.requestOptions.queryParameters.containsKey('sortBy')}');
+          }
 
           if (AppConfig.isDevelopment) {
             // ignore: avoid_print
@@ -548,6 +629,9 @@ class ProjectsRepository {
   Future<ApiResponse<List<Project>>> _fetchAllCategoriesProjects(
     Map<String, dynamic> queryParams,
   ) async {
+    if (AppConfig.isDevelopment) {
+      print('📡 [fetchAllCategoriesProjects] Query params: $queryParams');
+    }
     try {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
@@ -746,11 +830,51 @@ class ProjectsRepository {
       }
     }
 
+    // Sort combined results if sortBy is provided (since we fetched from multiple categories)
+    final sortBy = queryParams['sortBy'] as String?;
+    if (sortBy != null && sortBy.isNotEmpty) {
+      switch (sortBy.toLowerCase()) {
+        case 'newest':
+          allProjects.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          break;
+        case 'price_low_to_high':
+          allProjects.sort((a, b) {
+            final aPrice = a.projectType == 'fixed' 
+                ? (a.budget ?? 999999) 
+                : a.projectType == 'hourly' 
+                    ? (a.hourlyRate ?? 999999)
+                    : (a.budgetMin ?? 999999);
+            final bPrice = b.projectType == 'fixed' 
+                ? (b.budget ?? 999999) 
+                : b.projectType == 'hourly' 
+                    ? (b.hourlyRate ?? 999999)
+                    : (b.budgetMin ?? 999999);
+            return aPrice.compareTo(bPrice);
+          });
+          break;
+        case 'price_high_to_low':
+          allProjects.sort((a, b) {
+            final aPrice = a.projectType == 'fixed' 
+                ? (a.budget ?? 0) 
+                : a.projectType == 'hourly' 
+                    ? (a.hourlyRate ?? 0)
+                    : (a.budgetMax ?? 0);
+            final bPrice = b.projectType == 'fixed' 
+                ? (b.budget ?? 0) 
+                : b.projectType == 'hourly' 
+                    ? (b.hourlyRate ?? 0)
+                    : (b.budgetMax ?? 0);
+            return bPrice.compareTo(aPrice);
+          });
+          break;
+      }
+    }
+
     if (AppConfig.isDevelopment) {
       // ignore: avoid_print
       print('✅ EXPLORE: Fetched ${allProjects.length} projects from ${categoryIds.length} categories');
       // ignore: avoid_print
-      print('📊 Final projects count for "All": ${allProjects.length}');
+      print('📊 Final projects count for "All": ${allProjects.length}, sortBy: $sortBy');
     }
 
     return ApiResponse(
