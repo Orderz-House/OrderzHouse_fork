@@ -20,6 +20,8 @@ class User with _$User {
     @Default(false)
     bool isTwoFactorEnabled,
     @JsonKey(name: 'email_verified') @Default(false) bool emailVerified,
+    @JsonKey(name: 'must_accept_terms') @Default(false) bool mustAcceptTerms,
+    @JsonKey(name: 'terms_version_required') String? termsVersionRequired,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

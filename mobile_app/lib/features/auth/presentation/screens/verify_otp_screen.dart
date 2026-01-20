@@ -102,6 +102,12 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     if (!mounted) return;
 
     if (success) {
+      final user = ref.read(authStateProvider).user;
+      // Check if terms need to be accepted
+      if (user?.mustAcceptTerms == true) {
+        context.go('/accept-terms');
+        return;
+      }
       final role = ref.read(authStateProvider).userRole;
       if (role == 'freelancer') {
         context.go('/freelancer');

@@ -37,6 +37,10 @@ mixin _$User {
   bool get isTwoFactorEnabled => throw _privateConstructorUsedError;
   @JsonKey(name: 'email_verified')
   bool get emailVerified => throw _privateConstructorUsedError;
+  @JsonKey(name: 'must_accept_terms')
+  bool get mustAcceptTerms => throw _privateConstructorUsedError;
+  @JsonKey(name: 'terms_version_required')
+  String? get termsVersionRequired => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -58,7 +62,9 @@ abstract class $UserCopyWith<$Res> {
       @JsonKey(name: 'profile_pic_url') String? profilePicUrl,
       @JsonKey(name: 'is_deleted') bool isDeleted,
       @JsonKey(name: 'is_two_factor_enabled') bool isTwoFactorEnabled,
-      @JsonKey(name: 'email_verified') bool emailVerified});
+      @JsonKey(name: 'email_verified') bool emailVerified,
+      @JsonKey(name: 'must_accept_terms') bool mustAcceptTerms,
+      @JsonKey(name: 'terms_version_required') String? termsVersionRequired});
 }
 
 /// @nodoc
@@ -84,6 +90,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? isDeleted = null,
     Object? isTwoFactorEnabled = null,
     Object? emailVerified = null,
+    Object? mustAcceptTerms = null,
+    Object? termsVersionRequired = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -126,6 +134,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.emailVerified
           : emailVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      mustAcceptTerms: null == mustAcceptTerms
+          ? _value.mustAcceptTerms
+          : mustAcceptTerms // ignore: cast_nullable_to_non_nullable
+              as bool,
+      termsVersionRequired: freezed == termsVersionRequired
+          ? _value.termsVersionRequired
+          : termsVersionRequired // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -147,7 +163,9 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       @JsonKey(name: 'profile_pic_url') String? profilePicUrl,
       @JsonKey(name: 'is_deleted') bool isDeleted,
       @JsonKey(name: 'is_two_factor_enabled') bool isTwoFactorEnabled,
-      @JsonKey(name: 'email_verified') bool emailVerified});
+      @JsonKey(name: 'email_verified') bool emailVerified,
+      @JsonKey(name: 'must_accept_terms') bool mustAcceptTerms,
+      @JsonKey(name: 'terms_version_required') String? termsVersionRequired});
 }
 
 /// @nodoc
@@ -170,6 +188,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? isDeleted = null,
     Object? isTwoFactorEnabled = null,
     Object? emailVerified = null,
+    Object? mustAcceptTerms = null,
+    Object? termsVersionRequired = freezed,
   }) {
     return _then(_$UserImpl(
       id: null == id
@@ -212,6 +232,14 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.emailVerified
           : emailVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      mustAcceptTerms: null == mustAcceptTerms
+          ? _value.mustAcceptTerms
+          : mustAcceptTerms // ignore: cast_nullable_to_non_nullable
+              as bool,
+      termsVersionRequired: freezed == termsVersionRequired
+          ? _value.termsVersionRequired
+          : termsVersionRequired // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -229,7 +257,9 @@ class _$UserImpl extends _User {
       @JsonKey(name: 'profile_pic_url') this.profilePicUrl,
       @JsonKey(name: 'is_deleted') this.isDeleted = false,
       @JsonKey(name: 'is_two_factor_enabled') this.isTwoFactorEnabled = false,
-      @JsonKey(name: 'email_verified') this.emailVerified = false})
+      @JsonKey(name: 'email_verified') this.emailVerified = false,
+      @JsonKey(name: 'must_accept_terms') this.mustAcceptTerms = false,
+      @JsonKey(name: 'terms_version_required') this.termsVersionRequired})
       : super._();
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
@@ -262,10 +292,16 @@ class _$UserImpl extends _User {
   @override
   @JsonKey(name: 'email_verified')
   final bool emailVerified;
+  @override
+  @JsonKey(name: 'must_accept_terms')
+  final bool mustAcceptTerms;
+  @override
+  @JsonKey(name: 'terms_version_required')
+  final String? termsVersionRequired;
 
   @override
   String toString() {
-    return 'User(id: $id, username: $username, email: $email, roleId: $roleId, firstName: $firstName, lastName: $lastName, profilePicUrl: $profilePicUrl, isDeleted: $isDeleted, isTwoFactorEnabled: $isTwoFactorEnabled, emailVerified: $emailVerified)';
+    return 'User(id: $id, username: $username, email: $email, roleId: $roleId, firstName: $firstName, lastName: $lastName, profilePicUrl: $profilePicUrl, isDeleted: $isDeleted, isTwoFactorEnabled: $isTwoFactorEnabled, emailVerified: $emailVerified, mustAcceptTerms: $mustAcceptTerms, termsVersionRequired: $termsVersionRequired)';
   }
 
   @override
@@ -289,7 +325,11 @@ class _$UserImpl extends _User {
             (identical(other.isTwoFactorEnabled, isTwoFactorEnabled) ||
                 other.isTwoFactorEnabled == isTwoFactorEnabled) &&
             (identical(other.emailVerified, emailVerified) ||
-                other.emailVerified == emailVerified));
+                other.emailVerified == emailVerified) &&
+            (identical(other.mustAcceptTerms, mustAcceptTerms) ||
+                other.mustAcceptTerms == mustAcceptTerms) &&
+            (identical(other.termsVersionRequired, termsVersionRequired) ||
+                other.termsVersionRequired == termsVersionRequired));
   }
 
   @JsonKey(ignore: true)
@@ -305,7 +345,9 @@ class _$UserImpl extends _User {
       profilePicUrl,
       isDeleted,
       isTwoFactorEnabled,
-      emailVerified);
+      emailVerified,
+      mustAcceptTerms,
+      termsVersionRequired);
 
   @JsonKey(ignore: true)
   @override
@@ -332,7 +374,10 @@ abstract class _User extends User {
       @JsonKey(name: 'profile_pic_url') final String? profilePicUrl,
       @JsonKey(name: 'is_deleted') final bool isDeleted,
       @JsonKey(name: 'is_two_factor_enabled') final bool isTwoFactorEnabled,
-      @JsonKey(name: 'email_verified') final bool emailVerified}) = _$UserImpl;
+      @JsonKey(name: 'email_verified') final bool emailVerified,
+      @JsonKey(name: 'must_accept_terms') final bool mustAcceptTerms,
+      @JsonKey(name: 'terms_version_required')
+      final String? termsVersionRequired}) = _$UserImpl;
   const _User._() : super._();
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
@@ -364,6 +409,12 @@ abstract class _User extends User {
   @override
   @JsonKey(name: 'email_verified')
   bool get emailVerified;
+  @override
+  @JsonKey(name: 'must_accept_terms')
+  bool get mustAcceptTerms;
+  @override
+  @JsonKey(name: 'terms_version_required')
+  String? get termsVersionRequired;
   @override
   @JsonKey(ignore: true)
   _$$UserImplCopyWith<_$UserImpl> get copyWith =>

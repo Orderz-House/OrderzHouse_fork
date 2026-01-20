@@ -240,6 +240,10 @@ export const verifyTwoFactorLogin = async (req, res) => {
       expiresIn: "1d",
     });
 
+    // Check terms acceptance
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+    const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -256,12 +260,44 @@ export const verifyTwoFactorLogin = async (req, res) => {
         is_two_factor_enabled: user.is_two_factor_enabled,
         email_verified: user.email_verified,
       },
+      must_accept_terms: mustAcceptTerms,
+      terms_version_required: CURRENT_TERMS_VERSION,
     });
   } catch (error) {
     console.error("verifyTwoFactorLogin Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server error verifying 2FA code",
+    });
+  }
+};
+
+/**
+ * POST /auth/accept-terms
+ * Accept Terms & Conditions
+ */
+export const acceptTerms = async (req, res) => {
+  try {
+    const userId = req.token.userId;
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+
+    // Update user's terms acceptance
+    await pool.query(
+      `UPDATE users 
+       SET terms_accepted_at = NOW(), terms_version = $1 
+       WHERE id = $2`,
+      [CURRENT_TERMS_VERSION, userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Terms & Conditions accepted successfully",
+    });
+  } catch (error) {
+    console.error("Accept Terms Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while accepting terms",
     });
   }
 };

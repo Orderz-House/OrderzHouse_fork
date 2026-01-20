@@ -32,6 +32,7 @@ import '../../features/projects/presentation/pages/create_project_wizard_page.da
 import '../../features/common/presentation/screens/talent_details_screen.dart';
 import '../../features/common/presentation/screens/health_check_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
+import '../../features/auth/presentation/screens/accept_terms_screen.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -69,6 +70,10 @@ final GoRouter appRouter = GoRouter(
         final email = state.uri.queryParameters['email'] ?? '';
         return VerifyOtpScreen(email: email);
       },
+    ),
+    GoRoute(
+      path: '/accept-terms',
+      builder: (context, state) => const AcceptTermsScreen(),
     ),
     // Freelancer Routes
     GoRoute(

@@ -687,6 +687,10 @@ const login = async (req, res) => {
           expiresIn: "1d",
         });
 
+        // Check terms acceptance
+        const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+        const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+
         return res.status(200).json({
           success: true,
           message: "Login successful",
@@ -703,6 +707,8 @@ const login = async (req, res) => {
             is_two_factor_enabled: user.is_two_factor_enabled,
             email_verified: user.email_verified,
           },
+          must_accept_terms: mustAcceptTerms,
+          terms_version_required: CURRENT_TERMS_VERSION,
         });
       }
 
@@ -807,6 +813,10 @@ const verifyOTP = async (req, res) => {
       expiresIn: "1d",
     });
 
+    // Check terms acceptance
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+    const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -823,6 +833,8 @@ const verifyOTP = async (req, res) => {
         is_two_factor_enabled: user.is_two_factor_enabled,
         email_verified: user.email_verified,
       },
+      must_accept_terms: mustAcceptTerms,
+      terms_version_required: CURRENT_TERMS_VERSION,
     });
   } catch (error) {
     console.error("Verify OTP Error:", error);
@@ -1084,6 +1096,8 @@ const getUserdata = async (req, res) => {
          is_deleted,
          is_two_factor_enabled,
          email_verified,
+         terms_accepted_at,
+         terms_version,
          created_at,
          updated_at
        FROM users 
@@ -1097,9 +1111,17 @@ const getUserdata = async (req, res) => {
         .json({ success: false, message: "Account has been deleted" });
     }
 
+    const userData = user.rows[0];
+    
+    // Check terms acceptance
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+    const mustAcceptTerms = !userData.terms_accepted_at || userData.terms_version !== CURRENT_TERMS_VERSION;
+
     return res.json({
       success: true,
-      user: user.rows[0],
+      user: userData,
+      must_accept_terms: mustAcceptTerms,
+      terms_version_required: CURRENT_TERMS_VERSION,
     });
   } catch (err) {
     console.error("getUserdata error:", err);

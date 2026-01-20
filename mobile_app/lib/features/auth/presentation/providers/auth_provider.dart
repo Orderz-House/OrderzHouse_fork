@@ -126,6 +126,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> acceptTerms() async {
+    final response = await _repository.acceptTerms();
+    if (response.success) {
+      // Refresh user data to get updated terms status
+      await refreshUser();
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
+
   /// Invalidate all user-scoped providers to clear cached data
   /// Call this on login/logout to prevent showing stale data from previous user
   /// 

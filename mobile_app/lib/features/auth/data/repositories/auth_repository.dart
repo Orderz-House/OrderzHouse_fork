@@ -26,7 +26,15 @@ class AuthRepository {
         final token = data['token'] as String;
         await SecureStorageService.saveToken(token);
 
-        final user = User.fromJson(data['userInfo'] as Map<String, dynamic>);
+        final userData = data['userInfo'] as Map<String, dynamic>;
+        // Include terms acceptance fields
+        if (data['must_accept_terms'] != null) {
+          userData['must_accept_terms'] = data['must_accept_terms'];
+        }
+        if (data['terms_version_required'] != null) {
+          userData['terms_version_required'] = data['terms_version_required'];
+        }
+        final user = User.fromJson(userData);
         return ApiResponse(
           success: true,
           message: data['message'] as String?,
@@ -64,7 +72,15 @@ class AuthRepository {
       final token = data['token'] as String;
       await SecureStorageService.saveToken(token);
 
-      final user = User.fromJson(data['userInfo'] as Map<String, dynamic>);
+      final userData = data['userInfo'] as Map<String, dynamic>;
+      // Include terms acceptance fields
+      if (data['must_accept_terms'] != null) {
+        userData['must_accept_terms'] = data['must_accept_terms'];
+      }
+      if (data['terms_version_required'] != null) {
+        userData['terms_version_required'] = data['terms_version_required'];
+      }
+      final user = User.fromJson(userData);
       return ApiResponse(
         success: true,
         message: data['message'] as String?,
@@ -152,7 +168,15 @@ class AuthRepository {
   Future<ApiResponse<User>> getUserData() async {
     try {
       final response = await _dio.get('/users/getUserdata');
-      final user = User.fromJson(response.data['user'] as Map<String, dynamic>);
+      final userData = response.data['user'] as Map<String, dynamic>;
+      // Include terms acceptance fields
+      if (response.data['must_accept_terms'] != null) {
+        userData['must_accept_terms'] = response.data['must_accept_terms'];
+      }
+      if (response.data['terms_version_required'] != null) {
+        userData['terms_version_required'] = response.data['terms_version_required'];
+      }
+      final user = User.fromJson(userData);
       return ApiResponse(
         success: true,
         data: user,
@@ -161,6 +185,21 @@ class AuthRepository {
       return ApiResponse(
         success: false,
         message: e.response?.data['message'] as String? ?? 'Failed to fetch user data',
+      );
+    }
+  }
+
+  Future<ApiResponse<void>> acceptTerms() async {
+    try {
+      final response = await _dio.post('/auth/accept-terms');
+      return ApiResponse(
+        success: response.statusCode == 200,
+        message: response.data['message'] as String?,
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Failed to accept terms',
       );
     }
   }

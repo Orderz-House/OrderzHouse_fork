@@ -17,6 +17,8 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       isDeleted: json['is_deleted'] as bool? ?? false,
       isTwoFactorEnabled: json['is_two_factor_enabled'] as bool? ?? false,
       emailVerified: json['email_verified'] as bool? ?? false,
+      mustAcceptTerms: json['must_accept_terms'] as bool? ?? false,
+      termsVersionRequired: json['terms_version_required'] as String?,
     );
 
 Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
@@ -31,4 +33,6 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'is_deleted': instance.isDeleted,
       'is_two_factor_enabled': instance.isTwoFactorEnabled,
       'email_verified': instance.emailVerified,
+      'must_accept_terms': instance.mustAcceptTerms,
+      'terms_version_required': instance.termsVersionRequired,
     };

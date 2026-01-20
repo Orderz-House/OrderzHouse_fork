@@ -7,6 +7,7 @@ import {
   disableTwoFactor,
   verifyTwoFactorLogin,
   changePassword,
+  acceptTerms,
 } from "../controller/auth.js";
 
 const authRouter = express.Router();
@@ -20,6 +21,9 @@ authRouter.use(authentication);
 authRouter.post("/2fa/generate", generateTwoFactorSecret);
 authRouter.post("/2fa/verify", verifyTwoFactorToken);
 authRouter.post("/2fa/disable", disableTwoFactor);
+
+// Accept Terms & Conditions (requires authentication, but must be before terms check)
+authRouter.post("/accept-terms", acceptTerms);
 
 // Change password (requires authentication)
 authRouter.patch("/change-password", changePassword);

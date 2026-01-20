@@ -14,6 +14,11 @@ class SplashScreen extends ConsumerWidget {
       if (next.isLoading) return;
 
       if (next.isAuthenticated) {
+        // Check if terms need to be accepted
+        if (next.user?.mustAcceptTerms == true) {
+          context.go('/accept-terms');
+          return;
+        }
         final role = next.userRole;
         if (role == 'freelancer') {
           context.go('/freelancer');

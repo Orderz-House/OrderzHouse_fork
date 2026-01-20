@@ -28,7 +28,7 @@ const authentication = (req, res, next) => {
       // Double-check in DB to ensure user still exists and is not deleted
       try {
         const userCheck = await pool.query(
-          "SELECT id FROM users WHERE id = $1 AND is_deleted = FALSE",
+          "SELECT id, terms_accepted_at, terms_version FROM users WHERE id = $1 AND is_deleted = FALSE",
           [result.userId]
         );
         if (userCheck.rows.length === 0) {
@@ -36,6 +36,22 @@ const authentication = (req, res, next) => {
             success: false,
             message: "Account has been deleted",
           });
+        }
+
+        // Check terms acceptance (exclude /auth/accept-terms endpoint)
+        const path = req.originalUrl || req.url || "";
+        if (!path.includes("/auth/accept-terms")) {
+          const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+          const user = userCheck.rows[0];
+          const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+          
+          if (mustAcceptTerms) {
+            return res.status(403).json({
+              success: false,
+              code: "TERMS_NOT_ACCEPTED",
+              message: "Terms & Conditions must be accepted before accessing this resource",
+            });
+          }
         }
       } catch (dbErr) {
         console.error("Auth middleware DB check error:", dbErr);
