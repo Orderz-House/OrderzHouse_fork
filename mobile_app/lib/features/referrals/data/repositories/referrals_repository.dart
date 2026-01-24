@@ -30,7 +30,7 @@ class ReferralsRepository {
         if (data is Map<String, dynamic>) {
           jsonData = data;
         } else {
-          return ApiResponse(
+          return const ApiResponse(
             success: false,
             message: 'Invalid response format',
           );
@@ -118,7 +118,7 @@ class ReferralsRepository {
       
       // Handle 401 - authentication required
       if (e.response?.statusCode == 401) {
-        return ApiResponse(
+        return const ApiResponse(
           success: false,
           message: 'Please log in to view referrals',
         );
