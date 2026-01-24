@@ -808,7 +808,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final amountPrefix = isIncome ? '+' : '-';
 
     // Get enriched display name/title (use new enriched fields if available)
-    String displayName = payment.title ?? 
+    final String displayName = payment.title ?? 
                         payment.projectTitle ?? 
                         payment.note ?? 
                         'Transaction';
@@ -944,7 +944,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                   ),
                   child: Text(
                     payment.source!.toUpperCase(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 9,
                       fontWeight: FontWeight.w600,

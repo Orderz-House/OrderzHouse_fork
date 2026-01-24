@@ -1095,7 +1095,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             label: const Text('Applicants'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
-              side: BorderSide(color: AppColors.border),
+              side: const BorderSide(color: AppColors.border),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1131,7 +1131,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             label: const Text('Request Changes'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
-              side: BorderSide(color: AppColors.border),
+              side: const BorderSide(color: AppColors.border),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
@@ -1671,7 +1671,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           // Header
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
                   color: AppColors.border,
@@ -1708,7 +1708,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.folder_open_rounded,
                           size: 64,
                           color: AppColors.textTertiary,
@@ -1854,7 +1854,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           // Header
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
                   color: AppColors.border,
@@ -1939,7 +1939,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 label: const Text('Refresh'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.accentOrange,
-                  side: BorderSide(color: AppColors.border),
+                  side: const BorderSide(color: AppColors.border),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: const Size(0, 32),
                 ),
@@ -2029,7 +2029,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.insert_drive_file_rounded,
             color: AppColors.accentOrange,
             size: 20,
