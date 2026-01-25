@@ -34,7 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authNotifier = ref.read(authStateProvider.notifier);
     final success = await authNotifier.login(
       _emailController.text.trim(),
-      _passwordController.text,
+      _passwordController.text.trim(),
     );
 
     if (!mounted) return;
@@ -54,15 +54,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } else {
       final error = ref.read(authStateProvider).error;
-      if (error == 'OTP required') {
-        context.go(
-          '/verify-otp?email=${Uri.encodeComponent(_emailController.text.trim())}',
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Login failed')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? 'Login failed')),
+      );
     }
   }
 
@@ -127,10 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Email input
                         _StyledTextField(
                           controller: _emailController,
-                          hint: 'Username',
+                          hint: 'Email',
                           prefixIcon: Icons.lock_outline,
                           keyboardType: TextInputType.emailAddress,
-                          validator: Validators.email,
+                          validator: (value) => Validators.email(value?.trim()),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         // Password input

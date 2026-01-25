@@ -120,7 +120,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         return true;
       case 'account':
         final usernameValid = Validators.required(_usernameController.text, fieldName: 'Username') == null;
-        final emailValid = Validators.email(_emailController.text) == null;
+        final emailValid = Validators.email(_emailController.text.trim()) == null;
         final passwordValid = Validators.password(_passwordController.text) == null;
         final confirmPasswordValid = Validators.match(_confirmPasswordController.text, _passwordController.text, fieldName: 'Password') == null;
         if (!usernameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
@@ -199,7 +199,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
-      password: _passwordController.text,
+      password: _passwordController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
       country: _countryController.text.trim(),
       username: _usernameController.text.trim(),
