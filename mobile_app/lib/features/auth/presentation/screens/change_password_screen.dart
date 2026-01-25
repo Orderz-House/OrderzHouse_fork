@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -65,47 +66,44 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
   }
 
-  String? _validateCurrentPassword(String? value) {
+  String? _validateCurrentPassword(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Current password is required';
+      return l10n.passwordRequired;
     }
     return null;
   }
 
-  String? _validateNewPassword(String? value) {
+  String? _validateNewPassword(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'New password is required';
+      return l10n.passwordRequired;
     }
     if (value.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (value == _currentPasswordController.text) {
-      return 'New password must be different from current password';
+      return l10n.passwordTooShort;
     }
     return null;
   }
 
-  String? _validateConfirmPassword(String? value) {
+  String? _validateConfirmPassword(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Please confirm your password';
+      return l10n.fieldRequired;
     }
     if (value != _newPasswordController.text) {
-      return 'Passwords do not match';
+      return l10n.passwordsDoNotMatch;
     }
     return null;
   }
 
-  bool _validateForm() {
+  bool _validateForm(AppLocalizations l10n) {
     _validationErrors.clear();
-    final currentError = _validateCurrentPassword(_currentPasswordController.text);
+    final currentError = _validateCurrentPassword(_currentPasswordController.text, l10n);
     if (currentError != null) {
       _validationErrors['currentPassword'] = currentError;
     }
-    final newError = _validateNewPassword(_newPasswordController.text);
+    final newError = _validateNewPassword(_newPasswordController.text, l10n);
     if (newError != null) {
       _validationErrors['newPassword'] = newError;
     }
-    final confirmError = _validateConfirmPassword(_confirmPasswordController.text);
+    final confirmError = _validateConfirmPassword(_confirmPasswordController.text, l10n);
     if (confirmError != null) {
       _validationErrors['confirmPassword'] = confirmError;
     }
@@ -114,10 +112,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   }
 
   Future<void> _handleSave() async {
-    if (!_validateForm()) {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_validateForm(l10n)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields correctly'),
+        SnackBar(
+          content: Text(l10n.fieldRequired),
           backgroundColor: AppColors.error,
         ),
       );
@@ -142,10 +141,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         _confirmPasswordController.clear();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password changed successfully!'),
+          SnackBar(
+            content: Text(l10n.passwordChanged),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -158,7 +157,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.message ?? 'Failed to change password'),
+            content: Text(response.message ?? l10n.somethingWentWrong),
             backgroundColor: AppColors.error,
           ),
         );
@@ -167,7 +166,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${l10n.error}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -180,27 +179,28 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   }
 
   void _handleCancel() {
+    final l10n = AppLocalizations.of(context)!;
     if (_currentPasswordController.text.isNotEmpty ||
         _newPasswordController.text.isNotEmpty ||
         _confirmPasswordController.text.isNotEmpty) {
       // Show confirmation if there's input
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Discard changes?'),
-          content: const Text('You have unsaved changes. Are you sure you want to go back?'),
+          title: Text(l10n.warning),
+          content: Text(l10n.confirmDeleteAccount),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.cancel, style: const TextStyle(color: AppColors.textSecondary)),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 _handleBack();
               },
-              child: const Text('Discard', style: TextStyle(color: AppColors.error)),
+              child: Text(l10n.confirm, style: const TextStyle(color: AppColors.error)),
             ),
           ],
         ),
@@ -212,6 +212,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -221,7 +223,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             children: [
               // Header
               AppHeader(
-                title: 'Change Password',
+                title: l10n.changePassword,
                 onBack: _handleBack,
               ),
 
@@ -237,7 +239,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       _buildPasswordField(
                         controller: _currentPasswordController,
                         focusNode: _currentPasswordFocusNode,
-                        label: 'Current Password',
+                        label: l10n.currentPassword,
                         obscureText: _obscureCurrentPassword,
                         errorText: _validationErrors['currentPassword'],
                         onVisibilityToggle: () {
@@ -257,7 +259,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       _buildPasswordField(
                         controller: _newPasswordController,
                         focusNode: _newPasswordFocusNode,
-                        label: 'New Password',
+                        label: l10n.newPassword,
                         obscureText: _obscureNewPassword,
                         errorText: _validationErrors['newPassword'],
                         onVisibilityToggle: () {
@@ -281,7 +283,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       _buildPasswordField(
                         controller: _confirmPasswordController,
                         focusNode: _confirmPasswordFocusNode,
-                        label: 'Confirm New Password',
+                        label: l10n.confirmNewPassword,
                         obscureText: _obscureConfirmPassword,
                         errorText: _validationErrors['confirmPassword'],
                         onVisibilityToggle: () {
@@ -338,7 +340,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             ),
                           ),
                           child: Text(
-                            'Cancel',
+                            l10n.cancel,
                             style: AppTextStyles.labelLarge.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -353,7 +355,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       Expanded(
                         child: PrimaryGradientButton(
                           onPressed: _isLoading ? null : _handleSave,
-                          label: 'Save',
+                          label: l10n.save,
                           isLoading: _isLoading,
                           height: 52,
                           borderRadius: 18,

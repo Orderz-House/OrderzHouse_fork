@@ -13,6 +13,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -349,6 +350,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final fullName = '${_firstNameController.text} ${_lastNameController.text}'.trim();
 
     if (_isFetching) {
@@ -399,7 +401,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const Spacer(),
                     // Title
                     Text(
-                      'Edit Profile',
+                      l10n.editProfile,
                       style: AppTextStyles.headlineSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -427,7 +429,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Form Fields
                     ProfileFieldTile(
-                      label: 'Full Name',
+                      label: '${l10n.firstName} ${l10n.lastName}',
                       value: fullName.isEmpty ? '—' : fullName,
                       icon: Icons.edit_outlined,
                       readOnly: true,
@@ -436,7 +438,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'First Name',
+                      label: l10n.firstName,
                       controller: _firstNameController,
                       icon: Icons.person_outline_rounded,
                       errorText: _validationErrors['first_name'],
@@ -450,7 +452,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'Last Name',
+                      label: l10n.lastName,
                       controller: _lastNameController,
                       icon: Icons.person_outline_rounded,
                       errorText: _validationErrors['last_name'],
@@ -464,7 +466,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'Nickname',
+                      label: l10n.username,
                       controller: _usernameController,
                       icon: Icons.alternate_email_rounded,
                       errorText: _validationErrors['username'],
@@ -478,7 +480,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'Email',
+                      label: l10n.email,
                       value: _emailController.text,
                       icon: Icons.email_outlined,
                       readOnly: true,
@@ -487,7 +489,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'Phone',
+                      label: l10n.phone,
                       controller: _phoneController,
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
@@ -510,7 +512,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 12),
 
                     ProfileFieldTile(
-                      label: 'Country',
+                      label: l10n.country,
                       controller: _countryController,
                       icon: Icons.location_on_outlined,
                       errorText: _validationErrors['country'],
@@ -565,7 +567,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ),
                         ),
                         child: Text(
-                          'Discard',
+                          l10n.cancel,
                           style: AppTextStyles.labelLarge.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
@@ -580,7 +582,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     Expanded(
                       child: PrimaryGradientButton(
                         onPressed: _isLoading ? null : _saveProfile,
-                        label: 'Save',
+                        label: l10n.save,
                         isLoading: _isLoading,
                         height: 52,
                         borderRadius: 18,

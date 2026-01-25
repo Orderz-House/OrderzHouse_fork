@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/theme/app_spacing.dart';
+import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../../features/categories/data/repositories/categories_repository.dart';
 import '../../../../../../features/categories/presentation/providers/categories_provider.dart';
 import '../../providers/project_wizard_provider.dart';
@@ -131,8 +132,51 @@ class _ProjectDetailsStepViewState
     super.dispose();
   }
 
+  // Helper to get localized error message
+  String? _getLocalizedError(AppLocalizations l10n, Map<String, String> errors, String key) {
+    final error = errors[key];
+    if (error == null) return null;
+    
+    // Map error messages to localized versions
+    switch (error) {
+      case 'Title is required':
+        return l10n.titleIsRequired;
+      case 'Title must be between 10 and 100 characters':
+        return l10n.titleLengthError;
+      case 'Description is required':
+        return l10n.descriptionIsRequired;
+      case 'Description must be between 100 and 2000 characters':
+        return l10n.descriptionLengthError;
+      case 'Category is required':
+        return l10n.categoryIsRequired;
+      case 'Sub-sub-category is required':
+        return l10n.subSubCategoryIsRequired;
+      case 'Project type is required':
+        return l10n.projectTypeIsRequired;
+      case 'Budget is required and must be greater than 0':
+        return l10n.budgetIsRequired;
+      case 'Hourly rate is required and must be greater than 0':
+        return l10n.hourlyRateIsRequired;
+      case 'Minimum budget is required and must be greater than 0':
+        return l10n.minBudgetIsRequired;
+      case 'Maximum budget is required and must be greater than 0':
+        return l10n.maxBudgetIsRequired;
+      case 'Maximum budget must be greater than or equal to minimum budget':
+        return l10n.maxBudgetMustBeGreater;
+      case 'Duration type is required':
+        return l10n.durationTypeIsRequired;
+      case 'Duration days is required and must be greater than 0':
+        return l10n.durationDaysIsRequired;
+      case 'Duration hours is required and must be greater than 0':
+        return l10n.durationHoursIsRequired;
+      default:
+        return error;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(projectWizardProvider);
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final errors = draft.validateStep1();
@@ -146,12 +190,12 @@ class _ProjectDetailsStepViewState
           TextFormField(
             controller: _titleController,
             decoration: InputDecoration(
-              labelText: 'Project Title *',
-              hintText: 'Enter project title (10-100 characters)',
+              labelText: l10n.projectTitleLabel,
+              hintText: l10n.projectTitleHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              errorText: errors['title'],
+              errorText: _getLocalizedError(l10n, errors, 'title'),
             ),
             maxLength: 100,
             onChanged: (value) {
@@ -164,12 +208,12 @@ class _ProjectDetailsStepViewState
           TextFormField(
             controller: _descriptionController,
             decoration: InputDecoration(
-              labelText: 'Description *',
-              hintText: 'Describe your project (100-2000 characters)',
+              labelText: l10n.descriptionLabel,
+              hintText: l10n.descriptionHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              errorText: errors['description'],
+              errorText: _getLocalizedError(l10n, errors, 'description'),
             ),
             maxLines: 6,
             maxLength: 2000,
@@ -184,22 +228,22 @@ class _ProjectDetailsStepViewState
             data: (categories) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Category *',
-                  style: TextStyle(
+                Text(
+                  l10n.categoryLabel,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF111827),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 DropdownButtonFormField<int>(
-                  initialValue: draft.categoryId,
+                  value: draft.categoryId,
                   decoration: InputDecoration(
-                    hintText: 'Select category',
+                    hintText: l10n.selectCategoryHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    errorText: errors['categoryId'],
+                    errorText: _getLocalizedError(l10n, errors, 'categoryId'),
                   ),
                   items: categories.map((cat) {
                     return DropdownMenuItem(
@@ -221,7 +265,7 @@ class _ProjectDetailsStepViewState
               ],
             ),
             loading: () => const CircularProgressIndicator(),
-            error: (_, __) => const Text('Failed to load categories'),
+            error: (_, __) => Text(l10n.failedToLoadCategories),
           ),
 
           const SizedBox(height: AppSpacing.md),
@@ -231,9 +275,9 @@ class _ProjectDetailsStepViewState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Sub-Sub-Category *',
-                  style: TextStyle(
+                Text(
+                  l10n.subSubCategoryLabel,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF111827),
                   ),
@@ -242,13 +286,13 @@ class _ProjectDetailsStepViewState
                 _loadingSubSubCategories
                     ? const Center(child: CircularProgressIndicator())
                     : DropdownButtonFormField<int>(
-                        initialValue: draft.subSubCategoryId,
+                        value: draft.subSubCategoryId,
                         decoration: InputDecoration(
-                          hintText: 'Select sub-sub-category',
+                          hintText: l10n.selectSubSubCategoryHint,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          errorText: errors['subSubCategoryId'],
+                          errorText: _getLocalizedError(l10n, errors, 'subSubCategoryId'),
                         ),
                         items: _subSubCategories?.map((ssc) {
                               return DropdownMenuItem(
@@ -276,27 +320,27 @@ class _ProjectDetailsStepViewState
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Project Type *',
-                style: TextStyle(
+              Text(
+                l10n.projectTypeLabel,
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF111827),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                initialValue: draft.projectType,
+                value: draft.projectType,
                 decoration: InputDecoration(
-                  hintText: 'Select project type',
+                  hintText: l10n.selectProjectTypeHint,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  errorText: errors['projectType'],
+                  errorText: _getLocalizedError(l10n, errors, 'projectType'),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'fixed', child: Text('Fixed Price')),
-                  DropdownMenuItem(value: 'hourly', child: Text('Hourly Rate')),
-                  DropdownMenuItem(value: 'bidding', child: Text('Bidding')),
+                items: [
+                  DropdownMenuItem(value: 'fixed', child: Text(l10n.projectTypeFixed)),
+                  DropdownMenuItem(value: 'hourly', child: Text(l10n.projectTypeHourly)),
+                  DropdownMenuItem(value: 'bidding', child: Text(l10n.projectTypeBidding)),
                 ],
                 onChanged: (value) {
                   ref.read(projectWizardProvider.notifier).updateProjectType(value);
@@ -314,11 +358,11 @@ class _ProjectDetailsStepViewState
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Budget (JOD) *',
+                labelText: l10n.budgetJodLabel,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                errorText: errors['budget'],
+                errorText: _getLocalizedError(l10n, errors, 'budget'),
               ),
               onChanged: (value) {
                 final budget = double.tryParse(value);
@@ -331,11 +375,11 @@ class _ProjectDetailsStepViewState
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Hourly Rate (JOD) *',
+                labelText: l10n.hourlyRateJodLabel,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                errorText: errors['hourlyRate'],
+                errorText: _getLocalizedError(l10n, errors, 'hourlyRate'),
               ),
               onChanged: (value) {
                 final rate = double.tryParse(value);
@@ -351,11 +395,11 @@ class _ProjectDetailsStepViewState
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                     decoration: InputDecoration(
-                      labelText: 'Min Budget (JOD) *',
+                      labelText: l10n.minBudgetJodLabel,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      errorText: errors['budgetMin'],
+                      errorText: _getLocalizedError(l10n, errors, 'budgetMin'),
                     ),
                     onChanged: (value) {
                       final min = double.tryParse(value);
@@ -373,11 +417,11 @@ class _ProjectDetailsStepViewState
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                     decoration: InputDecoration(
-                      labelText: 'Max Budget (JOD) *',
+                      labelText: l10n.maxBudgetJodLabel,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      errorText: errors['budgetMax'],
+                      errorText: _getLocalizedError(l10n, errors, 'budgetMax'),
                     ),
                     onChanged: (value) {
                       final max = double.tryParse(value);
@@ -398,26 +442,26 @@ class _ProjectDetailsStepViewState
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Duration Type *',
-                style: TextStyle(
+              Text(
+                l10n.durationTypeLabel,
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF111827),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                initialValue: draft.durationType,
+                value: draft.durationType,
                 decoration: InputDecoration(
-                  hintText: 'Select duration type',
+                  hintText: l10n.selectDurationTypeHint,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  errorText: errors['durationType'],
+                  errorText: _getLocalizedError(l10n, errors, 'durationType'),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'days', child: Text('Days')),
-                  DropdownMenuItem(value: 'hours', child: Text('Hours')),
+                items: [
+                  DropdownMenuItem(value: 'days', child: Text(l10n.durationTypeDays)),
+                  DropdownMenuItem(value: 'hours', child: Text(l10n.durationTypeHours)),
                 ],
                 onChanged: (value) {
                   ref.read(projectWizardProvider.notifier).updateDuration(
@@ -439,11 +483,11 @@ class _ProjectDetailsStepViewState
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
-                labelText: 'Duration (Days) *',
+                labelText: l10n.durationDaysLabel,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                errorText: errors['durationDays'],
+                errorText: _getLocalizedError(l10n, errors, 'durationDays'),
               ),
               onChanged: (value) {
                 final days = int.tryParse(value);
@@ -460,11 +504,11 @@ class _ProjectDetailsStepViewState
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
-                labelText: 'Duration (Hours) *',
+                labelText: l10n.durationHoursLabel,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                errorText: errors['durationHours'],
+                errorText: _getLocalizedError(l10n, errors, 'durationHours'),
               ),
               onChanged: (value) {
                 final hours = int.tryParse(value);
@@ -483,8 +527,8 @@ class _ProjectDetailsStepViewState
           TextFormField(
             controller: _skillsController,
             decoration: InputDecoration(
-              labelText: 'Preferred Skills (comma-separated)',
-              hintText: 'e.g., Flutter, Design, Marketing',
+              labelText: l10n.preferredSkillsLabel,
+              hintText: l10n.preferredSkillsHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

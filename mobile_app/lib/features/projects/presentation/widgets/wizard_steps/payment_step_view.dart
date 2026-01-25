@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../core/theme/app_spacing.dart';
+import '../../../../../../l10n/app_localizations.dart';
 import '../../providers/project_wizard_provider.dart';
 
 class PaymentStepView extends ConsumerWidget {
@@ -12,8 +13,22 @@ class PaymentStepView extends ConsumerWidget {
     required this.onSubmit,
   });
 
+  String _formatProjectType(AppLocalizations l10n, String? type) {
+    switch (type) {
+      case 'fixed':
+        return l10n.projectTypeFixed;
+      case 'hourly':
+        return l10n.projectTypeHourly;
+      case 'bidding':
+        return l10n.projectTypeBidding;
+      default:
+        return l10n.naNotAvailable;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(projectWizardProvider);
 
     // Calculate amount based on project type
@@ -32,18 +47,18 @@ class PaymentStepView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Payment Summary',
-            style: TextStyle(
+          Text(
+            l10n.paymentSummary,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF111827),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
-            'Review your project details and proceed to payment.',
-            style: TextStyle(
+          Text(
+            l10n.paymentSummaryDescription,
+            style: const TextStyle(
               color: Color(0xFF6B7280),
               fontSize: 14,
             ),
@@ -79,7 +94,7 @@ class PaymentStepView extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        draft.title ?? 'N/A',
+                        draft.title ?? l10n.naNotAvailable,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -94,21 +109,21 @@ class PaymentStepView extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
 
                 // Project Type
-                _buildSummaryRow('Project Type', _formatProjectType(draft.projectType)),
+                _buildSummaryRow(l10n.projectTypeLabel.replaceAll(' *', ''), _formatProjectType(l10n, draft.projectType)),
                 const SizedBox(height: AppSpacing.sm),
 
                 // Amount
                 if (amount != null) ...[
-                  _buildSummaryRow('Amount', formatter.format(amount)),
+                  _buildSummaryRow(l10n.amountLabel, formatter.format(amount)),
                   const SizedBox(height: AppSpacing.sm),
                 ],
 
                 // Duration
                 _buildSummaryRow(
-                  'Duration',
+                  l10n.durationLabel,
                   draft.durationType == 'days'
-                      ? '${draft.durationDays} days'
-                      : '${draft.durationHours} hours',
+                      ? l10n.daysCount(draft.durationDays ?? 0)
+                      : l10n.hoursCount(draft.durationHours ?? 0),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 const Divider(),
@@ -119,9 +134,9 @@ class PaymentStepView extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Total',
-                        style: TextStyle(
+                      Text(
+                        l10n.totalLabel,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: Color(0xFF111827),
@@ -160,7 +175,7 @@ class PaymentStepView extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    'You will be redirected to Stripe to complete the payment securely.',
+                    l10n.stripePaymentInfo,
                     style: TextStyle(
                       color: const Color(0xFF6D5FFD).withValues(alpha: 0.9),
                       fontSize: 12,
@@ -196,18 +211,5 @@ class PaymentStepView extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  String _formatProjectType(String? type) {
-    switch (type) {
-      case 'fixed':
-        return 'Fixed Price';
-      case 'hourly':
-        return 'Hourly Rate';
-      case 'bidding':
-        return 'Bidding';
-      default:
-        return 'N/A';
-    }
   }
 }

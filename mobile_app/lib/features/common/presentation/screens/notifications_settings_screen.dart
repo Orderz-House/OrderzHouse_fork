@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -43,6 +44,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
     final messages = ref.watch(messagesEnabledProvider);
     final payments = ref.watch(paymentsEnabledProvider);
     final promotions = ref.watch(promotionsEnabledProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,7 +53,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
           children: [
             // Header
             AppHeader(
-              title: 'Notifications',
+              title: l10n.notifications,
               onBack: () => _handleBack(context),
             ),
 
@@ -83,7 +85,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Enable Notifications',
+                                  l10n.enableNotifications,
                                   style: AppTextStyles.headlineSmall.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.bold,
@@ -91,7 +93,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: AppSpacing.xs),
                                 Text(
-                                  'Receive push notifications on your device',
+                                  l10n.notificationsSubtitle,
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
@@ -131,8 +133,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                         child: Column(
                           children: [
                             _NotificationCategoryTile(
-                              title: 'Project Updates',
-                              subtitle: 'Notifications about your projects',
+                              title: l10n.projects,
+                              subtitle: l10n.noProjectsMessage,
                               value: projectUpdates,
                               onChanged: (value) {
                                 ref.read(projectUpdatesEnabledProvider.notifier).state = value;
@@ -141,8 +143,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                             ),
                             const Divider(height: 1, color: AppColors.borderLight),
                             _NotificationCategoryTile(
-                              title: 'Messages',
-                              subtitle: 'Direct messages and conversations',
+                              title: l10n.messages,
+                              subtitle: l10n.noNotificationsMessage,
                               value: messages,
                               onChanged: (value) {
                                 ref.read(messagesEnabledProvider.notifier).state = value;
@@ -151,8 +153,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                             ),
                             const Divider(height: 1, color: AppColors.borderLight),
                             _NotificationCategoryTile(
-                              title: 'Payments',
-                              subtitle: 'Payment updates and transactions',
+                              title: l10n.payments,
+                              subtitle: l10n.transactionHistory,
                               value: payments,
                               onChanged: (value) {
                                 ref.read(paymentsEnabledProvider.notifier).state = value;
@@ -161,8 +163,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                             ),
                             const Divider(height: 1, color: AppColors.borderLight),
                             _NotificationCategoryTile(
-                              title: 'Promotions',
-                              subtitle: 'Special offers and announcements',
+                              title: l10n.offers,
+                              subtitle: l10n.inviteFriends,
                               value: promotions,
                               onChanged: (value) {
                                 ref.read(promotionsEnabledProvider.notifier).state = value;

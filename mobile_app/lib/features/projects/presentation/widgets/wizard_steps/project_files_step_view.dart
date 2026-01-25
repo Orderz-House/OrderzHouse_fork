@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../../../core/theme/app_spacing.dart';
+import '../../../../../../l10n/app_localizations.dart';
 import '../../providers/project_wizard_provider.dart';
 
 class ProjectFilesStepView extends ConsumerWidget {
@@ -14,6 +15,7 @@ class ProjectFilesStepView extends ConsumerWidget {
   });
 
   Future<void> _pickFiles(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
@@ -32,8 +34,8 @@ class ProjectFilesStepView extends ConsumerWidget {
         if (totalFiles > 5) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Maximum 5 files allowed. Please remove some files first.'),
+              SnackBar(
+                content: Text(l10n.maxFilesAllowed(5)),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -48,7 +50,7 @@ class ProjectFilesStepView extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to pick files: $e'),
+            content: Text('${l10n.failedToPickFiles}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -64,6 +66,7 @@ class ProjectFilesStepView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(projectWizardProvider);
 
     return SingleChildScrollView(
@@ -71,18 +74,18 @@ class ProjectFilesStepView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Project Files',
-            style: TextStyle(
+          Text(
+            l10n.projectFiles,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF111827),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
-            'Add optional files related to your project (max 5 files).',
-            style: TextStyle(
+          Text(
+            l10n.projectFilesDescription,
+            style: const TextStyle(
               color: Color(0xFF6B7280),
               fontSize: 14,
             ),
@@ -96,7 +99,7 @@ class ProjectFilesStepView extends ConsumerWidget {
                 : () => _pickFiles(context, ref),
             icon: const Icon(Icons.add),
             label: Text(
-              'Add Files (${draft.projectFiles.length}/5)',
+              l10n.addFilesCount(draft.projectFiles.length, 5),
             ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(
@@ -120,10 +123,10 @@ class ProjectFilesStepView extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'No files added yet',
-                  style: TextStyle(
+                  l10n.noFilesAddedYet,
+                  style: const TextStyle(
                     color: Color(0xFF6B7280),
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -37,29 +38,28 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Future<void> _handleDeleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
     // Show final confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Are you sure?'),
-        content: const Text(
-          'This action cannot be undone. Your account and all associated data will be permanently deleted.',
-        ),
+        title: Text(l10n.confirmDeleteAccount),
+        content: Text(l10n.deleteAccountWarning),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.error,
             ),
-            child: const Text('Delete Account'),
+            child: Text(l10n.deleteAccount),
           ),
         ],
       ),
@@ -81,10 +81,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         print('✅ [DeleteAccountScreen] Account deleted successfully');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account deleted successfully'),
+            SnackBar(
+              content: Text(l10n.accountDeleted),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+              duration: const Duration(seconds: 2),
             ),
           );
           // Navigate to login (logout already cleared tokens)
@@ -97,7 +97,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(error ?? 'Failed to delete account'),
+              content: Text(error ?? l10n.somethingWentWrong),
               backgroundColor: AppColors.error,
             ),
           );
@@ -109,7 +109,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting account: ${e.toString()}'),
+            content: Text('${l10n.error}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -119,6 +119,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -126,7 +128,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           children: [
             // Header
             AppHeader(
-              title: 'Delete Account',
+              title: l10n.deleteAccount,
               onBack: _handleBack,
             ),
 
@@ -138,24 +140,25 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Warning Card
-                    _WarningCard(),
+                    _WarningCard(l10n: l10n),
                     const SizedBox(height: AppSpacing.lg),
 
                     // What will be deleted
-                    _WhatWillBeDeletedCard(),
+                    _WhatWillBeDeletedCard(l10n: l10n),
                     const SizedBox(height: AppSpacing.xl),
 
                     // Confirmation step
                     _ConfirmationCard(
                       controller: _confirmationController,
                       onChanged: () => setState(() {}),
+                      l10n: l10n,
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
                     // Delete button
                     PrimaryGradientButton(
                       onPressed: _canDelete && !_isDeleting ? _handleDeleteAccount : null,
-                      label: 'Delete Account',
+                      label: l10n.deleteAccount,
                       isLoading: _isDeleting,
                       height: 54,
                       borderRadius: 16,
@@ -172,6 +175,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 }
 
 class _WarningCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  
+  const _WarningCard({required this.l10n});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -202,7 +209,7 @@ class _WarningCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Delete your account',
+                  l10n.deleteAccount,
                   style: AppTextStyles.headlineSmall.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
@@ -210,7 +217,7 @@ class _WarningCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'This will permanently delete your account and all your data (projects, posts, payments history, etc.). This action can\'t be undone.',
+                  l10n.deleteAccountWarning,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -226,6 +233,10 @@ class _WarningCard extends StatelessWidget {
 }
 
 class _WhatWillBeDeletedCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  
+  const _WhatWillBeDeletedCard({required this.l10n});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -246,17 +257,17 @@ class _WhatWillBeDeletedCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'What will be deleted',
+            l10n.warning,
             style: AppTextStyles.headlineSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const _BulletPoint('Account profile'),
-          const _BulletPoint('Posts/projects/content'),
-          const _BulletPoint('Payment history'),
-          const _BulletPoint('Referrals & rewards'),
+          _BulletPoint(l10n.profile),
+          _BulletPoint(l10n.projects),
+          _BulletPoint(l10n.transactionHistory),
+          _BulletPoint(l10n.referralCode),
         ],
       ),
     );
@@ -304,10 +315,12 @@ class _BulletPoint extends StatelessWidget {
 class _ConfirmationCard extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onChanged;
+  final AppLocalizations l10n;
 
   const _ConfirmationCard({
     required this.controller,
     required this.onChanged,
+    required this.l10n,
   });
 
   @override
@@ -330,7 +343,7 @@ class _ConfirmationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Confirmation',
+            l10n.confirm,
             style: AppTextStyles.headlineSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
@@ -338,7 +351,7 @@ class _ConfirmationCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Type "DELETE" to confirm',
+            l10n.typeDeleteToConfirm,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

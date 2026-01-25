@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../../../core/theme/app_spacing.dart';
+import '../../../../../../l10n/app_localizations.dart';
 import '../../providers/project_wizard_provider.dart';
 
 class ProjectCoverStepView extends ConsumerWidget {
@@ -14,6 +15,7 @@ class ProjectCoverStepView extends ConsumerWidget {
   });
 
   Future<void> _pickImage(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     try {
       final pickedFile = await picker.pickImage(
@@ -30,7 +32,7 @@ class ProjectCoverStepView extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to pick image: $e'),
+            content: Text('${l10n.failedToPickImage}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -40,6 +42,7 @@ class ProjectCoverStepView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(projectWizardProvider);
 
     return SingleChildScrollView(
@@ -47,18 +50,18 @@ class ProjectCoverStepView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Project Cover Image',
-            style: TextStyle(
+          Text(
+            l10n.projectCoverImage,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF111827),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
-            'Add an optional cover image for your project. This will help attract freelancers.',
-            style: TextStyle(
+          Text(
+            l10n.coverImageDescription,
+            style: const TextStyle(
               color: Color(0xFF6B7280),
               fontSize: 14,
             ),
@@ -93,9 +96,9 @@ class ProjectCoverStepView extends ConsumerWidget {
                               fit: BoxFit.cover,
                             ),
                           ),
-                          Positioned(
+                          PositionedDirectional(
                             top: 8,
-                            right: 8,
+                            end: 8,
                             child: Container(
                               decoration: const BoxDecoration(
                                 color: Colors.red,
@@ -121,7 +124,7 @@ class ProjectCoverStepView extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            'Tap to add cover image',
+                            l10n.tapToAddCoverImage,
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,

@@ -12,6 +12,7 @@ import '../../../../core/models/payment.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../payments/data/repositories/payments_repository.dart';
 import '../../../referrals/presentation/providers/referrals_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Provider for payments repository
 final paymentsRepositoryProvider = Provider<PaymentsRepository>((ref) {
@@ -89,6 +90,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = ref.watch(authStateProvider).user;
     final roleId = user?.roleId ?? 0;
     final isClient = roleId == 2;
@@ -150,6 +152,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     int roleId,
     String userEmail,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
       onRefresh: () async {
         final filter = ref.read(_selectedFilterProvider);
@@ -214,9 +217,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                     ),
                     const Spacer(),
                     // Title
-                    const Text(
-                      'Payments',
-                      style: TextStyle(
+                    Text(
+                      l10n.payments,
+                      style: const TextStyle(
                         color: Color(0xFF111827),
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
@@ -290,7 +293,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         size: 18,
                       ),
                       label: Text(
-                        _showReferAndEarn ? 'Hide Refer & Earn' : 'Refer & Earn',
+                        l10n.referAndEarn,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -311,6 +314,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildBalanceHero(BuildContext context, double balance, bool isClient) {
+    final l10n = AppLocalizations.of(context)!;
     final numberFormat = NumberFormat.currency(
       symbol: '',
       decimalDigits: 2,
@@ -323,7 +327,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         children: [
           // Label
           Text(
-            isClient ? 'Total Spent' : 'Available Balance',
+            isClient ? l10n.totalEarnings : l10n.availableBalance,
             style: const TextStyle(
               color: Color(0xFF6B7280),
               fontSize: 14,
@@ -355,9 +359,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Updated today',
-                style: TextStyle(
+              Text(
+                l10n.today,
+                style: const TextStyle(
                   color: Color(0xFF6B7280),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -371,6 +375,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildReferAndEarnCard(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final referralsAsync = ref.watch(myReferralsProvider);
     
     return referralsAsync.when(
@@ -406,23 +411,28 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              'Failed to load referrals',
-              style: TextStyle(
-                color: Colors.red.shade700,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => ref.invalidate(myReferralsProvider),
-              child: const Text('Retry'),
-            ),
-          ],
+        child: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            return Column(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 32),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.failedToLoad,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => ref.invalidate(myReferralsProvider),
+                  child: Text(l10n.retry),
+                ),
+              ],
+            );
+          },
         ),
       ),
       data: (referralInfo) {
@@ -466,9 +476,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Refer & Earn',
-                          style: TextStyle(
+                        Text(
+                          l10n.referAndEarn,
+                          style: const TextStyle(
                             color: Color(0xFF111827),
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -476,7 +486,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Invite friends and earn rewards',
+                          l10n.inviteFriends,
                           style: TextStyle(
                             color: const Color(0xFF111827).withValues(alpha: 0.6),
                             fontSize: 13,
@@ -506,9 +516,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Your code',
-                            style: TextStyle(
+                          Text(
+                            l10n.yourReferralCode,
+                            style: const TextStyle(
                               color: Color(0xFF6B7280),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -537,9 +547,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: referralInfo.code));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Code copied to clipboard'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(l10n.codeCopied),
+                              duration: const Duration(seconds: 2),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -560,7 +570,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       ? () => _handleShareInvite(context, referralInfo)
                       : null,
                   icon: const Icon(Icons.share_rounded, size: 20),
-                  label: const Text('Share Invite'),
+                  label: Text(l10n.shareInvite),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: hasValidCode 
                         ? const Color(0xFFFB923C) 
@@ -580,7 +590,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Invited', referralInfo.invited.toString()),
+                    child: _buildStatItem(l10n.invited, referralInfo.invited.toString()),
                   ),
                   Container(
                     width: 1,
@@ -588,7 +598,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                     color: const Color(0xFFE5E7EB),
                   ),
                   Expanded(
-                    child: _buildStatItem('Successful', referralInfo.successful.toString()),
+                    child: _buildStatItem(l10n.successful, referralInfo.successful.toString()),
                   ),
                   Container(
                     width: 1,
@@ -596,7 +606,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                     color: const Color(0xFFE5E7EB),
                   ),
                   Expanded(
-                    child: _buildStatItem('Earned', '${referralInfo.earned.toStringAsFixed(1)} ${referralInfo.currency}'),
+                    child: _buildStatItem(l10n.earned, '${referralInfo.earned.toStringAsFixed(1)} ${referralInfo.currency}'),
                   ),
                 ],
               ),
@@ -610,7 +620,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Earn ${referralInfo.referrerReward.toStringAsFixed(1)} ${referralInfo.currency} when your friend buys a plan. Friend gets ${referralInfo.friendReward.toStringAsFixed(1)} ${referralInfo.currency} discount.',
+                  l10n.referralBannerText,
                   style: const TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 12,
@@ -628,10 +638,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
   /// Handle share invite action
   Future<void> _handleShareInvite(BuildContext context, ReferralInfo referralInfo) async {
+    final l10n = AppLocalizations.of(context)!;
     if (!referralInfo.hasValidCode) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Referral code not available'),
+        SnackBar(
+          content: Text(l10n.referralCodeNotAvailable),
           backgroundColor: Colors.red,
         ),
       );
@@ -640,7 +651,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
     try {
       // Build share message
-      String message = 'Join me on OrderzHouse! Use my referral code: ${referralInfo.code} to sign up and get a discount!';
+      String message = l10n.shareMessage(referralInfo.code);
       
       // Append link if available
       if (referralInfo.link != null && referralInfo.link!.isNotEmpty) {
@@ -689,6 +700,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildFilterChips(BuildContext context, WidgetRef ref, bool isFreelancer) {
+    final l10n = AppLocalizations.of(context)!;
     final selectedFilter = ref.watch(_selectedFilterProvider);
     
     final filters = isFreelancer
@@ -701,12 +713,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         children: filters.map((filter) {
           final isSelected = selectedFilter == filter;
           final label = filter == 'all'
-              ? 'All'
+              ? l10n.all
               : filter == 'plan'
-                  ? 'Plans'
+                  ? l10n.subscriptions
                   : filter == 'project'
-                      ? 'Projects'
-                      : 'Wallet';
+                      ? l10n.projects
+                      : l10n.balance;
           
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -736,6 +748,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     List<Payment> transactions,
     bool isClient,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -743,9 +756,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
+            Text(
+              l10n.transactionHistory,
+              style: const TextStyle(
                 color: Color(0xFF111827),
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -755,24 +768,24 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               onPressed: () {
                 // Navigate to details if exists, otherwise no-op
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('View all transactions'),
+                  SnackBar(
+                    content: Text(l10n.viewDetails),
                   ),
                 );
               },
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'View Details',
-                    style: TextStyle(
+                    l10n.viewDetails,
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
+                  const SizedBox(width: 4),
+                  const Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
                     color: AppColors.primary,
@@ -785,12 +798,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         const SizedBox(height: 16),
         // Transactions list
         if (transactions.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32.0),
             child: Center(
               child: Text(
-                'No recent transactions',
-                style: TextStyle(
+                l10n.noTransactions,
+                style: const TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontSize: 14,
                 ),

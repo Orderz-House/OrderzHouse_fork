@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -145,6 +146,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return PopScope(
       canPop: false, // Handle back button ourselves
@@ -213,7 +215,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       const SizedBox(height: AppSpacing.xl),
                       // Title
                       Text(
-                        'Enter OTP code',
+                        l10n.enterOtp,
                         style: AppTextStyles.displayMedium.copyWith(
                           color: const Color(0xFF111827),
                           fontWeight: FontWeight.bold,
@@ -223,7 +225,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       // Subtitle
                       Text(
-                        'OTP code has been send to\n${widget.email}',
+                        l10n.otpSentTo(widget.email),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: const Color(0xFF6B7280),
                         ),
@@ -247,7 +249,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       const SizedBox(height: AppSpacing.xxl),
                       // Verify button
                       PrimaryGradientButton(
-                        label: 'Verify',
+                        label: l10n.verify,
                         onPressed: _handleVerify,
                         isLoading: authState.isLoading,
                         width: double.infinity,
@@ -260,7 +262,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Didn\'t get OTP? ',
+                            '${l10n.resendCode}? ',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: const Color(0xFF6B7280),
                             ),
@@ -274,7 +276,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Resend OTP',
+                                l10n.resendCode,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
@@ -283,7 +285,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                             )
                           else
                             Text(
-                              'Resend OTP (${_resendTimer}s)',
+                              l10n.resendIn(_resendTimer),
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: const Color(0xFF9CA3AF),
                               ),

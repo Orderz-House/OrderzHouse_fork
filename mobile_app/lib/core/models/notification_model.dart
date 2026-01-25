@@ -1,12 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+/// Notification types matching backend NOTIFICATION_TYPES
+class NotificationType {
+  static const String projectCreated = 'project_created';
+  static const String projectStatusChanged = 'project_status_changed';
+  
+  static const String offerSubmitted = 'offer_submitted';
+  static const String offerApproved = 'offer_approved';
+  static const String offerRejected = 'offer_rejected';
+  
+  static const String freelancerAssigned = 'freelancer_assigned';
+  static const String freelancerRemoved = 'freelancer_removed';
+  
+  static const String workSubmitted = 'work_submitted';
+  static const String workApproved = 'work_approved';
+  static const String workRevisionRequested = 'work_revision_requested';
+  
+  static const String escrowCreated = 'escrow_created';
+  static const String escrowReleased = 'escrow_released';
+  
+  static const String paymentReleased = 'payment_released';
+  static const String paymentApproved = 'payment_approved';
+  static const String paymentRejected = 'payment_rejected';
+  static const String paymentPending = 'payment_pending';
+  
+  static const String taskRequested = 'task_requested';
+  static const String taskRequestAccepted = 'task_request_accepted';
+  static const String taskRequestRejected = 'task_request_rejected';
+  static const String taskCompleted = 'task_completed';
+  static const String taskNeedsApproval = 'task_needs_approval';
+  
+  static const String userRegistered = 'user_registered';
+  static const String userVerified = 'user_verified';
+  static const String userVerificationRejected = 'user_verification_rejected';
+  
+  static const String reviewSubmitted = 'review_submitted';
+  static const String messageReceived = 'message_received';
+  
+  static const String appointmentScheduled = 'appointment_scheduled';
+  static const String appointmentCancelled = 'appointment_cancelled';
+  static const String appointmentRequested = 'appointment_requested';
+  static const String appointmentRescheduled = 'appointment_rescheduled';
+  static const String appointmentCompleted = 'appointment_completed';
+  
+  static const String courseEnrolled = 'course_enrolled';
+  static const String subscriptionStatusChanged = 'subscription_status_changed';
+  
+  static const String systemAnnouncement = 'system_announcement';
+  static const String chatsAdmin = 'chats_admin';
+}
+
+/// Entity types from backend
+class EntityType {
+  static const String project = 'project';
+  static const String offer = 'offer';
+  static const String message = 'message';
+  static const String task = 'task';
+  static const String taskRequest = 'task_request';
+  static const String review = 'review';
+  static const String escrow = 'escrow';
+  static const String system = 'system';
+}
+
 class AppNotification {
   final int id;
   final String title;
   final String? body;
   final String? type;
   final int? referenceId;
+  final String? entityType;
   final bool isRead;
   final DateTime createdAt;
 
@@ -16,6 +79,7 @@ class AppNotification {
     this.body,
     this.type,
     this.referenceId,
+    this.entityType,
     required this.isRead,
     required this.createdAt,
   });
@@ -26,10 +90,57 @@ class AppNotification {
       title: json['title'] as String? ?? json['notification_title'] as String? ?? 'Notification',
       body: json['body'] as String? ?? json['message'] as String? ?? json['notification_body'] as String?,
       type: json['type'] as String? ?? json['notification_type'] as String?,
-      referenceId: json['reference_id'] as int? ?? json['referenceId'] as int?,
+      referenceId: json['reference_id'] as int? ?? json['referenceId'] as int? ?? json['related_entity_id'] as int?,
+      entityType: json['entity_type'] as String? ?? json['entityType'] as String?,
       isRead: json['is_read'] as bool? ?? json['read_status'] as bool? ?? json['isRead'] as bool? ?? false,
       createdAt: _dateTimeFromJson(json['created_at'] ?? json['createdAt']),
     );
+  }
+  
+  /// Check if this notification should open project details
+  bool get isProjectRelated {
+    if (entityType == EntityType.project || entityType == EntityType.escrow) return true;
+    final t = type?.toLowerCase() ?? '';
+    return t.contains('project') || 
+           t.contains('work') || 
+           t.contains('freelancer_assigned') ||
+           t.contains('freelancer_removed');
+  }
+  
+  /// Check if this notification should open applicants/offers
+  bool get isOfferRelated {
+    if (entityType == EntityType.offer) return true;
+    final t = type?.toLowerCase() ?? '';
+    return t.contains('offer');
+  }
+  
+  /// Check if this is a delivery/work notification
+  bool get isDeliveryRelated {
+    final t = type?.toLowerCase() ?? '';
+    return t == NotificationType.workSubmitted ||
+           t == NotificationType.workApproved ||
+           t == NotificationType.workRevisionRequested;
+  }
+  
+  /// Check if this is a payment notification
+  bool get isPaymentRelated {
+    if (entityType == EntityType.escrow) return true;
+    final t = type?.toLowerCase() ?? '';
+    return t.contains('payment') || t.contains('escrow');
+  }
+  
+  /// Check if this is a message notification
+  bool get isMessageRelated {
+    if (entityType == EntityType.message) return true;
+    final t = type?.toLowerCase() ?? '';
+    return t.contains('message');
+  }
+  
+  /// Check if this is a task notification
+  bool get isTaskRelated {
+    if (entityType == EntityType.task || entityType == EntityType.taskRequest) return true;
+    final t = type?.toLowerCase() ?? '';
+    return t.contains('task');
   }
 
   static DateTime _dateTimeFromJson(dynamic value) {

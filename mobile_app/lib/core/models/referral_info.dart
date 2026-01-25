@@ -6,8 +6,8 @@ class ReferralInfo {
   final int successful;
   final double earned;
   final int weeklyRemaining;
-  final double referrerReward;
-  final double friendReward;
+  /// Referral reward percentage (e.g., 0.05 = 5% of registration fee)
+  final double referrerRewardPercent;
   final String currency;
 
   const ReferralInfo({
@@ -17,10 +17,12 @@ class ReferralInfo {
     this.successful = 0,
     this.earned = 0.0,
     this.weeklyRemaining = 0,
-    this.referrerReward = 5.0,
-    this.friendReward = 5.0,
+    this.referrerRewardPercent = 0.05, // 5% of registration fee
     this.currency = 'JOD',
   });
+  
+  /// Get reward percent as display string (e.g., "5%")
+  String get rewardPercentDisplay => '${(referrerRewardPercent * 100).toStringAsFixed(0)}%';
 
   /// Check if referral code is valid (not empty or placeholder)
   bool get hasValidCode => code.isNotEmpty && code != 'N/A' && code != 'Loading...';
@@ -103,8 +105,7 @@ class ReferralInfo {
       successful: successful,
       earned: earned,
       weeklyRemaining: weeklyRemaining,
-      referrerReward: parseDouble(rules['referrerReward'] ?? json['referrerReward'] ?? 5.0),
-      friendReward: parseDouble(rules['friendReward'] ?? json['friendReward'] ?? 5.0),
+      referrerRewardPercent: parseDouble(rules['referrerRewardPercent'] ?? json['referrerRewardPercent'] ?? rules['referrerReward'] ?? json['referrerReward'] ?? 0.05),
       currency: currency,
     );
   }
@@ -118,8 +119,7 @@ class ReferralInfo {
       'successful': successful,
       'earned': earned,
       'weeklyRemaining': weeklyRemaining,
-      'referrerReward': referrerReward,
-      'friendReward': friendReward,
+      'referrerRewardPercent': referrerRewardPercent,
       'currency': currency,
     };
   }

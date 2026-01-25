@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -20,16 +21,8 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   final _formKey = GlobalKey<FormState>();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  String _selectedSubject = 'Account';
+  String _selectedSubjectKey = 'subjectAccount';
   bool _isSending = false;
-
-  final List<String> _subjects = [
-    'Account',
-    'Payments',
-    'Projects',
-    'Bug',
-    'Other',
-  ];
 
   @override
   void dispose() {
@@ -48,19 +41,21 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   }
 
   Future<void> _copyEmail() async {
+    final l10n = AppLocalizations.of(context)!;
     const email = 'support@orderzhouse.com';
     await Clipboard.setData(const ClipboardData(text: email));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email copied to clipboard'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(l10n.copiedToClipboard),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
   Future<void> _openMailto() async {
+    final l10n = AppLocalizations.of(context)!;
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: 'support@orderzhouse.com',
@@ -71,13 +66,14 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open email client')),
+          SnackBar(content: Text(l10n.somethingWentWrong)),
         );
       }
     }
   }
 
   Future<void> _handleSend() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSending = true);
@@ -85,7 +81,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     try {
       // TODO: Implement API call
       // await ref.read(supportRepositoryProvider).sendTicket(
-      //   subject: _selectedSubject,
+      //   subject: _selectedSubjectKey,
       //   message: _messageController.text,
       // );
 
@@ -95,10 +91,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Message sent! We\'ll reply by email.'),
+        SnackBar(
+          content: Text(l10n.messageSent),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
 
@@ -107,7 +103,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error sending message: ${e.toString()}'),
+            content: Text('${l10n.error}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -119,8 +115,29 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     }
   }
 
+  List<Map<String, String>> _getSubjects(AppLocalizations l10n) {
+    return [
+      {'key': 'account', 'label': l10n.profile},
+      {'key': 'payments', 'label': l10n.payments},
+      {'key': 'projects', 'label': l10n.projects},
+      {'key': 'bug', 'label': l10n.error},
+      {'key': 'other', 'label': l10n.other},
+    ];
+  }
+
+  String _getSelectedLabel(AppLocalizations l10n) {
+    final subjects = _getSubjects(l10n);
+    return subjects.firstWhere(
+      (s) => s['key'] == _selectedSubjectKey,
+      orElse: () => subjects.first,
+    )['label']!;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final subjects = _getSubjects(l10n);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -128,7 +145,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
           children: [
             // Header
             AppHeader(
-              title: 'Support',
+              title: l10n.support,
               onBack: _handleBack,
             ),
 
@@ -160,7 +177,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Need help?',
+                              l10n.howCanWeHelp,
                               style: AppTextStyles.headlineSmall.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
@@ -168,7 +185,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'Send us a message and we\'ll reply by email.',
+                              l10n.supportSubtitle,
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.textSecondary,
                                 height: 1.5,
@@ -188,19 +205,20 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
 
                       // In-app Form Card
                       _InAppFormCard(
-                        selectedSubject: _selectedSubject,
-                        subjects: _subjects,
+                        selectedSubject: _getSelectedLabel(l10n),
+                        subjects: subjects,
                         messageController: _messageController,
                         onSubjectChanged: (value) {
-                          setState(() => _selectedSubject = value!);
+                          setState(() => _selectedSubjectKey = value!);
                         },
+                        l10n: l10n,
                       ),
                       const SizedBox(height: AppSpacing.xl),
 
                       // Send Button
                       PrimaryGradientButton(
                         onPressed: _isSending ? null : _handleSend,
-                        label: 'Send',
+                        label: l10n.submit,
                         isLoading: _isSending,
                         height: 54,
                         borderRadius: 16,
@@ -284,15 +302,17 @@ class _EmailSupportCard extends StatelessWidget {
 
 class _InAppFormCard extends StatelessWidget {
   final String selectedSubject;
-  final List<String> subjects;
+  final List<Map<String, String>> subjects;
   final TextEditingController messageController;
   final ValueChanged<String?> onSubjectChanged;
+  final AppLocalizations l10n;
 
   const _InAppFormCard({
     required this.selectedSubject,
     required this.subjects,
     required this.messageController,
     required this.onSubjectChanged,
+    required this.l10n,
   });
 
   @override
@@ -315,7 +335,7 @@ class _InAppFormCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Send a message',
+            l10n.sendMessage,
             style: AppTextStyles.headlineSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
@@ -324,9 +344,12 @@ class _InAppFormCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           // Subject dropdown
           DropdownButtonFormField<String>(
-            initialValue: selectedSubject,
+            value: subjects.firstWhere(
+              (s) => s['label'] == selectedSubject,
+              orElse: () => subjects.first,
+            )['key'],
             decoration: InputDecoration(
-              labelText: 'Subject',
+              labelText: l10n.category,
               labelStyle: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -349,8 +372,8 @@ class _InAppFormCard extends StatelessWidget {
             ),
             items: subjects.map((subject) {
               return DropdownMenuItem(
-                value: subject,
-                child: Text(subject),
+                value: subject['key'],
+                child: Text(subject['label']!),
               );
             }).toList(),
             onChanged: onSubjectChanged,
@@ -361,11 +384,11 @@ class _InAppFormCard extends StatelessWidget {
             controller: messageController,
             maxLines: 6,
             decoration: InputDecoration(
-              labelText: 'Message',
+              labelText: l10n.yourMessage,
               labelStyle: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
-              hintText: 'Describe your issue or question...',
+              hintText: l10n.describeYourProject,
               hintStyle: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textTertiary,
               ),
@@ -385,10 +408,10 @@ class _InAppFormCard extends StatelessWidget {
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter a message';
+                return l10n.fieldRequired;
               }
               if (value.trim().length < 10) {
-                return 'Message must be at least 10 characters';
+                return l10n.minLength(10);
               }
               return null;
             },

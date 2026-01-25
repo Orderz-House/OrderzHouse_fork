@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -30,6 +31,9 @@ class FreelancerHomeScreen extends ConsumerWidget {
     final myProjectsAsync = ref.watch(myProjectsProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
     final balanceAsync = ref.watch(balanceFromHistoryProvider);
+    final workspaceAsync = ref.watch(workspaceItemsProvider);
+    final selectedTab = ref.watch(workspaceTabProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return AppScaffold(
       body: RefreshIndicator(
@@ -54,7 +58,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
 
               // B) SEARCH BAR
               HomeSearchBar(
-                hintText: 'Search projects, categories',
+                hintText: l10n.searchProjects,
                 onFilterTap: () {
                   // TODO: Show filter dialog
                 },
@@ -63,18 +67,37 @@ class FreelancerHomeScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
 
               // C) HERO ACTION CARD
-              _buildHeroCard(context, ref, myProjectsAsync, balanceAsync),
+              _buildHeroCard(context, ref, myProjectsAsync, balanceAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
 
               // D) QUICK ACTIONS ROW
-              _buildQuickActions(context),
+              _buildQuickActions(context, l10n),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // E) YOUR WORKSPACE SECTION
+              SectionTitleRow(
+                title: l10n.yourWorkspace,
+                onSeeAllTap: () {
+                  context.go('/freelancer/projects');
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Tabs: Action Required / Active
+              _buildWorkspaceTabs(context, ref, selectedTab, l10n),
+
+              const SizedBox(height: AppSpacing.md),
+
+              _buildWorkspaceContent(context, ref, workspaceAsync, selectedTab, l10n),
 
               const SizedBox(height: AppSpacing.xl),
 
               // F) MAIN LIST SECTION: Recommended Projects
               SectionTitleRow(
-                title: 'Recommended Projects',
+                title: l10n.recommendedProjects,
                 onSeeAllTap: () {
                   context.go('/freelancer/explore');
                 },
@@ -82,33 +105,33 @@ class FreelancerHomeScreen extends ConsumerWidget {
 
               const SizedBox(height: AppSpacing.md),
 
-              _buildRecommendedProjects(context, latestProjectsAsync),
+              _buildRecommendedProjects(context, latestProjectsAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(
+      bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: [
           NavItem(
-              icon: Icons.home_rounded, title: 'Home', route: '/freelancer'),
+              icon: Icons.home_rounded, title: l10n.home, route: '/freelancer'),
           NavItem(
               icon: Icons.work_outline_rounded,
-              title: 'My Projects',
+              title: l10n.myProjects,
               route: '/freelancer/projects'),
           NavItem(
               icon: Icons.explore_rounded,
-              title: 'Explore',
+              title: l10n.explore,
               route: '/freelancer/explore'),
           NavItem(
               icon: Icons.payment_rounded,
-              title: 'Payments',
+              title: l10n.payments,
               route: '/freelancer/payments'),
           NavItem(
               icon: Icons.person_outline_rounded,
-              title: 'Profile',
+              title: l10n.profile,
               route: '/freelancer/profile'),
         ],
       ),
@@ -120,6 +143,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<Project>> myProjectsAsync,
     AsyncValue<Map<String, dynamic>> balanceAsync,
+    AppLocalizations l10n,
   ) {
     // Get balance and currency from payment history
     final balanceData = balanceAsync.when(
@@ -131,34 +155,34 @@ class FreelancerHomeScreen extends ConsumerWidget {
     final currency = balanceData['currency'] as String;
 
     return HomeHeroCardV2(
-      chipLabel: 'This Month',
+      chipLabel: l10n.balance,
       iconData: Icons.account_balance_wallet_outlined,
       onIconTap: () {
         context.go('/freelancer/payments');
       },
-      title: 'Your Balance',
+      title: l10n.yourBalance,
       bigNumber: '$currency ${balance.toStringAsFixed(2)}',
-      subtitle: 'Available to withdraw',
-      ctaLabel: 'View Earnings',
+      subtitle: l10n.availableToWithdraw,
+      ctaLabel: l10n.viewEarnings,
       onCtaTap: () {
         context.go('/freelancer/payments');
       },
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, AppLocalizations l10n) {
     return QuickActionsRow(
       actions: [
         QuickAction(
           icon: Icons.search_rounded,
-          label: 'Browse',
+          label: l10n.browseProjects,
           onTap: () {
             context.go('/freelancer/explore');
           },
         ),
         QuickAction(
           icon: Icons.description_outlined,
-          label: 'Proposals',
+          label: l10n.applicants,
           onTap: () {
             context.go('/freelancer/projects');
           },
@@ -169,13 +193,13 @@ class FreelancerHomeScreen extends ConsumerWidget {
           onTap: () {
             // TODO: Navigate to messages screen when available
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Messages coming soon')),
+              SnackBar(content: Text('Messages coming soon')),
             );
           },
         ),
         QuickAction(
           icon: Icons.file_upload_outlined,
-          label: 'Deliveries',
+          label: l10n.deliveries,
           onTap: () {
             // Navigate to deliveries (via projects screen)
             context.go('/freelancer/projects');
@@ -185,14 +209,14 @@ class FreelancerHomeScreen extends ConsumerWidget {
           icon: Icons.more_horiz_rounded,
           label: 'More',
           onTap: () {
-            _showMoreBottomSheet(context);
+            _showMoreBottomSheet(context, l10n);
           },
         ),
       ],
     );
   }
 
-  void _showMoreBottomSheet(BuildContext context) {
+  void _showMoreBottomSheet(BuildContext context, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -217,7 +241,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.payment_rounded,
                     color: AppColors.accentOrange),
-                title: const Text('Payments'),
+                title: Text(l10n.payments),
                 onTap: () {
                   Navigator.pop(context);
                   context.go('/freelancer/payments');
@@ -226,7 +250,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.notifications_outlined,
                     color: AppColors.accentOrange),
-                title: const Text('Notifications'),
+                title: Text(l10n.notifications),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/freelancer/notifications');
@@ -235,7 +259,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.settings_outlined,
                     color: AppColors.accentOrange),
-                title: const Text('Settings'),
+                title: Text(l10n.settings),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/settings');
@@ -249,16 +273,197 @@ class FreelancerHomeScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildWorkspaceTabs(BuildContext context, WidgetRef ref, WorkspaceTab selectedTab, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          _buildTabChip(context, ref, l10n.actionRequired, WorkspaceTab.actionRequired, selectedTab),
+          const SizedBox(width: AppSpacing.md),
+          _buildTabChip(context, ref, l10n.active, WorkspaceTab.active, selectedTab),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabChip(BuildContext context, WidgetRef ref, String label, WorkspaceTab tab, WorkspaceTab selectedTab) {
+    final isSelected = selectedTab == tab;
+    return GestureDetector(
+      onTap: () {
+        ref.read(workspaceTabProvider.notifier).state = tab;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [
+                    AppColors.gradientStart,
+                    AppColors.gradientEnd,
+                  ],
+                )
+              : null,
+          color: isSelected ? null : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : AppColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: isSelected ? Colors.white : AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceContent(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<Project>> workspaceAsync,
+    WorkspaceTab selectedTab,
+    AppLocalizations l10n,
+  ) {
+    return workspaceAsync.when(
+      loading: () => _buildLoadingSkeleton(),
+      error: (err, stack) => _buildWorkspaceErrorState(context, ref, l10n),
+      data: (projects) {
+        if (projects.isEmpty) {
+          return _buildEmptyWorkspace(context, selectedTab, l10n);
+        }
+
+        return SizedBox(
+          height: 220,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            scrollDirection: Axis.horizontal,
+            itemCount: projects.length, // Already limited to 5 by provider
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, index) {
+              final project = projects[index];
+              return HomeProjectCard(
+                project: project,
+                onTap: () {
+                  context.push('/project/${project.id}', extra: project);
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWorkspaceErrorState(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.failedToLoad,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton(
+              onPressed: () {
+                ref.invalidate(myProjectsProvider);
+              },
+              child: Text(l10n.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyWorkspace(BuildContext context, WorkspaceTab selectedTab, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.work_outline_rounded,
+              size: 48,
+              color: AppColors.iconGray,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              selectedTab == WorkspaceTab.actionRequired
+                  ? l10n.noActionsRequired
+                  : l10n.noActiveProjects,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildGradientButton(
+              label: l10n.browseProjects,
+              onTap: () => context.go('/freelancer/explore'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildGradientButton({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
+          ),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gradientEnd.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecommendedProjects(
     BuildContext context,
     AsyncValue<List<Project>> projectsAsync,
+    AppLocalizations l10n,
   ) {
     return projectsAsync.when(
       loading: () => _buildLoadingSkeleton(),
-      error: (err, stack) => _buildErrorState(context),
+      error: (err, stack) => _buildErrorState(context, l10n),
       data: (projects) {
         if (projects.isEmpty) {
-          return _buildEmptyState(context);
+          return _buildEmptyState(context, l10n);
         }
 
         return SizedBox(
@@ -304,7 +509,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -317,7 +522,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Failed to load projects',
+              l10n.failedToLoad,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -329,7 +534,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
                   onPressed: () {
                     ref.invalidate(latestProjectsProvider);
                   },
-                  child: const Text('Retry'),
+                  child: Text(l10n.retry),
                 );
               },
             ),
@@ -339,7 +544,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -352,7 +557,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No projects available',
+              l10n.noDataFound,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -362,7 +567,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
               onPressed: () {
                 context.go('/freelancer/explore');
               },
-              child: const Text('Explore Projects'),
+              child: Text(l10n.explore),
             ),
           ],
         ),

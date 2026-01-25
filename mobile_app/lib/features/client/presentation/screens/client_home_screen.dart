@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -20,20 +21,17 @@ import '../../../../core/models/project.dart';
 /// - User info: authStateProvider
 /// - Projects: myProjectsProvider (for counts and workspace)
 /// - Latest projects: latestProjectsProvider (for inspiration)
-class ClientHomeScreen extends ConsumerStatefulWidget {
+/// - Workspace: workspaceItemsProvider (filtered, max 5)
+class ClientHomeScreen extends ConsumerWidget {
   const ClientHomeScreen({super.key});
 
   @override
-  ConsumerState<ClientHomeScreen> createState() => _ClientHomeScreenState();
-}
-
-class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
-  String _selectedTab = 'action'; // 'action' or 'active'
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final myProjectsAsync = ref.watch(myProjectsProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
+    final workspaceAsync = ref.watch(workspaceItemsProvider);
+    final selectedTab = ref.watch(workspaceTabProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return AppScaffold(
       body: RefreshIndicator(
@@ -57,7 +55,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
               // B) SEARCH BAR
               HomeSearchBar(
-                hintText: 'Search freelancers, categories',
+                hintText: l10n.searchFreelancers,
                 onFilterTap: () {
                   // TODO: Show filter dialog
                 },
@@ -66,18 +64,18 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               // C) HERO ACTION CARD
-              _buildHeroCard(context, ref, myProjectsAsync),
+              _buildHeroCard(context, ref, myProjectsAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
 
               // D) QUICK ACTIONS ROW
-              _buildQuickActions(context),
+              _buildQuickActions(context, l10n),
 
               const SizedBox(height: AppSpacing.xl),
 
               // F) MAIN LIST SECTION: Your Workspace
               SectionTitleRow(
-                title: 'Your Workspace',
+                title: l10n.yourWorkspace,
                 onSeeAllTap: () {
                   context.go('/client/projects');
                 },
@@ -86,17 +84,17 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               const SizedBox(height: AppSpacing.md),
 
               // Tabs: Action Required / Active
-              _buildWorkspaceTabs(),
+              _buildWorkspaceTabs(context, ref, selectedTab, l10n),
 
               const SizedBox(height: AppSpacing.md),
 
-              _buildWorkspaceContent(context, myProjectsAsync),
+              _buildWorkspaceContent(context, ref, workspaceAsync, selectedTab, l10n),
 
               const SizedBox(height: AppSpacing.xl),
 
               // G) INSPIRATION SECTION
               SectionTitleRow(
-                title: 'Get Inspired',
+                title: l10n.getInspired,
                 onSeeAllTap: () {
                   context.go('/client/explore');
                 },
@@ -104,32 +102,32 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
               const SizedBox(height: AppSpacing.md),
 
-              _buildInspirationProjects(context, latestProjectsAsync),
+              _buildInspirationProjects(context, ref, latestProjectsAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(
+      bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: [
-          NavItem(icon: Icons.home_rounded, title: 'Home', route: '/client'),
+          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
           NavItem(
               icon: Icons.work_outline_rounded,
-              title: 'My Projects',
+              title: l10n.myProjects,
               route: '/client/projects'),
           NavItem(
               icon: Icons.explore_rounded,
-              title: 'Explore',
+              title: l10n.explore,
               route: '/client/explore'),
           NavItem(
               icon: Icons.payment_rounded,
-              title: 'Payments',
+              title: l10n.payments,
               route: '/client/payments'),
           NavItem(
               icon: Icons.person_outline_rounded,
-              title: 'Profile',
+              title: l10n.profile,
               route: '/client/profile'),
         ],
       ),
@@ -140,16 +138,17 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<Project>> myProjectsAsync,
+    AppLocalizations l10n,
   ) {
     return HomeHeroCardV2(
-      chipLabel: 'Action Center',
+      chipLabel: l10n.actionRequired,
       iconData: Icons.work_outline_rounded,
       onIconTap: () {
         context.go('/client/projects');
       },
-      title: 'Manage your projects',
-      subtitle: 'Track offers, deliveries and payments',
-      ctaLabel: 'Post a Project',
+      title: l10n.manageProjects,
+      subtitle: l10n.viewProjects,
+      ctaLabel: l10n.postProject,
       ctaIcon: Icons.add_rounded,
       onCtaTap: () {
         context.go('/create-project');
@@ -157,33 +156,33 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, AppLocalizations l10n) {
     return QuickActionsRow(
       actions: [
         QuickAction(
           icon: Icons.add_circle_outline_rounded,
-          label: 'Post',
+          label: l10n.postProject,
           onTap: () {
             context.go('/create-project');
           },
         ),
         QuickAction(
           icon: Icons.work_outline_rounded,
-          label: 'Projects',
+          label: l10n.projects,
           onTap: () {
             context.go('/client/projects');
           },
         ),
         QuickAction(
           icon: Icons.people_outline_rounded,
-          label: 'Proposals',
+          label: l10n.applicants,
           onTap: () {
             context.go('/client/projects');
           },
         ),
         QuickAction(
           icon: Icons.payment_outlined,
-          label: 'Payments',
+          label: l10n.payments,
           onTap: () {
             context.go('/client/payments');
           },
@@ -192,14 +191,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           icon: Icons.more_horiz_rounded,
           label: 'More',
           onTap: () {
-            _showMoreBottomSheet(context);
+            _showMoreBottomSheet(context, l10n);
           },
         ),
       ],
     );
   }
 
-  void _showMoreBottomSheet(BuildContext context) {
+  void _showMoreBottomSheet(BuildContext context, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -224,7 +223,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               ListTile(
                 leading: const Icon(Icons.explore_outlined,
                     color: AppColors.accentOrange),
-                title: const Text('Explore Freelancers'),
+                title: Text(l10n.explore),
                 onTap: () {
                   Navigator.pop(context);
                   context.go('/client/explore');
@@ -233,7 +232,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               ListTile(
                 leading: const Icon(Icons.notifications_outlined,
                     color: AppColors.accentOrange),
-                title: const Text('Notifications'),
+                title: Text(l10n.notifications),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/client/notifications');
@@ -242,7 +241,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               ListTile(
                 leading: const Icon(Icons.settings_outlined,
                     color: AppColors.accentOrange),
-                title: const Text('Settings'),
+                title: Text(l10n.settings),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/settings');
@@ -256,26 +255,24 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildWorkspaceTabs() {
+  Widget _buildWorkspaceTabs(BuildContext context, WidgetRef ref, WorkspaceTab selectedTab, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         children: [
-          _buildTabChip('Action Required', 'action'),
+          _buildTabChip(context, ref, l10n.actionRequired, WorkspaceTab.actionRequired, selectedTab),
           const SizedBox(width: AppSpacing.md),
-          _buildTabChip('Active', 'active'),
+          _buildTabChip(context, ref, l10n.active, WorkspaceTab.active, selectedTab),
         ],
       ),
     );
   }
 
-  Widget _buildTabChip(String label, String value) {
-    final isSelected = _selectedTab == value;
+  Widget _buildTabChip(BuildContext context, WidgetRef ref, String label, WorkspaceTab tab, WorkspaceTab selectedTab) {
+    final isSelected = selectedTab == tab;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedTab = value;
-        });
+        ref.read(workspaceTabProvider.notifier).state = tab;
       },
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -310,30 +307,17 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildWorkspaceContent(
     BuildContext context,
-    AsyncValue<List<Project>> myProjectsAsync,
+    WidgetRef ref,
+    AsyncValue<List<Project>> workspaceAsync,
+    WorkspaceTab selectedTab,
+    AppLocalizations l10n,
   ) {
-    return myProjectsAsync.when(
+    return workspaceAsync.when(
       loading: () => _buildLoadingSkeleton(),
-      error: (err, stack) => _buildErrorState(context, 'myProjects'),
+      error: (err, stack) => _buildErrorState(context, ref, 'workspace', l10n),
       data: (projects) {
-        List<Project> filteredProjects;
-
-        if (_selectedTab == 'action') {
-          // Action Required: pending_review, pending (with proposals), completed
-          filteredProjects = projects
-              .where((p) =>
-                  p.status == 'pending_review' ||
-                  p.status == 'pending' ||
-                  p.status == 'completed')
-              .toList();
-        } else {
-          // Active: in_progress
-          filteredProjects =
-              projects.where((p) => p.status == 'in_progress').toList();
-        }
-
-        if (filteredProjects.isEmpty) {
-          return _buildEmptyWorkspace(context);
+        if (projects.isEmpty) {
+          return _buildEmptyWorkspace(context, selectedTab, l10n);
         }
 
         return SizedBox(
@@ -341,10 +325,10 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             scrollDirection: Axis.horizontal,
-            itemCount: filteredProjects.length,
+            itemCount: projects.length, // Already limited to 5 by provider
             separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, index) {
-              final project = filteredProjects[index];
+              final project = projects[index];
               return HomeProjectCard(
                 project: project,
                 onTap: () {
@@ -360,14 +344,16 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildInspirationProjects(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<List<Project>> projectsAsync,
+    AppLocalizations l10n,
   ) {
     return projectsAsync.when(
       loading: () => _buildLoadingSkeleton(),
-      error: (err, stack) => _buildErrorState(context, 'latest'),
+      error: (err, stack) => _buildErrorState(context, ref, 'latest', l10n),
       data: (projects) {
         if (projects.isEmpty) {
-          return _buildEmptyState(context);
+          return _buildEmptyState(context, l10n);
         }
 
         return SizedBox(
@@ -413,7 +399,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String providerKey) {
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, String providerKey, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -426,7 +412,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Failed to load projects',
+              l10n.failedToLoad,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -434,13 +420,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             const SizedBox(height: AppSpacing.md),
             ElevatedButton(
               onPressed: () {
-                if (providerKey == 'myProjects') {
+                if (providerKey == 'workspace') {
                   ref.invalidate(myProjectsProvider);
                 } else {
                   ref.invalidate(latestProjectsProvider);
                 }
               },
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -448,7 +434,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildEmptyWorkspace(BuildContext context) {
+  Widget _buildEmptyWorkspace(BuildContext context, WorkspaceTab selectedTab, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -461,27 +447,56 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              _selectedTab == 'action'
-                  ? 'No actions required'
-                  : 'No active projects',
+              selectedTab == WorkspaceTab.actionRequired
+                  ? l10n.noActionsRequired
+                  : l10n.noActiveProjects,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            ElevatedButton(
-              onPressed: () {
-                context.go('/create-project');
-              },
-              child: const Text('Post a Project'),
+            _buildGradientButton(
+              label: l10n.postProject,
+              onTap: () => context.go('/create-project'),
             ),
           ],
         ),
       ),
     );
   }
+  
+  Widget _buildGradientButton({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
+          ),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gradientEnd.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -494,7 +509,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Explore to get inspired',
+              l10n.getInspired,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),

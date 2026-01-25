@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -106,6 +107,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final filteredFaqs = _filteredFaqs;
 
     return Scaffold(
@@ -115,7 +117,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
           children: [
             // Header
             AppHeader(
-              title: 'Help / FAQ',
+              title: l10n.helpFaq,
               onBack: _handleBack,
             ),
             // Search Bar
@@ -125,7 +127,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search FAQs...',
+                  hintText: l10n.searchHelp,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -170,7 +172,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           Text(
-                            'No FAQs found',
+                            l10n.noResultsFound,
                             style: AppTextStyles.bodyLarge.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -205,7 +207,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
               ),
               child: PrimaryGradientButton(
                 onPressed: _isLoading ? null : _handleContactSupport,
-                label: 'Contact Support',
+                label: l10n.contactSupport,
                 isLoading: _isLoading,
                 height: 54,
                 borderRadius: 17,

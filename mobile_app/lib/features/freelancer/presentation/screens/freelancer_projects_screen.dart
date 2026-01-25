@@ -16,6 +16,7 @@ import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/freelancer_project_card.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class FreelancerProjectsScreen extends ConsumerStatefulWidget {
   const FreelancerProjectsScreen({super.key});
@@ -106,6 +107,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final projectsAsync = ref.watch(myProjectsProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
@@ -151,11 +153,11 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
                     return EmptyState(
                       icon: Icons.work_outline,
                       title: _searchController.text.isNotEmpty || _selectedStatus != null
-                          ? 'No projects found'
-                          : 'No projects yet',
+                          ? l10n.noResultsFound
+                          : l10n.noProjects,
                       message: _searchController.text.isNotEmpty || _selectedStatus != null
-                          ? 'Try adjusting your search or filters'
-                          : 'Your assigned projects will appear here',
+                          ? l10n.noResultsFound
+                          : l10n.noProjectsMessage,
                     );
                   }
 
@@ -173,14 +175,14 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(
+      bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         items: [
-          NavItem(icon: Icons.home, title: 'Home', route: '/freelancer'),
-          NavItem(icon: Icons.work, title: 'My Projects', route: '/freelancer/projects'),
-          NavItem(icon: Icons.explore, title: 'Explore', route: '/freelancer/explore'),
-          NavItem(icon: Icons.payment, title: 'Payments', route: '/freelancer/payments'),
-          NavItem(icon: Icons.person, title: 'Profile', route: '/freelancer/profile'),
+          NavItem(icon: Icons.home, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payment, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person, title: l10n.profile, route: '/freelancer/profile'),
         ],
       ),
     );
@@ -188,6 +190,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
 
   // 1) Top Bar
   Widget _buildTopBar(BuildContext context, User? user) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Container(
@@ -226,7 +229,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
             
             // Center: Title
             Text(
-              'My Projects',
+              l10n.myProjects,
               style: AppTextStyles.headlineMedium.copyWith(
                 color: const Color(0xFF111827),
                 fontWeight: FontWeight.bold,
@@ -276,6 +279,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
 
   // 2) Search + Actions Row
   Widget _buildSearchRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -298,7 +302,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search Projects',
+                  hintText: l10n.searchProjects,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF9CA3AF),
                   ),
@@ -381,7 +385,8 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
 
   // 3) Category Chips Row (Active/Pending/Completed) - pill chips matching Explore style
   Widget _buildCategoryChips() {
-    final tabs = ['All', 'Active', 'Pending', 'Completed'];
+    final l10n = AppLocalizations.of(context)!;
+    final tabs = [l10n.all, l10n.active, l10n.pending, l10n.completed];
     
     return Container(
       height: 50,
@@ -393,14 +398,14 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
         separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final tab = tabs[index];
-          final isSelected = _selectedStatus == tab || (_selectedStatus == null && tab == 'All');
+          final isSelected = _selectedStatus == tab || (_selectedStatus == null && tab == l10n.all);
           
           return AppGradientFilterChip(
             label: tab,
             selected: isSelected,
             onTap: () {
               setState(() {
-                _selectedStatus = tab == 'All' ? null : tab;
+                _selectedStatus = tab == l10n.all ? null : tab;
               });
             },
           );

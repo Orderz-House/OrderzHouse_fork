@@ -34,6 +34,7 @@ import '../../features/common/presentation/screens/health_check_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/accept_terms_screen.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/common/presentation/screens/language_selection_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -139,14 +140,23 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/project/:id',
       builder: (context, state) {
+        // Parse deep-link query parameters for notification navigation
+        final openApplicants = state.uri.queryParameters['openApplicants'] == 'true';
+        final openReceiveModal = state.uri.queryParameters['openReceiveModal'] == 'true';
+        final showDeliveries = state.uri.queryParameters['showDeliveries'] == 'true';
+        
         // Try to get project from extra, otherwise parse from path
         final project = state.extra;
         if (project != null && project is Project) {
-          return ProjectDetailsScreen(project: project);
+          return ProjectDetailsScreen(
+            project: project,
+            openApplicants: openApplicants,
+            openReceiveModal: openReceiveModal,
+            showDeliveries: showDeliveries,
+          );
         }
         final id = int.parse(state.pathParameters['id'] ?? '0');
         // Fallback: create a minimal project object (will need to fetch from API)
-        // For now, we'll show an error or fetch it
         return ProjectDetailsScreen(
           project: Project(
             id: id,
@@ -157,6 +167,9 @@ final GoRouter appRouter = GoRouter(
             status: 'pending',
             createdAt: DateTime.now(),
           ),
+          openApplicants: openApplicants,
+          openReceiveModal: openReceiveModal,
+          showDeliveries: showDeliveries,
         );
       },
     ),
@@ -241,6 +254,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings/security',
       builder: (context, state) => const SecurityCenterScreen(),
+    ),
+    GoRoute(
+      path: '/settings/language',
+      builder: (context, state) => const LanguageSelectionScreen(),
     ),
   ],
 );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/project_wizard_provider.dart';
 import '../widgets/wizard_steps/project_details_step_view.dart';
 import '../widgets/wizard_steps/project_cover_step_view.dart';
@@ -32,7 +33,47 @@ class _CreateProjectWizardPageState
     super.dispose();
   }
 
+  String _getLocalizedValidationError(AppLocalizations l10n, String error) {
+    switch (error) {
+      case 'Title is required':
+        return l10n.titleIsRequired;
+      case 'Title must be between 10 and 100 characters':
+        return l10n.titleLengthError;
+      case 'Description is required':
+        return l10n.descriptionIsRequired;
+      case 'Description must be between 100 and 2000 characters':
+        return l10n.descriptionLengthError;
+      case 'Category is required':
+        return l10n.categoryIsRequired;
+      case 'Sub-sub-category is required':
+        return l10n.subSubCategoryIsRequired;
+      case 'Project type is required':
+        return l10n.projectTypeIsRequired;
+      case 'Budget is required and must be greater than 0':
+        return l10n.budgetIsRequired;
+      case 'Hourly rate is required and must be greater than 0':
+        return l10n.hourlyRateIsRequired;
+      case 'Minimum budget is required and must be greater than 0':
+        return l10n.minBudgetIsRequired;
+      case 'Maximum budget is required and must be greater than 0':
+        return l10n.maxBudgetIsRequired;
+      case 'Maximum budget must be greater than or equal to minimum budget':
+        return l10n.maxBudgetMustBeGreater;
+      case 'Duration type is required':
+        return l10n.durationTypeIsRequired;
+      case 'Duration days is required and must be greater than 0':
+        return l10n.durationDaysIsRequired;
+      case 'Duration hours is required and must be greater than 0':
+        return l10n.durationHoursIsRequired;
+      case 'Maximum 5 files allowed':
+        return l10n.maxFilesError;
+      default:
+        return error;
+    }
+  }
+
   void _nextStep() {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.read(projectWizardProvider);
     
     // Validate current step before proceeding
@@ -41,7 +82,7 @@ class _CreateProjectWizardPageState
       // Show first error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errors.values.first),
+          content: Text(_getLocalizedValidationError(l10n, errors.values.first)),
           backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
@@ -79,6 +120,7 @@ class _CreateProjectWizardPageState
   }
 
   Future<void> _handleSubmit() async {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.read(projectWizardProvider);
     final repository = ProjectsRepository();
 
@@ -96,7 +138,7 @@ class _CreateProjectWizardPageState
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(allErrors.values.first),
+          content: Text(_getLocalizedValidationError(l10n, allErrors.values.first)),
           backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
@@ -149,8 +191,7 @@ class _CreateProjectWizardPageState
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                      'Project created but failed to upload files: ${uploadResponse.message}'),
+                  content: Text(l10n.projectCreatedButFilesFailed(uploadResponse.message ?? '')),
                   backgroundColor: AppColors.accentOrange,
                 ),
               );
@@ -162,8 +203,8 @@ class _CreateProjectWizardPageState
         if (mounted) {
           ref.read(projectWizardProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Project created successfully'),
+            SnackBar(
+              content: Text(l10n.projectCreated),
               backgroundColor: Colors.green,
             ),
           );
@@ -201,14 +242,14 @@ class _CreateProjectWizardPageState
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         } else {
-          throw Exception('Could not launch checkout URL');
+          throw Exception(l10n.couldNotLaunchCheckout);
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${l10n.error}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -222,22 +263,24 @@ class _CreateProjectWizardPageState
     }
   }
 
-  String _getActionButtonLabel() {
+  String _getActionButtonLabel(AppLocalizations l10n) {
     final draft = ref.read(projectWizardProvider);
     final totalSteps = _getTotalSteps();
 
     if (_currentStep == totalSteps - 1) {
       if (draft.projectType == 'bidding') {
-        return 'Create Project';
+        return l10n.createProject;
       } else {
-        return 'Pay with Stripe';
+        // For fixed/hourly - payment step
+        return l10n.payWithStripe;
       }
     }
-    return 'Continue';
+    return l10n.continue_;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.read(projectWizardProvider);
     final totalSteps = _getTotalSteps();
 
@@ -271,9 +314,9 @@ class _CreateProjectWizardPageState
                   ),
                   const Spacer(),
                   // Title
-                  const Text(
-                    'Create Project',
-                    style: TextStyle(
+                  Text(
+                    l10n.createProject,
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 18,
@@ -371,9 +414,9 @@ class _CreateProjectWizardPageState
                       ),
                       foregroundColor: AppColors.textPrimary,
                     ),
-                    child: const Text(
-                      'Back',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.back,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -421,7 +464,7 @@ class _CreateProjectWizardPageState
                               ),
                             )
                           : Text(
-                              _getActionButtonLabel(),
+                              _getActionButtonLabel(l10n),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,

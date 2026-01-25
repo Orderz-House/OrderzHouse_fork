@@ -179,3 +179,119 @@ final latestProjectsProvider =
 
   throw Exception(response.message ?? 'Failed to fetch latest projects');
 });
+
+/// Profile stats computed from user's projects
+/// Automatically refreshes when user changes (account switching)
+class ProfileStats {
+  final int total;
+  final int active;
+  final int completed;
+
+  const ProfileStats({
+    required this.total,
+    required this.active,
+    required this.completed,
+  });
+
+  factory ProfileStats.empty() => const ProfileStats(total: 0, active: 0, completed: 0);
+}
+
+/// Workspace tab enum
+enum WorkspaceTab { actionRequired, active }
+
+/// Provider for selected workspace tab
+final workspaceTabProvider = StateProvider<WorkspaceTab>((ref) => WorkspaceTab.actionRequired);
+
+/// Provider for workspace items (max 5) - filtered from myProjectsProvider
+/// Automatically refreshes when user changes or tab changes
+final workspaceItemsProvider = Provider<AsyncValue<List<Project>>>((ref) {
+  final projectsAsync = ref.watch(myProjectsProvider);
+  final selectedTab = ref.watch(workspaceTabProvider);
+  final authState = ref.read(authStateProvider);
+  final isFreelancer = authState.user?.roleId == 3;
+  
+  return projectsAsync.when(
+    data: (projects) {
+      List<Project> filtered;
+      
+      if (selectedTab == WorkspaceTab.actionRequired) {
+        // Action Required tab
+        if (isFreelancer) {
+          // Freelancer: pending delivery, revision requested, etc.
+          filtered = projects.where((p) {
+            final status = p.status.toLowerCase();
+            return status == 'pending_review' ||
+                   status == 'revision_requested' ||
+                   status == 'pending_delivery' ||
+                   status == 'changes_requested';
+          }).toList();
+        } else {
+          // Client: pending review (freelancer submitted), pending offers
+          filtered = projects.where((p) {
+            final status = p.status.toLowerCase();
+            return status == 'pending_review' ||
+                   status == 'pending' ||
+                   status == 'pending_approval';
+          }).toList();
+        }
+      } else {
+        // Active tab
+        filtered = projects.where((p) {
+          final status = p.status.toLowerCase();
+          return status == 'active' ||
+                 status == 'in_progress' ||
+                 status == 'in-progress' ||
+                 status == 'not_started';
+        }).toList();
+      }
+      
+      // Sort by updatedAt/createdAt (most recent first) and limit to 5
+      filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final limited = filtered.take(5).toList();
+      
+      return AsyncValue.data(limited);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stack) => AsyncValue.error(error, stack),
+  );
+});
+
+/// Provider for profile stats - derived from myProjectsProvider
+/// Watches userId so it auto-refreshes on account switch
+final profileStatsProvider = Provider<AsyncValue<ProfileStats>>((ref) {
+  final projectsAsync = ref.watch(myProjectsProvider);
+  
+  return projectsAsync.when(
+    data: (projects) {
+      // Count by status
+      int activeCount = 0;
+      int completedCount = 0;
+      
+      for (final project in projects) {
+        final status = project.status.toLowerCase();
+        
+        // Active statuses
+        if (status == 'active' || 
+            status == 'in_progress' || 
+            status == 'in-progress' ||
+            status == 'pending' ||
+            status == 'not_started' ||
+            status == 'pending_review') {
+          activeCount++;
+        }
+        // Completed status
+        else if (status == 'completed' || status == 'done' || status == 'finished') {
+          completedCount++;
+        }
+      }
+      
+      return AsyncValue.data(ProfileStats(
+        total: projects.length,
+        active: activeCount,
+        completed: completedCount,
+      ));
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stack) => AsyncValue.error(error, stack),
+  );
+});

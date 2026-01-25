@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/gradient_button.dart';
 import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_app/core/models/user.dart';
+import '../../../projects/presentation/providers/projects_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -16,6 +18,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
     final isFreelancer = user?.roleId == 3;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -24,7 +27,7 @@ class ProfileScreen extends ConsumerWidget {
         child: Column(
           children: [
             // Standard AppBar/Header (like My Projects)
-            const _ProfileTopBar(),
+            _ProfileTopBar(l10n: l10n),
             
             // Scrollable content
             Expanded(
@@ -42,8 +45,8 @@ class ProfileScreen extends ConsumerWidget {
                     _ProfileHeader(user: user),
                     const SizedBox(height: 18),
 
-                    // 2) Stats Row (placeholder stats - can be replaced with real data)
-                    _StatsRow(),
+                    // 2) Stats Row - Dynamic stats from user's projects
+                    _StatsRow(l10n: l10n),
                     const SizedBox(height: 18),
 
                     // 3) Settings List Card (original items)
@@ -52,6 +55,7 @@ class ProfileScreen extends ConsumerWidget {
                       onSettings: () => context.go('/settings'),
                       onSubscription: () => context.go('/subscription'),
                       showSubscription: isFreelancer,
+                      l10n: l10n,
                     ),
                     const SizedBox(height: 18),
 
@@ -60,25 +64,27 @@ class ProfileScreen extends ConsumerWidget {
                       onHelp: () => context.push('/help-faq'),
                       onPrivacy: () => context.push('/privacy-policy'),
                       onTerms: () => context.push('/terms-conditions'),
+                      l10n: l10n,
                     ),
                     const SizedBox(height: 18),
 
                     // 4) Logout Card (separate card, red accent)
                     _LogoutCard(
+                      l10n: l10n,
                       onLogout: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Logout'),
-                            content: const Text('Are you sure you want to logout?'),
+                            title: Text(l10n.logoutConfirmTitle),
+                            content: Text(l10n.logoutConfirmMessage),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel'),
+                                child: Text(l10n.cancel),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Logout'),
+                                child: Text(l10n.logout),
                               ),
                             ],
                           ),
@@ -98,6 +104,7 @@ class ProfileScreen extends ConsumerWidget {
                     if (isFreelancer)
                       _UpgradeCard(
                         onViewPlans: () => context.go('/subscription'),
+                        l10n: l10n,
                       ),
 
                     // Bottom padding for safe area
@@ -115,7 +122,9 @@ class ProfileScreen extends ConsumerWidget {
 
 // Standard Top Bar (matching My Projects style)
 class _ProfileTopBar extends StatelessWidget {
-  const _ProfileTopBar();
+  final AppLocalizations l10n;
+  
+  const _ProfileTopBar({required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +172,7 @@ class _ProfileTopBar extends StatelessWidget {
           
           // Center: Title
           Text(
-            'Profile',
+            l10n.profile,
             style: AppTextStyles.headlineSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -277,17 +286,41 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-// 2) Stats Row (placeholder - can be replaced with real user stats)
-class _StatsRow extends StatelessWidget {
+// 2) Stats Row - Dynamic stats from user's projects
+class _StatsRow extends ConsumerWidget {
+  final AppLocalizations l10n;
+  
+  const _StatsRow({required this.l10n});
+
   @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _StatItem(number: '0', label: 'Projects'),
-        _StatItem(number: '0', label: 'Completed'),
-        _StatItem(number: '0', label: 'Active'),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(profileStatsProvider);
+    
+    return statsAsync.when(
+      data: (stats) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatItem(number: stats.total.toString(), label: l10n.projects),
+          _StatItem(number: stats.completed.toString(), label: l10n.completed),
+          _StatItem(number: stats.active.toString(), label: l10n.active),
+        ],
+      ),
+      loading: () => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatItem(number: '—', label: l10n.projects),
+          _StatItem(number: '—', label: l10n.completed),
+          _StatItem(number: '—', label: l10n.active),
+        ],
+      ),
+      error: (_, __) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatItem(number: '—', label: l10n.projects),
+          _StatItem(number: '—', label: l10n.completed),
+          _StatItem(number: '—', label: l10n.active),
+        ],
+      ),
     );
   }
 }
@@ -332,11 +365,13 @@ class _SettingsListCard extends StatelessWidget {
   final VoidCallback onSettings;
   final VoidCallback onSubscription;
   final bool showSubscription;
+  final AppLocalizations l10n;
 
   const _SettingsListCard({
     required this.onEditProfile,
     required this.onSettings,
     required this.onSubscription,
+    required this.l10n,
     this.showSubscription = true,
   });
 
@@ -359,20 +394,20 @@ class _SettingsListCard extends StatelessWidget {
         children: [
           _SettingsListItem(
             icon: Icons.edit_rounded,
-            label: 'Edit Profile',
+            label: l10n.editProfile,
             onTap: onEditProfile,
           ),
           const _SettingsDivider(),
           _SettingsListItem(
             icon: Icons.settings_rounded,
-            label: 'Settings',
+            label: l10n.settings,
             onTap: onSettings,
           ),
           if (showSubscription) ...[
             const _SettingsDivider(),
             _SettingsListItem(
               icon: Icons.subscriptions_rounded,
-              label: 'Subscription',
+              label: l10n.subscription,
               onTap: onSubscription,
             ),
           ],
@@ -452,11 +487,13 @@ class _HelpLegalListCard extends StatelessWidget {
   final VoidCallback onHelp;
   final VoidCallback onPrivacy;
   final VoidCallback onTerms;
+  final AppLocalizations l10n;
 
   const _HelpLegalListCard({
     required this.onHelp,
     required this.onPrivacy,
     required this.onTerms,
+    required this.l10n,
   });
 
   @override
@@ -478,19 +515,19 @@ class _HelpLegalListCard extends StatelessWidget {
         children: [
           _SettingsListItem(
             icon: Icons.help_outline_rounded,
-            label: 'Help / FAQ',
+            label: l10n.helpFaq,
             onTap: onHelp,
           ),
           const _SettingsDivider(),
           _SettingsListItem(
             icon: Icons.privacy_tip_outlined,
-            label: 'Privacy Policy',
+            label: l10n.privacyPolicy,
             onTap: onPrivacy,
           ),
           const _SettingsDivider(),
           _SettingsListItem(
             icon: Icons.description_outlined,
-            label: 'Terms & Conditions',
+            label: l10n.termsAndConditions,
             onTap: onTerms,
           ),
         ],
@@ -502,8 +539,9 @@ class _HelpLegalListCard extends StatelessWidget {
 // 4) Logout Card (separate card, red accent)
 class _LogoutCard extends StatelessWidget {
   final VoidCallback onLogout;
+  final AppLocalizations l10n;
 
-  const _LogoutCard({required this.onLogout});
+  const _LogoutCard({required this.onLogout, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -537,7 +575,7 @@ class _LogoutCard extends StatelessWidget {
               // Middle: Label (red)
               Expanded(
                 child: Text(
-                  'Logout',
+                  l10n.logout,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.error,
                     fontWeight: FontWeight.w400,
@@ -562,8 +600,9 @@ class _LogoutCard extends StatelessWidget {
 // 5) Upgrade/Plans CTA Card (Full Width)
 class _UpgradeCard extends StatelessWidget {
   final VoidCallback onViewPlans;
+  final AppLocalizations l10n;
 
-  const _UpgradeCard({required this.onViewPlans});
+  const _UpgradeCard({required this.onViewPlans, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -587,7 +626,7 @@ class _UpgradeCard extends StatelessWidget {
         children: [
           // Text
           Text(
-            'Want to access more features?',
+            l10n.wantMoreFeatures,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textPrimary,
               fontSize: 15,
@@ -601,7 +640,7 @@ class _UpgradeCard extends StatelessWidget {
             height: 48,
             child: PrimaryGradientButton(
               onPressed: onViewPlans,
-              label: 'View Plans',
+              label: l10n.viewPlans,
               height: 48,
               borderRadius: 30,
               width: double.infinity, // ✅ Explicit width for button

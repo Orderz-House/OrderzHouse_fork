@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -69,6 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background, // Pure white
@@ -107,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: AppSpacing.xl),
                         // Title
                         Text(
-                          'Sign In',
+                          l10n.login,
                           style: AppTextStyles.displayMedium.copyWith(
                             color: const Color(0xFF111827),
                             fontWeight: FontWeight.bold,
@@ -117,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         // Subtitle
                         Text(
-                          'Please enter the code we just sent to email.',
+                          l10n.welcomeBack,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: const Color(0xFF6B7280),
                           ),
@@ -127,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Email input
                         _StyledTextField(
                           controller: _emailController,
-                          hint: 'Username',
+                          hint: l10n.email,
                           prefixIcon: Icons.lock_outline,
                           keyboardType: TextInputType.emailAddress,
                           validator: Validators.email,
@@ -136,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Password input
                         _StyledTextField(
                           controller: _passwordController,
-                          hint: 'Password',
+                          hint: l10n.password,
                           prefixIcon: Icons.lock_outline,
                           obscureText: _obscurePassword,
                           suffixIcon: IconButton(
@@ -155,7 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         // Forget Password link
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
                             onPressed: () {
                               // Keep existing forget password logic if exists
@@ -167,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
-                              'Forget Password?',
+                              l10n.forgotPassword,
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: const Color(0xFF6B7280),
                               ),
@@ -178,7 +180,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Sign In button
                         GradientButton(
                           onPressed: authState.isLoading ? null : _handleLogin,
-                          label: 'Sign In',
+                          label: l10n.login,
                           isLoading: authState.isLoading,
                           height: 52,
                           borderRadius: 30, // Pill shape
@@ -235,7 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Sign Up',
+                                l10n.signUp,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color:const Color(0xFFFB923C),
                                   fontWeight: FontWeight.w600,
