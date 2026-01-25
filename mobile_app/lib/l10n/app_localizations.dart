@@ -3751,6 +3751,732 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'N/A'**
   String get naNotAvailable;
+
+  /// No description provided for @offerRejectedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer rejected'**
+  String get offerRejectedMsg;
+
+  /// No description provided for @offerAcceptedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer accepted ✅'**
+  String get offerAcceptedMsg;
+
+  /// No description provided for @applicationRejectedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Application rejected'**
+  String get applicationRejectedMsg;
+
+  /// No description provided for @applicationAcceptedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Application accepted ✅'**
+  String get applicationAcceptedMsg;
+
+  /// No description provided for @failedWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: {error}'**
+  String failedWithError(Object error);
+
+  /// No description provided for @projectApprovedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Project approved ✅'**
+  String get projectApprovedMsg;
+
+  /// No description provided for @failedToApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to approve: {error}'**
+  String failedToApprove(Object error);
+
+  /// No description provided for @pleaseEnterMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a message'**
+  String get pleaseEnterMessage;
+
+  /// No description provided for @changeRequestSentMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Change request sent ✉️'**
+  String get changeRequestSentMsg;
+
+  /// No description provided for @failedToSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send request: {error}'**
+  String failedToSendRequest(Object error);
+
+  /// No description provided for @enterFeedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your feedback or change requests...'**
+  String get enterFeedbackHint;
+
+  /// No description provided for @exploreTalents.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Talents'**
+  String get exploreTalents;
+
+  /// No description provided for @noFreelancersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No freelancers found'**
+  String get noFreelancersFound;
+
+  /// No description provided for @selectAtLeastOneFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one file'**
+  String get selectAtLeastOneFile;
+
+  /// No description provided for @failedToDeliver.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to deliver: {error}'**
+  String failedToDeliver(Object error);
+
+  /// No description provided for @noDeliveriesToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries to review yet'**
+  String get noDeliveriesToReview;
+
+  /// No description provided for @deliveryApprovedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery approved!'**
+  String get deliveryApprovedMsg;
+
+  /// No description provided for @changesRequestedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested'**
+  String get changesRequestedMsg;
+
+  /// No description provided for @failedToSendOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send offer: {error}'**
+  String failedToSendOffer(Object error);
+
+  /// No description provided for @failedToApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to apply: {error}'**
+  String failedToApply(Object error);
+
+  /// No description provided for @deliverySubmittedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery submitted successfully ✅'**
+  String get deliverySubmittedMsg;
+
+  /// No description provided for @projectApprovedCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Project approved and marked as completed ✅'**
+  String get projectApprovedCompleted;
+
+  /// No description provided for @noDownloadableFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No downloadable file available'**
+  String get noDownloadableFile;
+
+  /// No description provided for @downloadingFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading: {fileName}'**
+  String downloadingFile(Object fileName);
+
+  /// No description provided for @downloadFailedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed: {error}'**
+  String downloadFailedError(Object error);
+
+  /// No description provided for @bidAmountJod.
+  ///
+  /// In en, this message translates to:
+  /// **'Bid Amount (JOD)'**
+  String get bidAmountJod;
+
+  /// No description provided for @addMessageToOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a message to your offer...'**
+  String get addMessageToOffer;
+
+  /// No description provided for @proposalOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal (Optional)'**
+  String get proposalOptional;
+
+  /// No description provided for @message.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get message;
+
+  /// No description provided for @describeChangesNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what changes are needed...'**
+  String get describeChangesNeeded;
+
+  /// No description provided for @freelancerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Freelancer Profile'**
+  String get freelancerProfile;
+
+  /// No description provided for @freelancerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Freelancer Name'**
+  String get freelancerName;
+
+  /// No description provided for @ratingStars.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating: {rating} ⭐'**
+  String ratingStars(Object rating);
+
+  /// No description provided for @plansForFreelancersOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans are available for freelancers only.'**
+  String get plansForFreelancersOnly;
+
+  /// No description provided for @pleaseLoginToSubscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to subscribe'**
+  String get pleaseLoginToSubscribe;
+
+  /// No description provided for @paymentSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment successful! Subscription activated.'**
+  String get paymentSuccessful;
+
+  /// No description provided for @paymentCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment cancelled'**
+  String get paymentCancelled;
+
+  /// No description provided for @paymentError.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment error: {error}'**
+  String paymentError(Object error);
+
+  /// No description provided for @noActiveSubscriptions.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscriptions'**
+  String get noActiveSubscriptions;
+
+  /// No description provided for @pleaseFillAllRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all required fields correctly'**
+  String get pleaseFillAllRequiredFields;
+
+  /// No description provided for @profileUpdatedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully!'**
+  String get profileUpdatedMsg;
+
+  /// No description provided for @supportRequestSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request submitted. We\'ll get back to you soon!'**
+  String get supportRequestSubmitted;
+
+  /// No description provided for @referralCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral code copied: {code}'**
+  String referralCodeCopied(Object code);
+
+  /// No description provided for @acceptanceOfTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance of Terms'**
+  String get acceptanceOfTerms;
+
+  /// No description provided for @accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get accounts;
+
+  /// No description provided for @userResponsibilities.
+  ///
+  /// In en, this message translates to:
+  /// **'User Responsibilities'**
+  String get userResponsibilities;
+
+  /// No description provided for @projectsDeliverables.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects & Deliverables'**
+  String get projectsDeliverables;
+
+  /// No description provided for @paymentsFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments & Fees'**
+  String get paymentsFees;
+
+  /// No description provided for @disputes.
+  ///
+  /// In en, this message translates to:
+  /// **'Disputes'**
+  String get disputes;
+
+  /// No description provided for @termination.
+  ///
+  /// In en, this message translates to:
+  /// **'Termination'**
+  String get termination;
+
+  /// No description provided for @limitationOfLiability.
+  ///
+  /// In en, this message translates to:
+  /// **'Limitation of Liability'**
+  String get limitationOfLiability;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @informationWeCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Information We Collect'**
+  String get informationWeCollect;
+
+  /// No description provided for @howWeUseInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'2. How We Use Information'**
+  String get howWeUseInformation;
+
+  /// No description provided for @sharingThirdParties.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Sharing & Third Parties'**
+  String get sharingThirdParties;
+
+  /// No description provided for @dataRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Data Retention'**
+  String get dataRetention;
+
+  /// No description provided for @securityPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Security'**
+  String get securityPrivacy;
+
+  /// No description provided for @yourRights.
+  ///
+  /// In en, this message translates to:
+  /// **'6. Your Rights'**
+  String get yourRights;
+
+  /// No description provided for @contactPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'7. Contact'**
+  String get contactPrivacy;
+
+  /// No description provided for @englishLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get englishLanguage;
+
+  /// No description provided for @arabicLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get arabicLanguage;
+
+  /// No description provided for @noApplicantsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No applicants yet'**
+  String get noApplicantsYet;
+
+  /// No description provided for @pleaseEnterCompleteOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter complete OTP'**
+  String get pleaseEnterCompleteOtp;
+
+  /// No description provided for @otpResentSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP resent successfully'**
+  String get otpResentSuccessfully;
+
+  /// No description provided for @pleaseSelectRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a role'**
+  String get pleaseSelectRole;
+
+  /// No description provided for @pleaseSelectCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one category'**
+  String get pleaseSelectCategory;
+
+  /// No description provided for @pleaseEnterOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter OTP'**
+  String get pleaseEnterOtp;
+
+  /// No description provided for @termsConditionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get termsConditionsTitle;
+
+  /// No description provided for @refundPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund Policy'**
+  String get refundPolicy;
+
+  /// No description provided for @onboardingTitle1New.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Talent\nwith Opportunity'**
+  String get onboardingTitle1New;
+
+  /// No description provided for @onboardingTitle2New.
+  ///
+  /// In en, this message translates to:
+  /// **'Seamless\nCollaboration'**
+  String get onboardingTitle2New;
+
+  /// No description provided for @onboardingTitle3New.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure & Smart\nPayments'**
+  String get onboardingTitle3New;
+
+  /// No description provided for @onboardingTitle4New.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Your\nJourney'**
+  String get onboardingTitle4New;
+
+  /// No description provided for @onboardingDesc1New.
+  ///
+  /// In en, this message translates to:
+  /// **'Find the best freelancers for your project or discover exciting opportunities to showcase your skills.'**
+  String get onboardingDesc1New;
+
+  /// No description provided for @onboardingDesc2New.
+  ///
+  /// In en, this message translates to:
+  /// **'Work together effortlessly with built-in tools for communication, file sharing, and project management.'**
+  String get onboardingDesc2New;
+
+  /// No description provided for @onboardingDesc3New.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy peace of mind with our escrow protection and milestone-based payment system.'**
+  String get onboardingDesc3New;
+
+  /// No description provided for @onboardingDesc4New.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account and start your freelancing journey today.'**
+  String get onboardingDesc4New;
+
+  /// No description provided for @development.
+  ///
+  /// In en, this message translates to:
+  /// **'Development'**
+  String get development;
+
+  /// No description provided for @contentWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Writing'**
+  String get contentWriting;
+
+  /// No description provided for @design.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get design;
+
+  /// No description provided for @marketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing'**
+  String get marketing;
+
+  /// No description provided for @dataEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Entry'**
+  String get dataEntry;
+
+  /// No description provided for @adminSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Support'**
+  String get adminSupport;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusBidding.
+  ///
+  /// In en, this message translates to:
+  /// **'Bidding'**
+  String get statusBidding;
+
+  /// No description provided for @statusPendingReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Review'**
+  String get statusPendingReview;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @statusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get statusOpen;
+
+  /// No description provided for @statusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get statusClosed;
+
+  /// No description provided for @statusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get statusDraft;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get statusExpired;
+
+  /// No description provided for @statusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get statusAssigned;
+
+  /// No description provided for @statusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get statusDelivered;
+
+  /// No description provided for @statusRevisionRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision Requested'**
+  String get statusRevisionRequested;
+
+  /// No description provided for @statusNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Started'**
+  String get statusNotStarted;
+
+  /// No description provided for @statusAwaitingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Payment'**
+  String get statusAwaitingPayment;
+
+  /// No description provided for @fixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed'**
+  String get fixed;
+
+  /// No description provided for @hourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly'**
+  String get hourly;
+
+  /// No description provided for @bidding.
+  ///
+  /// In en, this message translates to:
+  /// **'Bidding'**
+  String get bidding;
+
+  /// No description provided for @urgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get urgent;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @postedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted by'**
+  String get postedBy;
+
+  /// No description provided for @deadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get deadline;
+
+  /// No description provided for @budgetRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Range'**
+  String get budgetRange;
+
+  /// No description provided for @jod.
+  ///
+  /// In en, this message translates to:
+  /// **'JOD'**
+  String get jod;
+
+  /// No description provided for @noProjectsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet'**
+  String get noProjectsYet;
+
+  /// No description provided for @yourProjectsWillAppearHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects will appear here'**
+  String get yourProjectsWillAppearHere;
+
+  /// No description provided for @welcomeBackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}!'**
+  String welcomeBackName(Object name);
+
+  /// No description provided for @featured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get featured;
+
+  /// No description provided for @popularCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular Categories'**
+  String get popularCategories;
+
+  /// No description provided for @latestProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Projects'**
+  String get latestProjects;
+
+  /// No description provided for @findTopFreelancersFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Find top freelancers fast'**
+  String get findTopFreelancersFast;
+
+  /// No description provided for @postProjectGetOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Post a project and get offers'**
+  String get postProjectGetOffers;
+
+  /// No description provided for @noCategoriesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available'**
+  String get noCategoriesAvailable;
+
+  /// No description provided for @noProjectsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects available'**
+  String get noProjectsAvailable;
+
+  /// No description provided for @failedToLoadProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load projects'**
+  String get failedToLoadProjects;
 }
 
 class _AppLocalizationsDelegate

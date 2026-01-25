@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Premium section title row with optional "See All" button
 class SectionTitleRow extends StatelessWidget {
@@ -16,6 +17,7 @@ class SectionTitleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -34,7 +36,7 @@ class SectionTitleRow extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'See All',
+                    l10n.seeAll,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.accentOrange,
                       fontWeight: FontWeight.w600,

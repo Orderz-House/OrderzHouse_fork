@@ -5,6 +5,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Onboarding page model
 class OnboardingPage {
@@ -31,33 +32,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // Onboarding pages data
-  static const List<OnboardingPage> _pages = [
-    OnboardingPage(
-      title: 'Connect Talent\nwith Opportunity',
-      description:
-          'Find the perfect projects that match your skills, or hire talented freelancers who bring your vision to life.',
-      imageAsset: '', // Using icon placeholder instead
-    ),
-    OnboardingPage(
-      title: 'Seamless\nCollaboration',
-      description:
-          'Work together smoothly with built-in communication tools and smart workflow management for successful projects.',
-      imageAsset: '', // Using icon placeholder instead
-    ),
-    OnboardingPage(
-      title: 'Secure & Smart\nPayments',
-      description:
-          'Trust in our secure payment system that protects both freelancers and clients, ensuring fair and timely transactions.',
-      imageAsset: '', // Using icon placeholder instead
-    ),
-    OnboardingPage(
-      title: 'Start Your\nJourney',
-      description:
-          'Join thousands of freelancers and businesses creating amazing work together. Your next opportunity is just a tap away.',
-      imageAsset: '', // Using icon placeholder instead
-    ),
-  ];
+  // Get localized onboarding pages
+  List<OnboardingPage> _getPages(AppLocalizations l10n) {
+    return [
+      OnboardingPage(
+        title: l10n.onboardingTitle1New,
+        description: l10n.onboardingDesc1New,
+        imageAsset: '',
+      ),
+      OnboardingPage(
+        title: l10n.onboardingTitle2New,
+        description: l10n.onboardingDesc2New,
+        imageAsset: '',
+      ),
+      OnboardingPage(
+        title: l10n.onboardingTitle3New,
+        description: l10n.onboardingDesc3New,
+        imageAsset: '',
+      ),
+      OnboardingPage(
+        title: l10n.onboardingTitle4New,
+        description: l10n.onboardingDesc4New,
+        imageAsset: '',
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -73,6 +72,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pages = _getPages(l10n);
+    
     return Scaffold(
       backgroundColor: AppColors.background, // Pure white
       body: SafeArea(
@@ -92,10 +94,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: _onPageChanged,
-                    itemCount: _pages.length,
+                    itemCount: pages.length,
                     itemBuilder: (context, index) {
                       return _OnboardingPageContent(
-                        page: _pages[index],
+                        page: pages[index],
                         pageIndex: index,
                       );
                     },
@@ -107,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   child: _DotsIndicator(
                     currentPage: _currentPage,
-                    pageCount: _pages.length,
+                    pageCount: pages.length,
                   ),
                 ),
 
@@ -125,7 +127,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           onPressed: () {
                             context.go('/register');
                           },
-                          label: 'Register',
+                          label: l10n.register,
                           height: 56,
                           borderRadius: AppRadius.lg,
                         ),
@@ -150,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           child: Text(
-                            'Sign in',
+                            l10n.signIn,
                             style: AppTextStyles.labelLarge.copyWith(
                               color: const Color(0xFFFB923C),
                               fontWeight: FontWeight.w600,
