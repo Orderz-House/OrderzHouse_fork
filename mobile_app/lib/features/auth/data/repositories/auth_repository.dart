@@ -42,10 +42,11 @@ class AuthRepository {
         );
       }
 
-      // OTP required
-      return const ApiResponse(
+      // No token - treat as login failure (not OTP)
+      // OTP is only for registration, not login
+      return ApiResponse(
         success: false,
-        message: 'OTP required',
+        message: data['message'] as String? ?? 'Login failed. Please check your credentials.',
       );
     } on DioException catch (e) {
       return ApiResponse(
