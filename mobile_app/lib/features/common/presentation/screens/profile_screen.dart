@@ -254,7 +254,7 @@ class _ProfileHeader extends StatelessWidget {
               const SizedBox(height: 4),
               // Email
               Text(
-                user?.email ?? 'user@example.com',
+                user?.email ?? 'info@battechno.com',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 14,

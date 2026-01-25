@@ -198,7 +198,7 @@ class TermsConditionsScreen extends StatelessWidget {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   _SectionParagraph(
-                    'Email: legal@orderzhouse.com',
+                    'Email: info@battechno.com',
                     isBold: true,
                   ),
                   SizedBox(height: AppSpacing.sm),

@@ -123,11 +123,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Email input
                         _StyledTextField(
                           controller: _emailController,
-<<<<<<< HEAD
                           hint: l10n.email,
-=======
-                          hint: 'Email',
->>>>>>> hh
+
                           prefixIcon: Icons.lock_outline,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) => Validators.email(value?.trim()),

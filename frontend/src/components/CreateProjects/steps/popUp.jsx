@@ -18,7 +18,7 @@ export default function DevelopmentNoticeModal({ onClose, onConfirm }) {
             📞 <strong>+962 791433341</strong>
           </p>
           <p className="text-sm text-gray-800">
-            ✉️ <strong>info@orderzhouse.com</strong>
+            ✉️ <strong>info@battechno.com</strong>
           </p>
         </div>
 

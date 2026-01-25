@@ -99,7 +99,7 @@ export default function ContactUsPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 mb-2">Email Address</h3>
-                    <p className="text-slate-600">info@orderzhouse.com</p>
+                    <p className="text-slate-600">info@battechno.com</p>
                   </div>
                 </div>
 

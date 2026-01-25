@@ -40,23 +40,23 @@ const mockProjects = [
 ];
 
 const mockClients = [
-  { id: "c-1", name: "John Carter", email: "john@acme.io", country: "UAE", status: "Online", avatar: "https://i.pravatar.cc/80?img=12" },
-  { id: "c-2", name: "Mina Rose", email: "mina@globex.com", country: "KSA", status: "Offline" },
+  { id: "c-1", name: "John Carter", email: "info@battechno.com", country: "UAE", status: "Online", avatar: "https://i.pravatar.cc/80?img=12" },
+  { id: "c-2", name: "Mina Rose", email: "info@battechno.com", country: "KSA", status: "Offline" },
 ];
 
 const mockFreelancers = [
-  { id: "f-1", name: "Ali Hassan", email: "ali@example.com", role: "Designer", status: "Online", verified: "Yes", avatar: "https://i.pravatar.cc/80?img=5" },
-  { id: "f-2", name: "Sara Noor", email: "sara@example.com", role: "Frontend", status: "Offline", verified: "Yes" },
+  { id: "f-1", name: "Ali Hassan", email: "info@battechno.com", role: "Designer", status: "Online", verified: "Yes", avatar: "https://i.pravatar.cc/80?img=5" },
+  { id: "f-2", name: "Sara Noor", email: "info@battechno.com", role: "Frontend", status: "Offline", verified: "Yes" },
 ];
 
 const mockAdmins = [
-  { id: "a-1", name: "Admin One", email: "a1@site.com", role: "Super Admin", status: "Online", verified: "Yes" },
-  { id: "a-2", name: "Admin Two", email: "a2@site.com", role: "Moderator", status: "Offline" },
+  { id: "a-1", name: "Admin One", email: "info@battechno.com", role: "Super Admin", status: "Online", verified: "Yes" },
+  { id: "a-2", name: "Admin Two", email: "info@battechno.com", role: "Moderator", status: "Offline" },
 ];
 
 const mockVerifications = [
-  { id: "v-1", name: "Talal", email: "talal@x.com", phone: "+971...", specialization: "UI", submittedAt: "2025-10-01", status: "Pending" },
-  { id: "v-2", name: "Nora",  email: "nora@x.com",  phone: "+966...", specialization: "Backend", submittedAt: "2025-10-02", status: "Approved" },
+  { id: "v-1", name: "Talal", email: "info@battechno.com", phone: "+971...", specialization: "UI", submittedAt: "2025-10-01", status: "Pending" },
+  { id: "v-2", name: "Nora",  email: "info@battechno.com",  phone: "+966...", specialization: "Backend", submittedAt: "2025-10-02", status: "Approved" },
 ];
 
 /* ============= NEW: Tasks mock ============= */
@@ -185,13 +185,13 @@ const mockDashboardAdmin = {
       id: "dash-admin-verif-1",
       name: "Khaled F.",
       role: "Freelancer • Design",
-      email: "khaled@example.com",
+      email: "info@battechno.com",
     },
     {
       id: "dash-admin-verif-2",
       name: "Maha S.",
       role: "Client • —",
-      email: "maha@example.com",
+      email: "info@battechno.com",
     },
   ],
   // نفس النقاط اللي كانت في SimpleAreaChart

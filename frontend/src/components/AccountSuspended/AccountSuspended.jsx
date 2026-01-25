@@ -116,7 +116,7 @@ const AccountSuspended = () => {
           {/* Action Buttons */}
           <div className="space-y-3">
             <a
-              href={`mailto:support@freelancerhub.com?subject=Account Suspension Inquiry - User ID: ${userData.id}&body=Hello Support Team,%0D%0A%0D%0AMy account has been suspended and I would like more information about this decision.%0D%0A%0D%0AUser ID: ${userData.id}%0D%0AName: ${userData.first_name} ${userData.last_name}%0D%0AEmail: ${userData.email}%0D%0A%0D%0APlease provide me with details about my account suspension and what steps I can take to resolve this issue.%0D%0A%0D%0AThank you.`}
+              href={`mailto:info@battechno.com?subject=Account Suspension Inquiry - User ID: ${userData.id}&body=Hello Support Team,%0D%0A%0D%0AMy account has been suspended and I would like more information about this decision.%0D%0A%0D%0AUser ID: ${userData.id}%0D%0AName: ${userData.first_name} ${userData.last_name}%0D%0AEmail: ${userData.email}%0D%0A%0D%0APlease provide me with details about my account suspension and what steps I can take to resolve this issue.%0D%0A%0D%0AThank you.`}
               className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               <Mail className="w-5 h-5 mr-2" />

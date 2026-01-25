@@ -280,7 +280,7 @@ const Login = () => {
                       <input
                         type="email"
                         id="email"
-                        placeholder="you@email.com"
+                        placeholder="info@battechno.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required

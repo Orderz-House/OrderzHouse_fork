@@ -42,7 +42,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
 
   Future<void> _copyEmail() async {
     final l10n = AppLocalizations.of(context)!;
-    const email = 'support@orderzhouse.com';
+    const email = 'info@battechno.com';
     await Clipboard.setData(const ClipboardData(text: email));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +58,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     final l10n = AppLocalizations.of(context)!;
     final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: 'support@orderzhouse.com',
+      path: 'info@battechno.com',
       query: 'subject=Support Request',
     );
     if (await canLaunchUrl(emailUri)) {
@@ -281,7 +281,7 @@ class _EmailSupportCard extends StatelessWidget {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                'support@orderzhouse.com',
+                'info@battechno.com',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
