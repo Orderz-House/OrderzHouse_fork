@@ -2287,4 +2287,59 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get failedToLoadProjects => 'فشل في تحميل المشاريع';
+
+  @override
+  String get forgotPasswordTitle => 'نسيت كلمة المرور؟';
+
+  @override
+  String get forgotPasswordDesc =>
+      'أدخل بريدك الإلكتروني وسنرسل لك رمزاً لإعادة تعيين كلمة المرور.';
+
+  @override
+  String get sendOtp => 'إرسال الرمز';
+
+  @override
+  String get backToLogin => 'العودة لتسجيل الدخول';
+
+  @override
+  String get enterOtpCode => 'أدخل رمز التحقق';
+
+  @override
+  String get didntReceiveCode => 'لم تستلم الرمز؟';
+
+  @override
+  String get resendOtp => 'إعادة إرسال الرمز';
+
+  @override
+  String get resetPasswordTitle => 'إعادة تعيين كلمة المرور';
+
+  @override
+  String get resetPasswordDesc => 'أنشئ كلمة مرور جديدة لحسابك.';
+
+  @override
+  String get confirmPasswordRequired => 'يرجى تأكيد كلمة المرور';
+
+  @override
+  String get savePassword => 'حفظ';
+
+  @override
+  String get passwordUpdated => 'تم تحديث كلمة المرور بنجاح!';
+
+  @override
+  String get passwordMinLength => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+
+  @override
+  String get passwordUppercase =>
+      'كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل';
+
+  @override
+  String get passwordLowercase =>
+      'كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل';
+
+  @override
+  String get passwordNumber =>
+      'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل';
+
+  @override
+  String get passwordRequirements => '8 أحرف كحد أدنى، حرف كبير، حرف صغير، رقم';
 }

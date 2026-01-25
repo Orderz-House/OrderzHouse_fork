@@ -61,8 +61,18 @@ dev_dependencies:
   build_runner: ^2.4.8
   freezed: ^2.4.7
 
+  # App Icon
+  flutter_launcher_icons: ^0.13.1
+
 flutter:
   generate: true
   uses-material-design: true
   assets:
     - .env
+    - assets/icon.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+  remove_alpha_ios: true

@@ -977,5 +977,27 @@
   "postProjectGetOffers": "انشر مشروعاً واحصل على عروض",
   "noCategoriesAvailable": "لا توجد فئات متاحة",
   "noProjectsAvailable": "لا توجد مشاريع متاحة",
-  "failedToLoadProjects": "فشل في تحميل المشاريع"
+  "failedToLoadProjects": "فشل في تحميل المشاريع",
+  
+  "forgotPasswordTitle": "نسيت كلمة المرور؟",
+  "forgotPasswordDesc": "أدخل بريدك الإلكتروني وسنرسل لك رمزاً لإعادة تعيين كلمة المرور.",
+  "sendOtp": "إرسال الرمز",
+  "backToLogin": "العودة لتسجيل الدخول",
+  
+  "enterOtpCode": "أدخل رمز التحقق",
+  "didntReceiveCode": "لم تستلم الرمز؟",
+  "resendOtp": "إعادة إرسال الرمز",
+  
+  "resetPasswordTitle": "إعادة تعيين كلمة المرور",
+  "resetPasswordDesc": "أنشئ كلمة مرور جديدة لحسابك.",
+  "newPassword": "كلمة المرور الجديدة",
+  "confirmPasswordRequired": "يرجى تأكيد كلمة المرور",
+  "savePassword": "حفظ",
+  "passwordUpdated": "تم تحديث كلمة المرور بنجاح!",
+  
+  "passwordMinLength": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+  "passwordUppercase": "كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل",
+  "passwordLowercase": "كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل",
+  "passwordNumber": "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل",
+  "passwordRequirements": "8 أحرف كحد أدنى، حرف كبير، حرف صغير، رقم"
 }

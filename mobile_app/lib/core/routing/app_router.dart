@@ -33,6 +33,9 @@ import '../../features/common/presentation/screens/talent_details_screen.dart';
 import '../../features/common/presentation/screens/health_check_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/accept_terms_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/reset_password_otp_screen.dart';
+import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/common/presentation/screens/language_selection_screen.dart';
 
@@ -75,6 +78,26 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/accept-terms',
       builder: (context, state) => const AcceptTermsScreen(),
+    ),
+    // Forgot Password Flow
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/reset-otp',
+      builder: (context, state) {
+        final email = state.uri.queryParameters['email'] ?? '';
+        return ResetPasswordOtpScreen(email: email);
+      },
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) {
+        final email = state.uri.queryParameters['email'] ?? '';
+        final otp = state.uri.queryParameters['otp'] ?? '';
+        return ResetPasswordScreen(email: email, otp: otp);
+      },
     ),
     // Freelancer Routes
     GoRoute(
