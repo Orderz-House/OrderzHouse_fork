@@ -17,6 +17,7 @@ import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/client_project_card.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ClientProjectsScreen extends ConsumerStatefulWidget {
   const ClientProjectsScreen({super.key});
@@ -86,13 +87,14 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final projectsAsync = ref.watch(myProjectsProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
     // Get unique statuses from projects for chips
     final statuses = projectsAsync.value?.map((p) => p.status).toSet().toList() ?? [];
-    final allStatuses = ['All', ...statuses];
+    final allStatuses = [l10n.all, ...statuses];
 
     // Filter projects based on search and selected status
     List<Project>? filteredProjects;
@@ -149,11 +151,11 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
                         return EmptyState(
                           icon: Icons.work_outline,
                           title: _searchController.text.isNotEmpty || _selectedStatus != null
-                              ? 'No projects found'
-                              : 'No projects yet',
+                              ? l10n.noResultsFound
+                              : l10n.noProjects,
                           message: _searchController.text.isNotEmpty || _selectedStatus != null
-                              ? 'Try adjusting your search or filters'
-                              : 'Create your first project to get started',
+                              ? l10n.noResultsFound
+                              : l10n.noProjectsMessage,
                         );
                       }
 
@@ -183,14 +185,14 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(
+      bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         items: [
-          NavItem(icon: Icons.home_rounded, title: 'Home', route: '/client'),
-          NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/client/projects'),
-          NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/client/explore'),
-          NavItem(icon: Icons.payment_rounded, title: 'Payments', route: '/client/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: 'Profile', route: '/client/profile'),
+          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
+          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/client/projects'),
+          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/client/explore'),
+          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/client/payments'),
+          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/client/profile'),
         ],
       ),
     );
@@ -198,6 +200,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   // 1) Top Bar (matching Explore style)
   Widget _buildTopBar(BuildContext context, User? user) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Container(
@@ -239,7 +242,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
             
             // Center: Title
             Text(
-              'My Projects',
+              l10n.myProjects,
               style: AppTextStyles.headlineMedium.copyWith(
                 color: const Color(0xFF111827), // Black
                 fontWeight: FontWeight.bold,
@@ -289,6 +292,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   // 2) Search + Actions Row
   Widget _buildSearchRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -311,7 +315,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search Projects',
+                  hintText: l10n.searchProjects,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF9CA3AF),
                   ),
@@ -394,6 +398,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   // 3) Category Chips Row (pill chips matching Explore style)
   Widget _buildCategoryChips(List<String> statuses) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -404,7 +409,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
         separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final status = statuses[index];
-          final isSelected = _selectedStatus == status || (_selectedStatus == null && status == 'All');
+          final isSelected = _selectedStatus == status || (_selectedStatus == null && status == l10n.all);
           
           return AppGradientFilterChip(
             label: status,
@@ -454,11 +459,12 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   // 5) Floating Action Button (positioned near bottom navigation bar)
   Widget _buildFloatingActionButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return PrimaryGradientButton(
       onPressed: () {
         context.go('/create-project');
       },
-      label: 'Add Project',
+      label: l10n.createProject,
       icon: Icons.add_rounded,
       width: null, // Use intrinsic width (pill shape)
       height: 48,

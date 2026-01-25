@@ -23,6 +23,7 @@ import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../search/presentation/providers/search_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'dart:async';
 
 class ExploreProjectsScreen extends ConsumerStatefulWidget {
@@ -83,50 +84,55 @@ class _ExploreProjectsScreenState
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Sort By',
-              style: AppTextStyles.headlineSmall.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SortOption(
-              label: 'Newest First',
-              value: 'newest',
-              isSelected: currentSort == 'newest',
-              onTap: () {
-                ref.read(exploreSortByProvider.notifier).state = 'newest';
-                Navigator.pop(context);
-                ref.invalidate(exploreProjectsProvider);
-              },
-            ),
-            _SortOption(
-              label: 'Price: Low to High',
-              value: 'price_low_to_high',
-              isSelected: currentSort == 'price_low_to_high',
-              onTap: () {
-                ref.read(exploreSortByProvider.notifier).state = 'price_low_to_high';
-                Navigator.pop(context);
-                ref.invalidate(exploreProjectsProvider);
-              },
-            ),
-            _SortOption(
-              label: 'Price: High to Low',
-              value: 'price_high_to_low',
-              isSelected: currentSort == 'price_high_to_low',
-              onTap: () {
-                ref.read(exploreSortByProvider.notifier).state = 'price_high_to_low';
-                Navigator.pop(context);
-                ref.invalidate(exploreProjectsProvider);
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            final l10n = AppLocalizations.of(context)!;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.sortBy,
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SortOption(
+                  label: l10n.newestFirst,
+                  value: 'newest',
+                  isSelected: currentSort == 'newest',
+                  onTap: () {
+                    ref.read(exploreSortByProvider.notifier).state = 'newest';
+                    Navigator.pop(context);
+                    ref.invalidate(exploreProjectsProvider);
+                  },
+                ),
+                _SortOption(
+                  label: l10n.priceLowToHigh,
+                  value: 'price_low_to_high',
+                  isSelected: currentSort == 'price_low_to_high',
+                  onTap: () {
+                    ref.read(exploreSortByProvider.notifier).state = 'price_low_to_high';
+                    Navigator.pop(context);
+                    ref.invalidate(exploreProjectsProvider);
+                  },
+                ),
+                _SortOption(
+                  label: l10n.priceHighToLow,
+                  value: 'price_high_to_low',
+                  isSelected: currentSort == 'price_high_to_low',
+                  onTap: () {
+                    ref.read(exploreSortByProvider.notifier).state = 'price_high_to_low';
+                    Navigator.pop(context);
+                    ref.invalidate(exploreProjectsProvider);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -134,6 +140,7 @@ class _ExploreProjectsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final searchQuery = ref.watch(searchQueryProvider);
     final projectsAsync = ref.watch(exploreProjectsProvider);
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
@@ -147,7 +154,7 @@ class _ExploreProjectsScreenState
       debugPrint('🔍 [ExploreScreen] State: categoryId=$selectedCategoryId, searchQuery="$searchQuery", sortBy=$sortBy');
       debugPrint('🔍 [ExploreScreen] searchQueryProvider value: "${ref.read(searchQueryProvider)}"');
       debugPrint('🔍 [ExploreScreen] exploreSortByProvider value: "$sortByValue"');
-      print("sortBy=${ref.watch(exploreSortByProvider)}");
+      print('sortBy=${ref.watch(exploreSortByProvider)}');
     }
     
     // Sync shared provider to local provider on first build
@@ -196,12 +203,12 @@ class _ExploreProjectsScreenState
                           if (projects.isEmpty) {
                             return EmptyState(
                               icon: Icons.explore_outlined,
-                              title: 'No projects found',
+                              title: l10n.noResultsFound,
                               message: selectedCategoryId == null
-                                  ? 'Try selecting a category or adjusting your search'
+                                  ? l10n.noResultsFound
                                   : searchQuery.trim().isNotEmpty
-                                      ? 'No projects match your search. Try different keywords.'
-                                      : 'No projects in this category. Try another category.',
+                                      ? l10n.noResultsFound
+                                      : l10n.noResultsFound,
                             );
                           }
 
@@ -237,6 +244,7 @@ class _ExploreProjectsScreenState
 
   // 1) Top Row
   Widget _buildTopRow(BuildContext context, User? user) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -280,7 +288,7 @@ class _ExploreProjectsScreenState
           
             // Center: Title
             Text(
-              'Explore',
+              l10n.explore,
               style: AppTextStyles.headlineMedium.copyWith(
                 color: const Color(0xFF111827),
                 fontWeight: FontWeight.bold,
@@ -335,6 +343,7 @@ class _ExploreProjectsScreenState
 
   // 2) Search + Actions Row
   Widget _buildSearchRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -383,7 +392,7 @@ class _ExploreProjectsScreenState
                   }
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search Projects',
+                  hintText: l10n.searchProjects,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF9CA3AF),
                   ),
@@ -474,10 +483,11 @@ class _ExploreProjectsScreenState
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: categoriesAsync.when(
         data: (categories) {
+          final l10n = AppLocalizations.of(context)!;
           // Use real categories if available, otherwise use placeholders
           final chipLabels = categories.isNotEmpty
-              ? ['All', ...categories.map((c) => c.name)]
-              : ['All', 'Design', 'Writing', 'Development', 'Marketing', 'Video'];
+              ? [l10n.all, ...categories.map((c) => c.name)]
+              : [l10n.all, 'Design', 'Writing', 'Development', 'Marketing', 'Video'];
 
           // Find the index of the selected category chip
           int? selectedIndex;
@@ -513,7 +523,7 @@ class _ExploreProjectsScreenState
             separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, index) {
               final label = chipLabels[index];
-              final isSelected = label == 'All'
+              final isSelected = label == l10n.all
                   ? selectedCategoryId == null
                   : categories.isNotEmpty &&
                       categories.any((c) => c.name == label && c.id == selectedCategoryId);
@@ -522,7 +532,7 @@ class _ExploreProjectsScreenState
                 label: label,
                 selected: isSelected,
                 onTap: () {
-                  if (label == 'All') {
+                  if (label == l10n.all) {
                     ref.read(selectedExploreCategoryIdProvider.notifier).state = null;
                   } else if (categories.isNotEmpty) {
                     final category = categories.firstWhere((c) => c.name == label);
@@ -605,11 +615,12 @@ class _ExploreProjectsScreenState
           onRetry: () => ref.invalidate(searchResultsProvider),
         ),
         data: (searchResult) {
+          final l10n = AppLocalizations.of(context)!;
           if (searchResult.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'No results found',
-              message: 'Try different keywords or check your spelling.',
+              title: l10n.noResultsFound,
+              message: l10n.tryAgain,
             );
           }
 
@@ -622,7 +633,7 @@ class _ExploreProjectsScreenState
                 // Categories Section
                 if (searchResult.categories.isNotEmpty) ...[
                   Text(
-                    'Categories',
+                    l10n.categories,
                     style: AppTextStyles.headlineSmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF111827),
@@ -674,7 +685,7 @@ class _ExploreProjectsScreenState
                 // Projects Section
                 if (searchResult.projects.isNotEmpty) ...[
                   Text(
-                    'Projects',
+                    l10n.projects,
                     style: AppTextStyles.headlineSmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF111827),
@@ -709,13 +720,14 @@ class _ExploreProjectsScreenState
     // Significantly reduce margin to move button DOWN - position it closer to bottom nav
     final totalBottomMargin = bottomNavHeight + buttonSpacing - 113 ; // Reduced by 50px to move DOWN significantly
 
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav
       child: PrimaryGradientButton(
         onPressed: () {
           context.go('/create-project');
         },
-        label: 'Add Project',
+        label: l10n.createProject,
         icon: Icons.add_rounded,
         width: null, // Use intrinsic width (pill shape)
         height: 48,
@@ -742,14 +754,15 @@ class _ExploreProjectsScreenState
         currentIndex = 0;
       }
 
+      final l10n = AppLocalizations.of(context)!;
       return AppBottomNavBar(
         currentIndex: currentIndex,
-        items: const [
-          NavItem(icon: Icons.home_rounded, title: 'Home', route: '/client'),
-          NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/client/projects'),
-          NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/client/explore'),
-          NavItem(icon: Icons.payment_rounded, title: 'Payments', route: '/client/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: 'Profile', route: '/client/profile'),
+        items: [
+          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
+          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/client/projects'),
+          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/client/explore'),
+          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/client/payments'),
+          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/client/profile'),
         ],
       );
     } else if (location.contains('/freelancer')) {
@@ -765,14 +778,15 @@ class _ExploreProjectsScreenState
         currentIndex = 0;
       }
 
+      final l10n = AppLocalizations.of(context)!;
       return AppBottomNavBar(
         currentIndex: currentIndex,
-        items: const [
-          NavItem(icon: Icons.home_rounded, title: 'Home', route: '/freelancer'),
-          NavItem(icon: Icons.work_outline_rounded, title: 'My Projects', route: '/freelancer/projects'),
-          NavItem(icon: Icons.explore_rounded, title: 'Explore', route: '/freelancer/explore'),
-          NavItem(icon: Icons.payment_rounded, title: 'Payments', route: '/freelancer/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: 'Profile', route: '/freelancer/profile'),
+        items: [
+          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/freelancer/profile'),
         ],
       );
     }

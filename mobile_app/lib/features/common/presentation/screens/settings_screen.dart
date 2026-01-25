@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 // Settings state providers
@@ -16,6 +18,8 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final currentLocale = ref.watch(localeProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -70,7 +74,7 @@ class SettingsScreen extends ConsumerWidget {
                     const Spacer(),
                     // Title
                     Text(
-                      'Settings',
+                      l10n.settings,
                       style: AppTextStyles.headlineSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -103,12 +107,36 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
+                    // Language Setting
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.language_rounded,
+                      title: l10n.language,
+                      subtitle: currentLocale.languageCode == 'ar' ? 'العربية' : 'English',
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/settings/language');
+                      },
+                    ),
+                    
+                    // Divider
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderLight,
+                      indent: 72,
+                    ),
+                    
                     // Notifications Setting
                     _buildSettingTile(
                       context: context,
                       icon: Icons.notifications_outlined,
-                      title: 'Notifications',
-                      subtitle: 'Manage notification preferences',
+                      title: l10n.notifications,
+                      subtitle: l10n.notificationsSubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,
@@ -131,8 +159,8 @@ class SettingsScreen extends ConsumerWidget {
                     _buildSettingTile(
                       context: context,
                       icon: Icons.security_outlined,
-                      title: 'Security',
-                      subtitle: 'Manage security settings',
+                      title: l10n.security,
+                      subtitle: l10n.securitySubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,
@@ -155,8 +183,8 @@ class SettingsScreen extends ConsumerWidget {
                     _buildSettingTile(
                       context: context,
                       icon: Icons.lock_outline_rounded,
-                      title: 'Change Password',
-                      subtitle: 'Update your account password',
+                      title: l10n.changePassword,
+                      subtitle: l10n.changePasswordSubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,
@@ -194,8 +222,8 @@ class SettingsScreen extends ConsumerWidget {
                     _buildSettingTile(
                       context: context,
                       icon: Icons.folder_outlined,
-                      title: 'My Content',
-                      subtitle: 'Manage your uploaded content',
+                      title: l10n.myContent,
+                      subtitle: l10n.myContentSubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,
@@ -214,8 +242,8 @@ class SettingsScreen extends ConsumerWidget {
                     _buildSettingTile(
                       context: context,
                       icon: Icons.help_outline_rounded,
-                      title: 'Support',
-                      subtitle: 'Get help and contact us',
+                      title: l10n.support,
+                      subtitle: l10n.supportSubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,
@@ -234,8 +262,8 @@ class SettingsScreen extends ConsumerWidget {
                     _buildSettingTile(
                       context: context,
                       icon: Icons.delete_outline_rounded,
-                      title: 'Delete Account',
-                      subtitle: 'Permanently delete your account',
+                      title: l10n.deleteAccount,
+                      subtitle: l10n.deleteAccountSubtitle,
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.iconGray,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -23,6 +24,7 @@ class SecurityCenterScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final twoFactorEnabled = ref.watch(twoFactorEnabledProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,7 +33,7 @@ class SecurityCenterScreen extends ConsumerWidget {
           children: [
             // Header
             AppHeader(
-              title: 'Security',
+              title: l10n.security,
               onBack: () => _handleBack(context),
             ),
 
@@ -54,6 +56,7 @@ class SecurityCenterScreen extends ConsumerWidget {
                           _showDisable2FADialog(context, ref);
                         }
                       },
+                      l10n: l10n,
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
@@ -61,9 +64,10 @@ class SecurityCenterScreen extends ConsumerWidget {
                     _ChangePasswordCard(
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Change password feature coming soon')),
+                          SnackBar(content: Text(l10n.comingSoon)),
                         );
                       },
+                      l10n: l10n,
                     ),
                   ],
                 ),
@@ -76,28 +80,27 @@ class SecurityCenterScreen extends ConsumerWidget {
   }
 
   void _showEnable2FADialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Enable Two-Factor Authentication'),
-        content: const Text(
-          'Two-factor authentication adds an extra layer of security to your account. You\'ll receive a code via email to verify your identity when signing in.',
-        ),
+        title: Text(l10n.enableTwoFactor),
+        content: Text(l10n.twoFactorAuthSubtitle),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel, style: const TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               // TODO: Implement 2FA enable flow
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('2FA enable flow coming soon')),
+                SnackBar(content: Text(l10n.comingSoon)),
               );
             },
-            child: const Text('Enable', style: TextStyle(color: AppColors.accentOrange)),
+            child: Text(l10n.confirm, style: const TextStyle(color: AppColors.accentOrange)),
           ),
         ],
       ),
@@ -105,27 +108,26 @@ class SecurityCenterScreen extends ConsumerWidget {
   }
 
   void _showDisable2FADialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Disable Two-Factor Authentication?'),
-        content: const Text(
-          'This will make your account less secure. Are you sure you want to disable 2FA?',
-        ),
+        title: Text(l10n.disableTwoFactor),
+        content: Text(l10n.warning),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel, style: const TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
               ref.read(twoFactorEnabledProvider.notifier).state = false;
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               // TODO: Implement 2FA disable API call
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Disable'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -136,10 +138,12 @@ class SecurityCenterScreen extends ConsumerWidget {
 class _TwoFactorCard extends StatelessWidget {
   final bool enabled;
   final VoidCallback onToggle;
+  final AppLocalizations l10n;
 
   const _TwoFactorCard({
     required this.enabled,
     required this.onToggle,
+    required this.l10n,
   });
 
   @override
@@ -182,7 +186,7 @@ class _TwoFactorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Two-Factor Authentication',
+                      l10n.twoFactorAuth,
                       style: AppTextStyles.headlineSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -198,7 +202,7 @@ class _TwoFactorCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        enabled ? 'Enabled' : 'Disabled',
+                        enabled ? l10n.active : l10n.notAvailable,
                         style: AppTextStyles.labelSmall.copyWith(
                           color: enabled ? AppColors.success : AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -212,9 +216,7 @@ class _TwoFactorCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            enabled
-                ? 'Your account is protected with two-factor authentication. You\'ll receive a verification code via email when signing in.'
-                : 'Add an extra layer of security to your account. Enable 2FA to receive verification codes via email when signing in.',
+            enabled ? l10n.securitySubtitle : l10n.twoFactorAuthSubtitle,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
@@ -223,7 +225,7 @@ class _TwoFactorCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           PrimaryGradientButton(
             onPressed: onToggle,
-            label: enabled ? 'Manage 2FA' : 'Enable 2FA',
+            label: enabled ? l10n.settings : l10n.enableTwoFactor,
             height: 48,
             borderRadius: 12,
           ),
@@ -235,8 +237,9 @@ class _TwoFactorCard extends StatelessWidget {
 
 class _ChangePasswordCard extends StatelessWidget {
   final VoidCallback onTap;
+  final AppLocalizations l10n;
 
-  const _ChangePasswordCard({required this.onTap});
+  const _ChangePasswordCard({required this.onTap, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -278,7 +281,7 @@ class _ChangePasswordCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Change Password',
+                    l10n.changePassword,
                     style: AppTextStyles.headlineSmall.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
@@ -286,7 +289,7 @@ class _ChangePasswordCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Update your account password',
+                    l10n.changePasswordSubtitle,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),

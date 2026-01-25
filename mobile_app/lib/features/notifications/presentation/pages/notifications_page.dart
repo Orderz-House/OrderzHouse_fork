@@ -9,12 +9,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../providers/notifications_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class NotificationsPage extends ConsumerWidget {
   const NotificationsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return AppScaffold(
@@ -56,7 +58,7 @@ class NotificationsPage extends ConsumerWidget {
                   const Spacer(),
                   // Title
                   Text(
-                    'Notifications',
+                    l10n.notifications,
                     style: AppTextStyles.headlineSmall.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -226,67 +228,150 @@ class NotificationsPage extends ConsumerWidget {
     WidgetRef ref,
     AppNotification notification,
   ) async {
-    // Mark as read if unread
+    // Mark as read if unread (don't block navigation on failure)
     if (!notification.isRead) {
       try {
         await ref.read(
           markNotificationAsReadProvider(notification.id).future,
         );
+        // Refresh notifications list
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(unreadCountProvider);
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to mark notification as read: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        // Log error but continue with navigation
+        debugPrint('Failed to mark notification as read: $e');
+      }
+    }
+
+    if (!context.mounted) return;
+
+    // Get current route to determine role context
+    final location = GoRouterState.of(context).uri.path;
+    final isClientContext = location.contains('/client');
+    final rolePrefix = isClientContext ? '/client' : '/freelancer';
+
+    final type = notification.type?.toLowerCase() ?? '';
+    final refId = notification.referenceId;
+
+    // Route based on notification type - always navigate, never show dialog
+    if (notification.isDeliveryRelated) {
+      // WORK_SUBMITTED / WORK_APPROVED / WORK_REVISION_REQUESTED
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'project');
         return;
       }
-    }
-
-    // Navigate based on type and referenceId
-    if (notification.type != null && notification.referenceId != null) {
-      final type = notification.type!.toLowerCase();
-      final refId = notification.referenceId!;
-
-      if (type.contains('project')) {
-        // Navigate to project details
-        if (context.mounted) {
-          context.push('/project/$refId');
-        }
-      } else if (type.contains('offer')) {
-        // Navigate to offers/projects screen
-        // For now, just show a message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Offer details screen not implemented yet'),
-            ),
-          );
-        }
-      } else if (type.contains('payment')) {
-        // Navigate to payments screen
-        final location = GoRouterState.of(context).uri.path;
-        if (context.mounted) {
-          if (location.contains('/client')) {
-            context.push('/client/payments');
-          } else if (location.contains('/freelancer')) {
-            context.push('/freelancer/payments');
-          } else {
-            context.push('/client/payments');
-          }
-        }
-      } else if (type.contains('message')) {
-        // Navigate to chat/messages
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Messages screen not implemented yet'),
-            ),
-          );
-        }
+      _navigateToProject(
+        context,
+        refId,
+        openReceiveModal: isClientContext && type == NotificationType.workSubmitted,
+        showDeliveries: !isClientContext,
+      );
+    } else if (notification.isOfferRelated) {
+      // OFFER_SUBMITTED / OFFER_APPROVED / OFFER_REJECTED
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'project');
+        return;
       }
+      if (notification.entityType == EntityType.offer) {
+        // refId is offer ID - navigate to projects with offers
+        _navigateToProjectsWithOffersTab(context, rolePrefix);
+      } else {
+        // refId is project ID - open applicants/offers section
+        _navigateToProject(context, refId, openApplicants: isClientContext);
+      }
+    } else if (notification.isProjectRelated) {
+      // PROJECT_CREATED / PROJECT_STATUS_CHANGED / FREELANCER_ASSIGNED etc.
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'project');
+        return;
+      }
+      _navigateToProject(context, refId);
+    } else if (notification.isPaymentRelated) {
+      // PAYMENT_* / ESCROW_* - navigate to payments (no refId required)
+      context.push('$rolePrefix/payments');
+    } else if (notification.isMessageRelated) {
+      // MESSAGE_RECEIVED - navigate to messages/chat
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'conversation');
+        return;
+      }
+      // TODO: Navigate to chat when implemented
+      _showNotImplemented(context, 'Messages');
+    } else if (notification.isTaskRelated) {
+      // TASK_* notifications
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'task');
+        return;
+      }
+      _showNotImplemented(context, 'Tasks');
+    } else if (type == NotificationType.systemAnnouncement) {
+      // System announcement - no specific screen, just mark as read
+      // (already marked as read above)
+      return;
+    } else if (type == NotificationType.reviewSubmitted) {
+      // Navigate to profile/reviews
+      context.push('$rolePrefix/profile');
+    } else if (type.contains('subscription')) {
+      // Navigate to subscription/plans
+      context.push('/plans');
+    } else if (type.contains('appointment')) {
+      if (refId == null) {
+        _showMissingDataSnackbar(context, 'appointment');
+        return;
+      }
+      _showNotImplemented(context, 'Appointments');
+    } else if (refId != null) {
+      // Fallback: try to navigate to project details if we have a refId
+      _navigateToProject(context, refId);
+    } else {
+      // No refId and unknown type - show missing data snackbar
+      _showMissingDataSnackbar(context, 'required');
     }
+  }
+
+  void _navigateToProject(
+    BuildContext context,
+    int projectId, {
+    bool openApplicants = false,
+    bool openReceiveModal = false,
+    bool showDeliveries = false,
+  }) {
+    // Build query parameters for deep-linking
+    final queryParams = <String, String>{};
+    if (openApplicants) queryParams['openApplicants'] = 'true';
+    if (openReceiveModal) queryParams['openReceiveModal'] = 'true';
+    if (showDeliveries) queryParams['showDeliveries'] = 'true';
+    
+    final uri = Uri(
+      path: '/project/$projectId',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+    
+    context.push(uri.toString());
+  }
+
+  void _navigateToProjectsWithOffersTab(BuildContext context, String rolePrefix) {
+    // Navigate to my projects screen
+    context.go('$rolePrefix/projects');
+  }
+
+  void _showNotImplemented(BuildContext context, String feature) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.comingSoon),
+        backgroundColor: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  void _showMissingDataSnackbar(BuildContext context, String dataType) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.couldntOpenNotification(dataType)),
+        backgroundColor: AppColors.error,
+      ),
+    );
   }
 }

@@ -79,9 +79,9 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
                             },
                             activeColor: AppColors.primary,
                           ),
-                          Expanded(
+                          const Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 12),
+                              padding: EdgeInsets.only(top: 12),
                               child: Text(
                                 'I have read and agree to the Terms & Conditions and Refund Policy',
                                 style: AppTextStyles.bodyMedium,

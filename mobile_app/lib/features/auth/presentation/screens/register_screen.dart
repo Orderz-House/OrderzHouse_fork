@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -224,6 +225,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.background, // Pure white
@@ -300,7 +302,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.xl),
                       // Title
                       Text(
-                        'Sign Up',
+                        l10n.signUp,
                         style: AppTextStyles.displayMedium.copyWith(
                           color: const Color(0xFF0B0B0F), // Near-black primary
                           fontWeight: FontWeight.bold,
@@ -310,7 +312,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       // Subtitle
                       Text(
-                        _getStepSubtitle(),
+                        _getStepSubtitle(l10n),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: const Color(0xFF8A8A95), // Neutral gray
                         ),
@@ -362,7 +364,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                           Text(
-                            'Sign In',
+                            l10n.login,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: const Color(0xFFFB923C), // Red accent
                               fontWeight: FontWeight.w600,
@@ -394,7 +396,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 ),
                               ),
                               child: Text(
-                                'Back',
+                                l10n.back,
                                 style: AppTextStyles.labelLarge.copyWith(
                                   color: const Color(0xFFFB923C), // Red accent
                                   fontWeight: FontWeight.w600,
@@ -412,7 +414,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           onPressed: authState.isLoading
                               ? null
                               : (_currentStep == _totalSteps - 1 ? _handleRegister : _nextStep),
-                          label: _currentStep == _totalSteps - 1 ? 'Sign Up' : 'Next',
+                          label: _currentStep == _totalSteps - 1 ? l10n.signUp : l10n.next,
                           isLoading: authState.isLoading,
                           height: 52,
                           borderRadius: 30, // Pill shape
@@ -429,7 +431,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  String _getStepSubtitle() {
+  String _getStepSubtitle(AppLocalizations l10n) {
     final stepType = _getStepType(_currentStep);
     switch (stepType) {
       case 'role':
@@ -443,7 +445,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       case 'contact':
         return 'Add your contact information';
       default:
-        return 'Please complete all steps';
+        return l10n.loading;
     }
   }
 

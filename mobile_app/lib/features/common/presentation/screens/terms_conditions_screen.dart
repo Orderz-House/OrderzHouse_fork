@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -19,6 +20,7 @@ class TermsConditionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -26,7 +28,7 @@ class TermsConditionsScreen extends StatelessWidget {
           children: [
             // Header
             AppHeader(
-              title: 'Terms & Conditions',
+              title: l10n.termsAndConditions,
               onBack: () => _handleBack(context),
             ),
             // Content

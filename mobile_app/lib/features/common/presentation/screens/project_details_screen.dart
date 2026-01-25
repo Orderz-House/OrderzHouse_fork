@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart' as open_filex;
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -36,9 +36,17 @@ final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
 
 class ProjectDetailsScreen extends ConsumerStatefulWidget {
   final Project project;
+  
+  /// Deep-link parameters for notification navigation
+  final bool openApplicants;
+  final bool openReceiveModal;
+  final bool showDeliveries;
 
   const ProjectDetailsScreen({
     required this.project,
+    this.openApplicants = false,
+    this.openReceiveModal = false,
+    this.showDeliveries = false,
     super.key,
   });
 
@@ -70,12 +78,158 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   List<Map<String, dynamic>> _deliveries = [];
   bool _isLoadingDeliveries = false;
 
+  // Flag to track if deep-link actions have been handled
+  bool _deepLinkHandled = false;
+  
   @override
   void initState() {
     super.initState();
     _checkIfApplied();
     _fetchRawProjectData();
     _fetchAssignment(); // This will call _fetchDeliveriesIfNeeded() after assignment loads
+    
+    // Handle deep-link parameters after first frame
+    if (widget.openApplicants || widget.openReceiveModal || widget.showDeliveries) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleDeepLinkNavigation();
+      });
+    }
+  }
+  
+  /// Handle deep-link navigation from notifications
+  void _handleDeepLinkNavigation() {
+    if (_deepLinkHandled) return;
+    _deepLinkHandled = true;
+    
+    // Delay to ensure data is loaded
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      
+      if (widget.openApplicants) {
+        _openApplicantsSheetDeepLink();
+      } else if (widget.openReceiveModal) {
+        _openReceiveModalDeepLink();
+      } else if (widget.showDeliveries) {
+        _openDeliveriesSheetDeepLink();
+      }
+    });
+  }
+  
+  /// Open applicants bottom sheet (for clients) - deep-link version
+  void _openApplicantsSheetDeepLink() {
+    if (!mounted) return;
+    
+    // Track submitting state
+    bool isSubmitting = false;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => ApplicationsBottomSheet(
+          project: widget.project,
+          applications: _applications,
+          isLoading: _isLoading,
+          isSubmitting: isSubmitting,
+          onClose: () => Navigator.pop(context),
+          onAction: (assignmentId, projectId, action) async {
+            setSheetState(() => isSubmitting = true);
+            try {
+              final repository = ref.read(projectsRepositoryProvider);
+              await repository.acceptRejectApplication(assignmentId, projectId, action);
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text('Application ${action == 'accept' ? 'accepted' : 'rejected'}')),
+                );
+                _fetchRawProjectData();
+                ref.invalidate(myProjectsProvider);
+              }
+            } catch (e) {
+              setSheetState(() => isSubmitting = false);
+              if (mounted) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text('Failed: $e')),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+  
+  /// Open receive modal (for clients to review deliveries) - deep-link version
+  void _openReceiveModalDeepLink() {
+    if (!mounted) return;
+    
+    if (_deliveries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No deliveries to review yet')),
+      );
+      return;
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => ReviewDeliveryBottomSheet(
+        project: widget.project,
+        deliveries: _deliveries,
+        isLoading: _isLoadingDeliveries,
+        onClose: () => Navigator.pop(sheetContext),
+        onApprove: (projectId) async {
+          final repository = ref.read(projectsRepositoryProvider);
+          await repository.approveDelivery(projectId);
+          if (mounted) {
+            Navigator.pop(sheetContext);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Delivery approved!')),
+            );
+            _fetchRawProjectData();
+            _fetchDeliveriesIfNeeded();
+            // Invalidate providers
+            ref.invalidate(myProjectsProvider);
+          }
+        },
+        onRequestChanges: (projectId, message) async {
+          final repository = ref.read(projectsRepositoryProvider);
+          await repository.requestChanges(projectId, message);
+          if (mounted) {
+            Navigator.pop(sheetContext);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Changes requested')),
+            );
+            _fetchDeliveriesIfNeeded();
+          }
+        },
+        onRefresh: () {
+          _fetchDeliveriesIfNeeded();
+        },
+      ),
+    );
+  }
+  
+  /// Open deliveries sheet (for freelancers to see change requests) - deep-link version
+  void _openDeliveriesSheetDeepLink() {
+    if (!mounted) return;
+    
+    // Build change requests from deliveries that have changes_requested status
+    final changeRequests = _deliveries
+        .where((d) => (d['status'] ?? '').toString().toLowerCase() == 'changes_requested')
+        .toList();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => ChangeRequestsBottomSheet(
+        requests: changeRequests,
+        isLoading: _isLoadingDeliveries,
+      ),
+    );
   }
   
   // Fetch deliveries if user is owner or assigned freelancer
@@ -2335,9 +2489,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               textColor: Colors.white,
               onPressed: () async {
                 try {
-                  final result = await open_filex.OpenFilex.open(savePath);
-                  if (result.type != open_filex.ResultType.done) {
-                    debugPrint('Could not open file: ${result.message}');
+                  final fileUri = Uri.file(savePath);
+                  if (await canLaunchUrl(fileUri)) {
+                    await launchUrl(fileUri);
+                  } else {
+                    debugPrint('Could not open file: $savePath');
                   }
                 } catch (e) {
                   debugPrint('Error opening file: $e');

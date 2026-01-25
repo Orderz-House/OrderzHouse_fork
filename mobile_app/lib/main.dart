@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/network/health_check_service.dart';
 import 'core/config/app_config.dart';
+import 'core/providers/locale_provider.dart';
 
 void main() async {
   // Step 1: Ensure Flutter binding is initialized
@@ -48,16 +51,29 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch locale for automatic updates
+    final locale = ref.watch(localeProvider);
+    
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'OrderzHouse',
       theme: AppTheme.lightTheme,
       routerConfig: appRouter,
+      
+      // Localization configuration
+      locale: locale,
+      supportedLocales: AppLocales.supported,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }
