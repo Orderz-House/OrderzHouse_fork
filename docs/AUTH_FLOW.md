@@ -51,7 +51,7 @@ Authorization: Bearer <jwt-token>
   "role_id": 2,  // or 3 for freelancer
   "first_name": "John",
   "last_name": "Doe",
-  "email": "john@example.com",
+  "email": "info@battechno.com",
   "password": "SecurePass123",
   "phone_number": "+1234567890",
   "country": "USA",
@@ -91,7 +91,7 @@ Authorization: Bearer <jwt-token>
 **Request Body:**
 ```json
 {
-  "email": "john@example.com",
+  "email": "info@battechno.com",
   "otp": "123456"
 }
 ```
@@ -123,7 +123,7 @@ Authorization: Bearer <jwt-token>
 **Request Body:**
 ```json
 {
-  "email": "john@example.com",
+  "email": "info@battechno.com",
   "password": "SecurePass123",
   "otpMethod": "email"  // Optional: "email" or "sms"
 }
@@ -138,7 +138,7 @@ Authorization: Bearer <jwt-token>
   "userInfo": {
     "id": 123,
     "username": "johndoe",
-    "email": "john@example.com",
+    "email": "info@battechno.com",
     "role_id": 2,
     "first_name": "John",
     "last_name": "Doe",
@@ -186,7 +186,7 @@ If user has **3 or more failed login attempts**, or password verification fails,
 **Request Body:**
 ```json
 {
-  "email": "john@example.com",
+  "email": "info@battechno.com",
   "otp": "123456"
 }
 ```

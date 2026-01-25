@@ -188,16 +188,6 @@ class FreelancerHomeScreen extends ConsumerWidget {
           },
         ),
         QuickAction(
-          icon: Icons.chat_bubble_outline_rounded,
-          label: 'Messages',
-          onTap: () {
-            // TODO: Navigate to messages screen when available
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Messages coming soon')),
-            );
-          },
-        ),
-        QuickAction(
           icon: Icons.file_upload_outlined,
           label: l10n.deliveries,
           onTap: () {

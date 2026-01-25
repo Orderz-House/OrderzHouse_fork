@@ -4,7 +4,7 @@ const GRAD = "linear-gradient(135deg, #016c76 0%, #028090 40%, #03a3a8 100%)";
 export default function Terms({
   lastUpdated = "Oct 5, 2025",
   version = "v1.0",
-  email = "support@example.com",
+  email = "info@battechno.com",
   country = "Jordan",
   feePercent = "10%",
   revisionCount = "2",

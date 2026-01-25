@@ -446,7 +446,7 @@ setMessage(
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          placeholder="you@email.com"
+                          placeholder="info@battechno.com"
                           className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
                         />
                       </div>

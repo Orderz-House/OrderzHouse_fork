@@ -52,13 +52,6 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   _buildStatCard(
                     context,
-                    'Messages',
-                    '0',
-                    Icons.message,
-                    Colors.green,
-                  ),
-                  _buildStatCard(
-                    context,
                     'Notifications',
                     '0',
                     Icons.notifications,

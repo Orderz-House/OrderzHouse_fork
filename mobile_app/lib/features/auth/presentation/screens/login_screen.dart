@@ -124,6 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _StyledTextField(
                           controller: _emailController,
  
+
                           hint: l10n.email,
 
                           prefixIcon: Icons.lock_outline,

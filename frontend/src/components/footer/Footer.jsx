@@ -89,12 +89,12 @@ export default function CleanFooter() {
                     <span className="text-sm">+962 791433341</span>
                   </a>
                   <a
-                    href="mailto:info@orderzhouse.com"
+                    href="mailto:info@battechno.com"
                     className="flex w-fit items-center gap-3 text-gray-600 hover:text-[#028090] transition-colors"
                   >
                     <Mail className="w-4 h-4 flex-shrink-0" />
                     <span className="text-sm break-all sm:break-normal">
-                      info@orderzhouse.com
+                      info@battechno.com
                     </span>
                   </a>
                   <a
