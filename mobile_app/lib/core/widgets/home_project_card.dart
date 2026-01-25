@@ -5,6 +5,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../config/app_config.dart';
 import '../models/project.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Premium horizontal project card for home dashboard
 class HomeProjectCard extends StatelessWidget {
@@ -19,6 +20,7 @@ class HomeProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Debug log for price display (temporary)
     _debugPriceDisplay();
     
@@ -89,12 +91,12 @@ class HomeProjectCard extends StatelessWidget {
                         AppColors.accentOrange,
                       ),
                       _buildChip(
-                        _getTypeDisplay(),
+                        _getTypeDisplay(l10n),
                         AppColors.info,
                       ),
                       if (_isUrgent())
                         _buildChip(
-                          'Urgent',
+                          l10n.urgent,
                           AppColors.error,
                         ),
                     ],
@@ -155,14 +157,14 @@ class HomeProjectCard extends StatelessWidget {
     print('   Final display text: ${project.budgetDisplay}');
   }
 
-  String _getTypeDisplay() {
+  String _getTypeDisplay(AppLocalizations l10n) {
     switch (project.projectType.toLowerCase()) {
       case 'fixed':
-        return 'Fixed';
+        return l10n.fixed;
       case 'hourly':
-        return 'Hourly';
+        return l10n.hourly;
       case 'bidding':
-        return 'Bidding';
+        return l10n.bidding;
       default:
         return project.projectType;
     }

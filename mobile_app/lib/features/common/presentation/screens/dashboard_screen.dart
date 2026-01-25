@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -169,12 +170,15 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search projects, categories',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: const Color(0xFF9CA3AF),
-                      ),
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context)!;
+                      return TextField(
+                        decoration: InputDecoration(
+                          hintText: l10n.searchProjects,
+                          hintStyle: AppTextStyles.bodyMedium.copyWith(
+                            color: const Color(0xFF9CA3AF),
+                          ),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         color: Color(0xFF9CA3AF),
@@ -195,7 +199,9 @@ class DashboardScreen extends ConsumerWidget {
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.md,
                       ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -208,6 +214,7 @@ class DashboardScreen extends ConsumerWidget {
 
   // 2) SECTION 1: Featured Banner
   Widget _buildFeaturedBanner(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -218,7 +225,7 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Featured',
+                l10n.featured,
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: const Color(0xFF111827),
                   fontWeight: FontWeight.bold,
@@ -229,7 +236,7 @@ class DashboardScreen extends ConsumerWidget {
                   context.go('/client/explore');
                 },
                 child: Text(
-                  'See All >',
+                  l10n.seeAll,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF6D5FFD),
                     fontWeight: FontWeight.w600,
@@ -276,7 +283,7 @@ class DashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Find top freelancers fast',
+                          l10n.findTopFreelancersFast,
                           style: AppTextStyles.headlineSmall.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -284,7 +291,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'Post a project and get offers',
+                          l10n.postProjectGetOffers,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
                           ),
@@ -303,7 +310,7 @@ class DashboardScreen extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Post a Project',
+                                l10n.postProject,
                                 style: AppTextStyles.labelLarge.copyWith(
                                   color: const Color(0xFF6D5FFD),
                                   fontWeight: FontWeight.w600,
@@ -358,6 +365,7 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     AsyncValue<List<Category>> categoriesAsync,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -368,7 +376,7 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Popular Categories',
+                l10n.popularCategories,
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: const Color(0xFF111827),
                   fontWeight: FontWeight.bold,
@@ -379,7 +387,7 @@ class DashboardScreen extends ConsumerWidget {
                   context.go('/client/explore');
                 },
                 child: Text(
-                  'See All >',
+                  l10n.seeAll,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF6D5FFD),
                     fontWeight: FontWeight.w600,
@@ -398,7 +406,7 @@ class DashboardScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Text(
-                  'Failed to load categories',
+                  l10n.failedToLoadCategories,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: const Color(0xFF6B7280),
                   ),
@@ -412,7 +420,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Text(
-                      'No categories available',
+                      l10n.noCategoriesAvailable,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: const Color(0xFF6B7280),
                       ),
@@ -584,6 +592,7 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     AsyncValue<List<Project>> projectsAsync,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -594,7 +603,7 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Latest Projects',
+                l10n.latestProjects,
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: const Color(0xFF111827),
                   fontWeight: FontWeight.bold,
@@ -605,7 +614,7 @@ class DashboardScreen extends ConsumerWidget {
                   context.go('/client/explore');
                 },
                 child: Text(
-                  'See All >',
+                  l10n.seeAll,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF6D5FFD),
                     fontWeight: FontWeight.w600,
@@ -626,7 +635,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Failed to load projects',
+                      l10n.failedToLoadProjects,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: const Color(0xFF6B7280),
                       ),
@@ -638,7 +647,7 @@ class DashboardScreen extends ConsumerWidget {
                           onPressed: () {
                             ref.invalidate(latestProjectsProvider);
                           },
-                          child: const Text('Retry'),
+                          child: Text(l10n.retry),
                         );
                       },
                     ),
@@ -652,7 +661,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Text(
-                      'No projects available',
+                      l10n.noProjectsAvailable,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: const Color(0xFF6B7280),
                       ),

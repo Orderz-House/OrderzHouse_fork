@@ -1893,4 +1893,398 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get naNotAvailable => 'غير متوفر';
+
+  @override
+  String get offerRejectedMsg => 'تم رفض العرض';
+
+  @override
+  String get offerAcceptedMsg => 'تم قبول العرض ✅';
+
+  @override
+  String get applicationRejectedMsg => 'تم رفض الطلب';
+
+  @override
+  String get applicationAcceptedMsg => 'تم قبول الطلب ✅';
+
+  @override
+  String failedWithError(Object error) {
+    return 'فشل: $error';
+  }
+
+  @override
+  String get projectApprovedMsg => 'تمت الموافقة على المشروع ✅';
+
+  @override
+  String failedToApprove(Object error) {
+    return 'فشل في الموافقة: $error';
+  }
+
+  @override
+  String get pleaseEnterMessage => 'يرجى إدخال رسالة';
+
+  @override
+  String get changeRequestSentMsg => 'تم إرسال طلب التعديل ✉️';
+
+  @override
+  String failedToSendRequest(Object error) {
+    return 'فشل في إرسال الطلب: $error';
+  }
+
+  @override
+  String get enterFeedbackHint => 'أدخل ملاحظاتك أو طلبات التعديل...';
+
+  @override
+  String get exploreTalents => 'استكشاف المواهب';
+
+  @override
+  String get noFreelancersFound => 'لم يتم العثور على مستقلين';
+
+  @override
+  String get selectAtLeastOneFile => 'يرجى اختيار ملف واحد على الأقل';
+
+  @override
+  String failedToDeliver(Object error) {
+    return 'فشل في التسليم: $error';
+  }
+
+  @override
+  String get noDeliveriesToReview => 'لا توجد تسليمات للمراجعة بعد';
+
+  @override
+  String get deliveryApprovedMsg => 'تمت الموافقة على التسليم!';
+
+  @override
+  String get changesRequestedMsg => 'تم طلب تعديلات';
+
+  @override
+  String failedToSendOffer(Object error) {
+    return 'فشل في إرسال العرض: $error';
+  }
+
+  @override
+  String failedToApply(Object error) {
+    return 'فشل في التقديم: $error';
+  }
+
+  @override
+  String get deliverySubmittedMsg => 'تم تقديم التسليم بنجاح ✅';
+
+  @override
+  String get projectApprovedCompleted =>
+      'تمت الموافقة على المشروع وتم إكماله ✅';
+
+  @override
+  String get noDownloadableFile => 'لا يوجد ملف للتنزيل';
+
+  @override
+  String downloadingFile(Object fileName) {
+    return 'جاري التنزيل: $fileName';
+  }
+
+  @override
+  String downloadFailedError(Object error) {
+    return 'فشل التنزيل: $error';
+  }
+
+  @override
+  String get bidAmountJod => 'مبلغ المزايدة (دينار)';
+
+  @override
+  String get addMessageToOffer => 'أضف رسالة إلى عرضك...';
+
+  @override
+  String get proposalOptional => 'المقترح (اختياري)';
+
+  @override
+  String get message => 'الرسالة';
+
+  @override
+  String get describeChangesNeeded => 'صف التعديلات المطلوبة...';
+
+  @override
+  String get freelancerProfile => 'ملف المستقل';
+
+  @override
+  String get freelancerName => 'اسم المستقل';
+
+  @override
+  String ratingStars(Object rating) {
+    return 'التقييم: $rating ⭐';
+  }
+
+  @override
+  String get plansForFreelancersOnly => 'الخطط متاحة للمستقلين فقط.';
+
+  @override
+  String get pleaseLoginToSubscribe => 'يرجى تسجيل الدخول للاشتراك';
+
+  @override
+  String get paymentSuccessful => 'تم الدفع بنجاح! تم تفعيل الاشتراك.';
+
+  @override
+  String get paymentCancelled => 'تم إلغاء الدفع';
+
+  @override
+  String paymentError(Object error) {
+    return 'خطأ في الدفع: $error';
+  }
+
+  @override
+  String get noActiveSubscriptions => 'لا توجد اشتراكات نشطة';
+
+  @override
+  String get pleaseFillAllRequiredFields =>
+      'يرجى ملء جميع الحقول المطلوبة بشكل صحيح';
+
+  @override
+  String get profileUpdatedMsg => 'تم تحديث الملف الشخصي بنجاح!';
+
+  @override
+  String get supportRequestSubmitted =>
+      'تم إرسال طلب الدعم. سنتواصل معك قريباً!';
+
+  @override
+  String referralCodeCopied(Object code) {
+    return 'تم نسخ رمز الإحالة: $code';
+  }
+
+  @override
+  String get acceptanceOfTerms => 'قبول الشروط';
+
+  @override
+  String get accounts => 'الحسابات';
+
+  @override
+  String get userResponsibilities => 'مسؤوليات المستخدم';
+
+  @override
+  String get projectsDeliverables => 'المشاريع والتسليمات';
+
+  @override
+  String get paymentsFees => 'المدفوعات والرسوم';
+
+  @override
+  String get disputes => 'النزاعات';
+
+  @override
+  String get termination => 'الإنهاء';
+
+  @override
+  String get limitationOfLiability => 'تحديد المسؤولية';
+
+  @override
+  String get contact => 'التواصل';
+
+  @override
+  String get informationWeCollect => '١. المعلومات التي نجمعها';
+
+  @override
+  String get howWeUseInformation => '٢. كيف نستخدم المعلومات';
+
+  @override
+  String get sharingThirdParties => '٣. المشاركة والأطراف الثالثة';
+
+  @override
+  String get dataRetention => '٤. الاحتفاظ بالبيانات';
+
+  @override
+  String get securityPrivacy => '٥. الأمان';
+
+  @override
+  String get yourRights => '٦. حقوقك';
+
+  @override
+  String get contactPrivacy => '٧. التواصل';
+
+  @override
+  String get englishLanguage => 'English';
+
+  @override
+  String get arabicLanguage => 'العربية';
+
+  @override
+  String get noApplicantsYet => 'لا يوجد متقدمين بعد';
+
+  @override
+  String get pleaseEnterCompleteOtp => 'يرجى إدخال رمز التحقق كاملاً';
+
+  @override
+  String get otpResentSuccessfully => 'تم إعادة إرسال رمز التحقق بنجاح';
+
+  @override
+  String get pleaseSelectRole => 'يرجى اختيار الدور';
+
+  @override
+  String get pleaseSelectCategory => 'يرجى اختيار فئة واحدة على الأقل';
+
+  @override
+  String get pleaseEnterOtp => 'يرجى إدخال رمز التحقق';
+
+  @override
+  String get termsConditionsTitle => 'الشروط والأحكام';
+
+  @override
+  String get refundPolicy => 'سياسة الاسترداد';
+
+  @override
+  String get onboardingTitle1New => 'اربط الموهبة\nبالفرصة';
+
+  @override
+  String get onboardingTitle2New => 'تعاون\nسلس';
+
+  @override
+  String get onboardingTitle3New => 'مدفوعات آمنة\nوذكية';
+
+  @override
+  String get onboardingTitle4New => 'ابدأ\nرحلتك';
+
+  @override
+  String get onboardingDesc1New =>
+      'اعثر على أفضل المستقلين لمشروعك أو اكتشف فرصاً مثيرة لعرض مهاراتك.';
+
+  @override
+  String get onboardingDesc2New =>
+      'اعمل معاً بسهولة مع أدوات مدمجة للتواصل ومشاركة الملفات وإدارة المشاريع.';
+
+  @override
+  String get onboardingDesc3New =>
+      'استمتع براحة البال مع حماية الضمان ونظام الدفع المرحلي.';
+
+  @override
+  String get onboardingDesc4New =>
+      'أنشئ حسابك وابدأ رحلتك في العمل الحر اليوم.';
+
+  @override
+  String get development => 'التطوير';
+
+  @override
+  String get contentWriting => 'كتابة المحتوى';
+
+  @override
+  String get design => 'التصميم';
+
+  @override
+  String get marketing => 'التسويق';
+
+  @override
+  String get dataEntry => 'إدخال البيانات';
+
+  @override
+  String get adminSupport => 'الدعم الإداري';
+
+  @override
+  String get statusActive => 'نشط';
+
+  @override
+  String get statusBidding => 'مزايدة';
+
+  @override
+  String get statusPendingReview => 'قيد المراجعة';
+
+  @override
+  String get statusCompleted => 'مكتمل';
+
+  @override
+  String get statusPending => 'معلق';
+
+  @override
+  String get statusInProgress => 'قيد التنفيذ';
+
+  @override
+  String get statusCancelled => 'ملغي';
+
+  @override
+  String get statusRejected => 'مرفوض';
+
+  @override
+  String get statusAccepted => 'مقبول';
+
+  @override
+  String get statusOpen => 'مفتوح';
+
+  @override
+  String get statusClosed => 'مغلق';
+
+  @override
+  String get statusDraft => 'مسودة';
+
+  @override
+  String get statusExpired => 'منتهي';
+
+  @override
+  String get statusAssigned => 'معين';
+
+  @override
+  String get statusDelivered => 'تم التسليم';
+
+  @override
+  String get statusRevisionRequested => 'مطلوب تعديل';
+
+  @override
+  String get statusNotStarted => 'لم يبدأ';
+
+  @override
+  String get statusAwaitingPayment => 'في انتظار الدفع';
+
+  @override
+  String get fixed => 'ثابت';
+
+  @override
+  String get hourly => 'بالساعة';
+
+  @override
+  String get bidding => 'مزايدة';
+
+  @override
+  String get urgent => 'عاجل';
+
+  @override
+  String get description => 'الوصف';
+
+  @override
+  String get postedBy => 'نشر بواسطة';
+
+  @override
+  String get deadline => 'الموعد النهائي';
+
+  @override
+  String get budgetRange => 'نطاق الميزانية';
+
+  @override
+  String get jod => 'دينار';
+
+  @override
+  String get noProjectsYet => 'لا توجد مشاريع بعد';
+
+  @override
+  String get yourProjectsWillAppearHere => 'ستظهر مشاريعك هنا';
+
+  @override
+  String welcomeBackName(Object name) {
+    return 'مرحباً بعودتك، $name!';
+  }
+
+  @override
+  String get featured => 'مميز';
+
+  @override
+  String get popularCategories => 'الفئات الشائعة';
+
+  @override
+  String get latestProjects => 'أحدث المشاريع';
+
+  @override
+  String get findTopFreelancersFast => 'اعثر على أفضل المستقلين بسرعة';
+
+  @override
+  String get postProjectGetOffers => 'انشر مشروعاً واحصل على عروض';
+
+  @override
+  String get noCategoriesAvailable => 'لا توجد فئات متاحة';
+
+  @override
+  String get noProjectsAvailable => 'لا توجد مشاريع متاحة';
+
+  @override
+  String get failedToLoadProjects => 'فشل في تحميل المشاريع';
 }

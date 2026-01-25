@@ -123,11 +123,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Email input
                         _StyledTextField(
                           controller: _emailController,
-<<<<<<< HEAD
+ 
                           hint: l10n.email,
-=======
-                          hint: 'Email',
->>>>>>> hh
+
                           prefixIcon: Icons.lock_outline,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) => Validators.email(value?.trim()),
@@ -196,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                               child: Text(
-                                'or sign up with',
+                                l10n.orContinueWith,
                                 style: AppTextStyles.bodySmall.copyWith(
                                   color: const Color(0xFF6B7280),
                                   fontSize: 12,
@@ -220,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Don\'t have account? ',
+                              '${l10n.dontHaveAccount} ',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: const Color(0xFF6B7280),
                               ),

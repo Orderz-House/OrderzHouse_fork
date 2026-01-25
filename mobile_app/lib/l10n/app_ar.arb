@@ -773,5 +773,209 @@
     }
   },
   "couldNotLaunchCheckout": "تعذر فتح صفحة الدفع",
-  "naNotAvailable": "غير متوفر"
+  "naNotAvailable": "غير متوفر",
+  
+  "offerRejectedMsg": "تم رفض العرض",
+  "offerAcceptedMsg": "تم قبول العرض ✅",
+  "applicationRejectedMsg": "تم رفض الطلب",
+  "applicationAcceptedMsg": "تم قبول الطلب ✅",
+  "failedWithError": "فشل: {error}",
+  "@failedWithError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  
+  "projectApprovedMsg": "تمت الموافقة على المشروع ✅",
+  "failedToApprove": "فشل في الموافقة: {error}",
+  "@failedToApprove": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "pleaseEnterMessage": "يرجى إدخال رسالة",
+  "changeRequestSentMsg": "تم إرسال طلب التعديل ✉️",
+  "failedToSendRequest": "فشل في إرسال الطلب: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "enterFeedbackHint": "أدخل ملاحظاتك أو طلبات التعديل...",
+  
+  "exploreTalents": "استكشاف المواهب",
+  "noFreelancersFound": "لم يتم العثور على مستقلين",
+  
+  "selectAtLeastOneFile": "يرجى اختيار ملف واحد على الأقل",
+  "failedToDeliver": "فشل في التسليم: {error}",
+  "@failedToDeliver": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  
+  "noDeliveriesToReview": "لا توجد تسليمات للمراجعة بعد",
+  "deliveryApprovedMsg": "تمت الموافقة على التسليم!",
+  "changesRequestedMsg": "تم طلب تعديلات",
+  "failedToSendOffer": "فشل في إرسال العرض: {error}",
+  "@failedToSendOffer": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToApply": "فشل في التقديم: {error}",
+  "@failedToApply": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deliverySubmittedMsg": "تم تقديم التسليم بنجاح ✅",
+  "projectApprovedCompleted": "تمت الموافقة على المشروع وتم إكماله ✅",
+  "noDownloadableFile": "لا يوجد ملف للتنزيل",
+  "downloadingFile": "جاري التنزيل: {fileName}",
+  "@downloadingFile": {
+    "placeholders": {
+      "fileName": {}
+    }
+  },
+  "downloadFailedError": "فشل التنزيل: {error}",
+  "@downloadFailedError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "bidAmountJod": "مبلغ المزايدة (دينار)",
+  "addMessageToOffer": "أضف رسالة إلى عرضك...",
+  "proposalOptional": "المقترح (اختياري)",
+  "message": "الرسالة",
+  "describeChangesNeeded": "صف التعديلات المطلوبة...",
+  
+  "freelancerProfile": "ملف المستقل",
+  "freelancerName": "اسم المستقل",
+  "ratingStars": "التقييم: {rating} ⭐",
+  "@ratingStars": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  
+  "plansForFreelancersOnly": "الخطط متاحة للمستقلين فقط.",
+  "pleaseLoginToSubscribe": "يرجى تسجيل الدخول للاشتراك",
+  "paymentSuccessful": "تم الدفع بنجاح! تم تفعيل الاشتراك.",
+  "paymentCancelled": "تم إلغاء الدفع",
+  "paymentError": "خطأ في الدفع: {error}",
+  "@paymentError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noActiveSubscriptions": "لا توجد اشتراكات نشطة",
+  
+  "pleaseFillAllRequiredFields": "يرجى ملء جميع الحقول المطلوبة بشكل صحيح",
+  "profileUpdatedMsg": "تم تحديث الملف الشخصي بنجاح!",
+  
+  "supportRequestSubmitted": "تم إرسال طلب الدعم. سنتواصل معك قريباً!",
+  "referralCodeCopied": "تم نسخ رمز الإحالة: {code}",
+  "@referralCodeCopied": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  
+  "acceptanceOfTerms": "قبول الشروط",
+  "accounts": "الحسابات",
+  "userResponsibilities": "مسؤوليات المستخدم",
+  "projectsDeliverables": "المشاريع والتسليمات",
+  "paymentsFees": "المدفوعات والرسوم",
+  "disputes": "النزاعات",
+  "termination": "الإنهاء",
+  "limitationOfLiability": "تحديد المسؤولية",
+  "contact": "التواصل",
+  
+  "informationWeCollect": "١. المعلومات التي نجمعها",
+  "howWeUseInformation": "٢. كيف نستخدم المعلومات",
+  "sharingThirdParties": "٣. المشاركة والأطراف الثالثة",
+  "dataRetention": "٤. الاحتفاظ بالبيانات",
+  "securityPrivacy": "٥. الأمان",
+  "yourRights": "٦. حقوقك",
+  "contactPrivacy": "٧. التواصل",
+  
+  "englishLanguage": "English",
+  "arabicLanguage": "العربية",
+  
+  "noApplicantsYet": "لا يوجد متقدمين بعد",
+  
+  "pleaseEnterCompleteOtp": "يرجى إدخال رمز التحقق كاملاً",
+  "otpResentSuccessfully": "تم إعادة إرسال رمز التحقق بنجاح",
+  "pleaseSelectRole": "يرجى اختيار الدور",
+  "pleaseSelectCategory": "يرجى اختيار فئة واحدة على الأقل",
+  "pleaseEnterOtp": "يرجى إدخال رمز التحقق",
+  
+  "termsConditionsTitle": "الشروط والأحكام",
+  "refundPolicy": "سياسة الاسترداد",
+  
+  "onboardingTitle1New": "اربط الموهبة\nبالفرصة",
+  "onboardingTitle2New": "تعاون\nسلس",
+  "onboardingTitle3New": "مدفوعات آمنة\nوذكية",
+  "onboardingTitle4New": "ابدأ\nرحلتك",
+  "onboardingDesc1New": "اعثر على أفضل المستقلين لمشروعك أو اكتشف فرصاً مثيرة لعرض مهاراتك.",
+  "onboardingDesc2New": "اعمل معاً بسهولة مع أدوات مدمجة للتواصل ومشاركة الملفات وإدارة المشاريع.",
+  "onboardingDesc3New": "استمتع براحة البال مع حماية الضمان ونظام الدفع المرحلي.",
+  "onboardingDesc4New": "أنشئ حسابك وابدأ رحلتك في العمل الحر اليوم.",
+  
+  "development": "التطوير",
+  "contentWriting": "كتابة المحتوى",
+  "design": "التصميم",
+  "marketing": "التسويق",
+  "dataEntry": "إدخال البيانات",
+  "adminSupport": "الدعم الإداري",
+  
+  "statusActive": "نشط",
+  "statusBidding": "مزايدة",
+  "statusPendingReview": "قيد المراجعة",
+  "statusCompleted": "مكتمل",
+  "statusPending": "معلق",
+  "statusInProgress": "قيد التنفيذ",
+  "statusCancelled": "ملغي",
+  "statusRejected": "مرفوض",
+  "statusAccepted": "مقبول",
+  "statusOpen": "مفتوح",
+  "statusClosed": "مغلق",
+  "statusDraft": "مسودة",
+  "statusExpired": "منتهي",
+  "statusAssigned": "معين",
+  "statusDelivered": "تم التسليم",
+  "statusRevisionRequested": "مطلوب تعديل",
+  "statusNotStarted": "لم يبدأ",
+  "statusAwaitingPayment": "في انتظار الدفع",
+  
+  "fixed": "ثابت",
+  "hourly": "بالساعة",
+  "bidding": "مزايدة",
+  "urgent": "عاجل",
+  
+  "description": "الوصف",
+  "postedBy": "نشر بواسطة",
+  "deadline": "الموعد النهائي",
+  "budgetRange": "نطاق الميزانية",
+  "jod": "دينار",
+  
+  "noProjectsYet": "لا توجد مشاريع بعد",
+  "yourProjectsWillAppearHere": "ستظهر مشاريعك هنا",
+  
+  "welcomeBackName": "مرحباً بعودتك، {name}!",
+  "@welcomeBackName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  
+  "featured": "مميز",
+  "popularCategories": "الفئات الشائعة",
+  "latestProjects": "أحدث المشاريع",
+  "findTopFreelancersFast": "اعثر على أفضل المستقلين بسرعة",
+  "postProjectGetOffers": "انشر مشروعاً واحصل على عروض",
+  "noCategoriesAvailable": "لا توجد فئات متاحة",
+  "noProjectsAvailable": "لا توجد مشاريع متاحة",
+  "failedToLoadProjects": "فشل في تحميل المشاريع"
 }

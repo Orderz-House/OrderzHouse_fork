@@ -773,5 +773,209 @@
     }
   },
   "couldNotLaunchCheckout": "Could not launch checkout URL",
-  "naNotAvailable": "N/A"
+  "naNotAvailable": "N/A",
+  
+  "offerRejectedMsg": "Offer rejected",
+  "offerAcceptedMsg": "Offer accepted ✅",
+  "applicationRejectedMsg": "Application rejected",
+  "applicationAcceptedMsg": "Application accepted ✅",
+  "failedWithError": "Failed: {error}",
+  "@failedWithError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  
+  "projectApprovedMsg": "Project approved ✅",
+  "failedToApprove": "Failed to approve: {error}",
+  "@failedToApprove": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "pleaseEnterMessage": "Please enter a message",
+  "changeRequestSentMsg": "Change request sent ✉️",
+  "failedToSendRequest": "Failed to send request: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "enterFeedbackHint": "Enter your feedback or change requests...",
+  
+  "exploreTalents": "Explore Talents",
+  "noFreelancersFound": "No freelancers found",
+  
+  "selectAtLeastOneFile": "Please select at least one file",
+  "failedToDeliver": "Failed to deliver: {error}",
+  "@failedToDeliver": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  
+  "noDeliveriesToReview": "No deliveries to review yet",
+  "deliveryApprovedMsg": "Delivery approved!",
+  "changesRequestedMsg": "Changes requested",
+  "failedToSendOffer": "Failed to send offer: {error}",
+  "@failedToSendOffer": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToApply": "Failed to apply: {error}",
+  "@failedToApply": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deliverySubmittedMsg": "Delivery submitted successfully ✅",
+  "projectApprovedCompleted": "Project approved and marked as completed ✅",
+  "noDownloadableFile": "No downloadable file available",
+  "downloadingFile": "Downloading: {fileName}",
+  "@downloadingFile": {
+    "placeholders": {
+      "fileName": {}
+    }
+  },
+  "downloadFailedError": "Download failed: {error}",
+  "@downloadFailedError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "bidAmountJod": "Bid Amount (JOD)",
+  "addMessageToOffer": "Add a message to your offer...",
+  "proposalOptional": "Proposal (Optional)",
+  "message": "Message",
+  "describeChangesNeeded": "Describe what changes are needed...",
+  
+  "freelancerProfile": "Freelancer Profile",
+  "freelancerName": "Freelancer Name",
+  "ratingStars": "Rating: {rating} ⭐",
+  "@ratingStars": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  
+  "plansForFreelancersOnly": "Plans are available for freelancers only.",
+  "pleaseLoginToSubscribe": "Please log in to subscribe",
+  "paymentSuccessful": "Payment successful! Subscription activated.",
+  "paymentCancelled": "Payment cancelled",
+  "paymentError": "Payment error: {error}",
+  "@paymentError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noActiveSubscriptions": "No active subscriptions",
+  
+  "pleaseFillAllRequiredFields": "Please fill in all required fields correctly",
+  "profileUpdatedMsg": "Profile updated successfully!",
+  
+  "supportRequestSubmitted": "Support request submitted. We'll get back to you soon!",
+  "referralCodeCopied": "Referral code copied: {code}",
+  "@referralCodeCopied": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  
+  "acceptanceOfTerms": "Acceptance of Terms",
+  "accounts": "Accounts",
+  "userResponsibilities": "User Responsibilities",
+  "projectsDeliverables": "Projects & Deliverables",
+  "paymentsFees": "Payments & Fees",
+  "disputes": "Disputes",
+  "termination": "Termination",
+  "limitationOfLiability": "Limitation of Liability",
+  "contact": "Contact",
+  
+  "informationWeCollect": "1. Information We Collect",
+  "howWeUseInformation": "2. How We Use Information",
+  "sharingThirdParties": "3. Sharing & Third Parties",
+  "dataRetention": "4. Data Retention",
+  "securityPrivacy": "5. Security",
+  "yourRights": "6. Your Rights",
+  "contactPrivacy": "7. Contact",
+  
+  "englishLanguage": "English",
+  "arabicLanguage": "العربية",
+  
+  "noApplicantsYet": "No applicants yet",
+  
+  "pleaseEnterCompleteOtp": "Please enter complete OTP",
+  "otpResentSuccessfully": "OTP resent successfully",
+  "pleaseSelectRole": "Please select a role",
+  "pleaseSelectCategory": "Please select at least one category",
+  "pleaseEnterOtp": "Please enter OTP",
+  
+  "termsConditionsTitle": "Terms & Conditions",
+  "refundPolicy": "Refund Policy",
+  
+  "onboardingTitle1New": "Connect Talent\nwith Opportunity",
+  "onboardingTitle2New": "Seamless\nCollaboration",
+  "onboardingTitle3New": "Secure & Smart\nPayments",
+  "onboardingTitle4New": "Start Your\nJourney",
+  "onboardingDesc1New": "Find the best freelancers for your project or discover exciting opportunities to showcase your skills.",
+  "onboardingDesc2New": "Work together effortlessly with built-in tools for communication, file sharing, and project management.",
+  "onboardingDesc3New": "Enjoy peace of mind with our escrow protection and milestone-based payment system.",
+  "onboardingDesc4New": "Create your account and start your freelancing journey today.",
+  
+  "development": "Development",
+  "contentWriting": "Content Writing",
+  "design": "Design",
+  "marketing": "Marketing",
+  "dataEntry": "Data Entry",
+  "adminSupport": "Admin Support",
+  
+  "statusActive": "Active",
+  "statusBidding": "Bidding",
+  "statusPendingReview": "Pending Review",
+  "statusCompleted": "Completed",
+  "statusPending": "Pending",
+  "statusInProgress": "In Progress",
+  "statusCancelled": "Cancelled",
+  "statusRejected": "Rejected",
+  "statusAccepted": "Accepted",
+  "statusOpen": "Open",
+  "statusClosed": "Closed",
+  "statusDraft": "Draft",
+  "statusExpired": "Expired",
+  "statusAssigned": "Assigned",
+  "statusDelivered": "Delivered",
+  "statusRevisionRequested": "Revision Requested",
+  "statusNotStarted": "Not Started",
+  "statusAwaitingPayment": "Awaiting Payment",
+  
+  "fixed": "Fixed",
+  "hourly": "Hourly",
+  "bidding": "Bidding",
+  "urgent": "Urgent",
+  
+  "description": "Description",
+  "postedBy": "Posted by",
+  "deadline": "Deadline",
+  "budgetRange": "Budget Range",
+  "jod": "JOD",
+  
+  "noProjectsYet": "No projects yet",
+  "yourProjectsWillAppearHere": "Your projects will appear here",
+  
+  "welcomeBackName": "Welcome back, {name}!",
+  "@welcomeBackName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  
+  "featured": "Featured",
+  "popularCategories": "Popular Categories",
+  "latestProjects": "Latest Projects",
+  "findTopFreelancersFast": "Find top freelancers fast",
+  "postProjectGetOffers": "Post a project and get offers",
+  "noCategoriesAvailable": "No categories available",
+  "noProjectsAvailable": "No projects available",
+  "failedToLoadProjects": "Failed to load projects"
 }

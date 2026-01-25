@@ -1901,4 +1901,399 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get naNotAvailable => 'N/A';
+
+  @override
+  String get offerRejectedMsg => 'Offer rejected';
+
+  @override
+  String get offerAcceptedMsg => 'Offer accepted ✅';
+
+  @override
+  String get applicationRejectedMsg => 'Application rejected';
+
+  @override
+  String get applicationAcceptedMsg => 'Application accepted ✅';
+
+  @override
+  String failedWithError(Object error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get projectApprovedMsg => 'Project approved ✅';
+
+  @override
+  String failedToApprove(Object error) {
+    return 'Failed to approve: $error';
+  }
+
+  @override
+  String get pleaseEnterMessage => 'Please enter a message';
+
+  @override
+  String get changeRequestSentMsg => 'Change request sent ✉️';
+
+  @override
+  String failedToSendRequest(Object error) {
+    return 'Failed to send request: $error';
+  }
+
+  @override
+  String get enterFeedbackHint => 'Enter your feedback or change requests...';
+
+  @override
+  String get exploreTalents => 'Explore Talents';
+
+  @override
+  String get noFreelancersFound => 'No freelancers found';
+
+  @override
+  String get selectAtLeastOneFile => 'Please select at least one file';
+
+  @override
+  String failedToDeliver(Object error) {
+    return 'Failed to deliver: $error';
+  }
+
+  @override
+  String get noDeliveriesToReview => 'No deliveries to review yet';
+
+  @override
+  String get deliveryApprovedMsg => 'Delivery approved!';
+
+  @override
+  String get changesRequestedMsg => 'Changes requested';
+
+  @override
+  String failedToSendOffer(Object error) {
+    return 'Failed to send offer: $error';
+  }
+
+  @override
+  String failedToApply(Object error) {
+    return 'Failed to apply: $error';
+  }
+
+  @override
+  String get deliverySubmittedMsg => 'Delivery submitted successfully ✅';
+
+  @override
+  String get projectApprovedCompleted =>
+      'Project approved and marked as completed ✅';
+
+  @override
+  String get noDownloadableFile => 'No downloadable file available';
+
+  @override
+  String downloadingFile(Object fileName) {
+    return 'Downloading: $fileName';
+  }
+
+  @override
+  String downloadFailedError(Object error) {
+    return 'Download failed: $error';
+  }
+
+  @override
+  String get bidAmountJod => 'Bid Amount (JOD)';
+
+  @override
+  String get addMessageToOffer => 'Add a message to your offer...';
+
+  @override
+  String get proposalOptional => 'Proposal (Optional)';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get describeChangesNeeded => 'Describe what changes are needed...';
+
+  @override
+  String get freelancerProfile => 'Freelancer Profile';
+
+  @override
+  String get freelancerName => 'Freelancer Name';
+
+  @override
+  String ratingStars(Object rating) {
+    return 'Rating: $rating ⭐';
+  }
+
+  @override
+  String get plansForFreelancersOnly =>
+      'Plans are available for freelancers only.';
+
+  @override
+  String get pleaseLoginToSubscribe => 'Please log in to subscribe';
+
+  @override
+  String get paymentSuccessful => 'Payment successful! Subscription activated.';
+
+  @override
+  String get paymentCancelled => 'Payment cancelled';
+
+  @override
+  String paymentError(Object error) {
+    return 'Payment error: $error';
+  }
+
+  @override
+  String get noActiveSubscriptions => 'No active subscriptions';
+
+  @override
+  String get pleaseFillAllRequiredFields =>
+      'Please fill in all required fields correctly';
+
+  @override
+  String get profileUpdatedMsg => 'Profile updated successfully!';
+
+  @override
+  String get supportRequestSubmitted =>
+      'Support request submitted. We\'ll get back to you soon!';
+
+  @override
+  String referralCodeCopied(Object code) {
+    return 'Referral code copied: $code';
+  }
+
+  @override
+  String get acceptanceOfTerms => 'Acceptance of Terms';
+
+  @override
+  String get accounts => 'Accounts';
+
+  @override
+  String get userResponsibilities => 'User Responsibilities';
+
+  @override
+  String get projectsDeliverables => 'Projects & Deliverables';
+
+  @override
+  String get paymentsFees => 'Payments & Fees';
+
+  @override
+  String get disputes => 'Disputes';
+
+  @override
+  String get termination => 'Termination';
+
+  @override
+  String get limitationOfLiability => 'Limitation of Liability';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get informationWeCollect => '1. Information We Collect';
+
+  @override
+  String get howWeUseInformation => '2. How We Use Information';
+
+  @override
+  String get sharingThirdParties => '3. Sharing & Third Parties';
+
+  @override
+  String get dataRetention => '4. Data Retention';
+
+  @override
+  String get securityPrivacy => '5. Security';
+
+  @override
+  String get yourRights => '6. Your Rights';
+
+  @override
+  String get contactPrivacy => '7. Contact';
+
+  @override
+  String get englishLanguage => 'English';
+
+  @override
+  String get arabicLanguage => 'العربية';
+
+  @override
+  String get noApplicantsYet => 'No applicants yet';
+
+  @override
+  String get pleaseEnterCompleteOtp => 'Please enter complete OTP';
+
+  @override
+  String get otpResentSuccessfully => 'OTP resent successfully';
+
+  @override
+  String get pleaseSelectRole => 'Please select a role';
+
+  @override
+  String get pleaseSelectCategory => 'Please select at least one category';
+
+  @override
+  String get pleaseEnterOtp => 'Please enter OTP';
+
+  @override
+  String get termsConditionsTitle => 'Terms & Conditions';
+
+  @override
+  String get refundPolicy => 'Refund Policy';
+
+  @override
+  String get onboardingTitle1New => 'Connect Talent\nwith Opportunity';
+
+  @override
+  String get onboardingTitle2New => 'Seamless\nCollaboration';
+
+  @override
+  String get onboardingTitle3New => 'Secure & Smart\nPayments';
+
+  @override
+  String get onboardingTitle4New => 'Start Your\nJourney';
+
+  @override
+  String get onboardingDesc1New =>
+      'Find the best freelancers for your project or discover exciting opportunities to showcase your skills.';
+
+  @override
+  String get onboardingDesc2New =>
+      'Work together effortlessly with built-in tools for communication, file sharing, and project management.';
+
+  @override
+  String get onboardingDesc3New =>
+      'Enjoy peace of mind with our escrow protection and milestone-based payment system.';
+
+  @override
+  String get onboardingDesc4New =>
+      'Create your account and start your freelancing journey today.';
+
+  @override
+  String get development => 'Development';
+
+  @override
+  String get contentWriting => 'Content Writing';
+
+  @override
+  String get design => 'Design';
+
+  @override
+  String get marketing => 'Marketing';
+
+  @override
+  String get dataEntry => 'Data Entry';
+
+  @override
+  String get adminSupport => 'Admin Support';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusBidding => 'Bidding';
+
+  @override
+  String get statusPendingReview => 'Pending Review';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusAccepted => 'Accepted';
+
+  @override
+  String get statusOpen => 'Open';
+
+  @override
+  String get statusClosed => 'Closed';
+
+  @override
+  String get statusDraft => 'Draft';
+
+  @override
+  String get statusExpired => 'Expired';
+
+  @override
+  String get statusAssigned => 'Assigned';
+
+  @override
+  String get statusDelivered => 'Delivered';
+
+  @override
+  String get statusRevisionRequested => 'Revision Requested';
+
+  @override
+  String get statusNotStarted => 'Not Started';
+
+  @override
+  String get statusAwaitingPayment => 'Awaiting Payment';
+
+  @override
+  String get fixed => 'Fixed';
+
+  @override
+  String get hourly => 'Hourly';
+
+  @override
+  String get bidding => 'Bidding';
+
+  @override
+  String get urgent => 'Urgent';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get postedBy => 'Posted by';
+
+  @override
+  String get deadline => 'Deadline';
+
+  @override
+  String get budgetRange => 'Budget Range';
+
+  @override
+  String get jod => 'JOD';
+
+  @override
+  String get noProjectsYet => 'No projects yet';
+
+  @override
+  String get yourProjectsWillAppearHere => 'Your projects will appear here';
+
+  @override
+  String welcomeBackName(Object name) {
+    return 'Welcome back, $name!';
+  }
+
+  @override
+  String get featured => 'Featured';
+
+  @override
+  String get popularCategories => 'Popular Categories';
+
+  @override
+  String get latestProjects => 'Latest Projects';
+
+  @override
+  String get findTopFreelancersFast => 'Find top freelancers fast';
+
+  @override
+  String get postProjectGetOffers => 'Post a project and get offers';
+
+  @override
+  String get noCategoriesAvailable => 'No categories available';
+
+  @override
+  String get noProjectsAvailable => 'No projects available';
+
+  @override
+  String get failedToLoadProjects => 'Failed to load projects';
 }
