@@ -157,8 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
                             onPressed: () {
-                              // Keep existing forget password logic if exists
-                              // For now, just a placeholder
+                              context.push('/forgot-password');
                             },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
@@ -168,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: Text(
                               l10n.forgotPassword,
                               style: AppTextStyles.bodySmall.copyWith(
-                                color: const Color(0xFF6B7280),
+                                color: const Color(0xFFFB923C),
                               ),
                             ),
                           ),

@@ -712,17 +712,16 @@ class _ExploreProjectsScreenState
       return const SizedBox.shrink();
     }
 
-    // Calculate proper spacing: bottom nav base height (85) + safe area + gap (12px)
-    // Reduced total margin significantly to move button DOWN (closer to bottom nav)
+    // Calculate proper spacing above bottom nav
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final bottomNavHeight = 85.0 + bottomPadding;
-    const buttonSpacing = 12.0; // Gap between button and bottom nav (10-16px range)
-    // Significantly reduce margin to move button DOWN - position it closer to bottom nav
-    final totalBottomMargin = bottomNavHeight + buttonSpacing - 113 ; // Reduced by 50px to move DOWN significantly
+    const buttonSpacing = 12.0; // Gap between button and bottom nav
+    // Clamp to non-negative to avoid Flutter assertion error
+    final totalBottomMargin = (bottomNavHeight + buttonSpacing).clamp(0.0, double.infinity);
 
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      margin: EdgeInsets.only(bottom: totalBottomMargin), // Dynamic spacing above bottom nav
+      margin: EdgeInsets.only(bottom: totalBottomMargin),
       child: PrimaryGradientButton(
         onPressed: () {
           context.go('/create-project');

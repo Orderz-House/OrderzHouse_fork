@@ -278,4 +278,94 @@ class AuthRepository {
   Future<void> logout() async {
     await SecureStorageService.clearAll();
   }
+
+  // ==================== Forgot Password Flow ====================
+
+  /// Request OTP for password reset
+  Future<ApiResponse<void>> requestPasswordResetOtp({
+    required String email,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/forgot-password',
+        data: {'email': email},
+      );
+
+      return ApiResponse(
+        success: response.statusCode == 200 || response.statusCode == 201,
+        message: response.data['message'] as String? ?? 'OTP sent to your email',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Failed to send OTP. Please try again.',
+      );
+    }
+  }
+
+  /// Verify OTP for password reset
+  Future<ApiResponse<String?>> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/verify-reset-otp',
+        data: {
+          'email': email,
+          'otp': otp,
+        },
+      );
+
+      // Backend may return a reset token
+      final resetToken = response.data['resetToken'] as String?;
+
+      return ApiResponse(
+        success: response.statusCode == 200,
+        message: response.data['message'] as String? ?? 'OTP verified successfully',
+        data: resetToken,
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Invalid OTP. Please try again.',
+      );
+    }
+  }
+
+  /// Reset password with email, OTP, and new password
+  Future<ApiResponse<void>> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/reset-password',
+        data: {
+          'email': email,
+          'otp': otp,
+          'newPassword': newPassword,
+        },
+      );
+
+      return ApiResponse(
+        success: response.statusCode == 200,
+        message: response.data['message'] as String? ?? 'Password reset successfully',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] as String? ?? 'Failed to reset password. Please try again.',
+      );
+    }
+  }
+
+  /// Resend OTP for password reset
+  Future<ApiResponse<void>> resendPasswordResetOtp({
+    required String email,
+  }) async {
+    // This can reuse the requestPasswordResetOtp method
+    return requestPasswordResetOtp(email: email);
+  }
 }

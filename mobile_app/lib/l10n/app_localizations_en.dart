@@ -2296,4 +2296,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToLoadProjects => 'Failed to load projects';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot password?';
+
+  @override
+  String get forgotPasswordDesc =>
+      'Enter your email address and we\'ll send you a code to reset your password.';
+
+  @override
+  String get sendOtp => 'Send OTP';
+
+  @override
+  String get backToLogin => 'Back to login';
+
+  @override
+  String get enterOtpCode => 'Enter OTP code';
+
+  @override
+  String get didntReceiveCode => 'Didn\'t receive code?';
+
+  @override
+  String get resendOtp => 'Resend OTP';
+
+  @override
+  String get resetPasswordTitle => 'Reset password';
+
+  @override
+  String get resetPasswordDesc => 'Create a new password for your account.';
+
+  @override
+  String get confirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get savePassword => 'Save';
+
+  @override
+  String get passwordUpdated => 'Password updated successfully!';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordUppercase =>
+      'Password must contain at least one uppercase letter';
+
+  @override
+  String get passwordLowercase =>
+      'Password must contain at least one lowercase letter';
+
+  @override
+  String get passwordNumber => 'Password must contain at least one number';
+
+  @override
+  String get passwordRequirements =>
+      'Min 8 characters, 1 uppercase, 1 lowercase, 1 number';
 }

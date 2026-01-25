@@ -4477,6 +4477,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load projects'**
   String get failedToLoadProjects;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email address and we\'ll send you a code to reset your password.'**
+  String get forgotPasswordDesc;
+
+  /// No description provided for @sendOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send OTP'**
+  String get sendOtp;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to login'**
+  String get backToLogin;
+
+  /// No description provided for @enterOtpCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter OTP code'**
+  String get enterOtpCode;
+
+  /// No description provided for @didntReceiveCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive code?'**
+  String get didntReceiveCode;
+
+  /// No description provided for @resendOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP'**
+  String get resendOtp;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new password for your account.'**
+  String get resetPasswordDesc;
+
+  /// No description provided for @confirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get confirmPasswordRequired;
+
+  /// No description provided for @savePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get savePassword;
+
+  /// No description provided for @passwordUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated successfully!'**
+  String get passwordUpdated;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordMinLength;
+
+  /// No description provided for @passwordUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one uppercase letter'**
+  String get passwordUppercase;
+
+  /// No description provided for @passwordLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one lowercase letter'**
+  String get passwordLowercase;
+
+  /// No description provided for @passwordNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one number'**
+  String get passwordNumber;
+
+  /// No description provided for @passwordRequirements.
+  ///
+  /// In en, this message translates to:
+  /// **'Min 8 characters, 1 uppercase, 1 lowercase, 1 number'**
+  String get passwordRequirements;
 }
 
 class _AppLocalizationsDelegate

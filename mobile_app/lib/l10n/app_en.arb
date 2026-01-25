@@ -977,5 +977,27 @@
   "postProjectGetOffers": "Post a project and get offers",
   "noCategoriesAvailable": "No categories available",
   "noProjectsAvailable": "No projects available",
-  "failedToLoadProjects": "Failed to load projects"
+  "failedToLoadProjects": "Failed to load projects",
+  
+  "forgotPasswordTitle": "Forgot password?",
+  "forgotPasswordDesc": "Enter your email address and we'll send you a code to reset your password.",
+  "sendOtp": "Send OTP",
+  "backToLogin": "Back to login",
+  
+  "enterOtpCode": "Enter OTP code",
+  "didntReceiveCode": "Didn't receive code?",
+  "resendOtp": "Resend OTP",
+  
+  "resetPasswordTitle": "Reset password",
+  "resetPasswordDesc": "Create a new password for your account.",
+  "newPassword": "New Password",
+  "confirmPasswordRequired": "Please confirm your password",
+  "savePassword": "Save",
+  "passwordUpdated": "Password updated successfully!",
+  
+  "passwordMinLength": "Password must be at least 8 characters",
+  "passwordUppercase": "Password must contain at least one uppercase letter",
+  "passwordLowercase": "Password must contain at least one lowercase letter",
+  "passwordNumber": "Password must contain at least one number",
+  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number"
 }
