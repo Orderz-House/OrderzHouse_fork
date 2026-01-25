@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/models/terms_content.dart';
+import '../../../../core/providers/locale_provider.dart';
 
-class TermsConditionsScreen extends StatelessWidget {
+class TermsConditionsScreen extends ConsumerWidget {
   const TermsConditionsScreen({super.key});
 
   void _handleBack(BuildContext context) {
@@ -19,8 +22,11 @@ class TermsConditionsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final locale = ref.watch(localeProvider);
+    final termsContent = TermsContent.getContent(locale.languageCode);
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -36,182 +42,59 @@ class TermsConditionsScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Last Updated
-              Text(
-                'Last updated: ${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textTertiary,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Last Updated
+                    Text(
+                      locale.languageCode == 'ar' 
+                        ? 'آخر تحديث: ${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}'
+                        : 'Last updated: ${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Fundamental Terms Section
+                    _SectionCard(
+                      number: 0,
+                      title: termsContent.fundamentalTerms.title,
+                      children: termsContent.fundamentalTerms.terms.map((term) => 
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: _SectionParagraph(term),
+                        ),
+                      ).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Contract Terms Sections
+                    ...termsContent.sections.map((section) => 
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: _SectionCard(
+                          number: section.number,
+                          title: section.title,
+                          children: [
+                            ...section.paragraphs.map((paragraph) => 
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                child: _SectionParagraph(paragraph),
+                              ),
+                            ),
+                            if (section.bulletPoints != null) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              ...section.bulletPoints!.map((point) => _BulletPoint(point)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Bottom padding for safe area
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Acceptance of Terms
-              const _SectionCard(
-                number: 1,
-                title: 'Acceptance of Terms',
-                children: [
-                  _SectionParagraph(
-                    'By accessing and using this platform, you accept and agree to be bound by these Terms & Conditions. If you do not agree to these terms, please do not use our services.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'We reserve the right to modify these terms at any time. Your continued use of the platform after changes constitutes acceptance of the modified terms.',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Accounts
-              const _SectionCard(
-                number: 2,
-                title: 'Accounts',
-                children: [
-                  _SectionParagraph(
-                    'You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'You must:',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _BulletPoint('Provide accurate and complete information'),
-                  _BulletPoint('Keep your account information up to date'),
-                  _BulletPoint('Notify us immediately of any unauthorized use'),
-                  _BulletPoint('Be at least 18 years old or have parental consent'),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // User Responsibilities
-              const _SectionCard(
-                number: 3,
-                title: 'User Responsibilities',
-                children: [
-                  _SectionParagraph(
-                    'Users agree to:',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _BulletPoint('Comply with all applicable laws and regulations'),
-                  _BulletPoint('Not engage in fraudulent, harmful, or illegal activities'),
-                  _BulletPoint('Respect intellectual property rights of others'),
-                  _BulletPoint('Not interfere with or disrupt the platform\'s operation'),
-                  _BulletPoint('Provide accurate project descriptions and deliverables'),
-                  _BulletPoint('Complete projects and payments in good faith'),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Projects & Deliverables
-              const _SectionCard(
-                number: 4,
-                title: 'Projects & Deliverables',
-                children: [
-                  _SectionParagraph(
-                    'Clients are responsible for clearly describing project requirements and expectations. Freelancers are responsible for delivering work that meets agreed-upon specifications.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'Disputes regarding deliverables should be resolved through the platform\'s dispute resolution process. We may, but are not obligated to, assist in resolving disputes.',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Payments & Fees
-              const _SectionCard(
-                number: 5,
-                title: 'Payments & Fees',
-                children: [
-                  _SectionParagraph(
-                    'All payments are processed securely through third-party payment processors. We charge platform fees as disclosed at the time of transaction.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'Payment terms:',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _BulletPoint('Clients pay upfront or upon milestone completion as agreed'),
-                  _BulletPoint('Funds are held in escrow until project completion and approval'),
-                  _BulletPoint('Refunds are processed according to our refund policy'),
-                  _BulletPoint('All fees are non-refundable unless otherwise stated'),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Disputes
-              const _SectionCard(
-                number: 6,
-                title: 'Disputes',
-                children: [
-                  _SectionParagraph(
-                    'If a dispute arises between users, both parties should attempt to resolve it through direct communication. If resolution is not possible, users may request platform mediation.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'Our dispute resolution process is designed to be fair and impartial. Decisions are final and binding. We reserve the right to suspend or terminate accounts involved in fraudulent disputes.',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Termination
-              const _SectionCard(
-                number: 7,
-                title: 'Termination',
-                children: [
-                  _SectionParagraph(
-                    'Either party may terminate an account at any time, subject to completion of active projects and payment obligations.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'We reserve the right to suspend or terminate accounts that violate these terms, engage in fraudulent activity, or otherwise harm the platform or its users.',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Limitation of Liability
-              const _SectionCard(
-                number: 8,
-                title: 'Limitation of Liability',
-                children: [
-                  _SectionParagraph(
-                    'To the maximum extent permitted by law, our platform is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from use of our services.',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'We facilitate connections between clients and freelancers but are not a party to agreements between users. Users are solely responsible for their agreements and deliverables.',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Contact
-              const _SectionCard(
-                number: 9,
-                title: 'Contact',
-                children: [
-                  _SectionParagraph(
-                    'For questions about these Terms & Conditions, please contact us at:',
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'Email: info@battechno.com',
-                    isBold: true,
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  _SectionParagraph(
-                    'We will respond to your inquiry within a reasonable timeframe.',
-                  ),
-                ],
-              ),
-
-                // Bottom padding for safe area
-                SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
-              ],
-            ),
               ),
             ),
           ],
@@ -298,8 +181,8 @@ class _SectionParagraph extends StatelessWidget {
 
   const _SectionParagraph(
     this.text, {
-    this.isBold = false,
-  });
+    bool isBold = false,
+  }) : isBold = isBold;
 
   @override
   Widget build(BuildContext context) {

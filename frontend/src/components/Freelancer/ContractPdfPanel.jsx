@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 /**
  * ContractPdfPanel
@@ -75,13 +74,13 @@ function fitFontSize(font, text, maxWidth, start = 11, min = 8) {
   return min;
 }
 
-function drawTextInRect(page, font, text, rect, opts = {}) {
+function drawTextInRect(page, font, text, rect, rgbFn, opts = {}) {
   const t = safeStr(text);
   if (!t) return;
 
   const padX = opts.padX ?? 3;
   const align = opts.align ?? "right"; // "left" | "right" | "center"
-  const color = opts.color ?? rgb(0.05, 0.1, 0.2);
+  const color = opts.color ?? rgbFn(0.05, 0.1, 0.2);
 
   const pageHeight = page.getHeight();
   const pr = toPdfRect(rect, pageHeight);
@@ -100,6 +99,9 @@ function drawTextInRect(page, font, text, rect, opts = {}) {
 }
 
 async function buildFilledPdf({ templateUrl, data }) {
+  // Dynamic import to avoid Vite resolution issues
+  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+  
   const res = await fetch(templateUrl);
   if (!res.ok) throw new Error(`Failed to load PDF template: ${res.status}`);
   const tplBytes = await res.arrayBuffer();
@@ -109,22 +111,22 @@ async function buildFilledPdf({ templateUrl, data }) {
 
   const page = pdf.getPages()[0];
 
-  drawTextInRect(page, font, data?.duration, FIELD_RECTS.duration, { size: 10.5, align: "left" });
-  drawTextInRect(page, font, data?.fullName, FIELD_RECTS.party2_name, { size: 10.5, align: "left" });
+  drawTextInRect(page, font, data?.duration, FIELD_RECTS.duration, rgb, { size: 10.5, align: "left" });
+  drawTextInRect(page, font, data?.fullName, FIELD_RECTS.party2_name, rgb, { size: 10.5, align: "left" });
 
-  drawTextInRect(page, font, data?.country, FIELD_RECTS.country, { size: 10.5 });
-  drawTextInRect(page, font, data?.specialty, FIELD_RECTS.specialty, { size: 10.5 });
-  drawTextInRect(page, font, data?.governorate, FIELD_RECTS.governorate, { size: 10.5 });
+  drawTextInRect(page, font, data?.country, FIELD_RECTS.country, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.specialty, FIELD_RECTS.specialty, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.governorate, FIELD_RECTS.governorate, rgb, { size: 10.5 });
 
-  drawTextInRect(page, font, data?.area, FIELD_RECTS.area, { size: 10.5 });
-  drawTextInRect(page, font, data?.neighborhood, FIELD_RECTS.neighborhood, { size: 10.5 });
-  drawTextInRect(page, font, data?.street, FIELD_RECTS.street, { size: 10.5 });
-  drawTextInRect(page, font, data?.building, FIELD_RECTS.building, { size: 10.5 });
-  drawTextInRect(page, font, data?.apartment, FIELD_RECTS.apartment, { size: 10.5 });
+  drawTextInRect(page, font, data?.area, FIELD_RECTS.area, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.neighborhood, FIELD_RECTS.neighborhood, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.street, FIELD_RECTS.street, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.building, FIELD_RECTS.building, rgb, { size: 10.5 });
+  drawTextInRect(page, font, data?.apartment, FIELD_RECTS.apartment, rgb, { size: 10.5 });
 
-  drawTextInRect(page, font, data?.jobTitle, FIELD_RECTS.jobTitle, { size: 10.5 });
+  drawTextInRect(page, font, data?.jobTitle, FIELD_RECTS.jobTitle, rgb, { size: 10.5 });
 
-  drawTextInRect(page, font, data?.issueDay, FIELD_RECTS.issueDay, { size: 10 });
+  drawTextInRect(page, font, data?.issueDay, FIELD_RECTS.issueDay, rgb, { size: 10 });
 
   const endDate = formatDateISO(data?.endDate);
   if (endDate) {
@@ -139,14 +141,14 @@ async function buildFilledPdf({ templateUrl, data }) {
       opacity: 1,
       borderWidth: 0,
     });
-    drawTextInRect(page, font, endDate, FIELD_RECTS.endDate, { size: 10, align: "left" });
+    drawTextInRect(page, font, endDate, FIELD_RECTS.endDate, rgb, { size: 10, align: "left" });
   }
 
-  drawTextInRect(page, font, data?.fullName, FIELD_RECTS.signature_name, { size: 10.5, align: "left" });
-  drawTextInRect(page, font, data?.nationalId, FIELD_RECTS.signature_nationalId, { size: 10.5, align: "left" });
+  drawTextInRect(page, font, data?.fullName, FIELD_RECTS.signature_name, rgb, { size: 10.5, align: "left" });
+  drawTextInRect(page, font, data?.nationalId, FIELD_RECTS.signature_nationalId, rgb, { size: 10.5, align: "left" });
 
   const signText = safeStr(data?.signatureText) || (data?.fullName ? `${data.fullName} (e-signed)` : "");
-  drawTextInRect(page, font, signText, FIELD_RECTS.signature_sign, { size: 10.5, align: "left" });
+  drawTextInRect(page, font, signText, FIELD_RECTS.signature_sign, rgb, { size: 10.5, align: "left" });
 
   return await pdf.save();
 }
