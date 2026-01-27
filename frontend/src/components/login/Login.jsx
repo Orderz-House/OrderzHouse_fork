@@ -1,10 +1,9 @@
 // src/components/login/Login.jsx
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router-dom";
 import { setLogin } from "../../slice/auth/authSlice";
 import { connectSocket } from "../../services/socketService";
 import {
@@ -200,31 +199,6 @@ const Login = () => {
     }
   };
 
-  const handleGoogleSuccess = (credentialResponse) => {
-    try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      dispatch(
-        setLogin({
-          token: credentialResponse.credential,
-          userId: decoded.sub,
-          roleId: "2",
-          is_verified: true,
-        })
-      );
-      setStatus(true);
-      setMessage("Google login successful! Redirecting...");
-      connectSocket(credentialResponse.credential, decoded.sub);
-      setTimeout(() => navigate("/"), 1500);
-    } catch (error) {
-      setStatus(false);
-      setMessage("Google login failed. Please try again.");
-    }
-  };
-
-  const handleGoogleError = () => {
-    setStatus(false);
-    setMessage("Google login failed. Please try again.");
-  };
 
   const resetToLogin = () => {
     setOtpMode(null);
@@ -246,8 +220,8 @@ const Login = () => {
       </div> */}
 
       <div className="flex min-h-screen items-center justify-center pt-32 p-4 lg:px-8">
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-6">
+        <div className="w-full max-w-xl">
+          <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
               Welcome back
             </h1>
@@ -257,8 +231,8 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-6 sm:p-8 shadow-sm">
-            <div className="mb-6 text-center">
+          <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-8 sm:p-10 shadow-sm">
+            <div className="mb-8 text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white">
                 {isOtpStep ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
                 <span className="text-sm">
@@ -267,7 +241,7 @@ const Login = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* فورم الإيميل + الباسورد */}
               {!isOtpStep && (
                 <>
@@ -291,9 +265,17 @@ const Login = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm text-slate-700 mb-1.5">
-                      Password
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="password" className="block text-sm text-slate-700">
+                        Password
+                      </label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm text-orange-600 hover:text-orange-700 hover:underline font-medium"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                     <div className="relative">
                       <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
@@ -402,38 +384,11 @@ const Login = () => {
                   </button>
                 </div>
               )}
-
-              {/* Google login فقط في خطوة الباسورد */}
-              {!isOtpStep && (
-                <>
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-slate-500 text-sm">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-center">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      theme="filled_blue"
-                      size="large"
-                      shape="pill"
-                      text="signin_with"
-                    />
-                  </div>
-                </>
-              )}
             </form>
 
             {message && (
               <div
-                className={`mt-6 p-4 rounded-xl flex items-start border ${
+                className={`mt-8 p-4 rounded-xl flex items-start border ${
                   status
                     ? "bg-green-50 text-green-800 border-green-200"
                     : "bg-rose-50 text-rose-800 border-rose-200"
@@ -449,7 +404,7 @@ const Login = () => {
             )}
 
             {!isOtpStep && (
-              <div className="mt-6 text-center pt-4 border-t border-slate-200">
+              <div className="mt-8 text-center pt-5 border-t border-slate-200">
                 <p className="text-sm text-slate-600">
                   Don&apos;t have an account?{" "}
                   <a

@@ -1,11 +1,14 @@
 // components/Projects/ProjectCard.jsx
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { safeStringMatch } from "../../utils/safeStringMatch";
 
 export default function ProjectCard({
   project,
   theme = "#F97316",
   linkBase = "projects",
   priceField = "price",
+  hasApplied: hasAppliedProp = false,
 }) {
   const {
     id,
@@ -18,6 +21,38 @@ export default function ProjectCard({
     offers,
   } = project;
 
+  // Get current user ID to check if they've applied
+  const currentUserId = useSelector((state) => state?.auth?.userId) || 
+                        (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
+  
+  // Check if current user has applied to this project
+  const hasApplied = (() => {
+    // Use prop from parent (preferred - most reliable)
+    if (hasAppliedProp === true) {
+      return true;
+    }
+    
+    // Check explicit fields
+    if (project?.has_applied === true || project?.is_applied === true || project?.hasApplied === true) {
+      return true;
+    }
+    
+    // Check if user has an offer in the offers array
+    if (currentUserId && Array.isArray(offers) && offers.length > 0) {
+      return offers.some(offer => {
+        const offerUserId = offer?.freelancer_id || offer?.user_id || offer?.userId;
+        return String(offerUserId) === String(currentUserId);
+      });
+    }
+    
+    return false;
+  })();
+
+  // Debug log (remove after confirming it works)
+  if (process.env.NODE_ENV === 'development') {
+    console.log("project", project.id, "hasApplied", hasApplied);
+  }
+
   const to = `/${linkBase}/${id}`;
  const projectType = (project?.project_type ?? project?.type ?? "").toLowerCase();
 
@@ -25,7 +60,7 @@ const toNumber = (v) => {
   if (v === null || v === undefined || v === "") return null;
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
   if (typeof v === "string") {
-    const m = v.match(/(\d+(\.\d+)?)/);
+    const m = safeStringMatch(v, /(\d+(\.\d+)?)/);
     return m ? Number(m[1]) : null;
   }
   return null;
@@ -48,40 +83,45 @@ const maxBid =
   toNumber(project?.max_bid) ??
   toNumber(project?.max_bid_amount);
 
-// fallback للسعر العادي (fixed/hourly)
-const basePrice =
+// Get price values based on project type
+const fixedPrice = toNumber(
   project?.budget ??
   project?.price ??
   project?.amount ??
-  project?.[priceField] ??
-  null;
+  project?.[priceField]
+);
 
-// ✅ label + value
-const priceLabel =
-  projectType === "bidding"
-    ? "Bidding Range"
-    : linkBase === "tasks"
-      ? "Price"
-      : "From";
+const hourlyRate = toNumber(project?.hourly_rate);
 
-let displayPrice = "—";
+// ✅ label + value based on project_type
+let priceLabel = "Price";
+let displayPrice = "Price not available";
 
-// ✅ لو bidding وعندنا range
-if (projectType === "bidding" && (minBid !== null || maxBid !== null)) {
-  if (minBid !== null && maxBid !== null) displayPrice = `$${minBid} - $${maxBid}`;
-  else displayPrice = `From $${minBid ?? maxBid}`;
+if (projectType === "fixed") {
+  priceLabel = "Price";
+  if (fixedPrice !== null) {
+    displayPrice = `${fixedPrice} JD`;
+  }
+} else if (projectType === "hourly") {
+  priceLabel = "Price";
+  if (hourlyRate !== null) {
+    displayPrice = `${hourlyRate} JD`;
+  }
+} else if (projectType === "bidding") {
+  priceLabel = "Bidding";
+  if (minBid !== null && maxBid !== null) {
+    displayPrice = `(${minBid} JD - ${maxBid} JD)`;
+  } else if (minBid !== null) {
+    displayPrice = `(${minBid} JD - ${maxBid ?? minBid} JD)`;
+  } else if (maxBid !== null) {
+    displayPrice = `(${minBid ?? maxBid} JD - ${maxBid} JD)`;
+  }
 } else {
-  // ✅ لو القيمة string فيها range مثل "200 - 300"
-  if (typeof basePrice === "string" && basePrice.includes("-")) {
-    const nums = basePrice.match(/(\d+(\.\d+)?)/g);
-    if (nums && nums.length >= 2) displayPrice = `$${nums[0]} - $${nums[1]}`;
-    else {
-      const n = toNumber(basePrice);
-      displayPrice = n !== null ? `$${n}` : "—";
-    }
-  } else {
-    const n = toNumber(basePrice);
-    displayPrice = n !== null ? `$${n}` : "—";
+  // Fallback for unknown types or missing project_type
+  if (fixedPrice !== null) {
+    displayPrice = `${fixedPrice} JD`;
+  } else if (hourlyRate !== null) {
+    displayPrice = `${hourlyRate} JD`;
   }
 }
 
@@ -133,14 +173,33 @@ if (projectType === "bidding" && (minBid !== null || maxBid !== null)) {
   }
 
   return (
-    <article className="group">
+    <article className="group relative">
       <Link to={to} state={{ project }} className="block" title={title}>
-        <div className="aspect-[16/9] w-full bg-slate-100 overflow-hidden rounded-xl">
+        <div className="aspect-[16/9] w-full bg-slate-100 overflow-hidden rounded-xl relative">
           <img
             src={coverSrc}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
+          {/* Already Applied Overlay Ribbon */}
+          {hasApplied && (
+            <div 
+              className="absolute inset-0 z-20 pointer-events-none overflow-hidden"
+            >
+              <div
+                className="absolute top-[20px] left-[-30%] right-[-30%] rotate-[-12deg] px-8 py-2 text-white font-bold text-xs sm:text-sm tracking-wider uppercase shadow-xl whitespace-nowrap text-center"
+                style={{
+                  background: "linear-gradient(135deg, rgba(249, 115, 22, 0.95) 0%, rgba(220, 38, 38, 0.95) 100%)",
+                  textShadow: "2px 2px 4px rgba(0, 0, 0, 0.9)",
+                  letterSpacing: "2px",
+                  borderTop: "3px solid rgba(255, 255, 255, 0.4)",
+                  borderBottom: "3px solid rgba(255, 255, 255, 0.4)",
+                }}
+              >
+                Already Applied
+              </div>
+            </div>
+          )}
         </div>
       </Link>
 

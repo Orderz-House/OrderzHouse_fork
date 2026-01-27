@@ -213,3 +213,37 @@ export const checkIfAssignedApi = async (projectId, token) => {
     return false;
   }
 };
+
+/* ==============================
+   📋 GET ALL PROJECT IDs WHERE USER HAS APPLIED
+============================== */
+export const getMyAppliedProjectIds = async () => {
+  const token = getAuthToken();
+  if (!token) return new Set();
+
+  try {
+    // Use the existing endpoint that returns applications for user's projects
+    // We'll extract project IDs from it
+    const { data } = await axios.get(
+      `${API_BASE}/applications/my-projects`,
+      getAuthHeaders()
+    );
+
+    if (data.success && Array.isArray(data.applications)) {
+      // Extract unique project IDs from applications
+      const projectIds = new Set(
+        data.applications
+          .map((app) => app.project_id)
+          .filter((id) => id != null)
+      );
+      return projectIds;
+    }
+    return new Set();
+  } catch (err) {
+    // If endpoint doesn't work or user is not a client, try alternative approach
+    // For freelancers, we need to query assignments differently
+    // For now, return empty set and let individual checks happen
+    console.warn("getMyAppliedProjectIds: Could not fetch applications", err.response?.data || err.message);
+    return new Set();
+  }
+};

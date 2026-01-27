@@ -1,5 +1,6 @@
 // components/Projects/SubSideBar.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
 
 // Projects API
@@ -7,6 +8,7 @@ import {
   fetchAuthProjectsByCategory,
   fetchAuthProjectsBySubCategory,
   fetchAuthProjectsBySubSubCategory,
+  checkIfAssignedApi,
 } from "./api/projects";
 
 // Tasks API
@@ -22,13 +24,15 @@ export default function SubSidebar({
   theme = "#028090",
   subCategoryId,
 }) {
+  const userData = useSelector((state) => state?.auth?.userData) || null;
   const [subSubs, setSubSubs] = useState([]);
   const [items, setItems] = useState([]);
   const [loadingSubSubs, setLoadingSubSubs] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [appliedProjectIds, setAppliedProjectIds] = useState(new Set());
 
   const [projectTypeFilter, setProjectTypeFilter] = useState("all");
-  const [sortFilter, setSortFilter] = useState("default");
+  const [sortFilter, setSortFilter] = useState("newest");
   const [budgetFilter, setBudgetFilter] = useState("any");
   const [durationFilter, setDurationFilter] = useState("any");
   const [withFilesOnly, setWithFilesOnly] = useState(false);
@@ -42,23 +46,20 @@ export default function SubSidebar({
   const activeFiltersCount = useMemo(() => {
     return [
       projectTypeFilter !== "all",
-      budgetFilter !== "any",
-      durationFilter !== "any",
       withFilesOnly,
       withFreelancerOnly,
     ].filter(Boolean).length;
-  }, [projectTypeFilter, budgetFilter, durationFilter, withFilesOnly, withFreelancerOnly]);
+  }, [projectTypeFilter, withFilesOnly, withFreelancerOnly]);
 
   const filterPillHint = activeFiltersCount === 0 ? "All" : `${activeFiltersCount}`;
 
   const SORT_LABELS = {
-    default: "Best",
     newest: "Newest",
     price_low_high: "Low to High",
     price_high_low: "High to Low",
   };
 
-  const sortPillLabel = SORT_LABELS[sortFilter] || "Best";
+  const sortPillLabel = SORT_LABELS[sortFilter] || "Newest";
 
   const filterSummary = activeFiltersCount === 0 ? "All" : `${activeFiltersCount} selected`;
 
@@ -116,24 +117,51 @@ export default function SubSidebar({
         }
 
         // projects
+        let data;
         if (activeSubSub) {
-          const data = await fetchAuthProjectsBySubSubCategory(
+          data = await fetchAuthProjectsBySubSubCategory(
             Number(activeSubSub)
           );
-          setItems(Array.isArray(data) ? data : []);
-          return;
-        }
-
-        if (subCategoryId) {
-          const data = await fetchAuthProjectsBySubCategory(
+        } else if (subCategoryId) {
+          data = await fetchAuthProjectsBySubCategory(
             Number(subCategoryId)
           );
-          setItems(Array.isArray(data) ? data : []);
-          return;
+        } else {
+          data = await fetchAuthProjectsByCategory(Number(categoryId));
         }
 
-        const data = await fetchAuthProjectsByCategory(Number(categoryId));
-        setItems(Array.isArray(data) ? data : []);
+        const projects = Array.isArray(data) ? data : [];
+        setItems(projects);
+
+        // Batch check which projects user has applied to (only for freelancers)
+        if (projects.length > 0 && !isTasks) {
+          const token = localStorage.getItem("token");
+          const roleIdFromState = userData?.role_id || userData?.roleId;
+          const roleIdFromStorage = localStorage.getItem("roleId");
+          const roleId = roleIdFromState || roleIdFromStorage;
+          const isFreelancer = String(roleId) === "3";
+
+          if (token && isFreelancer) {
+            // Check in parallel (limit to first 30 projects to avoid too many requests)
+            const projectsToCheck = projects.slice(0, 30);
+            const checkPromises = projectsToCheck.map(async (project) => {
+              try {
+                const hasApplied = await checkIfAssignedApi(project.id, token);
+                return hasApplied ? project.id : null;
+              } catch (err) {
+                return null;
+              }
+            });
+
+            const results = await Promise.all(checkPromises);
+            const appliedIds = new Set(results.filter((id) => id != null));
+            setAppliedProjectIds(appliedIds);
+          } else {
+            setAppliedProjectIds(new Set());
+          }
+        } else {
+          setAppliedProjectIds(new Set());
+        }
       } catch (err) {
         console.error("SubSidebar fetch error:", err);
         setItems([]);
@@ -143,7 +171,7 @@ export default function SubSidebar({
     };
 
     run();
-  }, [categoryId, activeSubSub, subCategoryId, isTasks]);
+  }, [categoryId, activeSubSub, subCategoryId, isTasks, userData]);
 
   if (!categoryId) return null;
 
@@ -376,32 +404,6 @@ export default function SubSidebar({
                   { value: "bidding", label: "Bidding" },
                 ]}
               />
-
-              <FilterDropdown
-                label="Budget"
-                value={budgetFilter}
-                onChange={setBudgetFilter}
-                options={[
-                  { value: "any", label: "Any budget" },
-                  { value: "0-100", label: "Up to $100" },
-                  { value: "100-500", label: "$100 – $500" },
-                  { value: "500-1000", label: "$500 – $1000" },
-                  { value: "1000+", label: "$1000+" },
-                ]}
-              />
-
-              <FilterDropdown
-                label="Delivery time"
-                value={durationFilter}
-                onChange={setDurationFilter}
-                options={[
-                  { value: "any", label: "Any time" },
-                  { value: "1", label: "Up to 1 day" },
-                  { value: "3", label: "Up to 3 days" },
-                  { value: "7", label: "Up to 7 days" },
-                  { value: "7+", label: "More than 7 days" },
-                ]}
-              />
             </div>
 
        
@@ -456,7 +458,6 @@ export default function SubSidebar({
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 aria-label="Sort"
               >
-                <option value="default">Best selling</option>
                 <option value="newest">Newest</option>
                 <option value="price_low_high">Price: Low to High</option>
                 <option value="price_high_low">Price: High to Low</option>
@@ -541,52 +542,6 @@ export default function SubSidebar({
                   </div>
                 </div>
 
-                {/* Budget */}
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-800">Budget</div>
-                  <div className="relative mt-2">
-                    <select
-                      value={budgetFilter}
-                      onChange={(e) => setBudgetFilter(e.target.value)}
-                      className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
-                    >
-                      <option value="any">Any budget</option>
-                      <option value="0-100">Up to $100</option>
-                      <option value="100-500">$100 – $500</option>
-                      <option value="500-1000">$500 – $1000</option>
-                      <option value="1000+">$1000+</option>
-                    </select>
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Delivery time */}
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-800">Delivery time</div>
-                  <div className="relative mt-2">
-                    <select
-                      value={durationFilter}
-                      onChange={(e) => setDurationFilter(e.target.value)}
-                      className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
-                    >
-                      <option value="any">Any time</option>
-                      <option value="1">Up to 1 day</option>
-                      <option value="3">Up to 3 days</option>
-                      <option value="7">Up to 7 days</option>
-                      <option value="7+">More than 7 days</option>
-                    </select>
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
               </div>
 
               <button
@@ -621,7 +576,6 @@ export default function SubSidebar({
               onChange={(e) => setSortFilter(e.target.value)}
               className="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer"
             >
-              <option value="default">Best selling</option>
               <option value="newest">Newest</option>
               <option value="price_low_high">Price: Low to High</option>
               <option value="price_high_low">Price: High to Low</option>
@@ -661,6 +615,7 @@ export default function SubSidebar({
                   theme={theme}
                   linkBase={isTasks ? "tasks" : "projects"}
                   priceField={priceField}
+                  hasApplied={appliedProjectIds.has(it.id)}
                 />
               ))}
             </div>
