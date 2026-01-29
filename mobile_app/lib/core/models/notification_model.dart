@@ -72,6 +72,14 @@ class AppNotification {
   final String? entityType;
   final bool isRead;
   final DateTime createdAt;
+  
+  // Additional IDs for navigation (extracted from metadata or referenceId)
+  final int? projectId;
+  final int? assignmentId;
+  final int? offerId;
+  final int? paymentId;
+  final int? messageId;
+  final int? taskId;
 
   AppNotification({
     required this.id,
@@ -82,19 +90,80 @@ class AppNotification {
     this.entityType,
     required this.isRead,
     required this.createdAt,
+    this.projectId,
+    this.assignmentId,
+    this.offerId,
+    this.paymentId,
+    this.messageId,
+    this.taskId,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    // Extract IDs from various possible fields
+    final refId = json['reference_id'] as int? ?? 
+                  json['referenceId'] as int? ?? 
+                  json['related_entity_id'] as int?;
+    
+    // Try to extract specific IDs from metadata or separate fields
+    final metadata = json['metadata'] as Map<String, dynamic>?;
+    final projectId = json['project_id'] as int? ?? 
+                      json['projectId'] as int? ??
+                      metadata?['project_id'] as int? ??
+                      metadata?['projectId'] as int?;
+    
+    final assignmentId = json['assignment_id'] as int? ?? 
+                         json['assignmentId'] as int? ??
+                         metadata?['assignment_id'] as int? ??
+                         metadata?['assignmentId'] as int?;
+    
+    final offerId = json['offer_id'] as int? ?? 
+                    json['offerId'] as int? ??
+                    metadata?['offer_id'] as int? ??
+                    metadata?['offerId'] as int?;
+    
+    final paymentId = json['payment_id'] as int? ?? 
+                      json['paymentId'] as int? ??
+                      metadata?['payment_id'] as int? ??
+                      metadata?['paymentId'] as int?;
+    
+    final messageId = json['message_id'] as int? ?? 
+                      json['messageId'] as int? ??
+                      metadata?['message_id'] as int? ??
+                      metadata?['messageId'] as int?;
+    
+    final taskId = json['task_id'] as int? ?? 
+                   json['taskId'] as int? ??
+                   metadata?['task_id'] as int? ??
+                   metadata?['taskId'] as int?;
+    
+    // If entityType is 'project' and we have referenceId but no projectId, use referenceId
+    final entityType = json['entity_type'] as String? ?? json['entityType'] as String?;
+    final resolvedProjectId = projectId ?? 
+                              (entityType == 'project' ? refId : null);
+    
     return AppNotification(
       id: json['id'] as int,
       title: json['title'] as String? ?? json['notification_title'] as String? ?? 'Notification',
       body: json['body'] as String? ?? json['message'] as String? ?? json['notification_body'] as String?,
       type: json['type'] as String? ?? json['notification_type'] as String?,
-      referenceId: json['reference_id'] as int? ?? json['referenceId'] as int? ?? json['related_entity_id'] as int?,
-      entityType: json['entity_type'] as String? ?? json['entityType'] as String?,
+      referenceId: refId,
+      entityType: entityType,
       isRead: json['is_read'] as bool? ?? json['read_status'] as bool? ?? json['isRead'] as bool? ?? false,
       createdAt: _dateTimeFromJson(json['created_at'] ?? json['createdAt']),
+      projectId: resolvedProjectId,
+      assignmentId: assignmentId,
+      offerId: offerId,
+      paymentId: paymentId,
+      messageId: messageId,
+      taskId: taskId,
     );
+  }
+  
+  /// Get the primary project ID for navigation (projectId or referenceId if entityType is project)
+  int? get primaryProjectId {
+    if (projectId != null) return projectId;
+    if (entityType == EntityType.project && referenceId != null) return referenceId;
+    return null;
   }
   
   /// Check if this notification should open project details
@@ -189,8 +258,9 @@ class AppNotification {
         return Icons.payment_outlined;
       case 'work_submitted':
       case 'work_approved':
-      case 'work_revision_requested':
         return Icons.task_outlined;
+      case 'work_revision_requested':
+        return Icons.edit_note_rounded;
       case 'message_received':
         return Icons.chat_bubble_outline_rounded;
       default:

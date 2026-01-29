@@ -999,5 +999,18 @@
   "passwordUppercase": "Password must contain at least one uppercase letter",
   "passwordLowercase": "Password must contain at least one lowercase letter",
   "passwordNumber": "Password must contain at least one number",
-  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number"
+  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number",
+
+  "filters": "Filters",
+  "oldestFirst": "Oldest First",
+  "allTypes": "All Types",
+  "anyBudget": "Any Budget",
+  "budgetLessThan50": "Up to 50 JOD",
+  "budget50To200": "50 – 200 JOD",
+  "budgetAbove200": "200+ JOD",
+  "deliveryTime": "Delivery Time",
+  "anyTime": "Any Time",
+  "deliveryShort": "Up to 7 days",
+  "deliveryMedium": "8 – 30 days",
+  "deliveryLong": "More than 30 days"
 }

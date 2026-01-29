@@ -112,23 +112,11 @@ class ClientHomeScreen extends ConsumerWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: [
-          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
-          NavItem(
-              icon: Icons.work_outline_rounded,
-              title: l10n.myProjects,
-              route: '/client/projects'),
-          NavItem(
-              icon: Icons.explore_rounded,
-              title: l10n.explore,
-              route: '/client/explore'),
-          NavItem(
-              icon: Icons.payment_rounded,
-              title: l10n.payments,
-              route: '/client/payments'),
-          NavItem(
-              icon: Icons.person_outline_rounded,
-              title: l10n.profile,
-              route: '/client/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/client'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/client/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/client/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/client/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/client/profile'),
         ],
       ),
     );

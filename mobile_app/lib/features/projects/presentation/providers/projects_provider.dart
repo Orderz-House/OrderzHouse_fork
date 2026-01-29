@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/cache/cache_service.dart';
 import '../../data/repositories/projects_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
@@ -10,41 +11,123 @@ final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
   return ProjectsRepository(ref: ref);
 });
 
+/// Provider for fetching a single project by ID
+/// Tries to find it in myProjects first, then shows error if not found
+final projectByIdProvider = FutureProvider.autoDispose.family<Project?, int>((ref, projectId) async {
+  final repository = ref.read(projectsRepositoryProvider);
+  
+  // Try to find in my projects
+  final myProjectsResponse = await repository.getMyProjectsRaw(limit: 1000);
+  if (myProjectsResponse.success && myProjectsResponse.data != null) {
+    final projectData = myProjectsResponse.data!.firstWhere(
+      (p) => (p['id'] as int?) == projectId,
+      orElse: () => {},
+    );
+    
+    if (projectData.isNotEmpty) {
+      try {
+        return Project.fromJson(projectData);
+      } catch (e) {
+        if (AppConfig.isDevelopment) {
+          print('❌ Failed to parse project $projectId: $e');
+        }
+        return null;
+      }
+    }
+  }
+  
+  // Not found in my projects - return null (will show error)
+  return null;
+});
+
+// In-memory cache for my projects (instant access)
+final _myProjectsCacheProvider = StateProvider<List<Project>?>((ref) => null);
+
 // Changed from autoDispose to prevent refetch on rebuilds
 // Now watches userId to automatically refetch when user changes
+// Uses stale-while-revalidate: returns cached data immediately, then fetches fresh
 final myProjectsProvider =
     FutureProvider<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
-  
-  // Watch userId to trigger refetch when user changes (login/logout/switch account)
+  ref.watch(authEpochProvider);
   final userId = ref.watch(authStateProvider.select((state) => state.userId));
-  
-  // If no user, return empty list (logged out state)
+
   if (userId == null) {
+    ref.read(_myProjectsCacheProvider.notifier).state = [];
     return [];
   }
   
-  final response = await repository.getMyProjects();
-
-  if (response.success && response.data != null) {
-    return response.data!;
+  // 1. Check in-memory cache first (instant)
+  final cached = ref.read(_myProjectsCacheProvider);
+  if (cached != null) {
+    // Return cached immediately, but continue fetching fresh data
+    // The provider will update when fresh data arrives
   }
+  
+  // 2. Try to load from persistent cache
+  final cacheKey = 'my_projects_$userId';
+  final persistentCache = await CacheService.getList<Project>(
+    cacheKey,
+    (json) => Project.fromJson(json),
+  );
+  
+  if (persistentCache != null && persistentCache.isNotEmpty) {
+    // Update in-memory cache
+    ref.read(_myProjectsCacheProvider.notifier).state = persistentCache;
+    // Return cached immediately, continue fetching fresh
+  }
+  
+  // 3. Fetch fresh data (this will update the provider when done)
+  try {
+    final response = await repository.getMyProjects();
 
-  throw Exception(response.message ?? 'Failed to fetch projects');
+    if (response.success && response.data != null) {
+      // Save to both caches
+      ref.read(_myProjectsCacheProvider.notifier).state = response.data!;
+      await CacheService.setList(
+        cacheKey,
+        response.data!,
+        (project) => project.toJson(),
+      );
+      return response.data!;
+    }
+
+    // If fetch fails, return cached data if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    throw Exception(response.message ?? 'Failed to fetch projects');
+  } catch (e) {
+    // Return cached data on error if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+    rethrow;
+  }
 });
+
+// In-memory cache for explore projects
+final _exploreProjectsCacheProvider = StateProvider.autoDispose<Map<String, List<Project>>>((ref) => {});
+
+/// Last successful explore projects list. Show this while refetching to avoid flicker.
+/// Updated when exploreProjectsProvider emits data; not autoDispose so it survives navigation.
+final exploreProjectsLastDataProvider = StateProvider<List<Project>?>((ref) => null);
 
 final exploreProjectsProvider =
     FutureProvider.autoDispose<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
-  
-  // Watch userId to trigger refetch when user changes
+  ref.watch(authEpochProvider);
   final userId = ref.watch(authStateProvider.select((state) => state.userId));
-  
-  // Get user role from auth state
   final authState = ref.read(authStateProvider);
   final userRoleId = authState.user?.roleId;
-  
-  // If no user, return empty list
+
   if (userId == null) {
     return [];
   }
@@ -59,29 +142,84 @@ final exploreProjectsProvider =
   final searchQuery = ref.watch(searchQueryProvider);
   final query = searchQuery.trim().isNotEmpty ? searchQuery.trim() : null;
   
+  // Create cache key from filters
+  final cacheKey = 'explore_${userId}_${selectedCategoryId ?? 'all'}_${sortBy}_${query ?? 'noquery'}';
+  
   if (AppConfig.isDevelopment) {
     print('🔍 [exploreProjectsProvider] Fetching with: categoryId=$selectedCategoryId, query=$query, sortBy=$sortBy');
   }
   
-  final response = await repository.fetchExploreProjects(
-    query: query,
-    categoryId: selectedCategoryId,
-    subCategoryId: null,
-    subSubCategoryId: null,
-    page: 1,
-    limit: 20,
-    userRoleId: userRoleId,
-    sortBy: sortBy,
-  );
-
-  if (response.success && response.data != null) {
-    if (AppConfig.isDevelopment) {
-      print('✅ [exploreProjectsProvider] Fetched ${response.data!.length} projects');
-    }
-    return response.data!;
+  // 1. Check in-memory cache first (instant)
+  final inMemoryCache = ref.read(_exploreProjectsCacheProvider);
+  final cached = inMemoryCache[cacheKey];
+  if (cached != null && cached.isNotEmpty) {
+    // Return cached immediately, continue fetching fresh
   }
+  
+  // 2. Try persistent cache
+  final persistentCache = await CacheService.getList<Project>(
+    cacheKey,
+    (json) => Project.fromJson(json),
+  );
+  
+  if (persistentCache != null && persistentCache.isNotEmpty) {
+    // Update in-memory cache
+    ref.read(_exploreProjectsCacheProvider.notifier).update((state) {
+      return {...state, cacheKey: persistentCache};
+    });
+    // Return cached immediately, continue fetching fresh
+  }
+  
+  // 3. Fetch fresh data
+  try {
+    final response = await repository.fetchExploreProjects(
+      query: query,
+      categoryId: selectedCategoryId,
+      subCategoryId: null,
+      subSubCategoryId: null,
+      page: 1,
+      limit: 20,
+      userRoleId: userRoleId,
+      sortBy: sortBy,
+    );
 
-  throw Exception(response.message ?? 'Failed to fetch explore projects');
+    if (response.success && response.data != null) {
+      if (AppConfig.isDevelopment) {
+        print('✅ [exploreProjectsProvider] Fetched ${response.data!.length} projects');
+      }
+      
+      // Save to both caches
+      ref.read(_exploreProjectsCacheProvider.notifier).update((state) {
+        return {...state, cacheKey: response.data!};
+      });
+      await CacheService.setList(
+        cacheKey,
+        response.data!,
+        (project) => project.toJson(),
+      );
+      
+      return response.data!;
+    }
+
+    // If fetch fails, return cached data if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    throw Exception(response.message ?? 'Failed to fetch explore projects');
+  } catch (e) {
+    // Return cached data on error if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+    rethrow;
+  }
 });
 
 class ExploreProjectsParams {
@@ -148,15 +286,11 @@ class ExploreProjectsParams {
 final latestProjectsProvider =
     FutureProvider.autoDispose<List<Project>>((ref) async {
   final repository = ref.read(projectsRepositoryProvider);
-  
-  // Watch userId to trigger refetch when user changes
+  ref.watch(authEpochProvider);
   final userId = ref.watch(authStateProvider.select((state) => state.userId));
-  
-  // Get user role from auth state
   final authState = ref.read(authStateProvider);
   final userRoleId = authState.user?.roleId;
-  
-  // If no user, return empty list
+
   if (userId == null) {
     return [];
   }

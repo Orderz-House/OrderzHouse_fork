@@ -178,11 +178,11 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         items: [
-          NavItem(icon: Icons.home, title: l10n.home, route: '/freelancer'),
-          NavItem(icon: Icons.work, title: l10n.myProjects, route: '/freelancer/projects'),
-          NavItem(icon: Icons.explore, title: l10n.explore, route: '/freelancer/explore'),
-          NavItem(icon: Icons.payment, title: l10n.payments, route: '/freelancer/payments'),
-          NavItem(icon: Icons.person, title: l10n.profile, route: '/freelancer/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/freelancer/profile'),
         ],
       ),
     );

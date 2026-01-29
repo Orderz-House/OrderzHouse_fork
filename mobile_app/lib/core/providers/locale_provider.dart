@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-/// Key for storing locale preference
-const String _localeKey = 'app_locale';
+import '../storage/app_prefs.dart';
 
 /// Supported locales
 class AppLocales {
@@ -16,17 +13,16 @@ class AppLocales {
   static bool isRtl(Locale locale) => locale.languageCode == 'ar';
 }
 
-/// Locale state notifier for managing app language
+/// Locale state notifier for managing app language (uses AppPrefs — non-sensitive only)
 class LocaleNotifier extends StateNotifier<Locale> {
   LocaleNotifier() : super(AppLocales.english) {
     _loadSavedLocale();
   }
   
-  /// Load saved locale from SharedPreferences
+  /// Load saved locale from AppPrefs
   Future<void> _loadSavedLocale() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedLocale = prefs.getString(_localeKey);
+      final savedLocale = await AppPrefs.getLanguageCode();
       if (savedLocale != null) {
         state = Locale(savedLocale);
       }
@@ -42,8 +38,7 @@ class LocaleNotifier extends StateNotifier<Locale> {
     state = locale;
     
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_localeKey, locale.languageCode);
+      await AppPrefs.setLanguageCode(locale.languageCode);
     } catch (e) {
       debugPrint('Error saving locale: $e');
     }

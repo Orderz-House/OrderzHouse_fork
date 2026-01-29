@@ -2351,4 +2351,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordRequirements =>
       'Min 8 characters, 1 uppercase, 1 lowercase, 1 number';
+
+  @override
+  String get filters => 'Filters';
+
+  @override
+  String get oldestFirst => 'Oldest First';
+
+  @override
+  String get allTypes => 'All Types';
+
+  @override
+  String get anyBudget => 'Any Budget';
+
+  @override
+  String get budgetLessThan50 => 'Up to 50 JOD';
+
+  @override
+  String get budget50To200 => '50 – 200 JOD';
+
+  @override
+  String get budgetAbove200 => '200+ JOD';
+
+  @override
+  String get deliveryTime => 'Delivery Time';
+
+  @override
+  String get anyTime => 'Any Time';
+
+  @override
+  String get deliveryShort => 'Up to 7 days';
+
+  @override
+  String get deliveryMedium => '8 – 30 days';
+
+  @override
+  String get deliveryLong => 'More than 30 days';
 }

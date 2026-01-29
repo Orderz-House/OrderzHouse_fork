@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/models/api_response.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/storage/secure_store.dart';
 
 class AuthRepository {
   final Dio _dio = DioClient.instance;
@@ -24,7 +24,7 @@ class AuthRepository {
 
       if (data['token'] != null) {
         final token = data['token'] as String;
-        await SecureStorageService.saveToken(token);
+        await SecureStore.saveAccessToken(token);
 
         final userData = data['userInfo'] as Map<String, dynamic>;
         // Include terms acceptance fields
@@ -71,7 +71,7 @@ class AuthRepository {
 
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
-      await SecureStorageService.saveToken(token);
+      await SecureStore.saveAccessToken(token);
 
       final userData = data['userInfo'] as Map<String, dynamic>;
       // Include terms acceptance fields
@@ -233,7 +233,7 @@ class AuthRepository {
     required String newPassword,
   }) async {
     try {
-      final token = await SecureStorageService.getToken();
+      final token = await SecureStore.readAccessToken();
       if (token == null) {
         return const ApiResponse(
           success: false,
@@ -276,7 +276,7 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    await SecureStorageService.clearAll();
+    await SecureStore.clearAll();
   }
 
   // ==================== Forgot Password Flow ====================

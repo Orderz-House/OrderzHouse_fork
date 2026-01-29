@@ -4579,6 +4579,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Min 8 characters, 1 uppercase, 1 lowercase, 1 number'**
   String get passwordRequirements;
+
+  /// No description provided for @filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filters;
+
+  /// No description provided for @oldestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest First'**
+  String get oldestFirst;
+
+  /// No description provided for @allTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All Types'**
+  String get allTypes;
+
+  /// No description provided for @anyBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Any Budget'**
+  String get anyBudget;
+
+  /// No description provided for @budgetLessThan50.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 50 JOD'**
+  String get budgetLessThan50;
+
+  /// No description provided for @budget50To200.
+  ///
+  /// In en, this message translates to:
+  /// **'50 – 200 JOD'**
+  String get budget50To200;
+
+  /// No description provided for @budgetAbove200.
+  ///
+  /// In en, this message translates to:
+  /// **'200+ JOD'**
+  String get budgetAbove200;
+
+  /// No description provided for @deliveryTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Time'**
+  String get deliveryTime;
+
+  /// No description provided for @anyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Any Time'**
+  String get anyTime;
+
+  /// No description provided for @deliveryShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 7 days'**
+  String get deliveryShort;
+
+  /// No description provided for @deliveryMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'8 – 30 days'**
+  String get deliveryMedium;
+
+  /// No description provided for @deliveryLong.
+  ///
+  /// In en, this message translates to:
+  /// **'More than 30 days'**
+  String get deliveryLong;
 }
 
 class _AppLocalizationsDelegate

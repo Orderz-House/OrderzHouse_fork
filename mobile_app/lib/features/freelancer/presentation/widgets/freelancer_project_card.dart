@@ -19,6 +19,16 @@ class FreelancerProjectCard extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Check if project has unresolved change requests
+  bool _hasUnresolvedChangeRequests() {
+    if (projectData == null) return false;
+    
+    final changeRequestMessage = projectData!['change_request_message'] as String? ?? '';
+    final unresolvedCount = projectData!['change_requests_unresolved_count'] as int? ?? 0;
+    
+    return changeRequestMessage.trim().isNotEmpty || unresolvedCount > 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     const double imageHeight = 120.0;
@@ -101,6 +111,24 @@ class FreelancerProjectCard extends StatelessWidget {
                             ),
                           ),
                   ),
+                  // Badge indicator for unresolved change requests
+                  if (_hasUnresolvedChangeRequests())
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: AppColors.accentOrange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.notifications_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

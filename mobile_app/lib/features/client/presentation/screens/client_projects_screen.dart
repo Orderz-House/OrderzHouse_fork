@@ -12,7 +12,7 @@ import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
-import '../../../../core/widgets/gradient_button.dart';
+import '../../../../core/widgets/gradient_fab.dart';
 import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -120,79 +120,71 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     final contentBottomPadding = safe + 80.0;
 
     return AppScaffold(
-      body: Stack(
+      body: Column(
         children: [
-          // Main content
-          Column(
-            children: [
-              // 1) Top Bar
-              _buildTopBar(context, user),
-              
-              // 2) Search + Actions Row
-              _buildSearchRow(context),
-              
-              // 3) Category Chips Row
-              _buildCategoryChips(allStatuses),
-              
-              // 4) Projects Grid
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    _onRefresh();
+          // 1) Top Bar
+          _buildTopBar(context, user),
+          
+          // 2) Search + Actions Row
+          _buildSearchRow(context),
+          
+          // 3) Category Chips Row
+          _buildCategoryChips(allStatuses),
+          
+          // 4) Projects Grid
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _onRefresh();
+                ref.invalidate(myProjectsProvider);
+                await ref.read(myProjectsProvider.future);
+              },
+              child: projectsAsync.when(
+                data: (projects) {
+                  // Fetch and store raw project data (only once)
+                  _fetchRawProjectDataForProjects(projects);
+
+                  if (filteredProjects == null || filteredProjects.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.work_outline,
+                      title: _searchController.text.isNotEmpty || _selectedStatus != null
+                          ? l10n.noResultsFound
+                          : l10n.noProjects,
+                      message: _searchController.text.isNotEmpty || _selectedStatus != null
+                          ? l10n.noResultsFound
+                          : l10n.noProjectsMessage,
+                    );
+                  }
+
+                  return _buildProjectsGrid(context, filteredProjects, bottomPadding: contentBottomPadding);
+                },
+                loading: () => _LoadingGrid(bottomPadding: contentBottomPadding),
+                error: (error, stackTrace) => ErrorState(
+                  message: error.toString().replaceAll('Exception: ', ''),
+                  onRetry: () {
                     ref.invalidate(myProjectsProvider);
-                    await ref.read(myProjectsProvider.future);
                   },
-                  child: projectsAsync.when(
-                    data: (projects) {
-                      // Fetch and store raw project data (only once)
-                      _fetchRawProjectDataForProjects(projects);
-
-                      if (filteredProjects == null || filteredProjects.isEmpty) {
-                        return EmptyState(
-                          icon: Icons.work_outline,
-                          title: _searchController.text.isNotEmpty || _selectedStatus != null
-                              ? l10n.noResultsFound
-                              : l10n.noProjects,
-                          message: _searchController.text.isNotEmpty || _selectedStatus != null
-                              ? l10n.noResultsFound
-                              : l10n.noProjectsMessage,
-                        );
-                      }
-
-                      return _buildProjectsGrid(context, filteredProjects, bottomPadding: contentBottomPadding);
-                    },
-                    loading: () => _LoadingGrid(bottomPadding: contentBottomPadding),
-                    error: (error, stackTrace) => ErrorState(
-                      message: error.toString().replaceAll('Exception: ', ''),
-                      onRetry: () {
-                        ref.invalidate(myProjectsProvider);
-                      },
-                    ),
-                  ),
                 ),
               ),
-            ],
-          ),
-          
-          // Floating button positioned near bottom navigation bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: buttonBottomOffset,
-            child: Center(
-              child: _buildFloatingActionButton(context),
             ),
           ),
         ],
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: GradientFab(
+          onPressed: () => context.go('/create-project'),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         items: [
-          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
-          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/client/projects'),
-          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/client/explore'),
-          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/client/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/client/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/client'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/client/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/client/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/client/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/client/profile'),
         ],
       ),
     );
@@ -454,21 +446,6 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
           },
         );
       },
-    );
-  }
-
-  // 5) Floating Action Button (positioned near bottom navigation bar)
-  Widget _buildFloatingActionButton(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return PrimaryGradientButton(
-      onPressed: () {
-        context.go('/create-project');
-      },
-      label: l10n.createProject,
-      icon: Icons.add_rounded,
-      width: null, // Use intrinsic width (pill shape)
-      height: 48,
-      borderRadius: 30,
     );
   }
 }

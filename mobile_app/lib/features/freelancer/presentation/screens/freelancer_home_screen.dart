@@ -115,24 +115,11 @@ class FreelancerHomeScreen extends ConsumerWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: [
-          NavItem(
-              icon: Icons.home_rounded, title: l10n.home, route: '/freelancer'),
-          NavItem(
-              icon: Icons.work_outline_rounded,
-              title: l10n.myProjects,
-              route: '/freelancer/projects'),
-          NavItem(
-              icon: Icons.explore_rounded,
-              title: l10n.explore,
-              route: '/freelancer/explore'),
-          NavItem(
-              icon: Icons.payment_rounded,
-              title: l10n.payments,
-              route: '/freelancer/payments'),
-          NavItem(
-              icon: Icons.person_outline_rounded,
-              title: l10n.profile,
-              route: '/freelancer/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/freelancer/profile'),
         ],
       ),
     );

@@ -115,6 +115,44 @@ class Payment {
       reference: parseReference(json['reference'] as Map<String, dynamic>?),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'amount': amount,
+      'currency': currency,
+      'status': status,
+      'purpose': purpose,
+      'reference_id': referenceId,
+      'project_title': projectTitle,
+      'created_at': createdAt.toIso8601String(),
+      'type': type,
+      'note': note,
+      'method': method,
+      'source': source,
+      'title': title,
+      'description': description,
+      'project': project != null
+          ? {
+              'projectId': project!.projectId,
+              'title': project!.title,
+              'clientId': project!.clientId,
+              'freelancerId': project!.freelancerId,
+            }
+          : null,
+      'reference': reference != null
+          ? {
+              'paymentId': reference!.paymentId,
+              'purpose': reference!.purpose,
+              'referenceId': reference!.referenceId,
+              'stripeSessionId': reference!.stripeSessionId,
+              'stripePaymentIntent': reference!.stripePaymentIntent,
+              'transactionId': reference!.transactionId,
+              'type': reference!.transactionType,
+            }
+          : null,
+    };
+  }
 }
 
 class PaymentProject {

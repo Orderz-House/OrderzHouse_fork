@@ -164,6 +164,14 @@ class PaymentsRepository {
         message: response.data['message'] as String? ?? 'Failed to fetch payment history',
       );
     } on DioException catch (e) {
+      // Handle 404 specifically - endpoint may not be deployed yet
+      if (e.response?.statusCode == 404) {
+        return ApiResponse(
+          success: false,
+          message: 'Payment history endpoint is not available. The server may need to be updated. Please try again later or contact support.',
+        );
+      }
+
       return ApiResponse(
         success: false,
         message: e.response?.data['message'] as String? ?? 'Failed to fetch payment history',

@@ -38,6 +38,8 @@ import '../../features/auth/presentation/screens/reset_password_otp_screen.dart'
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/common/presentation/screens/language_selection_screen.dart';
+import '../../features/messages/presentation/screens/project_messages_screen.dart';
+import '../../features/projects/presentation/screens/change_requests_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -168,7 +170,7 @@ final GoRouter appRouter = GoRouter(
         final openReceiveModal = state.uri.queryParameters['openReceiveModal'] == 'true';
         final showDeliveries = state.uri.queryParameters['showDeliveries'] == 'true';
         
-        // Try to get project from extra, otherwise parse from path
+        // Try to get project from extra (when navigating from explore/my projects)
         final project = state.extra;
         if (project != null && project is Project) {
           return ProjectDetailsScreen(
@@ -178,18 +180,22 @@ final GoRouter appRouter = GoRouter(
             showDeliveries: showDeliveries,
           );
         }
-        final id = int.parse(state.pathParameters['id'] ?? '0');
-        // Fallback: create a minimal project object (will need to fetch from API)
+        
+        // Otherwise, parse projectId from path and fetch from API
+        final idString = state.pathParameters['id'] ?? '0';
+        final id = int.tryParse(idString);
+        if (id == null || id == 0) {
+          // Invalid ID, show error screen
+          return const Scaffold(
+            body: Center(
+              child: Text('Invalid project ID'),
+            ),
+          );
+        }
+        
+        // Pass projectId to screen, which will fetch the project
         return ProjectDetailsScreen(
-          project: Project(
-            id: id,
-            userId: 0,
-            title: 'Loading...',
-            description: '',
-            projectType: 'fixed',
-            status: 'pending',
-            createdAt: DateTime.now(),
-          ),
+          projectId: id,
           openApplicants: openApplicants,
           openReceiveModal: openReceiveModal,
           showDeliveries: showDeliveries,
@@ -208,6 +214,24 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final id = int.parse(state.pathParameters['id'] ?? '0');
         return DeliveriesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      path: '/project/:id/messages',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id'] ?? '0');
+        return ProjectMessagesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      path: '/project/:id/change-requests',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id'] ?? '0');
+        final title = state.uri.queryParameters['title'] ?? '';
+        return ChangeRequestsScreen(
+          projectId: id,
+          projectTitle: title,
+        );
       },
     ),
     GoRoute(

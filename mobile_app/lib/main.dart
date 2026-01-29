@@ -8,12 +8,16 @@ import 'core/routing/app_router.dart';
 import 'core/network/health_check_service.dart';
 import 'core/config/app_config.dart';
 import 'core/providers/locale_provider.dart';
+import 'core/storage/app_prefs.dart';
 
 void main() async {
   // Step 1: Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Step 2: Load environment variables (gracefully handle missing .env file)
+  // Step 2: Initialize app preferences (non-sensitive settings only)
+  await AppPrefs.init();
+  
+  // Step 3: Load environment variables (gracefully handle missing .env file)
   try {
     await dotenv.load(fileName: '.env');
     // ignore: avoid_print
@@ -25,7 +29,7 @@ void main() async {
     dotenv.testLoad(fileInput: '');
   }
   
-  // Step 3: Log baseUrl for debugging
+  // Step 4: Log baseUrl for debugging
   // ignore: avoid_print
   print('🌐 API Base URL: ${AppConfig.baseUrl}');
   

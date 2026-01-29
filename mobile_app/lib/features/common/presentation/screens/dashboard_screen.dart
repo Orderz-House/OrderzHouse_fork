@@ -23,6 +23,13 @@ class DashboardScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final latestProjectsAsync = ref.watch(latestProjectsProvider);
 
+    // Prefetch data for likely next screens (non-blocking)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Prefetch My Projects and Explore data in background
+      ref.read(myProjectsProvider.future).catchError((_) {});
+      // Prefetch is already happening via watch above
+    });
+
     return AppScaffold(
       body: SingleChildScrollView(
           child: Column(
@@ -224,11 +231,15 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.featured,
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: const Color(0xFF111827),
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  l10n.featured,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: const Color(0xFF111827),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton(
@@ -253,53 +264,70 @@ class DashboardScreen extends ConsumerWidget {
             onTap: () {
               context.go('/create-project');
             },
-            child: Container(
-              height: 160,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    Color(0xFF8B5CF6),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: 140,
+                    maxHeight: 200,
                   ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Left Content
-                  Padding(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary,
+                          Color(0xFF8B5CF6),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6D5FFD).withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        // Left Content
+                        Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          l10n.findTopFreelancersFast,
-                          style: AppTextStyles.headlineSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            l10n.findTopFreelancersFast,
+                            style: AppTextStyles.headlineSmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          l10n.postProjectGetOffers,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
+                        Flexible(
+                          child: Text(
+                            l10n.postProjectGetOffers,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
+                            horizontal: AppSpacing.md,
                             vertical: AppSpacing.sm,
                           ),
                           decoration: BoxDecoration(
@@ -309,11 +337,15 @@ class DashboardScreen extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                l10n.postProject,
-                                style: AppTextStyles.labelLarge.copyWith(
-                                  color: const Color(0xFF6D5FFD),
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  l10n.postProject,
+                                  style: AppTextStyles.labelLarge.copyWith(
+                                    color: const Color(0xFF6D5FFD),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.xs),
@@ -327,32 +359,40 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
-                  // Right Illustration (Placeholder)
-                  Positioned(
-                    right: 0,
+                        ),
+                        // Right Illustration (Placeholder) - Responsive
+                        PositionedDirectional(
+                    end: 0,
                     top: 0,
                     bottom: 0,
-                    child: Container(
-                      width: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.work_rounded,
-                          color: Colors.white,
-                          size: 60,
-                        ),
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final iconWidth = constraints.maxWidth * 0.3;
+                        return Container(
+                          width: iconWidth.clamp(80.0, 120.0),
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadiusDirectional.only(
+                              topEnd: Radius.circular(20),
+                              bottomEnd: Radius.circular(20),
+                            ),
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.work_rounded,
+                              color: Colors.white,
+                              size: (iconWidth * 0.5).clamp(40.0, 60.0),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ],
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -375,11 +415,15 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.popularCategories,
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: const Color(0xFF111827),
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  l10n.popularCategories,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: const Color(0xFF111827),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton(
@@ -513,15 +557,18 @@ class DashboardScreen extends ConsumerWidget {
                       : _buildCategoryIcon(category.name),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  category.name,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: const Color(0xFF111827),
-                    fontSize: 11,
+                Flexible(
+                  child: Text(
+                    category.name,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF111827),
+                      fontSize: 11,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
                 ),
               ],
             ),
@@ -602,11 +649,15 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.latestProjects,
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: const Color(0xFF111827),
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  l10n.latestProjects,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: const Color(0xFF111827),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton(

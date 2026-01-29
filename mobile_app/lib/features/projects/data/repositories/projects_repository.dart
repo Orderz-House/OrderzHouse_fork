@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/api_response.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../models/change_request_model.dart';
 
 class ProjectsRepository {
   final Dio _dio = DioClient.instance;
+  final _api = ApiClient.instance;
   final Ref? _ref;
 
   ProjectsRepository({Ref? ref}) : _ref = ref;
@@ -89,13 +92,7 @@ class ProjectsRepository {
   }) async {
     try {
       // Logging is handled by LoggingInterceptor, no need to duplicate here
-      final response = await _dio.get(
-        '/projects/myprojects',
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
-      );
+      final response = await _api.getMyProjects(page: page, limit: limit);
 
       final data = response.data as Map<String, dynamic>;
 
@@ -1317,35 +1314,133 @@ class ProjectsRepository {
     }
   }
 
-  /// Get change requests for a project (freelancer notifications)
-  /// Endpoint: GET /projects/{projectId}/change-requests
-  Future<ApiResponse<List<Map<String, dynamic>>>> getChangeRequests(int projectId) async {
+  /// Request project changes (client)
+  /// Endpoint: POST /projects/{projectId}/request-changes
+  /// Body: { "message": "<string>" }
+  Future<ApiResponse<void>> requestProjectChanges({
+    required int projectId,
+    required String message,
+  }) async {
     try {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => PATH: /projects/$projectId/change-requests');
+        print('📡 REQUEST[POST] => PATH: /projects/$projectId/request-changes');
+        print('📦 BODY: { "message": "$message" }');
       }
 
-      final response = await _dio.get('/projects/$projectId/change-requests');
+      final response = await _dio.post(
+        '/projects/$projectId/request-changes',
+        data: {'message': message},
+      );
 
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/change-requests');
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/request-changes');
       }
 
       final data = response.data as Map<String, dynamic>;
-      final items = data['requests'] ?? data['items'] ?? [];
-      final list = (items is List) ? items : [];
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Change request sent successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to send change request',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/request-changes');
+        print('Response: ${e.response?.data}');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to send change request',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/request-changes: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to send change request: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get change requests for a project (freelancer)
+  /// Endpoint: GET /projects/{projectId}/change-requests
+  /// Response: { success: true, requests: [...] } or { items: [...] } or { data: [...] }
+  Future<ApiResponse<List<ChangeRequest>>> getProjectChangeRequests(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        print('📡 REQUEST[GET] => PATH: /projects/$projectId/change-requests');
+      }
+
+      final response = await _api.getChangeRequests(projectId);
+
+      if (AppConfig.isDevelopment) {
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/change-requests');
+        print('📦 Response data: ${response.data}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      
+      // Handle different response shapes: requests, items, or data itself being a List
+      List<dynamic>? itemsList;
+      if (data['requests'] != null && data['requests'] is List) {
+        itemsList = data['requests'] as List<dynamic>;
+      } else if (data['items'] != null && data['items'] is List) {
+        itemsList = data['items'] as List<dynamic>;
+      } else if (data['data'] != null && data['data'] is List) {
+        itemsList = data['data'] as List<dynamic>;
+      } else if (response.data is List) {
+        itemsList = response.data as List<dynamic>;
+      }
+
+      if (itemsList == null || itemsList.isEmpty) {
+        if (AppConfig.isDevelopment) {
+          print('ℹ️ No change requests found (empty or null list)');
+        }
+        return const ApiResponse(
+          success: true,
+          data: [],
+          message: 'No change requests found',
+        );
+      }
+
+      final changeRequests = itemsList
+          .map((json) => ChangeRequest.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      if (AppConfig.isDevelopment) {
+        print('✅ Parsed ${changeRequests.length} change requests');
+      }
 
       return ApiResponse(
         success: true,
-        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        data: changeRequests,
         message: 'Change requests fetched successfully',
       );
     } on DioException catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
         print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/change-requests');
+        print('Response: ${e.response?.data}');
+      }
+
+      // Handle 404 as empty list (not an error)
+      if (e.response?.statusCode == 404) {
+        return const ApiResponse(
+          success: true,
+          data: [],
+          message: 'No change requests found',
+        );
       }
 
       return ApiResponse(
@@ -1355,7 +1450,6 @@ class ProjectsRepository {
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
         print('❌ UNEXPECTED ERROR => /projects/$projectId/change-requests: $e');
       }
 
@@ -1365,6 +1459,19 @@ class ProjectsRepository {
         message: 'Failed to fetch change requests: ${e.toString()}',
       );
     }
+  }
+
+  /// Mark change requests as read/seen for current user (optional backend).
+  /// If backend has PATCH /projects/:projectId/change-requests/mark-read, it will be called; otherwise no-op.
+  Future<void> markChangeRequestsRead(int projectId, {List<int>? ids, DateTime? lastSeenAt}) async {
+    try {
+      await _api.markChangeRequestsRead(projectId);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 501) return;
+      if (AppConfig.isDevelopment) {
+        print('⚠️ markChangeRequestsRead: ${e.message}');
+      }
+    } catch (_) {}
   }
 
   /// Deliver project (freelancer)

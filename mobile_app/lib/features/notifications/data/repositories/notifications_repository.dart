@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import '../../../../core/models/notification_model.dart';
 import '../../../../core/models/api_response.dart';
-import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/config/app_config.dart';
 
 class NotificationsRepository {
-  final Dio _dio = DioClient.instance;
+  final _api = ApiClient.instance;
 
   /// Fetch notifications for the authenticated user
   /// Endpoint: GET /notifications
@@ -24,13 +24,10 @@ class NotificationsRepository {
         print('📡 REQUEST[GET] => Query: limit=$limit, offset=$offset, unreadOnly=$unreadOnly');
       }
 
-      final response = await _dio.get(
-        '/notifications',
-        queryParameters: {
-          'limit': limit,
-          'offset': offset,
-          'unreadOnly': unreadOnly.toString(),
-        },
+      final response = await _api.getNotifications(
+        limit: limit,
+        offset: offset,
+        unreadOnly: unreadOnly,
       );
 
       if (AppConfig.isDevelopment) {
@@ -139,12 +136,7 @@ class NotificationsRepository {
         print('📡 REQUEST[GET] => Query: unreadOnly=$unreadOnly');
       }
 
-      final response = await _dio.get(
-        '/notifications/count',
-        queryParameters: {
-          'unreadOnly': unreadOnly.toString(),
-        },
-      );
+      final response = await _api.getNotificationsCount(unreadOnly: unreadOnly);
 
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
@@ -204,7 +196,7 @@ class NotificationsRepository {
         print('📡 REQUEST[PUT] => PATH: /notifications/$notificationId/read');
       }
 
-      final response = await _dio.put('/notifications/$notificationId/read');
+      final response = await _api.markNotificationRead(notificationId);
 
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
