@@ -641,6 +641,122 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
   );
 }
 
+/* ===================== Subscription Card ===================== */
+function SubscriptionCard({ subscriptionStatus, loading }) {
+  if (loading) {
+    return (
+      <div className={cx(UI.card, "p-6")} style={{ ...UI.ring, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.04)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm font-extrabold text-slate-900">Subscription</div>
+        </div>
+        <div className="text-xs text-slate-500">Loading subscription...</div>
+      </div>
+    );
+  }
+
+  if (!subscriptionStatus || !subscriptionStatus.subscription) {
+    return (
+      <div className={cx(UI.card, "p-6")} style={{ ...UI.ring, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.04)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm font-extrabold text-slate-900">Subscription</div>
+        </div>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
+          No active subscription
+        </div>
+      </div>
+    );
+  }
+
+  const sub = subscriptionStatus.subscription;
+  const status = subscriptionStatus.status || sub.status;
+  const remainingDays = subscriptionStatus.remaining_days || 0;
+  const statusMessage = subscriptionStatus.status_message || "";
+
+  // Status badge styling
+  const getStatusBadge = () => {
+    if (status === "pending_start") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-200/70 px-2.5 py-1 text-[10px] font-semibold">
+          Not started
+        </span>
+      );
+    }
+    if (status === "active") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70 px-2.5 py-1 text-[10px] font-semibold">
+          Active
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 border border-slate-200/70 px-2.5 py-1 text-[10px] font-semibold">
+        Expired
+      </span>
+    );
+  };
+
+  // Format end date
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return "";
+    }
+  };
+
+  return (
+    <div className={cx(UI.card, "p-6")} style={{ ...UI.ring, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.04)" }}>
+      {/* Title row with status badge */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="text-sm font-extrabold text-slate-900">Subscription</div>
+        {getStatusBadge()}
+      </div>
+
+      <div className="space-y-4">
+        {/* Plan name - more prominent */}
+        <div>
+          <div className="text-base font-extrabold text-slate-900">
+            {sub.plan_name || "Plan"}
+          </div>
+        </div>
+
+        {/* Main value area */}
+        {status === "active" && remainingDays > 0 ? (
+          <div>
+            <div className="text-3xl font-extrabold text-slate-900 mb-1">
+              {remainingDays}
+            </div>
+            <div className="text-sm text-slate-600 font-medium">
+              days remaining
+            </div>
+          </div>
+        ) : status === "pending_start" ? (
+          <div>
+            <div className="text-base text-slate-700 font-semibold leading-relaxed">
+              Starts when you start your first project
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-2xl font-extrabold text-slate-600">
+              Expired
+            </div>
+          </div>
+        )}
+
+        {/* End date (only if active/expired) */}
+        {(status === "active" || status === "expired") && sub.end_date && (
+          <div className="text-xs text-slate-500 pt-1">
+            Ends: {formatDate(sub.end_date)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 /* ===================== Activation steps (embedded) ===================== */
 function ActivationStepperCard({
@@ -1003,6 +1119,7 @@ function FreelancerDashboard() {
   const [balanceCards, setBalanceCards] = useState([]);
   const [activeProjects, setActiveProjects] = useState([]);
   const [latestClientProjects, setLatestClientProjects] = useState([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -1023,6 +1140,7 @@ function FreelancerDashboard() {
           ? payload.latestClientProjects
           : []
       );
+      setSubscriptionStatus(payload?.subscriptionStatus || null);
     } catch (e) {
       console.error(e);
       setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
@@ -1205,68 +1323,7 @@ function FreelancerDashboard() {
                 }
               />
 
-              <RightListCard
-                title="Latest client projects"
-                items={latestClientProjects}
-                onSeeAll={() => navigate(`${base}/projects`)}
-                renderRow={(p) => (
-                  <>
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold text-slate-900 truncate">
-                        {p?.title || "Project"}
-                      </div>
-                      <div className="text-[11px] text-slate-500 truncate">
-                        {p?.type || p?.project_type || "—"}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (p?.id) {
-                          navigate(`${base}/projects/${p.id}`);
-                        } else {
-                          navigate(`${base}/projects`);
-                        }
-                      }}
-                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Open
-                    </button>
-                  </>
-                )}
-              />
-
-              <div className={cx(UI.card, "p-5")} style={UI.ring}>
-                <div className="text-sm font-extrabold text-slate-900">
-                  Quick actions
-                </div>
-                <div className="mt-4 grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${base}/projects`)}
-                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4 text-violet-600" />
-                      View my projects
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-slate-400" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${base}/payments`)}
-                    className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-orange-600" />
-                      Go to payouts
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-slate-400" />
-                  </button>
-                </div>
-              </div>
+              <SubscriptionCard subscriptionStatus={subscriptionStatus} loading={loading} />
             </div>
           </div>
         </div>

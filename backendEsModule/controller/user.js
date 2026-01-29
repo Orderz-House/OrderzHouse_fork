@@ -445,14 +445,14 @@ const register = async (req, res) => {
     }
 
     /* =========================
-       CREATE USER
+       CREATE USER (with email_verified = FALSE)
     ========================= */
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userResult = await client.query(
       `INSERT INTO users
         (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,FALSE)
        RETURNING id, email, first_name`,
       [
         roleId,
@@ -467,6 +467,46 @@ const register = async (req, res) => {
     );
 
     const user = userResult.rows[0];
+
+    /* =========================
+       GENERATE AND SEND EMAIL OTP
+    ========================= */
+    const emailOtp = generateOtp();
+    const emailOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await client.query(
+      `UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3`,
+      [emailOtp, emailOtpExpires, user.id]
+    );
+
+    // Send OTP email - if this fails, rollback registration
+    try {
+      const mailOptions = {
+        from: `"OrderzHouse" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Verify your email - OrderzHouse",
+        html: `
+          <h2>Hello ${user.first_name}</h2>
+          <p>Welcome to OrderzHouse! Please verify your email address.</p>
+          <p>Your verification code:</p>
+          <h1 style="color:#007bff; font-size: 32px; letter-spacing:4px; text-align:center;">${emailOtp}</h1>
+          <p>This code expires in <b>5 minutes</b>.</p>
+          <br/>
+          <p>Thanks,<br/>OrderzHouse Team</p>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Registration OTP email sent to ${user.email}`);
+    } catch (emailError) {
+      await client.query("ROLLBACK");
+      console.error("❌ Failed to send registration OTP email:", emailError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again or contact support.",
+        error: process.env.NODE_ENV === "development" ? emailError.message : undefined,
+      });
+    }
 
     /* =========================
        GENERATE REFERRAL CODE
@@ -554,7 +594,7 @@ const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Registered successfully ✅",
+      message: "Registered successfully. OTP sent to your email ✅",
       user_id: user.id,
     });
   } catch (err) {
@@ -597,6 +637,13 @@ const verifyEmailOtp = async (req, res) => {
 
     const user = rows[0];
 
+    if (!user.email_otp) {
+      return res.status(400).json({
+        success: false,
+        message: "No OTP found. Please request a new one.",
+      });
+    }
+
     if (user.email_otp !== otp) {
       return res
         .status(400)
@@ -606,7 +653,7 @@ const verifyEmailOtp = async (req, res) => {
     if (new Date() > new Date(user.email_otp_expires)) {
       return res.status(400).json({
         success: false,
-        message: "OTP expired",
+        message: "OTP expired. Please request a new one.",
       });
     }
 
@@ -624,6 +671,102 @@ const verifyEmailOtp = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Server error" });
+  }
+};
+
+/* ======================================================
+   RESEND EMAIL OTP
+====================================================== */
+const resendEmailOtp = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+    });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, first_name, email, email_verified, email_otp_expires FROM users WHERE email = $1 AND is_deleted = FALSE",
+      [email.toLowerCase()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = rows[0];
+
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already verified",
+      });
+    }
+
+    // Throttle: Allow resend only if previous OTP expired or doesn't exist
+    const now = new Date();
+    const lastExpiry = user.email_otp_expires ? new Date(user.email_otp_expires) : null;
+    
+    if (lastExpiry && now < lastExpiry) {
+      const secondsLeft = Math.ceil((lastExpiry - now) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${secondsLeft} seconds before requesting a new code`,
+      });
+    }
+
+    // Generate new OTP
+    const emailOtp = generateOtp();
+    const emailOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await pool.query(
+      "UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3",
+      [emailOtp, emailOtpExpires, user.id]
+    );
+
+    // Send OTP email
+    try {
+      const mailOptions = {
+        from: `"OrderzHouse" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Verify your email - OrderzHouse",
+        html: `
+          <h2>Hello ${user.first_name}</h2>
+          <p>Your new verification code:</p>
+          <h1 style="color:#007bff; font-size: 32px; letter-spacing:4px; text-align:center;">${emailOtp}</h1>
+          <p>This code expires in <b>5 minutes</b>.</p>
+          <br/>
+          <p>Thanks,<br/>OrderzHouse Team</p>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Resend OTP email sent to ${user.email}`);
+
+      return res.status(200).json({
+        success: true,
+        message: "OTP sent successfully",
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send resend OTP email:", emailError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send email. Please try again later.",
+        error: process.env.NODE_ENV === "development" ? emailError.message : undefined,
+      });
+    }
+  } catch (err) {
+    console.error("Resend Email OTP Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -660,7 +803,9 @@ const login = async (req, res) => {
     if (!user.email_verified) {
       return res.status(403).json({
         success: false,
-        message: "Please verify your email before logging in",
+        error: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email",
+        email: user.email,
       });
     }
 
@@ -1584,6 +1729,7 @@ export {
   updatePassword,
   deactivateAccount,
   verifyEmailOtp,
+  resendEmailOtp,
   uploadProfilePic,
   sendOtpController,
   getUserdata,

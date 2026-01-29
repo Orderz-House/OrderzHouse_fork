@@ -10,6 +10,7 @@ import {
   updatePassword,
   deactivateAccount,
   verifyEmailOtp,
+  resendEmailOtp,
   uploadProfilePic,
   sendOtpController,
   getUserdata,
@@ -26,6 +27,7 @@ const usersRouter = express.Router();
 // =============== PUBLIC ROUTES ===============
 usersRouter.post("/register", register);
 usersRouter.post("/verify-email", verifyEmailOtp);
+usersRouter.post("/resend-email-otp", resendEmailOtp);
 usersRouter.post("/login", login);
 usersRouter.post("/verify-otp", verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);

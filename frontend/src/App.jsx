@@ -69,6 +69,15 @@ const RoleBasedAppointments = ({ userData }) => {
   }
 };
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname, search]);
+  return null;
+}
+
 function App() {
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
@@ -92,6 +101,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       {/* <GlobalLoadingProvider> */}
       {!shouldHideNavbar && <Navbar />}
 

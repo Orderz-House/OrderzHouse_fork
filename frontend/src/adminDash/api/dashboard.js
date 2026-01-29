@@ -284,10 +284,11 @@ export async function fetchFreelancerDashboard() {
     headers: { ...getAuthHeaders() },
   });
 
-  const [projectsRes, assignedTasksRes, openRes] = await Promise.allSettled([
+  const [projectsRes, assignedTasksRes, openRes, subscriptionRes] = await Promise.allSettled([
     api.get("/projects/myprojects"),
     api.get("/tasks/freelancer/assigned"),
     api.get("/offers/projects/open"),
+    api.get("/subscriptions/status"),
   ]);
 
   const projects =
@@ -379,7 +380,11 @@ export async function fetchFreelancerDashboard() {
     },
   ];
 
-  return { balanceCards, activeProjects, latestClientProjects };
+  const subscriptionStatus = subscriptionRes.status === "fulfilled" 
+    ? subscriptionRes.value?.data 
+    : null;
+
+  return { balanceCards, activeProjects, latestClientProjects, subscriptionStatus };
 }
 
 /* ===================== Helpers ===================== */

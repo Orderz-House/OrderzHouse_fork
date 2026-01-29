@@ -6,14 +6,13 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { setLogin } from "../../slice/auth/authSlice";
 import { connectSocket } from "../../services/socketService";
+import { useToast } from "../toast/ToastProvider";
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
   LogIn,
-  AlertCircle,
-  CheckCircle,
   ArrowRight,
   Shield,
   KeyRound,
@@ -23,6 +22,7 @@ import GradientButton from "../buttons/GradientButton.jsx";
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +57,7 @@ const Login = () => {
         // ===== 2FA (Authenticator App) =====
         if (data.requires_2fa && data.temp_token) {
           setStatus(true);
-          setMessage("Enter the 6-digit code from your authenticator app.");
+          toast.info("Enter the 6-digit code from your authenticator app.");
           setOtp("");
           setOtpMode("app");
           setTempToken(data.temp_token);
@@ -67,7 +67,7 @@ const Login = () => {
         // ===== Email OTP (محاولات كثيرة) =====
         if (data.requires_email_otp) {
           setStatus(true);
-          setMessage(
+          toast.info(
             data.message ||
               "Verification code sent. Please check your email and enter the code below."
           );
@@ -79,7 +79,7 @@ const Login = () => {
         // ===== Login مباشر (بدون أي خطوة إضافية) =====
         if (data.token) {
           setStatus(true);
-          setMessage("Login successful! Redirecting...");
+          toast.success("Login successful! Redirecting...");
           const decoded = jwtDecode(data.token);
           dispatch(
             setLogin({
@@ -97,7 +97,7 @@ const Login = () => {
 
         // fallback
         setStatus(false);
-        setMessage(data.message || "Unexpected response from server.");
+        toast.error(data.message || "Unexpected response from server.");
       })
       .catch((err) => {
         setIsLoading(false);
@@ -105,7 +105,16 @@ const Login = () => {
         const errorMessage =
           err.response?.data?.message ||
           "Login failed. Please check your credentials.";
-        setMessage(errorMessage);
+        
+        // Special handling for email verification error
+        if (err.response?.status === 403 && (err.response?.data?.error === "EMAIL_NOT_VERIFIED" || errorMessage.includes("verify your email"))) {
+          const userEmail = err.response?.data?.email || email;
+          toast.info("Please verify your email. We sent you a code.");
+          // Redirect to verify email page with email in URL
+          navigate(`/register?email=${encodeURIComponent(userEmail)}&verify=true`);
+        } else {
+          toast.error(errorMessage);
+        }
         setOtpMode(null);
       });
   };
@@ -127,7 +136,7 @@ const Login = () => {
           const data = res.data;
 
           setStatus(true);
-          setMessage("Login successful! Redirecting...");
+          toast.success("Login successful! Redirecting...");
 
           const decoded = jwtDecode(data.token);
           dispatch(
@@ -147,7 +156,7 @@ const Login = () => {
           setStatus(false);
           const errorMessage =
             err.response?.data?.message || "Invalid or expired OTP.";
-          setMessage(errorMessage);
+          toast.error(errorMessage);
           setOtp("");
         });
       return;
@@ -165,7 +174,7 @@ const Login = () => {
           const data = res.data;
 
           setStatus(true);
-          setMessage("Login successful! Redirecting...");
+          toast.success("Login successful! Redirecting...");
 
           const decoded = jwtDecode(data.token);
           dispatch(
@@ -185,7 +194,7 @@ const Login = () => {
           setStatus(false);
           const errorMessage =
             err.response?.data?.message || "Invalid 2FA code.";
-          setMessage(errorMessage);
+          toast.error(errorMessage);
           setOtp("");
         });
     }
@@ -386,23 +395,6 @@ const Login = () => {
               )}
             </form>
 
-            {message && (
-              <div
-                className={`mt-8 p-4 rounded-xl flex items-start border ${
-                  status
-                    ? "bg-green-50 text-green-800 border-green-200"
-                    : "bg-rose-50 text-rose-800 border-rose-200"
-                }`}
-              >
-                {status ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-green-600" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-rose-600" />
-                )}
-                <p className="text-sm">{message}</p>
-              </div>
-            )}
-
             {!isOtpStep && (
               <div className="mt-8 text-center pt-5 border-t border-slate-200">
                 <p className="text-sm text-slate-600">
@@ -420,7 +412,7 @@ const Login = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
