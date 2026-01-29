@@ -19,7 +19,6 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
   // refs
   const menuRef = useRef(null);
   const anchorRef = useRef(null);
-  const [menuTop, setMenuTop] = useState(0);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -36,23 +35,9 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const updateMenuTop = () => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-    setMenuTop(rect.bottom + window.scrollY + 8);
-  };
-
   useEffect(() => {
     if (isOpen) {
-      updateMenuTop();
       if (categories.length === 0) loadCategories();
-
-      window.addEventListener("scroll", updateMenuTop, { passive: true });
-      window.addEventListener("resize", updateMenuTop);
-      return () => {
-        window.removeEventListener("scroll", updateMenuTop);
-        window.removeEventListener("resize", updateMenuTop);
-      };
     }
   }, [isOpen]);
 
@@ -145,8 +130,7 @@ const CategoryMegaMenu = ({ activeLink, onSetActiveLink }) => {
       {isOpen && (
         <div
           ref={menuRef}
-          style={{ top: menuTop }}
-          className="fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 w-[95vw] max-w-[1300px] max-h-[80vh] overflow-auto"
         >
           {loading ? (
             <div className="p-8 text-center text-gray-500 font-inter">

@@ -28,9 +28,9 @@ export default function ContactUsPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const serviceID = "service_xjlxu9w";
-    const templateID = "template_cqt07lu";
-    const publicKey = "pfn428lvrdzy-q3WR";
+    const serviceID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     const templateParams = {
       from_name: formData.name,
@@ -202,9 +202,7 @@ export default function ContactUsPage() {
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </GradientButton>
 
-                <p className="text-xs text-slate-500">
-                  Tip: you can keep the CTA orange, and use violet as a soft accent for focus states.
-                </p>
+                
               </form>
             </div>
           </div>

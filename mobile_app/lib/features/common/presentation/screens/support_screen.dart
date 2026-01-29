@@ -344,7 +344,7 @@ class _InAppFormCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           // Subject dropdown
           DropdownButtonFormField<String>(
-            value: subjects.firstWhere(
+            initialValue: subjects.firstWhere(
               (s) => s['label'] == selectedSubject,
               orElse: () => subjects.first,
             )['key'],
