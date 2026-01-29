@@ -97,8 +97,8 @@ export default function CategoriesShowcase() {
   return (
     <div
       ref={sectionRef}
-      className="overflow-hidden bg-slate-50 sm:bg-white min-h-[60vh] sm:h-screen"
-      style={{ position: 'static' }}
+      className="relative isolate overflow-hidden bg-slate-50 sm:bg-white min-h-[60vh] sm:h-screen pb-12 2xl:pb-16 3xl:pb-20"
+
     >
       {/* ✅ FIX: إزالة clip-path لأنه يقص الشادو */}
       <style>{`
@@ -157,8 +157,11 @@ export default function CategoriesShowcase() {
       <div className="relative">
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-12 sm:h-16 bg-gradient-to-b from-white to-transparent" />
 
-        <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
-        <h1
+      <div className="mx-auto w-fit">
+        <div className="origin-top scale-100 2xl:scale-[1.06] 3xl:scale-[1.14] 4xl:scale-[1.22]">
+          <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
+            <h1
+
           className={[
             "text-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-4xl",
             "sm:transition-all sm:duration-700 sm:ease-out sm:motion-safe:will-change-[transform,opacity,filter]",
@@ -235,6 +238,8 @@ export default function CategoriesShowcase() {
               {/* نهاية card-reveal */}
             </div>
           ))}
+          </div>
+        </div>
           </div>
         </div>
       </div>

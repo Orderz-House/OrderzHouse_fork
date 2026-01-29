@@ -1,6 +1,7 @@
 import React from "react";
 
-const THEME = "#6d5ffd";
+const primaryBtn =
+  "bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus-visible:ring-2 focus-visible:ring-orange-200/70";
 
 export default function PaymentStep({
   onBack,
@@ -27,7 +28,7 @@ export default function PaymentStep({
       <div className="rounded-xl border p-4 mb-6">
         <p className="font-semibold">Project</p>
         <p>{projectData.title}</p>
-        <p className="mt-2 font-bold" style={{ color: THEME }}>
+        <p className="mt-2 font-bold text-orange-600">
           Amount: ${calculateAmount()}
         </p>
       </div>
@@ -44,8 +45,7 @@ export default function PaymentStep({
         <button
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="flex-1 h-12 rounded-xl font-semibold text-white"
-          style={{ background: THEME }}
+          className={`flex-1 h-12 rounded-xl font-semibold ${primaryBtn}`}
         >
           {isSubmitting ? "Redirecting..." : "Pay with Stripe"}
         </button>

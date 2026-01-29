@@ -56,7 +56,7 @@ function StatusChip({ status }) {
       : s.includes("pending") || s.includes("await")
       ? "bg-amber-50 border-amber-200/70 text-amber-700"
       : s.includes("bidding")
-      ? "bg-violet-50 border-violet-200/70 text-violet-700"
+      ? "bg-orange-50 border-orange-200/70 text-orange-700"
       : "bg-slate-50 border-slate-200/70 text-slate-700";
 
   return (
@@ -75,7 +75,7 @@ function StatusChip({ status }) {
 function StatPill({ icon: Icon, label, value, tone = "slate" }) {
   const toneCls =
     tone === "violet"
-      ? "bg-violet-50 border-violet-200/70 text-violet-700"
+      ? "bg-orange-50 border-orange-200/70 text-orange-700"
       : tone === "emerald"
       ? "bg-emerald-50 border-emerald-200/70 text-emerald-700"
       : tone === "amber"
@@ -487,8 +487,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
         {/* Hero */}
         <div className="rounded-3xl overflow-hidden">
           <div
-            className="relative p-4 sm:p-6 text-white"
-            style={{ background: "linear-gradient(135deg,#7C3AED,#6366F1,#8B5CF6)" }}
+            className="relative p-4 sm:p-6 text-white bg-gradient-to-b from-orange-400 to-red-500"
           >
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
             <div className="absolute left-8 -bottom-28 h-72 w-72 rounded-full bg-black/10 blur-3xl" />
@@ -573,7 +572,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
                 icon={Tag}
                 label="Type"
                 value={valueOrDash(projectType)}
-                tone="violet"
+                tone="orange"
               />
               <StatPill
                 icon={Clock}
