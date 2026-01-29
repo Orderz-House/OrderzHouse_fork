@@ -87,9 +87,9 @@ const Sidebar = ({
 
   // Brand colors (غيرها مرة واحدة هنا)
   const BRAND = {
-    primary: "#6D5FFD", // بنفسجي مثل الصورة
-    primarySoft: "#F2F1FF",
-    primaryRing: "#E6E2FF",
+    primary: "#F97316", // بنفسجي مثل الصورة
+    primarySoft: "#F97316",
+    primaryRing: "#F97316",
     danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
   };
 

@@ -28,6 +28,7 @@ import {
   Activity,
   UserCheck,
   Users,
+  Check,
 } from "lucide-react";
 
 // 🧩 API (كما هو عندك)
@@ -67,7 +68,7 @@ const UI = {
   softCard:
     "rounded-3xl bg-white/80 backdrop-blur border border-slate-200/70 shadow-sm",
   ring: { border: "1px solid rgba(15,23,42,.10)" },
-  violetGrad: "bg-gradient-to-r from-violet-500 via-indigo-500 to-violet-500",
+  violetGrad: "bg-gradient-to-b from-orange-400 to-red-500",
   chip: "rounded-2xl bg-white border border-slate-200/70 shadow-sm",
 };
 
@@ -89,7 +90,7 @@ function InfoTip({ text }) {
     <span className="relative inline-flex items-center group">
       <button
         type="button"
-        className="inline-flex items-center justify-center rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-200/70"
+        className="inline-flex items-center justify-center rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-200/70"
         aria-label="Help"
       >
         <HelpCircle className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
@@ -226,15 +227,17 @@ function MiniKpi({
   icon: Icon,
   label,
   value,
-  tone = "violet",
+  tone = "orange",
   compact = false,
 }) {
   const toneBg =
     tone === "orange"
       ? "bg-orange-50 text-orange-700 border-orange-200/70"
+      : tone === "red"
+      ? "bg-red-50 text-red-700 border-red-200/70"
       : tone === "emerald"
       ? "bg-emerald-50 text-emerald-700 border-emerald-200/70"
-      : "bg-violet-50 text-violet-700 border-violet-200/70";
+      : "bg-orange-50 text-orange-700 border-orange-200/70";
 
   const SafeIcon = typeof Icon === "function" ? Icon : null;
 
@@ -300,7 +303,7 @@ function KpiRow({ items }) {
             icon={it?.icon}
             label={it?.title || it?.label || "KPI"}
             value={it?.value}
-            tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+            tone={i % 3 === 0 ? "orange" : i % 3 === 1 ? "red" : "emerald"}
           />
         ))}
       </div>
@@ -314,7 +317,7 @@ function KpiRow({ items }) {
             icon={it?.icon}
             label={it?.title || it?.label || "KPI"}
             value={it?.value}
-            tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+            tone={i % 3 === 0 ? "orange" : i % 3 === 1 ? "red" : "emerald"}
           />
         ))}
       </div>
@@ -370,7 +373,7 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
       onClick={onOpen}
       className={cx(
         UI.card,
-        "w-full text-left overflow-hidden hover:shadow-md transition-shadow"
+        "w-full text-left overflow-hidden hover:shadow-md transition-shadow min-w-0"
       )}
       style={UI.ring}
     >
@@ -391,19 +394,16 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
         <div className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/85 border border-slate-200/70 grid place-items-center">
           <Heart className="h-4 w-4 text-slate-700" />
         </div>
+      </div>
 
-        {/* bottom overlay text (compact like streaming cards) */}
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 via-black/10 to-transparent">
-          <div className="text-gray-600 text-sm sm:text-[15px] font-extrabold leading-snug line-clamp-2">
-            {title || "Untitled"}
-          </div>
-
-          <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-white/80">
-            <span className="truncate min-w-0">{metaLeft || "—"}</span>
-            <span className="shrink-0 font-semibold text-white">
-              {metaRight || ""}
-            </span>
-          </div>
+      {/* Footer content below image */}
+      <div className="p-3 border-t border-slate-100 min-w-0">
+        <div className="text-sm font-extrabold text-slate-900 line-clamp-2">
+          {title || "Untitled"}
+        </div>
+        <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-slate-500">
+          <span className="truncate min-w-0">{metaLeft || "—"}</span>
+          <span className="shrink-0 font-semibold text-slate-800">{metaRight || ""}</span>
         </div>
       </div>
     </button>
@@ -413,6 +413,8 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
 function ContinueSection({ title, rightAction, items, renderItem }) {
   const list = Array.isArray(items) ? items : [];
   const scrollerRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
@@ -455,76 +457,202 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
     el.scrollBy({ left: dir * (cardW + gap), behavior: "smooth" });
   };
 
+  // Extract props from item for mobile layout (matches renderItem pattern)
+  const extractItemProps = useCallback((item, index) => {
+    const badge = item?.status || item?.completion_status || "Project";
+    const title = item?.title || "Untitled";
+    const metaLeft =
+      (item?.completion_status && `Status: ${item.completion_status}`) ||
+      (item?.status && `Status: ${item.status}`) ||
+      "—";
+    const metaRight = item?.amount_to_pay ?? item?.budget ?? "";
+    
+    // Determine base path from current location
+    const getBasePrefix = (pathname) => {
+      if (pathname.startsWith("/client")) return "/client";
+      if (pathname.startsWith("/freelancer")) return "/freelancer";
+      if (pathname.startsWith("/apm")) return "/apm";
+      if (pathname.startsWith("/partner")) return "/partner";
+      return "/admin";
+    };
+    const base = getBasePrefix(location.pathname);
+    
+    // Create onOpen handler - try to extract from renderItem, fallback to navigation
+    let onOpenHandler = () => {
+      const itemId = item?.id ?? item?._id ?? item?.project_id;
+      if (itemId) {
+        navigate(`${base}/project/${itemId}`);
+      } else {
+        navigate(`${base}/projects`);
+      }
+    };
+    
+    // Try to extract onClick from renderItem result
+    try {
+      const rendered = renderItem?.(item, index);
+      if (rendered) {
+        const wrapper = rendered;
+        if (wrapper.props && wrapper.props.children) {
+          const card = wrapper.props.children;
+          if (card && card.props && card.props.onClick) {
+            onOpenHandler = card.props.onClick;
+          }
+        }
+      }
+    } catch (e) {
+      // Use fallback handler
+    }
+    
+    return { badge, title, metaLeft, metaRight, onOpen: onOpenHandler };
+  }, [renderItem, navigate, location.pathname]);
+
   return (
     <div className="mt-6 overflow-hidden">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-extrabold text-slate-900">{title}</div>
-
-        <div className="flex items-center gap-2">
+      {/* Mobile Layout: Vertical List */}
+      <div className="sm:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm font-extrabold text-slate-900">{title}</div>
           {rightAction}
+        </div>
 
-          {/* arrows like the screenshot (desktop/tablet) */}
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollByStep(-1)}
-              disabled={!canLeft}
-              className={cx(
-                "h-9 w-9 rounded-full border grid place-items-center transition",
-                canLeft
-                  ? "bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50"
-                  : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-              )}
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
+        <div className="mt-3 space-y-3">
+          {list.slice(0, 5).map((it, i) => {
+            const { badge, title: itemTitle, metaLeft, metaRight, onOpen } = extractItemProps(it, i);
+            
+            return (
+              <button
+                key={it?.id || it?._id || i}
+                type="button"
+                onClick={onOpen || (() => {})}
+                className="w-full text-left min-w-0"
+              >
+                <div className="flex gap-3 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-sm active:scale-[0.99] transition">
+                  {/* Thumbnail */}
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-slate-200 via-white to-slate-200 opacity-90" />
+                    {/* Badge */}
+                    {badge ? (
+                      <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[70px]">
+                        {badge}
+                      </span>
+                    ) : null}
+                  </div>
 
-            <button
-              type="button"
-              onClick={() => scrollByStep(1)}
-              disabled={!canRight}
-              className={cx(
-                "h-9 w-9 rounded-full border grid place-items-center transition",
-                canRight
-                  ? "bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50"
-                  : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-              )}
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-extrabold text-slate-900 line-clamp-2">
+                          {itemTitle}
+                        </div>
+                        <div className="mt-1 text-[11px] text-slate-500 line-clamp-1">
+                          {metaLeft}
+                        </div>
+                      </div>
+
+                      {/* Heart / Favorite */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Toggle favorite logic (if needed)
+                        }}
+                        className="shrink-0 rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-orange-600 transition-colors"
+                        aria-label="Toggle favorite"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-slate-700">
+                        {metaRight}
+                      </span>
+                      <span className="text-[11px] font-semibold text-orange-700">
+                        Open →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* carousel */}
-      <div
-        ref={scrollerRef}
-        className="
-          mt-3 flex gap-4
-          overflow-x-auto scroll-smooth
-          snap-x snap-mandatory
-          pr-10 sm:pr-16
-          [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
-        "
-      >
-        {list.map((it, i) => (
-          <div
-            key={it?.id || it?._id || i}
-            data-carousel-item
-            className="
-    snap-start flex-none min-w-0
-    w-[82%]          /* phone: كارد + جزء واضح من التالي */
-    sm:w-[70%]       /* small */
-    md:w-[52%]       /* iPad: تقريباً كاردين إلا شوي */
-    lg:w-[calc((100%-1rem)/2.5)]  /* desktop: 2 كارد كاملين + نص الثالث */
-    xl:w-[calc((100%-1rem)/2.6)]  /* شاشات أكبر: يظل فيه peek لطيف */
-  "
-          >
-            {renderItem?.(it, i)}
+      {/* Desktop Layout: Carousel (unchanged) */}
+      <div className="hidden sm:block">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm font-extrabold text-slate-900">{title}</div>
+
+          <div className="flex items-center gap-2">
+            {rightAction}
+
+            {/* arrows like the screenshot (desktop/tablet) */}
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => scrollByStep(-1)}
+                disabled={!canLeft}
+                className={cx(
+                  "h-9 w-9 rounded-full border grid place-items-center transition",
+                  canLeft
+                    ? "bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50"
+                    : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                )}
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollByStep(1)}
+                disabled={!canRight}
+                className={cx(
+                  "h-9 w-9 rounded-full border grid place-items-center transition",
+                  canRight
+                    ? "bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50"
+                    : "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                )}
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        ))}
+        </div>
+
+        {/* carousel */}
+        <div
+          ref={scrollerRef}
+          className="
+            mt-3 flex gap-4
+            overflow-x-auto scroll-smooth
+            snap-x snap-mandatory
+            overscroll-x-contain touch-pan-x
+            px-4 -mx-4 pb-2
+            pr-10 sm:pr-16
+            [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+          "
+        >
+          {list.map((it, i) => (
+            <div
+              key={it?.id || it?._id || i}
+              data-carousel-item
+              className="
+                snap-start flex-none min-w-0
+                w-[92%] max-w-[420px]
+                sm:w-[70%]
+                md:w-[52%]
+                lg:w-[calc((100%-1rem)/2.5)]
+                xl:w-[calc((100%-1rem)/2.6)]
+              "
+            >
+              {renderItem?.(it, i)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -561,7 +689,7 @@ function RingProgress({ percent = 0, label, subLabel, extra }) {
               cx="50"
               cy="50"
               r={r}
-              stroke="rgba(139,92,246,1)"
+              stroke="rgb(249 115 22)"
               strokeWidth="10"
               fill="none"
               strokeDasharray={`${dash} ${c - dash}`}
@@ -577,7 +705,7 @@ function RingProgress({ percent = 0, label, subLabel, extra }) {
           </div>
 
           <div className="absolute right-0 top-2">
-            <span className="inline-flex items-center rounded-full bg-violet-50 text-violet-700 border border-violet-200/70 px-2 py-0.5 text-[10px] font-bold">
+            <span className="inline-flex items-center rounded-full bg-orange-50 text-orange-700 border border-orange-200/70 px-2 py-0.5 text-[10px] font-bold">
               {Math.round(p)}%
             </span>
           </div>
@@ -631,7 +759,7 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
           <button
             type="button"
             onClick={onSeeAll}
-            className="w-full h-10 rounded-2xl bg-violet-50 text-violet-700 border border-violet-200/70 text-sm font-semibold hover:bg-violet-100"
+            className="w-full h-10 rounded-2xl bg-orange-50 text-orange-700 border border-orange-200/70 text-sm font-semibold hover:bg-orange-100"
           >
             See All
           </button>
@@ -662,21 +790,21 @@ function ActivationStepperCard({
       : `${stepsLeft} step${stepsLeft > 1 ? "s" : ""} left`;
 
   const nodeStyle = (status) => {
-    if (status === "done") return "bg-violet-600 ring-1 ring-violet-200";
-    if (status === "current") return "bg-violet-50 ring-1 ring-violet-200";
+    if (status === "done") return "bg-orange-600 ring-1 ring-orange-200";
+    if (status === "current") return "bg-orange-50 ring-1 ring-orange-200";
     return "bg-white ring-1 ring-slate-200";
   };
 
   const lineStyle = (status) => {
-    if (status === "done") return "bg-violet-600/70";
-    if (status === "current") return "bg-violet-500/25";
+    if (status === "done") return "bg-orange-600/70";
+    if (status === "current") return "bg-orange-500/25";
     return "bg-slate-200";
   };
 
   const nodeInner = (status) => {
     if (status === "done") return <Check className="h-4 w-4 text-white" />;
     if (status === "current")
-      return <span className="h-3 w-3 rounded-md bg-violet-600" />;
+      return <span className="h-3 w-3 rounded-md bg-orange-600" />;
     return <span className="h-3 w-3 rounded-md bg-slate-300" />;
   };
 
@@ -775,7 +903,7 @@ function ActivationStepperCard({
         onClick={onCta}
         className={cx(
           "mt-3 w-full h-10 rounded-2xl text-sm font-semibold transition",
-          "bg-violet-50 text-violet-700 border border-violet-200/70 hover:bg-violet-100"
+          "bg-orange-50 text-orange-700 border border-orange-200/70 hover:bg-orange-100"
         )}
       >
         {ctaLabel}
@@ -847,27 +975,195 @@ function isProfileComplete(u) {
 /* ===================== Skeletons ===================== */
 function Sk({ className = "" }) {
   return (
-    <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />
+    <div className={`shimmer rounded-xl bg-slate-200/60 ${className}`} />
   );
 }
 
 function DashboardSkeletonV2() {
   return (
-    <div className="space-y-4">
-      <div className={cx(UI.softCard, "p-4")}>
-        <Sk className="h-11 w-full" />
-      </div>
-      <div className={cx(UI.card, "p-6")}>
-        <Sk className="h-28 w-full" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Sk className="h-16" />
-        <Sk className="h-16" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Sk className="h-56" />
-        <Sk className="h-56" />
-        <Sk className="h-56" />
+    <div className={cx(UI.pageBg)} aria-busy="true" aria-live="polite">
+      <div className={UI.container}>
+        <div className="space-y-4">
+          {/* Main grid - matches real dashboard layout */}
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            {/* LEFT COLUMN */}
+            <div>
+              {/* HelloSticker skeleton (mobile only) */}
+              <div className="lg:hidden mb-4">
+                <Sk className="h-12 w-48" />
+              </div>
+
+              {/* Hero Banner Skeleton */}
+              <div className={cx(UI.card, UI.violetGrad, "relative overflow-hidden")} style={UI.ring}>
+                <div className="absolute -right-20 -top-16 h-56 w-56 sm:h-64 sm:w-64 rounded-full bg-white/10 blur-2xl" />
+                <div className="absolute left-6 sm:left-10 -bottom-24 h-56 w-56 sm:h-64 sm:w-64 rounded-full bg-black/10 blur-2xl" />
+                
+                <div className="relative p-4 sm:p-5 lg:p-6">
+                  <div className="lg:flex lg:items-end lg:justify-between lg:gap-6">
+                    <div className="min-w-0 lg:max-w-[68%]">
+                      {/* Eyebrow */}
+                      <Sk className="h-3 w-32 mb-2 opacity-70" />
+                      
+                      {/* Title */}
+                      <div className="space-y-2 mt-2">
+                        <Sk className="h-6 w-full max-w-md opacity-90" />
+                        <Sk className="h-6 w-full max-w-sm opacity-90" />
+                      </div>
+                      
+                      {/* Subtitle */}
+                      <Sk className="h-4 w-full max-w-lg mt-2 opacity-80" />
+                      
+                      {/* CTA buttons */}
+                      <div className="flex items-center gap-3 mt-3 sm:mt-4">
+                        <Sk className="h-10 sm:h-11 w-32 rounded-2xl opacity-80" />
+                        <Sk className="h-4 w-24 hidden sm:block opacity-70" />
+                      </div>
+                    </div>
+                    
+                    {/* Right slot (refresh button on desktop) */}
+                    <div className="hidden lg:block shrink-0">
+                      <Sk className="h-11 w-24 rounded-2xl opacity-70" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI Row Skeleton */}
+              <div className="mt-4">
+                {/* Desktop/Tablet */}
+                <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className={cx(UI.chip, "px-3 py-2.5")} style={UI.ring}>
+                      <div className="flex items-center gap-3">
+                        <Sk className="h-9 w-9 rounded-2xl shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <Sk className="h-3 w-16" />
+                          <Sk className="h-4 w-20" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Mobile */}
+                <div className="sm:hidden grid grid-cols-2 gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className={cx(UI.chip, "px-3 py-3")} style={UI.ring}>
+                      <div className="flex items-center gap-3">
+                        <Sk className="h-9 w-9 rounded-2xl shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <Sk className="h-3 w-12" />
+                          <Sk className="h-4 w-16" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Continue Section Skeleton */}
+              <div className="mt-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <Sk className="h-5 w-32" />
+                  <Sk className="h-4 w-16" />
+                </div>
+                
+                {/* Carousel cards */}
+                <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pr-10 sm:pr-16 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="snap-start flex-none w-[82%] sm:w-[70%] md:w-[52%] lg:w-[calc((100%-1rem)/2.5)] xl:w-[calc((100%-1rem)/2.6)]"
+                    >
+                      <div className={cx(UI.card, "overflow-hidden")} style={UI.ring}>
+                        {/* Image area */}
+                        <div className="relative aspect-[16/9] bg-slate-100">
+                          <Sk className="absolute inset-0" />
+                          {/* Badge */}
+                          <div className="absolute left-3 top-3">
+                            <Sk className="h-5 w-16 rounded-full" />
+                          </div>
+                        </div>
+                        {/* Bottom text */}
+                        <div className="p-3 border-t border-slate-100 space-y-2">
+                          <Sk className="h-4 w-full" />
+                          <div className="flex items-center justify-between">
+                            <Sk className="h-3 w-24" />
+                            <Sk className="h-3 w-16" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
+              {/* RingProgress Skeleton */}
+              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+                <Sk className="h-5 w-24 mb-4" />
+                <div className="flex flex-col items-center mt-4">
+                  <div className="relative h-28 w-28">
+                    {/* Circular progress skeleton */}
+                    <div className="h-28 w-28 rounded-full border-8 border-slate-200" />
+                    <div className="absolute inset-0 grid place-items-center">
+                      <Sk className="h-14 w-14 rounded-full" />
+                    </div>
+                    {/* Badge */}
+                    <div className="absolute right-0 top-2">
+                      <Sk className="h-5 w-10 rounded-full" />
+                    </div>
+                  </div>
+                  <Sk className="h-4 w-32 mt-3" />
+                  <Sk className="h-3 w-40 mt-1" />
+                </div>
+              </div>
+
+              {/* RightListCard Skeleton */}
+              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+                <Sk className="h-5 w-32 mb-4" />
+                <div className="mt-4 space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Sk className="h-3 w-full" />
+                        <Sk className="h-2.5 w-3/4" />
+                      </div>
+                      <Sk className="h-9 w-16 rounded-2xl shrink-0" />
+                    </div>
+                  ))}
+                  {/* See All button */}
+                  <Sk className="h-10 w-full rounded-2xl" />
+                </div>
+              </div>
+
+              {/* Quick Actions Skeleton */}
+              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+                <Sk className="h-5 w-28 mb-4" />
+                <div className="mt-4 grid gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-11 rounded-2xl bg-white border border-slate-200/70 flex items-center justify-between px-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sk className="h-4 w-4 rounded" />
+                        <Sk className="h-4 w-24" />
+                      </div>
+                      <Sk className="h-4 w-4 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -941,7 +1237,7 @@ function AdminDashboard() {
               icon={s?.icon}
               label={s?.title}
               value={s?.value}
-              tone={i % 3 === 0 ? "violet" : i % 3 === 1 ? "orange" : "emerald"}
+              tone={i % 3 === 0 ? "orange" : i % 3 === 1 ? "red" : "emerald"}
             />
           ))}
         </div>
@@ -1047,6 +1343,22 @@ function FreelancerDashboard() {
         .includes(q)
     );
   }, [activeProjects, query]);
+
+  const openFreelancerProject = useCallback(
+    (p) => {
+      const pid = p?.id ?? p?._id ?? p?.project_id;
+      if (!pid) navigate(`${base}/projects`);
+      else navigate(`${base}/project/${pid}`);
+    },
+    [navigate, base]
+  );
+
+  // Latest 5 client projects (newest first) for mini-table
+  const latestFive = useMemo(() => {
+    const list = Array.isArray(latestClientProjects) ? [...latestClientProjects] : [];
+    list.sort((a, b) => getProjectTime(b) - getProjectTime(a));
+    return list.slice(0, 5);
+  }, [latestClientProjects]);
 
   // progress percent (best effort): available/total if values exist
   const totalBal = parseNumberLike(balanceCards?.[0]?.value);
@@ -1184,6 +1496,9 @@ function FreelancerDashboard() {
                   />
                 )}
               />
+
+              {/* Latest Projects mini-table (Your Lesson style) */}
+            
             </div>
 
             {/* RIGHT */}
@@ -1248,7 +1563,7 @@ function FreelancerDashboard() {
                     className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
                   >
                     <span className="inline-flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4 text-violet-600" />
+                      <ClipboardList className="h-4 w-4 text-orange-600" />
                       View my projects
                     </span>
                     <ArrowRight className="h-4 w-4 text-slate-400" />
@@ -1271,6 +1586,240 @@ function FreelancerDashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ===================== Latest Projects mini-table (Your Lesson style) ===================== */
+function getProjectTime(p) {
+  const raw = p?.created_at ?? p?.createdAt ?? p?.posted_at ?? p?.updated_at ?? "";
+  if (raw) {
+    const t = new Date(raw).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+  const id = Number(p?.id ?? p?._id ?? p?.project_id ?? 0);
+  return id;
+}
+
+function formatProjectDate(p) {
+  const raw = p?.created_at ?? p?.createdAt ?? p?.posted_at ?? p?.updated_at ?? "";
+  if (!raw) return "";
+  try {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+function pickType(p) {
+  return p?.type ?? p?.project_type ?? p?.category ?? p?.category_name ?? p?.status ?? "PROJECT";
+}
+
+function pickDesc(p) {
+  const d = p?.description ?? p?.short_description ?? p?.title ?? "";
+  return typeof d === "string" ? d : String(d || "—");
+}
+
+function LatestProjectsMiniTable({ title = "Your Lesson", items = [], loading, onSeeAll, onOpen, mode = "client" }) {
+  const list = Array.isArray(items) ? items : [];
+  const col1Label = mode === "freelancer" ? "Client" : "Project";
+
+  function getRowLabel(p) {
+    if (mode === "freelancer") {
+      return p?.client_name ?? p?.client ?? p?.owner_name ?? p?.title ?? "—";
+    }
+    return p?.title ?? "Untitled";
+  }
+
+  function getAvatarUrl(p) {
+    return p?.avatar_url ?? p?.client_avatar ?? p?.cover ?? p?.image ?? "";
+  }
+
+  return (
+    <div className="mt-6 w-full max-w-full overflow-hidden rounded-3xl bg-white border border-slate-200/70 shadow-sm">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-3 border-b border-slate-100">
+        <h3 className="text-sm font-extrabold text-slate-900 min-w-0 truncate">{title}</h3>
+        <button
+          type="button"
+          onClick={onSeeAll}
+          className="text-xs font-semibold text-slate-500 hover:text-slate-700 underline-offset-2 hover:underline"
+        >
+          See all
+        </button>
+      </div>
+
+      {loading && list.length === 0 ? (
+        /* Skeleton rows */
+        <div className="divide-y divide-slate-100">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex sm:grid sm:grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center gap-3 px-5 py-3 sm:gap-0"
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="h-9 w-9 rounded-full bg-slate-200/70 animate-pulse shrink-0" />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="h-3 w-24 rounded bg-slate-200/70 animate-pulse" />
+                  <div className="h-2.5 w-16 rounded bg-slate-100 animate-pulse" />
+                </div>
+              </div>
+              <div className="hidden sm:block h-6 w-14 rounded-full bg-slate-100 animate-pulse" />
+              <div className="hidden sm:block h-3 w-32 rounded bg-slate-100 animate-pulse min-w-0" />
+              <div className="h-9 w-9 rounded-full bg-slate-100 animate-pulse shrink-0 sm:justify-self-end" />
+            </div>
+          ))}
+        </div>
+      ) : list.length === 0 ? (
+        <div className="mx-5 mb-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-[11px] text-slate-500">
+          Nothing to show.
+        </div>
+      ) : (
+        <>
+          {/* Mini-table header (sm+) */}
+          <div className="hidden sm:grid grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center px-5 py-2 text-[10px] uppercase tracking-wider text-slate-400">
+            <span>{col1Label}</span>
+            <span>Type</span>
+            <span>Desc</span>
+            <span className="justify-self-end">Action</span>
+          </div>
+          <div className="h-px bg-slate-100" />
+
+          {/* Desktop: table rows */}
+          <div className="hidden sm:block">
+            {list.map((p, i) => {
+              const pid = p?.id ?? p?._id ?? p?.project_id;
+              const rowLabel = getRowLabel(p);
+              const typeLabel = pickType(p);
+              const descText = pickDesc(p);
+              const dateStr = formatProjectDate(p);
+              const avatarUrl = getAvatarUrl(p);
+
+              return (
+                <div
+                  key={pid ?? i}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onOpen?.(p)}
+                  onKeyDown={(e) => e.key === "Enter" && onOpen?.(p)}
+                  className="grid grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100 last:border-b-0"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 grid place-items-center shrink-0 overflow-hidden">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-[11px] font-bold text-slate-600">{(rowLabel?.[0] || "P").toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-semibold text-slate-900 truncate">{rowLabel}</div>
+                      <div className="text-[10px] text-slate-500">{dateStr || "—"}</div>
+                    </div>
+                  </div>
+                  <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200/70 w-fit">
+                    {String(typeLabel).slice(0, 12)}
+                  </div>
+                  <div className="text-[12px] text-slate-700 truncate min-w-0">{descText}</div>
+                  <div className="justify-self-end">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpen?.(p);
+                      }}
+                      className="h-9 w-9 rounded-full border border-slate-200 bg-white grid place-items-center text-slate-600 hover:text-orange-700 hover:border-orange-200/70 hover:bg-orange-50 transition"
+                      aria-label="Open project"
+                    >
+                      <ArrowUpRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile: horizontal swipeable Lesson Cards carousel */}
+          <div className="sm:hidden px-4 pb-4">
+            <p className="mt-2 text-[10px] text-slate-400">Swipe →</p>
+            <div
+              className="mt-3 flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {list.slice(0, 5).map((p, i) => {
+                const stableId = p?.id ?? p?._id ?? p?.project_id ?? i;
+                const cardTitle = getRowLabel(p);
+                const typeLabel = String(pickType(p)).slice(0, 12);
+                const dateStr = formatProjectDate(p) || "—";
+                const descText = pickDesc(p);
+                const descOrDate = dateStr;
+                const smallMeta =
+                  mode === "freelancer"
+                    ? (p?.title ?? "Project").slice(0, 28)
+                    : ((p?.status ?? descText) || "—").slice(0, 28);
+                const coverUrl = getAvatarUrl(p);
+
+                return (
+                  <button
+                    key={stableId}
+                    type="button"
+                    onClick={() => onOpen?.(p)}
+                    className="snap-start flex-none w-[80vw] max-w-[320px] rounded-[24px] border border-slate-200/70 bg-white shadow-sm overflow-hidden text-left min-w-0"
+                  >
+                    {/* cover */}
+                    <div className="relative h-[92px] w-full flex-shrink-0">
+                      {coverUrl ? (
+                        <>
+                          <img
+                            src={coverUrl}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/20" />
+                        </>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-b from-orange-400 to-red-500" />
+                          <div className="absolute inset-0 bg-black/10" />
+                        </>
+                      )}
+                      {/* type pill */}
+                      <div className="absolute left-3 top-3">
+                        <span className="rounded-full bg-white/90 backdrop-blur px-2.5 py-1 text-[10px] font-extrabold text-orange-700 border border-white/60">
+                          {typeLabel}
+                        </span>
+                      </div>
+                      {/* decorative arrow */}
+                      <div className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/90 border border-white/60 shadow grid place-items-center text-slate-700 pointer-events-none">
+                        <ArrowUpRight className="h-4 w-4" />
+                      </div>
+                    </div>
+
+                    {/* content */}
+                    <div className="p-4 min-w-0">
+                      <div className="text-[13px] font-extrabold text-slate-900 leading-snug line-clamp-2 min-w-0 [overflow-wrap:anywhere]">
+                        {cardTitle}
+                      </div>
+                      <div className="mt-2 text-[11px] text-slate-500 line-clamp-1 min-w-0">
+                        {descOrDate}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2 min-w-0">
+                        <div className="text-[11px] font-semibold text-slate-600 truncate min-w-0 max-w-[70%]">
+                          {smallMeta}
+                        </div>
+                        <span className="inline-flex items-center rounded-full bg-orange-50 text-orange-700 border border-orange-200/70 px-3 py-1 text-[10px] font-bold shrink-0">
+                          Open
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1362,6 +1911,13 @@ function ClientDashboard() {
         .includes(q)
     );
   }, [recentProjects, query]);
+
+  // Latest 5 projects (newest first) for mini-table
+  const latestClientFive = useMemo(() => {
+    const list = Array.isArray(recentProjects) ? [...recentProjects] : [];
+    list.sort((a, b) => getProjectTime(b) - getProjectTime(a));
+    return list.slice(0, 5);
+  }, [recentProjects]);
 
   // best-effort completion percent from stats
   const total =
@@ -1484,6 +2040,16 @@ function ClientDashboard() {
                   />
                 )}
               />
+
+              {/* Latest Projects mini-table (Your Lesson style) */}
+              <LatestProjectsMiniTable
+                title="Your Lesson"
+                items={latestClientFive}
+                loading={loading}
+                mode="client"
+                onSeeAll={() => navigate(`${base}/projects`)}
+                onOpen={openProjectDetails}
+              />
             </div>
 
             {/* RIGHT */}
@@ -1568,7 +2134,7 @@ function ClientDashboard() {
                     className="h-11 rounded-2xl bg-white border border-slate-200/70 hover:bg-slate-50 text-sm font-semibold text-slate-800 px-4 flex items-center justify-between"
                   >
                     <span className="inline-flex items-center gap-2">
-                      <FolderPlus className="h-4 w-4 text-violet-600" />
+                      <FolderPlus className="h-4 w-4 text-orange-600" />
                       Post a new project
                     </span>
                     <ArrowRight className="h-4 w-4 text-slate-400" />
