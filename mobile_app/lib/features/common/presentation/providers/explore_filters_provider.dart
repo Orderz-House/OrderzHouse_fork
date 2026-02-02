@@ -117,6 +117,20 @@ int _compareSort(Project a, Project b, String sort) {
   }
 }
 
+/// Applies ExploreFilterState to a list of projects.
+/// Used by both Explore (filteredExploreProjectsProvider) and My Projects (filteredMyProjectsProvider).
+List<Project> applyExploreFilters(
+    List<Project> list, ExploreFilterState filters) {
+  final filtered = list.where((p) {
+    if (!_passesProjectType(p, filters.projectType)) return false;
+    if (!_passesBudget(p, filters.budgetFilter)) return false;
+    if (!_passesDuration(p, filters.durationFilter)) return false;
+    return true;
+  }).toList();
+  filtered.sort((a, b) => _compareSort(a, b, filters.sort));
+  return filtered;
+}
+
 /// Filtered + sorted list. Depends only on exploreProjectsProvider and exploreFiltersProvider.
 /// Does NOT invalidate any provider; no circular dependency.
 final filteredExploreProjectsProvider =
@@ -125,17 +139,8 @@ final filteredExploreProjectsProvider =
   final filters = ref.watch(exploreFiltersProvider);
 
   return projectsAsync.when(
-    data: (list) {
-      final filtered = list.where((p) {
-        if (!_passesProjectType(p, filters.projectType)) return false;
-        if (!_passesBudget(p, filters.budgetFilter)) return false;
-        if (!_passesDuration(p, filters.durationFilter)) return false;
-        return true;
-      }).toList();
-      filtered.sort((a, b) => _compareSort(a, b, filters.sort));
-      return AsyncValue.data(filtered);
-    },
-    loading: () => AsyncValue.loading(),
+    data: (list) => AsyncValue.data(applyExploreFilters(list, filters)),
+    loading: () => const AsyncValue.loading(),
     error: (err, st) => AsyncValue.error(err, st),
   );
 });

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/user.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/config/app_config.dart';
@@ -15,6 +17,8 @@ import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../common/presentation/providers/my_projects_filters_provider.dart';
+import '../../../common/presentation/widgets/projects_filter_bottom_sheet.dart';
 import '../widgets/freelancer_project_card.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -27,39 +31,85 @@ class FreelancerProjectsScreen extends ConsumerStatefulWidget {
 
 class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedStatus;
-  
-  // Store raw project data for additional fields (for future use if needed)
+  Timer? _debounceTimer;
+
   final Map<int, Map<String, dynamic>> _projectDataMap = {};
-  
-  // Guard to prevent multiple simultaneous calls
   bool _isFetchingRawData = false;
   bool _hasFetchedRawData = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentQuery = ref.read(myProjectsSearchQueryProvider);
+        if (currentQuery.isNotEmpty && _searchController.text != currentQuery) {
+          _searchController.text = currentQuery;
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-
-  // Check if project matches selected status
-  bool _matchesStatus(Project project, String? selectedTabStatus) {
-    if (selectedTabStatus == null || selectedTabStatus == 'All') return true;
-    
-    final projectStatus = project.status.toLowerCase();
-    final tabStatus = selectedTabStatus.toLowerCase();
-    
-    switch (tabStatus) {
-      case 'active':
-        return ['in_progress', 'active', 'running', 'started'].contains(projectStatus);
-      case 'pending':
-        return projectStatus == 'pending';
-      case 'completed':
-        return projectStatus == 'completed';
-      default:
-        return project.status == selectedTabStatus;
-    }
+  void _showSortDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentSort = ref.read(myProjectsFiltersProvider).sort;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.sortBy,
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SortOption(
+              label: l10n.newestFirst,
+              value: 'newest',
+              isSelected: currentSort == 'newest',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('newest');
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: l10n.priceLowToHigh,
+              value: 'budget_low_to_high',
+              isSelected: currentSort == 'budget_low_to_high',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('budget_low_to_high');
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: l10n.priceHighToLow,
+              value: 'budget_high_to_low',
+              isSelected: currentSort == 'budget_high_to_low',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('budget_high_to_low');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Fetch and store raw project data (only once per data load)
@@ -108,35 +158,18 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final filteredAsync = ref.watch(filteredMyProjectsProvider);
     final projectsAsync = ref.watch(myProjectsProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
-
-    // Filter projects based on search and selected status
-    List<Project>? filteredProjects;
-    if (projectsAsync.value != null) {
-      filteredProjects = projectsAsync.value!.where((project) {
-        final matchesSearch = _searchController.text.isEmpty ||
-            project.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            project.description.toLowerCase().contains(_searchController.text.toLowerCase());
-        final matchesStatus = _matchesStatus(project, _selectedStatus);
-        return matchesSearch && matchesStatus;
-      }).toList();
-    }
+    final selectedStatus = ref.watch(myProjectsStatusProvider);
 
     return AppScaffold(
       body: Column(
         children: [
-          // 1) Top Bar
           _buildTopBar(context, user),
-          
-          // 2) Search + Actions Row
-          _buildSearchRow(context),
-          
-          // 3) Category Chips Row (Active/Pending/Completed)
-          _buildCategoryChips(),
-          
-          // 4) Projects Grid
+          _buildSearchRow(context, ref),
+          _buildCategoryChips(context, selectedStatus),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -144,31 +177,25 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
                 ref.invalidate(myProjectsProvider);
                 await ref.read(myProjectsProvider.future);
               },
-              child: projectsAsync.when(
-                data: (projects) {
-                  // Fetch and store raw project data (only once)
-                  _fetchRawProjectDataForProjects(projects);
-
-                  if (filteredProjects == null || filteredProjects.isEmpty) {
+              child: filteredAsync.when(
+                data: (filteredProjects) {
+                  _fetchRawProjectDataForProjects(
+                      projectsAsync.value ?? filteredProjects);
+                  final hasFilters = ref.read(myProjectsSearchQueryProvider).trim().isNotEmpty ||
+                      ref.read(myProjectsStatusProvider) != null;
+                  if (filteredProjects.isEmpty) {
                     return EmptyState(
                       icon: Icons.work_outline,
-                      title: _searchController.text.isNotEmpty || _selectedStatus != null
-                          ? l10n.noResultsFound
-                          : l10n.noProjects,
-                      message: _searchController.text.isNotEmpty || _selectedStatus != null
-                          ? l10n.noResultsFound
-                          : l10n.noProjectsMessage,
+                      title: hasFilters ? l10n.noResultsFound : l10n.noProjects,
+                      message: hasFilters ? l10n.noResultsFound : l10n.noProjectsMessage,
                     );
                   }
-
                   return _buildProjectsGrid(context, filteredProjects);
                 },
                 loading: () => const _LoadingGrid(),
                 error: (error, stackTrace) => ErrorState(
                   message: error.toString().replaceAll('Exception: ', ''),
-                  onRetry: () {
-                    ref.invalidate(myProjectsProvider);
-                  },
+                  onRetry: () => ref.invalidate(myProjectsProvider),
                 ),
               ),
             ),
@@ -277,14 +304,13 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
     );
   }
 
-  // 2) Search + Actions Row
-  Widget _buildSearchRow(BuildContext context) {
+  // 2) Search + Actions Row (debounced search, filter sheet, sort - same as Explore)
+  Widget _buildSearchRow(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         children: [
-          // Search Field
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -300,7 +326,19 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
               ),
               child: TextField(
                 controller: _searchController,
-                onChanged: (_) => setState(() {}),
+                onChanged: (value) {
+                  _debounceTimer?.cancel();
+                  _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+                    if (mounted) {
+                      ref.read(myProjectsSearchQueryProvider.notifier).state =
+                          value;
+                    }
+                  });
+                },
+                onSubmitted: (value) {
+                  _debounceTimer?.cancel();
+                  ref.read(myProjectsSearchQueryProvider.notifier).state = value;
+                },
                 decoration: InputDecoration(
                   hintText: l10n.searchProjects,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
@@ -320,10 +358,7 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
               ),
             ),
           ),
-          
           const SizedBox(width: AppSpacing.sm),
-          
-          // Filter Button
           Container(
             width: 48,
             height: 48,
@@ -339,20 +374,12 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
               ],
             ),
             child: IconButton(
-              icon: const Icon(
-                Icons.tune_rounded,
-                color: Color(0xFF111827),
-                size: 20,
-              ),
-              onPressed: () {
-                // TODO: Show filter dialog
-              },
+              icon: const Icon(Icons.tune_rounded, color: Color(0xFF111827), size: 20),
+              onPressed: () =>
+                  showProjectsFilterBottomSheet(context, ProjectsFilterTarget.myProjects),
             ),
           ),
-          
           const SizedBox(width: AppSpacing.sm),
-          
-          // Sort Button
           Container(
             width: 48,
             height: 48,
@@ -368,14 +395,8 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
               ],
             ),
             child: IconButton(
-              icon: const Icon(
-                Icons.swap_vert_rounded,
-                color: Color(0xFF111827),
-                size: 20,
-              ),
-              onPressed: () {
-                // TODO: Show sort dialog
-              },
+              icon: const Icon(Icons.swap_vert_rounded, color: Color(0xFF111827), size: 20),
+              onPressed: () => _showSortDialog(context, ref),
             ),
           ),
         ],
@@ -383,11 +404,15 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
     );
   }
 
-  // 3) Category Chips Row (Active/Pending/Completed) - pill chips matching Explore style
-  Widget _buildCategoryChips() {
+  // 3) Category Chips Row (All/Active/Pending/Completed)
+  Widget _buildCategoryChips(BuildContext context, String? selectedStatus) {
     final l10n = AppLocalizations.of(context)!;
-    final tabs = [l10n.all, l10n.active, l10n.pending, l10n.completed];
-    
+    final tabs = [
+      (l10n.all, null),
+      (l10n.active, 'active'),
+      (l10n.pending, 'pending'),
+      (l10n.completed, 'completed'),
+    ];
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -397,16 +422,13 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
         itemCount: tabs.length,
         separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
-          final tab = tabs[index];
-          final isSelected = _selectedStatus == tab || (_selectedStatus == null && tab == l10n.all);
-          
+          final (label, value) = tabs[index];
+          final isSelected = selectedStatus == value;
           return AppGradientFilterChip(
-            label: tab,
+            label: label,
             selected: isSelected,
             onTap: () {
-              setState(() {
-                _selectedStatus = tab == l10n.all ? null : tab;
-              });
+              ref.read(myProjectsStatusProvider.notifier).state = value;
             },
           );
         },
@@ -443,7 +465,34 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
 
 }
 
-// Removed _ProjectCard - now using ExploreProjectCard widget
+class _SortOption extends StatelessWidget {
+  const _SortOption({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        label,
+        style: AppTextStyles.bodyLarge.copyWith(
+          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? const Icon(Icons.check_rounded, color: AppColors.primary) : null,
+      onTap: onTap,
+    );
+  }
+}
 
 // Loading Grid
 class _LoadingGrid extends StatelessWidget {

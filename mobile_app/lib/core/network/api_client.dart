@@ -12,10 +12,19 @@ class ApiClient {
 
   // ——— Projects ———
   /// GET /projects/myprojects
-  Future<Response> getMyProjects({int page = 1, int limit = 20}) {
+  /// [statusKey] optional filter e.g. "in_progress" for workspace In progress tab
+  Future<Response> getMyProjects({
+    int page = 1,
+    int limit = 20,
+    String? statusKey,
+  }) {
+    final params = <String, dynamic>{'page': page, 'limit': limit};
+    if (statusKey != null && statusKey.isNotEmpty) {
+      params['status'] = statusKey;
+    }
     return _dio.get(
       '/projects/myprojects',
-      queryParameters: {'page': page, 'limit': limit},
+      queryParameters: params,
     );
   }
 

@@ -21,15 +21,15 @@ class ProjectsRepository {
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyProjectsRaw({
     int page = 1,
     int limit = 20,
+    String? statusKey,
   }) async {
     try {
+      final params = <String, dynamic>{'page': page, 'limit': limit};
+      if (statusKey != null && statusKey.isNotEmpty) params['status'] = statusKey;
       // Logging is handled by LoggingInterceptor, no need to duplicate here
       final response = await _dio.get(
         '/projects/myprojects',
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: params,
       );
 
       final data = response.data as Map<String, dynamic>;
@@ -85,14 +85,20 @@ class ProjectsRepository {
 
   /// Get user's projects (client or freelancer)
   /// Endpoint: GET /projects/myprojects
+  /// [statusKey] optional filter e.g. "in_progress" for client workspace In progress tab
   /// Response: { success: true, projects: [...] } or { projects: [...] } or { data: [...] }
   Future<ApiResponse<List<Project>>> getMyProjects({
     int page = 1,
     int limit = 20,
+    String? statusKey,
   }) async {
     try {
       // Logging is handled by LoggingInterceptor, no need to duplicate here
-      final response = await _api.getMyProjects(page: page, limit: limit);
+      final response = await _api.getMyProjects(
+        page: page,
+        limit: limit,
+        statusKey: statusKey,
+      );
 
       final data = response.data as Map<String, dynamic>;
 

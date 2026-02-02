@@ -185,7 +185,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     if (!mounted) return;
     
     // Track submitting state
-    bool isSubmitting = false;
+    const bool isSubmitting = false;
     
     showModalBottomSheet(
       context: context,
@@ -972,7 +972,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     color: AppColors.error,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Failed to load project',
                     style: AppTextStyles.titleMedium,
                   ),
@@ -1672,7 +1672,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: PrimaryGradientButton(
                       onPressed: null,
                       label: 'Receive',

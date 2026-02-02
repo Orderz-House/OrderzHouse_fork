@@ -274,7 +274,7 @@
   "projectCompleted": "Project completed",
   
   "yourWorkspace": "Your Workspace",
-  "actionRequired": "Action Required",
+  "actionRequired": "In progress",
   "noActionsRequired": "No actions required",
   "noActiveProjects": "No active projects",
   "getInspired": "Get Inspired",
@@ -300,8 +300,9 @@
   "createAccount": "Create Account",
   "alreadyHaveAccount": "Already have an account?",
   "dontHaveAccount": "Don't have an account?",
-  "orContinueWith": "Or continue with",
-  
+"orContinueWith": "Or continue with",
+  "continueWithGoogle": "Continue with Google",
+
   "email": "Email",
   "emailAddress": "Email Address",
   "enterEmail": "Enter your email",

@@ -31,9 +31,9 @@ class ExploreSkeletonCard extends StatelessWidget {
           Container(
             height: _imageHeight,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(_cardRadius),
                 topRight: Radius.circular(_cardRadius),
               ),

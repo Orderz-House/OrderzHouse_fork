@@ -88,7 +88,7 @@ class NotificationTargetMapper {
           );
         } else {
           // Freelancer: navigate to their projects or offers screen
-          return NotificationTarget(
+          return const NotificationTarget(
             route: '/freelancer/projects',
           );
         }
@@ -148,7 +148,7 @@ class NotificationTargetMapper {
 
     // SUBSCRIPTION-RELATED
     if (type.contains('subscription')) {
-      return NotificationTarget(
+      return const NotificationTarget(
         route: '/plans',
       );
     }

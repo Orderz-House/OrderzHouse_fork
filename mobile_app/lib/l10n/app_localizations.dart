@@ -1547,7 +1547,7 @@ abstract class AppLocalizations {
   /// No description provided for @actionRequired.
   ///
   /// In en, this message translates to:
-  /// **'Action Required'**
+  /// **'In progress'**
   String get actionRequired;
 
   /// No description provided for @noActionsRequired.
@@ -1663,6 +1663,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Or continue with'**
   String get orContinueWith;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
 
   /// No description provided for @email.
   ///

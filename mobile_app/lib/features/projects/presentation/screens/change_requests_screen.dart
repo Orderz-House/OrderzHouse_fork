@@ -231,7 +231,7 @@ class _ChangeRequestsScreenState extends ConsumerState<ChangeRequestsScreen> {
           // Timestamp
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.access_time_rounded,
                 size: 14,
                 color: AppColors.textTertiary,

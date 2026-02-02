@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/user.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/config/app_config.dart';
@@ -16,6 +18,8 @@ import '../../../../core/widgets/gradient_fab.dart';
 import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../common/presentation/providers/my_projects_filters_provider.dart';
+import '../../../common/presentation/widgets/projects_filter_bottom_sheet.dart';
 import '../widgets/client_project_card.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -28,17 +32,29 @@ class ClientProjectsScreen extends ConsumerStatefulWidget {
 
 class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedStatus;
-  
+  Timer? _debounceTimer;
+
   // Store raw project data for additional fields (for future use if needed)
   final Map<int, Map<String, dynamic>> _projectDataMap = {};
-  
-  // Guard to prevent multiple simultaneous calls
   bool _isFetchingRawData = false;
   bool _hasFetchedRawData = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentQuery = ref.read(myProjectsSearchQueryProvider);
+        if (currentQuery.isNotEmpty && _searchController.text != currentQuery) {
+          _searchController.text = currentQuery;
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -85,38 +101,74 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     });
   }
 
+  void _showSortDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentSort = ref.read(myProjectsFiltersProvider).sort;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.sortBy,
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SortOption(
+              label: l10n.newestFirst,
+              value: 'newest',
+              isSelected: currentSort == 'newest',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('newest');
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: l10n.priceLowToHigh,
+              value: 'budget_low_to_high',
+              isSelected: currentSort == 'budget_low_to_high',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('budget_low_to_high');
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: l10n.priceHighToLow,
+              value: 'budget_high_to_low',
+              isSelected: currentSort == 'budget_high_to_low',
+              onTap: () {
+                ref.read(myProjectsFiltersProvider.notifier).setSort('budget_high_to_low');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final filteredAsync = ref.watch(filteredMyProjectsProvider);
     final projectsAsync = ref.watch(myProjectsProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final selectedStatus = ref.watch(myProjectsStatusProvider);
 
-    // Get unique statuses from projects for chips
     final statuses = projectsAsync.value?.map((p) => p.status).toSet().toList() ?? [];
     final allStatuses = [l10n.all, ...statuses];
 
-    // Filter projects based on search and selected status
-    List<Project>? filteredProjects;
-    if (projectsAsync.value != null) {
-      filteredProjects = projectsAsync.value!.where((project) {
-        final matchesSearch = _searchController.text.isEmpty ||
-            project.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            project.description.toLowerCase().contains(_searchController.text.toLowerCase());
-        final matchesStatus = _selectedStatus == null ||
-            _selectedStatus == 'All' ||
-            project.status == _selectedStatus;
-        return matchesSearch && matchesStatus;
-      }).toList();
-    }
-
-    // Calculate bottom offset for floating button
-    // Note: Scaffold body already stops above bottomNavigationBar, so we don't add nav bar height
-    final safe = MediaQuery.of(context).padding.bottom; // iPhone safe area
-    const gap = 0.0; // Very small gap above the bottom edge (almost touching nav bar)
-    final buttonBottomOffset = safe + gap;
-
-    // Calculate bottom padding for content (to prevent overlap with button)
+    final safe = MediaQuery.of(context).padding.bottom;
     final contentBottomPadding = safe + 80.0;
 
     return AppScaffold(
@@ -126,10 +178,10 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
           _buildTopBar(context, user),
           
           // 2) Search + Actions Row
-          _buildSearchRow(context),
+          _buildSearchRow(context, ref),
           
           // 3) Category Chips Row
-          _buildCategoryChips(allStatuses),
+          _buildCategoryChips(context, allStatuses, selectedStatus),
           
           // 4) Projects Grid
           Expanded(
@@ -139,24 +191,26 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
                 ref.invalidate(myProjectsProvider);
                 await ref.read(myProjectsProvider.future);
               },
-              child: projectsAsync.when(
-                data: (projects) {
-                  // Fetch and store raw project data (only once)
-                  _fetchRawProjectDataForProjects(projects);
-
-                  if (filteredProjects == null || filteredProjects.isEmpty) {
+              child: filteredAsync.when(
+                data: (filteredProjects) {
+                  _fetchRawProjectDataForProjects(
+                      projectsAsync.value ?? filteredProjects);
+                  final hasFilters = ref.read(myProjectsSearchQueryProvider).trim().isNotEmpty ||
+                      ref.read(myProjectsStatusProvider) != null;
+                  if (filteredProjects.isEmpty) {
                     return EmptyState(
                       icon: Icons.work_outline,
-                      title: _searchController.text.isNotEmpty || _selectedStatus != null
+                      title: hasFilters
                           ? l10n.noResultsFound
                           : l10n.noProjects,
-                      message: _searchController.text.isNotEmpty || _selectedStatus != null
+                      message: hasFilters
                           ? l10n.noResultsFound
                           : l10n.noProjectsMessage,
                     );
                   }
-
-                  return _buildProjectsGrid(context, filteredProjects, bottomPadding: contentBottomPadding);
+                  return _buildProjectsGrid(
+                      context, filteredProjects,
+                      bottomPadding: contentBottomPadding);
                 },
                 loading: () => _LoadingGrid(bottomPadding: contentBottomPadding),
                 error: (error, stackTrace) => ErrorState(
@@ -282,14 +336,13 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     );
   }
 
-  // 2) Search + Actions Row
-  Widget _buildSearchRow(BuildContext context) {
+  // 2) Search + Actions Row (debounced search, filter sheet, sort dialog - same as Explore)
+  Widget _buildSearchRow(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         children: [
-          // Search Field
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -305,7 +358,19 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
               ),
               child: TextField(
                 controller: _searchController,
-                onChanged: (_) => setState(() {}),
+                onChanged: (value) {
+                  _debounceTimer?.cancel();
+                  _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+                    if (mounted) {
+                      ref.read(myProjectsSearchQueryProvider.notifier).state =
+                          value;
+                    }
+                  });
+                },
+                onSubmitted: (value) {
+                  _debounceTimer?.cancel();
+                  ref.read(myProjectsSearchQueryProvider.notifier).state = value;
+                },
                 decoration: InputDecoration(
                   hintText: l10n.searchProjects,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
@@ -325,10 +390,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
               ),
             ),
           ),
-          
           const SizedBox(width: AppSpacing.sm),
-          
-          // Filter Button
           Container(
             width: 48,
             height: 48,
@@ -349,15 +411,11 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
                 color: Color(0xFF111827),
                 size: 20,
               ),
-              onPressed: () {
-                // TODO: Show filter dialog
-              },
+              onPressed: () =>
+                  showProjectsFilterBottomSheet(context, ProjectsFilterTarget.myProjects),
             ),
           ),
-          
           const SizedBox(width: AppSpacing.sm),
-          
-          // Sort Button
           Container(
             width: 48,
             height: 48,
@@ -378,9 +436,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
                 color: Color(0xFF111827),
                 size: 20,
               ),
-              onPressed: () {
-                // TODO: Show sort dialog
-              },
+              onPressed: () => _showSortDialog(context, ref),
             ),
           ),
         ],
@@ -388,8 +444,9 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     );
   }
 
-  // 3) Category Chips Row (pill chips matching Explore style)
-  Widget _buildCategoryChips(List<String> statuses) {
+  // 3) Category Chips Row (status filter - same pattern as Explore)
+  Widget _buildCategoryChips(
+      BuildContext context, List<String> statuses, String? selectedStatus) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 50,
@@ -401,15 +458,16 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
         separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final status = statuses[index];
-          final isSelected = _selectedStatus == status || (_selectedStatus == null && status == l10n.all);
-          
+          final isAll = status == l10n.all;
+          final isSelected =
+              isAll ? selectedStatus == null : selectedStatus == status;
+
           return AppGradientFilterChip(
             label: status,
             selected: isSelected,
             onTap: () {
-              setState(() {
-                _selectedStatus = status == 'All' ? null : status;
-              });
+              ref.read(myProjectsStatusProvider.notifier).state =
+                  isAll ? null : status;
             },
           );
         },
@@ -450,7 +508,34 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
   }
 }
 
-// Removed _ProjectCard - now using ExploreProjectCard widget
+class _SortOption extends StatelessWidget {
+  const _SortOption({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        label,
+        style: AppTextStyles.bodyLarge.copyWith(
+          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? const Icon(Icons.check_rounded, color: AppColors.primary) : null,
+      onTap: onTap,
+    );
+  }
+}
 
 // Loading Grid
 class _LoadingGrid extends StatelessWidget {

@@ -30,7 +30,7 @@ class GradientFab extends StatelessWidget {
           width: size,
           height: size,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppGradients.primaryButtonGradient,
           ),

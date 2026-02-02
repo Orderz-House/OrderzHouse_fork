@@ -60,7 +60,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final response = await _repository.login(email: email, password: password);
     if (response.success && response.data != null) {
       state = AuthState(user: response.data);
-      // Signal user-scoped providers to refresh (no ref.invalidate to avoid CircularDependencyError)
+      _ref.read(authEpochProvider.notifier).state++;
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
+
+  /// Sign in with Google. Updates state and invalidates user-scoped providers via authEpoch.
+  Future<bool> loginWithGoogle() async {
+    state = const AuthState(isLoading: true);
+    final response = await _repository.signInWithGoogle();
+    if (response.success && response.data != null) {
+      state = AuthState(user: response.data);
       _ref.read(authEpochProvider.notifier).state++;
       return true;
     }

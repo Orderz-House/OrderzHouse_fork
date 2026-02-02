@@ -267,7 +267,7 @@ class DashboardScreen extends ConsumerWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return ConstrainedBox(
-                  constraints: BoxConstraints(
+                  constraints: const BoxConstraints(
                     minHeight: 140,
                     maxHeight: 200,
                   ),

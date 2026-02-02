@@ -4,9 +4,102 @@ import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+
+/**
+ * POST /auth/google
+ * Sign in with Google idToken. Verifies token, finds user by email, returns app JWT.
+ * Body: { idToken: string, accessToken?: string }
+ */
+export const loginWithGoogle = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: "idToken is required",
+      });
+    }
+    if (!GOOGLE_CLIENT_ID) {
+      console.error("GOOGLE_AUTH: GOOGLE_WEB_CLIENT_ID or GOOGLE_CLIENT_ID not set in .env");
+      return res.status(500).json({
+        success: false,
+        message: "Google Sign-In is not configured on the server",
+      });
+    }
+
+    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Google token: missing email",
+      });
+    }
+
+    const email = payload.email.toLowerCase();
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND is_deleted = FALSE",
+      [email]
+    );
+    const user = rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this Google email. Please register first.",
+      });
+    }
+
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+    const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+
+    const tokenPayload = {
+      userId: user.id,
+      role: user.role_id,
+      is_verified: user.email_verified,
+      username: user.username,
+      is_deleted: user.is_deleted,
+      is_two_factor_enabled: user.is_two_factor_enabled,
+    };
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      userInfo: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role_id: user.role_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        profile_pic_url: user.profile_pic_url,
+        is_deleted: user.is_deleted,
+        is_two_factor_enabled: user.is_two_factor_enabled,
+        email_verified: user.email_verified,
+      },
+      must_accept_terms: mustAcceptTerms,
+      terms_version_required: CURRENT_TERMS_VERSION,
+    });
+  } catch (error) {
+    console.error("GOOGLE_AUTH Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Google sign-in failed",
+    });
+  }
+};
 
 /**
  * POST /auth/2fa/generate

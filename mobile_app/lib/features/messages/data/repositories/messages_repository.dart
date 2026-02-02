@@ -112,7 +112,7 @@ class MessagesRepository {
       }
 
       if (message == null) {
-        return ApiResponse(
+        return const ApiResponse(
           success: false,
           data: null,
           message: 'Invalid response format',

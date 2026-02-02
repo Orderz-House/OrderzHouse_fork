@@ -265,7 +265,7 @@ class NotificationsPage extends ConsumerWidget {
     if (target == null) {
       // No valid target - show snackbar
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('This notification has no link'),
           backgroundColor: AppColors.textSecondary,
         ),

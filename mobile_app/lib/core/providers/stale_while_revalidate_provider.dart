@@ -11,7 +11,7 @@ class StaleWhileRevalidateProvider<T> {
   /// [fetchFn] - Function to fetch fresh data
   /// [fromJson] - Function to deserialize from JSON
   /// [toJson] - Function to serialize to JSON
-  static create<T>({
+  static AutoDisposeFutureProvider<T> create<T>({
     required String cacheKey,
     required Future<T> Function() fetchFn,
     required T Function(Map<String, dynamic>) fromJson,
@@ -51,7 +51,7 @@ class StaleWhileRevalidateProvider<T> {
   }
 
   /// Create a provider for lists that uses stale-while-revalidate pattern
-  static createList<T>({
+  static AutoDisposeFutureProvider<List<T>> createList<T>({
     required String cacheKey,
     required Future<List<T>> Function() fetchFn,
     required T Function(Map<String, dynamic>) fromJson,

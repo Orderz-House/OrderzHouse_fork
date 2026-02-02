@@ -8,7 +8,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/home_header.dart';
-import '../../../../core/widgets/home_search_bar.dart';
 import '../../../../core/widgets/home_hero_card_v2.dart';
 import '../../../../core/widgets/quick_actions_row.dart';
 import '../../../../core/widgets/home_project_card.dart';
@@ -38,6 +37,7 @@ class ClientHomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(myProjectsProvider);
           ref.invalidate(latestProjectsProvider);
+          ref.invalidate(workspaceInProgressProjectsProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -51,19 +51,9 @@ class ClientHomeScreen extends ConsumerWidget {
                 roleRoute: '/client',
               ),
 
-              const SizedBox(height: 8),
-
-              // B) SEARCH BAR
-              HomeSearchBar(
-                hintText: l10n.searchFreelancers,
-                onFilterTap: () {
-                  // TODO: Show filter dialog
-                },
-              ),
-
               const SizedBox(height: AppSpacing.xl),
 
-              // C) HERO ACTION CARD
+              // B) HERO ACTION CARD
               _buildHeroCard(context, ref, myProjectsAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
@@ -410,6 +400,7 @@ class ClientHomeScreen extends ConsumerWidget {
               onPressed: () {
                 if (providerKey == 'workspace') {
                   ref.invalidate(myProjectsProvider);
+                  ref.invalidate(workspaceInProgressProjectsProvider);
                 } else {
                   ref.invalidate(latestProjectsProvider);
                 }

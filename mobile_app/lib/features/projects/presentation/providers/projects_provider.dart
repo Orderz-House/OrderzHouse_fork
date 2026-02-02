@@ -334,40 +334,62 @@ class ProfileStats {
 enum WorkspaceTab { actionRequired, active }
 
 /// Provider for selected workspace tab
-final workspaceTabProvider = StateProvider<WorkspaceTab>((ref) => WorkspaceTab.actionRequired);
+/// Default = ACTIVE so first render shows active projects.
+/// autoDispose: when Home is left (no listeners), state resets so next open starts as Active.
+final workspaceTabProvider = StateProvider.autoDispose<WorkspaceTab>((ref) => WorkspaceTab.active);
 
-/// Provider for workspace items (max 5) - filtered from myProjectsProvider
-/// Automatically refreshes when user changes or tab changes
+/// Fetches client projects with status=in_progress for the "In progress" workspace tab.
+/// Uses my projects endpoint with status filter. Cached (no autoDispose) for instant switch-back.
+final workspaceInProgressProjectsProvider = FutureProvider<List<Project>>((ref) async {
+  final repository = ref.read(projectsRepositoryProvider);
+  ref.watch(authEpochProvider);
+  final userId = ref.watch(authStateProvider.select((s) => s.userId));
+  if (userId == null) return [];
+
+  final response = await repository.getMyProjects(
+    statusKey: 'in_progress',
+    page: 1,
+    limit: 5,
+  );
+  if (response.success && response.data != null) {
+    final list = response.data!;
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+  throw Exception(response.message ?? 'Failed to fetch in-progress projects');
+});
+
+/// Provider for workspace items (max 5) - data source depends on tab and role
+/// - ACTIVE: filter from myProjects (active, in_progress, in-progress, not_started)
+/// - IN_PROGRESS (actionRequired): Client = API status=in_progress; Freelancer = filter from myProjects
 final workspaceItemsProvider = Provider<AsyncValue<List<Project>>>((ref) {
-  final projectsAsync = ref.watch(myProjectsProvider);
   final selectedTab = ref.watch(workspaceTabProvider);
   final authState = ref.read(authStateProvider);
   final isFreelancer = authState.user?.roleId == 3;
-  
+
+  // Client + In progress tab: fetch from API with status=in_progress
+  if (selectedTab == WorkspaceTab.actionRequired && !isFreelancer) {
+    return ref.watch(workspaceInProgressProjectsProvider).when(
+          data: (projects) => AsyncValue.data(projects),
+          loading: () => const AsyncValue.loading(),
+          error: (e, s) => AsyncValue.error(e, s),
+        );
+  }
+
+  // Active tab OR Freelancer + In progress: filter from myProjects
+  final projectsAsync = ref.watch(myProjectsProvider);
   return projectsAsync.when(
     data: (projects) {
       List<Project> filtered;
-      
       if (selectedTab == WorkspaceTab.actionRequired) {
-        // Action Required tab
-        if (isFreelancer) {
-          // Freelancer: pending delivery, revision requested, etc.
-          filtered = projects.where((p) {
-            final status = p.status.toLowerCase();
-            return status == 'pending_review' ||
-                   status == 'revision_requested' ||
-                   status == 'pending_delivery' ||
-                   status == 'changes_requested';
-          }).toList();
-        } else {
-          // Client: pending review (freelancer submitted), pending offers
-          filtered = projects.where((p) {
-            final status = p.status.toLowerCase();
-            return status == 'pending_review' ||
-                   status == 'pending' ||
-                   status == 'pending_approval';
-          }).toList();
-        }
+        // Freelancer In progress: pending delivery, revision requested, etc.
+        filtered = projects.where((p) {
+          final status = p.status.toLowerCase();
+          return status == 'pending_review' ||
+                 status == 'revision_requested' ||
+                 status == 'pending_delivery' ||
+                 status == 'changes_requested';
+        }).toList();
       } else {
         // Active tab
         filtered = projects.where((p) {
@@ -378,12 +400,8 @@ final workspaceItemsProvider = Provider<AsyncValue<List<Project>>>((ref) {
                  status == 'not_started';
         }).toList();
       }
-      
-      // Sort by updatedAt/createdAt (most recent first) and limit to 5
       filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final limited = filtered.take(5).toList();
-      
-      return AsyncValue.data(limited);
+      return AsyncValue.data(filtered.take(5).toList());
     },
     loading: () => const AsyncValue.loading(),
     error: (error, stack) => AsyncValue.error(error, stack),

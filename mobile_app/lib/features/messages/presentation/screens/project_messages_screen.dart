@@ -246,7 +246,7 @@ class _ProjectMessagesScreenState extends ConsumerState<ProjectMessagesScreen> {
           if (isCurrentUser) ...[
             const SizedBox(width: 8),
             // Avatar (only for current user)
-            CircleAvatar(
+            const CircleAvatar(
               radius: 16,
               backgroundColor: AppColors.surfaceVariant,
               child: Icon(

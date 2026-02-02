@@ -739,7 +739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourWorkspace => 'Your Workspace';
 
   @override
-  String get actionRequired => 'Action Required';
+  String get actionRequired => 'In progress';
 
   @override
   String get noActionsRequired => 'No actions required';
@@ -799,6 +799,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orContinueWith => 'Or continue with';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
 
   @override
   String get email => 'Email';

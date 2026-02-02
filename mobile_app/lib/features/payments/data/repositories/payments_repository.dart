@@ -166,7 +166,7 @@ class PaymentsRepository {
     } on DioException catch (e) {
       // Handle 404 specifically - endpoint may not be deployed yet
       if (e.response?.statusCode == 404) {
-        return ApiResponse(
+        return const ApiResponse(
           success: false,
           message: 'Payment history endpoint is not available. The server may need to be updated. Please try again later or contact support.',
         );

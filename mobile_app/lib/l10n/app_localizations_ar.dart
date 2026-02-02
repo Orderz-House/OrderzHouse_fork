@@ -737,7 +737,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get yourWorkspace => 'مساحة العمل';
 
   @override
-  String get actionRequired => 'يتطلب إجراء';
+  String get actionRequired => 'قيد التنفيذ';
 
   @override
   String get noActionsRequired => 'لا توجد إجراءات مطلوبة';
@@ -797,6 +797,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get orContinueWith => 'أو تابع باستخدام';
+
+  @override
+  String get continueWithGoogle => 'المتابعة عبر Google';
 
   @override
   String get email => 'البريد الإلكتروني';
