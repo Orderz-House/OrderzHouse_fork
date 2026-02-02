@@ -1840,6 +1840,73 @@ export const getProjectDeliveries = async (req, res) => {
   }
 };
 
+/// Get change requests for a project (freelancer)
+/// GET /projects/:projectId/change-requests
+export const getProjectChangeRequests = async (req, res) => {
+  const requesterId = req.token?.userId;
+  const { projectId } = req.params;
+
+  if (!requesterId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!projectId) return res.status(400).json({ success: false, message: "Missing projectId" });
+
+  try {
+    // Check if project exists
+    const { rows: pr } = await pool.query(
+      `SELECT id, user_id AS client_id
+         FROM projects
+        WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+    if (!pr.length) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    // Get active freelancer assignment
+    const { rows: ar } = await pool.query(
+      `SELECT freelancer_id
+         FROM project_assignments
+        WHERE project_id = $1 AND status = 'active'`,
+      [projectId]
+    );
+
+    if (!ar.length) {
+      // No active assignment - return empty list
+      return res.status(200).json({ success: true, requests: [] });
+    }
+
+    const freelancerId = ar[0].freelancer_id;
+
+    // Check if requester is the assigned freelancer or the client owner
+    const isFreelancer = String(requesterId) === String(freelancerId);
+    const isClient = String(requesterId) === String(pr[0].client_id);
+
+    if (!isFreelancer && !isClient) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    // Get change requests for this project and freelancer
+    const { rows } = await pool.query(
+      `SELECT 
+         id,
+         project_id,
+         client_id,
+         freelancer_id,
+         message,
+         is_resolved,
+         created_at
+       FROM project_change_requests
+       WHERE project_id = $1 AND freelancer_id = $2
+       ORDER BY created_at DESC`,
+      [projectId, freelancerId]
+    );
+
+    return res.status(200).json({ success: true, requests: rows || [] });
+  } catch (err) {
+    console.error("getProjectChangeRequests error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 export const requestProjectChanges = async (req, res) => {
   const clientId = req.token?.userId;
   const { projectId } = req.params;
@@ -1868,7 +1935,7 @@ export const requestProjectChanges = async (req, res) => {
     const { rows: ar } = await pool.query(
       `SELECT freelancer_id
          FROM project_assignments
-        WHERE project_id = $1 AND status = 'active'
+         WHERE project_id = $1 AND status = 'active'
         `,
       [projectId]
     );

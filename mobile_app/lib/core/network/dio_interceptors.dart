@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../storage/secure_storage_service.dart';
+import '../storage/secure_store.dart';
 import '../config/app_config.dart';
 
 class AuthInterceptor extends Interceptor {
@@ -8,7 +8,7 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await SecureStorageService.getToken();
+    final token = await SecureStore.readAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -104,7 +104,7 @@ class ErrorInterceptor extends Interceptor {
     // Handle 401 globally (token expired/invalid)
     // Don't clear on 403 as it might be role-based permission issue
     if (err.response?.statusCode == 401) {
-      SecureStorageService.clearAll();
+      SecureStore.clearAll();
     }
     handler.next(err);
   }

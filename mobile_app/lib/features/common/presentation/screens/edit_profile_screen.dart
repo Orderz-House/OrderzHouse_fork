@@ -11,7 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/storage/secure_store.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -208,7 +208,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await SecureStorageService.getToken();
+      final token = await SecureStore.readAccessToken();
       if (token == null) {
         throw Exception('Authentication required. Please login.');
       }

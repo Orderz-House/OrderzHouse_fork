@@ -13,16 +13,19 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
-import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/explore_project_card.dart';
+import '../../../../core/widgets/explore_skeleton.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../core/widgets/gradient_fab.dart';
 import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../search/presentation/providers/search_provider.dart';
+import '../providers/explore_filters_provider.dart';
+import '../widgets/projects_filter_bottom_sheet.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'dart:async';
 
@@ -138,11 +141,14 @@ class _ExploreProjectsScreenState
     );
   }
 
+  void _showFilterBottomSheet(BuildContext context, WidgetRef ref) {
+    showProjectsFilterBottomSheet(context, ProjectsFilterTarget.explore);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final searchQuery = ref.watch(searchQueryProvider);
-    final projectsAsync = ref.watch(exploreProjectsProvider);
     final categoriesAsync = ref.watch(exploreCategoriesProvider);
     final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
     final sharedCategoryId = ref.watch(exploreSelectedCategoryIdProvider);
@@ -179,53 +185,38 @@ class _ExploreProjectsScreenState
     return AppScaffold(
       body: Column(
           children: [
-            // 1) Top Row
             _buildTopRow(context, user),
-            
-            // 2) Search + Actions Row
             _buildSearchRow(context),
-            
-            // 3) Content (Always use exploreProjectsProvider, which includes search/sort filtering)
             Expanded(
               child: Column(
                 children: [
-                  // Horizontal Chips Row
                   _buildCategoryChips(categoriesAsync, selectedCategoryId),
-                  // Projects Grid
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () async {
                         _refresh();
                         await ref.read(exploreProjectsProvider.future);
                       },
-                      child: projectsAsync.when(
-                        data: (projects) {
-                          if (projects.isEmpty) {
-                            return EmptyState(
-                              icon: Icons.explore_outlined,
-                              title: l10n.noResultsFound,
-                              message: selectedCategoryId == null
-                                  ? l10n.noResultsFound
-                                  : searchQuery.trim().isNotEmpty
-                                      ? l10n.noResultsFound
-                                      : l10n.noResultsFound,
-                            );
-                          }
-
-                          return _buildProjectsGrid(context, projects);
-                        },
-                        loading: () => const _LoadingGrid(),
-                        error: (error, stackTrace) {
-                          final errorMessage = error.toString().replaceAll('Exception: ', '');
-                          final is403 = errorMessage.toLowerCase().contains('permission') ||
-                              errorMessage.toLowerCase().contains('access denied') ||
-                              errorMessage.toLowerCase().contains('forbidden');
-                          
-                          return ErrorState(
-                            message: is403
-                                ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
-                                : errorMessage,
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          ref.listen(authEpochProvider, (_, __) {
+                            ref.read(exploreProjectsLastDataProvider.notifier).state = null;
+                          });
+                          ref.listen(filteredExploreProjectsProvider, (prev, next) {
+                            next.whenData((data) {
+                              ref.read(exploreProjectsLastDataProvider.notifier).state = data;
+                            });
+                          });
+                          final lastData = ref.watch(exploreProjectsLastDataProvider);
+                          final projectsAsync = ref.watch(filteredExploreProjectsProvider);
+                          return _ExploreGridContent(
+                            projectsAsync: projectsAsync,
+                            lastData: lastData,
+                            l10n: l10n,
+                            selectedCategoryId: selectedCategoryId,
+                            searchQuery: searchQuery,
                             onRetry: _refresh,
+                            buildGrid: _buildProjectsGrid,
                           );
                         },
                       ),
@@ -434,9 +425,7 @@ class _ExploreProjectsScreenState
                 color: Color(0xFF111827),
                 size: 20,
               ),
-              onPressed: () {
-                // TODO: Show filter dialog
-              },
+              onPressed: () => _showFilterBottomSheet(context, ref),
             ),
           ),
           
@@ -708,29 +697,13 @@ class _ExploreProjectsScreenState
     final isClient = location.contains('/client');
 
     if (!isClient) {
-      // Freelancers don't have "Add Project" - return empty
       return const SizedBox.shrink();
     }
 
-    // Calculate proper spacing above bottom nav
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final bottomNavHeight = 85.0 + bottomPadding;
-    const buttonSpacing = 12.0; // Gap between button and bottom nav
-    // Clamp to non-negative to avoid Flutter assertion error
-    final totalBottomMargin = (bottomNavHeight + buttonSpacing).clamp(0.0, double.infinity);
-
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      margin: EdgeInsets.only(bottom: totalBottomMargin),
-      child: PrimaryGradientButton(
-        onPressed: () {
-          context.go('/create-project');
-        },
-        label: l10n.createProject,
-        icon: Icons.add_rounded,
-        width: null, // Use intrinsic width (pill shape)
-        height: 48,
-        borderRadius: 30, // Pill shape
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GradientFab(
+        onPressed: () => context.go('/create-project'),
       ),
     );
   }
@@ -757,11 +730,11 @@ class _ExploreProjectsScreenState
       return AppBottomNavBar(
         currentIndex: currentIndex,
         items: [
-          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/client'),
-          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/client/projects'),
-          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/client/explore'),
-          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/client/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/client/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/client'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/client/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/client/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/client/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/client/profile'),
         ],
       );
     } else if (location.contains('/freelancer')) {
@@ -781,11 +754,11 @@ class _ExploreProjectsScreenState
       return AppBottomNavBar(
         currentIndex: currentIndex,
         items: [
-          NavItem(icon: Icons.home_rounded, title: l10n.home, route: '/freelancer'),
-          NavItem(icon: Icons.work_outline_rounded, title: l10n.myProjects, route: '/freelancer/projects'),
-          NavItem(icon: Icons.explore_rounded, title: l10n.explore, route: '/freelancer/explore'),
-          NavItem(icon: Icons.payment_rounded, title: l10n.payments, route: '/freelancer/payments'),
-          NavItem(icon: Icons.person_outline_rounded, title: l10n.profile, route: '/freelancer/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/freelancer/profile'),
         ],
       );
     }
@@ -827,64 +800,122 @@ class _SortOption extends StatelessWidget {
   }
 }
 
-// Loading Grid
-class _LoadingGrid extends StatelessWidget {
-  const _LoadingGrid();
+/// Grid content: shows lastData + overlay while loading, skeleton when no lastData, or data/error.
+class _ExploreGridContent extends StatelessWidget {
+  const _ExploreGridContent({
+    required this.projectsAsync,
+    required this.lastData,
+    required this.l10n,
+    required this.selectedCategoryId,
+    required this.searchQuery,
+    required this.onRetry,
+    required this.buildGrid,
+  });
+
+  final AsyncValue<List<Project>> projectsAsync;
+  final List<Project>? lastData;
+  final AppLocalizations l10n;
+  final int? selectedCategoryId;
+  final String searchQuery;
+  final VoidCallback onRetry;
+  final Widget Function(BuildContext context, List<Project> projects) buildGrid;
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: 6,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    // Loading with previous data: show grid + small loading indicator
+    if (projectsAsync.isLoading && lastData != null && lastData!.isNotEmpty) {
+      return Stack(
+        children: [
+          buildGrid(context, lastData!),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Material(
+              elevation: 0,
+              color: Colors.transparent,
+              child: LinearProgressIndicator(
+                backgroundColor: Color(0xFFE5E7EB),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
               ),
-            ],
+            ),
           ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LoadingShimmer(
-                height: 180,
-                width: double.infinity,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
+        ],
+      );
+    }
+    // Loading with no previous data: skeleton grid
+    if (projectsAsync.isLoading) {
+      return const ExploreSkeletonGrid(itemCount: 8);
+    }
+    // Error with previous data: show grid + error bar with retry
+    if (projectsAsync.hasError && lastData != null && lastData!.isNotEmpty) {
+      final errorMessage = projectsAsync.error.toString().replaceAll('Exception: ', '');
+      final is403 = errorMessage.toLowerCase().contains('permission') ||
+          errorMessage.toLowerCase().contains('access denied') ||
+          errorMessage.toLowerCase().contains('forbidden');
+      return Stack(
+        children: [
+          buildGrid(context, lastData!),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Material(
+              color: Colors.white,
+              elevation: 4,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          is403
+                              ? 'Permission denied. Verify your account.'
+                              : errorMessage.length > 60
+                                  ? '${errorMessage.substring(0, 60)}...'
+                                  : errorMessage,
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: onRetry,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LoadingShimmer(width: 120, height: 16),
-                    SizedBox(height: AppSpacing.xs),
-                    LoadingShimmer(width: 100, height: 12),
-                    SizedBox(height: AppSpacing.xs),
-                    LoadingShimmer(width: 80, height: 12),
-                    Spacer(),
-                    LoadingShimmer(width: 60, height: 12),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      },
-    );
+        ],
+      );
+    }
+    // Error with no previous data: full error state
+    if (projectsAsync.hasError) {
+      final errorMessage = projectsAsync.error.toString().replaceAll('Exception: ', '');
+      final is403 = errorMessage.toLowerCase().contains('permission') ||
+          errorMessage.toLowerCase().contains('access denied') ||
+          errorMessage.toLowerCase().contains('forbidden');
+      return ErrorState(
+        message: is403
+            ? 'You don\'t have permission to view these projects. Please verify your account or log in with a different role.'
+            : errorMessage,
+        onRetry: onRetry,
+      );
+    }
+    // Data case
+    final projects = projectsAsync.value!;
+    if (projects.isEmpty) {
+      return EmptyState(
+        icon: Icons.explore_outlined,
+        title: l10n.noResultsFound,
+        message: l10n.noResultsFound,
+      );
+    }
+    return buildGrid(context, projects);
   }
 }

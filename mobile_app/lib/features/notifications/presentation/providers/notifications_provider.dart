@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/notification_model.dart';
 import '../../data/repositories/notifications_repository.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 final notificationsRepositoryProvider = Provider<NotificationsRepository>((ref) {
   return NotificationsRepository();
@@ -9,6 +10,9 @@ final notificationsRepositoryProvider = Provider<NotificationsRepository>((ref) 
 /// Provider for fetching all notifications
 final notificationsProvider =
     FutureProvider.autoDispose<List<AppNotification>>((ref) async {
+  ref.watch(authEpochProvider);
+  final userId = ref.watch(authStateProvider.select((s) => s.userId));
+  if (userId == null) return [];
   final repository = ref.read(notificationsRepositoryProvider);
   final response = await repository.fetchNotifications(
     limit: 50,
@@ -26,6 +30,9 @@ final notificationsProvider =
 /// Provider for fetching unread notifications count
 final unreadCountProvider =
     FutureProvider.autoDispose<int>((ref) async {
+  ref.watch(authEpochProvider);
+  final userId = ref.watch(authStateProvider.select((s) => s.userId));
+  if (userId == null) return 0;
   final repository = ref.read(notificationsRepositoryProvider);
   final response = await repository.fetchUnreadCount(unreadOnly: true);
 

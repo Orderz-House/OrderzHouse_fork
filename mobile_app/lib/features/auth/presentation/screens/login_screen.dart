@@ -210,8 +210,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        // Social login buttons row (Google, Apple, Facebook)
-                        _buildSocialButtonsRow(),
+                        // Continue with Google
+                        _buildGoogleSignInButton(l10n),
                         const SizedBox(height: AppSpacing.xl),
                         // Bottom link
                         Row(
@@ -255,96 +255,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // Social buttons row widget
-  Widget _buildSocialButtonsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _SocialIconButton(
-          iconWidget: _buildGoogleIcon(),
-          onTap: () {
-            // Placeholder for Google sign in (keep existing logic)
-          },
-        ),
-        const SizedBox(width: AppSpacing.md),
-        _SocialIconButton(
-          iconWidget: _buildAppleIcon(),
-          onTap: () {
-            // Placeholder for Apple sign in
-          },
-        ),
-        const SizedBox(width: AppSpacing.md),
-        _SocialIconButton(
-          iconWidget: _buildFacebookIcon(),
-          onTap: () {
-            // Placeholder for Facebook sign in (keep existing logic)
-          },
-        ),
-      ],
+  Widget _buildGoogleSignInButton(AppLocalizations l10n) {
+    final authState = ref.watch(authStateProvider);
+    return GradientButton(
+      onPressed: authState.isLoading ? null : _handleGoogleSignIn,
+      label: l10n.continueWithGoogle,
+      isLoading: authState.isLoading,
+      height: 52,
+      borderRadius: 30,
     );
   }
 
-  // Helper methods to build social icons
-  Widget _buildGoogleIcon() {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4285F4), Color(0xFF34A853)],
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+  Future<void> _handleGoogleSignIn() async {
+    final authNotifier = ref.read(authStateProvider.notifier);
+    final success = await authNotifier.loginWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      final user = ref.read(authStateProvider).user;
+      if (user?.mustAcceptTerms == true) {
+        context.go('/accept-terms');
+        return;
+      }
+      final role = ref.read(authStateProvider).userRole;
+      if (role == 'freelancer') {
+        context.go('/freelancer');
+      } else if (role == 'client') {
+        context.go('/client');
+      }
+    } else {
+      final error = ref.read(authStateProvider).error;
+      if (error != null && !error.toLowerCase().contains('cancel')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            duration: const Duration(seconds: 5),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppleIcon() {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: const BoxDecoration(
-        color: Color(0xFF000000),
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.apple,
-          color: Colors.white,
-          size: 16,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFacebookIcon() {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1877F2),
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Text(
-          'f',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
 }
 
@@ -428,45 +378,6 @@ class _StyledTextField extends StatelessWidget {
   }
 }
 
-// Small rounded-square social icon button (matches reference design)
-class _SocialIconButton extends StatelessWidget {
-  final Widget iconWidget;
-  final VoidCallback onTap;
-
-  const _SocialIconButton({
-    required this.iconWidget,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(11), // 10-12 range
-          border: Border.all(
-            color: const Color(0xFFE5E7EB), // Light grey border
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), // Very subtle shadow
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: iconWidget,
-        ),
-      ),
-    );
-  }
-}
 
 
 

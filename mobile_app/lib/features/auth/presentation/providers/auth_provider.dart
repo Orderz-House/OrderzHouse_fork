@@ -1,11 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/storage/secure_store.dart';
+import '../../../../core/cache/cache_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
+
+/// Incremented on login/logout so user-scoped providers can refresh without being invalidated from AuthNotifier.
+/// Prevents CircularDependencyError: do NOT call ref.invalidate() on providers that depend on auth from inside AuthNotifier.
+final authEpochProvider = StateProvider<int>((ref) => 0);
 
 final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>(
   (ref) {
@@ -39,7 +44,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _init() async {
     state = const AuthState(isLoading: true);
-    final token = await SecureStorageService.getToken();
+    final token = await SecureStore.readAccessToken();
     if (token != null) {
       final response = await _repository.getUserData();
       if (response.success && response.data != null) {
@@ -54,9 +59,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(isLoading: true);
     final response = await _repository.login(email: email, password: password);
     if (response.success && response.data != null) {
-      // Clear all user-scoped state before setting new user
-      _invalidateUserScopedProviders();
       state = AuthState(user: response.data);
+      _ref.read(authEpochProvider.notifier).state++;
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
+
+  /// Sign in with Google. Updates state and invalidates user-scoped providers via authEpoch.
+  Future<bool> loginWithGoogle() async {
+    state = const AuthState(isLoading: true);
+    final response = await _repository.signInWithGoogle();
+    if (response.success && response.data != null) {
+      state = AuthState(user: response.data);
+      _ref.read(authEpochProvider.notifier).state++;
       return true;
     }
     state = AuthState(error: response.message);
@@ -67,9 +84,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(isLoading: true);
     final response = await _repository.verifyOtp(email: email, otp: otp);
     if (response.success && response.data != null) {
-      // Clear all user-scoped state before setting new user
-      _invalidateUserScopedProviders();
       state = AuthState(user: response.data);
+      _ref.read(authEpochProvider.notifier).state++;
       return true;
     }
     state = AuthState(error: response.message);
@@ -114,8 +130,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _repository.logout();
-    // Clear all user-scoped state
-    _invalidateUserScopedProviders();
+    await CacheService.clearAll();
+    // Signal user-scoped providers to refresh (no ref.invalidate to avoid CircularDependencyError)
+    _ref.read(authEpochProvider.notifier).state++;
     state = const AuthState();
   }
 
@@ -135,20 +152,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
     state = AuthState(error: response.message);
     return false;
-  }
-
-  /// Invalidate all user-scoped providers to clear cached data
-  /// Call this on login/logout to prevent showing stale data from previous user
-  /// 
-  /// Note: We use invalidateSelf() on the container to clear ALL providers
-  /// This is safer than listing each provider individually (avoids circular deps)
-  void _invalidateUserScopedProviders() {
-    // Strategy: Instead of importing and invalidating each provider individually,
-    // we'll mark a flag that other providers can watch to auto-invalidate
-    // This is handled by making providers watch authStateProvider.userId
-    
-    // For now, we just clear the state. Individual screens will refresh
-    // their data when they detect the user has changed via authStateProvider.watch
   }
 
   Future<bool> deleteAccount({String? reason}) async {

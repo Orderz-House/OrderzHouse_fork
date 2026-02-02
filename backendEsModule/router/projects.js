@@ -27,6 +27,7 @@ import {
   getProjectDeliveries,
   adminApproveProject,
   requestProjectChanges,
+  getProjectChangeRequests,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -281,6 +282,12 @@ projectsRouter.post(
   authentication,
   // adminViewerOnly,
   adminApproveProject
+);
+
+projectsRouter.get(
+  "/:projectId/change-requests",
+  authentication,
+  getProjectChangeRequests
 );
 
 projectsRouter.post(

@@ -1,21 +1,74 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/category.dart';
+import '../../../../core/cache/cache_service.dart';
 import '../../data/repositories/categories_repository.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 final categoriesRepositoryProvider = Provider<CategoriesRepository>((ref) {
   return CategoriesRepository();
 });
 
+// In-memory cache for categories (instant access)
+final _categoriesCacheProvider = StateProvider.autoDispose<List<Category>?>((ref) => null);
+
 final exploreCategoriesProvider =
     FutureProvider.autoDispose<List<Category>>((ref) async {
   final repository = ref.read(categoriesRepositoryProvider);
-  final response = await repository.fetchExploreCategories();
+  ref.watch(authEpochProvider);
+  const cacheKey = 'explore_categories';
 
-  if (response.success && response.data != null) {
-    return response.data!;
+  // 1. Check in-memory cache first (instant)
+  final cached = ref.read(_categoriesCacheProvider);
+  if (cached != null && cached.isNotEmpty) {
+    // Return cached immediately, continue fetching fresh
   }
+  
+  // 2. Try persistent cache
+  final persistentCache = await CacheService.getList<Category>(
+    cacheKey,
+    (json) => Category.fromJson(json),
+  );
+  
+  if (persistentCache != null && persistentCache.isNotEmpty) {
+    // Update in-memory cache
+    ref.read(_categoriesCacheProvider.notifier).state = persistentCache;
+    // Return cached immediately, continue fetching fresh
+  }
+  
+  // 3. Fetch fresh data
+  try {
+    final response = await repository.fetchExploreCategories();
 
-  throw Exception(response.message ?? 'Failed to fetch categories');
+    if (response.success && response.data != null) {
+      // Save to both caches
+      ref.read(_categoriesCacheProvider.notifier).state = response.data!;
+      await CacheService.setList(
+        cacheKey,
+        response.data!,
+        (category) => category.toJson(),
+      );
+      return response.data!;
+    }
+
+    // If fetch fails, return cached data if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    throw Exception(response.message ?? 'Failed to fetch categories');
+  } catch (e) {
+    // Return cached data on error if available
+    if (persistentCache != null && persistentCache.isNotEmpty) {
+      return persistentCache;
+    }
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+    rethrow;
+  }
 });
 
 /// Selected category ID for explore projects

@@ -274,7 +274,7 @@
   "projectCompleted": "Project completed",
   
   "yourWorkspace": "Your Workspace",
-  "actionRequired": "Action Required",
+  "actionRequired": "In progress",
   "noActionsRequired": "No actions required",
   "noActiveProjects": "No active projects",
   "getInspired": "Get Inspired",
@@ -300,8 +300,9 @@
   "createAccount": "Create Account",
   "alreadyHaveAccount": "Already have an account?",
   "dontHaveAccount": "Don't have an account?",
-  "orContinueWith": "Or continue with",
-  
+"orContinueWith": "Or continue with",
+  "continueWithGoogle": "Continue with Google",
+
   "email": "Email",
   "emailAddress": "Email Address",
   "enterEmail": "Enter your email",
@@ -999,5 +1000,18 @@
   "passwordUppercase": "Password must contain at least one uppercase letter",
   "passwordLowercase": "Password must contain at least one lowercase letter",
   "passwordNumber": "Password must contain at least one number",
-  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number"
+  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number",
+
+  "filters": "Filters",
+  "oldestFirst": "Oldest First",
+  "allTypes": "All Types",
+  "anyBudget": "Any Budget",
+  "budgetLessThan50": "Up to 50 JOD",
+  "budget50To200": "50 – 200 JOD",
+  "budgetAbove200": "200+ JOD",
+  "deliveryTime": "Delivery Time",
+  "anyTime": "Any Time",
+  "deliveryShort": "Up to 7 days",
+  "deliveryMedium": "8 – 30 days",
+  "deliveryLong": "More than 30 days"
 }

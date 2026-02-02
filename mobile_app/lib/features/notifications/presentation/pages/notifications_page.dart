@@ -5,10 +5,12 @@ import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/models/notification_model.dart';
+import '../../../../core/models/notification_target.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../providers/notifications_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class NotificationsPage extends ConsumerWidget {
@@ -228,7 +230,7 @@ class NotificationsPage extends ConsumerWidget {
     WidgetRef ref,
     AppNotification notification,
   ) async {
-    // Mark as read if unread (don't block navigation on failure)
+    // Mark as read if unread (optimistic UI - don't block navigation on failure)
     if (!notification.isRead) {
       try {
         await ref.read(
@@ -245,131 +247,45 @@ class NotificationsPage extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    // Get current route to determine role context
-    final location = GoRouterState.of(context).uri.path;
-    final isClientContext = location.contains('/client');
-    final rolePrefix = isClientContext ? '/client' : '/freelancer';
-
-    final type = notification.type?.toLowerCase() ?? '';
-    final refId = notification.referenceId;
-
-    // Route based on notification type - always navigate, never show dialog
-    if (notification.isDeliveryRelated) {
-      // WORK_SUBMITTED / WORK_APPROVED / WORK_REVISION_REQUESTED
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'project');
-        return;
-      }
-      _navigateToProject(
-        context,
-        refId,
-        openReceiveModal: isClientContext && type == NotificationType.workSubmitted,
-        showDeliveries: !isClientContext,
-      );
-    } else if (notification.isOfferRelated) {
-      // OFFER_SUBMITTED / OFFER_APPROVED / OFFER_REJECTED
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'project');
-        return;
-      }
-      if (notification.entityType == EntityType.offer) {
-        // refId is offer ID - navigate to projects with offers
-        _navigateToProjectsWithOffersTab(context, rolePrefix);
-      } else {
-        // refId is project ID - open applicants/offers section
-        _navigateToProject(context, refId, openApplicants: isClientContext);
-      }
-    } else if (notification.isProjectRelated) {
-      // PROJECT_CREATED / PROJECT_STATUS_CHANGED / FREELANCER_ASSIGNED etc.
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'project');
-        return;
-      }
-      _navigateToProject(context, refId);
-    } else if (notification.isPaymentRelated) {
-      // PAYMENT_* / ESCROW_* - navigate to payments (no refId required)
-      context.push('$rolePrefix/payments');
-    } else if (notification.isMessageRelated) {
-      // MESSAGE_RECEIVED - navigate to messages/chat
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'conversation');
-        return;
-      }
-      // TODO: Navigate to chat when implemented
-      _showNotImplemented(context, 'Messages');
-    } else if (notification.isTaskRelated) {
-      // TASK_* notifications
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'task');
-        return;
-      }
-      _showNotImplemented(context, 'Tasks');
-    } else if (type == NotificationType.systemAnnouncement) {
-      // System announcement - no specific screen, just mark as read
-      // (already marked as read above)
+    // Get user role for mapper
+    final authState = ref.read(authStateProvider);
+    final userRoleId = authState.user?.roleId;
+    
+    if (userRoleId == null) {
+      _showErrorSnackbar(context, 'User role not found');
       return;
-    } else if (type == NotificationType.reviewSubmitted) {
-      // Navigate to profile/reviews
-      context.push('$rolePrefix/profile');
-    } else if (type.contains('subscription')) {
-      // Navigate to subscription/plans
-      context.push('/plans');
-    } else if (type.contains('appointment')) {
-      if (refId == null) {
-        _showMissingDataSnackbar(context, 'appointment');
-        return;
-      }
-      _showNotImplemented(context, 'Appointments');
-    } else if (refId != null) {
-      // Fallback: try to navigate to project details if we have a refId
-      _navigateToProject(context, refId);
-    } else {
-      // No refId and unknown type - show missing data snackbar
-      _showMissingDataSnackbar(context, 'required');
+    }
+
+    // Map notification to target using the unified mapper
+    final target = NotificationTargetMapper.mapNotificationToTarget(
+      notification,
+      userRoleId,
+    );
+
+    if (target == null) {
+      // No valid target - show snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This notification has no link'),
+          backgroundColor: AppColors.textSecondary,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to target
+    try {
+      target.navigate(context);
+    } catch (e) {
+      debugPrint('Navigation error: $e');
+      _showErrorSnackbar(context, 'Failed to navigate: ${e.toString()}');
     }
   }
 
-  void _navigateToProject(
-    BuildContext context,
-    int projectId, {
-    bool openApplicants = false,
-    bool openReceiveModal = false,
-    bool showDeliveries = false,
-  }) {
-    // Build query parameters for deep-linking
-    final queryParams = <String, String>{};
-    if (openApplicants) queryParams['openApplicants'] = 'true';
-    if (openReceiveModal) queryParams['openReceiveModal'] = 'true';
-    if (showDeliveries) queryParams['showDeliveries'] = 'true';
-    
-    final uri = Uri(
-      path: '/project/$projectId',
-      queryParameters: queryParams.isNotEmpty ? queryParams : null,
-    );
-    
-    context.push(uri.toString());
-  }
-
-  void _navigateToProjectsWithOffersTab(BuildContext context, String rolePrefix) {
-    // Navigate to my projects screen
-    context.go('$rolePrefix/projects');
-  }
-
-  void _showNotImplemented(BuildContext context, String feature) {
-    final l10n = AppLocalizations.of(context)!;
+  void _showErrorSnackbar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(l10n.comingSoon),
-        backgroundColor: AppColors.textSecondary,
-      ),
-    );
-  }
-
-  void _showMissingDataSnackbar(BuildContext context, String dataType) {
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.couldntOpenNotification(dataType)),
+        content: Text(message),
         backgroundColor: AppColors.error,
       ),
     );
