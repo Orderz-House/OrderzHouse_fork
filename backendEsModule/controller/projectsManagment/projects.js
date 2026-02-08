@@ -5,6 +5,117 @@ import { Readable } from "stream";
 import multer from "multer";
 import eventBus from "../../events/eventBus.js";
 
+/**
+ * Activate subscription when freelancer starts first project
+ * Called when project status changes to 'in_progress'
+ */
+const activateSubscriptionIfPending = async (freelancerId) => {
+  try {
+    // Check if freelancer has a pending_start subscription
+    // Check for pending subscription (handle missing activated_at column)
+    let pendingSubs;
+    try {
+      const result = await pool.query(
+        `SELECT s.id, s.plan_id, s.start_date, s.end_date, p.duration, p.plan_type
+         FROM subscriptions s
+         JOIN plans p ON s.plan_id = p.id
+         WHERE s.freelancer_id = $1 
+           AND s.status = 'pending_start'
+           AND s.activated_at IS NULL
+         ORDER BY s.id DESC
+         LIMIT 1`,
+        [freelancerId]
+      );
+      pendingSubs = result.rows;
+    } catch (err) {
+      // If activated_at column doesn't exist, query without it
+      if (err.message && err.message.includes('activated_at')) {
+        const result = await pool.query(
+          `SELECT s.id, s.plan_id, s.start_date, s.end_date, p.duration, p.plan_type
+           FROM subscriptions s
+           JOIN plans p ON s.plan_id = p.id
+           WHERE s.freelancer_id = $1 
+             AND s.status = 'pending_start'
+           ORDER BY s.id DESC
+           LIMIT 1`,
+          [freelancerId]
+        );
+        pendingSubs = result.rows;
+      } else {
+        throw err;
+      }
+    }
+
+    if (pendingSubs.length === 0) {
+      return; // No pending subscription
+    }
+
+    const subscription = pendingSubs[0];
+    const plan = subscription;
+
+    // Check if this is freelancer's first active project
+    const { rows: activeProjects } = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM project_assignments pa
+       JOIN projects p ON pa.project_id = p.id
+       WHERE pa.freelancer_id = $1
+         AND pa.status = 'active'
+         AND p.status IN ('in_progress', 'active')`,
+      [freelancerId]
+    );
+
+    // Only activate if this is the first project (count = 1 means this is the first)
+    if (parseInt(activeProjects[0].count) === 1) {
+      const activatedAt = new Date();
+      const startDate = new Date(activatedAt);
+      startDate.setHours(0, 0, 0, 0, 0); // Set to start of day
+      const endDate = new Date(startDate);
+
+      // Calculate end date based on plan type
+      if (plan.plan_type === "monthly") {
+        endDate.setMonth(endDate.getMonth() + plan.duration);
+      } else {
+        endDate.setFullYear(endDate.getFullYear() + plan.duration);
+      }
+
+      // Activate subscription (handle missing activated_at column)
+      try {
+        await pool.query(
+          `UPDATE subscriptions
+           SET activated_at = $1,
+               start_date = $2,
+               end_date = $3,
+               status = 'active'
+           WHERE id = $4
+             AND status = 'pending_start'
+             AND activated_at IS NULL`,
+          [activatedAt, startDate, endDate, subscription.id]
+        );
+        console.log(`✅ Subscription ${subscription.id} activated for freelancer ${freelancerId}`);
+      } catch (err) {
+        // Fallback if activated_at column doesn't exist
+        if (err.message && err.message.includes('activated_at')) {
+          await pool.query(
+            `UPDATE subscriptions
+             SET start_date = $1,
+                 end_date = $2,
+                 status = 'active'
+             WHERE id = $3
+               AND status = 'pending_start'`,
+            [startDate, endDate, subscription.id]
+          );
+          console.log(`✅ Subscription ${subscription.id} activated for freelancer ${freelancerId} (no activated_at column)`);
+        } else {
+          throw err;
+        }
+      }
+    }
+  } catch (err) {
+    // Silently fail - subscription activation is not critical for project flow
+    console.error("Subscription activation error:", err);
+  }
+};
+
 // Multer memory storage
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -40,6 +151,19 @@ export const createProject = async (req, res) => {
   const client = await pool.connect();
   try {
     const userId = req.token?.userId;
+    
+    // Check if user is client (role_id = 2)
+    const { rows: userRows } = await pool.query(
+      `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
+      [userId]
+    );
+    
+    if (!userRows.length || Number(userRows[0].role_id) !== 2) {
+      return res.status(403).json({
+        success: false,
+        message: "Only clients can create projects",
+      });
+    }
 
     await client.query("SELECT pg_advisory_xact_lock($1)", [userId]);
 
@@ -598,6 +722,10 @@ export const approveOrRejectApplication = async (req, res) => {
 `, [assignment.project_id]);
 
     await client.query("COMMIT");
+    client.release();
+
+    // Activate subscription if pending (after transaction commit)
+    await activateSubscriptionIfPending(assignment.freelancer_id);
 
     // ✅ emit events
     try {
@@ -660,6 +788,9 @@ export const acceptAssignment = async (req, res) => {
        WHERE id = $1`,
       [assignment.project_id]
     );
+
+    // Activate subscription if pending
+    await activateSubscriptionIfPending(freelancerId);
 
     await LogCreators.projectOperation(
       freelancerId,
@@ -779,9 +910,9 @@ export const approveWorkCompletion = async (req, res) => {
       });
     }
 
-    // 1) Load project
+    // 1) Load project with completion status
     const { rows } = await pool.query(
-      `SELECT id, user_id, title
+      `SELECT id, user_id, title, status, completion_status
        FROM projects
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
@@ -802,6 +933,16 @@ export const approveWorkCompletion = async (req, res) => {
         success: false,
         message: "Only client can approve work",
       });
+    }
+
+    // 3) Validate that work was delivered before allowing approve
+    if (action === "approve") {
+      if (project.status !== "pending_review" && project.completion_status !== "pending_review") {
+        return res.status(400).json({
+          success: false,
+          message: "Work must be submitted for review before it can be approved",
+        });
+      }
     }
 
     const newStatus =

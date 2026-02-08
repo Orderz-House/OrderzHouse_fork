@@ -20,8 +20,8 @@ export const confirmCheckoutSession = async (req, res) => {
     const user_id = Number(session.metadata.user_id);
     const purpose = session.metadata.purpose; // 'plan' | 'project'
     const reference_id = Number(session.metadata.reference_id);
-    const includesVerificationFee =
-      session.metadata.includes_verification_fee === "yes";
+    const includesYearlyFee =
+      session.metadata.includes_yearly_fee === "yes";
 
     const amount = session.amount_total / 1000;
 
@@ -56,20 +56,20 @@ export const confirmCheckoutSession = async (req, res) => {
   ]
 );
 
-
-    // 3️⃣ Verification fee logic (plans only)
-    if (includesVerificationFee) {
+    // 3️⃣ Yearly fee tracking (plans only) - record in user_yearly_fees table if fee was paid
+    if (purpose === "plan" && includesYearlyFee) {
+      const currentYear = new Date().getFullYear();
       await pool.query(
         `
-        UPDATE users
-        SET is_verified = true
-        WHERE id = $1 AND is_verified = false
+        INSERT INTO user_yearly_fees (user_id, fee_year, stripe_session_id)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, fee_year) DO NOTHING
         `,
-        [user_id]
+        [user_id, currentYear, session.id]
       );
     }
 
-    // 4️⃣ PLAN LOGIC → create subscription
+    // 4️⃣ PLAN LOGIC → create subscription with pending_start status
     if (purpose === "plan") {
       const planRes = await pool.query(
         "SELECT duration, plan_type FROM plans WHERE id = $1",
@@ -82,30 +82,54 @@ export const confirmCheckoutSession = async (req, res) => {
 
       const plan = planRes.rows[0];
 
-      const start = new Date();
-      const end = new Date(start);
+      // Subscription starts in pending_start state - dates will be set when activated
+      // For now, set placeholder dates (CURRENT_DATE) because columns are NOT NULL
+      // These will be recalculated on activation when freelancer starts first project
+      const placeholderStart = new Date();
+      placeholderStart.setHours(0, 0, 0, 0, 0);
+      const placeholderEnd = new Date(placeholderStart);
 
-      if (plan.plan_type === "monthly") {
-        end.setMonth(end.getMonth() + plan.duration);
-      } else {
-        end.setFullYear(end.getFullYear() + plan.duration);
+      // Insert subscription with pending_start status
+      // Handle activated_at column gracefully (may not exist in older DBs)
+      try {
+        await pool.query(
+          `
+          INSERT INTO subscriptions (
+            freelancer_id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            activated_at,
+            stripe_session_id
+          )
+          VALUES ($1, $2, $3, $4, 'pending_start', NULL, $5)
+          ON CONFLICT (stripe_session_id) DO NOTHING;
+          `,
+          [user_id, reference_id, placeholderStart, placeholderEnd, session.id]
+        );
+      } catch (err) {
+        // Fallback if activated_at column doesn't exist yet
+        if (err.message && err.message.includes('activated_at')) {
+          await pool.query(
+            `
+            INSERT INTO subscriptions (
+              freelancer_id,
+              plan_id,
+              start_date,
+              end_date,
+              status,
+              stripe_session_id
+            )
+            VALUES ($1, $2, $3, $4, 'pending_start', $5)
+            ON CONFLICT (stripe_session_id) DO NOTHING;
+            `,
+            [user_id, reference_id, placeholderStart, placeholderEnd, session.id]
+          );
+        } else {
+          throw err;
+        }
       }
-
-      await pool.query(
-        `
-        INSERT INTO subscriptions (
-          freelancer_id,
-          plan_id,
-          start_date,
-          end_date,
-          status,
-          stripe_session_id
-        )
-        VALUES ($1, $2, $3, $4, 'active', $5)
-        ON CONFLICT (stripe_session_id) DO NOTHING;
-        `,
-        [user_id, reference_id, start, end, session.id]
-      );
       
       // Check if this is user's first paid plan purchase and complete referral
       const existingSubscriptions = await pool.query(
@@ -154,19 +178,29 @@ export const confirmCheckoutSession = async (req, res) => {
       }
     }
 
-    // 5️⃣ PROJECT LOGIC → move project to admin review
+    // 5️⃣ PROJECT LOGIC → move project to admin review (or active if no admin approval needed)
     if (purpose === "project") {
-      await pool.query(
+      const updateResult = await pool.query(
         `
         UPDATE projects
-        SET status = 'pending_admin'
-        WHERE id = $1 AND status = 'pending_payment'
+        SET status = 'pending_admin',
+            updated_at = NOW()
+        WHERE id = $1 AND status = 'pending_payment' AND is_deleted = false
+        RETURNING id, title
         `,
         [reference_id]
       );
+
+      if (updateResult.rowCount === 0) {
+        // Project not found or already processed - log but don't fail (idempotent)
+        console.warn(`Project ${reference_id} not found or already processed`);
+      } else {
+        const project = updateResult.rows[0];
+        console.log(`✅ Project ${project.id} "${project.title}" moved to pending_admin after payment`);
+      }
     }
 
-    return res.json({ ok: true });
+    return res.json({ ok: true, purpose });
 
   } catch (err) {
     console.error("confirmCheckoutSession error:", err);

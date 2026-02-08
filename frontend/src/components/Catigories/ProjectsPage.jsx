@@ -25,6 +25,7 @@ export default function ProjectsPage({ mode: propMode }) {
   const category = sp.get("cat") || "";
   const sub = sp.get("sub") || "";
   const subcat = sp.get("subcat") || "";
+  const page = sp.get("page") || "";
 
   const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
@@ -32,6 +33,11 @@ export default function ProjectsPage({ mode: propMode }) {
   const [nameToSubCat, setNameToSubCat] = useState({});
   const [subSubInfo, setSubSubInfo] = useState(null);
   const [subCatInfo, setSubCatInfo] = useState(null);
+
+  // Scroll to top when category/page params change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [category, sub, subcat, page, location.pathname]);
 
   // load categories
   useEffect(() => {

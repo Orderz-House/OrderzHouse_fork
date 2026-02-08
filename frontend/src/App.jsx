@@ -17,6 +17,7 @@ import OrderzHousePage from "./components/main/Main";
 import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
+import ForgotPassword from "./components/login/ForgotPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 // import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
@@ -68,6 +69,15 @@ const RoleBasedAppointments = ({ userData }) => {
   }
 };
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname, search]);
+  return null;
+}
+
 function App() {
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
@@ -91,6 +101,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       {/* <GlobalLoadingProvider> */}
       {!shouldHideNavbar && <Navbar />}
 
@@ -115,6 +126,7 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/terms" element={<Terms />} />
 

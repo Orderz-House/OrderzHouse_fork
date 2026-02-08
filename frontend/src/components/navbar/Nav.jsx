@@ -15,7 +15,8 @@ import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL;
+// API base URL with fallback
+const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
 const ORANGE = "#C2410C";
 const ORANGE_DARK = "#9A3412";
 
@@ -158,6 +159,11 @@ export default function Header() {
   // ===== Load user + notifications =====
   useEffect(() => {
     if (!token) return;
+    if (!API_BASE) {
+      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
+      return;
+    }
+    
     axios
       .get(`${API_BASE}/users/getUserdata`, {
         headers: { authorization: `Bearer ${token}` },
@@ -167,7 +173,19 @@ export default function Header() {
         fetchNotifications();
         fetchUnreadCount();
       })
-      .catch(() => handleLogout());
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+        // Only logout on auth errors, not network errors
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          handleLogout();
+        } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+          // Network error - show message but don't logout
+          console.warn("Network error: Server may be unreachable");
+        } else {
+          // Other errors - logout to be safe
+          handleLogout();
+        }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);
 

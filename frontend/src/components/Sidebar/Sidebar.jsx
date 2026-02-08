@@ -87,13 +87,14 @@ const Sidebar = ({
 
   // Brand colors (غيرها مرة واحدة هنا)
   const BRAND = {
-    primary: "#6D5FFD", // بنفسجي مثل الصورة
-    primarySoft: "#F2F1FF",
-    primaryRing: "#E6E2FF",
+    primary: "#F97316", // بنفسجي مثل الصورة
+    primarySoft: "#F97316",
+    primaryRing: "#F97316",
     danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
   };
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
+  // API base URL with fallback
+  const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
 
   const location = useLocation();
   const pathname = location?.pathname || "/";
@@ -110,6 +111,10 @@ const Sidebar = ({
   useEffect(() => {
     if (!token) return;
     if (profile?.email) return;
+    if (!API_BASE) {
+      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
+      return;
+    }
 
     setProfileLoading(true);
     axios
@@ -125,7 +130,11 @@ const Sidebar = ({
           null;
         if (u) setProfile(u);
       })
-      .catch(() => {})
+      .catch((error) => {
+        // Silently fail - don't crash the UI
+        console.warn("Error fetching user profile in Sidebar:", error);
+        // Don't set profile to avoid infinite retries
+      })
       .finally(() => setProfileLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profile?.email]);

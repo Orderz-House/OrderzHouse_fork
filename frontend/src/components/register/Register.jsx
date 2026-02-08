@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import arabCountries from "../../data/arabCountries.json";
 import {
   Mail,
@@ -24,6 +24,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
+import { useToast } from "../toast/ToastProvider";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -37,6 +38,8 @@ const API_URL = import.meta.env.VITE_APP_API_URL;
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [searchParams] = useSearchParams();
 
   const [role_id, setRole_id] = useState("");
   const [first_name, setFirst_name] = useState("");
@@ -51,6 +54,7 @@ const Register = () => {
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [passwordStrength, setPasswordStrength] = useState({
@@ -77,6 +81,27 @@ const Register = () => {
   useEffect(() => {
     setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
   }, []);
+
+  // Check URL params for email verification flow (from login redirect)
+  useEffect(() => {
+    const emailParam = searchParams.get("email");
+    const verifyParam = searchParams.get("verify");
+    
+    if (emailParam && verifyParam === "true") {
+      // User came from login page - show OTP field directly
+      setEmail(emailParam);
+      setShowOtpField(true);
+      // Auto-resend OTP (call API directly here to avoid dependency issues)
+      axios.post(`${API_URL}/users/resend-email-otp`, { email: emailParam })
+        .then((res) => {
+          toast.success(res.data.message || "OTP sent successfully");
+          setResendCooldown(60);
+        })
+        .catch((err) => {
+          toast.error(err.response?.data?.message || "Failed to resend OTP. Please try again.");
+        });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
   axios
@@ -237,21 +262,20 @@ const Register = () => {
     axios
       .post(`${API_URL}/users/register`, userData)
       .then((result) => {
-        setStatus(true);
-        setMessage(
+        toast.success(
           result.data.message ||
             "User registered successfully. OTP sent to email for verification."
         );
         setShowOtpField(true);
         setIsLoading(false);
+        setResendCooldown(60); // Start 60s cooldown
       })
       .catch((error) => {
-        setStatus(false);
-setMessage(
-  error.response?.data?.error ||
-  error.response?.data?.message ||
-  "Registration failed"
-);
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Registration failed";
+        toast.error(errorMessage);
         setIsLoading(false);
       });
   };
@@ -259,24 +283,46 @@ setMessage(
   // =============== VERIFY OTP =============== //
   const handleVerifyOtp = () => {
     if (!otp) {
-      setMessage("Please enter the OTP sent to your email.");
-      setStatus(false);
+      toast.error("Please enter the OTP sent to your email.");
       return;
     }
     setIsVerifying(true);
     axios
       .post(`${API_URL}/users/verify-email`, { email, otp })
       .then(() => {
-        setStatus(true);
-        setMessage("Email verified successfully ✅ Redirecting...");
+        toast.success("Email verified successfully ✅ Redirecting...");
         setTimeout(() => navigate("/login"), 2000);
       })
       .catch((err) => {
-        setStatus(false);
-        setMessage(err.response?.data?.message || "Invalid or expired OTP ❌");
+        toast.error(err.response?.data?.message || "Invalid or expired OTP ❌");
       })
       .finally(() => setIsVerifying(false));
   };
+
+  // =============== RESEND OTP =============== //
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+
+    try {
+      const res = await axios.post(`${API_URL}/users/resend-email-otp`, { email });
+      toast.success(res.data.message || "OTP sent successfully");
+      setResendCooldown(60); // Start 60s cooldown
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Failed to resend OTP. Please try again."
+      );
+    }
+  };
+
+  // =============== RESEND COOLDOWN TIMER =============== //
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const getPasswordStrengthText = () => {
     const validCount = Object.values(passwordStrength).filter(Boolean).length;
@@ -605,18 +651,42 @@ setMessage(
                 <h2 className="text-xl font-semibold text-slate-800">
                   Verify your email
                 </h2>
-                <p className="text-slate-500 text-sm">
-                  We've sent a 6-digit code to{" "}
-                  <span className="font-medium text-[#C2410C]">{email}</span>.
-                </p>
+                {email ? (
+                  <p className="text-slate-500 text-sm">
+                    We've sent a 6-digit code to{" "}
+                    <span className="font-medium text-[#C2410C]">{email}</span>.
+                  </p>
+                ) : (
+                  <p className="text-slate-500 text-sm">
+                    Enter your email to receive a verification code.
+                  </p>
+                )}
 
+                {!email && (
+                  <div>
+                    <label htmlFor="verify-email" className="block text-sm text-slate-700 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        id="verify-email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-center">
                   <div className="relative w-64">
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <input
                       type="text"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       maxLength={6}
                       placeholder="Enter OTP"
                       className="w-full pl-10 pr-3 py-3 text-center tracking-widest text-lg rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]/50"
@@ -627,24 +697,23 @@ setMessage(
                 <GradientButton onClick={handleVerifyOtp} disabled={isVerifying}>
                   {isVerifying ? "Verifying..." : "Verify OTP"}
                 </GradientButton>
-              </div>
-            )}
 
-            {/* Message */}
-            {message && (
-              <div
-                className={`mt-6 p-4 rounded-xl flex items-start border ${
-                  status
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                    : "bg-rose-50 text-rose-800 border-rose-200"
-                }`}
-              >
-                {status ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 mr-3 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 mt-0.5 mr-3 text-rose-600" />
-                )}
-                <p className="text-sm">{message}</p>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || isVerifying}
+                    className={`text-sm ${
+                      resendCooldown > 0
+                        ? "text-slate-400 cursor-not-allowed"
+                        : "text-[#C2410C] hover:underline"
+                    }`}
+                  >
+                    {resendCooldown > 0
+                      ? `Resend code in ${resendCooldown}s`
+                      : "Resend code"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

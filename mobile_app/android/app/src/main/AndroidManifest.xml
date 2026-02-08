@@ -11,7 +11,7 @@
         </intent>
     </queries>
     <application
-        android:label="OrderzHouse"
+        android:label="mobile_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

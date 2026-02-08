@@ -31,7 +31,7 @@ const UI = {
   card: "rounded-3xl bg-white/80 backdrop-blur shadow-sm",
   ring: ringStyle,
   violetHero:
-    "rounded-3xl overflow-hidden text-white bg-gradient-to-br from-violet-500 via-indigo-500 to-violet-600",
+    "rounded-3xl overflow-hidden text-white bg-gradient-to-b from-orange-400 to-red-500",
 };
 
 /* ---------- helpers ---------- */
@@ -79,7 +79,7 @@ const cx = (...a) => a.filter(Boolean).join(" ");
 function StatPill({ icon: Icon, label, value, tone = "slate" }) {
   const toneCls =
     tone === "violet"
-      ? "bg-violet-50 border-violet-200/70 text-violet-700"
+      ? "bg-orange-50 border-orange-200/70 text-orange-700"
       : tone === "emerald"
       ? "bg-emerald-50 border-emerald-200/70 text-emerald-700"
       : tone === "amber"
@@ -433,7 +433,7 @@ export default function Payments() {
     icon={CreditCard}
     label="Transactions"
     value={loading ? "…" : totalTx}
-    tone="violet"
+    tone="orange"
   />
 
   <StatPill
@@ -498,7 +498,7 @@ export default function Payments() {
 
 /* ================= UI bits ================= */
 function toneClasses(tone) {
-  if (tone === "violet") return "bg-violet-50 border-violet-200/70 text-violet-700";
+  if (tone === "violet") return "bg-orange-50 border-orange-200/70 text-orange-700";
   if (tone === "emerald") return "bg-emerald-50 border-emerald-200/70 text-emerald-700";
   if (tone === "amber") return "bg-amber-50 border-amber-200/70 text-amber-700";
   return "bg-slate-50 border-slate-200/70 text-slate-700";
