@@ -9,22 +9,21 @@ import {
   Tag,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import API from "../../api/client.js";
 import BlogCard from "./components/BlogCard.jsx";
 import BlogTopBar from "./components/BlogTopBar.jsx";
+import PageMeta from "../PageMeta.jsx";
 
 export default function Blogs() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       setErr(null);
-      const { data } = await axios.get(`${API_BASE}/blogs`);
+      const { data } = await API.get("/blogs");
       setPosts(Array.isArray(data) ? data : data?.items ?? []);
     } catch (e) {
       setErr(e?.message || "Failed to load blogs");
@@ -32,7 +31,7 @@ export default function Blogs() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE]);
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -92,7 +91,8 @@ export default function Blogs() {
 
   return (
     <div className="min-h-screen bg-white">
-      <BlogTopBar createUrl={`${API_BASE}/blogs`} mock={false} onCreated={fetchPosts} />
+      <PageMeta title="Blog – OrderzHouse" description="Articles, updates, and tips from the OrderzHouse team." />
+      <BlogTopBar createUrl="/blogs" mock={false} onCreated={fetchPosts} />
 
       {/* Header */}
       <header className="border-b border-slate-200/60 bg-white">

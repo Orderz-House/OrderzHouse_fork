@@ -1,9 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import API from "../../api/client.js";
 import { useToast } from "../toast/ToastProvider.jsx";
-
-const API_URL = import.meta.env.VITE_APP_API_URL;
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -20,7 +18,7 @@ export default function PaymentSuccess() {
       }
 
       try {
-        const res = await axios.get(`${API_URL}/stripe/confirm`, {
+        const res = await API.get("/stripe/confirm", {
           params: { session_id },
         });
 

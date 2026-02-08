@@ -113,24 +113,21 @@ export default function Policy() {
   const collapseAll = () => setOpen(Object.fromEntries(filtered.map((s) => [s.id, false])));
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* HERO */}
-      <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(80%_80%_at_10%_10%,rgba(2,128,144,0.25),transparent_40%),radial-gradient(60%_60%_at_90%_30%,rgba(2,128,144,0.18),transparent_45%),linear-gradient(135deg,#028090,rgba(2,128,144,0.75))]" />
-        <div className="absolute inset-0 backdrop-blur-[2px]"></div>
-
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-white">
+    <div className="min-h-screen bg-white">
+      {/* HERO — white background, orange accent, navbar spacing */}
+      <section className="relative bg-white border-b border-slate-100">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-24 sm:pt-28 pb-16 sm:pb-20">
           <div className="flex items-start gap-6">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white/10 border border-white/20 grid place-items-center shadow-2xl">
-              <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-orange-50 border border-orange-200/70 grid place-items-center shadow-sm">
+              <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-orange-700" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-5xl font-bold leading-tight">
+              <div className="h-2 w-20 rounded-full bg-gradient-to-b from-orange-400 to-red-500 mb-4" />
+              <h1 className="text-3xl sm:text-5xl font-bold leading-tight text-slate-900">
                 Privacy & Data Policy
               </h1>
-              <p className="text-white/80 mt-3 max-w-2xl">
+              <p className="text-slate-600 mt-3 max-w-2xl">
                 A modern, transparent policy designed to be clear and easy to skim.
-                Our primary color is <span className="font-semibold">#028090</span>.
               </p>
 
               {/* Quick tiles */}
@@ -143,23 +140,25 @@ export default function Policy() {
                 ].map((t, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-3 py-2"
+                    className="flex items-center gap-2 rounded-xl bg-orange-50 text-orange-700 border border-orange-200/70 px-3 py-2 hover:bg-orange-100 transition"
                   >
-                    <t.icon className="w-4 h-4 text-white" />
-                    <span className="text-sm text-white">{t.label}</span>
+                    <t.icon className="w-4 h-4 text-orange-700" />
+                    <span className="text-sm">{t.label}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* CONTENT */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      {/* CONTENT — white card overlapping hero */}
+      <div className="relative -mt-10 mx-auto max-w-6xl px-4">
+        <main className="rounded-3xl bg-white border border-slate-200/70 shadow-sm overflow-hidden">
+          <div className="px-4 sm:px-6 lg:px-8 py-10 space-y-10">
         {/* DATA LIFECYCLE */}
-        <section className="rounded-3xl bg-white shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-[#028090] to-[#02a7ab] text-white px-6 py-4">
+        <section className="rounded-2xl bg-white shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white px-6 py-4">
             <h2 className="text-lg font-semibold">Data Lifecycle</h2>
             <p className="text-white/80 text-sm">
               How your data travels through our system — from collection to deletion.
@@ -197,7 +196,7 @@ export default function Policy() {
               ].map((step, i) => (
                 <li key={i} className="grid grid-cols-[28px,1fr] gap-4 py-4">
                   <div className="relative">
-                    <div className="w-7 h-7 rounded-full bg-[#028090] grid place-items-center text-white shadow">
+                    <div className="w-7 h-7 rounded-full bg-orange-500 grid place-items-center text-white shadow">
                       {i + 1}
                     </div>
                     {i < 4 && (
@@ -228,7 +227,7 @@ export default function Policy() {
                   onClick={() => toggle(s.id)}
                   className="w-full text-left px-5 py-4 flex items-start sm:items-center gap-4 hover:bg-slate-50"
                 >
-                  <div className="shrink-0 p-2.5 rounded-xl bg-gradient-to-br from-[#028090] to-[#02a7ab] text-white shadow">
+                  <div className="shrink-0 p-2.5 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow">
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
@@ -241,7 +240,7 @@ export default function Policy() {
                           key={i}
                           className="inline-flex items-center gap-1 text-[12px] px-2 py-1 rounded-lg bg-slate-100 text-slate-700"
                         >
-                          <CheckCircle2 className="w-3 h-3 text-[#028090]" />
+                          <CheckCircle2 className="w-3 h-3 text-orange-600" />
                           {b}
                         </span>
                       ))}
@@ -264,7 +263,7 @@ export default function Policy() {
                         <ul className="grid sm:grid-cols-2 gap-2">
                           {s.bullets.map((b, i) => (
                             <li key={i} className="flex items-start gap-2 text-slate-700">
-                              <CheckCircle2 className="w-4 h-4 text-[#028090] mt-0.5" />
+                              <CheckCircle2 className="w-4 h-4 text-orange-600 mt-0.5" />
                               <span className="text-sm">{b}</span>
                             </li>
                           ))}
@@ -278,7 +277,9 @@ export default function Policy() {
           })}
         </section>
 
-      </main>
+          </div>
+        </main>
+      </div>
 
       {/* FOOTER NOTE */}
       <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-slate-500">

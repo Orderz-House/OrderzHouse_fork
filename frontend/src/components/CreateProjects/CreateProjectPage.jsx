@@ -15,6 +15,7 @@ import {
   uploadProjectFilesApi,
   createProjectCheckoutSessionApi,
 } from "./api/projects";
+import PageMeta from "../PageMeta.jsx";
 
 const DEVELOPMENT_CATEGORY_ID = 3;
 
@@ -85,7 +86,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-28">
-    
+      <PageMeta title="Create Project – OrderzHouse" description="Post a new project and find freelancers on OrderzHouse." />
       <div className="max-w-5xl mx-auto px-4 py-12 -mt-2 relative z-10">
 
         {step === 1 && (

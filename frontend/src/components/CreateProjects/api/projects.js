@@ -1,7 +1,5 @@
-import axios from "axios";
+import API from "../../../api/client.js";
 import { store } from "../../../store/store";
-
-const API_BASE = `${import.meta.env.VITE_APP_API_URL}/projects`;
 
 // -------------------- UTILITY --------------------
 /**
@@ -36,7 +34,7 @@ export const createProjectApi = async (projectData, token, coverPic) => {
     formData.append("cover_pic", coverPic);
   }
 
-  const { data } = await axios.post(`${API_BASE}/`, formData, {
+  const { data } = await API.post("/projects/", formData, {
     headers: {
       Authorization: `Bearer ${authToken}`,
     },
@@ -58,8 +56,8 @@ export const uploadProjectFilesApi = async (projectId, files, token) => {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
 
-  const { data } = await axios.post(
-    `${API_BASE}/${projectId}/files`,
+  const { data } = await API.post(
+    `/projects/${projectId}/files`,
     formData,
     {
       headers: {
@@ -82,8 +80,8 @@ export const assignFreelancerApi = async (projectId, freelancerId, token) => {
 
   const authToken = token || getAuthToken();
 
-  const { data } = await axios.post(
-    `${API_BASE}/${projectId}/assign`,
+  const { data } = await API.post(
+    `/projects/${projectId}/assign`,
     { freelancer_id: freelancerId },
     { headers: { Authorization: `Bearer ${authToken}` } }
   );
@@ -99,8 +97,8 @@ export const assignFreelancerApi = async (projectId, freelancerId, token) => {
 export const createProjectCheckoutSessionApi = async (projectData, token) => {
   const authToken = token || getAuthToken();
 
-  const { data } = await axios.post(
-    `${import.meta.env.VITE_APP_API_URL}/stripe/project-checkout-session`,
+  const { data } = await API.post(
+    "/stripe/project-checkout-session",
     projectData,
     {
       headers: {
@@ -116,7 +114,7 @@ export const createProjectCheckoutSessionApi = async (projectData, token) => {
 export const createProjectDraftApi = async (projectData) => {
   const token = getAuthToken();
 
-  const { data } = await axios.post(`${API_BASE}/draft`, projectData, {
+  const { data } = await API.post("/projects/draft", projectData, {
     headers: { Authorization: `Bearer ${token}` },
   });
 

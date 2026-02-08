@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import axios from 'axios';
+import API from '../../../api/client.js';
 
 export const useAppointments = () => {
   const { token, userData } = useSelector((state) => state.auth);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   const getConfig = () => ({
     headers: { 
@@ -22,7 +20,7 @@ export const useAppointments = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${API_BASE}/appointments/get`, getConfig());
+      const response = await API.get("/appointments/get", getConfig());
       setAppointments(response.data.appointments || []);
       return { success: true, data: response.data };
     } catch (err) {
@@ -40,7 +38,7 @@ export const useAppointments = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${API_BASE}/appointments/my`, getConfig());
+      const response = await API.get("/appointments/my", getConfig());
       setAppointments(response.data.appointments || []);
       return { success: true, data: response.data };
     } catch (err) {
@@ -58,8 +56,8 @@ export const useAppointments = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post(
-        `${API_BASE}/appointments/`, 
+      const response = await API.post(
+        "/appointments/", 
         appointmentData, 
         getConfig()
       );
@@ -80,8 +78,8 @@ export const useAppointments = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post(
-        `${API_BASE}/appointments/admin/appointments`, 
+      const response = await API.post(
+        "/appointments/admin/appointments", 
         appointmentData, 
         getConfig()
       );
@@ -101,8 +99,8 @@ export const useAppointments = () => {
   const acceptAppointment = async (appointmentId) => {
     setError('');
     try {
-      const response = await axios.patch(
-        `${API_BASE}/appointments/accept/${appointmentId}`, 
+      const response = await API.patch(
+        `/appointments/accept/${appointmentId}`, 
         {}, 
         getConfig()
       );
@@ -124,8 +122,8 @@ export const useAppointments = () => {
   const rejectAppointment = async (appointmentId) => {
     setError('');
     try {
-      const response = await axios.patch(
-        `${API_BASE}/appointments/reject/${appointmentId}`, 
+      const response = await API.patch(
+        `/appointments/reject/${appointmentId}`, 
         {}, 
         getConfig()
       );
@@ -145,17 +143,10 @@ export const useAppointments = () => {
 
   // Mark appointment as completed
   const markAppointmentCompleted = async (appointmentId) => {
-  console.log('🔍 [DEBUG] Starting markAppointmentCompleted for ID:', appointmentId);
-  console.log('🔍 [DEBUG] API_BASE:', API_BASE);
-  console.log('🔍 [DEBUG] Token exists:', !!token);
-  
   setError('');
   try {
-    const url = `${API_BASE}/appointments/complete/${appointmentId}`;
-    console.log('🔍 [DEBUG] Calling URL:', url);
-    
-    const response = await axios.patch(
-      url,
+    const response = await API.patch(
+      `/appointments/complete/${appointmentId}`,
       {},
       getConfig()
     );
@@ -186,8 +177,8 @@ export const useAppointments = () => {
   const rescheduleAppointment = async (appointmentId, newDate) => {
     setError('');
     try {
-      const response = await axios.patch(
-        `${API_BASE}/appointments/reschedule/${appointmentId}`, 
+      const response = await API.patch(
+        `/appointments/reschedule/${appointmentId}`, 
         { appointment_date: newDate },
         getConfig()
       );

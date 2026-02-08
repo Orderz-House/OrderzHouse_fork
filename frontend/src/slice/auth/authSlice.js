@@ -37,6 +37,10 @@ const authSlice = createSlice({
       localStorage.setItem("roleId", roleId);
       localStorage.setItem("is_verified", is_verified);
     },
+    setToken: (state, action) => {
+      state.token = action.payload;
+      if (action.payload) localStorage.setItem("token", action.payload);
+    },
     setUserId: (state, action) => {
       state.userId = action.payload;
       localStorage.setItem("userId", action.payload);
@@ -60,6 +64,7 @@ const authSlice = createSlice({
 
 export const {
   setLogin,
+  setToken,
   setUserId,
   setLogout,
   setUserData,

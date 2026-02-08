@@ -114,6 +114,23 @@ Authorization: Bearer <jwt-token>
 
 ---
 
+## Password Recovery Flow
+
+### POST `/users/forgot-password`
+- **Body**: `{ email: string }`
+- **Response**: Always `200` with message like "If the email exists, we sent a reset link" (no email enumeration).
+- **Behavior**: If user exists, a secure token is generated, stored as SHA-256 hash in `password_reset_tokens`, expiry 30 min. Reset link sent by email: `FRONTEND_URL/reset-password/<rawToken>`. If SMTP is not configured (e.g. dev), URL is logged to console only.
+
+### POST `/users/reset-password`
+- **Body**: `{ token: string, password: string, confirmPassword: string }`
+- **Behavior**: Token is hashed (SHA-256), looked up in `password_reset_tokens` (not expired, not used). User password is updated with bcrypt; token is marked `used_at = NOW()`.
+- **Response**: `200` with message "Password updated successfully", or `400` for invalid/expired/used token or validation errors.
+
+### Change password (authenticated)
+- **PUT `/users/update-password`** (or **PATCH `/auth/change-password`**): requires current password; body `currentPassword`, `newPassword` (and optionally `confirmNewPassword` on frontend). Used from profile/settings.
+
+---
+
 ## Login Flow
 
 ### Standard Login (No Failed Attempts)

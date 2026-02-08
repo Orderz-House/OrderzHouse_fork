@@ -1,5 +1,5 @@
 import { useToast } from "../toast/ToastProvider";
-import axios from "axios";
+import API from "../../api/client.js";
 
 const THEME = "#028090";
 
@@ -125,9 +125,8 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                           return;
                         }
                         try {
-                          const API_URL = import.meta.env.VITE_APP_API_URL || "";
-                          await axios.post(
-                            `${API_URL}/offers/offers/approve-reject`,
+                          await API.post(
+                            "/offers/offers/approve-reject",
                             { offerId: o.offer_id, action: "accept" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
@@ -173,9 +172,8 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                           return;
                         }
                         try {
-                          const API_URL = import.meta.env.VITE_APP_API_URL || "";
-                          await axios.post(
-                            `${API_URL}/offers/offers/approve-reject`,
+                          await API.post(
+                            "/offers/offers/approve-reject",
                             { offerId: o.offer_id, action: "reject" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );

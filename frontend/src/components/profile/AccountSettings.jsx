@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import axios from "axios";
+import API from "../../api/client.js";
 import {
   Shield,
   Loader,
@@ -14,7 +14,6 @@ import {
 
 const PRIMARY = "#028090";
 const DARK = "#05668D";
-const API_BASE = import.meta.env.VITE_APP_API_URL;
 
 export default function AccountSettings() {
   const { token, userData } = useSelector((s) => s.auth);
@@ -112,8 +111,8 @@ export default function AccountSettings() {
     setSuccess("");
 
     try {
-      const res = await axios.post(
-        `${API_BASE}/auth/2fa/generate`,
+      const res = await API.post(
+        "/auth/2fa/generate",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -135,8 +134,8 @@ export default function AccountSettings() {
     setError("");
 
     try {
-      await axios.post(
-        `${API_BASE}/auth/2fa/verify`,
+      await API.post(
+        "/auth/2fa/verify",
         { token: verificationCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -158,16 +157,16 @@ export default function AccountSettings() {
     setError("");
 
     try {
-      const res = await axios.post(
-        `${API_BASE}/users/verify-password`,
+      const res = await API.post(
+        "/users/verify-password",
         { password: currentPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.data.success) return setError("Incorrect password.");
 
-      await axios.post(
-        `${API_BASE}/auth/2fa/disable`,
+      await API.post(
+        "/auth/2fa/disable",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -197,8 +196,8 @@ export default function AccountSettings() {
     setSuccess("");
 
     try {
-      await axios.put(
-        `${API_BASE}/users/update-password`,
+      await API.put(
+        "/users/update-password",
         { currentPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -238,8 +237,8 @@ export default function AccountSettings() {
 
     try {
       // 1) Verify password
-      const verifyRes = await axios.post(
-        `${API_BASE}/users/verify-password`,
+      const verifyRes = await API.post(
+        "/users/verify-password",
         { password: deactPass },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -250,8 +249,8 @@ export default function AccountSettings() {
       }
 
       // 2) Deactivate + send reason
-      await axios.put(
-        `${API_BASE}/users/deactivate`,
+      await API.put(
+        "/users/deactivate",
         { reason: deactReason.trim() }, // 👈 سبب التعطيل يُرسل للباك
         { headers: { Authorization: `Bearer ${token}` } }
       );

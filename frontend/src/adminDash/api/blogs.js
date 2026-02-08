@@ -1,18 +1,4 @@
-import axios from "axios";
-
-// ----------------------
-// Axios instance
-// ----------------------
-const API = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL ,
-  withCredentials: true,
-});
-
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+import API from "./axios.js";
 
 // ----------------------
 // BLOGS API FUNCTIONS

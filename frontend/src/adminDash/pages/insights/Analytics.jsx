@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import API from "../../api/axios.js";
 import { useSelector } from "react-redux";
 import {
   Users,
@@ -152,15 +152,6 @@ export default function Analytics() {
   const [line, setLine] = useState([]);
   const [donut, setDonut] = useState([]);
 
-  const api = useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_API_URL || "",
-        headers: { "Content-Type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
-      }),
-    [token]
-  );
-
   const ENDPOINT = "/analytics/admin";
 
   useEffect(() => {
@@ -172,7 +163,7 @@ export default function Analytics() {
         if (MOCK_ENABLED) {
           res = mockFetch(`${ENDPOINT}?range=${range}`) || {};
         } else {
-          const { data } = await api.get(ENDPOINT, { params: { range } });
+          const { data } = await API.get(ENDPOINT, { params: { range } });
           res = data;
         }
         if (!alive) return;
@@ -219,7 +210,7 @@ export default function Analytics() {
     return () => {
       alive = false;
     };
-  }, [api, range]);
+  }, [range]);
 
   const ICONS = [Users, Folder, ClipboardList, DollarSign, TrendingUp, Activity, CalendarDays, CheckCircle2];
 

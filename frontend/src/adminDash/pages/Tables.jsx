@@ -1,7 +1,7 @@
 // Tables.jsx
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
+import API from "../api/axios.js";
 import { MOCK_ENABLED, mockFetch } from "./mockData.js";
 import {
   FiEdit2,
@@ -177,17 +177,7 @@ const DEFAULT_CRUD_CONFIG = {
 };
 
 function useApi(token) {
-  return useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_APP_API_URL || "",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      }),
-    [token]
-  );
+  return useMemo(() => API, [token]);
 }
 
 /* ====================== Data Hook ====================== */
@@ -234,7 +224,7 @@ function useTableData({ endpoint, api, refreshKey }) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const { data } = await api.get(endpoint, { params, signal: controller.signal });
+        const { data } = await API.get(endpoint, { params, signal: controller.signal });
 
         const list = Array.isArray(data)
           ? data
@@ -1106,7 +1096,7 @@ export default function PeopleTable({
           dispatch(setEditingRowId(null));
           return;
         }
-        await api.put(`${endpoint}/${formData.id}`, formData);
+        await API.put(`${endpoint}/${formData.id}`, formData);
         dispatch(updateUser(formData));
         dispatch(setEditingRowId(null));
         refresh();
@@ -1152,7 +1142,7 @@ export default function PeopleTable({
         }
 
         if (endpoint && id != null) {
-          await api.delete(`${endpoint}/${id}`);
+          await API.delete(`${endpoint}/${id}`);
           dispatch(removeUser(id));
         }
         refresh();

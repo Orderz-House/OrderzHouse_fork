@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import axios from "axios";
+import API from "../../api/axios.js";
 import {
   CreditCard,
   DollarSign,
@@ -140,18 +140,6 @@ export default function Payments() {
   const [status, setStatus] = useState("all");
   const [method, setMethod] = useState("all");
 
-  const api = useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_APP_API_URL || "",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      }),
-    [token]
-  );
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -159,7 +147,7 @@ export default function Payments() {
 
       // 2) api
       if (!data) {
-        const res = await api.get(endpoint, {
+        const res = await API.get(endpoint, {
           // headers: { authorization: `Bearer ${token}` },
           // silent: true
         });
@@ -178,7 +166,7 @@ export default function Payments() {
     } finally {
       setLoading(false);
     }
-  }, [endpoint, api]);
+  }, [endpoint]);
 
   useEffect(() => {
     let alive = true;

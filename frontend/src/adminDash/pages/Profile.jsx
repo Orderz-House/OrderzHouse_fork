@@ -130,6 +130,7 @@ export default function Profile() {
     const v = Math.max(0, Math.min(5, Number(value5 || 0)));
     const full = Math.floor(v);
     const hasHalf = v - full >= 0.5;
+    const orangeAccent = "#ea580c"; /* orange-600 */
 
     return (
       <div className="flex items-center gap-1">
@@ -151,8 +152,8 @@ export default function Profile() {
                   <Star
                     className="w-4 h-4"
                     style={{
-                      stroke: THEME.PRIMARY,
-                      fill: THEME.PRIMARY,
+                      stroke: orangeAccent,
+                      fill: orangeAccent,
                     }}
                   />
                 </span>
@@ -165,8 +166,8 @@ export default function Profile() {
               key={i}
               className="w-4 h-4"
               style={{
-                stroke: isFull ? THEME.PRIMARY : "#CBD5E1",
-                fill: isFull ? THEME.PRIMARY : "transparent",
+                stroke: isFull ? orangeAccent : "#CBD5E1",
+                fill: isFull ? orangeAccent : "transparent",
               }}
             />
           );
@@ -197,10 +198,7 @@ export default function Profile() {
           </div>
 
           {tag ? (
-            <span
-              className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
-              style={{ background: THEME.PRIMARY_DARK }}
-            >
+            <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-orange-600 text-white">
               {tag}
             </span>
           ) : null}
@@ -223,16 +221,17 @@ export default function Profile() {
   return (
     <div className="min-h-screen " style={{ background: THEME.BG }}>
       <div className="mx-auto w-full">
-        {/* Hero مثل الداشبورد */}
+        {/* Hero */}
         <div className="rounded-[26px] overflow-hidden mb-5 sm:mb-6">
-          <div className="relative bg-gradient-to-br from-violet-500 via-indigo-500 to-fuchsia-500 px-5 sm:px-6 py-5 sm:py-6 text-white">
-            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/80">
+          <div className="relative bg-gradient-to-b from-orange-400 to-red-500 px-5 sm:px-6 py-5 sm:py-6 text-white">
+            <div className="absolute inset-0 bg-black/10 pointer-events-none" aria-hidden="true" />
+            <div className="relative text-[11px] font-semibold tracking-[0.18em] uppercase text-white/85">
               PROFILE
             </div>
 
-            <div className="mt-2 flex items-start justify-between gap-4">
+            <div className="relative mt-2 flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h1 className="text-[18px] sm:text-2xl font-extrabold leading-tight truncate">
+                <h1 className="text-[18px] sm:text-2xl font-extrabold leading-tight truncate text-white">
                   {vm.fullName}
                 </h1>
 
@@ -243,20 +242,9 @@ export default function Profile() {
                   <span className="font-semibold">{vm.title}</span>
                 </div>
               </div>
-
-              {/* ✅ Settings -> editprofile (نفس منطقك) */}
-              <button
-                type="button"
-                onClick={() => navigate(`${roleBase}/editprofile`)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white/15 hover:bg-white/20 px-3 py-2 text-xs font-semibold text-white"
-                title="Edit profile"
-              >
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Settings</span>
-              </button>
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="relative mt-4 flex items-center gap-2">
               <span className="text-[18px] font-extrabold">{formatRating(vm.rating10)}</span>
               <StarRow value5={vm.rating5} />
             </div>
@@ -309,12 +297,22 @@ export default function Profile() {
           </Card>
 
           {/* RIGHT */}
-          <Card className="p-4 sm:p-6">
+          <Card className="relative p-4 sm:p-6">
+            <button
+              type="button"
+              onClick={() => navigate(`${roleBase}/editprofile`)}
+              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition"
+              aria-label="Settings"
+              title="Settings"
+            >
+              <Settings className="h-5 w-5 text-slate-700" />
+            </button>
+
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="pt-12 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="h-10 px-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition"
               >
                 <MessageSquare className="w-4 h-4" />
                 Send message
@@ -322,15 +320,14 @@ export default function Profile() {
 
               <button
                 type="button"
-                className="h-10 px-4 rounded-2xl text-xs font-semibold text-white inline-flex items-center gap-2"
-                style={{ background: THEME.PRIMARY_DARK }}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-orange-600 text-white shadow-sm hover:bg-orange-700 transition"
               >
                 ✓ Contacts
               </button>
 
               <button
                 type="button"
-                className="h-10 px-3 rounded-2xl text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                className="text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline text-sm font-semibold px-2 py-1"
               >
                 Report user
               </button>
@@ -348,12 +345,9 @@ export default function Profile() {
                     key={t.key}
                     type="button"
                     onClick={() => setActiveTab(t.key)}
-                    className={`py-3 text-xs font-extrabold transition-colors ${
-                      active ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
+                    className={`py-3 text-xs font-extrabold transition-colors border-b-2 ${
+                      active ? "text-slate-900 border-orange-600" : "text-slate-500 hover:text-slate-700 border-transparent"
                     }`}
-                    style={{
-                      borderBottom: active ? `2px solid ${THEME.PRIMARY_DARK}` : "2px solid transparent",
-                    }}
                   >
                     {t.label}
                   </button>

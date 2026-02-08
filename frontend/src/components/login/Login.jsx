@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-import axios from "axios";
-import { useNavigate } from "react-router";
+import API from "../../api/client.js";
+import { useNavigate, Link } from "react-router-dom";
 import { setLogin } from "../../slice/auth/authSlice";
 import { connectSocket } from "../../services/socketService";
 import {
@@ -20,6 +20,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
+import PageMeta from "../PageMeta.jsx";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -37,8 +38,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   const isOtpStep = otpMode !== null;
 
   const handleLogin = (e) => {
@@ -46,8 +45,8 @@ const Login = () => {
     setIsLoading(true);
     setMessage("");
 
-    axios
-      .post(`${API_BASE}/users/login`, {
+    API
+      .post("/users/login", {
         email: email.toLowerCase(),
         password,
       })
@@ -118,8 +117,8 @@ const Login = () => {
 
     // Email OTP
     if (otpMode === "email") {
-      axios
-        .post(`${API_BASE}/users/verify-otp`, {
+      API
+        .post("/users/verify-otp", {
           email: email.toLowerCase(),
           otp,
         })
@@ -156,8 +155,8 @@ const Login = () => {
 
     // 2FA App (TOTP)
     if (otpMode === "app") {
-      axios
-        .post(`${API_BASE}/auth/2fa/verify-login`, {
+      API
+        .post("/auth/2fa/verify-login", {
           temp_token: tempToken,
           code: otp,
         })
@@ -236,6 +235,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
+      <PageMeta title="Log in – OrderzHouse" description="Log in to your OrderzHouse account to manage projects and connect with freelancers." />
       {/* <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" /> */}
       {/* ✅ Orange theme glows */}
@@ -314,6 +314,14 @@ const Login = () => {
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
+                    </div>
+                    <div className="mt-2 text-right">
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm font-medium text-orange-600 hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
                     </div>
                   </div>
                 </>

@@ -17,6 +17,8 @@ import OrderzHousePage from "./components/main/Main";
 import ContactUsPage from "./components/contact/Contact";
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import ResetPassword from "./components/auth/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 // import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
@@ -29,7 +31,7 @@ import FreelancerAppointments from "./components/Appointments/FreelancerAppointm
 // import AdminCourseAccessControl from "./components/coursesManagement/AdminAccessControl.jsx";
 // import AdminCourseManagement from "./components/coursesManagement/AdminCourseManagement";
 // import MyRestrictedCourses from "./components/coursesManagement/MyRestrictedCourses";
-// import AccessDenied from "./components/coursesManagement/AccessDenied";
+import AccessDenied from "./components/coursesManagement/AccessDenied";
 import Terms from "./components/Terms/Terms.jsx";
 import Blogs from "./components/blogs/Blogs.jsx";
 import BlogPost from "./components/blogs/BlogPost.jsx";
@@ -45,6 +47,12 @@ import CopywritingTest from "./components/CopywritingTest";
 import PaymentSuccess from "./components/success/PaymentSuccess";
 import FreelancerContractTerms from "./components/Freelancer/FreelancerContractTerms.jsx";
 import FreelancerContractSignup from "./components/Freelancer/FreelancerContractSignup.jsx";
+import NotFound from "./components/NotFound.jsx";
+import Help from "./pages/Help.jsx";
+import DashboardRedirect from "./components/DashboardRedirect.jsx";
+import MyProjectsRedirect from "./components/MyProjectsRedirect.jsx";
+import OfferRedirect from "./components/OfferRedirect.jsx";
+import EscrowRedirect from "./components/EscrowRedirect.jsx";
 
 
 const RoleBasedAppointments = ({ userData }) => {
@@ -107,6 +115,16 @@ function App() {
         {/* --- Account Suspended --- */}
         <Route path="/account/suspended" element={<AccountSuspended />} />
 
+        {/* --- Dashboard alias: redirect to role base or login --- */}
+        <Route path="/dashboard" element={<DashboardRedirect />} />
+
+        {/* --- My projects alias: redirect to role-based projects list --- */}
+        <Route path="/my-projects" element={<MyProjectsRedirect />} />
+
+        {/* --- Offer/Escrow notification links: redirect to role-based payments with query --- */}
+        <Route path="/offers/:id" element={<OfferRedirect />} />
+        <Route path="/escrow/:id" element={<EscrowRedirect />} />
+
         {/* --- Public Pages --- */}
         <Route path="/" element={<OrderzHousePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -115,8 +133,12 @@ function App() {
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         <Route path="/terms" element={<Terms />} />
+        <Route path="/help" element={<Help />} />
 
         {/* --- Protected Pages --- */}
 
@@ -191,6 +213,8 @@ function App() {
               </ProtectedRoute>
             }
           />  */}
+
+        <Route path="/access-denied" element={<AccessDenied />} />
 
         {/* --- Notifications & Projects --- */}
         <Route
@@ -313,25 +337,7 @@ function App() {
 
 
         {/* --- 404 Fallback --- */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                404 - Page Not Found
-              </h2>
-              <p className="text-gray-600 mb-4">
-                The page you are looking for does not exist.
-              </p>
-              <button
-                onClick={() => window.history.back()}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Go Back
-              </button>
-            </div>
-          }
-        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       {!shouldHideNavbar && <EnhancedFooter />}

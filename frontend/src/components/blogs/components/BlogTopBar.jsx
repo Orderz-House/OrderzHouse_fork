@@ -9,14 +9,13 @@ import {
   Image as ImageIcon,
   Paperclip,
 } from "lucide-react";
-import axios from "axios";
-
-const API_BASE = import.meta.env.VITE_APP_API_URL;  
+import API from "../../../api/client.js";
 
 export default function BlogTopBar({
   showBack = false,
   onBack,
   enableNew = true,
+  createUrl = "/blogs",
   onCreated,
   currentId,
   currentTitle,
@@ -166,7 +165,7 @@ export default function BlogTopBar({
 
       const token = localStorage.getItem("token");
 
-      const { data } = await axios.post(`${API_BASE}/blogs`, formData, {
+      const { data } = await API.post(createUrl, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

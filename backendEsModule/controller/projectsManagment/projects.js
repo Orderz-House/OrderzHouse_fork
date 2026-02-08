@@ -2,12 +2,8 @@ import pool from "../../models/db.js";
 import { LogCreators, ACTION_TYPES } from "../../services/loggingService.js";
 import cloudinary from "../../cloudinary/setupfile.js";
 import { Readable } from "stream";
-import multer from "multer";
+import { upload } from "../../middleware/uploadMiddleware.js";
 import eventBus from "../../events/eventBus.js";
-
-// Multer memory storage
-const storage = multer.memoryStorage();
-export const upload = multer({ storage });
 
 /**
  * Upload fields for cover + project files (if sent as form-data)

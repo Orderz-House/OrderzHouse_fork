@@ -236,10 +236,7 @@ function EditProfile() {
         style={{ background: THEME.BG }}
       >
         <div className="text-center">
-          <div
-            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
-            style={{ borderBottomColor: THEME.PRIMARY_DARK }}
-          />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto" />
           <p className="mt-4 text-slate-600">Loading profile...</p>
         </div>
       </div>
@@ -261,12 +258,12 @@ function EditProfile() {
 
       <div className="mx-auto w-full">
         {/* Hero */}
-        <div className="rounded-[26px] overflow-hidden" style={{ boxShadow: THEME.CARD_SHADOW }}>
-          <div className="relative bg-gradient-to-br from-violet-500 via-indigo-500 to-fuchsia-500 px-5 sm:px-6 py-5 sm:py-6 text-white">
-            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/80">
+        <div className="rounded-3xl overflow-hidden shadow-sm">
+          <div className="relative bg-gradient-to-b from-orange-400 to-red-500 px-5 sm:px-6 py-5 sm:py-6 text-white">
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/85">
               SETTINGS
             </div>
-            <h1 className="mt-2 text-[18px] sm:text-2xl font-extrabold">
+            <h1 className="mt-2 text-[18px] sm:text-2xl font-extrabold text-white">
               Edit Profile
             </h1>
             <p className="text-white/85 text-xs sm:text-sm mt-1">
@@ -276,10 +273,7 @@ function EditProfile() {
         </div>
 
         {/* Content Card */}
-        <div
-          className="mt-5 sm:mt-6 rounded-[26px] bg-white p-4 sm:p-6"
-          style={{ boxShadow: THEME.CARD_SHADOW }}
-        >
+        <div className="mt-5 sm:mt-6 rounded-3xl bg-white border border-slate-200/70 shadow-sm p-4 sm:p-6">
           {/* Avatar */}
           <div className="flex justify-center mb-6 sm:mb-8">
             <div className="relative">
@@ -401,14 +395,11 @@ function EditProfile() {
             <button
               onClick={handleSubmit}
               disabled={isButtonDisabled}
-              className={`h-11 px-8 rounded-2xl font-semibold text-sm transition-colors ${
+              className={`inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-orange-200/60 ${
                 isButtonDisabled
                   ? "bg-slate-300 text-slate-600 cursor-not-allowed"
-                  : "text-white hover:opacity-95"
+                  : "bg-orange-600 text-white shadow-sm hover:bg-orange-700"
               }`}
-              style={{
-                background: isButtonDisabled ? undefined : THEME.PRIMARY_DARK,
-              }}
             >
               {loading ? "Saving Changes..." : "Save Changes"}
             </button>
@@ -424,7 +415,7 @@ function Field({ label, required, error, children }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-slate-600 mb-2">
-        {label} {required ? <span className="text-rose-500">*</span> : null}
+        {label} {required ? <span className="text-red-500">*</span> : null}
       </label>
       {children}
       {error ? <p className="mt-1 text-xs text-rose-500">{error}</p> : null}
@@ -437,8 +428,9 @@ function Input({ error, className = "", ...props }) {
     <input
       {...props}
       className={
-        "w-full h-11 rounded-2xl px-4 bg-white border outline-none text-sm text-slate-700 " +
-        (error ? "border-rose-300 focus:ring-4 focus:ring-rose-100" : "border-slate-200 focus:ring-4 focus:ring-indigo-100") +
+        "w-full h-11 rounded-2xl px-4 bg-white border text-sm text-slate-700 " +
+        "focus:outline-none focus:ring-4 focus:ring-orange-200/60 focus:border-orange-400 " +
+        (error ? "border-rose-300 focus:ring-rose-100 focus:border-rose-400" : "border-slate-200") +
         " " +
         className
       }
