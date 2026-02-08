@@ -9,6 +9,7 @@ class AppPrefs {
   static const String _localeKey = 'app_locale';
   static const String _themeModeKey = 'app_theme_mode';
   static const String _onboardingSeenKey = 'onboarding_seen';
+  static const String _lastRouteKey = 'last_route';
 
   static SharedPreferences? _prefs;
   static bool _initDone = false;
@@ -59,5 +60,21 @@ class AppPrefs {
   static Future<void> setOnboardingSeen(bool value) async {
     final prefs = await _instance;
     await prefs.setBool(_onboardingSeenKey, value);
+  }
+
+  // ——— Last visited route (for post-restore navigation) ———
+  static Future<String?> getLastRoute() async {
+    final prefs = await _instance;
+    return prefs.getString(_lastRouteKey);
+  }
+
+  static Future<void> setLastRoute(String path) async {
+    final prefs = await _instance;
+    await prefs.setString(_lastRouteKey, path);
+  }
+
+  static Future<void> clearLastRoute() async {
+    final prefs = await _instance;
+    await prefs.remove(_lastRouteKey);
   }
 }

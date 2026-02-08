@@ -2,13 +2,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/cache/cache_service.dart';
+import '../../../../core/network/dio_provider.dart';
+import '../../data/datasources/remote/projects_remote_datasource.dart';
 import '../../data/repositories/projects_repository.dart';
+import '../../domain/usecases/get_explore_projects.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../search/presentation/providers/search_provider.dart';
 
+final projectsRemoteDataSourceProvider = Provider<ProjectsRemoteDataSource>((ref) {
+  return ProjectsRemoteDataSource(ref.watch(dioProvider));
+});
+
 final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
-  return ProjectsRepository(ref: ref);
+  return ProjectsRepository(
+    ref: ref,
+    exploreRemote: ref.watch(projectsRemoteDataSourceProvider),
+  );
+});
+
+/// Use case for explore projects. Presentation (Explore notifier) uses this only.
+final getExploreProjectsProvider = Provider<GetExploreProjects>((ref) {
+  return GetExploreProjects(ref.watch(projectsRepositoryProvider));
 });
 
 /// Provider for fetching a single project by ID
@@ -113,113 +128,115 @@ final myProjectsProvider =
   }
 });
 
-// In-memory cache for explore projects
+// In-memory cache for explore projects (used by notifier)
 final _exploreProjectsCacheProvider = StateProvider.autoDispose<Map<String, List<Project>>>((ref) => {});
 
-/// Last successful explore projects list. Show this while refetching to avoid flicker.
-/// Updated when exploreProjectsProvider emits data; not autoDispose so it survives navigation.
-final exploreProjectsLastDataProvider = StateProvider<List<Project>?>((ref) => null);
+/// Non-blocking refresh error message (e.g. network failed but cache shown). UI shows snackbar and clears.
+final exploreRefreshErrorProvider = StateProvider.autoDispose<String?>((ref) => null);
 
+/// Cache-first explore state. Emits cached data immediately (if any), then fetches and updates. TTL 10 min.
+class ExploreProjectsNotifier extends AutoDisposeNotifier<AsyncValue<List<Project>>> {
+  @override
+  AsyncValue<List<Project>> build() {
+    ref.listen(selectedExploreCategoryIdProvider, (_, __) => _load());
+    ref.listen(exploreSortByProvider, (_, __) => _load());
+    ref.listen(searchQueryProvider, (_, __) => _load());
+    ref.listen(authStateProvider.select((s) => s.userId), (_, __) => _load());
+    Future.microtask(() => _load());
+    return const AsyncValue.loading();
+  }
+
+  /// Call from UI (e.g. RefreshIndicator) to reload. Resets refresh error and runs cache-then-network.
+  Future<void> load() => _load();
+
+  Future<void> _load() async {
+    final userId = ref.read(authStateProvider.select((state) => state.userId));
+    final authState = ref.read(authStateProvider);
+    final userRoleId = authState.user?.roleId;
+
+    if (userId == null) {
+      state = const AsyncValue.data([]);
+      return;
+    }
+
+    final selectedCategoryId = ref.read(selectedExploreCategoryIdProvider);
+    final String sortBy = ref.read(exploreSortByProvider);
+    final searchQuery = ref.read(searchQueryProvider);
+    final query = searchQuery.trim().isNotEmpty ? searchQuery.trim() : null;
+    final cacheKey = 'explore_${userId}_${selectedCategoryId ?? 'all'}_${sortBy}_${query ?? 'noquery'}';
+
+    state = const AsyncValue.loading();
+    ref.read(exploreRefreshErrorProvider.notifier).state = null;
+
+    // 1. Sync read from Hive (instant)
+    List<Project>? cached = ref.read(_exploreProjectsCacheProvider)[cacheKey];
+    if (cached == null || cached.isEmpty) {
+      cached = CacheService.getListSync(cacheKey, (json) => Project.fromJson(json));
+      if (cached != null && cached.isNotEmpty) {
+        ref.read(_exploreProjectsCacheProvider.notifier).update((s) => {...s, cacheKey: cached!});
+      }
+    }
+    if (cached != null && cached.isNotEmpty) {
+      state = AsyncValue.data(cached);
+    }
+
+    // 2. Fetch fresh via use case (no Dio in presentation)
+    try {
+      final getExplore = ref.read(getExploreProjectsProvider);
+      final response = await getExplore.call(
+        query: query,
+        categoryId: selectedCategoryId,
+        subCategoryId: null,
+        subSubCategoryId: null,
+        page: 1,
+        limit: 20,
+        userRoleId: userRoleId,
+        sortBy: sortBy,
+      );
+
+      if (response.success && response.data != null) {
+        ref.read(_exploreProjectsCacheProvider.notifier).update((s) => {...s, cacheKey: response.data!});
+        await CacheService.setList(cacheKey, response.data!, (p) => p.toJson());
+        state = AsyncValue.data(response.data!);
+        return;
+      }
+
+      if (cached != null && cached.isNotEmpty) {
+        ref.read(exploreRefreshErrorProvider.notifier).state =
+            response.message ?? 'Could not refresh';
+        return;
+      }
+      state = AsyncValue.error(Exception(response.message ?? 'Failed to load'), StackTrace.current);
+    } catch (e, st) {
+      if (cached != null && cached.isNotEmpty) {
+        ref.read(exploreRefreshErrorProvider.notifier).state = e.toString();
+        return;
+      }
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+final exploreProjectsStateProvider =
+    NotifierProvider.autoDispose<ExploreProjectsNotifier, AsyncValue<List<Project>>>(
+  ExploreProjectsNotifier.new,
+);
+
+/// Last successful explore projects list (for overlay loading). Updated when state has data.
+final exploreProjectsLastDataProvider = Provider.autoDispose<List<Project>?>((ref) {
+  return ref.watch(exploreProjectsStateProvider).valueOrNull;
+});
+
+/// Explore projects as Future (for compatibility). Completes with current or next data.
 final exploreProjectsProvider =
     FutureProvider.autoDispose<List<Project>>((ref) async {
-  final repository = ref.read(projectsRepositoryProvider);
-  ref.watch(authEpochProvider);
-  final userId = ref.watch(authStateProvider.select((state) => state.userId));
-  final authState = ref.read(authStateProvider);
-  final userRoleId = authState.user?.roleId;
-
-  if (userId == null) {
-    return [];
-  }
-  
-  // Get selected category ID (null means "All")
-  final selectedCategoryId = ref.watch(selectedExploreCategoryIdProvider);
-  
-  // Get sortBy option (defaults to 'newest')
-  final String sortBy = ref.watch(exploreSortByProvider);
-  
-  // Get search query from search provider
-  final searchQuery = ref.watch(searchQueryProvider);
-  final query = searchQuery.trim().isNotEmpty ? searchQuery.trim() : null;
-  
-  // Create cache key from filters
-  final cacheKey = 'explore_${userId}_${selectedCategoryId ?? 'all'}_${sortBy}_${query ?? 'noquery'}';
-  
-  if (AppConfig.isDevelopment) {
-    print('🔍 [exploreProjectsProvider] Fetching with: categoryId=$selectedCategoryId, query=$query, sortBy=$sortBy');
-  }
-  
-  // 1. Check in-memory cache first (instant)
-  final inMemoryCache = ref.read(_exploreProjectsCacheProvider);
-  final cached = inMemoryCache[cacheKey];
-  if (cached != null && cached.isNotEmpty) {
-    // Return cached immediately, continue fetching fresh
-  }
-  
-  // 2. Try persistent cache
-  final persistentCache = await CacheService.getList<Project>(
-    cacheKey,
-    (json) => Project.fromJson(json),
-  );
-  
-  if (persistentCache != null && persistentCache.isNotEmpty) {
-    // Update in-memory cache
-    ref.read(_exploreProjectsCacheProvider.notifier).update((state) {
-      return {...state, cacheKey: persistentCache};
-    });
-    // Return cached immediately, continue fetching fresh
-  }
-  
-  // 3. Fetch fresh data
-  try {
-    final response = await repository.fetchExploreProjects(
-      query: query,
-      categoryId: selectedCategoryId,
-      subCategoryId: null,
-      subSubCategoryId: null,
-      page: 1,
-      limit: 20,
-      userRoleId: userRoleId,
-      sortBy: sortBy,
-    );
-
-    if (response.success && response.data != null) {
-      if (AppConfig.isDevelopment) {
-        print('✅ [exploreProjectsProvider] Fetched ${response.data!.length} projects');
-      }
-      
-      // Save to both caches
-      ref.read(_exploreProjectsCacheProvider.notifier).update((state) {
-        return {...state, cacheKey: response.data!};
-      });
-      await CacheService.setList(
-        cacheKey,
-        response.data!,
-        (project) => project.toJson(),
-      );
-      
-      return response.data!;
-    }
-
-    // If fetch fails, return cached data if available
-    if (persistentCache != null && persistentCache.isNotEmpty) {
-      return persistentCache;
-    }
-    if (cached != null && cached.isNotEmpty) {
-      return cached;
-    }
-
-    throw Exception(response.message ?? 'Failed to fetch explore projects');
-  } catch (e) {
-    // Return cached data on error if available
-    if (persistentCache != null && persistentCache.isNotEmpty) {
-      return persistentCache;
-    }
-    if (cached != null && cached.isNotEmpty) {
-      return cached;
-    }
-    rethrow;
-  }
+  final notifier = ref.read(exploreProjectsStateProvider.notifier);
+  final current = ref.read(exploreProjectsStateProvider);
+  if (current.hasValue) return current.value!;
+  if (current.hasError) throw current.error!;
+  await notifier.load();
+  final next = ref.read(exploreProjectsStateProvider);
+  return next.valueOrNull ?? [];
 });
 
 class ExploreProjectsParams {

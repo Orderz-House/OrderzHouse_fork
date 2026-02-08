@@ -1,0 +1,89 @@
+{
+  "heroTitle": "Privacy & Data Policy",
+  "heroSubtitle": "A modern, transparent policy designed to be clear and easy to skim. Our primary color is #028090.",
+  "quickTiles": [
+    {"label": "Privacy First", "icon": "shield"},
+    {"label": "Secure by Default", "icon": "lock"},
+    {"label": "Minimal Data", "icon": "database"},
+    {"label": "Trusted Vendors", "icon": "globe"}
+  ],
+  "dataLifecycleTitle": "Data Lifecycle",
+  "dataLifecycleSubtitle": "How your data travels through our system — from collection to deletion.",
+  "lifecycle": [
+    {"title": "Collect (Minimal)", "desc": "We only ask for the essentials to create your account and deliver core features."},
+    {"title": "Store (Encrypted in transit)", "desc": "Traffic uses TLS (HTTPS). Storage uses secure, access-controlled services."},
+    {"title": "Use (Purpose-bound)", "desc": "We use data solely to operate the platform, improve quality, and prevent abuse."},
+    {"title": "Share (When necessary)", "desc": "Limited sharing with trusted providers under data-protection agreements."},
+    {"title": "Delete / Export (Your control)", "desc": "You can request deletion or a portable copy; we respect applicable regulations."}
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "title": "Introduction",
+      "icon": "shield",
+      "bullets": [
+        "We respect your privacy and aim for full transparency.",
+        "This policy explains what we collect, why, and how we use it.",
+        "Using our platform means you agree to this policy."
+      ],
+      "body": "We keep things concise and human-friendly. We never sell your data. We only process what is necessary to run the platform, improve reliability, and keep your account secure."
+    },
+    {
+      "id": "collection",
+      "title": "What We Collect",
+      "icon": "database",
+      "bullets": [
+        "Account data: name, email, role (Admin / Client / Freelancer).",
+        "Usage data: pages viewed, preferences, diagnostics.",
+        "Files: profile images and attachments related to projects."
+      ],
+      "body": "We collect the minimum data required to create your account, personalize your experience, and protect the system from abuse. Certain features store preferences locally in your browser."
+    },
+    {
+      "id": "cookies",
+      "title": "Cookies & Preferences",
+      "icon": "file_text",
+      "bullets": [
+        "Session cookies to keep you signed in securely.",
+        "Preference cookies for language and theme.",
+        "You can control them from your browser settings."
+      ],
+      "body": "Cookies simplify your experience (remembering language, dark mode) and secure sessions. You can refuse some cookies, but a few features may not work as expected."
+    },
+    {
+      "id": "sharing",
+      "title": "Sharing & Third Parties",
+      "icon": "globe",
+      "bullets": [
+        "We do not sell your data to advertisers.",
+        "Trusted providers for email, storage, and analytics only.",
+        "We share the least amount of information necessary."
+      ],
+      "body": "We may rely on reputable vendors to deliver parts of the service. They are bound by data-protection agreements and only receive data required to perform their tasks."
+    },
+    {
+      "id": "security",
+      "title": "Security & Access",
+      "icon": "lock",
+      "bullets": [
+        "Encryption in transit (HTTPS).",
+        "Role-based internal access (principle of least privilege).",
+        "Periodic reviews and abuse monitoring."
+      ],
+      "body": "We secure traffic with TLS, restrict staff access by role, apply logging/alerting, and review our controls regularly. If a breach occurs, we will notify affected users where required by law."
+    },
+    {
+      "id": "rights",
+      "title": "Your Rights",
+      "icon": "key_round",
+      "bullets": [
+        "Access and receive a copy of your data.",
+        "Request correction or deletion where possible.",
+        "Withdraw consent and exercise data portability."
+      ],
+      "body": "Contact us to exercise your rights. We will verify your identity and respond within a reasonable timeframe according to applicable regulations."
+    }
+  ],
+  "lastUpdated": "Jan 2025",
+  "footerNote": "We'll post updates here."
+}

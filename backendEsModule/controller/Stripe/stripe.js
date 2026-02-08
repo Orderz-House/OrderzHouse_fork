@@ -1,17 +1,16 @@
 import Stripe from "stripe";
 import pool from "../../models/db.js";
 
-// Lazy Stripe initialization
-let stripeInstance = null;
-const getStripe = () => {
-  if (!stripeInstance) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error("STRIPE_SECRET_KEY not set");
-    }
-    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+let _stripe = null;
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || String(key).trim() === "") {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
   }
-  return stripeInstance;
-};
+  if (!_stripe) _stripe = new Stripe(key);
+  return _stripe;
+}
+
 
 /* ============================================================
    PLAN CHECKOUT SESSION
@@ -225,16 +224,8 @@ export const createCheckoutSession = async (req, res) => {
       });
     }
 
-    const success_url = `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancel_url = `${process.env.CLIENT_URL}/payment/cancel`;
+    const session = await getStripe().checkout.sessions.create({
 
-    console.log("[Stripe] Creating session with:", {
-      line_items_count: line_items.length,
-      success_url,
-      cancel_url,
-    });
-
-    const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
@@ -269,122 +260,96 @@ export const createCheckoutSession = async (req, res) => {
 };
 
 /* ============================================================
-   PROJECT CHECKOUT SESSION (CREATE PROJECT WITH pending_payment STATUS)
+   PROJECT CHECKOUT SESSION (NO PROJECT CREATED YET)
+   Currency: JOD (3 decimal places) => unit_amount = amount * 1000
+
 ============================================================ */
 export const createProjectCheckoutSession = async (req, res) => {
   const client = await pool.connect();
   try {
+    if (!process.env.STRIPE_SECRET_KEY || String(process.env.STRIPE_SECRET_KEY).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "STRIPE_SECRET_KEY is not configured",
+        code: null,
+      });
+    }
+
+    const clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl || String(clientUrl).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "CLIENT_URL is not configured (required for success/cancel URLs)",
+        code: null,
+      });
+    }
+
     const userId = req.token.userId;
     const projectData = req.body;
+    const projectType = projectData.project_type;
+    const title = projectData.title != null ? String(projectData.title).trim() : "";
 
-    // Check if user is client (role_id = 2) and payment permission
-    const { rows: userRows } = await pool.query(
-      `SELECT role_id, can_post_without_payment FROM users WHERE id = $1 AND is_deleted = false`,
-      [userId]
-    );
-    
-    if (!userRows.length || Number(userRows[0].role_id) !== 2) {
-      return res.status(403).json({ error: "Only clients can create projects" });
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Project title is required",
+        code: null,
+      });
     }
 
-    const canPostWithoutPayment = userRows[0].can_post_without_payment === true;
+    let unitAmount = 0;
 
-    // Validate required fields
-    const {
-      category_id,
-      sub_category_id,
-      sub_sub_category_id,
-      title,
-      description,
-      budget,
-      duration_type,
-      duration_days,
-      duration_hours,
-      project_type,
-      budget_min,
-      budget_max,
-      hourly_rate,
-      preferred_skills,
-    } = projectData;
-
-    if (!category_id || !sub_sub_category_id || !title || !description || !duration_type) {
-      return res.status(400).json({ error: "Missing required project fields" });
+    if (projectType === "fixed") {
+      const budget = Number(projectData.budget);
+      if (!Number.isFinite(budget) || budget <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid budget for fixed project (must be a positive number)",
+          code: null,
+        });
+      }
+      unitAmount = Math.round(budget * 1000);
+    } else if (projectType === "hourly") {
+      const hourlyRate = Number(projectData.hourly_rate);
+      const durationHours = projectData.duration_hours != null
+        ? Number(projectData.duration_hours)
+        : null;
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid hourly_rate for hourly project (must be a positive number)",
+          code: null,
+        });
+      }
+      if (durationHours == null || !Number.isFinite(durationHours) || durationHours <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or missing duration_hours for hourly project",
+          code: null,
+        });
+      }
+      const amount = hourlyRate * durationHours;
+      unitAmount = Math.round(amount * 1000);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Bidding projects are paid later",
+        code: null,
+      });
     }
 
-    if (!["fixed", "hourly"].includes(project_type)) {
-      return res.status(400).json({ error: "Only fixed and hourly projects require payment" });
+    if (unitAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Calculated amount must be greater than zero",
+        code: null,
+      });
     }
 
-    if (project_type === "fixed" && (!budget || budget <= 0)) {
-      return res.status(400).json({ error: "Fixed projects require valid budget" });
-    }
+    const successUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-cancel`;
 
-    if (project_type === "hourly" && (!hourly_rate || hourly_rate <= 0)) {
-      return res.status(400).json({ error: "Hourly projects require valid hourly_rate" });
-    }
 
-    // Calculate amount
-    let amount = 0;
-    if (project_type === "fixed") {
-      amount = Number(budget);
-    } else if (project_type === "hourly") {
-      amount = Number(hourly_rate) * 3; // minimum
-    }
-
-    // Create project - status depends on payment permission
-    await client.query("BEGIN");
-
-    const durationDaysValue = duration_type === "days" ? Number(duration_days) : null;
-    const durationHoursValue = duration_type === "hours" ? Number(duration_hours) : null;
-    const normalizedBudget = project_type === "fixed" ? Number(budget) : null;
-    const normalizedHourlyRate = project_type === "hourly" ? Number(hourly_rate) : null;
-
-    // Determine initial status: pending_admin if skipping payment, pending_payment otherwise
-    const initialStatus = canPostWithoutPayment ? 'pending_admin' : 'pending_payment';
-
-    const { rows: projectRows } = await client.query(
-      `INSERT INTO projects (
-        user_id, category_id, sub_category_id, sub_sub_category_id,
-        title, description, budget, duration_days, duration_hours,
-        project_type, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'not_started', false
-      ) RETURNING id`,
-      [
-        userId,
-        category_id,
-        sub_category_id || null,
-        sub_sub_category_id,
-        title.trim(),
-        description.trim(),
-        normalizedBudget,
-        durationDaysValue,
-        durationHoursValue,
-        project_type,
-        normalizedHourlyRate,
-        preferred_skills || [],
-        initialStatus,
-      ]
-    );
-
-    const projectId = projectRows[0].id;
-
-    // Upload cover pic if provided (from req.files if available)
-    if (req.files?.cover_pic && req.files.cover_pic.length > 0) {
-      // Note: This requires multer middleware - if not available, skip cover pic upload
-      // Cover pic can be uploaded later after payment
-    }
-
-    await client.query("COMMIT");
-    client.release();
-
-    // If user can post without payment, skip Stripe and return success
-    if (canPostWithoutPayment) {
-      return res.json({ skipPayment: true, project_id: projectId });
-    }
-
-    // Create Stripe checkout session for normal users
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -394,9 +359,10 @@ export const createProjectCheckoutSession = async (req, res) => {
           price_data: {
             currency: "jod",
             product_data: {
-              name: title,
+              name: `Project: ${title}`,
+
             },
-            unit_amount: Math.round(amount * 1000),
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
@@ -404,19 +370,40 @@ export const createProjectCheckoutSession = async (req, res) => {
       metadata: {
         user_id: String(userId),
         purpose: "project",
-        reference_id: String(projectId), // Project ID for confirm endpoint
+        project_data: JSON.stringify(projectData),
       },
-      success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+
     });
 
-    return res.json({ url: session.url });
-
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
   } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
-    client.release();
-    console.error("createProjectCheckoutSession error:", err);
-    return res.status(500).json({ error: "Stripe error", message: err.message });
+    console.error("createProjectCheckoutSession error:", {
+      type: err.type,
+      code: err.code,
+      message: err.message,
+      rawMessage: err.raw?.message,
+      rawParam: err.raw?.param,
+      rawDeclineCode: err.raw?.decline_code,
+    });
+
+    const isDev = process.env.NODE_ENV !== "production";
+    const safeMessage = isDev
+      ? (err.raw?.message ?? err.message ?? "Stripe error")
+      : "Payment setup failed. Please try again.";
+    const code = err.code ?? null;
+
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: safeMessage,
+      code,
+    });
+
   }
 };
 
@@ -432,8 +419,7 @@ export const confirmCheckoutSession = async (req, res) => {
     }
 
     // 1️⃣ Retrieve Stripe session
-    const stripe = getStripe();
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await getStripe().checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== "paid") {
       return res.status(400).json({ ok: false, error: "Payment not completed" });

@@ -11,7 +11,7 @@ import '../widgets/wizard_steps/project_cover_step_view.dart';
 import '../widgets/wizard_steps/project_files_step_view.dart';
 import '../widgets/wizard_steps/payment_step_view.dart';
 import '../../data/repositories/projects_repository.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/utils/stripe_checkout_launcher.dart';
 
 class CreateProjectWizardPage extends ConsumerStatefulWidget {
   const CreateProjectWizardPage({super.key});
@@ -237,13 +237,8 @@ class _CreateProjectWizardPageState
 
         final checkoutUrl = checkoutResponse.data!;
 
-        // Open Stripe checkout URL
-        final uri = Uri.parse(checkoutUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          throw Exception(l10n.couldNotLaunchCheckout);
-        }
+        // Open Stripe checkout URL via launcher (external app → in-app browser → WebView fallback)
+        await openCheckoutUrl(context, checkoutUrl);
       }
     } catch (e) {
       if (mounted) {

@@ -42,6 +42,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noNotificationsMessage => 'ستظهر الإشعارات هنا عند استلامها.';
 
   @override
+  String get projectNotFound => 'المشروع غير موجود';
+
+  @override
+  String get projectNotFoundMessage =>
+      'ربما تم حذف المشروع أو ليس لديك صلاحية الوصول إليه.';
+
+  @override
+  String get backToNotifications => 'العودة إلى الإشعارات';
+
+  @override
+  String get loadingProject => 'جاري تحميل المشروع...';
+
+  @override
+  String get thisNotificationHasNoLink => 'هذا الإشعار لا يحتوي على رابط';
+
+  @override
   String get markAllAsRead => 'تحديد الكل كمقروء';
 
   @override
@@ -341,6 +357,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get refresh => 'تحديث';
+
+  @override
+  String get expandAll => 'توسيع الكل';
+
+  @override
+  String get collapseAll => 'طي الكل';
+
+  @override
+  String get lastUpdated => 'آخر تحديث';
+
+  @override
+  String get policySearchHint => 'تصفية الأقسام…';
 
   @override
   String get update => 'تحديث';

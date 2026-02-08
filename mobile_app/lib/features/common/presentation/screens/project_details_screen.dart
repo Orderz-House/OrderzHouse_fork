@@ -24,9 +24,9 @@ import '../../../freelancer/presentation/widgets/deliver_modal.dart';
 import '../../../client/presentation/widgets/review_delivery_bottom_sheet.dart';
 import '../../../client/presentation/widgets/offers_bottom_sheet.dart';
 import '../../../client/presentation/widgets/applications_bottom_sheet.dart';
-import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../messages/presentation/providers/messages_provider.dart';
 import '../../../projects/presentation/providers/change_requests_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Providers
 final offersRepositoryProvider = Provider<OffersRepository>((ref) {
@@ -874,11 +874,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       return projectAsync.when(
         data: (project) {
           if (project == null) {
-            // Project not found
+            final l10n = AppLocalizations.of(context)!;
             return Scaffold(
               backgroundColor: Colors.white,
               appBar: AppBar(
-                title: const Text('Project Not Found'),
+                title: Text(l10n.projectNotFound),
               ),
               body: Center(
                 child: Padding(
@@ -892,13 +892,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Project not found',
+                      Text(
+                        l10n.projectNotFound,
                         style: AppTextStyles.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'This project may have been deleted or you don\'t have access to it.',
+                      Text(
+                        l10n.projectNotFoundMessage,
                         style: AppTextStyles.bodySmall,
                         textAlign: TextAlign.center,
                       ),
@@ -911,7 +911,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                             context.go('/client');
                           }
                         },
-                        child: const Text('Back to Notifications'),
+                        child: Text(l10n.backToNotifications),
                       ),
                     ],
                   ),
@@ -935,69 +935,75 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           // Return normal build with project
           return _buildProjectContent(context, project);
         },
-        loading: () => Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading project...',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        error: (error, stackTrace) => Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            title: const Text('Error'),
-          ),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+        loading: () {
+          final l10n = AppLocalizations.of(context)!;
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline_rounded,
-                    size: 64,
-                    color: AppColors.error,
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Failed to load project',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
                   Text(
-                    error.toString().replaceAll('Exception: ', ''),
-                    style: AppTextStyles.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/client');
-                      }
-                    },
-                    child: const Text('Back'),
+                    l10n.loadingProject,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
+        error: (error, stackTrace) {
+          final l10n = AppLocalizations.of(context)!;
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: Text(l10n.error),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 64,
+                      color: AppColors.error,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.failedToLoadProjects,
+                      style: AppTextStyles.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString().replaceAll('Exception: ', ''),
+                      style: AppTextStyles.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/client');
+                        }
+                      },
+                      child: Text(l10n.back),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
     
@@ -1138,11 +1144,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     // Determine button label (null if project type is unknown)
     String? buttonLabel;
     if (_hasApplied) {
-      buttonLabel = 'Already Applied';
+      buttonLabel = AppLocalizations.of(context)!.applied;
     } else if (isBidding) {
-      buttonLabel = 'Send Offer';
+      buttonLabel = AppLocalizations.of(context)!.submitOffer;
     } else if (isFixed || isHourly) {
-      buttonLabel = 'Apply';
+      buttonLabel = AppLocalizations.of(context)!.apply;
     }
     
     // Show button only for freelancers, and only if project type is known (bidding/fixed/hourly)
@@ -1214,9 +1220,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                         ),
                         const Spacer(),
                         // Title
-                        const Text(
-                          'Project Details',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.projectDetails,
+                          style: const TextStyle(
                             color: Color(0xFF111827),
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
@@ -1435,22 +1441,22 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     children: [
                       _buildInfoCard(
                         icon: Icons.category_rounded,
-                        label: 'Type',
+                        label: AppLocalizations.of(context)!.projectType,
                         value: project.projectType.toUpperCase(),
                       ),
                       _buildInfoCard(
                         icon: Icons.account_balance_wallet_rounded,
-                        label: 'Budget',
+                        label: AppLocalizations.of(context)!.projectBudget,
                         value: project.budgetDisplay,
                       ),
                       _buildInfoCard(
                         icon: Icons.schedule_rounded,
-                        label: 'Duration',
+                        label: AppLocalizations.of(context)!.estimatedDuration,
                         value: durationText,
                       ),
                       _buildInfoCard(
                         icon: Icons.calendar_today_rounded,
-                        label: 'Created',
+                        label: AppLocalizations.of(context)!.startDate,
                         value: dateFormat.format(project.createdAt),
                       ),
                     ],
@@ -1488,7 +1494,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
-                                'Description',
+                                AppLocalizations.of(context)!.description,
                                 style: AppTextStyles.titleMedium.copyWith(
                                   color: const Color(0xFF111827),
                                   fontWeight: FontWeight.bold,
@@ -1660,7 +1666,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     child: OutlinedButton.icon(
                       onPressed: null,
                       icon: const Icon(Icons.people_outline_rounded, size: 20),
-                      label: const Text('Applicants'),
+                      label: Text(AppLocalizations.of(context)!.applicants),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textPrimary,
                         side: const BorderSide(color: AppColors.border),
@@ -1672,10 +1678,10 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: PrimaryGradientButton(
                       onPressed: null,
-                      label: 'Receive',
+                      label: AppLocalizations.of(context)!.receive,
                       icon: Icons.download_rounded,
                       height: 48,
                       borderRadius: 12,
@@ -1723,7 +1729,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           child: OutlinedButton.icon(
             onPressed: loading ? null : () => _openApplications(context),
             icon: const Icon(Icons.people_outline_rounded, size: 20),
-            label: const Text('Applicants'),
+            label: Text(AppLocalizations.of(context)!.applicants),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
               side: const BorderSide(color: AppColors.border),
@@ -1738,7 +1744,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         Expanded(
           child: PrimaryGradientButton(
             onPressed: loading ? null : () => _openReceivePanel(context),
-            label: 'Receive',
+            label: AppLocalizations.of(context)!.receive,
             icon: Icons.download_rounded,
             height: 48,
             borderRadius: 12,
@@ -1759,7 +1765,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           child: OutlinedButton.icon(
             onPressed: loading ? null : () => _openRequestChangesModal(context),
             icon: const Icon(Icons.edit_rounded, size: 20),
-            label: const Text('Request Changes'),
+            label: Text(AppLocalizations.of(context)!.requestChanges),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
               side: const BorderSide(color: AppColors.border),
@@ -1774,7 +1780,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         Expanded(
           child: PrimaryGradientButton(
             onPressed: loading ? null : () => _openFilesView(context),
-            label: 'Files',
+            label: AppLocalizations.of(context)!.files,
             icon: Icons.folder_outlined,
             height: 52,
             borderRadius: 28,
@@ -1811,7 +1817,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => _openRequestChangesModal(context),
                 icon: const Icon(Icons.edit_rounded, size: 20),
-                label: const Text('Request Change'),
+                label: Text(AppLocalizations.of(context)!.requestChanges),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF111827),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -1827,7 +1833,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             Expanded(
               child: PrimaryGradientButton(
                 onPressed: () => _handleApproveDelivery(context),
-                label: 'Approve',
+                label: AppLocalizations.of(context)!.approve,
                 icon: Icons.check_circle_rounded,
                 height: 48,
                 borderRadius: 12,
@@ -1866,7 +1872,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         child: shouldShowDeliver
             ? GradientButton(
                 onPressed: loading ? null : () => _openDeliverModal(context),
-                label: 'Deliver Work',
+                label: AppLocalizations.of(context)!.submitDelivery,
                 icon: Icons.send_rounded,
                 height: 48,
                 borderRadius: 12,
@@ -2608,7 +2614,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               OutlinedButton.icon(
                 onPressed: _fetchDeliveriesIfNeeded,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Refresh'),
+                label: Text(AppLocalizations.of(context)!.refresh),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.accentOrange,
                   side: const BorderSide(color: AppColors.border),
@@ -2621,7 +2627,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           const SizedBox(height: 12),
           if (latestDelivery == null)
             Text(
-              'No deliveries yet.',
+              AppLocalizations.of(context)!.noDeliveries,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -2807,7 +2813,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                       Navigator.pop(context);
                       await _handleApproveDelivery(context);
                     } : null,
-                    label: 'Approve',
+                    label: AppLocalizations.of(context)!.approve,
                     isEnabled: hasDelivery,
                     height: 48,
                     borderRadius: 12,

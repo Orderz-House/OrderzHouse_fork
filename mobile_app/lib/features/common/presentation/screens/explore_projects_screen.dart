@@ -17,7 +17,6 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/explore_project_card.dart';
 import '../../../../core/widgets/explore_skeleton.dart';
 import '../../../../core/widgets/app_scaffold.dart';
-import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/gradient_fab.dart';
 import '../../../../shared/widgets/app_gradient_filter_chip.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
@@ -73,7 +72,8 @@ class _ExploreProjectsScreenState
   }
 
   void _refresh() {
-    ref.invalidate(exploreProjectsProvider);
+    ref.read(exploreRefreshErrorProvider.notifier).state = null;
+    ref.read(exploreProjectsStateProvider.notifier).load();
     ref.invalidate(exploreCategoriesProvider);
   }
 
@@ -109,7 +109,6 @@ class _ExploreProjectsScreenState
                   onTap: () {
                     ref.read(exploreSortByProvider.notifier).state = 'newest';
                     Navigator.pop(context);
-                    ref.invalidate(exploreProjectsProvider);
                   },
                 ),
                 _SortOption(
@@ -119,7 +118,6 @@ class _ExploreProjectsScreenState
                   onTap: () {
                     ref.read(exploreSortByProvider.notifier).state = 'price_low_to_high';
                     Navigator.pop(context);
-                    ref.invalidate(exploreProjectsProvider);
                   },
                 ),
                 _SortOption(
@@ -129,7 +127,6 @@ class _ExploreProjectsScreenState
                   onTap: () {
                     ref.read(exploreSortByProvider.notifier).state = 'price_high_to_low';
                     Navigator.pop(context);
-                    ref.invalidate(exploreProjectsProvider);
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -194,18 +191,18 @@ class _ExploreProjectsScreenState
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () async {
-                        _refresh();
-                        await ref.read(exploreProjectsProvider.future);
+                        ref.read(exploreRefreshErrorProvider.notifier).state = null;
+                        await ref.read(exploreProjectsStateProvider.notifier).load();
                       },
                       child: Consumer(
                         builder: (context, ref, _) {
-                          ref.listen(authEpochProvider, (_, __) {
-                            ref.read(exploreProjectsLastDataProvider.notifier).state = null;
-                          });
-                          ref.listen(filteredExploreProjectsProvider, (prev, next) {
-                            next.whenData((data) {
-                              ref.read(exploreProjectsLastDataProvider.notifier).state = data;
-                            });
+                          ref.listen(exploreRefreshErrorProvider, (prev, msg) {
+                            if (msg != null && msg != prev && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+                              );
+                              ref.read(exploreRefreshErrorProvider.notifier).state = null;
+                            }
                           });
                           final lastData = ref.watch(exploreProjectsLastDataProvider);
                           final projectsAsync = ref.watch(filteredExploreProjectsProvider);
@@ -362,12 +359,10 @@ class _ExploreProjectsScreenState
                     if (mounted) {
                       if (AppConfig.isDevelopment) {
                         debugPrint('🔍 [ExploreScreen] Search text changed: "$value"');
-                        debugPrint('🔍 [ExploreScreen] Will update searchQueryProvider and invalidate exploreProjectsProvider');
+                        debugPrint('🔍 [ExploreScreen] Will update searchQueryProvider (notifier will reload)');
                       }
                       // Update search query provider (provider watches this and will auto-refetch)
                       ref.read(searchQueryProvider.notifier).state = value;
-                      // Explicitly invalidate to ensure refetch happens immediately
-                      ref.invalidate(exploreProjectsProvider);
                     }
                   });
                 },
@@ -379,7 +374,6 @@ class _ExploreProjectsScreenState
                       debugPrint('🔍 [ExploreScreen] Search submitted: "$value"');
                     }
                     ref.read(searchQueryProvider.notifier).state = value;
-                    ref.invalidate(exploreProjectsProvider);
                   }
                 },
                 decoration: InputDecoration(
@@ -527,7 +521,6 @@ class _ExploreProjectsScreenState
                     final category = categories.firstWhere((c) => c.name == label);
                     ref.read(selectedExploreCategoryIdProvider.notifier).state = category.id;
                   }
-                  ref.invalidate(exploreProjectsProvider);
                 },
               );
             },
@@ -644,7 +637,6 @@ class _ExploreProjectsScreenState
                             ref.read(selectedExploreCategoryIdProvider.notifier).state = category.id;
                             _searchController.clear();
                             ref.read(searchQueryProvider.notifier).state = '';
-                            ref.invalidate(exploreProjectsProvider);
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(

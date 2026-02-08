@@ -131,11 +131,10 @@ List<Project> applyExploreFilters(
   return filtered;
 }
 
-/// Filtered + sorted list. Depends only on exploreProjectsProvider and exploreFiltersProvider.
-/// Does NOT invalidate any provider; no circular dependency.
+/// Filtered + sorted list. Depends on exploreProjectsStateProvider (cache-first) and exploreFiltersProvider.
 final filteredExploreProjectsProvider =
-    Provider<AsyncValue<List<Project>>>((ref) {
-  final projectsAsync = ref.watch(exploreProjectsProvider);
+    Provider.autoDispose<AsyncValue<List<Project>>>((ref) {
+  final projectsAsync = ref.watch(exploreProjectsStateProvider);
   final filters = ref.watch(exploreFiltersProvider);
 
   return projectsAsync.when(
