@@ -1,9 +1,6 @@
-import axios from "axios";
+import API from "../../../api/client.js";
 import store from "../../../store/store";
 
-const API_BASE = `${import.meta.env.VITE_APP_API_URL}/tasks`;
-
-// Base API URL (use VITE_APP_API_URL if available)
 const getAuthToken = () =>
   store?.getState()?.auth?.token || localStorage.getItem("token") || null;
 
@@ -17,25 +14,25 @@ const getAuthHeaders = () => {
 ============================================================================ */
 
 export const createTaskApi = async (formData) => {
-  const res = await axios.post(`${API_BASE}/tasks`, formData, {
+  const res = await API.post("/tasks/tasks", formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const updateTaskApi = async (id, data) => {
-  const res = await axios.put(`${API_BASE}/tasks/${id}`, data, getAuthHeaders());
+  const res = await API.put(`/tasks/tasks/${id}`, data, getAuthHeaders());
   return res.data;
 };
 
 export const deleteTaskApi = async (id) => {
-  const res = await axios.delete(`${API_BASE}/tasks/${id}`, getAuthHeaders());
+  const res = await API.delete(`/tasks/tasks/${id}`, getAuthHeaders());
   return res.data;
 };
 
 export const updateTaskRequestStatusApi = async (requestId, status) => {
-  const res = await axios.put(
-    `${API_BASE}/tasks/requests/${requestId}/status`,
+  const res = await API.put(
+    `/tasks/tasks/requests/${requestId}/status`,
     { status },
     getAuthHeaders()
   );
@@ -43,8 +40,8 @@ export const updateTaskRequestStatusApi = async (requestId, status) => {
 };
 
 export const submitWorkCompletionApi = async (requestId, formData) => {
-  const res = await axios.post(
-    `${API_BASE}/tasks/requests/${requestId}/submit`,
+  const res = await API.post(
+    `/tasks/tasks/requests/${requestId}/submit`,
     formData,
     {
       headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
@@ -54,8 +51,8 @@ export const submitWorkCompletionApi = async (requestId, formData) => {
 };
 
 export const resubmitWorkCompletionApi = async (requestId, formData) => {
-  const res = await axios.post(
-    `${API_BASE}/tasks/requests/${requestId}/resubmit`,
+  const res = await API.post(
+    `/tasks/tasks/requests/${requestId}/resubmit`,
     formData,
     {
       headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
@@ -65,7 +62,7 @@ export const resubmitWorkCompletionApi = async (requestId, formData) => {
 };
 
 export const updateTaskKanbanStatusApi = async (id, status) => {
-  const res = await axios.put(`${API_BASE}/tasks/${id}/kanban`, { status }, getAuthHeaders());
+  const res = await API.put(`/tasks/tasks/${id}/kanban`, { status }, getAuthHeaders());
   return res.data;
 };
 
@@ -74,21 +71,21 @@ export const updateTaskKanbanStatusApi = async (id, status) => {
 ============================================================================ */
 
 export const requestTaskApi = async (taskId, formData) => {
-  const res = await axios.post(`${API_BASE}/tasks/${taskId}/request`, formData, {
+  const res = await API.post(`/tasks/tasks/${taskId}/request`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const submitPaymentProofApi = async (taskId, formData) => {
-  const res = await axios.post(`${API_BASE}/tasks/${taskId}/payment-proof`, formData, {
+  const res = await API.post(`/tasks/tasks/${taskId}/payment-proof`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const approveWorkCompletionApi = async (requestId, action, formData) => {
-  const res = await axios.put(`${API_BASE}/tasks/requests/${requestId}/approve`, formData, {
+  const res = await API.put(`/tasks/tasks/requests/${requestId}/approve`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
     params: { action },
   });
@@ -96,7 +93,7 @@ export const approveWorkCompletionApi = async (requestId, action, formData) => {
 };
 
 export const createReviewApi = async (taskId, data) => {
-  const res = await axios.post(`${API_BASE}/tasks/${taskId}/review`, data, getAuthHeaders());
+  const res = await API.post(`/tasks/tasks/${taskId}/review`, data, getAuthHeaders());
   return res.data;
 };
 
@@ -105,18 +102,18 @@ export const createReviewApi = async (taskId, data) => {
 ============================================================================ */
 
 export const getAllTasksForAdminApi = async () => {
-  const res = await axios.get(`${API_BASE}/tasks/admin/all`, getAuthHeaders());
+  const res = await API.get("/tasks/tasks/admin/all", getAuthHeaders());
   return res.data;
 };
 
 export const approveTaskByAdminApi = async (id, status) => {
-  const res = await axios.put(`${API_BASE}/tasks/${id}/approve`, { status }, getAuthHeaders());
+  const res = await API.put(`/tasks/tasks/${id}/approve`, { status }, getAuthHeaders());
   return res.data;
 };
 
 export const confirmPaymentByAdminApi = async (requestId) => {
-  const res = await axios.put(
-    `${API_BASE}/tasks/requests/${requestId}/confirm-payment`,
+  const res = await API.put(
+    `/tasks/tasks/requests/${requestId}/confirm-payment`,
     {},
     getAuthHeaders()
   );
@@ -128,26 +125,26 @@ export const confirmPaymentByAdminApi = async (requestId) => {
 ============================================================================ */
 
 export const getTaskPoolApi = async (categoryId) => {
-  const res = await axios.get(`${API_BASE}/tasks/pool`, {
+  const res = await API.get("/tasks/tasks/pool", {
     params: categoryId ? { category: categoryId } : {},
   });
   return res.data;
 };
 
 export const getTaskByIdApi = async (taskId) => {
-  const res = await axios.get(`${API_BASE}/tasks/${taskId}`, getAuthHeaders());
+  const res = await API.get(`/tasks/tasks/${taskId}`, getAuthHeaders());
   return res.data;
 };
 
 export const addTaskFilesApi = async (requestId, formData) => {
-  const res = await axios.post(`${API_BASE}/tasks/files/${requestId}`, formData, {
+  const res = await API.post(`/tasks/tasks/files/${requestId}`, formData, {
     headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
 export const getCategoriesApi = async () => {
-  const res = await axios.get(`${API_BASE}/tasks/categories`);
+  const res = await API.get("/tasks/tasks/categories");
   return res.data;
 };
 

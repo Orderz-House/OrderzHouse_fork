@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../api/client.js";
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -12,14 +12,12 @@ const MyRestrictedCourses = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     const fetchMyCourses = async () => {
       if (!token) return;
       try {
         setLoading(true);
-        const res = await axios.get(`${API_BASE}/courses/accessible`, {
+        const res = await API.get("/courses/accessible", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(res.data.courses || []);
@@ -33,7 +31,7 @@ const MyRestrictedCourses = () => {
     };
 
     fetchMyCourses();
-  }, [token, API_BASE]);
+  }, [token]);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

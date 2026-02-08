@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import axios from "axios";
+import API from "../../api/client.js";
 import { loadStripe } from "@stripe/stripe-js";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PaymentMethodModal from "./PaymentMethodChooser.jsx";
-import { useToast } from "../toast/ToastProvider";
+import PageMeta from "../PageMeta.jsx";
 
-const API_URL = import.meta.env.VITE_APP_API_URL;
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // =============== Auth Hook ===============
@@ -139,16 +139,11 @@ export default function Plans() {
   }, [user, navigate]);
 
   useEffect(() => {
-    axios.get(`${API_URL}/plans`)
-      .then((res) => {
-        setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch plans:", err);
-        setPlans([]);
-        setLoading(false);
-      });
+    API.get("/plans").then((res) => {
+      setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
+      setLoading(false);
+    });
+
   }, []);
 
   const subscribeOnline = async () => {
@@ -159,9 +154,11 @@ export default function Plans() {
       return;
     }
 
-    try {
-      console.log("Creating checkout session for plan:", selectedPlan.id);
-      await stripePromise;
+    const res = await API.post("/stripe/create-checkout-session", {
+      plan_id: selectedPlan.id,
+      user_id: user.id,
+    });
+
 
       const payload = {
         plan_id: selectedPlan.id,
@@ -207,6 +204,7 @@ export default function Plans() {
 
   return (
     <div className="relative isolate overflow-hidden bg-white">
+      <PageMeta title="Plans & Pricing – OrderzHouse" description="Choose a plan for freelancers: monthly or yearly subscription with clear pricing." />
       {/* ✅ نفس Glows الموجودة في Pricing */}
            <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />

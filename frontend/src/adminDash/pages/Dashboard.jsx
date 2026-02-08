@@ -37,6 +37,7 @@ import {
   fetchFreelancerDashboard,
   fetchClientDashboard,
 } from "../api/dashboard";
+import PageMeta from "../../components/PageMeta.jsx";
 
 /* ===================== Helpers (Role + Base paths) ===================== */
 function mapRole(roleId) {
@@ -1755,192 +1756,7 @@ function LatestProjectsMiniTable({ title = "Your Lesson", items = [], loading, o
     return p?.avatar_url ?? p?.client_avatar ?? p?.cover ?? p?.image ?? "";
   }
 
-  return (
-    <div className="mt-6 w-full max-w-full overflow-hidden rounded-3xl bg-white border border-slate-200/70 shadow-sm">
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-3 border-b border-slate-100">
-        <h3 className="text-sm font-extrabold text-slate-900 min-w-0 truncate">{title}</h3>
-        <button
-          type="button"
-          onClick={onSeeAll}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-700 underline-offset-2 hover:underline"
-        >
-          See all
-        </button>
-      </div>
-
-      {loading && list.length === 0 ? (
-        /* Skeleton rows */
-        <div className="divide-y divide-slate-100">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex sm:grid sm:grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center gap-3 px-5 py-3 sm:gap-0"
-            >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="h-9 w-9 rounded-full bg-slate-200/70 animate-pulse shrink-0" />
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="h-3 w-24 rounded bg-slate-200/70 animate-pulse" />
-                  <div className="h-2.5 w-16 rounded bg-slate-100 animate-pulse" />
-                </div>
-              </div>
-              <div className="hidden sm:block h-6 w-14 rounded-full bg-slate-100 animate-pulse" />
-              <div className="hidden sm:block h-3 w-32 rounded bg-slate-100 animate-pulse min-w-0" />
-              <div className="h-9 w-9 rounded-full bg-slate-100 animate-pulse shrink-0 sm:justify-self-end" />
-            </div>
-          ))}
-        </div>
-      ) : list.length === 0 ? (
-        <div className="mx-5 mb-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-[11px] text-slate-500">
-          Nothing to show.
-        </div>
-      ) : (
-        <>
-          {/* Mini-table header (sm+) */}
-          <div className="hidden sm:grid grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center px-5 py-2 text-[10px] uppercase tracking-wider text-slate-400">
-            <span>{col1Label}</span>
-            <span>Type</span>
-            <span>Desc</span>
-            <span className="justify-self-end">Action</span>
-          </div>
-          <div className="h-px bg-slate-100" />
-
-          {/* Desktop: table rows */}
-          <div className="hidden sm:block">
-            {list.map((p, i) => {
-              const pid = p?.id ?? p?._id ?? p?.project_id;
-              const rowLabel = getRowLabel(p);
-              const typeLabel = pickType(p);
-              const descText = pickDesc(p);
-              const dateStr = formatProjectDate(p);
-              const avatarUrl = getAvatarUrl(p);
-
-              return (
-                <div
-                  key={pid ?? i}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onOpen?.(p)}
-                  onKeyDown={(e) => e.key === "Enter" && onOpen?.(p)}
-                  className="grid grid-cols-[1.2fr_0.9fr_1.6fr_56px] items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100 last:border-b-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 grid place-items-center shrink-0 overflow-hidden">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-[11px] font-bold text-slate-600">{(rowLabel?.[0] || "P").toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[12px] font-semibold text-slate-900 truncate">{rowLabel}</div>
-                      <div className="text-[10px] text-slate-500">{dateStr || "—"}</div>
-                    </div>
-                  </div>
-                  <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200/70 w-fit">
-                    {String(typeLabel).slice(0, 12)}
-                  </div>
-                  <div className="text-[12px] text-slate-700 truncate min-w-0">{descText}</div>
-                  <div className="justify-self-end">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpen?.(p);
-                      }}
-                      className="h-9 w-9 rounded-full border border-slate-200 bg-white grid place-items-center text-slate-600 hover:text-orange-700 hover:border-orange-200/70 hover:bg-orange-50 transition"
-                      aria-label="Open project"
-                    >
-                      <ArrowUpRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Mobile: horizontal swipeable Lesson Cards carousel */}
-          <div className="sm:hidden px-4 pb-4">
-            <p className="mt-2 text-[10px] text-slate-400">Swipe →</p>
-            <div
-              className="mt-3 flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              style={{ WebkitOverflowScrolling: "touch" }}
-            >
-              {list.slice(0, 5).map((p, i) => {
-                const stableId = p?.id ?? p?._id ?? p?.project_id ?? i;
-                const cardTitle = getRowLabel(p);
-                const typeLabel = String(pickType(p)).slice(0, 12);
-                const dateStr = formatProjectDate(p) || "—";
-                const descText = pickDesc(p);
-                const descOrDate = dateStr;
-                const smallMeta =
-                  mode === "freelancer"
-                    ? (p?.title ?? "Project").slice(0, 28)
-                    : ((p?.status ?? descText) || "—").slice(0, 28);
-                const coverUrl = getAvatarUrl(p);
-
-                return (
-                  <button
-                    key={stableId}
-                    type="button"
-                    onClick={() => onOpen?.(p)}
-                    className="snap-start flex-none w-[80vw] max-w-[320px] rounded-[24px] border border-slate-200/70 bg-white shadow-sm overflow-hidden text-left min-w-0"
-                  >
-                    {/* cover */}
-                    <div className="relative h-[92px] w-full flex-shrink-0">
-                      {coverUrl ? (
-                        <>
-                          <img
-                            src={coverUrl}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/20" />
-                        </>
-                      ) : (
-                        <>
-                          <div className="absolute inset-0 bg-gradient-to-b from-orange-400 to-red-500" />
-                          <div className="absolute inset-0 bg-black/10" />
-                        </>
-                      )}
-                      {/* type pill */}
-                      <div className="absolute left-3 top-3">
-                        <span className="rounded-full bg-white/90 backdrop-blur px-2.5 py-1 text-[10px] font-extrabold text-orange-700 border border-white/60">
-                          {typeLabel}
-                        </span>
-                      </div>
-                      {/* decorative arrow */}
-                      <div className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/90 border border-white/60 shadow grid place-items-center text-slate-700 pointer-events-none">
-                        <ArrowUpRight className="h-4 w-4" />
-                      </div>
-                    </div>
-
-                    {/* content */}
-                    <div className="p-4 min-w-0">
-                      <div className="text-[13px] font-extrabold text-slate-900 leading-snug line-clamp-2 min-w-0 [overflow-wrap:anywhere]">
-                        {cardTitle}
-                      </div>
-                      <div className="mt-2 text-[11px] text-slate-500 line-clamp-1 min-w-0">
-                        {descOrDate}
-                      </div>
-                      <div className="mt-3 flex items-center justify-between gap-2 min-w-0">
-                        <div className="text-[11px] font-semibold text-slate-600 truncate min-w-0 max-w-[70%]">
-                          {smallMeta}
-                        </div>
-                        <span className="inline-flex items-center rounded-full bg-orange-50 text-orange-700 border border-orange-200/70 px-3 py-1 text-[10px] font-bold shrink-0">
-                          Open
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
+ 
 }
 
 /* ===================== Client/Partner (v2 like screenshot) ===================== */
@@ -2312,7 +2128,12 @@ export default function Dashboard() {
 
   const role = mapRole(Number(rawRoleId));
 
-  if (role === "freelancer") return <FreelancerDashboard />;
-  if (role === "client" || role === "partner") return <ClientDashboard />;
-  return <AdminDashboard />;
+  return (
+    <>
+      <PageMeta title="Dashboard – OrderzHouse" description="Your OrderzHouse dashboard for projects and activity." />
+      {role === "freelancer" && <FreelancerDashboard />}
+      {(role === "client" || role === "partner") && <ClientDashboard />}
+      {(role === "admin" || role === "user") && <AdminDashboard />}
+    </>
+  );
 }

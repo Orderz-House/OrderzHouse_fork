@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import API from "../../../api/axios.js";
 import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
 import { useToast } from "../../../../components/toast/ToastProvider";
@@ -106,7 +106,7 @@ function useProjectsStats(endpoint, token) {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await api.get(endpoint, {
+        const { data } = await API.get(endpoint, {
           headers: { authorization: `Bearer ${token}` },
         });
 
@@ -231,12 +231,6 @@ function mapRole(roleId) {
   if (roleId === 3) return "freelancer";
   return "user";
 }
-
-/* ---------- Axios base ---------- */
-const api = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL || "",
-  // headers: { "Content-Type": "application/json" },
-});
 
 /* ===================== Entry ===================== */
 export default function Projects() {
@@ -389,7 +383,7 @@ function ClientProjects() {
 
     (async () => {
       try {
-        const { data } = await api.get("/offers/my-projects/offers", {
+        const { data } = await API.get("/offers/my-projects/offers", {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
 
@@ -433,7 +427,7 @@ function ClientProjects() {
   const fetchOffersForProject = async (projectId) => {
     if (!token) return;
     try {
-      const { data } = await api.get("/offers/my-projects/offers", {
+      const { data } = await API.get("/offers/my-projects/offers", {
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -468,7 +462,7 @@ function ClientProjects() {
     if (!token) return;
     setOffersSubmitting(true);
     try {
-      await api.post(
+      await API.post(
         "/offers/offers/approve-reject",
         { offerId, action },
         {
@@ -549,7 +543,7 @@ function ClientProjects() {
 
   //   (async () => {
   //     try {
-  //       const { data } = await api.get("/projects/applications/my-projects", {
+  //       const { data } = await API.get("/projects/applications/my-projects", {
   //         headers: token ? { authorization: `Bearer ${token}` } : undefined,
   //       });
 
@@ -583,7 +577,7 @@ function ClientProjects() {
   const fetchApplicationsForProject = async (projectId) => {
     if (!token) return;
     try {
-      const { data } = await api.get(
+      const { data } = await API.get(
         `/projects/project/${projectId}/applications`,
         {
           headers: { authorization: `Bearer ${token}` },
@@ -612,7 +606,7 @@ function ClientProjects() {
     if (!token) return;
     setAppsSubmitting(true);
     try {
-      await api.post(
+      await API.post(
         "/projects/applications/decision",
         { assignmentId, id: assignmentId, projectId, action },
         {
@@ -843,7 +837,7 @@ function ClientProjects() {
             setReviewMode("review");
           }}
           onApprove={async (projectId) => {
-            await api.put(
+            await API.put(
               `/projects/${projectId}/approve`,
               { action: "approve" },
               {
@@ -876,7 +870,7 @@ function ClientProjects() {
               : undefined;
 
             // ✅ endpoint الصحيح
-            await api.post(
+            await API.post(
               `/projects/${projectId}/request-changes`,
               { message },
               { headers }
@@ -970,7 +964,7 @@ function FreelancerProjects() {
     try {
       const headers = token ? { authorization: `Bearer ${token}` } : undefined;
 
-      const { data } = await api.get(`/projects/${projectId}/change-requests`, {
+      const { data } = await API.get(`/projects/${projectId}/change-requests`, {
         headers,
       });
 
@@ -1084,7 +1078,7 @@ function FreelancerProjects() {
       const fd = new FormData();
       (payload.files || []).forEach((f) => fd.append("project_files", f));
 
-      await api.post(`/projects/${project.id}/deliver`, fd, {
+      await API.post(`/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
 
@@ -1337,7 +1331,7 @@ function ClientReviewDrawer({
     if (isAbsoluteUrl(raw)) return raw;
 
     // If api.baseURL is empty, keep it relative (browser will use current origin).
-    const base = String(api.defaults.baseURL || "").trim();
+    const base = String(API.defaults.baseURL || "").trim();
     if (!base) return raw;
 
     const cleanBase = base.replace(/\/$/, "");
@@ -1530,7 +1524,7 @@ function ClientReviewDrawer({
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/projects/${project.id}/deliveries`, {
+        const { data } = await API.get(`/projects/${project.id}/deliveries`, {
           headers: { authorization: `Bearer ${token}` },
         });
 
@@ -1561,7 +1555,7 @@ function ClientReviewDrawer({
     if (!project?.id || !token) return;
     try {
       setLoading(true);
-      const { data } = await api.get(`/projects/${project.id}/deliveries`, {
+      const { data } = await API.get(`/projects/${project.id}/deliveries`, {
         headers: { authorization: `Bearer ${token}` },
       });
 

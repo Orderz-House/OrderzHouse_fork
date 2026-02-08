@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API from "../../api/client.js";
 
 export default function LiveActivity() {
   const primary = "rgb(2, 128, 144)";
@@ -16,12 +17,12 @@ export default function LiveActivity() {
   const [pulseProcessing, setPulseProcessing] = useState(false);
   const [pulseClients, setPulseClients] = useState(false);
   const [pulseFreelancers, setPulseFreelancers] = useState(false);
-  const API = import.meta.env.VITE_APP_API_URL;
+
   // ========= FETCH REAL DATA FROM DATABASE =========
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API}/api/stats`);
-      const data = await res.json();
+      const res = await API.get("/api/stats");
+      const data = res.data;
 
       // Add pulse animation when values update
       setPulseTotal(true);

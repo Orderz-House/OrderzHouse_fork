@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import API from "../../api/client.js";
 import { useToast } from "../toast/ToastProvider.jsx";
 
-const API_URL = import.meta.env.VITE_APP_API_URL;
-const CONFIRM_TIMEOUT = 10000; // 10 seconds
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -32,7 +30,7 @@ export default function PaymentSuccess() {
       }, CONFIRM_TIMEOUT);
 
       try {
-        const res = await axios.get(`${API_URL}/stripe/confirm`, {
+        const res = await API.get("/stripe/confirm", {
           params: { session_id },
           timeout: 8000, // 8 second request timeout
         });

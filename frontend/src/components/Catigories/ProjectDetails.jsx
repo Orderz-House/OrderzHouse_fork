@@ -342,11 +342,6 @@ export default function ProjectDetails({ mode: propMode }) {
     }
   };
 
-  // ✅ إصلاح onContact (كان غير معرّف)
-  const onContact = () => {
-    navigate(`/chat/project/${id}`);
-  };
-
   // =============================== Skeleton
   if (!item) {
     return (
@@ -535,10 +530,8 @@ export default function ProjectDetails({ mode: propMode }) {
               isClient={isClient}
               isFreelancer={isFreelancer}
               busy={busy}
-              onContact={onContact}
               onApplyToProject={isFreelancer ? onApplyToProject : undefined}
               acceptLabel={acceptLabel}
-              contactLabel="Contact"
               acceptClasses={acceptClasses}
               // لو عندك payment فعلاً داخل ProjectInfoCard اتركها، وإلا احذفها من ProjectInfoCard نفسه
               triggerPaymentUpload={() => paymentInputRef.current?.click()}
@@ -564,9 +557,7 @@ export default function ProjectDetails({ mode: propMode }) {
       <MobileBottomBar
         hidden={readOnly}
         acceptLabel={acceptLabel}
-        contactLabel="Contact"
         onAccept={onApplyToProject}
-        onContact={onContact}
         acceptDisabled={!canAccept || busy || !isFreelancer}
       />
 

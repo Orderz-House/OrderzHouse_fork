@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_BASE = `${import.meta.env.VITE_APP_API_URL || ""}/offers`;
+import API from "../../../api/client.js";
 
 /**
  * Helper: Auth header
@@ -24,8 +22,8 @@ export const sendOfferApi = async (projectId, payload, token) => {
   };
 
   try {
-    const { data } = await axios.post(
-      `${API_BASE}/${projectId}/offers`,
+    const { data } = await API.post(
+      `/offers/${projectId}/offers`,
       body,
       token ? authHeaders(token) : undefined
     );
@@ -41,8 +39,8 @@ export const sendOfferApi = async (projectId, payload, token) => {
     GET MY OFFERS FOR A SPECIFIC PROJECT
 ===================================================== */
 export const getMyOffersForProjectApi = async (projectId, token) => {
-  const { data } = await axios.get(
-    `${API_BASE}/${projectId}/my-offers`,
+  const { data } = await API.get(
+    `/offers/${projectId}/my-offers`,
     authHeaders(token)
   );
   if (data.success) return data.data || data.offers || [];
@@ -55,7 +53,7 @@ export const getMyOffersForProjectApi = async (projectId, token) => {
 ===================================================== */
 export const getOffersForMyProjectsApi = async (token) => {
   try {
-    const { data } = await axios.get(`${API_BASE}/my-projects/offers`, authHeaders(token));
+    const { data } = await API.get("/offers/my-projects/offers", authHeaders(token));
     if (data?.success) return data.data || data.offers || [];
     throw new Error(data?.message || "Failed to fetch offers for my projects");
   } catch (err) {
@@ -71,7 +69,7 @@ export const getOffersForMyProjectsApi = async (token) => {
 export const getOffersForProjectApi = async (projectId, token) => {
   if (!projectId) throw new Error('Missing projectId');
   try {
-    const { data } = await axios.get(`${API_BASE}/project/${projectId}/offers`, authHeaders(token));
+    const { data } = await API.get(`/offers/project/${projectId}/offers`, authHeaders(token));
     if (data?.success) return data.data || data.offers || [];
     throw new Error(data?.message || 'Failed to fetch offers for project');
   } catch (err) {
@@ -83,8 +81,8 @@ export const getOffersForProjectApi = async (projectId, token) => {
 export const checkMyPendingOfferApi = async (projectId, token) => {
   if (!projectId) throw new Error("Missing projectId");
 
-  const { data } = await axios.get(
-    `${API_BASE}/my/${projectId}/pending`,
+  const { data } = await API.get(
+    `/offers/my/${projectId}/pending`,
     authHeaders(token)
   );
 

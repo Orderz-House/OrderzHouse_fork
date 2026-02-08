@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../api/client.js";
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { BookOpen, Plus, Edit, Trash2, Search, DollarSign, Users } from 'lucide-react';
@@ -20,18 +20,16 @@ const AdminCourseManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     const fetchData = async () => {
       if (!token) return;
       try {
         setLoading(true);
         const [coursesRes, categoriesRes] = await Promise.all([
-          axios.get(`${API_BASE}/courses/view`, {
+          API.get("/courses/view", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${API_BASE}/category`, {
+          API.get("/category", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -47,7 +45,7 @@ const AdminCourseManagement = () => {
     };
 
     fetchData();
-  }, [token, API_BASE]);
+  }, [token]);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,13 +62,13 @@ const AdminCourseManagement = () => {
     try {
       let res;
       if (isEditing) {
-        res = await axios.put(`${API_BASE}/courses/update/${editingCourseId}`, formData, {
+        res = await API.put(`/courses/update/${editingCourseId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => prev.map(c => c.id === editingCourseId ? res.data.course : c));
         toast.success('Course updated successfully!');
       } else {
-        res = await axios.post(`${API_BASE}/courses/create`, formData, {
+        res = await API.post("/courses/create", formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCourses(prev => [res.data.course, ...prev]);
@@ -88,7 +86,7 @@ const AdminCourseManagement = () => {
   const handleDelete = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
     try {
-      await axios.delete(`${API_BASE}/courses/delete/${courseId}`, {
+      await API.delete(`/courses/delete/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCourses(prev => prev.filter(c => c.id !== courseId));

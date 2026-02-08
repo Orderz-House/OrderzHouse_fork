@@ -6,8 +6,8 @@ const THEME = "#F97316"; // orange-500
 const THEME_DARK = "#C2410C"; // orange-700
 const THEME_LIGHT = "#FDBA74"; // orange-300
 
-// Data
-const DEFAULT_FAQS = [
+// Data (exported for reuse e.g. Help page search)
+export const DEFAULT_FAQS = [
   {
     question: "Do you offer a free trial?",
     answer: "No, a free trial is not necessary because we already provide a free plan.",

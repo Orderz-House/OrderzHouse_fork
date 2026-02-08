@@ -10,13 +10,12 @@ import {
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLogout, setUserData } from "../../slice/auth/authSlice";
-import axios from "axios";
+import API from "../../api/client.js";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
-// API base URL with fallback
-const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
+
 const ORANGE = "#C2410C";
 const ORANGE_DARK = "#9A3412";
 
@@ -85,7 +84,7 @@ export default function Header() {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get(`${API_BASE}/notifications`, {
+      const { data } = await API.get("/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
       });
@@ -98,7 +97,7 @@ export default function Header() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get(`${API_BASE}/notifications/count`, {
+      const { data } = await API.get("/notifications/count", {
         headers: { authorization: `Bearer ${token}` },
         params: { unreadOnly: true },
       });
@@ -110,8 +109,8 @@ export default function Header() {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/${id}/read`,
+      await API.put(
+        `/notifications/${id}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
@@ -126,8 +125,8 @@ export default function Header() {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/read-all`,
+      await API.put(
+        "/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
@@ -144,6 +143,7 @@ export default function Header() {
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
+    API.post("/users/logout").catch(() => {}); // clear refresh cookie
     dispatch(setLogout());
     navigate("/");
     window.location.reload();
@@ -159,13 +159,9 @@ export default function Header() {
   // ===== Load user + notifications =====
   useEffect(() => {
     if (!token) return;
-    if (!API_BASE) {
-      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
-      return;
-    }
-    
-    axios
-      .get(`${API_BASE}/users/getUserdata`, {
+    API
+      .get("/users/getUserdata", {
+
         headers: { authorization: `Bearer ${token}` },
       })
       .then((res) => {

@@ -1,14 +1,6 @@
 // src/adminDash/api/dashboard.js
-import axios from "axios";
+import API from "./axios.js";
 import { Users, Briefcase, UserCheck, Wallet, ClipboardList } from "lucide-react";
-
-const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-  // lowercase لأن أغلب middleware تقرأ req.headers.authorization
-  return token ? { authorization: `Bearer ${token}` } : {};
-}
 
 function pickArray(data, keys = []) {
   for (const k of keys) {
@@ -34,16 +26,10 @@ function formatMoney(n) {
 /* ===================== Client dashboard (عندك موجود) ===================== */
 /* ===================== Client dashboard ===================== */
 export async function fetchClientDashboard() {
-  const api = axios.create({
-    baseURL: API_BASE,
-    headers: { ...getAuthHeaders() },
-  });
-
-  // مشاريع الكلينت + Applications (Assignments) + Offers (اختياري لكن مفيد لو عندك نظام عروض)
   const [projectsRes, appsRes, offersRes] = await Promise.allSettled([
-    api.get("/projects/myprojects"),
-    api.get("/projects/applications/my-projects"),
-    api.get("/offers/my-projects/offers"),
+    API.get("/projects/myprojects"),
+    API.get("/projects/applications/my-projects"),
+    API.get("/offers/my-projects/offers"),
   ]);
 
   const projects =
@@ -168,18 +154,13 @@ export async function fetchClientDashboard() {
 
 /* ===================== Admin dashboard ===================== */
 export async function fetchAdminDashboard() {
-  const api = axios.create({
-    baseURL: API_BASE,
-    headers: { ...getAuthHeaders() },
-  });
-
   const [projectsRes, freelancersRes, deactivatedRes, paymentsRes, tasksRes] =
     await Promise.allSettled([
-      api.get("/projects/admin/projects"),
-      api.get("/projects/admin/freelancers"),
-      api.get("/users/deactivated-users"),
-      api.get("/payments/admin/all"),
-      api.get("/tasks/admin"),
+      API.get("/projects/admin/projects"),
+      API.get("/projects/admin/freelancers"),
+      API.get("/users/deactivated-users"),
+      API.get("/payments/admin/all"),
+      API.get("/tasks/admin"),
     ]);
 
   const projects =
@@ -279,16 +260,11 @@ export async function fetchAdminDashboard() {
 
 /* ===================== Freelancer dashboard ===================== */
 export async function fetchFreelancerDashboard() {
-  const api = axios.create({
-    baseURL: API_BASE,
-    headers: { ...getAuthHeaders() },
-  });
+  const [projectsRes, assignedTasksRes, openRes] = await Promise.allSettled([
+    API.get("/projects/myprojects"),
+    API.get("/tasks/freelancer/assigned"),
+    API.get("/offers/projects/open"),
 
-  const [projectsRes, assignedTasksRes, openRes, subscriptionRes] = await Promise.allSettled([
-    api.get("/projects/myprojects"),
-    api.get("/tasks/freelancer/assigned"),
-    api.get("/offers/projects/open"),
-    api.get("/subscriptions/status"),
   ]);
 
   const projects =

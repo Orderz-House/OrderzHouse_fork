@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import axios from "axios";
+import { useState } from "react";
+import API from "../../api/client.js";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useToast } from "../toast/ToastProvider"; 
 
@@ -20,22 +20,10 @@ export default function ApproveRejectButtons({
   const [loading, setLoading] = useState(null);
   const { showToast } = useToast(); 
 
-  const api = useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_APP_API_URL || "",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
-        },
-      }),
-    [token]
-  );
-
   const doApprove = async () => {
     try {
       setLoading("approve");
-      if (approveApi) await api.put(approveApi);
+      if (approveApi) await API.put(approveApi);
       onApproved?.(id);
       showToast("User approved successfully!", "success"); 
     } catch {
@@ -48,7 +36,7 @@ export default function ApproveRejectButtons({
   const doReject = async () => {
     try {
       setLoading("reject");
-      if (rejectApi) await api.put(rejectApi);
+      if (rejectApi) await API.put(rejectApi);
       onRejected?.(id);
       showToast("User rejected successfully!", "success"); 
     } catch {

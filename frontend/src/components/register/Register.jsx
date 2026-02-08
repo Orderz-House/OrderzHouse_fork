@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
-import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import API from "../../api/client.js";
+import { useNavigate } from "react-router";
+
 import arabCountries from "../../data/arabCountries.json";
 import {
   Mail,
@@ -24,7 +25,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
-import { useToast } from "../toast/ToastProvider";
+import PageMeta from "../PageMeta.jsx";
+
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -33,7 +35,6 @@ const roles = [
 ];
 
 const PRIMARY = "#C2410C";
-const API_URL = import.meta.env.VITE_APP_API_URL;
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -104,8 +105,8 @@ const Register = () => {
   }, [searchParams]);
 
   useEffect(() => {
-  axios
-    .get(`${API_URL}/category`)
+  API
+    .get("/category")
     .then((res) => {
       if (res.data.success) {
         setCategories(res.data.data);
@@ -156,8 +157,8 @@ const Register = () => {
     // Fetch sub-categories if not already fetched
     if (!isExpanded && !subCategories[categoryId]) {
       try {
-        const res = await axios.get(
-          `${API_URL}/category/${categoryId}/sub-categories`
+        const res = await API.get(
+          `/category/${categoryId}/sub-categories`
         );
         setSubCategories((prev) => ({
           ...prev,
@@ -259,8 +260,8 @@ const Register = () => {
 
 
 
-    axios
-      .post(`${API_URL}/users/register`, userData)
+    API
+      .post("/users/register", userData)
       .then((result) => {
         toast.success(
           result.data.message ||
@@ -287,8 +288,8 @@ const Register = () => {
       return;
     }
     setIsVerifying(true);
-    axios
-      .post(`${API_URL}/users/verify-email`, { email, otp })
+    API
+      .post("/users/verify-email", { email, otp })
       .then(() => {
         toast.success("Email verified successfully ✅ Redirecting...");
         setTimeout(() => navigate("/login"), 2000);
@@ -349,6 +350,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
+      <PageMeta title="Sign up – OrderzHouse" description="Create your OrderzHouse account as a client, freelancer, or partner." />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-28 -right-28 w-80 h-80 rounded-full bg-[#C2410C]/10 blur-3xl" />
         <div className="absolute -bottom-32 -left-28 w-96 h-96 rounded-full bg-[#C2410C]/5 blur-3xl" />

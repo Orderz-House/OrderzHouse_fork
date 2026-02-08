@@ -145,12 +145,14 @@ function MobileBottomBar({ hidden, acceptLabel, onAccept, onContact, acceptDisab
             {acceptLabel}
           </button>
 
-          <button
-            onClick={onContact}
-            className="flex-1 h-12 rounded-2xl border border-slate-300 bg-white text-slate-800 font-semibold transition active:scale-[0.99]"
-          >
-            Contact
-          </button>
+          {onContact && (
+            <button
+              onClick={onContact}
+              className="flex-1 h-12 rounded-2xl border border-slate-300 bg-white text-slate-800 font-semibold transition active:scale-[0.99]"
+            >
+              Contact
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -299,9 +301,6 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, isClient, currentUserId]);
-
-  // =============================== Handlers
-  const onContact = () => navigate(`/chat/project/${id}`);
 
   // =============================== Guard
   // إذا كان الرابط لا يحتوي على id صحيح
@@ -766,7 +765,6 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
         hidden={readOnly || !isFreelancer}
         acceptLabel={acceptLabel}
         onAccept={onApplyToProject}
-        onContact={onContact}
         acceptDisabled={acceptDisabled}
       />
 

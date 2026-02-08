@@ -1,34 +1,19 @@
 import axios from "axios";
 import store from "../store/store";
-import { setLogout } from "../slice/auth/authSlice";
+import { setLogout, setToken } from "../slice/auth/authSlice";
 
 /**
  * Centralized API Client
- * 
- * Base URL priority:
- * 1. VITE_APP_API_URL env variable (if set)
- * 2. Default: http://localhost:5000 (dev backend)
- * 
- * This ensures "undefined" never appears in URLs and requests
- * always target the correct backend server.
+ * Base URL: VITE_APP_API_URL or http://localhost:5000 (never undefined)
  */
-const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_APP_API_URL;
-  
-  // If env var is set and not empty, use it
-  if (envUrl && typeof envUrl === "string" && envUrl.trim() !== "") {
-    return envUrl.trim();
-  }
-  
-  // Default to dev backend (as per API_MAP.md)
-  return "http://localhost:5000";
-};
-
+const baseURL = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
 const API = axios.create({
-  baseURL: getBaseURL(),
+  baseURL,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
+
+let refreshPromise = null;
 
 // Request interceptor: Add auth token from Redux store
 API.interceptors.request.use(
@@ -39,18 +24,47 @@ API.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor: Auto-logout on 401/403
+// Response interceptor: On 401 try refresh once, then retry or logout
 API.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    const isRefreshRequest = originalRequest.url?.includes("/users/refresh");
+    if (isRefreshRequest) {
+      refreshPromise = null;
       store.dispatch(setLogout());
-      console.warn("Token expired or invalid. User logged out automatically.");
+      return Promise.reject(error);
+    }
+
+    if (originalRequest._retryAfterRefresh) {
+      store.dispatch(setLogout());
+      return Promise.reject(error);
+    }
+
+    try {
+      if (!refreshPromise) {
+        refreshPromise = API.post("/users/refresh");
+      }
+      const { data } = await refreshPromise;
+      refreshPromise = null;
+      const newToken = data?.token;
+      if (newToken) {
+        store.dispatch(setToken(newToken));
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        originalRequest._retryAfterRefresh = true;
+        return API(originalRequest);
+      }
+    } catch (_) {
+      refreshPromise = null;
+      store.dispatch(setLogout());
     }
     return Promise.reject(error);
   }

@@ -1,6 +1,14 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import {
+  buildTokenPayload,
+  issueAccessToken,
+  issueRefreshToken,
+  setRefreshTokenCookie,
+  clearRefreshTokenCookie,
+  verifyRefreshToken,
+} from "../utils/tokenHelper.js";
 import { LogCreators, ACTION_TYPES } from "../services/loggingService.js";
 import { NotificationCreators } from "../services/notificationService.js"; // تركته زي ما هو
 import eventBus from "../events/eventBus.js"; // ✅ ADDED
@@ -819,18 +827,10 @@ const login = async (req, res) => {
           [user.id]
         );
 
-        const tokenPayload = {
-          userId: user.id,
-          role: user.role_id,
-          is_verified: user.email_verified,
-          username: user.username,
-          is_deleted: user.is_deleted,
-          is_two_factor_enabled: user.is_two_factor_enabled,
-        };
-
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-          expiresIn: "1d",
-        });
+        const tokenPayload = buildTokenPayload(user);
+        const token = issueAccessToken(tokenPayload);
+        const refreshToken = issueRefreshToken(tokenPayload);
+        setRefreshTokenCookie(res, refreshToken);
 
         // Check terms acceptance
         const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
@@ -945,18 +945,10 @@ const verifyOTP = async (req, res) => {
       [user.id]
     );
 
-    const tokenPayload = {
-      userId: user.id,
-      role: user.role_id,
-      is_verified: user.email_verified,
-      username: user.username,
-      is_deleted: user.is_deleted,
-      is_two_factor_enabled: user.is_two_factor_enabled,
-    };
-
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const tokenPayload = buildTokenPayload(user);
+    const token = issueAccessToken(tokenPayload);
+    const refreshToken = issueRefreshToken(tokenPayload);
+    setRefreshTokenCookie(res, refreshToken);
 
     // Check terms acceptance
     const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
@@ -1273,6 +1265,132 @@ const getUserdata = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Server error" });
+  }
+};
+
+/* =========================================
+   PASSWORD RESET (forgot / reset)
+========================================= */
+const RESET_EXPIRY_MINUTES = 30;
+
+const hashToken = (raw) =>
+  crypto.createHash("sha256").update(raw).digest("hex");
+
+const sendPasswordResetEmail = async (destination, resetUrl) => {
+  try {
+    const mailOptions = {
+      from: `"OrderzHouse" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: destination,
+      subject: "Reset your password - OrderzHouse",
+      html: `
+        <h2>Password reset</h2>
+        <p>You requested a password reset. Click the link below (valid for ${RESET_EXPIRY_MINUTES} minutes):</p>
+        <p><a href="${resetUrl}" style="color:#ea580c;">${resetUrl}</a></p>
+        <p>If you did not request this, ignore this email.</p>
+        <br/>
+        <p>— OrderzHouse Team</p>
+      `,
+    };
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.error("sendPasswordResetEmail error:", err);
+    throw err;
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  const email = (req.body.email || "").toLowerCase().trim();
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+
+  try {
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE LOWER(email) = $1 AND is_deleted = FALSE",
+      [email]
+    );
+
+    if (userResult.rows.length > 0) {
+      const userId = userResult.rows[0].id;
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashToken(rawToken);
+      const expiresAt = new Date(Date.now() + RESET_EXPIRY_MINUTES * 60 * 1000);
+
+      await pool.query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at)
+         VALUES ($1, $2, $3, NOW())`,
+        [userId, tokenHash, expiresAt]
+      );
+
+      const resetUrl = `${frontendUrl}/reset-password/${rawToken}`;
+
+      if (process.env.SMTP_HOST && process.env.EMAIL_USER) {
+        await sendPasswordResetEmail(email, resetUrl);
+      } else {
+        console.log("[DEV] Password reset URL (no SMTP):", resetUrl);
+      }
+    }
+  } catch (err) {
+    console.error("forgotPassword error:", err);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "If the email exists, we sent a reset link. Check your inbox.",
+  });
+};
+
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  const tokenHash = hashToken((token || "").trim());
+
+  try {
+    const tokenResult = await pool.query(
+      `SELECT id, user_id, expires_at, used_at
+       FROM password_reset_tokens
+       WHERE token_hash = $1`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link. Request a new one.",
+      });
+    }
+
+    const row = tokenResult.rows[0];
+    if (row.used_at) {
+      return res.status(400).json({
+        success: false,
+        message: "This reset link has already been used. Request a new one.",
+      });
+    }
+    if (new Date(row.expires_at) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "This reset link has expired. Request a new one.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query("UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2", [
+      hashedPassword,
+      row.user_id,
+    ]);
+    await pool.query(
+      "UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1",
+      [row.id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (err) {
+    console.error("resetPassword error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during password reset",
+    });
   }
 };
 
@@ -1717,16 +1835,52 @@ const resetPassword = async (req, res) => {
 
 
 /* =========================================
+   REFRESH TOKEN
+========================================= */
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Refresh token missing" });
+    }
+    const decoded = verifyRefreshToken(token);
+    const newAccessToken = issueAccessToken({
+      userId: decoded.userId,
+      role: decoded.role,
+      is_verified: decoded.is_verified,
+      username: decoded.username,
+      is_deleted: decoded.is_deleted,
+      is_two_factor_enabled: decoded.is_two_factor_enabled,
+    });
+    return res.status(200).json({ token: newAccessToken });
+  } catch (err) {
+    return res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
+  }
+};
+
+/* =========================================
+   LOGOUT (clear refresh cookie)
+========================================= */
+const logout = async (req, res) => {
+  clearRefreshTokenCookie(res);
+  return res.status(200).json({ success: true, message: "Logged out" });
+};
+
+/* =========================================
    EXPORTS
 ========================================= */
 export {
   register,
   login,
   verifyOTP,
+  refreshToken,
+  logout,
   editUserSelf,
   rateFreelancer,
   verifyPassword,
   updatePassword,
+  forgotPassword,
+  resetPassword,
   deactivateAccount,
   verifyEmailOtp,
   resendEmailOtp,

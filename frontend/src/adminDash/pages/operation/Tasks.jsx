@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   ListChecks,
   TimerReset,
@@ -31,11 +30,6 @@ function mapRole(roleId) {
   if (roleId === 3) return "freelancer";
   return "user";
 }
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
-  headers: { "Content-Type": "application/json" },
-});
 
 /* =========================
    Admin View

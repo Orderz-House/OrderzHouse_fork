@@ -6,6 +6,12 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
+import {
+  buildTokenPayload,
+  issueAccessToken,
+  issueRefreshToken,
+  setRefreshTokenCookie,
+} from "../utils/tokenHelper.js";
 
 dotenv.config();
 
@@ -320,18 +326,10 @@ export const verifyTwoFactorLogin = async (req, res) => {
       });
     }
 
-    const tokenPayload = {
-      userId: user.id,
-      role: user.role_id,
-      is_verified: user.email_verified,
-      username: user.username,
-      is_deleted: user.is_deleted,
-      is_two_factor_enabled: user.is_two_factor_enabled,
-    };
-
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const tokenPayload = buildTokenPayload(user);
+    const token = issueAccessToken(tokenPayload);
+    const refreshToken = issueRefreshToken(tokenPayload);
+    setRefreshTokenCookie(res, refreshToken);
 
     // Check terms acceptance
     const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");

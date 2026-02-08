@@ -129,14 +129,16 @@ export default function ProjectInfoCard({
           </button>
         )}
 
-        <button
-          type="button"
-          className={contactClasses}
-          disabled={busy}
-          onClick={onContact}
-        >
-          {contactLabel}
-        </button>
+        {onContact && (
+          <button
+            type="button"
+            className={contactClasses}
+            disabled={busy}
+            onClick={onContact}
+          >
+            {contactLabel}
+          </button>
+        )}
 
         <ul className="mt-4 space-y-2 text-sm text-slate-600">
           <li className="flex items-center gap-2">

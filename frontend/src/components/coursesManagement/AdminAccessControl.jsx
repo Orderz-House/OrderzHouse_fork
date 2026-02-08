@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import API from "../../api/client.js";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Users, BookOpen, Check, X } from "lucide-react";
@@ -12,19 +12,17 @@ const AdminAccessControl = () => {
   const [loading, setLoading] = useState(true);
   const [selectedFreelancerId, setSelectedFreelancerId] = useState("");
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [freelancersRes, coursesRes, accessRes] = await Promise.all([
-          axios.get(`${API_BASE}/users/freelancers/all`, {
+          API.get("/users/freelancers/all", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${API_BASE}/courses/view`, {
+          API.get("/courses/view", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${API_BASE}/access-control/all`, {
+          API.get("/access-control/all", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -43,13 +41,13 @@ const AdminAccessControl = () => {
     if (token) {
       fetchData();
     }
-  }, [token, API_BASE]);
+  }, [token]);
 
   const toggleAccess = async (freelancerId, courseId) => {
     const currentAccess = accessData[freelancerId]?.[courseId] || false;
     try {
-      await axios.post(
-        `${API_BASE}/access-control/grant-access`,
+      await API.post(
+        "/access-control/grant-access",
         {
           freelancer_id: freelancerId,
           course_id: courseId,

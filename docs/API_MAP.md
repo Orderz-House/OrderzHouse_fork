@@ -105,6 +105,19 @@ Authorization: Bearer <jwt-token>
 - **Body**: `{ email: string, otpMethod?: "email"|"sms" }`
 - **Response**: `{ success: true, message: string }`
 
+### POST `/users/forgot-password`
+**Public** - Request password reset email (rate limited: 10 per 15 min per IP)
+- **Body**: `{ email: string }`
+- **Response**: `{ success: true, message: "If the email exists, we sent a reset link. Check your inbox." }`
+- **Note**: Always returns 200; does not reveal whether the email exists. Reset link: `FRONTEND_URL/reset-password/<token>` (token valid 30 min).
+
+### POST `/users/reset-password`
+**Public** - Set new password using reset token (rate limited: 10 per 15 min per IP)
+- **Body**: `{ token: string, password: string, confirmPassword: string }`
+- **Validation**: password length ≥ 8, confirmPassword must match
+- **Response**: `{ success: true, message: "Password updated successfully" }`
+- **Errors**: 400 for invalid/expired/used token or validation failure
+
 ### GET `/users/getUserdata`
 **Auth Required** - Get current user data
 - **Response**: `{ success: true, user: {...} }`
@@ -132,9 +145,10 @@ Authorization: Bearer <jwt-token>
 - **Response**: `{ success: true }`
 
 ### PUT `/users/update-password`
-**Auth Required** - Update password
-- **Body**: `{ old_password: string, new_password: string }`
-- **Response**: `{ success: true, message: string }`
+**Auth Required** - Change password (current user)
+- **Body**: `{ currentPassword: string, newPassword: string }`
+- **Response**: `{ success: true, message: "Password updated successfully" }`
+- **Note**: Same as change-password flow; use from profile/settings.
 
 ### PUT `/users/deactivate`
 **Auth Required** - Deactivate account
