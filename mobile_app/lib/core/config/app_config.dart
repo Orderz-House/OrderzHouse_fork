@@ -24,4 +24,13 @@ class AppConfig {
   static bool get isProduction => environment == 'production';
 
   static bool get isDevelopment => environment == 'development';
+
+  /// Google OAuth Web Client ID (for server-side verification).
+  /// Set GOOGLE_WEB_CLIENT_ID in .env.
+  static String? get googleWebClientId {
+    if (dotenv.isInitialized) {
+      return dotenv.env['GOOGLE_WEB_CLIENT_ID'];
+    }
+    return null;
+  }
 }

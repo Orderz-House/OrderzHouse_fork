@@ -13,10 +13,13 @@ import {
   resetPassword,
   deactivateAccount,
   verifyEmailOtp,
+  resendEmailOtp,
   uploadProfilePic,
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
+  forgotPassword,
+  resetPassword,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";
@@ -47,6 +50,7 @@ usersRouter.post("/forgot-password", forgotPasswordValidator, validateRequest, f
 usersRouter.post("/reset-password", resetPasswordValidator, validateRequest, resetPassword);
 usersRouter.post("/refresh", refreshToken);
 usersRouter.post("/logout", logout);
+
 
 // =============== AUTHENTICATED ROUTES ===============
 usersRouter.get("/getUserdata", authentication, getUserdata);

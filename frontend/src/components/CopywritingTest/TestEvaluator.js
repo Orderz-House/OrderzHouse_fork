@@ -34,7 +34,11 @@ export const evaluateResponse = (response, testPrompt, timeLeftInitial, timeLeft
   // ================================
   // 🔥 Grammar
   // ================================
-  const mistakes = (response.match(/[.!?]\s+[a-z]/g) || []).length;
+  // Safe string matching to prevent undefined errors
+  const grammarMatches = typeof response === 'string' && response 
+    ? (response.match(/[.!?]\s+[a-z]/g) || [])
+    : [];
+  const mistakes = grammarMatches.length;
   grammar = limit(10 - mistakes);
 
   // ================================

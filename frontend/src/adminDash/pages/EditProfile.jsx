@@ -47,12 +47,19 @@ function EditProfile() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/users/getUserdata", {
+      // Use environment variable with fallback
+      const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
+      
+      const response = await fetch(`${API_BASE}/users/getUserdata`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -75,8 +82,19 @@ function EditProfile() {
         });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Error loading profile" });
-      console.error("Error:", error);
+      console.error("Error loading profile:", error);
+      // Handle network errors gracefully
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setMessage({
+          type: "error",
+          text: "Unable to connect to server. Please check your connection.",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: error.message || "Error loading profile",
+        });
+      }
     } finally {
       setFetchLoading(false);
     }
@@ -193,7 +211,10 @@ function EditProfile() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/users/edit", {
+      // Use environment variable with fallback
+      const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
+      
+      const response = await fetch(`${API_BASE}/users/edit`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -209,6 +230,10 @@ function EditProfile() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -222,8 +247,19 @@ function EditProfile() {
         });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Error connecting to server" });
-      console.error("Error:", error);
+      console.error("Error updating profile:", error);
+      // Handle network errors gracefully
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setMessage({
+          type: "error",
+          text: "Unable to connect to server. Please check your connection.",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: error.message || "Error connecting to server",
+        });
+      }
     } finally {
       setLoading(false);
     }

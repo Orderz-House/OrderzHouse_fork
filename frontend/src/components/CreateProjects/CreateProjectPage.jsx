@@ -65,14 +65,33 @@ export default function CreateProjectPage() {
       }
 
       // ============================
-      // 2️⃣ PAID PROJECT → STRIPE FIRST
+      // 2️⃣ PAID PROJECT → STRIPE FIRST (or skip if permission granted)
       // ============================
-      const { url } = await createProjectCheckoutSessionApi(
+      const response = await createProjectCheckoutSessionApi(
         projectData,
         token
       );
 
-      window.location.href = url;
+      // Check if payment was skipped
+      if (response.skipPayment === true) {
+        const projectId = response.project_id;
+
+        // Upload files if any
+        if (files.length > 0) {
+          await uploadProjectFilesApi(projectId, files, token);
+        }
+
+        showToast("Project posted successfully", "success");
+        navigate("/client", { replace: true });
+        return;
+      }
+
+      // Normal flow: redirect to Stripe
+      if (response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error("No payment URL or skipPayment flag in response");
+      }
 
     } catch (err) {
       console.error(err);

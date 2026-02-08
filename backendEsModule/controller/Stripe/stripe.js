@@ -1,19 +1,44 @@
 import Stripe from "stripe";
 import pool from "../../models/db.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+let _stripe = null;
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || String(key).trim() === "") {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  if (!_stripe) _stripe = new Stripe(key);
+  return _stripe;
+}
+
 
 /* ============================================================
    PLAN CHECKOUT SESSION
 ============================================================ */
 export const createCheckoutSession = async (req, res) => {
   try {
-    const { plan_id, user_id } = req.body;
+    console.log("[Stripe] Request body:", req.body);
+    // Accept both plan_id/planId and user_id/userId
+    const plan_id = req.body.plan_id || req.body.planId;
+    const user_id = req.body.user_id || req.body.userId;
 
     if (!plan_id || !user_id) {
       return res.status(400).json({ error: "Missing plan_id or user_id" });
     }
 
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("[Stripe] STRIPE_SECRET_KEY is missing");
+      return res.status(500).json({ error: "Stripe configuration error", message: "STRIPE_SECRET_KEY not set" });
+    }
+
+    const stripe = getStripe();
+
+    if (!process.env.CLIENT_URL) {
+      console.error("[Stripe] CLIENT_URL is missing");
+      return res.status(500).json({ error: "Configuration error", message: "CLIENT_URL not set" });
+    }
+
+    console.log("[Stripe] Fetching plan:", plan_id);
     const planRes = await pool.query(
       "SELECT id, name, description, price FROM plans WHERE id = $1",
       [plan_id]
@@ -23,8 +48,9 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(404).json({ error: "Plan not found" });
     }
 
+    console.log("[Stripe] Fetching user:", user_id);
     const userRes = await pool.query(
-      "SELECT id, is_verified FROM users WHERE id = $1",
+      "SELECT id, role_id FROM users WHERE id = $1",
       [user_id]
     );
 
@@ -35,6 +61,144 @@ export const createCheckoutSession = async (req, res) => {
     const plan = planRes.rows[0];
     const user = userRes.rows[0];
 
+    // Check if user is freelancer (role_id = 3)
+    if (Number(user.role_id) !== 3) {
+      return res.status(403).json({ 
+        error: "Forbidden", 
+        message: "Only freelancers can subscribe to plans" 
+      });
+    }
+
+    console.log("[Stripe] Plan data:", { id: plan.id, name: plan.name, price: plan.price });
+    console.log("[Stripe] User data:", { id: user.id, role_id: user.role_id });
+
+    const planPrice = Number(plan.price) || 0;
+    const currentYear = new Date().getFullYear();
+    
+    // Yearly 25 JOD fee check - only charge if not paid in current calendar year
+    // Check user_yearly_fees table (NOT is_verified)
+    const feeCheckRes = await pool.query(
+      `SELECT id FROM user_yearly_fees 
+       WHERE user_id = $1 AND fee_year = $2 
+       LIMIT 1`,
+      [user_id, currentYear]
+    );
+    const needsYearlyFee = feeCheckRes.rowCount === 0;
+
+    console.log("[Stripe] Computed:", { planPrice, needsYearlyFee });
+
+    // CASE A: Free plan (price = 0) AND yearly fee required
+    if (planPrice === 0 && needsYearlyFee) {
+      const line_items = [
+        {
+          price_data: {
+            currency: "jod",
+            product_data: { name: "Annual Plan Activation Fee" },
+            unit_amount: 25 * 1000,
+          },
+          quantity: 1,
+        },
+      ];
+
+      const success_url = `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
+      const cancel_url = `${process.env.CLIENT_URL}/payment/cancel`;
+
+      console.log("[Stripe] Free plan with yearly fee - creating session with 25 JD only");
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items,
+        metadata: {
+          user_id: String(user_id),
+          purpose: "plan",
+          reference_id: String(plan_id),
+          includes_yearly_fee: "yes",
+        },
+        success_url,
+        cancel_url,
+      });
+
+      console.log("[Stripe] Session created:", session.id);
+      return res.json({ url: session.url });
+    }
+
+    // CASE B: Free plan (price = 0) AND yearly fee NOT required
+    if (planPrice === 0 && !needsYearlyFee) {
+      console.log("[Stripe] Free plan without yearly fee - creating subscription directly");
+
+      // Create subscription directly without Stripe
+      const planRes = await pool.query(
+        "SELECT duration, plan_type FROM plans WHERE id = $1",
+        [plan_id]
+      );
+
+      if (planRes.rowCount === 0) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      const planData = planRes.rows[0];
+      const placeholderStart = new Date();
+      placeholderStart.setHours(0, 0, 0, 0, 0);
+      const placeholderEnd = new Date(placeholderStart);
+
+      // Insert subscription with pending_start status
+      try {
+        await pool.query(
+          `
+          INSERT INTO subscriptions (
+            freelancer_id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            activated_at,
+            stripe_session_id
+          )
+          VALUES ($1, $2, $3, $4, 'pending_start', NULL, $5)
+          ON CONFLICT (stripe_session_id) DO NOTHING;
+          `,
+          [user_id, plan_id, placeholderStart, placeholderEnd, `free_${Date.now()}`]
+        );
+      } catch (err) {
+        // Fallback if activated_at column doesn't exist yet
+        if (err.message && err.message.includes('activated_at')) {
+          await pool.query(
+            `
+            INSERT INTO subscriptions (
+              freelancer_id,
+              plan_id,
+              start_date,
+              end_date,
+              status,
+              stripe_session_id
+            )
+            VALUES ($1, $2, $3, $4, 'pending_start', $5)
+            ON CONFLICT (stripe_session_id) DO NOTHING;
+            `,
+            [user_id, plan_id, placeholderStart, placeholderEnd, `free_${Date.now()}`]
+          );
+        } else {
+          throw err;
+        }
+      }
+
+      console.log("[Stripe] Free subscription created directly");
+      return res.json({ free: true, url: null });
+    }
+
+    // CASE C: Paid plan (price > 0)
+    if (planPrice <= 0 || isNaN(planPrice)) {
+      console.error("[Stripe] Invalid plan price:", plan.price);
+      return res.status(400).json({ error: "Invalid plan price" });
+    }
+
+    const unit_amount = Math.round(planPrice * 1000);
+    if (unit_amount <= 0) {
+      console.error("[Stripe] Invalid unit_amount:", unit_amount);
+      return res.status(400).json({ error: "Invalid plan price amount" });
+    }
+
     const line_items = [
       {
         price_data: {
@@ -43,25 +207,25 @@ export const createCheckoutSession = async (req, res) => {
             name: plan.name,
             description: plan.description || undefined,
           },
-          unit_amount: Math.round(Number(plan.price) * 1000),
+          unit_amount: unit_amount,
         },
         quantity: 1,
       },
     ];
 
-    // Optional verification fee
-    if (!user.is_verified) {
+    if (needsYearlyFee) {
       line_items.push({
         price_data: {
           currency: "jod",
-          product_data: { name: "Account Verification Fee" },
+          product_data: { name: "Annual Plan Activation Fee" },
           unit_amount: 25 * 1000,
         },
         quantity: 1,
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
+
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
@@ -69,38 +233,124 @@ export const createCheckoutSession = async (req, res) => {
         user_id: String(user_id),
         purpose: "plan",
         reference_id: String(plan_id),
-        includes_verification_fee: user.is_verified ? "no" : "yes",
+        includes_yearly_fee: needsYearlyFee ? "yes" : "no",
       },
-      success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+      success_url,
+      cancel_url,
     });
 
+    console.log("[Stripe] Session created:", session.id);
     return res.json({ url: session.url });
 
   } catch (err) {
-    console.error("Stripe create session error:", err);
-    return res.status(500).json({ error: "Stripe error" });
+    console.error("[Stripe] Create session error:", {
+      type: err.type,
+      message: err.message,
+      raw: err.raw?.message,
+      code: err.code,
+      statusCode: err.statusCode,
+      stack: err.stack,
+    });
+    return res.status(500).json({ 
+      error: "Stripe error",
+      message: err.message || "Failed to create checkout session",
+      details: err.type || "Unknown error"
+    });
   }
 };
 
 /* ============================================================
    PROJECT CHECKOUT SESSION (NO PROJECT CREATED YET)
+   Currency: JOD (3 decimal places) => unit_amount = amount * 1000
+
 ============================================================ */
 export const createProjectCheckoutSession = async (req, res) => {
+  const client = await pool.connect();
   try {
-    const userId = req.token.userId;
-    const projectData = req.body;
-
-    let amount = 0;
-
-    if (projectData.project_type === "fixed") {
-      amount = projectData.budget;
-    } else if (projectData.project_type === "hourly") {
-      amount = projectData.hourly_rate * 3; // minimum
-    } else {
-      return res.status(400).json({ error: "Bidding paid later" });
+    if (!process.env.STRIPE_SECRET_KEY || String(process.env.STRIPE_SECRET_KEY).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "STRIPE_SECRET_KEY is not configured",
+        code: null,
+      });
     }
 
+    const clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl || String(clientUrl).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "CLIENT_URL is not configured (required for success/cancel URLs)",
+        code: null,
+      });
+    }
+
+    const userId = req.token.userId;
+    const projectData = req.body;
+    const projectType = projectData.project_type;
+    const title = projectData.title != null ? String(projectData.title).trim() : "";
+
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Project title is required",
+        code: null,
+      });
+    }
+
+    let unitAmount = 0;
+
+    if (projectType === "fixed") {
+      const budget = Number(projectData.budget);
+      if (!Number.isFinite(budget) || budget <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid budget for fixed project (must be a positive number)",
+          code: null,
+        });
+      }
+      unitAmount = Math.round(budget * 1000);
+    } else if (projectType === "hourly") {
+      const hourlyRate = Number(projectData.hourly_rate);
+      const durationHours = projectData.duration_hours != null
+        ? Number(projectData.duration_hours)
+        : null;
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid hourly_rate for hourly project (must be a positive number)",
+          code: null,
+        });
+      }
+      if (durationHours == null || !Number.isFinite(durationHours) || durationHours <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or missing duration_hours for hourly project",
+          code: null,
+        });
+      }
+      const amount = hourlyRate * durationHours;
+      unitAmount = Math.round(amount * 1000);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Bidding projects are paid later",
+        code: null,
+      });
+    }
+
+    if (unitAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Calculated amount must be greater than zero",
+        code: null,
+      });
+    }
+
+    const successUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-cancel`;
+
+
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -109,9 +359,10 @@ export const createProjectCheckoutSession = async (req, res) => {
           price_data: {
             currency: "jod",
             product_data: {
-              name: projectData.title,
+              name: `Project: ${title}`,
+
             },
-            unit_amount: Math.round(amount * 1000),
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
@@ -119,17 +370,40 @@ export const createProjectCheckoutSession = async (req, res) => {
       metadata: {
         user_id: String(userId),
         purpose: "project",
-        project_data: JSON.stringify(projectData), // TEMP storage
+        project_data: JSON.stringify(projectData),
       },
-      success_url: `${process.env.CLIENT_URL}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/projects/payment-cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+
     });
 
-    return res.json({ url: session.url });
-
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
   } catch (err) {
-    console.error("createProjectCheckoutSession error:", err);
-    return res.status(500).json({ error: "Stripe error" });
+    console.error("createProjectCheckoutSession error:", {
+      type: err.type,
+      code: err.code,
+      message: err.message,
+      rawMessage: err.raw?.message,
+      rawParam: err.raw?.param,
+      rawDeclineCode: err.raw?.decline_code,
+    });
+
+    const isDev = process.env.NODE_ENV !== "production";
+    const safeMessage = isDev
+      ? (err.raw?.message ?? err.message ?? "Stripe error")
+      : "Payment setup failed. Please try again.";
+    const code = err.code ?? null;
+
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: safeMessage,
+      code,
+    });
+
   }
 };
 
@@ -145,7 +419,7 @@ export const confirmCheckoutSession = async (req, res) => {
     }
 
     // 1️⃣ Retrieve Stripe session
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await getStripe().checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== "paid") {
       return res.status(400).json({ ok: false, error: "Payment not completed" });

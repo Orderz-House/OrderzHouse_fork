@@ -3,14 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/project.dart';
 import '../../../../core/models/api_response.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/repositories/projects_repository.dart';
+import '../datasources/remote/projects_remote_datasource.dart';
+import '../models/change_request_model.dart';
 
-class ProjectsRepository {
+class ProjectsRepository implements IProjectsRepository {
+  ProjectsRepository({Ref? ref, ProjectsRemoteDataSource? exploreRemote})
+      : _ref = ref,
+        _exploreRemote = exploreRemote ?? ProjectsRemoteDataSource(DioClient.instance);
+
   final Dio _dio = DioClient.instance;
+  final _api = ApiClient.instance;
   final Ref? _ref;
-
-  ProjectsRepository({Ref? ref}) : _ref = ref;
+  final ProjectsRemoteDataSource _exploreRemote;
 
   /// Get user's projects as raw JSON (for additional fields)
   /// Endpoint: GET /projects/myprojects
@@ -18,15 +26,15 @@ class ProjectsRepository {
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyProjectsRaw({
     int page = 1,
     int limit = 20,
+    String? statusKey,
   }) async {
     try {
+      final params = <String, dynamic>{'page': page, 'limit': limit};
+      if (statusKey != null && statusKey.isNotEmpty) params['status'] = statusKey;
       // Logging is handled by LoggingInterceptor, no need to duplicate here
       final response = await _dio.get(
         '/projects/myprojects',
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: params,
       );
 
       final data = response.data as Map<String, dynamic>;
@@ -82,19 +90,19 @@ class ProjectsRepository {
 
   /// Get user's projects (client or freelancer)
   /// Endpoint: GET /projects/myprojects
+  /// [statusKey] optional filter e.g. "in_progress" for client workspace In progress tab
   /// Response: { success: true, projects: [...] } or { projects: [...] } or { data: [...] }
   Future<ApiResponse<List<Project>>> getMyProjects({
     int page = 1,
     int limit = 20,
+    String? statusKey,
   }) async {
     try {
       // Logging is handled by LoggingInterceptor, no need to duplicate here
-      final response = await _dio.get(
-        '/projects/myprojects',
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+      final response = await _api.getMyProjects(
+        page: page,
+        limit: limit,
+        statusKey: statusKey,
       );
 
       final data = response.data as Map<String, dynamic>;
@@ -192,12 +200,7 @@ class ProjectsRepository {
     }
   }
 
-  /// Fetch explore projects (role-based endpoint selection)
-  /// Freelancer: Use public endpoints so they can view without subscription
-  ///   - GET /projects/public/category/:categoryId (Public)
-  ///   - Or fetch all categories and combine
-  /// Client: GET /projects/public/category/:categoryId (Public)
-  /// Based on web frontend: freelancers can see projects via public endpoints
+  @override
   Future<ApiResponse<List<Project>>> fetchExploreProjects({
     String? query,
     int? categoryId,
@@ -208,199 +211,19 @@ class ProjectsRepository {
     int? userRoleId,
     String sortBy = 'newest',
   }) async {
-    try {
-      // Determine user role
-      final roleId = userRoleId ?? _getCurrentUserRole();
-      final isFreelancer = roleId == 3;
-      final isClient = roleId == 2;
-
-      String? endpoint;
-      final Map<String, dynamic> queryParams = {
-        'page': page,
-        'limit': limit,
-      };
-
-      if (query != null && query.isNotEmpty) {
-        queryParams['search'] = query;
-        if (AppConfig.isDevelopment) {
-          print('✅ [fetchExploreProjects] Added search param: "$query"');
-        }
-      } else {
-        if (AppConfig.isDevelopment) {
-          print('⚠️ [fetchExploreProjects] No search query (query=$query)');
-        }
-      }
-
-      // Always send sortBy (defaults to 'newest' if empty)
-      final finalSortBy = sortBy.trim().isNotEmpty ? sortBy : 'newest';
-      queryParams['sortBy'] = finalSortBy;
-      if (AppConfig.isDevelopment) {
-        print('✅ [fetchExploreProjects] Added sortBy param: "$finalSortBy"');
-      }
-
-      if (AppConfig.isDevelopment) {
-        print('📊 [fetchExploreProjects] Final queryParams before request: $queryParams');
-      }
-
-      // Use authenticated endpoint first (with token if available), fallback to public
-      // Primary: GET /projects/category/:categoryId (with Authorization)
-      // Fallback: GET /projects/public/category/:categoryId (if auth fails)
-      if (subSubCategoryId != null) {
-        endpoint = '/projects/public/subsubcategory/$subSubCategoryId';
-      } else if (subCategoryId != null) {
-        endpoint = '/projects/public/subcategory/$subCategoryId';
-      } else if (categoryId != null) {
-        // Try authenticated endpoint first, fallback to public
-        return await _fetchProjectsByCategoryWithFallback(categoryId, queryParams);
-      } else {
-        // No category specified (user selected "All")
-        // Fetch from all categories and combine
-        // Note: search and sortBy are already in queryParams
-        return await _fetchAllCategoriesProjects(queryParams);
-      }
-
-      // At this point, endpoint is guaranteed to be non-null
-      final finalEndpoint = endpoint;
-
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => PATH: $finalEndpoint');
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => Query: $queryParams');
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => User Role: ${isFreelancer ? "freelancer" : isClient ? "client" : "unknown"}');
-      }
-
-      final response = await _dio.get(
-        finalEndpoint,
-        queryParameters: queryParams,
-      );
-
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: $finalEndpoint');
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => Final URL: ${response.requestOptions.uri}');
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => Response data length: ${response.data?.toString().length ?? 0} chars');
-      }
-
-      final data = response.data as Map<String, dynamic>;
-
-      // Based on API_MAP.md, response format is: { success: true, projects: [...] }
-      // But handle multiple formats for robustness
-      List<dynamic>? projectsList;
-
-      if (data['projects'] != null && data['projects'] is List) {
-        projectsList = data['projects'] as List<dynamic>;
-      } else if (data['data'] != null) {
-        if (data['data'] is List) {
-          projectsList = data['data'] as List<dynamic>;
-        } else if (data['data'] is Map && data['data']['projects'] is List) {
-          projectsList = (data['data'] as Map<String, dynamic>)['projects'] as List<dynamic>;
-        }
-      } else if (data['rows'] != null && data['rows'] is List) {
-        projectsList = data['rows'] as List<dynamic>;
-      } else if (response.data is List) {
-        projectsList = response.data as List<dynamic>;
-      }
-
-      if (projectsList == null || projectsList.isEmpty) {
-        if (AppConfig.isDevelopment) {
-          // ignore: avoid_print
-          print('⚠️ RESPONSE: No projects found in response');
-          // ignore: avoid_print
-          print('📊 Explore projects count: 0');
-        }
-        return const ApiResponse(
-          success: true,
-          data: [],
-          message: 'No projects found',
-        );
-      }
-
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📊 Explore projects raw count: ${projectsList.length}');
-      }
-
-      final projects = <Project>[];
-      for (var i = 0; i < projectsList.length; i++) {
-        try {
-          final json = projectsList[i] as Map<String, dynamic>;
-          final project = Project.fromJson(json);
-          projects.add(project);
-        } catch (e) {
-          if (AppConfig.isDevelopment) {
-            // ignore: avoid_print
-            print('⚠️ Failed to parse explore project at index $i: $e');
-            final projectData = projectsList[i] as Map<String, dynamic>;
-            final projectId = projectData['id'];
-            // ignore: avoid_print
-            print('⚠️ Project ID: $projectId, Raw data: ${projectsList[i]}');
-          }
-          // Skip invalid projects but continue processing others
-        }
-      }
-
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ Parsed ${projects.length}/${projectsList.length} explore projects successfully');
-        // ignore: avoid_print
-        print('📊 Explore projects final count: ${projects.length}');
-      }
-
-      return ApiResponse(
-        success: true,
-        data: projects,
-        message: 'Projects fetched successfully',
-      );
-    } on DioException catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: explore projects');
-        // ignore: avoid_print
-        print('❌ ERROR => Type: ${e.type}');
-        // ignore: avoid_print
-        print('❌ ERROR => Final URL: ${e.requestOptions.uri}');
-        // ignore: avoid_print
-        print('❌ ERROR => Message: ${e.message}');
-        if (e.error != null) {
-          // ignore: avoid_print
-          print('❌ ERROR => Error: ${e.error}');
-        }
-        if (e.response != null) {
-          // ignore: avoid_print
-          print('❌ ERROR => Status Code: ${e.response?.statusCode}');
-          // ignore: avoid_print
-          print('❌ ERROR => Response Data: ${e.response?.data}');
-        }
-      }
-
-      return ApiResponse(
-        success: false,
-        data: [],
-        message: e.response?.data?['message'] as String? ??
-            _getErrorMessage(e),
-        error: e.response?.data as Map<String, dynamic>?,
-      );
-    } catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ UNEXPECTED ERROR => explore projects: $e');
-      }
-
-      return ApiResponse(
-        success: false,
-        data: [],
-        message: 'Failed to fetch projects: ${e.toString()}',
-      );
-    }
+    return _exploreRemote.fetchExploreProjects(
+      query: query,
+      categoryId: categoryId,
+      subCategoryId: subCategoryId,
+      subSubCategoryId: subSubCategoryId,
+      page: page,
+      limit: limit,
+      userRoleId: userRoleId ?? _getCurrentUserRole(),
+      sortBy: sortBy,
+    );
   }
 
-  /// Fetch projects by category with fallback
-  /// Primary: GET /projects/category/:categoryId (with Authorization)
-  /// Fallback: GET /projects/public/category/:categoryId
+  /// Fetch projects by category with fallback (used only by legacy paths; explore uses _exploreRemote)
   Future<ApiResponse<List<Project>>> _fetchProjectsByCategoryWithFallback(
     int categoryId,
     Map<String, dynamic> queryParams,
@@ -1279,7 +1102,7 @@ class ProjectsRepository {
 
       final data = response.data as Map<String, dynamic>;
 
-      if (data['url'] != null) {
+      if (data['success'] == true && data['url'] != null) {
         return ApiResponse(
           success: true,
           data: data['url'] as String,
@@ -1287,10 +1110,11 @@ class ProjectsRepository {
         );
       }
 
+      final backendMessage = data['message'] as String? ?? data['error'] as String?;
       return ApiResponse(
         success: false,
         data: '',
-        message: data['error'] as String? ?? 'Failed to create checkout session',
+        message: backendMessage ?? 'Failed to create checkout session',
       );
     } on DioException catch (e) {
       if (AppConfig.isDevelopment) {
@@ -1298,10 +1122,14 @@ class ProjectsRepository {
         print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /stripe/project-checkout-session');
       }
 
+      final body = e.response?.data;
+      final backendMessage = body is Map
+          ? (body['message'] as String? ?? body['error'] as String?)
+          : null;
       return ApiResponse(
         success: false,
         data: '',
-        message: e.response?.data?['error'] as String? ?? 'Failed to create checkout session',
+        message: backendMessage ?? 'Failed to create checkout session',
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
@@ -1317,35 +1145,133 @@ class ProjectsRepository {
     }
   }
 
-  /// Get change requests for a project (freelancer notifications)
-  /// Endpoint: GET /projects/{projectId}/change-requests
-  Future<ApiResponse<List<Map<String, dynamic>>>> getChangeRequests(int projectId) async {
+  /// Request project changes (client)
+  /// Endpoint: POST /projects/{projectId}/request-changes
+  /// Body: { "message": "<string>" }
+  Future<ApiResponse<void>> requestProjectChanges({
+    required int projectId,
+    required String message,
+  }) async {
     try {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[GET] => PATH: /projects/$projectId/change-requests');
+        print('📡 REQUEST[POST] => PATH: /projects/$projectId/request-changes');
+        print('📦 BODY: { "message": "$message" }');
       }
 
-      final response = await _dio.get('/projects/$projectId/change-requests');
+      final response = await _dio.post(
+        '/projects/$projectId/request-changes',
+        data: {'message': message},
+      );
 
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/change-requests');
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/request-changes');
       }
 
       final data = response.data as Map<String, dynamic>;
-      final items = data['requests'] ?? data['items'] ?? [];
-      final list = (items is List) ? items : [];
+      if (data['success'] == true) {
+        return const ApiResponse(
+          success: true,
+          data: null,
+          message: 'Change request sent successfully',
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to send change request',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/request-changes');
+        print('Response: ${e.response?.data}');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: e.response?.data?['message'] as String? ?? 'Failed to send change request',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/request-changes: $e');
+      }
+
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to send change request: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Get change requests for a project (freelancer)
+  /// Endpoint: GET /projects/{projectId}/change-requests
+  /// Response: { success: true, requests: [...] } or { items: [...] } or { data: [...] }
+  Future<ApiResponse<List<ChangeRequest>>> getProjectChangeRequests(int projectId) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        print('📡 REQUEST[GET] => PATH: /projects/$projectId/change-requests');
+      }
+
+      final response = await _api.getChangeRequests(projectId);
+
+      if (AppConfig.isDevelopment) {
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/change-requests');
+        print('📦 Response data: ${response.data}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      
+      // Handle different response shapes: requests, items, or data itself being a List
+      List<dynamic>? itemsList;
+      if (data['requests'] != null && data['requests'] is List) {
+        itemsList = data['requests'] as List<dynamic>;
+      } else if (data['items'] != null && data['items'] is List) {
+        itemsList = data['items'] as List<dynamic>;
+      } else if (data['data'] != null && data['data'] is List) {
+        itemsList = data['data'] as List<dynamic>;
+      } else if (response.data is List) {
+        itemsList = response.data as List<dynamic>;
+      }
+
+      if (itemsList == null || itemsList.isEmpty) {
+        if (AppConfig.isDevelopment) {
+          print('ℹ️ No change requests found (empty or null list)');
+        }
+        return const ApiResponse(
+          success: true,
+          data: [],
+          message: 'No change requests found',
+        );
+      }
+
+      final changeRequests = itemsList
+          .map((json) => ChangeRequest.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      if (AppConfig.isDevelopment) {
+        print('✅ Parsed ${changeRequests.length} change requests');
+      }
 
       return ApiResponse(
         success: true,
-        data: list.map((e) => e as Map<String, dynamic>).toList(),
+        data: changeRequests,
         message: 'Change requests fetched successfully',
       );
     } on DioException catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
         print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/$projectId/change-requests');
+        print('Response: ${e.response?.data}');
+      }
+
+      // Handle 404 as empty list (not an error)
+      if (e.response?.statusCode == 404) {
+        return const ApiResponse(
+          success: true,
+          data: [],
+          message: 'No change requests found',
+        );
       }
 
       return ApiResponse(
@@ -1355,7 +1281,6 @@ class ProjectsRepository {
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
         print('❌ UNEXPECTED ERROR => /projects/$projectId/change-requests: $e');
       }
 
@@ -1365,6 +1290,19 @@ class ProjectsRepository {
         message: 'Failed to fetch change requests: ${e.toString()}',
       );
     }
+  }
+
+  /// Mark change requests as read/seen for current user (optional backend).
+  /// If backend has PATCH /projects/:projectId/change-requests/mark-read, it will be called; otherwise no-op.
+  Future<void> markChangeRequestsRead(int projectId, {List<int>? ids, DateTime? lastSeenAt}) async {
+    try {
+      await _api.markChangeRequestsRead(projectId);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 501) return;
+      if (AppConfig.isDevelopment) {
+        print('⚠️ markChangeRequestsRead: ${e.message}');
+      }
+    } catch (_) {}
   }
 
   /// Deliver project (freelancer)

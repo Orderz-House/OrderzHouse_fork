@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/project.dart';
+import '../../core/routing/route_tracker.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -19,9 +22,9 @@ import '../../features/common/presentation/screens/profile_screen.dart';
 import '../../features/common/presentation/screens/edit_profile_screen.dart';
 import '../../features/common/presentation/screens/settings_screen.dart';
 import '../../features/common/presentation/screens/subscription_screen.dart';
-import '../../features/common/presentation/screens/help_faq_screen.dart';
-import '../../features/common/presentation/screens/privacy_policy_screen.dart';
-import '../../features/common/presentation/screens/terms_conditions_screen.dart';
+import '../../features/legal/presentation/screens/privacy_policy_screen.dart';
+import '../../features/legal/presentation/screens/terms_screen.dart';
+import '../../features/legal/presentation/screens/help_faq_screen.dart';
 import '../../features/common/presentation/screens/delete_account_screen.dart';
 import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/common/presentation/screens/my_content_screen.dart';
@@ -38,13 +41,58 @@ import '../../features/auth/presentation/screens/reset_password_otp_screen.dart'
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/common/presentation/screens/language_selection_screen.dart';
+import '../../features/messages/presentation/screens/project_messages_screen.dart';
+import '../../features/projects/presentation/screens/change_requests_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final GoRouter appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
-  initialLocation: '/onboarding',
-  routes: [
+class _AuthRefreshNotifier extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
+
+final _authRefreshNotifier = _AuthRefreshNotifier();
+
+/// Registers listener so router redirect runs when auth state changes.
+final _authRefreshListenableProvider = Provider<_AuthRefreshNotifier>((ref) {
+  ref.listen<AuthState>(authStateProvider, (_, _) => _authRefreshNotifier.refresh());
+  return _authRefreshNotifier;
+});
+
+String? _redirect(BuildContext context, GoRouterState state) {
+  final auth = ProviderScope.containerOf(context).read(authStateProvider);
+  final path = state.uri.path;
+
+  if (auth.isChecking) return '/splash';
+  if (!auth.isAuthenticated) {
+    if (path == '/splash') return '/login';
+    if (RouteTracker.isAuthRoute(path)) return null;
+    return '/login';
+  }
+  if (auth.user?.mustAcceptTerms == true) {
+    if (path == '/accept-terms') return null;
+    return '/accept-terms';
+  }
+  if (RouteTracker.isAuthRoute(path) || path == '/splash') {
+    final last = RouteTracker.getLastRoute();
+    final defaultHome = auth.userRole == 'freelancer' ? '/freelancer' : '/client';
+    return last ?? defaultHome;
+  }
+  RouteTracker.saveLastRoute(path);
+  return null;
+}
+
+final goRouterProvider = Provider<GoRouter>((ref) {
+  ref.watch(_authRefreshListenableProvider);
+  return GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    refreshListenable: _authRefreshNotifier,
+    initialLocation: '/splash',
+    redirect: _redirect,
+    routes: _appRoutes,
+  );
+});
+
+final List<RouteBase> _appRoutes = [
     GoRoute(
       path: '/splash',
       builder: (context, state) => const SplashScreen(),
@@ -168,7 +216,7 @@ final GoRouter appRouter = GoRouter(
         final openReceiveModal = state.uri.queryParameters['openReceiveModal'] == 'true';
         final showDeliveries = state.uri.queryParameters['showDeliveries'] == 'true';
         
-        // Try to get project from extra, otherwise parse from path
+        // Try to get project from extra (when navigating from explore/my projects)
         final project = state.extra;
         if (project != null && project is Project) {
           return ProjectDetailsScreen(
@@ -178,18 +226,22 @@ final GoRouter appRouter = GoRouter(
             showDeliveries: showDeliveries,
           );
         }
-        final id = int.parse(state.pathParameters['id'] ?? '0');
-        // Fallback: create a minimal project object (will need to fetch from API)
+        
+        // Otherwise, parse projectId from path and fetch from API
+        final idString = state.pathParameters['id'] ?? '0';
+        final id = int.tryParse(idString);
+        if (id == null || id == 0) {
+          // Invalid ID, show error screen
+          return const Scaffold(
+            body: Center(
+              child: Text('Invalid project ID'),
+            ),
+          );
+        }
+        
+        // Pass projectId to screen, which will fetch the project
         return ProjectDetailsScreen(
-          project: Project(
-            id: id,
-            userId: 0,
-            title: 'Loading...',
-            description: '',
-            projectType: 'fixed',
-            status: 'pending',
-            createdAt: DateTime.now(),
-          ),
+          projectId: id,
           openApplicants: openApplicants,
           openReceiveModal: openReceiveModal,
           showDeliveries: showDeliveries,
@@ -208,6 +260,24 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final id = int.parse(state.pathParameters['id'] ?? '0');
         return DeliveriesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      path: '/project/:id/messages',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id'] ?? '0');
+        return ProjectMessagesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      path: '/project/:id/change-requests',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id'] ?? '0');
+        final title = state.uri.queryParameters['title'] ?? '';
+        return ChangeRequestsScreen(
+          projectId: id,
+          projectTitle: title,
+        );
       },
     ),
     GoRoute(
@@ -255,8 +325,12 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const PrivacyPolicyScreen(),
     ),
     GoRoute(
+      path: '/terms',
+      builder: (context, state) => const TermsScreen(),
+    ),
+    GoRoute(
       path: '/terms-conditions',
-      builder: (context, state) => const TermsConditionsScreen(),
+      builder: (context, state) => const TermsScreen(),
     ),
     GoRoute(
       path: '/settings/delete-account',
@@ -282,5 +356,4 @@ final GoRouter appRouter = GoRouter(
       path: '/settings/language',
       builder: (context, state) => const LanguageSelectionScreen(),
     ),
-  ],
-);
+  ];

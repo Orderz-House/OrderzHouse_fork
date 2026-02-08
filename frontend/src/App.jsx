@@ -19,6 +19,7 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
 // import CourseDetail from "./components/coursesManagement/CourseDetail.jsx";
@@ -76,6 +77,15 @@ const RoleBasedAppointments = ({ userData }) => {
   }
 };
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname, search]);
+  return null;
+}
+
 function App() {
   const location = useLocation();
   const token = useSelector((state) => state.auth.token);
@@ -99,6 +109,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       {/* <GlobalLoadingProvider> */}
       {!shouldHideNavbar && <Navbar />}
 
@@ -136,6 +147,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+
 
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<Help />} />

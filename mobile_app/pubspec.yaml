@@ -36,21 +36,30 @@ dependencies:
   # Storage
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # Local DB cache (run build_runner to generate app_database.g.dart when adding Drift)
+  path_provider: ^2.1.1
 
   # Environment
   flutter_dotenv: ^5.1.0
 
+  # Google Sign-In
+  google_sign_in: ^6.2.2
+
   # Localization
   intl: 0.20.2
 
+  # Responsive UI
+  flutter_screenutil: ^5.9.3
+
   # Utilities
-  equatable: ^2.0.5
   image_picker: ^1.0.7
   file_picker: ^8.1.2
   url_launcher: ^6.3.1
   share_plus: ^10.1.2
   webview_flutter: ^4.4.2
-  path_provider: ^2.1.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +69,7 @@ dev_dependencies:
   # Code Generation
   build_runner: ^2.4.8
   freezed: ^2.4.7
+  # drift_dev: ^2.30.0  # Uncomment when using Drift
 
   # App Icon
   flutter_launcher_icons: ^0.13.1
@@ -70,6 +80,7 @@ flutter:
   assets:
     - .env
     - assets/icon.png
+    - assets/policies/
 
 flutter_launcher_icons:
   android: true

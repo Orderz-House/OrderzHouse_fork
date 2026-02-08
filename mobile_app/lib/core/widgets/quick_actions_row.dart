@@ -16,15 +16,24 @@ class QuickActionsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: actions.map((action) => _buildActionItem(action)).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (int i = 0; i < actions.length; i++) ...[
+              if (i > 0) const SizedBox(width: AppSpacing.sm),
+              _buildActionItem(actions[i]),
+            ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildActionItem(QuickAction action) {
-    return Flexible(
+    return SizedBox(
+      width: 64,
       child: GestureDetector(
         onTap: action.onTap,
         child: Column(

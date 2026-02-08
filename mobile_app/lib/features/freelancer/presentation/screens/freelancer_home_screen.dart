@@ -8,7 +8,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/home_header.dart';
-import '../../../../core/widgets/home_search_bar.dart';
 import '../../../../core/widgets/home_hero_card_v2.dart';
 import '../../../../core/widgets/quick_actions_row.dart';
 import '../../../../core/widgets/home_project_card.dart';
@@ -54,19 +53,9 @@ class FreelancerHomeScreen extends ConsumerWidget {
                 roleRoute: '/freelancer',
               ),
 
-              const SizedBox(height: 8),
-
-              // B) SEARCH BAR
-              HomeSearchBar(
-                hintText: l10n.searchProjects,
-                onFilterTap: () {
-                  // TODO: Show filter dialog
-                },
-              ),
-
               const SizedBox(height: AppSpacing.xl),
 
-              // C) HERO ACTION CARD
+              // B) HERO ACTION CARD
               _buildHeroCard(context, ref, myProjectsAsync, balanceAsync, l10n),
 
               const SizedBox(height: AppSpacing.xl),
@@ -115,24 +104,11 @@ class FreelancerHomeScreen extends ConsumerWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 0,
         items: [
-          NavItem(
-              icon: Icons.home_rounded, title: l10n.home, route: '/freelancer'),
-          NavItem(
-              icon: Icons.work_outline_rounded,
-              title: l10n.myProjects,
-              route: '/freelancer/projects'),
-          NavItem(
-              icon: Icons.explore_rounded,
-              title: l10n.explore,
-              route: '/freelancer/explore'),
-          NavItem(
-              icon: Icons.payment_rounded,
-              title: l10n.payments,
-              route: '/freelancer/payments'),
-          NavItem(
-              icon: Icons.person_outline_rounded,
-              title: l10n.profile,
-              route: '/freelancer/profile'),
+          NavItem(icon: Icons.home_outlined, title: l10n.home, route: '/freelancer'),
+          NavItem(icon: Icons.work_outline, title: l10n.myProjects, route: '/freelancer/projects'),
+          NavItem(icon: Icons.explore_outlined, title: l10n.explore, route: '/freelancer/explore'),
+          NavItem(icon: Icons.payments_outlined, title: l10n.payments, route: '/freelancer/payments'),
+          NavItem(icon: Icons.person_outline, title: l10n.profile, route: '/freelancer/profile'),
         ],
       ),
     );
@@ -181,6 +157,13 @@ class FreelancerHomeScreen extends ConsumerWidget {
           },
         ),
         QuickAction(
+          icon: Icons.payment_outlined,
+          label: l10n.payments,
+          onTap: () {
+            context.go('/freelancer/payments');
+          },
+        ),
+        QuickAction(
           icon: Icons.description_outlined,
           label: l10n.applicants,
           onTap: () {
@@ -191,7 +174,6 @@ class FreelancerHomeScreen extends ConsumerWidget {
           icon: Icons.file_upload_outlined,
           label: l10n.deliveries,
           onTap: () {
-            // Navigate to deliveries (via projects screen)
             context.go('/freelancer/projects');
           },
         ),
@@ -228,15 +210,6 @@ class FreelancerHomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              ListTile(
-                leading: const Icon(Icons.payment_rounded,
-                    color: AppColors.accentOrange),
-                title: Text(l10n.payments),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go('/freelancer/payments');
-                },
-              ),
               ListTile(
                 leading: const Icon(Icons.notifications_outlined,
                     color: AppColors.accentOrange),

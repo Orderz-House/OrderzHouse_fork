@@ -15,6 +15,7 @@ import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
+
 const ORANGE = "#C2410C";
 const ORANGE_DARK = "#9A3412";
 
@@ -160,6 +161,7 @@ export default function Header() {
     if (!token) return;
     API
       .get("/users/getUserdata", {
+
         headers: { authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -167,7 +169,19 @@ export default function Header() {
         fetchNotifications();
         fetchUnreadCount();
       })
-      .catch(() => handleLogout());
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+        // Only logout on auth errors, not network errors
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          handleLogout();
+        } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+          // Network error - show message but don't logout
+          console.warn("Network error: Server may be unreachable");
+        } else {
+          // Other errors - logout to be safe
+          handleLogout();
+        }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);
 

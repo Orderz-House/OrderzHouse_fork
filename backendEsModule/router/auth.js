@@ -8,9 +8,13 @@ import {
   verifyTwoFactorLogin,
   changePassword,
   acceptTerms,
+  loginWithGoogle,
 } from "../controller/auth.js";
 
 const authRouter = express.Router();
+
+// Public: Google Sign-In (no auth required)
+authRouter.post("/google", loginWithGoogle);
 
 // 👇 هذا الراوت مفتوح لأنه جزء من عملية تسجيل الدخول
 authRouter.post("/2fa/verify-login", verifyTwoFactorLogin);

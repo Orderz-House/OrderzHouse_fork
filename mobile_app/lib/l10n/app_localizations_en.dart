@@ -43,6 +43,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll see notifications here when you receive them.';
 
   @override
+  String get projectNotFound => 'Project not found';
+
+  @override
+  String get projectNotFoundMessage =>
+      'This project may have been deleted or you don\'t have access to it.';
+
+  @override
+  String get backToNotifications => 'Back to Notifications';
+
+  @override
+  String get loadingProject => 'Loading project...';
+
+  @override
+  String get thisNotificationHasNoLink => 'This notification has no link';
+
+  @override
   String get markAllAsRead => 'Mark all as read';
 
   @override
@@ -343,6 +359,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refresh => 'Refresh';
+
+  @override
+  String get expandAll => 'Expand all';
+
+  @override
+  String get collapseAll => 'Collapse all';
+
+  @override
+  String get lastUpdated => 'Last updated';
+
+  @override
+  String get policySearchHint => 'Filter sections…';
 
   @override
   String get update => 'Update';
@@ -739,7 +767,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourWorkspace => 'Your Workspace';
 
   @override
-  String get actionRequired => 'Action Required';
+  String get actionRequired => 'In progress';
 
   @override
   String get noActionsRequired => 'No actions required';
@@ -799,6 +827,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orContinueWith => 'Or continue with';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
 
   @override
   String get email => 'Email';
@@ -2351,4 +2382,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordRequirements =>
       'Min 8 characters, 1 uppercase, 1 lowercase, 1 number';
+
+  @override
+  String get filters => 'Filters';
+
+  @override
+  String get oldestFirst => 'Oldest First';
+
+  @override
+  String get allTypes => 'All Types';
+
+  @override
+  String get anyBudget => 'Any Budget';
+
+  @override
+  String get budgetLessThan50 => 'Up to 50 JOD';
+
+  @override
+  String get budget50To200 => '50 – 200 JOD';
+
+  @override
+  String get budgetAbove200 => '200+ JOD';
+
+  @override
+  String get deliveryTime => 'Delivery Time';
+
+  @override
+  String get anyTime => 'Any Time';
+
+  @override
+  String get deliveryShort => 'Up to 7 days';
+
+  @override
+  String get deliveryMedium => '8 – 30 days';
+
+  @override
+  String get deliveryLong => 'More than 30 days';
 }

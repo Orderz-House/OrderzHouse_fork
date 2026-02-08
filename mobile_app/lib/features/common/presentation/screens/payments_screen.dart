@@ -9,6 +9,7 @@ import '../../../../core/models/referral_info.dart';
 import '../../../../core/widgets/error_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/models/payment.dart';
+import '../../../../core/cache/cache_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../payments/data/repositories/payments_repository.dart';
 import '../../../referrals/presentation/providers/referrals_provider.dart';
@@ -22,20 +23,99 @@ final paymentsRepositoryProvider = Provider<PaymentsRepository>((ref) {
 // Provider for filter selection (All / Plans / Projects / Wallet)
 final _selectedFilterProvider = StateProvider<String>((ref) => 'all');
 
-// Provider for unified payment history
+// In-memory cache for payment history
+final _paymentHistoryCacheProvider = StateProvider.family<Map<String, dynamic>?, String>((ref, type) => null);
+
+// Provider for unified payment history with caching
 final paymentHistoryProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, type) async {
   final repository = ref.read(paymentsRepositoryProvider);
-  final response = await repository.getPaymentHistory(type: type);
+  final userId = ref.read(authStateProvider).userId;
   
-  if (response.success && response.data != null) {
-    return response.data!;
+  if (userId == null) {
+    return {
+      'balance': 0.0,
+      'currency': 'JOD',
+      'transactions': <Payment>[],
+    };
   }
   
-  return {
-    'balance': 0.0,
-    'currency': 'JOD',
-    'transactions': <Payment>[],
-  };
+  final cacheKey = 'payment_history_${userId}_$type';
+  
+  // 1. Check in-memory cache first (instant)
+  final cached = ref.read(_paymentHistoryCacheProvider(type));
+  if (cached != null) {
+    // Return cached immediately, continue fetching fresh
+  }
+  
+  // 2. Try persistent cache (for transactions list)
+  final persistentCache = await CacheService.getList<Payment>(
+    '${cacheKey}_transactions',
+    (json) => Payment.fromJson(json),
+  );
+  
+  if (persistentCache != null) {
+    final cachedData = {
+      'balance': cached?['balance'] ?? 0.0,
+      'currency': cached?['currency'] ?? 'JOD',
+      'transactions': persistentCache,
+    };
+    ref.read(_paymentHistoryCacheProvider(type).notifier).state = cachedData;
+    // Return cached immediately, continue fetching fresh
+  }
+  
+  // 3. Fetch fresh data
+  try {
+    final response = await repository.getPaymentHistory(type: type);
+    
+    if (response.success && response.data != null) {
+      // Save to both caches
+      ref.read(_paymentHistoryCacheProvider(type).notifier).state = response.data!;
+      final transactions = response.data!['transactions'] as List<Payment>?;
+      if (transactions != null) {
+        await CacheService.setList(
+          '${cacheKey}_transactions',
+          transactions,
+          (payment) => payment.toJson(),
+        );
+      }
+      return response.data!;
+    }
+    
+    // If fetch fails, return cached data if available
+    if (persistentCache != null) {
+      return {
+        'balance': cached?['balance'] ?? 0.0,
+        'currency': cached?['currency'] ?? 'JOD',
+        'transactions': persistentCache,
+      };
+    }
+    if (cached != null) {
+      return cached;
+    }
+    
+    return {
+      'balance': 0.0,
+      'currency': 'JOD',
+      'transactions': <Payment>[],
+    };
+  } catch (e) {
+    // Return cached data on error if available
+    if (persistentCache != null) {
+      return {
+        'balance': cached?['balance'] ?? 0.0,
+        'currency': cached?['currency'] ?? 'JOD',
+        'transactions': persistentCache,
+      };
+    }
+    if (cached != null) {
+      return cached;
+    }
+    return {
+      'balance': 0.0,
+      'currency': 'JOD',
+      'transactions': <Payment>[],
+    };
+  }
 });
 
 // Legacy provider for backward compatibility (still used for freelancer balance)

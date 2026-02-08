@@ -237,7 +237,7 @@ class _ProjectDetailsStepViewState
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 DropdownButtonFormField<int>(
-                  value: draft.categoryId,
+                  initialValue: draft.categoryId,
                   decoration: InputDecoration(
                     hintText: l10n.selectCategoryHint,
                     border: OutlineInputBorder(
@@ -286,7 +286,7 @@ class _ProjectDetailsStepViewState
                 _loadingSubSubCategories
                     ? const Center(child: CircularProgressIndicator())
                     : DropdownButtonFormField<int>(
-                        value: draft.subSubCategoryId,
+                        initialValue: draft.subSubCategoryId,
                         decoration: InputDecoration(
                           hintText: l10n.selectSubSubCategoryHint,
                           border: OutlineInputBorder(
@@ -329,7 +329,7 @@ class _ProjectDetailsStepViewState
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: draft.projectType,
+                initialValue: draft.projectType,
                 decoration: InputDecoration(
                   hintText: l10n.selectProjectTypeHint,
                   border: OutlineInputBorder(
@@ -451,7 +451,7 @@ class _ProjectDetailsStepViewState
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: draft.durationType,
+                initialValue: draft.durationType,
                 decoration: InputDecoration(
                   hintText: l10n.selectDurationTypeHint,
                   border: OutlineInputBorder(

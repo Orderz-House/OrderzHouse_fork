@@ -7,6 +7,7 @@ import GradientButton from "../buttons/GradientButton.jsx";
 import PaymentMethodModal from "./PaymentMethodChooser.jsx";
 import PageMeta from "../PageMeta.jsx";
 
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // =============== Auth Hook ===============
@@ -39,7 +40,7 @@ function CheckIcon({ className = "" }) {
   );
 }
 
-function PlanCard({ plan, onSubscribe }) {
+function PlanCard({ plan, onSubscribe, canSubscribe }) {
   const highlight = plan.plan_type === "popular";
 
   const durationLabel =
@@ -102,16 +103,23 @@ function PlanCard({ plan, onSubscribe }) {
         </ul>
 
         <div className="mt-auto">
-    <button
-      onClick={() => onSubscribe(plan)}
-      className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:opacity-95 active:scale-[0.99] transition"
-    >
-      Subscribe
-    </button>
-
-    <p className="mt-2 text-xs text-slate-500">
-      Secure checkout — choose online or offline payment.
-    </p>
+    {canSubscribe ? (
+      <>
+        <button
+          onClick={() => onSubscribe(plan)}
+          className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:opacity-95 active:scale-[0.99] transition"
+        >
+          Subscribe
+        </button>
+        <p className="mt-2 text-xs text-slate-500">
+          Secure checkout — choose online or offline payment.
+        </p>
+      </>
+    ) : (
+      <div className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-slate-400 bg-slate-100 text-center">
+        Freelancers only
+      </div>
+    )}
   </div>
       </div>
     </div>
@@ -121,7 +129,7 @@ function PlanCard({ plan, onSubscribe }) {
 export default function Plans() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
+  const toast = useToast();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -135,18 +143,50 @@ export default function Plans() {
       setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
       setLoading(false);
     });
+
   }, []);
 
   const subscribeOnline = async () => {
+    console.log("Subscribe Now clicked");
     if (!user) return navigate("/login");
-    await stripePromise;
+    if (!selectedPlan) {
+      console.error("No plan selected");
+      return;
+    }
 
     const res = await API.post("/stripe/create-checkout-session", {
       plan_id: selectedPlan.id,
       user_id: user.id,
     });
 
-    window.location.href = res.data.url;
+
+      const payload = {
+        plan_id: selectedPlan.id,
+        user_id: user.id,
+      };
+      console.log("[Frontend] Sending request payload:", payload);
+
+      const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, payload);
+
+      console.log("Checkout session response:", res.data);
+      
+      // Handle free plan (no Stripe needed)
+      if (res.data?.free === true || res.data?.url === null) {
+        toast.success("Free plan subscribed successfully!");
+        return;
+      }
+      
+      // Handle Stripe checkout
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        console.error("No checkout URL in response:", res.data);
+        alert("Invalid response from server. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to create checkout session:", err);
+      alert(err.response?.data?.error || err.message || "Failed to start checkout. Please try again.");
+    }
   };
 
   const subscribeOffline = () => {
@@ -187,7 +227,12 @@ export default function Plans() {
         {/* Grid نفس Pricing */}
         <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((p) => (
-            <PlanCard key={p.id} plan={p} onSubscribe={setSelectedPlan} />
+            <PlanCard 
+              key={p.id} 
+              plan={p} 
+              onSubscribe={setSelectedPlan}
+              canSubscribe={user?.role_id === 3}
+            />
           ))}
         </div>
 

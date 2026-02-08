@@ -40,6 +40,11 @@ export default function Profile() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("about");
 
+  // Role-based visibility
+  const roleId = profile?.role_id;
+  const isClient = roleId === 2;
+  const isFreelancer = roleId === 3;
+
   useEffect(() => {
     fetchUserProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,28 +277,34 @@ export default function Profile() {
               )}
             </div>
 
-            <div className="mt-5">
-              <SectionTitle>Work</SectionTitle>
-              <div className="mt-2 divide-y divide-slate-100">
-                <WorkItem
-                  item={{ title: "—", tag: "Primary", address: "", contact: "" }}
-                  fallbackLabel="—"
-                />
-                <WorkItem
-                  item={{ title: "—", tag: "Secondary", address: "", contact: "" }}
-                  fallbackLabel="—"
-                />
+            {/* Work section - Only show for freelancers */}
+            {isFreelancer && (
+              <div className="mt-5">
+                <SectionTitle>Work</SectionTitle>
+                <div className="mt-2 divide-y divide-slate-100">
+                  <WorkItem
+                    item={{ title: "—", tag: "Primary", address: "", contact: "" }}
+                    fallbackLabel="—"
+                  />
+                  <WorkItem
+                    item={{ title: "—", tag: "Secondary", address: "", contact: "" }}
+                    fallbackLabel="—"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="mt-5">
-              <SectionTitle>Skills</SectionTitle>
-              <ul className="mt-2 space-y-1 text-[12px] text-slate-500">
-                {["—", "—", "—", "—", "—"].map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
+            {/* Skills section - Only show for freelancers */}
+            {isFreelancer && (
+              <div className="mt-5">
+                <SectionTitle>Skills</SectionTitle>
+                <ul className="mt-2 space-y-1 text-[12px] text-slate-500">
+                  {["—", "—", "—", "—", "—"].map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </Card>
 
           {/* RIGHT */}
@@ -331,12 +342,12 @@ export default function Profile() {
               >
                 Report user
               </button>
+
             </div>
 
-            {/* Tabs */}
+            {/* Tabs - Removed Timeline tab */}
             <div className="mt-5 flex items-center gap-3 border-b border-slate-100">
               {[
-                { key: "timeline", label: "Timeline" },
                 { key: "about", label: "About" },
               ].map((t) => {
                 const active = activeTab === t.key;
@@ -357,61 +368,44 @@ export default function Profile() {
 
             {/* Content */}
             <div className="pt-6">
-              {activeTab === "timeline" ? (
-                <div className="text-[13px] text-slate-500">
-                  No timeline items yet.
-                </div>
-              ) : (
-                <div className="space-y-7">
-                  {/* Contact */}
-                  <div>
-                    <SectionTitle>Contact information</SectionTitle>
+              <div className="space-y-7">
+                {/* Contact */}
+                <div>
+                  <SectionTitle>Contact information</SectionTitle>
 
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-y-3 text-[13px]">
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <Phone className="w-4 h-4" />
-                        Phone:
-                      </div>
-                      <div className="font-semibold text-slate-900">{vm.phone}</div>
-
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <MapPin className="w-4 h-4" />
-                        Address:
-                      </div>
-                      <div className="text-slate-700">{vm.address}</div>
-
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <Mail className="w-4 h-4" />
-                        E-mail:
-                      </div>
-                      <div className="font-semibold text-slate-900">{vm.email}</div>
-
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <span
-                          className="w-4 h-4 grid place-items-center text-[10px] font-extrabold border border-slate-200 rounded"
-                        >
-                          @
-                        </span>
-                        Site:
-                      </div>
-                      <div className="font-semibold text-slate-900">{vm.site}</div>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-y-3 text-[13px]">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Phone className="w-4 h-4" />
+                      Phone:
                     </div>
-                  </div>
+                    <div className="font-semibold text-slate-900">{vm.phone}</div>
 
-                  {/* Basic */}
-                  <div>
-                    <SectionTitle>Basic information</SectionTitle>
-
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-y-3 text-[13px]">
-                      <div className="text-slate-500">Birthday:</div>
-                      <div className="text-slate-700">{vm.birthday}</div>
-
-                      <div className="text-slate-500">Gender:</div>
-                      <div className="text-slate-700">{vm.gender}</div>
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <MapPin className="w-4 h-4" />
+                      Address:
                     </div>
+                    <div className="text-slate-700">{vm.address}</div>
+
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Mail className="w-4 h-4" />
+                      E-mail:
+                    </div>
+                    <div className="font-semibold text-slate-900">{vm.email}</div>
+
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <span
+                        className="w-4 h-4 grid place-items-center text-[10px] font-extrabold border border-slate-200 rounded"
+                      >
+                        @
+                      </span>
+                      Site:
+                    </div>
+                    <div className="font-semibold text-slate-900">{vm.site}</div>
                   </div>
                 </div>
-              )}
+
+                {/* Basic - Hide if empty (Birthday and Gender removed) */}
+              </div>
             </div>
           </Card>
         </div>

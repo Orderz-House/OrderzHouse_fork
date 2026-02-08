@@ -14,6 +14,11 @@
   "notificationsSubtitle": "Manage notification preferences",
   "noNotifications": "No notifications yet",
   "noNotificationsMessage": "You'll see notifications here when you receive them.",
+  "projectNotFound": "Project not found",
+  "projectNotFoundMessage": "This project may have been deleted or you don't have access to it.",
+  "backToNotifications": "Back to Notifications",
+  "loadingProject": "Loading project...",
+  "thisNotificationHasNoLink": "This notification has no link",
   "markAllAsRead": "Mark all as read",
   "clearAll": "Clear all",
   
@@ -123,6 +128,10 @@
   "showLess": "Show Less",
   "loadMore": "Load More",
   "refresh": "Refresh",
+  "expandAll": "Expand all",
+  "collapseAll": "Collapse all",
+  "lastUpdated": "Last updated",
+  "policySearchHint": "Filter sections…",
   "update": "Update",
   "continue_": "Continue",
   "skip": "Skip",
@@ -274,7 +283,7 @@
   "projectCompleted": "Project completed",
   
   "yourWorkspace": "Your Workspace",
-  "actionRequired": "Action Required",
+  "actionRequired": "In progress",
   "noActionsRequired": "No actions required",
   "noActiveProjects": "No active projects",
   "getInspired": "Get Inspired",
@@ -300,8 +309,9 @@
   "createAccount": "Create Account",
   "alreadyHaveAccount": "Already have an account?",
   "dontHaveAccount": "Don't have an account?",
-  "orContinueWith": "Or continue with",
-  
+"orContinueWith": "Or continue with",
+  "continueWithGoogle": "Continue with Google",
+
   "email": "Email",
   "emailAddress": "Email Address",
   "enterEmail": "Enter your email",
@@ -999,5 +1009,18 @@
   "passwordUppercase": "Password must contain at least one uppercase letter",
   "passwordLowercase": "Password must contain at least one lowercase letter",
   "passwordNumber": "Password must contain at least one number",
-  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number"
+  "passwordRequirements": "Min 8 characters, 1 uppercase, 1 lowercase, 1 number",
+
+  "filters": "Filters",
+  "oldestFirst": "Oldest First",
+  "allTypes": "All Types",
+  "anyBudget": "Any Budget",
+  "budgetLessThan50": "Up to 50 JOD",
+  "budget50To200": "50 – 200 JOD",
+  "budgetAbove200": "200+ JOD",
+  "deliveryTime": "Delivery Time",
+  "anyTime": "Any Time",
+  "deliveryShort": "Up to 7 days",
+  "deliveryMedium": "8 – 30 days",
+  "deliveryLong": "More than 30 days"
 }

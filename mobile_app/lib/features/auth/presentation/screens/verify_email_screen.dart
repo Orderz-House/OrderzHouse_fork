@@ -73,7 +73,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 color: AppColors.primary,
               ),
               const SizedBox(height: AppSpacing.lg),
-              const Text(
+              Text(
                 'Verify Your Email',
                 style: AppTextStyles.headlineLarge,
               ),

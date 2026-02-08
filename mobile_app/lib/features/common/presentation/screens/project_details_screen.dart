@@ -14,7 +14,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/gradient_button.dart';
-import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/storage/secure_store.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projects/data/repositories/projects_repository.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
@@ -24,6 +24,9 @@ import '../../../freelancer/presentation/widgets/deliver_modal.dart';
 import '../../../client/presentation/widgets/review_delivery_bottom_sheet.dart';
 import '../../../client/presentation/widgets/offers_bottom_sheet.dart';
 import '../../../client/presentation/widgets/applications_bottom_sheet.dart';
+import '../../../messages/presentation/providers/messages_provider.dart';
+import '../../../projects/presentation/providers/change_requests_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Providers
 final offersRepositoryProvider = Provider<OffersRepository>((ref) {
@@ -35,7 +38,8 @@ final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
 });
 
 class ProjectDetailsScreen extends ConsumerStatefulWidget {
-  final Project project;
+  final Project? project;
+  final int? projectId; // For fetching when project is not provided
   
   /// Deep-link parameters for notification navigation
   final bool openApplicants;
@@ -43,18 +47,21 @@ class ProjectDetailsScreen extends ConsumerStatefulWidget {
   final bool showDeliveries;
 
   const ProjectDetailsScreen({
-    required this.project,
+    this.project,
+    this.projectId,
     this.openApplicants = false,
     this.openReceiveModal = false,
     this.showDeliveries = false,
     super.key,
-  });
+  }) : assert(project != null || projectId != null, 'Either project or projectId must be provided');
 
   @override
   ConsumerState<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
 }
 
 class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
+  Project? _currentProject;
+  
   bool _hasApplied = false;
   bool _isLoading = false;
   bool _isCheckingApplied = true;
@@ -81,12 +88,70 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   // Flag to track if deep-link actions have been handled
   bool _deepLinkHandled = false;
   
+  // Flag to track if project has been initialized (prevents double initialization)
+  bool _projectInitialized = false;
+  
+  Project? get _project => _currentProject ?? widget.project;
+  
   @override
   void initState() {
     super.initState();
+    
+    // If project is provided, use it immediately
+    if (widget.project != null) {
+      _currentProject = widget.project;
+      _initializeWithProject();
+    }
+    // If only projectId is provided, we'll fetch in build method using provider
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Note: Project initialization is now handled in the build method
+    // when the project loads from the provider. This ensures reactive updates.
+  }
+  
+  void _initializeWithProject() {
+    final project = _project;
+    if (project == null) return;
+    
+    // Prevent double initialization
+    if (_projectInitialized) {
+      if (AppConfig.isDevelopment) {
+        debugPrint('⚠️ [ProjectDetails] _initializeWithProject() called but already initialized, skipping');
+      }
+      return;
+    }
+    _projectInitialized = true;
+    
+    if (AppConfig.isDevelopment) {
+      debugPrint('✅ [ProjectDetails] _initializeWithProject() called for project ${project.id}');
+    }
+    
+    // Get user role reactively to determine what to fetch
+    final authState = ref.read(authStateProvider);
+    final userRoleId = authState.user?.roleId;
+    final isFreelancerRole = userRoleId == 3;
+    
     _checkIfApplied();
     _fetchRawProjectData();
-    _fetchAssignment(); // This will call _fetchDeliveriesIfNeeded() after assignment loads
+    
+    // Only fetch assignment for freelancers (clients don't need it)
+    if (isFreelancerRole) {
+      _fetchAssignment(); // This will call _fetchDeliveriesIfNeeded() after assignment loads
+    } else {
+      // For clients, skip assignment fetch entirely
+      _isLoadingAssignment = false;
+      // Fetch deliveries if we're the owner (to show Receive button state)
+      final currentUserId = authState.user?.id;
+      if (currentUserId != null && project.userId == currentUserId) {
+        _fetchDeliveriesIfNeeded();
+      } else {
+        _isLoadingDeliveries = false;
+      }
+    }
     
     // Handle deep-link parameters after first frame
     if (widget.openApplicants || widget.openReceiveModal || widget.showDeliveries) {
@@ -120,15 +185,19 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     if (!mounted) return;
     
     // Track submitting state
-    bool isSubmitting = false;
+    const bool isSubmitting = false;
     
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) => ApplicationsBottomSheet(
-          project: widget.project,
+      builder: (sheetContext) {
+        final project = _project;
+        if (project == null) return const SizedBox.shrink();
+        bool isSubmitting = false;
+        return StatefulBuilder(
+          builder: (context, setSheetState) => ApplicationsBottomSheet(
+            project: project,
           applications: _applications,
           isLoading: _isLoading,
           isSubmitting: isSubmitting,
@@ -156,7 +225,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             }
           },
         ),
-      ),
+      );
+      },
     );
   }
   
@@ -175,40 +245,44 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => ReviewDeliveryBottomSheet(
-        project: widget.project,
-        deliveries: _deliveries,
-        isLoading: _isLoadingDeliveries,
-        onClose: () => Navigator.pop(sheetContext),
-        onApprove: (projectId) async {
-          final repository = ref.read(projectsRepositoryProvider);
-          await repository.approveDelivery(projectId);
-          if (mounted) {
-            Navigator.pop(sheetContext);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Delivery approved!')),
-            );
-            _fetchRawProjectData();
+      builder: (sheetContext) {
+        final project = _project;
+        if (project == null) return const SizedBox.shrink();
+        return ReviewDeliveryBottomSheet(
+          project: project,
+          deliveries: _deliveries,
+          isLoading: _isLoadingDeliveries,
+          onClose: () => Navigator.pop(sheetContext),
+          onApprove: (projectId) async {
+            final repository = ref.read(projectsRepositoryProvider);
+            await repository.approveDelivery(projectId);
+            if (mounted) {
+              Navigator.pop(sheetContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Delivery approved!')),
+              );
+              _fetchRawProjectData();
+              _fetchDeliveriesIfNeeded();
+              // Invalidate providers
+              ref.invalidate(myProjectsProvider);
+            }
+          },
+          onRequestChanges: (projectId, message) async {
+            final repository = ref.read(projectsRepositoryProvider);
+            await repository.requestChanges(projectId, message);
+            if (mounted) {
+              Navigator.pop(sheetContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Changes requested')),
+              );
+              _fetchDeliveriesIfNeeded();
+            }
+          },
+          onRefresh: () {
             _fetchDeliveriesIfNeeded();
-            // Invalidate providers
-            ref.invalidate(myProjectsProvider);
-          }
-        },
-        onRequestChanges: (projectId, message) async {
-          final repository = ref.read(projectsRepositoryProvider);
-          await repository.requestChanges(projectId, message);
-          if (mounted) {
-            Navigator.pop(sheetContext);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Changes requested')),
-            );
-            _fetchDeliveriesIfNeeded();
-          }
-        },
-        onRefresh: () {
-          _fetchDeliveriesIfNeeded();
-        },
-      ),
+          },
+        );
+      },
     );
   }
   
@@ -234,10 +308,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Fetch deliveries if user is owner or assigned freelancer
   Future<void> _fetchDeliveriesIfNeeded() async {
+    final project = _project;
+    if (project == null) return;
+    
     // Check ownership and assignment
     final authState = ref.read(authStateProvider);
     final currentUserId = authState.user?.id;
-    final isOwnerCheck = currentUserId != null && widget.project.userId == currentUserId;
+    final isOwnerCheck = currentUserId != null && project.userId == currentUserId;
     
     // Check if assigned (need to check assignment data)
     bool isAssignedCheck = false;
@@ -262,7 +339,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.getProjectDeliveries(widget.project.id);
+      final project = _project;
+      if (project == null) return;
+      final response = await repository.getProjectDeliveries(project.id);
       
       if (mounted && response.success && response.data != null) {
         setState(() {
@@ -285,16 +364,30 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Normalize status key (completion_status takes precedence, fallback to status)
   String get _statusKey {
+    final project = _project;
     final completionStatus = (_projectData?['completion_status'] ?? '').toString().toLowerCase();
-    final status = (_projectData?['status'] ?? widget.project.status ?? '').toString().toLowerCase();
+    final status = (_projectData?['status'] ?? project?.status ?? '').toString().toLowerCase();
     return completionStatus.isNotEmpty ? completionStatus : status;
   }
   
-  // Fetch assignment details
+  // Fetch assignment details (ONLY for freelancers)
   Future<void> _fetchAssignment() async {
+    final project = _currentProject;
+    if (project == null) return;
+    
+    // Double-check: only fetch for freelancers
+    if (!_isFreelancerRole) {
+      setState(() {
+        _assignment = null;
+        _isLoadingAssignment = false;
+      });
+      _fetchDeliveriesIfNeeded();
+      return;
+    }
+    
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.getMyAssignment(widget.project.id);
+      final response = await repository.getMyAssignment(project.id);
       
       if (mounted) {
         setState(() {
@@ -320,9 +413,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Compute visibility booleans
   bool get _isOwner {
+    final project = _currentProject;
+    if (project == null) return false;
     final authState = ref.read(authStateProvider);
     final currentUserId = authState.user?.id;
-    return currentUserId != null && widget.project.userId == currentUserId;
+    return currentUserId != null && project.userId == currentUserId;
   }
   
   bool get _isFreelancerRole {
@@ -333,6 +428,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   bool get _isClientRole {
     final authState = ref.read(authStateProvider);
     return authState.user?.roleId == 2; // CLIENT_ROLE_ID
+  }
+  
+  bool get _isAdminRole {
+    final authState = ref.read(authStateProvider);
+    return authState.user?.roleId == 1; // ADMIN_ROLE_ID
   }
   
   bool get _isAssignedToMe {
@@ -373,7 +473,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Check if project is completed
   bool get _isProjectCompleted {
-    final status = widget.project.status.toLowerCase();
+    final project = _project;
+    if (project == null) return false;
+    final status = project.status.toLowerCase();
     final completionStatus = _statusKey.toLowerCase();
     return status == 'completed' || completionStatus == 'completed';
   }
@@ -384,7 +486,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       return false;
     }
     
-    final projectStatus = widget.project.status.toLowerCase();
+    final project = _project;
+    if (project == null) return false;
+    final projectStatus = project.status.toLowerCase();
     final isOpen = ['open', 'active', 'pending', 'in_progress'].contains(projectStatus);
     
     return isOpen;
@@ -392,18 +496,21 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Fetch raw project data for additional fields
   Future<void> _fetchRawProjectData() async {
+    final project = _project;
+    if (project == null) return;
+    
     try {
       final repository = ref.read(projectsRepositoryProvider);
       final response = await repository.getMyProjectsRaw();
       
       if (response.success && response.data != null) {
-        final project = response.data!.firstWhere(
-          (p) => (p['id'] as int?) == widget.project.id,
+        final projectData = response.data!.firstWhere(
+          (p) => (p['id'] as int?) == project.id,
           orElse: () => {},
         );
-        if (project.isNotEmpty) {
+        if (projectData.isNotEmpty) {
           setState(() {
-            _projectData = project;
+            _projectData = projectData;
           });
         }
       }
@@ -439,9 +546,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Fetch offers for a project (client)
   Future<void> _fetchOffers() async {
+    final project = _project;
+    if (project == null) return;
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.getProjectOffers(widget.project.id);
+      final response = await repository.getProjectOffers(project.id);
       
       if (response.success && response.data != null) {
         setState(() {
@@ -475,7 +584,9 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   Future<void> _fetchApplications() async {
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.getProjectApplications(widget.project.id);
+      final project = _project;
+      if (project == null) return;
+      final response = await repository.getProjectApplications(project.id);
       
       if (response.success && response.data != null) {
         setState(() {
@@ -497,14 +608,16 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       return;
     }
 
-    final projectTypeLower = widget.project.projectType.toLowerCase();
+    final project = _project;
+    if (project == null) return;
+    final projectTypeLower = project.projectType.toLowerCase();
     final isBidding = projectTypeLower == 'bidding';
 
     try {
       if (isBidding) {
         // Check pending offer
         final offersRepo = ref.read(offersRepositoryProvider);
-        final response = await offersRepo.checkMyPendingOffer(widget.project.id);
+        final response = await offersRepo.checkMyPendingOffer(project.id);
         if (mounted) {
           setState(() {
             _hasApplied = response.data ?? false;
@@ -514,7 +627,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       } else {
         // Check assignment
         final projectsRepo = ref.read(projectsRepositoryProvider);
-        final response = await projectsRepo.checkIfAssigned(widget.project.id);
+        final response = await projectsRepo.checkIfAssigned(project.id);
         if (mounted) {
           setState(() {
             _hasApplied = response.data ?? false;
@@ -534,13 +647,15 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
 
   Future<void> _handleSendOffer(double bidAmount, String? proposal) async {
     if (_isLoading) return;
+    final project = _project;
+    if (project == null) return;
 
     setState(() => _isLoading = true);
 
     try {
       final offersRepo = ref.read(offersRepositoryProvider);
       final response = await offersRepo.sendOffer(
-        projectId: widget.project.id,
+        projectId: project.id,
         bidAmount: bidAmount,
         proposal: proposal,
       );
@@ -589,13 +704,15 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
 
   Future<void> _handleApply() async {
     if (_isLoading) return;
+    final project = _project;
+    if (project == null) return;
 
     setState(() => _isLoading = true);
 
     try {
       final projectsRepo = ref.read(projectsRepositoryProvider);
       final response = await projectsRepo.applyForProject(
-        projectId: widget.project.id,
+        projectId: project.id,
         message: null,
       );
 
@@ -751,22 +868,266 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If we're fetching by ID, show loading/error states
+    if (_currentProject == null && widget.projectId != null) {
+      final projectAsync = ref.watch(projectByIdProvider(widget.projectId!));
+      return projectAsync.when(
+        data: (project) {
+          if (project == null) {
+            final l10n = AppLocalizations.of(context)!;
+            return Scaffold(
+              backgroundColor: Colors.white,
+              appBar: AppBar(
+                title: Text(l10n.projectNotFound),
+              ),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 64,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.projectNotFound,
+                        style: AppTextStyles.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.projectNotFoundMessage,
+                        style: AppTextStyles.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/client');
+                          }
+                        },
+                        child: Text(l10n.backToNotifications),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          // Project loaded, update state and initialize
+          if (mounted) {
+            setState(() {
+              _currentProject = project;
+            });
+            // Initialize project data (fetch assignments, deliveries, etc.)
+            // Use post-frame callback to avoid calling async methods during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _currentProject == project) {
+                _initializeWithProject();
+              }
+            });
+          }
+          // Return normal build with project
+          return _buildProjectContent(context, project);
+        },
+        loading: () {
+          final l10n = AppLocalizations.of(context)!;
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.loadingProject,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        error: (error, stackTrace) {
+          final l10n = AppLocalizations.of(context)!;
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: Text(l10n.error),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 64,
+                      color: AppColors.error,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.failedToLoadProjects,
+                      style: AppTextStyles.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString().replaceAll('Exception: ', ''),
+                      style: AppTextStyles.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/client');
+                        }
+                      },
+                      child: Text(l10n.back),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+    
+    // Project is available, render normally
+    return _buildProjectContent(context, _project!);
+  }
+
+  /// Messages icon (chat bubble) with red dot when unread. Same UI; dot visibility from projectUnreadProvider.
+  Widget _buildMessagesIconWithUnread(int projectId) {
+    final unreadAsync = ref.watch(projectUnreadProvider(projectId));
+    final unreadCount = unreadAsync.valueOrNull ?? 0;
+    final hasUnread = unreadCount > 0;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            color: AppColors.accentOrange,
+            iconSize: 20,
+            onPressed: () {
+              context.push('/project/$projectId/messages');
+            },
+          ),
+          if (hasUnread)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Change requests icon (chat bubble) with red dot when unread. Same UI; dot from changeRequestsUnreadCountProvider.
+  Widget _buildChangeRequestsIconWithUnread(int projectId) {
+    final unreadAsync = ref.watch(changeRequestsUnreadCountProvider(projectId));
+    final unreadCount = unreadAsync.valueOrNull ?? 0;
+    final hasUnread = unreadCount > 0;
+    final project = _project;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            color: AppColors.accentOrange,
+            iconSize: 20,
+            onPressed: () {
+              final title = project?.title ?? '';
+              context.push(
+                '/project/$projectId/change-requests?title=${Uri.encodeComponent(title)}',
+              );
+            },
+          ),
+          if (hasUnread)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildProjectContent(BuildContext context, Project project) {
     final dateFormat = DateFormat('MMM dd, yyyy');
-    final statusColor = _getStatusColor(widget.project.status);
+    final statusColor = _getStatusColor(project.status);
     
     // Build image URL
-    final imageUrl = widget.project.coverPic != null && widget.project.coverPic!.isNotEmpty
-        ? (widget.project.coverPic!.startsWith('http')
-            ? widget.project.coverPic!
-            : '${AppConfig.baseUrl}${widget.project.coverPic}')
+    final imageUrl = project.coverPic != null && project.coverPic!.isNotEmpty
+        ? (project.coverPic!.startsWith('http')
+            ? project.coverPic!
+            : '${AppConfig.baseUrl}${project.coverPic}')
         : null;
 
     // Get duration text
     String durationText = 'N/A';
-    if (widget.project.durationDays != null) {
-      durationText = '${widget.project.durationDays} ${widget.project.durationDays == 1 ? 'day' : 'days'}';
-    } else if (widget.project.durationHours != null) {
-      durationText = '${widget.project.durationHours} ${widget.project.durationHours == 1 ? 'hour' : 'hours'}';
+    if (project.durationDays != null) {
+      durationText = '${project.durationDays} ${project.durationDays == 1 ? 'day' : 'days'}';
+    } else if (project.durationHours != null) {
+      durationText = '${project.durationHours} ${project.durationHours == 1 ? 'hour' : 'hours'}';
     }
 
     // Check if current user is freelancer (role_id == 3)
@@ -775,7 +1136,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     final isFreelancer = user?.roleId == 3;
     
     // Determine button label and action based on project type
-    final projectTypeLower = widget.project.projectType.toLowerCase();
+    final projectTypeLower = project.projectType.toLowerCase();
     final isBidding = projectTypeLower == 'bidding';
     final isFixed = projectTypeLower == 'fixed';
     final isHourly = projectTypeLower == 'hourly';
@@ -783,11 +1144,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     // Determine button label (null if project type is unknown)
     String? buttonLabel;
     if (_hasApplied) {
-      buttonLabel = 'Already Applied';
+      buttonLabel = AppLocalizations.of(context)!.applied;
     } else if (isBidding) {
-      buttonLabel = 'Send Offer';
+      buttonLabel = AppLocalizations.of(context)!.submitOffer;
     } else if (isFixed || isHourly) {
-      buttonLabel = 'Apply';
+      buttonLabel = AppLocalizations.of(context)!.apply;
     }
     
     // Show button only for freelancers, and only if project type is known (bidding/fixed/hourly)
@@ -859,16 +1220,20 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                         ),
                         const Spacer(),
                         // Title
-                        const Text(
-                          'Project Details',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.projectDetails,
+                          style: const TextStyle(
                             color: Color(0xFF111827),
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
                           ),
                         ),
                         const Spacer(),
-                        const SizedBox(width: 40), // Balance the back button
+                        // Change Requests (freelancer) or Messages (admin) icon; red dot when unread
+                        if (_isFreelancerRole && _isAssignedToMe)
+                          _buildChangeRequestsIconWithUnread(project.id)
+                        else if (_isAdminRole)
+                          _buildMessagesIconWithUnread(project.id),
                       ],
                     ),
                   ),
@@ -946,7 +1311,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                               ],
                             ),
                             child: Text(
-                              widget.project.status.toUpperCase(),
+                              project.status.toUpperCase(),
                               style: AppTextStyles.labelSmall.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -971,7 +1336,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                       // Title (left, flexible)
                       Expanded(
                         child: Text(
-                          widget.project.title,
+                          project.title,
                           style: AppTextStyles.headlineMedium.copyWith(
                             color: const Color(0xFF111827),
                             fontWeight: FontWeight.bold,
@@ -984,7 +1349,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                       ),
                       const SizedBox(width: 12),
                       // Price badge (right)
-                      if (widget.project.budgetDisplay != 'Negotiable')
+                      if (project.budgetDisplay != 'Negotiable')
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -1002,7 +1367,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                             ],
                           ),
                           child: Text(
-                            widget.project.budgetDisplay,
+                            project.budgetDisplay,
                             style: AppTextStyles.labelLarge.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -1035,20 +1400,26 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                           ),
                         ),
                         child: Text(
-                          widget.project.projectType.toUpperCase(),
+                          project.projectType.toUpperCase(),
                           style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        dateFormat.format(widget.project.createdAt),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: const Color(0xFF6B7280),
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          dateFormat.format(project.createdAt),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: const Color(0xFF6B7280),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1070,23 +1441,23 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                     children: [
                       _buildInfoCard(
                         icon: Icons.category_rounded,
-                        label: 'Type',
-                        value: widget.project.projectType.toUpperCase(),
+                        label: AppLocalizations.of(context)!.projectType,
+                        value: project.projectType.toUpperCase(),
                       ),
                       _buildInfoCard(
                         icon: Icons.account_balance_wallet_rounded,
-                        label: 'Budget',
-                        value: widget.project.budgetDisplay,
+                        label: AppLocalizations.of(context)!.projectBudget,
+                        value: project.budgetDisplay,
                       ),
                       _buildInfoCard(
                         icon: Icons.schedule_rounded,
-                        label: 'Duration',
+                        label: AppLocalizations.of(context)!.estimatedDuration,
                         value: durationText,
                       ),
                       _buildInfoCard(
                         icon: Icons.calendar_today_rounded,
-                        label: 'Created',
-                        value: dateFormat.format(widget.project.createdAt),
+                        label: AppLocalizations.of(context)!.startDate,
+                        value: dateFormat.format(project.createdAt),
                       ),
                     ],
                   ),
@@ -1121,19 +1492,23 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Description',
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: const Color(0xFF111827),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                            Flexible(
+                              child: Text(
+                                AppLocalizations.of(context)!.description,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: const Color(0xFF111827),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          widget.project.description,
+                          project.description,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: const Color(0xFF374151),
                             fontSize: 14,
@@ -1164,57 +1539,111 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     return const SizedBox.shrink();
   }
   
-  // Build bottom bar (Actions or Apply/Send Offer CTA)
-  Widget? _buildBottomBar(BuildContext context, bool isFreelancer, bool isBidding, bool shouldShowButton, String? buttonLabel) {
-    // Wait for assignment and deliveries to load
-    if (_isLoadingAssignment || _isLoadingDeliveries) {
-      return null;
+  // Build bottom bar (Actions or Apply/Send Offer CTA). Always visible; disabled + spinner while loading (no flicker).
+  Widget _buildBottomBar(BuildContext context, bool isFreelancer, bool isBidding, bool shouldShowButton, String? buttonLabel) {
+    final project = _project;
+    final authState = ref.watch(authStateProvider);
+    final currentUser = authState.user;
+    final currentUserId = currentUser?.id;
+    final userRoleId = currentUser?.roleId;
+    final isClientRole = userRoleId == 2;
+    final isFreelancerRole = userRoleId == 3;
+    final isOwner = project != null && currentUserId != null && project.userId == currentUserId;
+
+    // Single flag: show same bar disabled + small spinner until data ready
+    final isLoadingActions = (project == null) ||
+        (currentUserId == null || userRoleId == null) ||
+        (isFreelancerRole && _isLoadingAssignment) ||
+        (isClientRole && isOwner && _isLoadingDeliveries);
+
+    // Always show a bar (no flicker). Skeleton when project/user not ready.
+    if (project == null || currentUserId == null || userRoleId == null) {
+      return _buildSkeletonBar(context, loading: true);
     }
+    
+    // Compute assignment status (only for freelancers)
+    bool isAssignedToMe = false;
+    bool isAssignedToSomeone = false;
+    if (isFreelancerRole && _assignment != null) {
+      final assignmentFreelancerId = _assignment!['freelancer_id'] as int?;
+      final assignmentStatus = (_assignment!['assignment_status'] ?? _assignment!['status'] ?? '').toString().toLowerCase();
+      isAssignedToMe = assignmentFreelancerId == currentUserId && ['active', 'assigned', 'accepted'].contains(assignmentStatus);
+      isAssignedToSomeone = ['active', 'assigned', 'accepted'].contains(assignmentStatus);
+    }
+    
+    // Compute project status
+    final projectStatus = project.status.toLowerCase();
+    final completionStatus = (_projectData?['completion_status'] ?? project.status ?? '').toString().toLowerCase();
+    final statusKey = completionStatus.isNotEmpty ? completionStatus : projectStatus;
+    final isProjectCompleted = projectStatus == 'completed' || completionStatus == 'completed';
     
     // Debug logs
     if (AppConfig.isDevelopment) {
-      debugPrint('🔍 ProjectDetails Bottom Bar Visibility:');
-      debugPrint('  isOwner: $_isOwner');
-      debugPrint('  isClientRole: $_isClientRole');
-      debugPrint('  isFreelancerRole: $_isFreelancerRole');
-      debugPrint('  isAssignedToMe: $_isAssignedToMe');
-      debugPrint('  statusKey: $_statusKey');
+      debugPrint('🔍 [ProjectDetails] Bottom Bar Visibility (REACTIVE):');
+      debugPrint('  currentUserId: $currentUserId');
+      debugPrint('  userRoleId: $userRoleId (${isClientRole ? "CLIENT" : isFreelancerRole ? "FREELANCER" : "OTHER"})');
+      debugPrint('  project.userId: ${project.userId}');
+      debugPrint('  project.status: $projectStatus');
+      debugPrint('  isOwner: $isOwner');
+      debugPrint('  isClientRole: $isClientRole');
+      debugPrint('  isFreelancerRole: $isFreelancerRole');
+      debugPrint('  isAssignedToMe: $isAssignedToMe');
+      debugPrint('  isAssignedToSomeone: $isAssignedToSomeone');
+      debugPrint('  statusKey: $statusKey');
       debugPrint('  deliveries.length: ${_deliveries.length}');
-      debugPrint('  shouldShowClientActionBar: $_shouldShowClientActionBar');
-      debugPrint('  shouldShowFreelancerActions: $_shouldShowFreelancerActions');
-      debugPrint('  shouldShowStickyCTA: $_shouldShowStickyCTA');
+      debugPrint('  isProjectCompleted: $isProjectCompleted');
+      debugPrint('  _isLoadingAssignment: $_isLoadingAssignment');
+      debugPrint('  _isLoadingDeliveries: $_isLoadingDeliveries');
+      debugPrint('  isLoadingActions: $isLoadingActions');
+      debugPrint('  _projectInitialized: $_projectInitialized');
     }
     
-    // Show Client Action Bar (Receive + Applicants) for all client-owned projects
-    if (_shouldShowClientActionBar) {
-      return _buildClientActionBar(context);
+    // Show Client Action Bar (Receive + Applicants) for client-owned projects
+    if (isClientRole && isOwner) {
+      if (AppConfig.isDevelopment) {
+        debugPrint('✅ [ProjectDetails] Showing Client Action Bar');
+      }
+      return _buildClientActionBar(context, isProjectCompleted, loading: isLoadingActions);
     }
     
     // Show Freelancer Actions (Deliver or Waiting status) if assigned
-    if (_shouldShowFreelancerActions) {
-      return _buildFreelancerActionsBottomBar(context);
+    if (isFreelancerRole && !isOwner && isAssignedToMe) {
+      if (AppConfig.isDevelopment) {
+        debugPrint('✅ [ProjectDetails] Showing Freelancer Actions');
+      }
+      return _buildFreelancerActionsBottomBar(context, statusKey, loading: isLoadingActions);
     }
     
     // Show Apply/Send Offer CTA if applicable (not owner, not assigned)
-    if (_shouldShowStickyCTA) {
-      final label = isBidding ? 'Send Offer' : 'Apply';
-      return SafeArea(
-        top: false,
-        bottom: true,
-        child: _buildBottomActionButton(
-          context,
-          label,
-          isBidding,
-          widget.project.id,
-        ),
-      );
+    if (isFreelancerRole && !isOwner && !isAssignedToMe && !isAssignedToSomeone) {
+      final isOpen = ['open', 'active', 'pending', 'in_progress'].contains(projectStatus);
+      if (isOpen) {
+        if (AppConfig.isDevelopment) {
+          debugPrint('✅ [ProjectDetails] Showing Apply/Send Offer CTA');
+        }
+        final label = isBidding ? 'Send Offer' : 'Apply';
+        return SafeArea(
+          top: false,
+          bottom: true,
+          child: _buildBottomActionButton(
+            context,
+            label,
+            isBidding,
+            project.id,
+            loading: isLoadingActions,
+          ),
+        );
+      }
     }
     
-    return null;
+    if (AppConfig.isDevelopment) {
+      debugPrint('❌ [ProjectDetails] No bottom bar shown (empty bar to avoid layout jump)');
+    }
+    return _buildSkeletonBar(context, loading: false);
   }
-  
-  // Build Client Action Bar (Receive + Applicants OR Files + Request Changes)
-  Widget _buildClientActionBar(BuildContext context) {
+
+  /// Skeleton bar: same container/height; when loading shows disabled buttons + small spinner.
+  Widget _buildSkeletonBar(BuildContext context, {required bool loading}) {
     return SafeArea(
       top: false,
       bottom: true,
@@ -1230,23 +1659,77 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             ),
           ],
         ),
-        child: _isProjectCompleted
-            ? _buildCompletedActionsRow(context)
-            : _buildActiveActionsRow(context),
+        child: loading
+            ? Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.people_outline_rounded, size: 20),
+                      label: Text(AppLocalizations.of(context)!.applicants),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PrimaryGradientButton(
+                      onPressed: null,
+                      label: AppLocalizations.of(context)!.receive,
+                      icon: Icons.download_rounded,
+                      height: 48,
+                      borderRadius: 12,
+                      width: double.infinity,
+                      isEnabled: false,
+                      isLoading: true,
+                    ),
+                  ),
+                ],
+              )
+            : const SizedBox(height: 48),
+      ),
+    );
+  }
+  
+  // Build Client Action Bar (Receive + Applicants OR Files + Request Changes)
+  Widget _buildClientActionBar(BuildContext context, bool isProjectCompleted, {bool loading = false}) {
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: isProjectCompleted
+            ? _buildCompletedActionsRow(context, loading: loading)
+            : _buildActiveActionsRow(context, loading: loading),
       ),
     );
   }
   
   // Build Active Actions Row (Applicants + Receive) - for in-progress projects
-  Widget _buildActiveActionsRow(BuildContext context) {
+  Widget _buildActiveActionsRow(BuildContext context, {bool loading = false}) {
     return Row(
       children: [
-        // Applicants button (left, outlined)
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => _openApplications(context),
+            onPressed: loading ? null : () => _openApplications(context),
             icon: const Icon(Icons.people_outline_rounded, size: 20),
-            label: const Text('Applicants'),
+            label: Text(AppLocalizations.of(context)!.applicants),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
               side: const BorderSide(color: AppColors.border),
@@ -1258,15 +1741,16 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        // Receive button (right, gradient)
         Expanded(
           child: PrimaryGradientButton(
-            onPressed: () => _openReceivePanel(context),
-            label: 'Receive',
+            onPressed: loading ? null : () => _openReceivePanel(context),
+            label: AppLocalizations.of(context)!.receive,
             icon: Icons.download_rounded,
             height: 48,
             borderRadius: 12,
             width: double.infinity,
+            isEnabled: !loading,
+            isLoading: loading,
           ),
         ),
       ],
@@ -1274,15 +1758,14 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   }
   
   // Build Completed Actions Row (Request Changes + Files) - for completed projects
-  Widget _buildCompletedActionsRow(BuildContext context) {
+  Widget _buildCompletedActionsRow(BuildContext context, {bool loading = false}) {
     return Row(
       children: [
-        // Request Changes button (left, outlined) - optional for post-completion changes
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => _openRequestChangesModal(context),
+            onPressed: loading ? null : () => _openRequestChangesModal(context),
             icon: const Icon(Icons.edit_rounded, size: 20),
-            label: const Text('Request Changes'),
+            label: Text(AppLocalizations.of(context)!.requestChanges),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
               side: const BorderSide(color: AppColors.border),
@@ -1294,15 +1777,16 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        // Files button (right, gradient primary)
         Expanded(
           child: PrimaryGradientButton(
-            onPressed: () => _openFilesView(context),
-            label: 'Files',
+            onPressed: loading ? null : () => _openFilesView(context),
+            label: AppLocalizations.of(context)!.files,
             icon: Icons.folder_outlined,
             height: 52,
             borderRadius: 28,
             width: double.infinity,
+            isEnabled: !loading,
+            isLoading: loading,
           ),
         ),
       ],
@@ -1333,7 +1817,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => _openRequestChangesModal(context),
                 icon: const Icon(Icons.edit_rounded, size: 20),
-                label: const Text('Request Change'),
+                label: Text(AppLocalizations.of(context)!.requestChanges),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF111827),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -1349,7 +1833,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             Expanded(
               child: PrimaryGradientButton(
                 onPressed: () => _handleApproveDelivery(context),
-                label: 'Approve',
+                label: AppLocalizations.of(context)!.approve,
                 icon: Icons.check_circle_rounded,
                 height: 48,
                 borderRadius: 12,
@@ -1363,7 +1847,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   }
   
   // Build Freelancer Actions Bottom Bar (Deliver or Waiting status)
-  Widget _buildFreelancerActionsBottomBar(BuildContext context) {
+  Widget _buildFreelancerActionsBottomBar(BuildContext context, String statusKey, {bool loading = false}) {
+    final project = _project;
+    if (project == null) return _buildSkeletonBar(context, loading: true);
+    
+    final shouldShowDeliver = ['in_progress', 'not_started'].contains(statusKey);
+    final shouldShowWaiting = statusKey == 'pending_review' || (_pendingLocal && statusKey != 'completed');
+    
     return SafeArea(
       top: false,
       bottom: true,
@@ -1379,15 +1869,17 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             ),
           ],
         ),
-        child: _shouldShowFreelancerDeliver
+        child: shouldShowDeliver
             ? GradientButton(
-                onPressed: () => _openDeliverModal(context),
-                label: 'Deliver Work',
+                onPressed: loading ? null : () => _openDeliverModal(context),
+                label: AppLocalizations.of(context)!.submitDelivery,
                 icon: Icons.send_rounded,
                 height: 48,
                 borderRadius: 12,
+                isEnabled: !loading,
+                isLoading: loading,
               )
-            : _shouldShowFreelancerWaiting
+            : shouldShowWaiting
                 ? Container(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     decoration: BoxDecoration(
@@ -1417,7 +1909,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                       ],
                     ),
                   )
-                : _statusKey == 'completed'
+                : statusKey == 'completed'
                     ? Container(
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
@@ -1454,6 +1946,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Open change requests (freelancer)
   Future<void> _openChangeRequests(BuildContext context) async {
+    final project = _project;
+    if (project == null) return;
     final repository = ref.read(projectsRepositoryProvider);
     List<Map<String, dynamic>> requests = [];
     bool isLoading = true;
@@ -1462,13 +1956,22 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          if (isLoading && requests.isEmpty) {
-            repository.getChangeRequests(widget.project.id).then((response) {
+      builder: (context) {
+        final proj = _project;
+        if (proj == null) return const SizedBox.shrink();
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            if (isLoading && requests.isEmpty) {
+              repository.getProjectChangeRequests(proj.id).then((response) {
               if (response.success && response.data != null) {
                 setModalState(() {
-                  requests = response.data!;
+                  // Convert ChangeRequest objects to maps for the bottom sheet
+                  requests = response.data!.map((cr) => <String, dynamic>{
+                    'id': cr.id,
+                    'message': cr.message,
+                    'created_at': cr.createdAt.toIso8601String(),
+                    'is_resolved': cr.isResolved,
+                  }).toList();
                   isLoading = false;
                 });
               } else {
@@ -1511,14 +2014,15 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 });
               }
             });
-          }
+            }
 
-          return ChangeRequestsBottomSheet(
-            requests: requests,
-            isLoading: isLoading,
-          );
-        },
-      ),
+            return ChangeRequestsBottomSheet(
+              requests: requests,
+              isLoading: isLoading,
+            );
+          },
+        );
+      },
     );
   }
   
@@ -1526,58 +2030,64 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   Future<void> _openDeliverModal(BuildContext context) async {
     await showDialog(
       context: context,
-      builder: (context) => DeliverModal(
-        project: widget.project,
-        onClose: () => Navigator.pop(context),
-        onSubmit: (project, filePaths) async {
-          final repository = ref.read(projectsRepositoryProvider);
-          final response = await repository.deliverProject(project.id, filePaths);
+      builder: (context) {
+        final project = _project;
+        if (project == null) return const SizedBox.shrink();
+        return DeliverModal(
+          project: project,
+          onClose: () => Navigator.pop(context),
+          onSubmit: (proj, filePaths) async {
+            final repository = ref.read(projectsRepositoryProvider);
+            final response = await repository.deliverProject(proj.id, filePaths);
 
-          if (!response.success) {
-            throw Exception(response.message ?? 'Failed to deliver project');
-          }
+            if (!response.success) {
+              throw Exception(response.message ?? 'Failed to deliver project');
+            }
 
-          // Update local state immediately
-          setState(() {
-            _pendingLocal = true;
-            _projectData = {
-              ...?_projectData,
-              'completion_status': 'pending_review',
-              'status': 'pending_review',
-            };
-          });
+            // Update local state immediately
+            setState(() {
+              _pendingLocal = true;
+              _projectData = {
+                ...?_projectData,
+                'completion_status': 'pending_review',
+                'status': 'pending_review',
+              };
+            });
 
-          // Refresh deliveries
-          await _fetchDeliveriesIfNeeded();
+            // Refresh deliveries
+            await _fetchDeliveriesIfNeeded();
 
-          // Refresh projects list
-          ref.invalidate(myProjectsProvider);
-          await ref.read(myProjectsProvider.future);
+            // Refresh projects list
+            ref.invalidate(myProjectsProvider);
+            await ref.read(myProjectsProvider.future);
 
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Delivery submitted successfully ✅'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            Navigator.pop(context);
-          }
-        },
-        isSubmitting: false,
-      ),
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Delivery submitted successfully ✅'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              Navigator.pop(context);
+            }
+          },
+          isSubmitting: false,
+        );
+      },
     );
   }
   
   // Handle Approve Delivery (client)
   Future<void> _handleApproveDelivery(BuildContext context) async {
     if (_isLoading) return;
+    final project = _project;
+    if (project == null) return;
     
     setState(() => _isLoading = true);
     
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.approveDelivery(widget.project.id);
+      final response = await repository.approveDelivery(project.id);
       
       if (!response.success) {
         throw Exception(response.message ?? 'Failed to approve delivery');
@@ -1745,12 +2255,17 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   // Handle Request Changes (client)
   Future<void> _handleRequestChanges(BuildContext context, String message) async {
     if (_isLoading) return;
+    final project = _project;
+    if (project == null) return;
     
     setState(() => _isLoading = true);
     
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.requestChanges(widget.project.id, message);
+      final response = await repository.requestProjectChanges(
+        projectId: project.id,
+        message: message,
+      );
       
       if (!response.success) {
         throw Exception(response.message ?? 'Failed to send change request');
@@ -1766,10 +2281,15 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         _isLoading = false;
       });
       
+      // Invalidate providers to refresh data
+      ref.invalidate(changeRequestsProvider(project.id));
+      ref.invalidate(projectByIdProvider(project.id));
+      _fetchDeliveriesIfNeeded();
+      
       // Refresh deliveries
       await _fetchDeliveriesIfNeeded();
       
-      // Refresh projects list
+      // Refresh projects list (so badges update)
       ref.invalidate(myProjectsProvider);
       await ref.read(myProjectsProvider.future);
       
@@ -1814,6 +2334,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Build Files Sheet UI (read-only, no actions)
   Widget _buildFilesSheet(BuildContext context) {
+    final project = _project;
+    if (project == null) return const SizedBox.shrink();
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -1837,7 +2359,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Project Files — ${widget.project.title}',
+                    'Project Files — ${project.title}',
                     style: AppTextStyles.titleLarge.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -1995,6 +2517,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Build Receive Sheet UI
   Widget _buildReceiveSheet(BuildContext context) {
+    final project = _project;
+    if (project == null) return const SizedBox.shrink();
     final latestDelivery = _deliveries.isNotEmpty ? _deliveries.first : null;
     
     return Container(
@@ -2020,7 +2544,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Receive Project — ${widget.project.title}',
+                    'Receive Project — ${project.title}',
                     style: AppTextStyles.titleLarge.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -2090,7 +2614,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
               OutlinedButton.icon(
                 onPressed: _fetchDeliveriesIfNeeded,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Refresh'),
+                label: Text(AppLocalizations.of(context)!.refresh),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.accentOrange,
                   side: const BorderSide(color: AppColors.border),
@@ -2103,7 +2627,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           const SizedBox(height: 12),
           if (latestDelivery == null)
             Text(
-              'No deliveries yet.',
+              AppLocalizations.of(context)!.noDeliveries,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -2289,7 +2813,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                       Navigator.pop(context);
                       await _handleApproveDelivery(context);
                     } : null,
-                    label: 'Approve',
+                    label: AppLocalizations.of(context)!.approve,
                     isEnabled: hasDelivery,
                     height: 48,
                     borderRadius: 12,
@@ -2419,7 +2943,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       final savePath = '${orderzHouseDir.path}/$fileName';
       
       // Get auth token from secure storage
-      final token = await SecureStorageService.getToken();
+      final token = await SecureStore.readAccessToken();
       
       // Create Dio instance with auth headers
       final dio = Dio();
@@ -2603,6 +3127,8 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
   
   // Open review delivery (client) - DEPRECATED: Use _openReceivePanel instead
   Future<void> _openReviewDelivery(BuildContext context) async {
+    final project = _project;
+    if (project == null) return;
     final repository = ref.read(projectsRepositoryProvider);
     List<Map<String, dynamic>> deliveries = [];
     bool isLoading = true;
@@ -2611,74 +3137,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          if (isLoading && deliveries.isEmpty) {
-            repository.getProjectDeliveries(widget.project.id).then((response) {
-              setModalState(() {
-                if (response.success && response.data != null) {
-                  deliveries = response.data!;
-                }
-                isLoading = false;
-              });
-            }).catchError((e) {
-              setModalState(() {
-                isLoading = false;
-              });
-            });
-          }
-
-          return ReviewDeliveryBottomSheet(
-            project: widget.project,
-            deliveries: deliveries,
-            isLoading: isLoading,
-            onClose: () => Navigator.pop(context),
-            onApprove: (projectId) async {
-              final repository = ref.read(projectsRepositoryProvider);
-              final response = await repository.approveDelivery(projectId);
-              if (!response.success) {
-                throw Exception(response.message ?? 'Failed to approve delivery');
-              }
-              setState(() {
-                _projectData = {
-                  ...?_projectData,
-                  'completion_status': 'completed',
-                  'status': 'completed',
-                };
-              });
-              
-              // Refresh deliveries
-              await _fetchDeliveriesIfNeeded();
-              
-              ref.invalidate(myProjectsProvider);
-              await ref.read(myProjectsProvider.future);
-            },
-            onRequestChanges: (projectId, message) async {
-              final repository = ref.read(projectsRepositoryProvider);
-              final response = await repository.requestChanges(projectId, message);
-              if (!response.success) {
-                throw Exception(response.message ?? 'Failed to send change request');
-              }
-              setState(() {
-                _projectData = {
-                  ...?_projectData,
-                  'status': 'in_progress',
-                  'completion_status': 'in_progress',
-                };
-              });
-              
-              // Refresh deliveries
-              await _fetchDeliveriesIfNeeded();
-              
-              ref.invalidate(myProjectsProvider);
-              await ref.read(myProjectsProvider.future);
-            },
-            onRefresh: () {
-              setModalState(() {
-                isLoading = true;
-                deliveries = [];
-              });
-              repository.getProjectDeliveries(widget.project.id).then((response) {
+      builder: (context) {
+        final proj = _project;
+        if (proj == null) return const SizedBox.shrink();
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            if (isLoading && deliveries.isEmpty) {
+              repository.getProjectDeliveries(proj.id).then((response) {
                 setModalState(() {
                   if (response.success && response.data != null) {
                     deliveries = response.data!;
@@ -2690,10 +3155,75 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                   isLoading = false;
                 });
               });
-            },
-          );
-        },
-      ),
+            }
+
+            return ReviewDeliveryBottomSheet(
+              project: proj,
+              deliveries: deliveries,
+              isLoading: isLoading,
+              onClose: () => Navigator.pop(context),
+              onApprove: (projectId) async {
+                final repository = ref.read(projectsRepositoryProvider);
+                final response = await repository.approveDelivery(projectId);
+                if (!response.success) {
+                  throw Exception(response.message ?? 'Failed to approve delivery');
+                }
+                setState(() {
+                  _projectData = {
+                    ...?_projectData,
+                    'completion_status': 'completed',
+                    'status': 'completed',
+                  };
+                });
+                
+                // Refresh deliveries
+                await _fetchDeliveriesIfNeeded();
+                
+                ref.invalidate(myProjectsProvider);
+                await ref.read(myProjectsProvider.future);
+              },
+              onRequestChanges: (projectId, message) async {
+                final repository = ref.read(projectsRepositoryProvider);
+                final response = await repository.requestChanges(projectId, message);
+                if (!response.success) {
+                  throw Exception(response.message ?? 'Failed to send change request');
+                }
+                setState(() {
+                  _projectData = {
+                    ...?_projectData,
+                    'status': 'in_progress',
+                    'completion_status': 'in_progress',
+                  };
+                });
+                
+                // Refresh deliveries
+                await _fetchDeliveriesIfNeeded();
+                
+                ref.invalidate(myProjectsProvider);
+                await ref.read(myProjectsProvider.future);
+              },
+              onRefresh: () {
+                setModalState(() {
+                  isLoading = true;
+                  deliveries = [];
+                });
+                repository.getProjectDeliveries(proj.id).then((response) {
+                  setModalState(() {
+                    if (response.success && response.data != null) {
+                      deliveries = response.data!;
+                    }
+                    isLoading = false;
+                  });
+                }).catchError((e) {
+                  setModalState(() {
+                    isLoading = false;
+                  });
+                });
+              },
+            );
+          },
+        );
+      },
     );
   }
   
@@ -2711,8 +3241,10 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          final project = _project;
+          if (project == null) return const SizedBox.shrink();
           return OffersBottomSheet(
-            project: widget.project,
+            project: project,
             offers: _offers,
             isLoading: false,
             isSubmitting: isSubmitting,
@@ -2781,8 +3313,10 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          final project = _project;
+          if (project == null) return const SizedBox.shrink();
           return ApplicationsBottomSheet(
-            project: widget.project,
+            project: project,
             applications: _applications,
             isLoading: false,
             isSubmitting: isSubmitting,
@@ -2929,9 +3463,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     BuildContext context,
     String label,
     bool isBidding,
-    int projectId,
-  ) {
-    final isDisabled = _hasApplied || _isLoading || _isCheckingApplied;
+    int projectId, {
+    bool loading = false,
+  }) {
+    final isDisabled = loading || _hasApplied || _isLoading || _isCheckingApplied;
+    final showSpinner = loading || _isLoading;
 
     return Container(
       decoration: BoxDecoration(
@@ -2976,10 +3512,10 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                   },
             borderRadius: BorderRadius.circular(20),
             child: Center(
-              child: _isLoading
+              child: showSpinner
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

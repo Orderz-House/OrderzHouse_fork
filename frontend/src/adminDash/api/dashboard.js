@@ -264,6 +264,7 @@ export async function fetchFreelancerDashboard() {
     API.get("/projects/myprojects"),
     API.get("/tasks/freelancer/assigned"),
     API.get("/offers/projects/open"),
+
   ]);
 
   const projects =
@@ -355,7 +356,11 @@ export async function fetchFreelancerDashboard() {
     },
   ];
 
-  return { balanceCards, activeProjects, latestClientProjects };
+  const subscriptionStatus = subscriptionRes.status === "fulfilled" 
+    ? subscriptionRes.value?.data 
+    : null;
+
+  return { balanceCards, activeProjects, latestClientProjects, subscriptionStatus };
 }
 
 /* ===================== Helpers ===================== */

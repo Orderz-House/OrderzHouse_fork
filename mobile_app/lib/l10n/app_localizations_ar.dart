@@ -42,6 +42,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noNotificationsMessage => 'ستظهر الإشعارات هنا عند استلامها.';
 
   @override
+  String get projectNotFound => 'المشروع غير موجود';
+
+  @override
+  String get projectNotFoundMessage =>
+      'ربما تم حذف المشروع أو ليس لديك صلاحية الوصول إليه.';
+
+  @override
+  String get backToNotifications => 'العودة إلى الإشعارات';
+
+  @override
+  String get loadingProject => 'جاري تحميل المشروع...';
+
+  @override
+  String get thisNotificationHasNoLink => 'هذا الإشعار لا يحتوي على رابط';
+
+  @override
   String get markAllAsRead => 'تحديد الكل كمقروء';
 
   @override
@@ -341,6 +357,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get refresh => 'تحديث';
+
+  @override
+  String get expandAll => 'توسيع الكل';
+
+  @override
+  String get collapseAll => 'طي الكل';
+
+  @override
+  String get lastUpdated => 'آخر تحديث';
+
+  @override
+  String get policySearchHint => 'تصفية الأقسام…';
 
   @override
   String get update => 'تحديث';
@@ -737,7 +765,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get yourWorkspace => 'مساحة العمل';
 
   @override
-  String get actionRequired => 'يتطلب إجراء';
+  String get actionRequired => 'قيد التنفيذ';
 
   @override
   String get noActionsRequired => 'لا توجد إجراءات مطلوبة';
@@ -797,6 +825,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get orContinueWith => 'أو تابع باستخدام';
+
+  @override
+  String get continueWithGoogle => 'المتابعة عبر Google';
 
   @override
   String get email => 'البريد الإلكتروني';
@@ -2342,4 +2373,40 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get passwordRequirements => '8 أحرف كحد أدنى، حرف كبير، حرف صغير، رقم';
+
+  @override
+  String get filters => 'الفلاتر';
+
+  @override
+  String get oldestFirst => 'الأقدم أولاً';
+
+  @override
+  String get allTypes => 'جميع الأنواع';
+
+  @override
+  String get anyBudget => 'أي ميزانية';
+
+  @override
+  String get budgetLessThan50 => 'حتى 50 د.أ';
+
+  @override
+  String get budget50To200 => '50 – 200 د.أ';
+
+  @override
+  String get budgetAbove200 => '200+ د.أ';
+
+  @override
+  String get deliveryTime => 'وقت التسليم';
+
+  @override
+  String get anyTime => 'أي وقت';
+
+  @override
+  String get deliveryShort => 'حتى 7 أيام';
+
+  @override
+  String get deliveryMedium => '8 – 30 يوماً';
+
+  @override
+  String get deliveryLong => 'أكثر من 30 يوماً';
 }

@@ -14,6 +14,11 @@
   "notificationsSubtitle": "إدارة تفضيلات الإشعارات",
   "noNotifications": "لا توجد إشعارات بعد",
   "noNotificationsMessage": "ستظهر الإشعارات هنا عند استلامها.",
+  "projectNotFound": "المشروع غير موجود",
+  "projectNotFoundMessage": "ربما تم حذف المشروع أو ليس لديك صلاحية الوصول إليه.",
+  "backToNotifications": "العودة إلى الإشعارات",
+  "loadingProject": "جاري تحميل المشروع...",
+  "thisNotificationHasNoLink": "هذا الإشعار لا يحتوي على رابط",
   "markAllAsRead": "تحديد الكل كمقروء",
   "clearAll": "مسح الكل",
   
@@ -123,6 +128,10 @@
   "showLess": "عرض أقل",
   "loadMore": "تحميل المزيد",
   "refresh": "تحديث",
+  "expandAll": "توسيع الكل",
+  "collapseAll": "طي الكل",
+  "lastUpdated": "آخر تحديث",
+  "policySearchHint": "تصفية الأقسام…",
   "update": "تحديث",
   "continue_": "متابعة",
   "skip": "تخطي",
@@ -274,7 +283,7 @@
   "projectCompleted": "اكتمل المشروع",
   
   "yourWorkspace": "مساحة العمل",
-  "actionRequired": "يتطلب إجراء",
+  "actionRequired": "قيد التنفيذ",
   "noActionsRequired": "لا توجد إجراءات مطلوبة",
   "noActiveProjects": "لا توجد مشاريع نشطة",
   "getInspired": "احصل على الإلهام",
@@ -300,8 +309,9 @@
   "createAccount": "إنشاء حساب",
   "alreadyHaveAccount": "لديك حساب بالفعل؟",
   "dontHaveAccount": "ليس لديك حساب؟",
-  "orContinueWith": "أو تابع باستخدام",
-  
+"orContinueWith": "أو تابع باستخدام",
+  "continueWithGoogle": "المتابعة عبر Google",
+
   "email": "البريد الإلكتروني",
   "emailAddress": "عنوان البريد الإلكتروني",
   "enterEmail": "أدخل بريدك الإلكتروني",
@@ -999,5 +1009,18 @@
   "passwordUppercase": "كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل",
   "passwordLowercase": "كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل",
   "passwordNumber": "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل",
-  "passwordRequirements": "8 أحرف كحد أدنى، حرف كبير، حرف صغير، رقم"
+  "passwordRequirements": "8 أحرف كحد أدنى، حرف كبير، حرف صغير، رقم",
+
+  "filters": "الفلاتر",
+  "oldestFirst": "الأقدم أولاً",
+  "allTypes": "جميع الأنواع",
+  "anyBudget": "أي ميزانية",
+  "budgetLessThan50": "حتى 50 د.أ",
+  "budget50To200": "50 – 200 د.أ",
+  "budgetAbove200": "200+ د.أ",
+  "deliveryTime": "وقت التسليم",
+  "anyTime": "أي وقت",
+  "deliveryShort": "حتى 7 أيام",
+  "deliveryMedium": "8 – 30 يوماً",
+  "deliveryLong": "أكثر من 30 يوماً"
 }

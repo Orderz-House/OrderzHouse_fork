@@ -93,6 +93,7 @@ const Sidebar = ({
     danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
   };
 
+
   const location = useLocation();
   const pathname = location?.pathname || "/";
 
@@ -108,6 +109,10 @@ const Sidebar = ({
   useEffect(() => {
     if (!token) return;
     if (profile?.email) return;
+    if (!API_BASE) {
+      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
+      return;
+    }
 
     setProfileLoading(true);
     API
@@ -123,7 +128,11 @@ const Sidebar = ({
           null;
         if (u) setProfile(u);
       })
-      .catch(() => {})
+      .catch((error) => {
+        // Silently fail - don't crash the UI
+        console.warn("Error fetching user profile in Sidebar:", error);
+        // Don't set profile to avoid infinite retries
+      })
       .finally(() => setProfileLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profile?.email]);

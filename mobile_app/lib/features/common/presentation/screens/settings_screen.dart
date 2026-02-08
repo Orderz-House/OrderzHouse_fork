@@ -201,6 +201,85 @@ class SettingsScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
+            // Legal & Help Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border, width: 1),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadowColorLight,
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.privacy_tip_outlined,
+                      title: l10n.privacyPolicy,
+                      subtitle: null,
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/privacy-policy');
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderLight,
+                      indent: 72,
+                    ),
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.description_outlined,
+                      title: l10n.termsAndConditions,
+                      subtitle: null,
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/terms-conditions');
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderLight,
+                      indent: 72,
+                    ),
+                    _buildSettingTile(
+                      context: context,
+                      icon: Icons.help_outline_rounded,
+                      title: l10n.helpFaq,
+                      subtitle: null,
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.iconGray,
+                        size: 24,
+                      ),
+                      onTap: () {
+                        context.push('/help-faq');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Account & Security Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
