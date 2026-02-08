@@ -36,6 +36,8 @@ dependencies:
   # Storage
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   # Local DB cache (run build_runner to generate app_database.g.dart when adding Drift)
   path_provider: ^2.1.1
 
@@ -47,6 +49,9 @@ dependencies:
 
   # Localization
   intl: 0.20.2
+
+  # Responsive UI
+  flutter_screenutil: ^5.9.3
 
   # Utilities
   image_picker: ^1.0.7
@@ -75,6 +80,7 @@ flutter:
   assets:
     - .env
     - assets/icon.png
+    - assets/policies/
 
 flutter_launcher_icons:
   android: true

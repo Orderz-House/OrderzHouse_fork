@@ -43,6 +43,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll see notifications here when you receive them.';
 
   @override
+  String get projectNotFound => 'Project not found';
+
+  @override
+  String get projectNotFoundMessage =>
+      'This project may have been deleted or you don\'t have access to it.';
+
+  @override
+  String get backToNotifications => 'Back to Notifications';
+
+  @override
+  String get loadingProject => 'Loading project...';
+
+  @override
+  String get thisNotificationHasNoLink => 'This notification has no link';
+
+  @override
   String get markAllAsRead => 'Mark all as read';
 
   @override
@@ -343,6 +359,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refresh => 'Refresh';
+
+  @override
+  String get expandAll => 'Expand all';
+
+  @override
+  String get collapseAll => 'Collapse all';
+
+  @override
+  String get lastUpdated => 'Last updated';
+
+  @override
+  String get policySearchHint => 'Filter sections…';
 
   @override
   String get update => 'Update';

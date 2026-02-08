@@ -9,6 +9,7 @@ import '../../../../core/models/notification_target.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/config/app_config.dart';
 import '../providers/notifications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -86,10 +87,10 @@ class NotificationsPage extends ConsumerWidget {
               ),
               data: (notifications) {
                 if (notifications.isEmpty) {
-                  return const EmptyState(
+                  return EmptyState(
                     icon: Icons.notifications_none_rounded,
-                    title: 'No notifications yet',
-                    message: 'You\'ll see notifications here when you receive them.',
+                    title: l10n.noNotifications,
+                    message: l10n.noNotificationsMessage,
                   );
                 }
 
@@ -264,16 +265,21 @@ class NotificationsPage extends ConsumerWidget {
 
     if (target == null) {
       // No valid target - show snackbar
+      final l10nNav = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This notification has no link'),
+        SnackBar(
+          content: Text(l10nNav.thisNotificationHasNoLink),
           backgroundColor: AppColors.textSecondary,
         ),
       );
       return;
     }
 
-    // Navigate to target
+    // Navigate to target (same go_router route as MyProjects: /project/:id)
+    if (AppConfig.isDevelopment) {
+      // ignore: avoid_print
+      print('Current locale before navigation: ${Localizations.localeOf(context)}');
+    }
     try {
       target.navigate(context);
     } catch (e) {

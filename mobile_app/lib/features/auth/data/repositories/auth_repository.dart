@@ -92,6 +92,10 @@ class AuthRepository {
       if (data['token'] != null) {
         final token = data['token'] as String;
         await SecureStore.saveAccessToken(token);
+        final refreshToken = data['refreshToken'] as String?;
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await SecureStore.saveRefreshToken(refreshToken);
+        }
 
         final rawUser = data['userInfo'] ?? data['user'];
         if (rawUser == null || rawUser is! Map<String, dynamic>) {
@@ -168,6 +172,10 @@ class AuthRepository {
       if (data['token'] != null) {
         final token = data['token'] as String;
         await SecureStore.saveAccessToken(token);
+        final refreshToken = data['refreshToken'] as String?;
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await SecureStore.saveRefreshToken(refreshToken);
+        }
 
         final userData = data['userInfo'] as Map<String, dynamic>;
         // Include terms acceptance fields
@@ -215,6 +223,10 @@ class AuthRepository {
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
       await SecureStore.saveAccessToken(token);
+      final refreshToken = data['refreshToken'] as String?;
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await SecureStore.saveRefreshToken(refreshToken);
+      }
 
       final userData = data['userInfo'] as Map<String, dynamic>;
       // Include terms acceptance fields

@@ -3,6 +3,7 @@ import '../../../../core/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../../../core/storage/secure_store.dart';
 import '../../../../core/cache/cache_service.dart';
+import '../../../../core/routing/route_tracker.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -21,11 +22,14 @@ final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>(
 class AuthState {
   final User? user;
   final bool isLoading;
+  /// True while restoring session on app startup; router should show splash and not redirect to login.
+  final bool isChecking;
   final String? error;
 
   const AuthState({
     this.user,
     this.isLoading = false,
+    this.isChecking = false,
     this.error,
   });
 
@@ -35,23 +39,27 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repository, this._ref) : super(const AuthState()) {
-    _init();
+  AuthNotifier(this._repository, this._ref) : super(const AuthState(isChecking: true)) {
+    restoreSession();
   }
 
   final AuthRepository _repository;
   final Ref _ref;
 
-  Future<void> _init() async {
-    state = const AuthState(isLoading: true);
+  /// Restore session from secure storage on app startup.
+  /// Sets isChecking false and either authenticated (with user) or unauthenticated.
+  Future<void> restoreSession() async {
     final token = await SecureStore.readAccessToken();
-    if (token != null) {
-      final response = await _repository.getUserData();
-      if (response.success && response.data != null) {
-        state = AuthState(user: response.data);
-        return;
-      }
+    if (token == null) {
+      state = const AuthState();
+      return;
     }
+    final response = await _repository.getUserData();
+    if (response.success && response.data != null) {
+      state = AuthState(user: response.data);
+      return;
+    }
+    // Token invalid or expired; if we had refresh we could try here
     state = const AuthState();
   }
 
@@ -131,6 +139,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await _repository.logout();
     await CacheService.clearAll();
+    await RouteTracker.clearLastRoute();
     // Signal user-scoped providers to refresh (no ref.invalidate to avoid CircularDependencyError)
     _ref.read(authEpochProvider.notifier).state++;
     state = const AuthState();

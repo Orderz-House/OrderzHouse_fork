@@ -19,12 +19,17 @@ class StaleWhileRevalidateProvider<T> {
   }) {
     return FutureProvider.autoDispose<T>((ref) async {
       // 1. Try to load from cache first (instant)
-      final cached = await CacheService.get<T>(cacheKey, fromJson);
+      final cached = CacheService.getCached<T>(cacheKey, fromJson);
       
       // 2. Start fetching fresh data in background (don't await yet)
       final freshDataFuture = fetchFn().then((data) async {
         // Save to cache when fresh data arrives
-        await CacheService.set(cacheKey, data, toJson);
+        await CacheService.setCached(
+          cacheKey,
+          data,
+          DateTime.now().millisecondsSinceEpoch,
+          toJson,
+        );
         return data;
       }).catchError((error) {
         // If fetch fails, return cached data if available

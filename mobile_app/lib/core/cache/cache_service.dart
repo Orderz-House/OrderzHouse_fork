@@ -1,125 +1,111 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-/// Cache service for storing and retrieving cached data
-/// Uses SharedPreferences for persistence across app restarts
+/// Cache service using Hive for non-sensitive data (projects, categories, etc.).
+/// Do NOT store auth tokens here — use flutter_secure_storage.
 class CacheService {
-  static const String _cachePrefix = 'app_cache_';
-  static const String _cacheTimestampPrefix = 'app_cache_ts_';
-  static const Duration _defaultCacheDuration = Duration(hours: 1);
+  static const String boxName = 'app_cache';
+  static const String _timestampSuffix = '_ts';
+  static const Duration defaultTtl = Duration(minutes: 10);
 
-  /// Get cached data by key
-  static Future<T?> get<T>(String key, T Function(Map<String, dynamic>) fromJson) async {
+  static Box<String>? _box;
+
+  /// Call from main() after Hive.initFlutter(). Opens [boxName].
+  static Future<void> init() async {
+    if (_box != null) return;
+    _box = await Hive.openBox<String>(boxName);
+  }
+
+  static Box<String> get _instance {
+    if (_box == null) throw StateError('CacheService.init() must be called before use');
+    return _box!;
+  }
+
+  /// Get cached value. Returns null if missing or decode fails.
+  static T? getCached<T>(String key, T Function(Map<String, dynamic>) fromJson) {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '$_cachePrefix$key';
-      final timestampKey = '$_cacheTimestampPrefix$key';
-      
-      final cachedData = prefs.getString(cacheKey);
-      final timestamp = prefs.getInt(timestampKey);
-      
-      if (cachedData == null || timestamp == null) {
-        return null;
-      }
-      
-      // Check if cache is expired
-      final cacheAge = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(timestamp));
-      if (cacheAge > _defaultCacheDuration) {
-        // Cache expired, but return it anyway for stale-while-revalidate
-        // The caller will use it while fetching fresh data
-      }
-      
-      final jsonData = json.decode(cachedData) as Map<String, dynamic>;
-      return fromJson(jsonData);
+      final raw = _instance.get(key);
+      if (raw == null) return null;
+      final map = json.decode(raw) as Map<String, dynamic>;
+      final data = map['v'];
+      if (data == null) return null;
+      return fromJson(data as Map<String, dynamic>);
     } catch (e) {
-      print('❌ [CacheService] Error getting cache for $key: $e');
       return null;
     }
   }
 
-  /// Get cached list data by key
+  /// Store value with [timestamp] (e.g. DateTime.now().millisecondsSinceEpoch).
+  static Future<void> setCached<T>(
+    String key,
+    T value,
+    int timestamp,
+    Map<String, dynamic> Function(T) toJson,
+  ) async {
+    try {
+      final map = {'v': toJson(value), 'ts': timestamp};
+      await _instance.put(key, json.encode(map));
+      await _instance.put('$key$_timestampSuffix', timestamp.toString());
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /// True if cache for [key] is older than [ttl]. Returns true if key missing.
+  static bool isExpired(String key, [Duration ttl = defaultTtl]) {
+    try {
+      final raw = _instance.get('$key$_timestampSuffix');
+      if (raw == null) return true;
+      final ts = int.tryParse(raw);
+      if (ts == null) return true;
+      return DateTime.now().millisecondsSinceEpoch - ts > ttl.inMilliseconds;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Get cached list (sync). Returns null if missing or decode fails.
+  static List<T>? getListSync<T>(String key, T Function(Map<String, dynamic>) fromJson) {
+    try {
+      final raw = _instance.get(key);
+      if (raw == null) return null;
+      final map = json.decode(raw) as Map<String, dynamic>;
+      final list = map['v'];
+      if (list == null || list is! List) return null;
+      return (list as List<dynamic>)
+          .map((e) => fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get cached list (async). Compatible with existing await CacheService.getList(...).
   static Future<List<T>?> getList<T>(String key, T Function(Map<String, dynamic>) fromJson) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '$_cachePrefix$key';
-      final timestampKey = '$_cacheTimestampPrefix$key';
-      
-      final cachedData = prefs.getString(cacheKey);
-      final timestamp = prefs.getInt(timestampKey);
-      
-      if (cachedData == null || timestamp == null) {
-        return null;
-      }
-      
-      final jsonData = json.decode(cachedData) as List<dynamic>;
-      return jsonData.map((item) => fromJson(item as Map<String, dynamic>)).toList();
-    } catch (e) {
-      print('❌ [CacheService] Error getting cache list for $key: $e');
-      return null;
-    }
+    return getListSync(key, fromJson);
   }
 
-  /// Set cached data (for freezed models with toJson)
-  static Future<void> set<T>(String key, T data, Map<String, dynamic> Function(T) toJson) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '$_cachePrefix$key';
-      final timestampKey = '$_cacheTimestampPrefix$key';
-      
-      final jsonData = toJson(data);
-      final jsonString = json.encode(jsonData);
-      
-      await prefs.setString(cacheKey, jsonString);
-      await prefs.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
-    } catch (e) {
-      print('❌ [CacheService] Error setting cache for $key: $e');
-    }
-  }
-
-  /// Set cached list data (for freezed models with toJson)
+  /// Set cached list with current timestamp.
   static Future<void> setList<T>(String key, List<T> data, Map<String, dynamic> Function(T) toJson) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '$_cachePrefix$key';
-      final timestampKey = '$_cacheTimestampPrefix$key';
-      
-      final jsonData = data.map((item) => toJson(item)).toList();
-      final jsonString = json.encode(jsonData);
-      
-      await prefs.setString(cacheKey, jsonString);
-      await prefs.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
+      final list = data.map((e) => toJson(e)).toList();
+      final map = {'v': list, 'ts': ts};
+      await _instance.put(key, json.encode(map));
+      await _instance.put('$key$_timestampSuffix', ts.toString());
     } catch (e) {
-      print('❌ [CacheService] Error setting cache list for $key: $e');
+      // ignore
     }
   }
 
-  /// Clear cache for a specific key
+  /// Clear one key (and its timestamp).
   static Future<void> clear(String key) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '$_cachePrefix$key';
-      final timestampKey = '$_cacheTimestampPrefix$key';
-      
-      await prefs.remove(cacheKey);
-      await prefs.remove(timestampKey);
-    } catch (e) {
-      print('❌ [CacheService] Error clearing cache for $key: $e');
-    }
+    await _instance.delete(key);
+    await _instance.delete('$key$_timestampSuffix');
   }
 
-  /// Clear all cache
+  /// Clear all entries in cache box.
   static Future<void> clearAll() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys();
-      
-      for (final key in keys) {
-        if (key.startsWith(_cachePrefix) || key.startsWith(_cacheTimestampPrefix)) {
-          await prefs.remove(key);
-        }
-      }
-    } catch (e) {
-      print('❌ [CacheService] Error clearing all cache: $e');
-    }
+    await _instance.clear();
   }
 }

@@ -164,6 +164,36 @@ abstract class AppLocalizations {
   /// **'You\'ll see notifications here when you receive them.'**
   String get noNotificationsMessage;
 
+  /// No description provided for @projectNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Project not found'**
+  String get projectNotFound;
+
+  /// No description provided for @projectNotFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This project may have been deleted or you don\'t have access to it.'**
+  String get projectNotFoundMessage;
+
+  /// No description provided for @backToNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Notifications'**
+  String get backToNotifications;
+
+  /// No description provided for @loadingProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading project...'**
+  String get loadingProject;
+
+  /// No description provided for @thisNotificationHasNoLink.
+  ///
+  /// In en, this message translates to:
+  /// **'This notification has no link'**
+  String get thisNotificationHasNoLink;
+
   /// No description provided for @markAllAsRead.
   ///
   /// In en, this message translates to:
@@ -763,6 +793,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get refresh;
+
+  /// No description provided for @expandAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand all'**
+  String get expandAll;
+
+  /// No description provided for @collapseAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse all'**
+  String get collapseAll;
+
+  /// No description provided for @lastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get lastUpdated;
+
+  /// No description provided for @policySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter sections…'**
+  String get policySearchHint;
 
   /// No description provided for @update.
   ///

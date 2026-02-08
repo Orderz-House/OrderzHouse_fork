@@ -54,7 +54,7 @@ class CachedDataNotifier<T> extends StateNotifier<CachedDataState<T>> {
   Future<void> _loadData() async {
     try {
       // 1. Try to load from cache first (instant)
-      final cached = await CacheService.get<T>(cacheKey, fromJson);
+      final cached = CacheService.getCached<T>(cacheKey, fromJson);
       
       if (cached != null) {
         // Show cached data immediately
@@ -73,7 +73,12 @@ class CachedDataNotifier<T> extends StateNotifier<CachedDataState<T>> {
         final freshData = await fetchFn();
         
         // Save to cache
-        await CacheService.set(cacheKey, freshData, toJson);
+        await CacheService.setCached(
+          cacheKey,
+          freshData,
+          DateTime.now().millisecondsSinceEpoch,
+          toJson,
+        );
         
         // Update with fresh data
         state = CachedDataState<T>(
@@ -119,7 +124,12 @@ class CachedDataNotifier<T> extends StateNotifier<CachedDataState<T>> {
     state = state.copyWith(isRefreshing: true);
     try {
       final freshData = await fetchFn();
-      await CacheService.set(cacheKey, freshData, toJson);
+      await CacheService.setCached(
+        cacheKey,
+        freshData,
+        DateTime.now().millisecondsSinceEpoch,
+        toJson,
+      );
       state = CachedDataState<T>(
         data: freshData,
         isLoading: false,

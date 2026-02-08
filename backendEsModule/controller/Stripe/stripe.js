@@ -1,7 +1,15 @@
 import Stripe from "stripe";
 import pool from "../../models/db.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+let _stripe = null;
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || String(key).trim() === "") {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  if (!_stripe) _stripe = new Stripe(key);
+  return _stripe;
+}
 
 /* ============================================================
    PLAN CHECKOUT SESSION
@@ -61,7 +69,7 @@ export const createCheckoutSession = async (req, res) => {
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
@@ -85,22 +93,93 @@ export const createCheckoutSession = async (req, res) => {
 
 /* ============================================================
    PROJECT CHECKOUT SESSION (NO PROJECT CREATED YET)
+   Currency: JOD (3 decimal places) => unit_amount = amount * 1000
 ============================================================ */
 export const createProjectCheckoutSession = async (req, res) => {
   try {
-    const userId = req.token.userId;
-    const projectData = req.body;
-
-    let amount = 0;
-
-    if (projectData.project_type === "fixed") {
-      amount = projectData.budget;
-    } else if (projectData.project_type === "hourly") {
-      amount = projectData.hourly_rate * 3; // minimum
-    } else {
-      return res.status(400).json({ error: "Bidding paid later" });
+    if (!process.env.STRIPE_SECRET_KEY || String(process.env.STRIPE_SECRET_KEY).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "STRIPE_SECRET_KEY is not configured",
+        code: null,
+      });
     }
 
+    const clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl || String(clientUrl).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "CLIENT_URL is not configured (required for success/cancel URLs)",
+        code: null,
+      });
+    }
+
+    const userId = req.token.userId;
+    const projectData = req.body;
+    const projectType = projectData.project_type;
+    const title = projectData.title != null ? String(projectData.title).trim() : "";
+
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Project title is required",
+        code: null,
+      });
+    }
+
+    let unitAmount = 0;
+
+    if (projectType === "fixed") {
+      const budget = Number(projectData.budget);
+      if (!Number.isFinite(budget) || budget <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid budget for fixed project (must be a positive number)",
+          code: null,
+        });
+      }
+      unitAmount = Math.round(budget * 1000);
+    } else if (projectType === "hourly") {
+      const hourlyRate = Number(projectData.hourly_rate);
+      const durationHours = projectData.duration_hours != null
+        ? Number(projectData.duration_hours)
+        : null;
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid hourly_rate for hourly project (must be a positive number)",
+          code: null,
+        });
+      }
+      if (durationHours == null || !Number.isFinite(durationHours) || durationHours <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or missing duration_hours for hourly project",
+          code: null,
+        });
+      }
+      const amount = hourlyRate * durationHours;
+      unitAmount = Math.round(amount * 1000);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Bidding projects are paid later",
+        code: null,
+      });
+    }
+
+    if (unitAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Calculated amount must be greater than zero",
+        code: null,
+      });
+    }
+
+    const successUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-cancel`;
+
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -109,9 +188,9 @@ export const createProjectCheckoutSession = async (req, res) => {
           price_data: {
             currency: "jod",
             product_data: {
-              name: projectData.title,
+              name: `Project: ${title}`,
             },
-            unit_amount: Math.round(amount * 1000),
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
@@ -119,17 +198,38 @@ export const createProjectCheckoutSession = async (req, res) => {
       metadata: {
         user_id: String(userId),
         purpose: "project",
-        project_data: JSON.stringify(projectData), // TEMP storage
+        project_data: JSON.stringify(projectData),
       },
-      success_url: `${process.env.CLIENT_URL}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/projects/payment-cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
 
-    return res.json({ url: session.url });
-
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
   } catch (err) {
-    console.error("createProjectCheckoutSession error:", err);
-    return res.status(500).json({ error: "Stripe error" });
+    console.error("createProjectCheckoutSession error:", {
+      type: err.type,
+      code: err.code,
+      message: err.message,
+      rawMessage: err.raw?.message,
+      rawParam: err.raw?.param,
+      rawDeclineCode: err.raw?.decline_code,
+    });
+
+    const isDev = process.env.NODE_ENV !== "production";
+    const safeMessage = isDev
+      ? (err.raw?.message ?? err.message ?? "Stripe error")
+      : "Payment setup failed. Please try again.";
+    const code = err.code ?? null;
+
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: safeMessage,
+      code,
+    });
   }
 };
 
@@ -145,7 +245,7 @@ export const confirmCheckoutSession = async (req, res) => {
     }
 
     // 1️⃣ Retrieve Stripe session
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await getStripe().checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== "paid") {
       return res.status(400).json({ ok: false, error: "Payment not completed" });

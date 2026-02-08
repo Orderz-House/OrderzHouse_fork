@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.mobile_app"
-        minSdk = 21  // Required for Google Sign-In
+        minSdk = flutter.minSdkVersion  // Required for Google Sign-In
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
