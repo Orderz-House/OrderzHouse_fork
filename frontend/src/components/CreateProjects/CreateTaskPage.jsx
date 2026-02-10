@@ -11,8 +11,6 @@ import PaymentStep from "./steps/PaymentStep";
 
 import { createTaskApi } from "./api/tasks"; // عدّل المسار حسب مشروعك
 
-const THEME = "#028090";
-
 export default function CreateTaskPage() {
   const token = useSelector((state) => state.auth.token);
   const navigate = useNavigate();
@@ -83,28 +81,27 @@ export default function CreateTaskPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+    <div className="min-h-screen bg-slate-50 py-12">
+      {/* Hero banner — Create Task theme (orange/red) */}
+      <div className="bg-gradient-to-b from-orange-400 to-red-500 py-8 px-4 mb-8 -mx-4 sm:mx-0 sm:rounded-2xl">
+        <div className="max-w-5xl mx-auto text-center">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Create New Task
           </h1>
-          <p className="text-slate-500 mt-2">
+          <p className="text-white/90 text-sm sm:text-base mt-1">
             Follow the steps below to create your task
           </p>
         </div>
-
+      </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Progress */}
         <div className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="relative">
             <div className="absolute left-4 right-4 top-[28px] h-1 bg-slate-100 rounded-full" />
             <div
-              className="absolute left-4 top-[28px] h-1 rounded-full transition-all"
+              className="absolute left-4 top-[28px] h-1 rounded-full transition-all bg-gradient-to-r from-orange-400 to-red-500"
               style={{
                 width: `calc(${((step - 1) / 3) * 100}% + 0.5rem)`,
-                background:
-                  "linear-gradient(90deg,#02C39A, #028090 60%, #05668D)",
               }}
             />
             <div className="relative grid grid-cols-4 gap-2">
@@ -116,17 +113,9 @@ export default function CreateTaskPage() {
                     <div
                       className={`w-14 h-14 rounded-full grid place-items-center font-bold ring-2 transition-all ${
                         active
-                          ? "text-white"
+                          ? "text-white bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-orange-200/50"
                           : "bg-white text-slate-500 ring-slate-200"
                       }`}
-                      style={{
-                        background: active
-                          ? "linear-gradient(135deg,#02C39A,#028090)"
-                          : undefined,
-                        boxShadow: active
-                          ? "0 10px 24px -10px rgba(2,128,144,.45)"
-                          : undefined,
-                      }}
                     >
                       {done ? (
                         <svg
@@ -148,7 +137,7 @@ export default function CreateTaskPage() {
                     </div>
                     <span
                       className={`mt-2 text-sm font-semibold ${
-                        active ? "text-[#028090]" : "text-slate-500"
+                        active ? "text-orange-600" : "text-slate-500"
                       }`}
                     >
                       {s.label}

@@ -1,7 +1,8 @@
 // components/CreateProjects/steps/ProjectCoverStep.jsx
 import React, { useState } from "react";
 
-const THEME = "#6d5ffd";
+const primaryBtn =
+  "bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus-visible:ring-2 focus-visible:ring-orange-200/70";
 
 export default function ProjectCoverStep({
   coverPic,
@@ -40,7 +41,7 @@ export default function ProjectCoverStep({
         </p>
       </div>
 
-      <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-[#6d5ffd]/50 transition-all">
+      <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-orange-400/50 transition-all">
         {!preview ? (
           <>
             <input
@@ -101,8 +102,7 @@ export default function ProjectCoverStep({
         <button
           type="button"
           onClick={onNext}
-          className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
-          style={{ background: THEME }}
+          className={`flex-1 h-12 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${primaryBtn}`}
         >
           {preview ? "Continue" : "Skip"}
           <svg

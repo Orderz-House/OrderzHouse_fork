@@ -1,8 +1,8 @@
 import express from "express";
-import multer from "multer";
 
 import { authentication } from "../middleware/authentication.js";
 import requireVerifiedWithSubscription from "../middleware/requireVerifiedWithSubscription.js";
+import { upload, uploadErrorHandler } from "../middleware/uploadMiddleware.js";
 
 import {
   createProject,
@@ -44,10 +44,10 @@ import {
 } from "../controller/projectsManagment/projectsFiltering.js";
 
 import {getAssignmentsForProject} from "../controller/projectsManagment/assignments.js";
-
+import validateRequest from "../middleware/validateRequest.js";
+import { createProjectValidator } from "../middleware/validators/projectValidators.js";
 
 const projectsRouter = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
 /* ======================================================================
    1) CREATE + MY PROJECTS
@@ -56,7 +56,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 projectsRouter.post(
   "/",
   authentication,
-  uploadProjectMedia, 
+  uploadProjectMedia,
+  createProjectValidator,
+  validateRequest,
   createProject
 );
 
@@ -295,4 +297,7 @@ projectsRouter.post(
   authentication,
   requestProjectChanges
 );
+
+projectsRouter.use(uploadErrorHandler);
+
 export default projectsRouter;

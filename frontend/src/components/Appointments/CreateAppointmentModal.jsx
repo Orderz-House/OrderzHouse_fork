@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Calendar, MessageCircle, User, AlertCircle } from "lucide-react";
 import { useAppointments } from "./hook/useAppointments";
-import axios from "axios";
+import API from "../../api/client.js";
 import { useSelector } from "react-redux";
 
 const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) => {
@@ -16,13 +16,11 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
   });
   const [dateError, setDateError] = useState("");
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     if (isAdmin) {
       const fetchFreelancers = async () => {
         try {
-          const response = await axios.get(`${API_BASE}/users/allfreelance`, {
+          const response = await API.get("/users/allfreelance", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setFreelancers(response.data.freelancers || []);
@@ -32,7 +30,7 @@ const CreateAppointmentModal = ({ onClose, onSuccess, isAdmin, validateDate }) =
       };
       fetchFreelancers();
     }
-  }, [isAdmin, token, API_BASE]);
+  }, [isAdmin, token]);
 
   const validateDateTime = (dateTime) => {
     if (!dateTime) return true;

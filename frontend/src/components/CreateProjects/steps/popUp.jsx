@@ -32,7 +32,7 @@ export default function DevelopmentNoticeModal({ onClose, onConfirm }) {
 
           <button
             onClick={onConfirm}
-            className="flex-1 h-11 rounded-xl bg-black text-white hover:bg-black/90"
+            className="flex-1 h-11 rounded-xl bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold focus-visible:ring-2 focus-visible:ring-orange-200/70"
           >
             I Understand
           </button>

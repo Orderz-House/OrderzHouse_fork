@@ -29,23 +29,30 @@ export default function Pagination({
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
-  // Button
+  const btnBase =
+    "inline-flex items-center justify-center gap-2 select-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/70 ";
+  const btnInactive =
+    "bg-white border border-slate-200/70 text-slate-700 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200/70 ";
+  const btnDisabled =
+    "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-70 ";
+
+  // Button (Prev/Next)
   const EdgeBtn = ({ disabled, onClick, children }) => (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={
-        "h-10 px-4 rounded-full ring-1 ring-slate-200 bg-white text-slate-700 " +
-        "inline-flex items-center gap-2 select-none transition " +
-        (disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow")
+        "h-10 px-4 rounded-full " +
+        btnBase +
+        (disabled ? btnDisabled : btnInactive)
       }
     >
       {children}
     </button>
   );
 
-  // Icon
+  // Icon (‹ › « »)
   const IconBtn = ({ label, disabled, onClick }) => (
     <button
       type="button"
@@ -53,21 +60,21 @@ export default function Pagination({
       disabled={disabled}
       aria-label={label}
       className={
-        "h-8 w-8 rounded-full ring-1 ring-slate-200 bg-white text-slate-700 " +
-        "grid place-items-center select-none transition " +
-        (disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow")
+        "h-8 w-8 rounded-full grid place-items-center " +
+        btnBase +
+        (disabled ? btnDisabled : btnInactive)
       }
     >
       {label}
     </button>
   );
 
-  // Pill
+  // Pill (page numbers)
   const PagePill = ({ p }) => {
     const active = p === page;
     if (p === "…") {
       return (
-        <li className="text-slate-400 select-none px-1">…</li>
+        <li className="text-slate-400 select-none px-1" aria-hidden="true">…</li>
       );
     }
     return (
@@ -77,10 +84,10 @@ export default function Pagination({
           aria-current={active ? "page" : undefined}
           onClick={() => onPageChange(p)}
           className={
-            "h-8 min-w-8 px-3 rounded-full ring-1 ring-slate-200 transition " +
+            "h-8 min-w-8 px-3 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/70 " +
             (active
-              ? "bg-[#6d5ffd] text-white font-medium shadow-sm"
-              : "bg-white text-slate-700 hover:shadow")
+              ? "bg-gradient-to-b from-orange-500 to-red-500 text-white font-medium border border-white/20 shadow-sm hover:from-orange-600 hover:to-red-600"
+              : "bg-white border border-slate-200/70 text-slate-700 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200/70")
           }
         >
           {p}

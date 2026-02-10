@@ -1,8 +1,5 @@
-import axios from "axios";
+import API from "../../../api/client.js";
 import store from "../../../store/store";
-
-const API_BASE = `${import.meta.env.VITE_APP_API_URL}/projects`;
-const ASSIGNMENTS_BASE = `${import.meta.env.VITE_APP_API_URL}/assignments`;
 
 const getAuthToken = () => {
   return store?.getState()?.auth?.token || localStorage.getItem("token") || null;
@@ -18,8 +15,8 @@ const getAuthHeaders = () => {
 ============================== */
 export const fetchAuthProjectsByCategory = async (categoryId) => {
   try {
-    const { data } = await axios.get(
-      `${API_BASE}/category/${categoryId}`,
+    const { data } = await API.get(
+      `/projects/category/${categoryId}`,
       getAuthHeaders()
     );
     if (data.success) return data.projects;
@@ -32,8 +29,8 @@ export const fetchAuthProjectsByCategory = async (categoryId) => {
 
 export const fetchAuthProjectsBySubCategory = async (subCategoryId) => {
   try {
-    const { data } = await axios.get(
-      `${API_BASE}/sub-category/${subCategoryId}`,
+    const { data } = await API.get(
+      `/projects/sub-category/${subCategoryId}`,
       getAuthHeaders()
     );
     if (data.success) return data.projects;
@@ -46,8 +43,8 @@ export const fetchAuthProjectsBySubCategory = async (subCategoryId) => {
 
 export const fetchAuthProjectsBySubSubCategory = async (subSubCategoryId) => {
   try {
-    const { data } = await axios.get(
-      `${API_BASE}/sub-sub-category/${subSubCategoryId}`,
+    const { data } = await API.get(
+      `/projects/sub-sub-category/${subSubCategoryId}`,
       getAuthHeaders()
     );
     if (data.success) return data.projects;
@@ -62,14 +59,14 @@ export const fetchAuthProjectsBySubSubCategory = async (subSubCategoryId) => {
    🌍 Public (No Auth)
 ============================== */
 export const fetchProjectsByCategory = async (categoryId) => {
-  const { data } = await axios.get(`${API_BASE}/public/category/${categoryId}`);
+  const { data } = await API.get(`/projects/public/category/${categoryId}`);
   if (data.success) return data.projects;
   throw new Error(data.message || "Failed to fetch projects");
 };
 
 export const fetchProjectsBySubCategory = async (subCategoryId) => {
-  const { data } = await axios.get(
-    `${API_BASE}/public/subcategory/${subCategoryId}`
+  const { data } = await API.get(
+    `/projects/public/subcategory/${subCategoryId}`
   );
   if (data.success) return data.projects;
   throw new Error(data.message || "Failed to fetch projects");
@@ -77,8 +74,8 @@ export const fetchProjectsBySubCategory = async (subCategoryId) => {
 
 export const fetchProjectsBySubSubCategory = async (subSubCategoryId) => {
   try {
-    const { data } = await axios.get(
-      `${API_BASE}/public/subsubcategory/${subSubCategoryId}`
+    const { data } = await API.get(
+      `/projects/public/subsubcategory/${subSubCategoryId}`
     );
     if (data.success) return data.projects;
     throw new Error(data.message || "Failed to fetch projects");
@@ -122,7 +119,7 @@ export const getProjectByIdApi = async (projectId, token) => {
       ? { headers: { Authorization: `Bearer ${authToken}` } }
       : {};
 
-    const { data } = await axios.get(`${API_BASE}/${projectId}`, config);
+    const { data } = await API.get(`/projects/${projectId}`, config);
 
     if (!data.success) throw new Error(data.message || "Failed to fetch project");
     return data.project;
@@ -139,8 +136,8 @@ export const getProjectFilesApi = async (projectId) => {
   if (!projectId) throw new Error("Missing projectId");
 
   try {
-    const { data } = await axios.get(
-      `${API_BASE}/${projectId}/files`,
+    const { data } = await API.get(
+      `/projects/${projectId}/files`,
       getAuthHeaders()
     );
     if (data.success && Array.isArray(data.files)) {
@@ -160,8 +157,8 @@ export const getAssignmentForFreelancerApi = async (projectId) => {
   if (!projectId) throw new Error("Missing projectId");
 
   try {
-    const { data } = await axios.get(
-      `${import.meta.env.VITE_APP_API_URL}/assignments/${projectId}/my-assignment`,
+    const { data } = await API.get(
+      `/assignments/${projectId}/my-assignment`,
       getAuthHeaders()
     );
 
@@ -180,8 +177,8 @@ export const getAssignmentForFreelancerApi = async (projectId) => {
 
 export const applyToProjectApi = async (projectId, body = {}, token) => {
   try {
-    const { data } = await axios.post(
-      `${API_BASE}/${projectId}/apply`,
+    const { data } = await API.post(
+      `/projects/${projectId}/apply`,
       body,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -201,8 +198,8 @@ export const checkIfAssignedApi = async (projectId, token) => {
   if (!authToken) throw new Error("Missing authentication token");
 
   try {
-    const { data } = await axios.get(
-      `${ASSIGNMENTS_BASE}/${projectId}/check`,
+    const { data } = await API.get(
+      `/assignments/${projectId}/check`,
       { headers: { Authorization: `Bearer ${authToken}` } }
     );
 
@@ -211,5 +208,39 @@ export const checkIfAssignedApi = async (projectId, token) => {
   } catch (err) {
     console.error("checkIfAssignedApi error:", err.response?.data || err.message);
     return false;
+  }
+};
+
+/* ==============================
+   📋 GET ALL PROJECT IDs WHERE USER HAS APPLIED
+============================== */
+export const getMyAppliedProjectIds = async () => {
+  const token = getAuthToken();
+  if (!token) return new Set();
+
+  try {
+    // Use the existing endpoint that returns applications for user's projects
+    // We'll extract project IDs from it
+    const { data } = await axios.get(
+      `${API_BASE}/applications/my-projects`,
+      getAuthHeaders()
+    );
+
+    if (data.success && Array.isArray(data.applications)) {
+      // Extract unique project IDs from applications
+      const projectIds = new Set(
+        data.applications
+          .map((app) => app.project_id)
+          .filter((id) => id != null)
+      );
+      return projectIds;
+    }
+    return new Set();
+  } catch (err) {
+    // If endpoint doesn't work or user is not a client, try alternative approach
+    // For freelancers, we need to query assignments differently
+    // For now, return empty set and let individual checks happen
+    console.warn("getMyAppliedProjectIds: Could not fetch applications", err.response?.data || err.message);
+    return new Set();
   }
 };

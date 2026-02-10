@@ -1,4 +1,6 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 import "./models/db.js";
 import cors from "cors";
 import http from "http";
@@ -14,6 +16,22 @@ import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
 import liveScreenRoutes from "./router/LiveScreen.js";
 
 dotenv.config();
+
+// Check email configuration (dev only)
+if (process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "production") {
+  const hasEmailConfig = !!(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_PORT &&
+    process.env.EMAIL_USER &&
+    process.env.EMAIL_PASS &&
+    (process.env.EMAIL_FROM || process.env.EMAIL_USER)
+  );
+  console.log(`📧 SMTP configured: ${hasEmailConfig ? "✅ YES" : "❌ NO"}`);
+  if (!hasEmailConfig) {
+    console.warn("⚠️  Email OTP verification will fail without SMTP configuration");
+    console.warn("   Required: SMTP_HOST, SMTP_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_FROM (optional)");
+  }
+}
 
 // Start real-time deadline watcher
 startDeadlineWatcher();
@@ -70,6 +88,7 @@ if (process.env.NODE_ENV !== "test") {
 app.use("/stripe", webhookRouter);
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(cors({
   origin: [
@@ -82,26 +101,41 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-
-
-
-// Rate limiter (optional)
-/*
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: "try again later",
+// Global rate limiter for all API routes (does not apply to /stripe webhook mounted above)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
 });
-app.use(limiter);
-*/
+app.use(globalLimiter);
+
+// Stricter limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many login/register attempts, please try later." },
+});
+app.use("/users/login", authLimiter);
+app.use("/users/register", authLimiter);
+
+// Stricter limiter for password reset (do not leak email existence)
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many password reset attempts. Please try again later." },
+});
+app.use("/users/forgot-password", passwordResetLimiter);
+app.use("/users/reset-password", passwordResetLimiter);
 
 // ============================================================
 // 🧪 TEMP TEST ROUTES - Direct in index.js (MUST BE FIRST!)
 // ============================================================
-app.patch("/auth/change-password", (req, res) => {
-  console.log("✅ TEMP /auth/change-password route HIT!");
-  res.json({ success: true, message: "TEMP change-password endpoint working!" });
-});
 
 app.get("/payments/history", (req, res) => {
   console.log("✅ TEMP /payments/history route HIT!");

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
-import axios from "axios";
+import API from "../../api/client.js";
 
 /**
  * Desktop: تصميم مشابه للصورة (Logo + أقسام: OVERVIEW / FRIENDS / SETTINGS)
@@ -87,13 +87,12 @@ const Sidebar = ({
 
   // Brand colors (غيرها مرة واحدة هنا)
   const BRAND = {
-    primary: "#6D5FFD", // بنفسجي مثل الصورة
-    primarySoft: "#F2F1FF",
-    primaryRing: "#E6E2FF",
+    primary: "#F97316", // بنفسجي مثل الصورة
+    primarySoft: "#F97316",
+    primaryRing: "#F97316",
     danger: "#F97316", // لون Logout بالصورة (برتقالي/أحمر)
   };
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   const location = useLocation();
   const pathname = location?.pathname || "/";
@@ -110,10 +109,14 @@ const Sidebar = ({
   useEffect(() => {
     if (!token) return;
     if (profile?.email) return;
+    if (!API_BASE) {
+      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
+      return;
+    }
 
     setProfileLoading(true);
-    axios
-      .get(`${API_BASE}/users/getUserdata`, {
+    API
+      .get("/users/getUserdata", {
         headers: { authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -125,7 +128,11 @@ const Sidebar = ({
           null;
         if (u) setProfile(u);
       })
-      .catch(() => {})
+      .catch((error) => {
+        // Silently fail - don't crash the UI
+        console.warn("Error fetching user profile in Sidebar:", error);
+        // Don't set profile to avoid infinite retries
+      })
       .finally(() => setProfileLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profile?.email]);
@@ -217,17 +224,16 @@ const Sidebar = ({
         className={`
           hidden lg:block lg:h-screen lg:sticky lg:top-0
           transition-all duration-300 ease-in-out
-          ${showDesktopSidebar ? "lg:w-72" : "lg:w-0 overflow-hidden"}
+          ${showDesktopSidebar ? "lg:w-[280px] xl:w-[300px]" : "lg:w-0 overflow-hidden"}
         `}
       >
         <div className="h-full">
-          <div className="h-full bg-white  border border-slate-100 shadow-sm px-5 py-6 flex flex-col">
-            
-{/* User */} 
-            <div className="mb-6">
+          <div className="h-full bg-white border border-slate-100 shadow-sm px-5 py-6 flex flex-col items-center">
+            {/* User */}
+            <div className="w-full px-3 mb-2">
               <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-3">
                 <div
-                  className="relative w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                  className="relative h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                   style={{ background: BRAND.primary }}
                   aria-hidden="true"
                 >
@@ -238,7 +244,7 @@ const Sidebar = ({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold text-slate-900 truncate">
+                    <div className="text-[14px] font-bold text-slate-900 truncate">
                       {displayName}
                     </div>
                     {profileLoading && (
@@ -247,7 +253,7 @@ const Sidebar = ({
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-500 truncate">
+                  <div className="text-[12px] text-slate-500 truncate">
                     {profile?.email || "—"}
                   </div>
                 </div>
@@ -255,55 +261,47 @@ const Sidebar = ({
             </div>
 
             {/* OVERVIEW */}
-            <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-2">
-              OVERVIEW
-            </div>
+            <div className="w-full pt-2 px-3">
+              <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                OVERVIEW
+              </div>
+              <nav className="flex flex-col space-y-2 px-3">
+                {navigation.map((item) => {
+                  const Icon = item.icon || defaultIcons[item.id] || User;
+                  const active = isItemActive(item);
 
-            <nav className="flex flex-col gap-1">
-              {navigation.map((item) => {
-                const Icon = item.icon || defaultIcons[item.id] || User;
-                const active = isItemActive(item);
-
-                return (
-                  <Clickable
-                    key={item.id}
-                    item={item}
-                    onClick={() => safeSetActivePage(item.id)}
-                    data-active={active ? "true" : "false"}
-                    className={`
-                      flex items-center gap-3 rounded-xl px-3 py-2.5
-                      transition-colors
-                      ${active ? "bg-slate-50" : "hover:bg-slate-50"}
-                    `}
-                  >
-                    <>
+                  return (
+                    <Clickable
+                      key={item.id}
+                      item={item}
+                      onClick={() => safeSetActivePage(item.id)}
+                      data-active={active ? "true" : "false"}
+                      className={`
+                        relative flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-800
+                        hover:bg-slate-100 active:scale-[0.99] transition
+                        ${active ? "bg-slate-100 text-slate-900" : ""}
+                      `}
+                    >
+                      {active && (
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full bg-orange-500" />
+                      )}
                       <Icon
-                        className="w-5 h-5"
-                        style={{ color: active ? BRAND.primary : "#111827" }}
+                        className={`h-5 w-5 shrink-0 ${active ? "text-orange-600" : "text-slate-500"}`}
                       />
-                      <span
-                        className={`text-sm ${
-                          active
-                            ? "font-semibold text-slate-900"
-                            : "font-medium text-slate-800"
-                        }`}
-                      >
-                        {item.name}
-                      </span>
-                    </>
-                  </Clickable>
-                );
-              })}
-            </nav>
+                      <span>{item.name}</span>
+                    </Clickable>
+                  );
+                })}
+              </nav>
+            </div>
 
             {/* FRIENDS */}
             {friends?.length > 0 && (
-              <div className="mt-7">
-                <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-3">
+              <div className="w-full px-3 mt-2">
+                <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
                   FRIENDS
                 </div>
-
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 px-3">
                   {friends.map((f) => (
                     <button
                       key={f.id ?? f.name}
@@ -349,12 +347,11 @@ const Sidebar = ({
             <div className="flex-1" />
 
             {/* SETTINGS */}
-            <div className="mt-8">
-              <div className="text-[10px] tracking-widest font-semibold text-slate-400 mb-3">
+            <div className="w-full px-3">
+              <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
                 SETTINGS
               </div>
-
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col space-y-2 px-3">
                 {bottomNavigation.map((item) => {
                   const Icon = item.icon || defaultIcons[item.id] || User;
                   const active = isItemActive(item);
@@ -370,34 +367,25 @@ const Sidebar = ({
                       }}
                       data-active={active ? "true" : "false"}
                       className={`
-                        flex items-center gap-3 rounded-xl px-3 py-2.5
-                        transition-colors
-                        ${active ? "bg-slate-50" : "hover:bg-slate-50"}
+                        relative flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-800
+                        hover:bg-slate-100 active:scale-[0.99] transition
+                        ${active ? "bg-slate-100 text-slate-900" : ""}
+                        ${isLogout ? "text-orange-600 hover:text-orange-700" : ""}
                       `}
                     >
-                      <>
-                        <Icon
-                          className="w-5 h-5"
-                          style={{
-                            color: isLogout
-                              ? BRAND.danger
-                              : active
-                              ? BRAND.primary
-                              : "#111827",
-                          }}
-                        />
-                        <span
-                          className={`text-sm font-medium ${
-                            isLogout
-                              ? "text-orange-500"
-                              : active
-                              ? "text-slate-900"
-                              : "text-slate-800"
-                          }`}
-                        >
-                          {item.name}
-                        </span>
-                      </>
+                      {active && !isLogout && (
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full bg-orange-500" />
+                      )}
+                      <Icon
+                        className={`h-5 w-5 shrink-0 ${
+                          isLogout
+                            ? "text-orange-600"
+                            : active
+                            ? "text-orange-600"
+                            : "text-slate-500"
+                        }`}
+                      />
+                      <span>{item.name}</span>
                     </Clickable>
                   );
                 })}

@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchCategories } from "../../Catigories/api/category";
 
-const categories = [
+const categoryConfig = [
   {
     title: "Programming",
     description: "Build web apps, APIs, and automations with modern tools.",
@@ -52,11 +54,51 @@ function useInViewOnce(
 
 export default function CategoriesShowcase() {
   const { ref: sectionRef, inView } = useInViewOnce();
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState(categoryConfig);
+
+  // Fetch category IDs and map to config
+  // Mapping display titles to actual DB category names
+  const titleToDbName = {
+    "Programming": "Development",
+    "Design": "Design",
+    "Content Writing": "Content Writing",
+  };
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const fetchedCats = await fetchCategories();
+        const mapped = categoryConfig.map((config) => {
+          const dbName = titleToDbName[config.title] || config.title;
+          const found = fetchedCats.find(
+            (cat) => cat.name?.toLowerCase() === dbName.toLowerCase()
+          );
+          return {
+            ...config,
+            id: found?.id || null,
+          };
+        });
+        setCategories(mapped);
+      } catch (err) {
+        console.error("Failed to load categories", err);
+        // Keep default config if fetch fails
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const handleCardClick = (category) => {
+    if (category.id) {
+      navigate(`/projectsPage?cat=${category.id}&page=1`);
+    }
+  };
 
   return (
     <div
       ref={sectionRef}
-      className="relative isolate overflow-hidden bg-slate-50 sm:bg-white min-h-[60vh] sm:h-screen"
+      className="relative isolate overflow-hidden bg-slate-50 sm:bg-white min-h-[60vh] sm:h-screen pb-12 2xl:pb-16 3xl:pb-20"
+
     >
       {/* ✅ FIX: إزالة clip-path لأنه يقص الشادو */}
       <style>{`
@@ -112,11 +154,14 @@ export default function CategoriesShowcase() {
 
       `}</style>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-12 sm:h-16 bg-gradient-to-b from-white to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-10 sm:h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-12 sm:h-16 bg-gradient-to-b from-white to-transparent" />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
-        <h1
+      <div className="mx-auto w-fit">
+        <div className="origin-top scale-100 2xl:scale-[1.06] 3xl:scale-[1.14] 4xl:scale-[1.22]">
+          <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-14">
+            <h1
+
           className={[
             "text-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-4xl",
             "sm:transition-all sm:duration-700 sm:ease-out sm:motion-safe:will-change-[transform,opacity,filter]",
@@ -145,11 +190,13 @@ export default function CategoriesShowcase() {
           {categories.map((c, i) => (
             <div
               key={c.title}
+              onClick={() => handleCardClick(c)}
               className={[
                 "group relative w-[84%] shrink-0 snap-center md:w-full md:shrink md:snap-align-none",
                 c.tilt,
                 c.offset,
                 "transition-transform duration-300 sm:hover:rotate-0 sm:hover:scale-[1.02]",
+                c.id ? "cursor-pointer" : "",
               ].join(" ")}
             >
               <div
@@ -185,14 +232,6 @@ export default function CategoriesShowcase() {
                       {c.description}
                     </p>
 
-                    <div className="mt-5 h-px w-full bg-gradient-to-r from-transparent via-slate-200/70 to-transparent" />
-
-                    <div className="mt-4 text-xs sm:text-sm font-medium text-slate-900/80">
-                      Explore{" "}
-                      <span className="inline-block transition sm:group-hover:translate-x-0.5">
-                        →
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -201,6 +240,9 @@ export default function CategoriesShowcase() {
           ))}
           </div>
         </div>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   );

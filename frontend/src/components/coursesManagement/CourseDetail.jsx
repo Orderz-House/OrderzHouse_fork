@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../api/client.js";
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -15,23 +15,21 @@ const CourseDetail = () => {
   const [error, setError] = useState('');
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     const fetchData = async () => {
       if (!token || !id) return;
       try {
-        const accessRes = await axios.get(`${API_BASE}/courses/check-access/${id}`, {
+        const accessRes = await API.get(`/courses/check-access/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHasAccess(accessRes.data.hasAccess);
 
         if (accessRes.data.hasAccess || userData?.role_id === 1) {
           const [courseRes, materialsRes] = await Promise.all([
-            axios.get(`${API_BASE}/courses/view/${id}`, {
+            API.get(`/courses/view/${id}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            axios.get(`${API_BASE}/courses/${id}/materials`, {
+            API.get(`/courses/${id}/materials`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
           ]);
@@ -52,7 +50,7 @@ const CourseDetail = () => {
     };
 
     fetchData();
-  }, [id, token, userData?.role_id, API_BASE]);
+  }, [id, token, userData?.role_id]);
 
   if (checkingAccess) {
     return (

@@ -2,15 +2,9 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import API from "../../api/axios.js";
 import { Search, ShieldCheck, UserPlus, X } from "lucide-react";
 import PeopleTable from "../Tables";
-
-const API_BASE = (
-  import.meta.env.VITE_APP_API_URL ||
-  import.meta.env.VITE_API_URL ||
-  ""
-).replace(/\/+$/, "");
 
 // Permissions options for new admin
 const PERMISSION_DEFS = [
@@ -218,8 +212,7 @@ function AddAdminModal({ token, onClose, onCreated }) {
     setLoading(true);
 
     try {
-      const url = `${API_BASE}/admUser/search`;
-      const { data } = await axios.get(url, {
+      const { data } = await API.get("/admUser/search", {
         params: { q },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -267,9 +260,8 @@ function AddAdminModal({ token, onClose, onCreated }) {
     setError("");
 
     try {
-      const url = `${API_BASE}/admUser/${id}`;
-      await axios.put(
-        url,
+      await API.put(
+        `/admUser/${id}`,
         {
           role_id: 1, // promote to admin
           permissions,

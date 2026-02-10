@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { fetchRelatedFreelancersApi } from "../api/projects";
 
-const THEME = "#6d5ffd";
+const primaryBtn =
+  "bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus-visible:ring-2 focus-visible:ring-orange-200/70";
 
 export default function AssignFreelancersStep({
   categoryId,
@@ -31,7 +32,7 @@ export default function AssignFreelancersStep({
 
       {fetchLoading ? (
         <div className="flex items-center justify-center py-12">
-          <svg className="animate-spin h-12 w-12" style={{ color: THEME }} viewBox="0 0 24 24">
+          <svg className="animate-spin h-12 w-12 text-orange-500" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
           </svg>
@@ -58,14 +59,13 @@ export default function AssignFreelancersStep({
                   type="button"
                   onClick={() => setSelectedFreelancer(f)}
                   className={`p-4 rounded-xl border-2 text-left transition-all w-full ${
-                    selected ? "border-[#6d5ffd] bg-[#E6F7F6] shadow-sm"
-                             : "border-slate-200 hover:border-[#6d5ffd]/50 hover:shadow-sm"
+                    selected ? "border-orange-500 bg-orange-50 shadow-sm"
+                             : "border-slate-200 hover:border-orange-400/50 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-12 h-12 rounded-full grid place-items-center font-bold text-white text-lg`}
-                      style={{ background: selected ? THEME : "#94a3b8" }}
+                      className={`w-12 h-12 rounded-full grid place-items-center font-bold text-white text-lg ${selected ? "bg-orange-500" : "bg-slate-400"}`}
                     >
                       {name.charAt(0).toUpperCase() || "F"}
                     </div>
@@ -75,7 +75,7 @@ export default function AssignFreelancersStep({
                       {f.hourly_rate && <p className="text-sm text-slate-500 mt-1">${f.hourly_rate}/hr</p>}
                     </div>
                     {selected && (
-                      <svg className="w-6 h-6" style={{ color: THEME }} fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     )}
@@ -86,8 +86,8 @@ export default function AssignFreelancersStep({
           </div>
 
           {selectedFreelancer && (
-            <div className="bg-[#E6F7F6] border border-[#6d5ffd]/30 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-2 text-[#05668D]">
+            <div className="bg-orange-50 border border-orange-200/70 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-2 text-orange-700">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
@@ -102,8 +102,7 @@ export default function AssignFreelancersStep({
             <button onClick={onBack} className="flex-1 h-12 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">Back</button>
             <button
               onClick={onNext}
-              className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
-              style={{ background: THEME }}
+              className={`flex-1 h-12 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${primaryBtn}`}
             >
               {selectedFreelancer ? "Continue with Freelancer" : "Skip"}
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,8 @@
 // components/CreateProjects/steps/ProjectFilesStep.jsx
 import React, { useState } from "react";
 
-const THEME = "#6d5ffd";
+const primaryBtn =
+  "bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus-visible:ring-2 focus-visible:ring-orange-200/70";
 
 export default function ProjectFilesStep({
   files,
@@ -61,8 +62,8 @@ export default function ProjectFilesStep({
       <div
         className={`rounded-2xl p-10 text-center border-2 border-dashed transition-all ${
           dragActive
-            ? "border-[#6d5ffd] bg-[#E6F7F6]"
-            : "border-slate-300 hover:border-[#6d5ffd]/50"
+            ? "border-orange-500 bg-orange-50"
+            : "border-slate-300 hover:border-orange-400/50"
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -112,8 +113,7 @@ export default function ProjectFilesStep({
               >
                 <div className="flex items-center gap-3">
                   <svg
-                    className="w-5 h-5"
-                    style={{ color: THEME }}
+                    className="w-5 h-5 text-orange-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -157,8 +157,7 @@ export default function ProjectFilesStep({
         <button
           type="button"
           onClick={onNext}
-          className="flex-1 h-12 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2"
-          style={{ background: THEME }}
+          className={`flex-1 h-12 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${primaryBtn}`}
         >
           {files.length === 0 ? "Skip" : "Continue"}
           <svg

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../api/client.js";
 import AuroraHeader, { useThemeLang } from "../AuroraHeader";
 import { CalendarDays, MapPin, Video, Check } from "lucide-react";
 
@@ -78,7 +78,7 @@ const generateTimeSlots = () => {
   const fetchSlots = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_APP_API_URL}/applicants-appointments/booked`, {
+      const res = await API.get("/applicants-appointments/booked", {
         params: { date },
       });
       const booked = res.data?.bookedTimes || [];
@@ -109,7 +109,7 @@ const generateTimeSlots = () => {
     if (!selected) return;
     setBooking(true);
     try {
-      await axios.post(`${import.meta.env.VITE_APP_API_URL}/applicants-appointments/public`, {
+      await API.post("/applicants-appointments/public", {
         survey_id: 1, // if you have a survey_id from form context
         appointment_date: date,
         appointment_time: selected.time,

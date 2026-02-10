@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HoverCardsBackground from "../../HoverCardsBackground";
 import {
-  fetchCategories,
-  fetchSubCategoriesByCategoryId,
+  fetchAllSubSubCategories,
 } from "../../Catigories/api/category";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -826,17 +825,18 @@ function HeroSearch({
   const [active, setActive] = useState(-1);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
 
-  const [cats, setCats] = useState([]);
-  const [subcats, setSubcats] = useState([]);
+  const [subSubCats, setSubSubCats] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // ---- helpers: normalize api objects (عشان لو أسماء الحقول تختلف)
   const norm = (x) => ({
-    id: x?.id ?? x?.categoryId ?? x?.subCategoryId ?? x?._id,
-    name: x?.name ?? x?.categoryName ?? x?.subCategoryName ?? x?.title ?? "",
+    id: x?.id ?? x?.subSubCategoryId ?? x?._id,
+    name: x?.name ?? x?.subSubCategoryName ?? x?.title ?? "",
+    subCategoryId: x?.sub_category_id ?? x?.subCategoryId,
+    categoryId: x?.category_id ?? x?.categoryId,
   });
 
-  // ---- load categories + subCategories once
+  // ---- load sub-sub-categories once
   useEffect(() => {
     let alive = true;
 
@@ -844,30 +844,16 @@ function HeroSearch({
       try {
         setLoading(true);
 
-        const catsRaw = await fetchCategories();
-        const catsNorm = (catsRaw || [])
+        const subSubCatsRaw = await fetchAllSubSubCategories();
+        const subSubCatsNorm = (subSubCatsRaw || [])
           .map(norm)
           .filter((c) => c.id && c.name);
 
-        // تحميل subCategories لكل Category
-        const subsAll = [];
-        await Promise.all(
-          catsNorm.map(async (c) => {
-            try {
-              const subsRaw = await fetchSubCategoriesByCategoryId(c.id);
-              (subsRaw || []).forEach((s) => {
-                const sn = norm(s);
-                if (sn.id && sn.name) subsAll.push({ ...sn, categoryId: c.id });
-              });
-            } catch {
-              // ignore per-category errors
-            }
-          })
-        );
-
         if (!alive) return;
-        setCats(catsNorm);
-        setSubcats(subsAll);
+        setSubSubCats(subSubCatsNorm);
+      } catch (err) {
+        console.error("Failed to load sub-sub-categories:", err);
+        if (alive) setSubSubCats([]);
       } finally {
         if (alive) setLoading(false);
       }
@@ -919,32 +905,25 @@ function HeroSearch({
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  // ---- suggestions (cats + subcats)
+  // ---- suggestions (only sub-sub-categories)
   const suggestions = useMemo(() => {
     const q = term.trim().toLowerCase();
     const limit = 10;
 
-    const catItems = cats.map((c) => ({
-      type: "cat",
-      id: c.id,
-      label: c.name,
-    }));
-
-    const subItems = subcats.map((s) => ({
-      type: "subcat",
+    const subSubItems = subSubCats.map((s) => ({
+      type: "subsubcat",
       id: s.id,
       label: s.name,
+      subCategoryId: s.subCategoryId,
       categoryId: s.categoryId,
     }));
 
-    const all = [...catItems, ...subItems];
+    if (!q) return subSubItems.slice(0, limit);
 
-    if (!q) return all.slice(0, limit);
-
-    return all
+    return subSubItems
       .filter((it) => it.label.toLowerCase().includes(q))
       .slice(0, limit);
-  }, [term, cats, subcats]);
+  }, [term, subSubCats]);
 
   const closeList = () => {
     setOpen(false);
@@ -958,21 +937,13 @@ function HeroSearch({
 
   const goBySuggestion = (s) => {
     if (!s) return;
-    if (s.type === "cat") {
-      goTo(`${to}?cat=${encodeURIComponent(s.id)}&page=1`);
-      return;
-    }
-    if (s.type === "subcat") {
-      goTo(
-        `${to}?cat=${encodeURIComponent(
-          s.categoryId
-        )}&subcat=${encodeURIComponent(s.id)}&page=1`
-      );
+    if (s.type === "subsubcat") {
+      goTo(`${to}?sub_sub_category_id=${encodeURIComponent(s.id)}&page=1`);
       return;
     }
   };
 
-  // نفس منطق ProjectsPage: إذا كتب اسم يطابق Category/SubCategory بالضبط -> يروح لهم
+  // Search by exact sub-sub-category name match, otherwise fallback to text search
   const goByText = (raw) => {
     const text = (raw ?? "").trim();
     if (!text) {
@@ -982,19 +953,9 @@ function HeroSearch({
 
     const q = text.toLowerCase();
 
-    const exactSub = subcats.find((s) => (s.name || "").toLowerCase() === q);
-    if (exactSub) {
-      goTo(
-        `${to}?cat=${encodeURIComponent(
-          exactSub.categoryId
-        )}&subcat=${encodeURIComponent(exactSub.id)}&page=1`
-      );
-      return;
-    }
-
-    const exactCat = cats.find((c) => (c.name || "").toLowerCase() === q);
-    if (exactCat) {
-      goTo(`${to}?cat=${encodeURIComponent(exactCat.id)}&page=1`);
+    const exactSubSub = subSubCats.find((s) => (s.name || "").toLowerCase() === q);
+    if (exactSubSub) {
+      goTo(`${to}?sub_sub_category_id=${encodeURIComponent(exactSubSub.id)}&page=1`);
       return;
     }
 
@@ -1037,16 +998,16 @@ function HeroSearch({
   return (
     <div className="mt-0 flex flex-col items-center gap-4 px-6">
       {/* Search */}
-      <form className="w-full max-w-md" onSubmit={onSubmit}>
+      <form className="w-full max-w-[clamp(420px,42vw,760px)]" onSubmit={onSubmit}>
         <label htmlFor="hero-search" className="sr-only">
           Search
         </label>
 
         <div
           ref={anchorRef}
-          className="rounded-full bg-gradient-to-r from-violet-200/70 via-orange-200/60 to-sky-200/70 p-[1px]"
+          className="rounded-full bg-gradient-to-r from-violet-200/70 via-orange-200/60 to-sky-200/70 p-[1px] h-11 lg:h-12 2xl:h-14 min-h-[44px]"
         >
-          <div className="relative rounded-full bg-white/70 backdrop-blur-md ring-1 ring-black/10 shadow-[0_18px_45px_rgba(17,24,39,0.08)]">
+          <div className="relative h-full min-h-[2.5rem] rounded-full bg-white/70 backdrop-blur-md ring-1 ring-black/10 shadow-[0_18px_45px_rgba(17,24,39,0.08)]">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
@@ -1075,14 +1036,14 @@ function HeroSearch({
               }}
               onKeyDown={onKeyDown}
               placeholder="Search anything..."
-              className="w-full rounded-full bg-transparent py-3 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2 focus:ring-violet-300/60"
+              className="h-full min-h-[2.5rem] w-full rounded-full bg-transparent py-3 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2 focus:ring-orange-200/70 lg:text-base"
               autoComplete="off"
             />
           </div>
         </div>
 
         {/* dropdown */}
-        {open && (loading || suggestions.length > 0) && (
+        {open && (
           <div
             ref={menuRef}
             className="fixed z-[99999] overflow-hidden rounded-2xl bg-white/90 backdrop-blur-md ring-1 ring-black/10 shadow-[0_24px_60px_rgba(0,0,0,0.14)]"
@@ -1094,7 +1055,7 @@ function HeroSearch({
           >
             {loading ? (
               <div className="px-4 py-3 text-sm text-gray-500">Loading…</div>
-            ) : (
+            ) : suggestions.length > 0 ? (
               <ul className="max-h-[320px] overflow-auto py-2">
                 {suggestions.map((s, i) => (
                   <li key={`${s.type}-${s.id}-${i}`}>
@@ -1110,20 +1071,12 @@ function HeroSearch({
                       ].join(" ")}
                     >
                       <span className="text-gray-800">{s.label}</span>
-                      <span
-                        className={[
-                          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                          s.type === "cat"
-                            ? "bg-violet-100 text-violet-700"
-                            : "bg-orange-100 text-orange-700",
-                        ].join(" ")}
-                      >
-                        {s.type === "cat" ? "Category" : "Sub"}
-                      </span>
                     </button>
                   </li>
                 ))}
               </ul>
+            ) : (
+              <div className="px-4 py-3 text-sm text-gray-500">No results</div>
             )}
           </div>
         )}
@@ -1132,7 +1085,7 @@ function HeroSearch({
       {/* Button (نفس ستايل زرّك) */}
       <button
         className={[
-          "rounded-full px-8 py-3",
+          "rounded-full px-6 py-2.5 2xl:px-10 2xl:py-3.5",
           "text-sm font-semibold text-white",
           "bg-gradient-to-b from-orange-400 to-red-500",
           "shadow-[0_14px_30px_rgba(249,115,22,0.35)]",
@@ -1155,7 +1108,7 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-white h-screen">
       <HoverCardsBackground className="min-h-screen">
-        <div className="pt-24 sm:pt-20">
+        <div className="pt-24 sm:pt-28 pb-10 lg:pb-14 2xl:pb-20">
           {/* ✅ Background soft glows (yellow + orange) */}
           <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
@@ -1163,7 +1116,7 @@ export default function Hero() {
           {/* <div className="pointer-events-none absolute bottom-[-120px] left-[10%] h-[320px] w-[320px] rounded-full bg-yellow-300/10 blur-3xl" />
           <div className="pointer-events-none absolute bottom-[-140px] right-[8%] h-[340px] w-[340px] rounded-full bg-orange-400/10 blur-3xl" /> */}
 
-          <div className="mx-auto max-w-6xl px-2\10 sm:px-20 xl:px-6">
+          <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-10 xl:px-8 2xl:px-10">
             <div className="relative">
               {/* ✅ Batman frame حول المحتوى */}
               <BatmanFrame
@@ -1184,11 +1137,12 @@ export default function Hero() {
                   rightAvatar={rightAvatar}
                 />
               </div>
-              <div
-                className="relative mx-auto  w-full max-w-[1088px] aspect-[1365/420] hidden md:block"
-                style={{ "--dur": "5.8s" }}
-              >
-                <NetworkLines />
+              <div className="relative mx-auto origin-center scale-100 lg:scale-[1.02] xl:scale-[1.08] 2xl:scale-[1.18] 3xl:scale-[1.28] 4xl:scale-[1.38]">
+                <div
+                  className="relative mx-auto w-full max-w-[1088px] aspect-[1365/420] hidden md:block"
+                  style={{ "--dur": "5.8s" }}
+                >
+                  <NetworkLines />
 
                 {/* Left avatar */}
                 <div className="absolute left-[0%] top-[58.5%] -translate-x-1/2 -translate-y-1/2">
@@ -1254,16 +1208,17 @@ export default function Hero() {
                     </div>
                   </div>
                 </div>
+                </div>
               </div>
               {/* Text */}
-              <div className="pb-16 sm:pb-20 pt-6 md:pt-12 lg:pt-10 xl:pt-0">
-                <h1 className="mx-auto max-w-3xl text-center text-[40px] font-extrabold leading-[0.98] tracking-tight text-gray-900 sm:text-5xl lg:text-5xl">
+              <div className="pb-16 sm:pb-20 pt-6 md:pt-12 lg:pt-10 xl:pt-32">
+                <h1 className="mx-auto max-w-3xl text-center font-extrabold tracking-tight text-gray-900 text-[clamp(1.8rem,6vw,2.6rem)] leading-[1.05] sm:text-[clamp(2.2rem,3.6vw,4.2rem)]">
                   All-in-one
                   <br />
                   platform
                 </h1>
 
-                <p className="mx-auto mt-6 max-w-md text-center text-sm leading-6 text-gray-500 sm:text-[15px]">
+                <p className="mx-auto mt-6 max-w-md text-center text-gray-500 text-[clamp(0.95rem,1.2vw,1.25rem)] leading-tight">
                   Where work finds its perfect home.
                 </p>
 

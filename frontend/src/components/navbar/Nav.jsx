@@ -10,12 +10,12 @@ import {
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLogout, setUserData } from "../../slice/auth/authSlice";
-import axios from "axios";
+import API from "../../api/client.js";
 import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
-const API_BASE = import.meta.env.VITE_APP_API_URL;
+
 const ORANGE = "#C2410C";
 const ORANGE_DARK = "#9A3412";
 
@@ -84,7 +84,7 @@ export default function Header() {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get(`${API_BASE}/notifications`, {
+      const { data } = await API.get("/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 10, unreadOnly: false },
       });
@@ -97,7 +97,7 @@ export default function Header() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get(`${API_BASE}/notifications/count`, {
+      const { data } = await API.get("/notifications/count", {
         headers: { authorization: `Bearer ${token}` },
         params: { unreadOnly: true },
       });
@@ -109,8 +109,8 @@ export default function Header() {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/${id}/read`,
+      await API.put(
+        `/notifications/${id}/read`,
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
@@ -125,8 +125,8 @@ export default function Header() {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/read-all`,
+      await API.put(
+        "/notifications/read-all",
         {},
         { headers: { authorization: `Bearer ${token}` } }
       );
@@ -143,6 +143,7 @@ export default function Header() {
   const handleLogout = () => {
     disconnectSocket();
     Cookies.remove("userData");
+    API.post("/users/logout").catch(() => {}); // clear refresh cookie
     dispatch(setLogout());
     navigate("/");
     window.location.reload();
@@ -158,8 +159,9 @@ export default function Header() {
   // ===== Load user + notifications =====
   useEffect(() => {
     if (!token) return;
-    axios
-      .get(`${API_BASE}/users/getUserdata`, {
+    API
+      .get("/users/getUserdata", {
+
         headers: { authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -167,7 +169,19 @@ export default function Header() {
         fetchNotifications();
         fetchUnreadCount();
       })
-      .catch(() => handleLogout());
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+        // Only logout on auth errors, not network errors
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          handleLogout();
+        } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+          // Network error - show message but don't logout
+          console.warn("Network error: Server may be unreachable");
+        } else {
+          // Other errors - logout to be safe
+          handleLogout();
+        }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);
 

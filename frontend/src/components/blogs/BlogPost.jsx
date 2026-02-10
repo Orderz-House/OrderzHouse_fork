@@ -7,7 +7,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import API from "../../api/client.js";
 import BlogTopBar from "./components/BlogTopBar.jsx";
 import AttachmentList from "../../components/Attachments/AttachmentList.jsx";
 
@@ -22,8 +22,6 @@ export default function BlogPost() {
   const [loading, setLoading] = useState(!post);
   const [err, setErr] = useState(null);
 
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   useEffect(() => {
     let mounted = true;
 
@@ -31,9 +29,7 @@ export default function BlogPost() {
       try {
         setLoading(true);
         setErr(null);
-        const { data } = await axios.get(
-          `${API_BASE}/blogs/${encodeURIComponent(id)}`
-        );
+        const { data } = await API.get(`/blogs/${encodeURIComponent(id)}`);
         if (!mounted) return;
 
         const item = data?.item ?? data ?? null;
@@ -54,7 +50,7 @@ export default function BlogPost() {
     return () => {
       mounted = false;
     };
-  }, [id, API_BASE]);
+  }, [id]);
 
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -117,7 +113,7 @@ export default function BlogPost() {
         showBack
         onBack={() => navigate(-1)}
         enableNew
-        createUrl={`${API_BASE}/blogs`}
+        createUrl="/blogs"
         onCreated={(created) => {
           const newId = created?.id ?? created?._id;
           if (newId) navigate(`/blogs/${newId}`);

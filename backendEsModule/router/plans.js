@@ -18,8 +18,8 @@ import freelancerOnly from "../middleware/freelancerOnly.js";
 
 const plansRouter = express.Router();
 
-
-plansRouter.get("/", authentication, freelancerOnly, getPlans);
+// Public route for viewing plans (pricing page)
+plansRouter.get("/", getPlans);
 
 
 plansRouter.get(

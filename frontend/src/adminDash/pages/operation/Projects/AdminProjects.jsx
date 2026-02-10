@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import API from "../../../api/axios.js";
 import { getClientProjects } from "../../../api/projects";
 import PeopleTable from "../../Tables";
 import { useToast } from "../../../../components/toast/ToastProvider";
@@ -34,6 +34,30 @@ const ringStyle = { border: `1px solid ${T.ring}` };
 
 /* ---------- Small UI helpers (Projects page) ---------- */
 const cx = (...a) => a.filter(Boolean).join(" ");
+
+const actionBtnBase =
+  "inline-flex items-center justify-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full text-xs font-semibold whitespace-nowrap " +
+  "transition shadow-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/70 " +
+  "disabled:opacity-60 disabled:pointer-events-none";
+
+const actionBtnVar = {
+  primary:
+    "text-white bg-gradient-to-b from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 hover:shadow",
+  outline:
+    "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
+  soft:
+    "bg-orange-50 text-orange-700 border border-orange-200/70 hover:bg-orange-100",
+};
+
+function ActionButton({ variant = "outline", className = "", ...props }) {
+  return (
+    <button
+      type="button"
+      className={`${actionBtnBase} ${actionBtnVar[variant] ?? actionBtnVar.outline} ${className}`.trim()}
+      {...props}
+    />
+  );
+}
 
 function statFromProjects(list = []) {
   const norm = (p) =>
@@ -82,7 +106,7 @@ function useProjectsStats(endpoint, token) {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await api.get(endpoint, {
+        const { data } = await API.get(endpoint, {
           headers: { authorization: `Bearer ${token}` },
         });
 
@@ -113,7 +137,7 @@ function useProjectsStats(endpoint, token) {
 function StatPill({ icon: Icon, label, value, tone = "slate" }) {
   const toneCls =
     tone === "violet"
-      ? "bg-violet-50 border-violet-200/70 text-violet-700"
+      ? "bg-orange-50 border-orange-200/70 text-orange-700"
       : tone === "emerald"
       ? "bg-emerald-50 border-emerald-200/70 text-emerald-700"
       : tone === "amber"
@@ -147,8 +171,7 @@ function StatPill({ icon: Icon, label, value, tone = "slate" }) {
 function ProjectsHero({ title, subtitle, eyebrow = "PROJECTS" }) {
   return (
     <div
-      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 lg:p-6 text-white shadow-sm"
-      style={{ background: "linear-gradient(135deg,#7C3AED,#6d5ffd,#8B5CF6)" }}
+      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 lg:p-6 text-white shadow-sm bg-gradient-to-b from-orange-400 to-red-500"
     >
       <div className="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
       <div className="absolute left-6 -bottom-24 h-56 w-56 rounded-full bg-black/10 blur-2xl" />
@@ -183,7 +206,7 @@ function ProjectsKPIs({ stats, loading }) {
         icon={Activity}
         label="Active"
         value={loading ? "…" : stats.active}
-        tone="violet"
+        tone="orange"
       />
       <StatPill
         icon={Clock}
@@ -208,12 +231,6 @@ function mapRole(roleId) {
   if (roleId === 3) return "freelancer";
   return "user";
 }
-
-/* ---------- Axios base ---------- */
-const api = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL || "",
-  // headers: { "Content-Type": "application/json" },
-});
 
 /* ===================== Entry ===================== */
 export default function Projects() {
@@ -366,7 +383,7 @@ function ClientProjects() {
 
     (async () => {
       try {
-        const { data } = await api.get("/offers/my-projects/offers", {
+        const { data } = await API.get("/offers/my-projects/offers", {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,
         });
 
@@ -410,7 +427,7 @@ function ClientProjects() {
   const fetchOffersForProject = async (projectId) => {
     if (!token) return;
     try {
-      const { data } = await api.get("/offers/my-projects/offers", {
+      const { data } = await API.get("/offers/my-projects/offers", {
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -445,7 +462,7 @@ function ClientProjects() {
     if (!token) return;
     setOffersSubmitting(true);
     try {
-      await api.post(
+      await API.post(
         "/offers/offers/approve-reject",
         { offerId, action },
         {
@@ -526,7 +543,7 @@ function ClientProjects() {
 
   //   (async () => {
   //     try {
-  //       const { data } = await api.get("/projects/applications/my-projects", {
+  //       const { data } = await API.get("/projects/applications/my-projects", {
   //         headers: token ? { authorization: `Bearer ${token}` } : undefined,
   //       });
 
@@ -560,7 +577,7 @@ function ClientProjects() {
   const fetchApplicationsForProject = async (projectId) => {
     if (!token) return;
     try {
-      const { data } = await api.get(
+      const { data } = await API.get(
         `/projects/project/${projectId}/applications`,
         {
           headers: { authorization: `Bearer ${token}` },
@@ -589,7 +606,7 @@ function ClientProjects() {
     if (!token) return;
     setAppsSubmitting(true);
     try {
-      await api.post(
+      await API.post(
         "/projects/applications/decision",
         { assignmentId, id: assignmentId, projectId, action },
         {
@@ -665,72 +682,68 @@ function ClientProjects() {
 
     return (
       <div className="flex flex-wrap gap-2 w-full">
-        <button
-          onClick={() => {
+        <ActionButton
+          variant="primary"
+          onClick={(e) => {
+            e.stopPropagation();
             setReviewHelpers(helpers);
             setReviewFor(row);
             setReviewMode(isCompleted ? "files" : "review");
             setReviewOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 h-10 rounded-xl text-white text-xs hover:shadow px-2"
-          style={{ backgroundColor: T.primary }}
           title={
             isCompleted ? "View project files" : "Review & receive delivery"
           }
         >
           {isCompleted ? (
-            <FolderOpen className="w-3 h-3" />
+            <FolderOpen className="w-4 h-4 shrink-0" />
           ) : (
-            <SendHorizontal className="w-3 h-3" />
+            <SendHorizontal className="w-4 h-4 shrink-0" />
           )}
           {isCompleted ? "Files" : "Receive"}
-        </button>
+        </ActionButton>
 
         {isCompleted ? (
-          <button
-            type="button"
-            onClick={() => {
+          <ActionButton
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
               setReviewHelpers(helpers);
               setReviewFor(row);
               setReviewMode("request");
               setReviewOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-            style={ringStyle}
             title="Request changes from freelancer"
           >
-            <Undo2 className="w-3 h-3" />
+            <Undo2 className="w-4 h-4 shrink-0" />
             Request changes
-          </button>
+          </ActionButton>
         ) : isBidding ? (
-          <button
-            type="button"
-            onClick={async () => {
+          <ActionButton
+            variant="outline"
+            onClick={async (e) => {
+              e.stopPropagation();
               setOffersProject({ id: pid, title: row.title });
-              // ✅ خذ نفس endpoint اللي تستعمله صفحة OffersReceived (نفس مصدر البيانات هنا)
               await fetchOffersForProject(pid);
               setOffersOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-            style={ringStyle}
           >
-            <Eye className="w-3 h-3" />
+            <Eye className="w-4 h-4 shrink-0" />
             Offers{pendingOffers ? ` (${pendingOffers})` : ""}
-          </button>
+          </ActionButton>
         ) : (
-          <button
-            type="button"
-            onClick={async () => {
+          <ActionButton
+            variant="outline"
+            onClick={async (e) => {
+              e.stopPropagation();
               setAppsProject({ id: pid, title: row.title });
               await fetchApplicationsForProject(pid);
               setAppsOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs px-2"
-            style={ringStyle}
           >
-            <Eye className="w-3 h-3" />
+            <Eye className="w-4 h-4 shrink-0" />
             Applicants{pendingCount ? ` (${pendingCount})` : ""}
-          </button>
+          </ActionButton>
         )}
       </div>
     );
@@ -824,7 +837,7 @@ function ClientProjects() {
             setReviewMode("review");
           }}
           onApprove={async (projectId) => {
-            await api.put(
+            await API.put(
               `/projects/${projectId}/approve`,
               { action: "approve" },
               {
@@ -857,7 +870,7 @@ function ClientProjects() {
               : undefined;
 
             // ✅ endpoint الصحيح
-            await api.post(
+            await API.post(
               `/projects/${projectId}/request-changes`,
               { message },
               { headers }
@@ -951,7 +964,7 @@ function FreelancerProjects() {
     try {
       const headers = token ? { authorization: `Bearer ${token}` } : undefined;
 
-      const { data } = await api.get(`/projects/${projectId}/change-requests`, {
+      const { data } = await API.get(`/projects/${projectId}/change-requests`, {
         headers,
       });
 
@@ -1065,7 +1078,7 @@ function FreelancerProjects() {
       const fd = new FormData();
       (payload.files || []).forEach((f) => fd.append("project_files", f));
 
-      await api.post(`/projects/${project.id}/deliver`, fd, {
+      await API.post(`/projects/${project.id}/deliver`, fd, {
         headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
       });
 
@@ -1318,7 +1331,7 @@ function ClientReviewDrawer({
     if (isAbsoluteUrl(raw)) return raw;
 
     // If api.baseURL is empty, keep it relative (browser will use current origin).
-    const base = String(api.defaults.baseURL || "").trim();
+    const base = String(API.defaults.baseURL || "").trim();
     if (!base) return raw;
 
     const cleanBase = base.replace(/\/$/, "");
@@ -1511,7 +1524,7 @@ function ClientReviewDrawer({
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/projects/${project.id}/deliveries`, {
+        const { data } = await API.get(`/projects/${project.id}/deliveries`, {
           headers: { authorization: `Bearer ${token}` },
         });
 
@@ -1542,7 +1555,7 @@ function ClientReviewDrawer({
     if (!project?.id || !token) return;
     try {
       setLoading(true);
-      const { data } = await api.get(`/projects/${project.id}/deliveries`, {
+      const { data } = await API.get(`/projects/${project.id}/deliveries`, {
         headers: { authorization: `Bearer ${token}` },
       });
 

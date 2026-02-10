@@ -35,7 +35,7 @@ const centerPop = {
 // communityImg: صورة الوسط (استبدلها بنفس متغيرك)
 export default function CommunitySection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-orange-50 py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-orange-50 py-10 sm:py-16 md:py-20 2xl:pb-16 3xl:pb-20 4xl:pb-24 px-4 sm:px-6 lg:px-8">
       {/* ✅ Seam fades (top/bottom) متناسقة مع الخلفية الجديدة */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-16 bg-gradient-to-b from-white to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[90] h-14 bg-gradient-to-b from-transparent via-white/80 to-white" />
@@ -89,9 +89,11 @@ export default function CommunitySection() {
         </svg>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-[340px] items-center justify-center sm:min-h-[520px] md:min-h-[620px]">
-          <motion.div
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-visible">
+        <div className="mx-auto w-fit">
+          <div className="origin-top scale-100 2xl:scale-[1.06] 3xl:scale-[1.14] 4xl:scale-[1.22]">
+            <div className="flex min-h-[340px] items-center justify-center sm:min-h-[520px] md:min-h-[620px]">
+              <motion.div
             variants={sectionStagger}
             initial="hidden"
             whileInView="show"
@@ -272,6 +274,8 @@ export default function CommunitySection() {
               </div>
             </div>
           </motion.div>
+            </div>
+          </div>
         </div>
       </div>
 

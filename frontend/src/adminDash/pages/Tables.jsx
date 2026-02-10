@@ -1,7 +1,7 @@
 // Tables.jsx
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
+import API from "../api/axios.js";
 import { MOCK_ENABLED, mockFetch } from "./mockData.js";
 import {
   FiEdit2,
@@ -9,6 +9,7 @@ import {
   FiX,
   FiChevronDown,
   FiChevronRight,
+  FiHeart,
 } from "react-icons/fi";
 import { AiOutlineEdit } from "react-icons/ai";
 import {
@@ -176,17 +177,7 @@ const DEFAULT_CRUD_CONFIG = {
 };
 
 function useApi(token) {
-  return useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_APP_API_URL || "",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      }),
-    [token]
-  );
+  return useMemo(() => API, [token]);
 }
 
 /* ====================== Data Hook ====================== */
@@ -233,7 +224,7 @@ function useTableData({ endpoint, api, refreshKey }) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const { data } = await api.get(endpoint, { params, signal: controller.signal });
+        const { data } = await API.get(endpoint, { params, signal: controller.signal });
 
         const list = Array.isArray(data)
           ? data
@@ -321,7 +312,7 @@ function renderPrettyCell(col, row, idx) {
     const color = {
       active: "text-emerald-600",
       escalated: "text-orange-500",
-      resolved: "text-violet-600",
+      resolved: "text-orange-600",
       dropped: "text-amber-600",
       scheduled: "text-sky-600",
       missed: "text-rose-600",
@@ -365,6 +356,179 @@ function initialsFrom(name) {
 function pickAvatar(row) {
   return row?.avatar || row?.image || row?.profile_image || row?.photoUrl || row?.photoURL || "";
 }
+function pickCover(row) {
+  return row?.cover || row?.coverUrl || row?.cover_image || row?.image || "";
+}
+
+/* ====================== Course-style card (presentational) ====================== */
+const CourseStyleCard = ({
+  row,
+  idx,
+  helpers,
+  titleVal,
+  subtitleText,
+  tagText,
+  coverUrl,
+  avatarUrl,
+  status,
+  crudConfig,
+  hideCrudActions,
+  renderActions,
+  onCardClick,
+  onOpenDrawer,
+  onToggleExpand,
+  expandedRow,
+  isExpanded,
+  formFields,
+  editingRowId,
+  onSaveEdit,
+  onCancelEdit,
+  renderSubtitle,
+  columns,
+}) => {
+  const [liked, setLiked] = useState(false);
+  const isEditing = editingRowId === helpers.getId(row);
+
+  const description =
+    typeof renderSubtitle === "function" ? renderSubtitle(row, helpers) : (subtitleText != null && subtitleText !== "" ? String(subtitleText) : null);
+  const nameRoleText = subtitleText != null && String(subtitleText).trim() !== "" ? String(subtitleText) : (status != null ? String(status) : "—");
+
+  return (
+    <div className="group relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onCardClick?.(row, helpers)}
+        onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
+        className="cursor-pointer outline-none"
+      >
+        {/* Cover */}
+        <div className="relative h-36 w-full overflow-hidden">
+          {coverUrl ? (
+            <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-b from-orange-400 to-red-500" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
+            </>
+          )}
+
+         
+
+          {/* Tag pill (bottom-left) */}
+          {tagText != null && String(tagText).trim() !== "" && (
+            <span className="absolute left-3 bottom-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#C2410C]">
+              {String(tagText)}
+            </span>
+          )}
+
+          {/* Expand (top-left on cover) */}
+          {crudConfig?.showExpand && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand?.(idx);
+              }}
+              className="absolute left-3 top-3 w-9 h-9 grid place-items-center rounded-full bg-white/90 shadow border border-white/60 text-slate-700 hover:bg-white"
+              title="Toggle"
+            >
+              {isExpanded ? <FiChevronDown size={18} /> : <FiChevronRight size={18} />}
+            </button>
+          )}
+        </div>
+
+        {/* Content under image */}
+        <div className="p-4">
+          <h3 className="text-sm font-extrabold text-slate-900 line-clamp-2">{titleVal}</h3>
+          {description != null && (
+            <p className="mt-1 text-[12px] text-slate-500 line-clamp-2">{description}</p>
+          )}
+
+          {/* Bottom row: avatar + name/role + actions */}
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 shrink-0 grid place-items-center text-[11px] font-semibold text-slate-600">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  initialsFrom(String(titleVal))
+                )}
+              </div>
+              <span className="text-[12px] text-slate-600 truncate">{nameRoleText}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {crudConfig?.showDetails && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDrawer?.(row, idx);
+                  }}
+                  className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                  title="View / Edit"
+                >
+                  <AiOutlineEdit size={18} />
+                </button>
+              )}
+              {typeof renderActions === "function" && (
+                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                {renderActions(row, helpers)}
+                </div>
+              )}
+              {!hideCrudActions && (
+                <>
+                  {crudConfig?.showRowEdit && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDrawer?.(row, idx);
+                      }}
+                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                      title="Edit"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                  )}
+                  {crudConfig?.showDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        helpers.handleDelete(idx);
+                      }}
+                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-red-600"
+                      title="Delete"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="border-t border-slate-200">
+          <ExpandedRow
+            row={row}
+            columns={columns}
+            formFields={formFields}
+            isEditing={isEditing}
+            onSave={onSaveEdit}
+            onDelete={() => helpers.handleDelete(idx)}
+            onCancel={onCancelEdit}
+            helpers={helpers}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ====================== Mobile List ====================== */
 const MobileCards = ({
@@ -736,162 +900,46 @@ const DesktopCards = ({
   const nameCol = pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
-  const dueCol = pickColumn(columns, ["due", "date"]);
-  const budgetCol = pickColumn(columns, ["budget", "price", "amount"]);
+  const tagCol = pickColumn(columns, ["category", "type", "role"]);
 
   return (
     <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {rows.map((row, idx) => {
         const isExpanded = expandedRow === idx;
-        const isEditing = editingRowId === helpers.getId(row);
-
         const titleVal = getCellValue(nameCol, row, idx) ?? "—";
         const subVal = getCellValue(subCol, row, idx);
         const status = getCellValue(statusCol, row, idx);
-        const due = getCellValue(dueCol, row, idx);
-        const budget = getCellValue(budgetCol, row, idx);
-
+        const tagText = getCellValue(tagCol, row, idx) ?? status ?? "";
+        const coverUrl = pickCover(row);
         const avatarUrl = pickAvatar(row);
 
         return (
-          <div
+          <CourseStyleCard
             key={helpers.getId(row) ?? idx}
-            className="group relative rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
-                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#F59E0B]/30"
-          >
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
-              className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
-              title="Open"
-            >
-              {!avatarUrl && (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-indigo-500 to-violet-600" />
-                  <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
-                </>
-              )}
-
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="relative z-10 w-full h-full object-cover mix-blend-multiply"
-                />
-              ) : (
-                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
-                  {initialsFrom(String(titleVal))}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">{titleVal}</div>
-
-                  {typeof renderSubtitle === "function" && (
-                    <div className="mt-0.5 text-[12px] text-slate-500">{renderSubtitle(row, helpers)}</div>
-                  )}
-
-                  {subVal && <div className="text-xs text-slate-500 truncate">{String(subVal)}</div>}
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {crudConfig.showExpand && (
-                    <button
-                      onClick={() => onToggleExpand?.(idx)}
-                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
-                      title="Toggle"
-                    >
-                      {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
-                    </button>
-                  )}
-
-                  {status && (
-                    <div className="shrink-0">
-                      {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {(due || (budget != null && budget !== "")) && (
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-                  {due && (
-                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-                      <span className="text-slate-400">Due:</span>{" "}
-                      <span className="font-medium text-slate-700">{String(due)}</span>
-                    </div>
-                  )}
-                  {budget != null && budget !== "" && (
-                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-                      <span className="text-slate-400">Budget:</span>{" "}
-                      <span className="font-medium text-slate-700">{String(budget)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="pt-1 flex items-center justify-between gap-1.5">
-                {crudConfig.showDetails && (
-                  <button
-                    onClick={() => onOpenDrawer?.(row, idx)}
-                    className="h-9 px-3 rounded-full border border-slate-200 bg-white/80 text-sm text-slate-700 hover:bg-slate-50"
-                    title="View / Edit"
-                  >
-                    <AiOutlineEdit size={18} />
-                  </button>
-                )}
-
-                <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" && renderActions(row, helpers)}
-
-                  {!hideCrudActions && (
-                    <>
-                      {crudConfig?.showRowEdit && (
-                        <button
-                          onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#FCE7E0]"
-                          style={{ borderColor: PRIMARY, color: PRIMARY }}
-                          title="Edit"
-                        >
-                          Edit
-                        </button>
-                      )}
-
-                      {crudConfig?.showDelete && (
-                        <button
-                          onClick={() => helpers.handleDelete(idx)}
-                          className="h-9 px-3 rounded-full border border-red-100 bg-red-50/70 hover:bg-red-100 text-sm text-red-600"
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="mt-2">
-                  <ExpandedRow
-                    row={row}
-                    columns={columns}
-                    formFields={formFields}
-                    isEditing={isEditing}
-                    onSave={onSaveEdit}
-                    onDelete={() => helpers.handleDelete(idx)}
-                    onCancel={onCancelEdit}
-                    helpers={helpers}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+            row={row}
+            idx={idx}
+            helpers={helpers}
+            titleVal={titleVal}
+            subtitleText={subVal != null ? String(subVal) : ""}
+            tagText={tagText != null ? String(tagText) : ""}
+            coverUrl={coverUrl}
+            avatarUrl={avatarUrl}
+            status={status}
+            crudConfig={crudConfig}
+            hideCrudActions={hideCrudActions}
+            renderActions={renderActions}
+            onCardClick={onCardClick}
+            onOpenDrawer={onOpenDrawer}
+            onToggleExpand={onToggleExpand}
+            expandedRow={expandedRow}
+            isExpanded={isExpanded}
+            formFields={formFields}
+            editingRowId={editingRowId}
+            onSaveEdit={onSaveEdit}
+            onCancelEdit={onCancelEdit}
+            renderSubtitle={renderSubtitle}
+            columns={columns}
+          />
         );
       })}
     </div>
@@ -938,155 +986,46 @@ const CardsGrid = ({
   const nameCol = pickColumn(columns, ["title", "name", "full name", "username"]) || columns[0];
   const subCol = pickColumn(columns, ["client", "owner", "email", "country"]);
   const statusCol = pickColumn(columns, ["status"]);
-  const dueCol = pickColumn(columns, ["due", "date"]);
-  const budgetCol = pickColumn(columns, ["budget", "price", "amount"]);
+  const tagCol = pickColumn(columns, ["category", "type", "role"]);
 
   return (
     <div className="grid md:hidden grid-cols-1 gap-3">
       {rows.map((row, idx) => {
         const isExpanded = expandedRow === idx;
-        const isEditing = editingRowId === helpers.getId(row);
-
         const titleVal = getCellValue(nameCol, row, idx) ?? "—";
         const subVal = getCellValue(subCol, row, idx);
         const status = getCellValue(statusCol, row, idx);
-        const due = getCellValue(dueCol, row, idx);
-        const budget = getCellValue(budgetCol, row, idx);
-
+        const tagText = getCellValue(tagCol, row, idx) ?? status ?? "";
+        const coverUrl = pickCover(row);
         const avatarUrl = pickAvatar(row);
 
         return (
-          <div
+          <CourseStyleCard
             key={helpers.getId(row) ?? idx}
-            className="rounded-2xl border border-slate-100 bg-white/90 shadow-sm overflow-hidden
-                       transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#F59E0B]/30"
-          >
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => onCardClick?.(row, helpers)}
-              onKeyDown={(e) => e.key === "Enter" && onCardClick?.(row, helpers)}
-              className="relative h-32 overflow-hidden cursor-pointer grid place-items-center"
-              title="Open"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-indigo-500 to-violet-600" />
-              <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_0_0,rgba(255,255,255,0.5),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(255,255,255,0.4),transparent_55%)]" />
-
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="relative z-10 w-full h-full object-cover mix-blend-multiply" />
-              ) : (
-                
-                <div className="relative z-10 w-14 h-14 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#C2410C] text-base font-semibold">
-                  {initialsFrom(String(titleVal))}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">{titleVal}</div>
-
-                  {typeof renderSubtitle === "function" && (
-                    <div className="mt-0.5 text-[12px] text-slate-500">{renderSubtitle(row, helpers)}</div>
-                  )}
-
-                  {subVal && <div className="text-xs text-slate-500 truncate">{String(subVal)}</div>}
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {crudConfig.showExpand && (
-                    <button
-                      onClick={() => onToggleExpand?.(idx)}
-                      className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
-                      title="Toggle"
-                    >
-                      {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
-                    </button>
-                  )}
-
-                  {status && (
-                    <div className="shrink-0">
-                      {renderPrettyCell({ label: "Status", key: "status" }, { status }, idx)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {(due || (budget != null && budget !== "")) && (
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-                  {due && (
-                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-                      <span className="text-slate-400">Due:</span>{" "}
-                      <span className="font-medium text-slate-700">{String(due)}</span>
-                    </div>
-                  )}
-                  {budget != null && budget !== "" && (
-                    <div className="rounded-xl bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-                      <span className="text-slate-400">Budget:</span>{" "}
-                      <span className="font-medium text-slate-700">{String(budget)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="pt-1 flex items-center justify-between gap-1.5">
-                {crudConfig.showDetails && (
-                  <button
-                    onClick={() => onOpenDrawer?.(row, idx)}
-                    className="h-9 px-3 rounded-full border border-slate-200 bg-white/80 text-sm text-slate-700 hover:bg-slate-50"
-                    title="View / Edit"
-                  >
-                    <AiOutlineEdit size={18} />
-                  </button>
-                )}
-
-                <div className="flex items-center gap-1.5">
-                  {typeof renderActions === "function" && renderActions(row, helpers)}
-
-                  {!hideCrudActions && (
-                    <>
-                      {crudConfig?.showRowEdit && (
-                        <button
-                          onClick={() => onOpenDrawer?.(row, idx)}
-                          className="h-9 px-3 rounded-full border text-sm bg-white/80 hover:bg-[#FCE7E0]"
-                          style={{ borderColor: PRIMARY, color: PRIMARY }}
-                          title="Edit"
-                        >
-                          Edit
-                        </button>
-                      )}
-
-                      {crudConfig?.showDelete && (
-                        <button
-                          onClick={() => helpers.handleDelete(idx)}
-                          className="h-9 px-3 rounded-full border border-red-100 bg-red-50/70 hover:bg-red-100 text-sm text-red-600"
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="mt-2">
-                  <ExpandedRow
-                    row={row}
-                    columns={columns}
-                    formFields={formFields}
-                    isEditing={isEditing}
-                    onSave={onSaveEdit}
-                    onDelete={() => helpers.handleDelete(idx)}
-                    onCancel={onCancelEdit}
-                    helpers={helpers}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+            row={row}
+            idx={idx}
+            helpers={helpers}
+            titleVal={titleVal}
+            subtitleText={subVal != null ? String(subVal) : ""}
+            tagText={tagText != null ? String(tagText) : ""}
+            coverUrl={coverUrl}
+            avatarUrl={avatarUrl}
+            status={status}
+            crudConfig={crudConfig}
+            hideCrudActions={hideCrudActions}
+            renderActions={renderActions}
+            onCardClick={onCardClick}
+            onOpenDrawer={onOpenDrawer}
+            onToggleExpand={onToggleExpand}
+            expandedRow={expandedRow}
+            isExpanded={isExpanded}
+            formFields={formFields}
+            editingRowId={editingRowId}
+            onSaveEdit={onSaveEdit}
+            onCancelEdit={onCancelEdit}
+            renderSubtitle={renderSubtitle}
+            columns={columns}
+          />
         );
       })}
     </div>
@@ -1157,7 +1096,7 @@ export default function PeopleTable({
           dispatch(setEditingRowId(null));
           return;
         }
-        await api.put(`${endpoint}/${formData.id}`, formData);
+        await API.put(`${endpoint}/${formData.id}`, formData);
         dispatch(updateUser(formData));
         dispatch(setEditingRowId(null));
         refresh();
@@ -1203,7 +1142,7 @@ export default function PeopleTable({
         }
 
         if (endpoint && id != null) {
-          await api.delete(`${endpoint}/${id}`);
+          await API.delete(`${endpoint}/${id}`);
           dispatch(removeUser(id));
         }
         refresh();

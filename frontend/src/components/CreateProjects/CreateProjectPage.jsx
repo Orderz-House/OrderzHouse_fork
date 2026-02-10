@@ -15,6 +15,7 @@ import {
   uploadProjectFilesApi,
   createProjectCheckoutSessionApi,
 } from "./api/projects";
+import PageMeta from "../PageMeta.jsx";
 
 const DEVELOPMENT_CATEGORY_ID = 3;
 
@@ -64,14 +65,33 @@ export default function CreateProjectPage() {
       }
 
       // ============================
-      // 2️⃣ PAID PROJECT → STRIPE FIRST
+      // 2️⃣ PAID PROJECT → STRIPE FIRST (or skip if permission granted)
       // ============================
-      const { url } = await createProjectCheckoutSessionApi(
+      const response = await createProjectCheckoutSessionApi(
         projectData,
         token
       );
 
-      window.location.href = url;
+      // Check if payment was skipped
+      if (response.skipPayment === true) {
+        const projectId = response.project_id;
+
+        // Upload files if any
+        if (files.length > 0) {
+          await uploadProjectFilesApi(projectId, files, token);
+        }
+
+        showToast("Project posted successfully", "success");
+        navigate("/client", { replace: true });
+        return;
+      }
+
+      // Normal flow: redirect to Stripe
+      if (response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error("No payment URL or skipPayment flag in response");
+      }
 
     } catch (err) {
       console.error(err);
@@ -84,8 +104,9 @@ export default function CreateProjectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 pt-28">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 pt-28">
+      <PageMeta title="Create Project – OrderzHouse" description="Post a new project and find freelancers on OrderzHouse." />
+      <div className="max-w-5xl mx-auto px-4 py-12 -mt-2 relative z-10">
 
         {step === 1 && (
           <ProjectDetailsStep

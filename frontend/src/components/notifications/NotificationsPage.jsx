@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import axios from "axios";
+import API from "../../api/client.js";
 import { io } from "socket.io-client";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -36,8 +36,6 @@ export default function NotificationsPage() {
   }));
 
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
-
   // ✅ Theme accents (مثل ContactUs)
   const ORANGE_GRAD = "from-orange-500 to-rose-500";
   const VIOLET_GRAD = "from-violet-500 to-indigo-600";
@@ -96,7 +94,7 @@ export default function NotificationsPage() {
   // Socket setup for live notifications
   useEffect(() => {
     if (!token) return;
-    const socket = io(API_BASE, {
+    const socket = io(API.defaults.baseURL || "http://localhost:5000", {
       auth: { token },
       transports: ["websocket"],
     });
@@ -127,7 +125,7 @@ export default function NotificationsPage() {
 
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE}/notifications`, {
+      const response = await API.get("/notifications", {
         headers: { authorization: `Bearer ${token}` },
         params: { limit: 100, offset: 0, unreadOnly: false },
       });
@@ -147,8 +145,8 @@ export default function NotificationsPage() {
   // Mark as read
   const markAsRead = async (id) => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/${id}/read`,
+      await API.put(
+        `/notifications/${id}/read`,
         {},
         {
           headers: { authorization: `Bearer ${token}` },
@@ -165,8 +163,8 @@ export default function NotificationsPage() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await axios.put(
-        `${API_BASE}/notifications/read-all`,
+      await API.put(
+        "/notifications/read-all",
         {},
         {
           headers: { authorization: `Bearer ${token}` },
@@ -181,7 +179,7 @@ export default function NotificationsPage() {
   // Delete single notification
   const deleteNotification = async (id) => {
     try {
-      await axios.delete(`${API_BASE}/notifications/${id}`, {
+      await API.delete(`/notifications/${id}`, {
         headers: { authorization: `Bearer ${token}` },
       });
       setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -200,7 +198,7 @@ export default function NotificationsPage() {
     try {
       await Promise.all(
         Array.from(selectedNotifications).map((id) =>
-          axios.delete(`${API_BASE}/notifications/${id}`, {
+          API.delete(`/notifications/${id}`, {
             headers: { authorization: `Bearer ${token}` },
           })
         )

@@ -2,12 +2,8 @@ import pool from "../../models/db.js";
 import { LogCreators, ACTION_TYPES } from "../../services/loggingService.js";
 import cloudinary from "../../cloudinary/setupfile.js";
 import { Readable } from "stream";
-import multer from "multer";
+import { upload } from "../../middleware/uploadMiddleware.js";
 import eventBus from "../../events/eventBus.js";
-
-// Multer memory storage
-const storage = multer.memoryStorage();
-export const upload = multer({ storage });
 
 /**
  * Upload fields for cover + project files (if sent as form-data)
@@ -40,6 +36,19 @@ export const createProject = async (req, res) => {
   const client = await pool.connect();
   try {
     const userId = req.token?.userId;
+    
+    // Check if user is client (role_id = 2)
+    const { rows: userRows } = await pool.query(
+      `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
+      [userId]
+    );
+    
+    if (!userRows.length || Number(userRows[0].role_id) !== 2) {
+      return res.status(403).json({
+        success: false,
+        message: "Only clients can create projects",
+      });
+    }
 
     await client.query("SELECT pg_advisory_xact_lock($1)", [userId]);
 
@@ -598,6 +607,10 @@ export const approveOrRejectApplication = async (req, res) => {
 `, [assignment.project_id]);
 
     await client.query("COMMIT");
+    client.release();
+
+    // Activate subscription if pending (after transaction commit)
+    await activateSubscriptionIfPending(assignment.freelancer_id);
 
     // ✅ emit events
     try {
@@ -660,6 +673,9 @@ export const acceptAssignment = async (req, res) => {
        WHERE id = $1`,
       [assignment.project_id]
     );
+
+    // Activate subscription if pending
+    await activateSubscriptionIfPending(freelancerId);
 
     await LogCreators.projectOperation(
       freelancerId,
@@ -779,9 +795,9 @@ export const approveWorkCompletion = async (req, res) => {
       });
     }
 
-    // 1) Load project
+    // 1) Load project with completion status
     const { rows } = await pool.query(
-      `SELECT id, user_id, title
+      `SELECT id, user_id, title, status, completion_status
        FROM projects
        WHERE id = $1 AND is_deleted = false`,
       [projectId]
@@ -802,6 +818,16 @@ export const approveWorkCompletion = async (req, res) => {
         success: false,
         message: "Only client can approve work",
       });
+    }
+
+    // 3) Validate that work was delivered before allowing approve
+    if (action === "approve") {
+      if (project.status !== "pending_review" && project.completion_status !== "pending_review") {
+        return res.status(400).json({
+          success: false,
+          message: "Work must be submitted for review before it can be approved",
+        });
+      }
     }
 
     const newStatus =

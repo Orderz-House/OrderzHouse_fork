@@ -1,5 +1,4 @@
-const primary = "#028090";
-const GRAD = "linear-gradient(135deg, #016c76 0%, #028090 40%, #03a3a8 100%)";
+import { FileText } from "lucide-react";
 
 export default function Terms({
   lastUpdated = "Oct 5, 2025",
@@ -26,21 +25,31 @@ export default function Terms({
   ];
 
   return (
-    <main id="terms-top" className="min-h-screen bg-slate-50 text-slate-800">
-      {/* Hero */}
-      <div className="relative" style={{ background: GRAD }}>
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:py-12">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Terms & Conditions
-          </h1>
-          <p className="mt-1 text-white/80 text-sm">
-            Last updated: {lastUpdated} • {version}
-          </p>
+    <main id="terms-top" className="min-h-screen bg-white text-slate-800">
+      {/* HERO — same layout as Privacy: white, orange accents, navbar spacing */}
+      <section className="relative bg-white border-b border-slate-100">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-24 sm:pt-28 pb-10">
+          <div className="flex items-start gap-6 mb-10">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-orange-50 border border-orange-200/70 grid place-items-center shadow-sm">
+              <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-orange-700" />
+            </div>
+            <div>
+              <div className="h-2 w-20 rounded-full bg-gradient-to-b from-orange-400 to-red-500 mb-4" />
+              <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight text-slate-900">
+                Terms & Conditions
+              </h1>
+              <p className="text-slate-600 mt-3">
+                Last updated: {lastUpdated} • {version}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 lg:py-10 grid lg:grid-cols-[260px_1fr] gap-6">
+      {/* Content — same surface as Privacy: rounded card */}
+      <div className="relative -mt-10 mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="rounded-3xl bg-white border border-slate-200/70 shadow-sm overflow-hidden">
+          <div className="p-6 lg:p-10 grid lg:grid-cols-[260px_1fr] gap-6">
         {/* TOC - mobile */}
         <details className="lg:hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
           <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-slate-700">
@@ -232,8 +241,7 @@ export default function Terms({
               Questions? Contact us at{" "}
               <a
                 href={`mailto:${email}`}
-                className="underline"
-                style={{ color: primary }}
+                className="underline text-orange-600 hover:text-orange-700"
               >
                 {email}
               </a>
@@ -244,13 +252,14 @@ export default function Terms({
           <div className="pt-6">
             <a
               href="#terms-top"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm"
-              style={{ backgroundColor: primary }}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white shadow-sm bg-gradient-to-b from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 transition"
             >
               Back to top
             </a>
           </div>
         </article>
+          </div>
+        </div>
       </div>
     </main>
   );
@@ -273,10 +282,7 @@ function Callout({ children }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div
-          className="h-8 w-8 shrink-0 rounded-xl grid place-items-center text-white"
-          style={{ backgroundColor: primary }}
-        >
+        <div className="h-8 w-8 shrink-0 rounded-xl grid place-items-center text-white bg-gradient-to-b from-orange-400 to-red-500">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
