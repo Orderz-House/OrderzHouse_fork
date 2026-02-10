@@ -72,7 +72,7 @@ class CacheService {
       final map = json.decode(raw) as Map<String, dynamic>;
       final list = map['v'];
       if (list == null || list is! List) return null;
-      return (list as List<dynamic>)
+      return (list)
           .map((e) => fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {

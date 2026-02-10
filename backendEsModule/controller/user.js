@@ -874,6 +874,227 @@ const sendOtpController = async (req, res) => {
   }
 };
 
+/* ======================================================
+   REQUEST SIGNUP OTP (no user created yet)
+   POST /users/request-signup-otp  body: { email }
+====================================================== */
+const requestSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+    const emailLower = email.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailLower)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [emailLower]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ success: false, message: "This email is already registered. Try logging in." });
+    }
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+    await pool.query(
+      `INSERT INTO signup_otps (email, otp, expires_at) VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO UPDATE SET otp = $2, expires_at = $3`,
+      [emailLower, otp, expiresAt]
+    );
+    await deliverOtp(emailLower, "email", otp);
+    console.log("[request-signup-otp] OTP sent to", emailLower, "status=200");
+    return res.status(200).json({ success: true, message: "Verification code sent. Check your email (and spam folder)." });
+  } catch (err) {
+    console.error("requestSignupOtp Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send verification code",
+      error: err.message,
+    });
+  }
+};
+
+/* ======================================================
+   VERIFY OTP AND REGISTER (create user only after OTP ok)
+   POST /users/verify-and-register  body: { email, otp, role_id, first_name, last_name, password, phone_number, country, username, category_ids?, referral_code? }
+====================================================== */
+const verifyAndRegister = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const {
+      email,
+      otp,
+      role_id,
+      first_name,
+      last_name,
+      password,
+      phone_number,
+      country,
+      username,
+      category_ids = [],
+      referral_code,
+    } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required" });
+    }
+    const emailLower = email.toLowerCase().trim();
+
+    const otpRow = await pool.query(
+      "SELECT otp, expires_at FROM signup_otps WHERE email = $1",
+      [emailLower]
+    );
+    if (otpRow.rows.length === 0) {
+      return res.status(400).json({ success: false, message: "No verification code found for this email. Request a new code." });
+    }
+    const { otp: storedOtp, expires_at: expiresAt } = otpRow.rows[0];
+    if (storedOtp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+    if (new Date() > new Date(expiresAt)) {
+      return res.status(400).json({ success: false, message: "OTP expired. Request a new code." });
+    }
+
+    if (!role_id || !first_name || !last_name || !password || !phone_number || !country || !username) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+    const roleId = parseInt(role_id, 10);
+    if (Number.isNaN(roleId)) {
+      return res.status(400).json({ success: false, message: "Invalid role_id" });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
+    if (!emailRegex.test(emailLower)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ success: false, message: "Password must be at least 8 chars and include upper, lower, number" });
+    }
+    if (roleId === 3) {
+      if (!Array.isArray(category_ids) || category_ids.length === 0) {
+        return res.status(400).json({ success: false, message: "At least one category is required for freelancers" });
+      }
+      if (category_ids.length > 5) {
+        return res.status(400).json({ success: false, message: "Maximum 5 categories allowed" });
+      }
+    }
+
+    await client.query("BEGIN");
+
+    const existingUser = await client.query(
+      "SELECT id FROM users WHERE email = $1 OR username = $2",
+      [emailLower, username]
+    );
+    if (existingUser.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ success: false, message: "Email or username already exists" });
+    }
+
+    if (roleId === 3) {
+      const categoryCheck = await client.query(
+        `SELECT id FROM categories WHERE is_deleted = false AND level = 0 AND id = ANY($1::int[])`,
+        [category_ids]
+      );
+      if (categoryCheck.rows.length !== category_ids.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ success: false, message: "One or more category_ids are invalid" });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userResult = await client.query(
+      `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE)
+       RETURNING id, email, first_name, last_name, username, role_id, profile_pic_url, is_deleted, is_two_factor_enabled, email_verified`,
+      [roleId, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
+    );
+    const user = userResult.rows[0];
+
+    function generateReferralCode(userId) {
+      const randomPart = crypto.randomBytes(4).toString("hex").toUpperCase().substring(0, 4);
+      const userIdPart = userId.toString().padStart(3, "0").substring(0, 3);
+      return `${randomPart}${userIdPart}`.substring(0, 7);
+    }
+    let refCode = generateReferralCode(user.id);
+    let attempts = 0;
+    while (attempts < 10) {
+      const check = await client.query("SELECT id FROM users WHERE referral_code = $1", [refCode]);
+      if (check.rows.length === 0) break;
+      refCode = generateReferralCode(user.id);
+      attempts++;
+    }
+    await client.query("UPDATE users SET referral_code = $1 WHERE id = $2", [refCode, user.id]);
+
+    if (roleId === 3) {
+      await client.query(
+        `INSERT INTO freelancer_categories (freelancer_id, category_id) SELECT $1, unnest($2::int[])`,
+        [user.id, category_ids]
+      );
+    }
+
+    if (referral_code && String(referral_code).trim().length > 0) {
+      try {
+        const referrerResult = await client.query(
+          "SELECT id FROM users WHERE referral_code = $1 AND id != $2",
+          [String(referral_code).trim().toUpperCase(), user.id]
+        );
+        if (referrerResult.rows.length > 0) {
+          const referrerUserId = referrerResult.rows[0].id;
+          const existingRef = await client.query("SELECT id FROM referrals WHERE referred_user_id = $1", [user.id]);
+          if (existingRef.rows.length === 0) {
+            await client.query(
+              "INSERT INTO referrals (referrer_user_id, referred_user_id, status) VALUES ($1, $2, 'pending')",
+              [referrerUserId, user.id]
+            );
+          }
+        }
+      } catch (e) {
+        console.error("Referral code application error:", e);
+      }
+    }
+
+    await pool.query("DELETE FROM signup_otps WHERE email = $1", [emailLower]);
+    await client.query("COMMIT");
+
+    const tokenPayload = {
+      userId: user.id,
+      role: user.role_id,
+      is_verified: user.email_verified,
+      username: user.username,
+      is_deleted: user.is_deleted,
+      is_two_factor_enabled: user.is_two_factor_enabled,
+    };
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+    const mustAcceptTerms = true; // New user has not accepted terms yet
+
+    return res.status(200).json({
+      success: true,
+      message: "Account created successfully",
+      token,
+      userInfo: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role_id: user.role_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        profile_pic_url: user.profile_pic_url,
+        is_deleted: user.is_deleted,
+        is_two_factor_enabled: user.is_two_factor_enabled,
+        email_verified: user.email_verified,
+      },
+      must_accept_terms: mustAcceptTerms,
+      terms_version_required: CURRENT_TERMS_VERSION,
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("verifyAndRegister Error:", err);
+    return res.status(500).json({ success: false, message: "Registration failed", error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
 /* =========================================
    EDIT USER PROFILE 
 ========================================= */
@@ -1370,4 +1591,6 @@ export {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
+  requestSignupOtp,
+  verifyAndRegister,
 };

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/models/signup_payload.dart';
 import '../../../../core/storage/secure_store.dart';
 import '../../../../core/cache/cache_service.dart';
 import '../../../../core/routing/route_tracker.dart';
@@ -8,6 +9,9 @@ import '../../../../core/routing/route_tracker.dart';
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
+
+/// In-memory pending signup payload (set after OTP requested, cleared after verify-and-register or logout).
+final pendingSignupPayloadProvider = StateProvider<SignupPayload?>((ref) => null);
 
 /// Incremented on login/logout so user-scoped providers can refresh without being invalidated from AuthNotifier.
 /// Prevents CircularDependencyError: do NOT call ref.invalidate() on providers that depend on auth from inside AuthNotifier.
@@ -100,6 +104,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return false;
   }
 
+  /// Step A: Request signup OTP only. Does NOT create user. Caller should store payload and navigate to verify-email.
+  Future<bool> startSignup(SignupPayload payload) async {
+    state = const AuthState(isLoading: true);
+    final response = await _repository.requestSignupOtp(payload.email);
+    state = AuthState(error: response.message);
+    return response.success;
+  }
+
+  /// Step B: Verify OTP and create user. Uses pending payload from pendingSignupPayloadProvider. Saves token and sets user on success.
+  Future<bool> verifyOtpAndCompleteSignup(String code) async {
+    final payload = _ref.read(pendingSignupPayloadProvider);
+    if (payload == null) {
+      state = const AuthState(error: 'Session expired. Please start signup again.');
+      return false;
+    }
+    state = const AuthState(isLoading: true);
+    final response = await _repository.verifyAndRegister(payload: payload, otp: code);
+    if (response.success && response.data != null) {
+      _ref.read(pendingSignupPayloadProvider.notifier).state = null;
+      state = AuthState(user: response.data);
+      _ref.read(authEpochProvider.notifier).state++;
+      return true;
+    }
+    state = AuthState(error: response.message);
+    return false;
+  }
+
+  /// Resend OTP for signup (e.g. from verify-email screen). Only needs email.
+  Future<bool> resendSignupOtp(String email) async {
+    final response = await _repository.requestSignupOtp(email);
+    if (!response.success) {
+      state = AuthState(error: response.message);
+    }
+    return response.success;
+  }
+
   Future<bool> register({
     required int roleId,
     required String firstName,
@@ -140,7 +180,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _repository.logout();
     await CacheService.clearAll();
     await RouteTracker.clearLastRoute();
-    // Signal user-scoped providers to refresh (no ref.invalidate to avoid CircularDependencyError)
+    _ref.read(pendingSignupPayloadProvider.notifier).state = null;
     _ref.read(authEpochProvider.notifier).state++;
     state = const AuthState();
   }

@@ -1,5 +1,6 @@
 /// In-memory legal content matching web Policy.jsx, Terms.jsx, and Faq.jsx.
 /// Use [getPrivacyContent], [getTermsContent], and [defaultFaqs].
+library;
 
 class LegalSection {
   final String id;
@@ -374,7 +375,7 @@ const List<LegalSection> termsEn = [
 const String termsLastUpdatedAr = '5 تشرين الأول 2025';
 const String termsVersionAr = 'v1.0';
 const String termsCalloutAr =
-    "هذه الصفحة تقدّم شروطاً عامة لسوق عمل حر. ليست استشارة قانونية. يُرجى استشارة محامٍ مؤهل لملاءمة هذه الشروط لاختصاصك ونشاطك.";
+    'هذه الصفحة تقدّم شروطاً عامة لسوق عمل حر. ليست استشارة قانونية. يُرجى استشارة محامٍ مؤهل لملاءمة هذه الشروط لاختصاصك ونشاطك.';
 const List<LegalSection> termsAr = [
   LegalSection(
     id: 'definitions',
@@ -507,52 +508,52 @@ TermsContentData getTermsContent(String languageCode) {
 // --- FAQ (from Faq.jsx DEFAULT_FAQS) - exact same Q/A strings ---
 const List<FaqItem> defaultFaqs = [
   FaqItem(
-    q: "Do you offer a free trial?",
-    a: "No, a free trial is not necessary because we already provide a free plan.",
+    q: 'Do you offer a free trial?',
+    a: 'No, a free trial is not necessary because we already provide a free plan.',
   ),
   FaqItem(
-    q: "Can I upgrade or downgrade my plan?",
-    a: "Yes, but only after your current subscription period ends.",
+    q: 'Can I upgrade or downgrade my plan?',
+    a: 'Yes, but only after your current subscription period ends.',
   ),
-  FaqItem(q: "Can I freeze my plan subscription?", a: "No, plans cannot be frozen."),
+  FaqItem(q: 'Can I freeze my plan subscription?', a: 'No, plans cannot be frozen.'),
   FaqItem(
-    q: "When does my plan period start?",
-    a: "The plan time counter starts after you receive your first project.",
-  ),
-  FaqItem(
-    q: "Can I deactivate my account?",
-    a: "Yes, you can deactivate your account, but only if you do not have any in-progress projects.",
+    q: 'When does my plan period start?',
+    a: 'The plan time counter starts after you receive your first project.',
   ),
   FaqItem(
-    q: "What happens if I miss a project deadline?",
-    a: "If project deadlines are not met, the contract may be terminated.",
+    q: 'Can I deactivate my account?',
+    a: 'Yes, you can deactivate your account, but only if you do not have any in-progress projects.',
   ),
   FaqItem(
-    q: "Do I need to pay for additional services?",
-    a: "Any additional services outside your selected plan may require extra fees, which will be clearly communicated before purchase.",
+    q: 'What happens if I miss a project deadline?',
+    a: 'If project deadlines are not met, the contract may be terminated.',
   ),
   FaqItem(
-    q: "Are refunds available?",
-    a: "No refunds or returns are offered once a subscription is active.",
+    q: 'Do I need to pay for additional services?',
+    a: 'Any additional services outside your selected plan may require extra fees, which will be clearly communicated before purchase.',
   ),
   FaqItem(
-    q: "Is the free plan truly free?",
-    a: "Yes, the free plan includes limited features to get started with no payment required.",
+    q: 'Are refunds available?',
+    a: 'No refunds or returns are offered once a subscription is active.',
   ),
   FaqItem(
-    q: "Can I switch between monthly and annual billing?",
-    a: "You can choose your billing cycle when subscribing, but changes can only occur at the end of the current subscription period.",
+    q: 'Is the free plan truly free?',
+    a: 'Yes, the free plan includes limited features to get started with no payment required.',
   ),
   FaqItem(
-    q: "Are there any hidden fees?",
-    a: "No, all fees including the one-time verification fee are clearly stated during the subscription process.",
+    q: 'Can I switch between monthly and annual billing?',
+    a: 'You can choose your billing cycle when subscribing, but changes can only occur at the end of the current subscription period.',
   ),
   FaqItem(
-    q: "What if I want to cancel my subscription?",
-    a: "You may cancel at any time, but no refunds are provided and your current plan will remain active until the end of the subscription period.",
+    q: 'Are there any hidden fees?',
+    a: 'No, all fees including the one-time verification fee are clearly stated during the subscription process.',
   ),
   FaqItem(
-    q: "Can I have multiple projects under the same plan?",
-    a: "Yes, your plan supports multiple projects, but the plan time counter starts when your first project is assigned.",
+    q: 'What if I want to cancel my subscription?',
+    a: 'You may cancel at any time, but no refunds are provided and your current plan will remain active until the end of the subscription period.',
+  ),
+  FaqItem(
+    q: 'Can I have multiple projects under the same plan?',
+    a: 'Yes, your plan supports multiple projects, but the plan time counter starts when your first project is assigned.',
   ),
 ];

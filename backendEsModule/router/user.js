@@ -14,6 +14,8 @@ import {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
+  requestSignupOtp,
+  verifyAndRegister,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";
@@ -27,6 +29,8 @@ usersRouter.post("/verify-email", verifyEmailOtp);
 usersRouter.post("/login", login);
 usersRouter.post("/verify-otp", verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);
+usersRouter.post("/request-signup-otp", requestSignupOtp);
+usersRouter.post("/verify-and-register", verifyAndRegister);
 
 // =============== AUTHENTICATED ROUTES ===============
 usersRouter.get("/getUserdata", authentication, getUserdata);

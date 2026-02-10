@@ -61,7 +61,7 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
 
   // Fetch and store raw project data (only once per data load)
   Future<void> _fetchRawProjectDataForProjects(List<Project> projects) async {
-    // Prevent multiple simultaneous calls
+    // Prevent multiple simultaneous calls and avoid retry loop on 403/error
     if (_isFetchingRawData || _hasFetchedRawData) {
       return;
     }
@@ -80,15 +80,16 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
               _projectDataMap[projectId] = rawProject;
             }
           }
-          _hasFetchedRawData = true;
         });
       }
     } catch (e) {
-      // Silently fail
+      // Silently fail - do not retry on every rebuild
     } finally {
       if (mounted) {
         setState(() {
           _isFetchingRawData = false;
+          // Mark as attempted so we don't retry in a loop on 403/error until user refreshes
+          _hasFetchedRawData = true;
         });
       }
     }
