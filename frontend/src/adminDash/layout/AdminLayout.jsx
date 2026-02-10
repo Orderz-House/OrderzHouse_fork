@@ -16,6 +16,7 @@ import {
   BarChart2,
   User,
   LogOut,
+  Settings,
   ListChecks,
   Star,
   CalendarDays,
@@ -71,6 +72,7 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/settings")) return "settings";
   }
 
   // ===== client =====
@@ -78,12 +80,14 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/settings")) return "settings";
   }
 
   if (base === "/partner") {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/settings")) return "settings";
   }
 
   // ===== freelancer =====
@@ -91,6 +95,7 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/settings")) return "settings";
   }
 
   // ===== apm =====
@@ -99,6 +104,8 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/questions")) return "questions";
     if (p.startsWith("/survey")) return "survey";
     if (p.startsWith("/videos")) return "videos";
+    if (p.startsWith("/settings")) return "settings";
+    if (p.startsWith("/profile")) return "profile";
   }
 
   return "overview";
@@ -178,6 +185,12 @@ function getNav(role, navigate, base, onLogout) {
     ];
     const bottomNavigation = [
       {
+        id: "settings",
+        name: "Settings",
+        icon: Settings,
+        path: `${base}/settings`,
+      },
+      {
         id: "profile",
         name: "Profile",
         icon: User,
@@ -228,6 +241,12 @@ function getNav(role, navigate, base, onLogout) {
     ];
     const bottomNavigation = [
       {
+        id: "settings",
+        name: "Settings",
+        icon: Settings,
+        path: `${base}/settings`,
+      },
+      {
         id: "profile",
         name: "Profile",
         icon: User,
@@ -265,6 +284,12 @@ function getNav(role, navigate, base, onLogout) {
       },
     ];
     const bottomNavigation = [
+      {
+        id: "settings",
+        name: "Settings",
+        icon: Settings,
+        path: `${base}/settings`,
+      },
       {
         id: "profile",
         name: "Profile",
@@ -304,6 +329,12 @@ function getNav(role, navigate, base, onLogout) {
     ];
     const bottomNavigation = [
       {
+        id: "settings",
+        name: "Settings",
+        icon: Settings,
+        path: `${base}/settings`,
+      },
+      {
         id: "profile",
         name: "Profile",
         icon: User,
@@ -328,6 +359,12 @@ function getNav(role, navigate, base, onLogout) {
     },
   ];
   const bottomNavigation = [
+    {
+      id: "settings",
+      name: "Settings",
+      icon: Settings,
+      path: "/admin/settings",
+    },
     {
       id: "profile",
       name: "Profile",

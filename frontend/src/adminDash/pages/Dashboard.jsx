@@ -521,11 +521,18 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
             const { badge, title: itemTitle, metaLeft, metaRight, onOpen } = extractItemProps(it, i);
             
             return (
-              <button
+              <div
                 key={it?.id || it?._id || i}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={onOpen || (() => {})}
-                className="w-full text-left min-w-0"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    (onOpen || (() => {}))();
+                  }
+                }}
+                className="w-full text-left min-w-0 cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
               >
                 <div className="flex gap-3 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-sm active:scale-[0.99] transition">
                   {/* Thumbnail */}
@@ -556,6 +563,7 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           // Toggle favorite logic (if needed)
                         }}
                         className="shrink-0 rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-orange-600 transition-colors"
@@ -575,7 +583,7 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

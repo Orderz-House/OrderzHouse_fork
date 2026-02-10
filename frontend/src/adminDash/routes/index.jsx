@@ -23,8 +23,7 @@ import Analytics from "../pages/insights/Analytics.jsx";
 // import Tasks from "../pages/operation/Tasks.jsx";
 import Profile from "../pages/Profile.jsx";
 
-// 👇 استيراد صفحة الإعدادات
-import AccountSettings from "../../components/profile/AccountSettings.jsx";
+import Settings from "../pages/Settings.jsx";
 import EditProfile from "../pages/EditProfile.jsx";
 
 function ProjectsSwitch() {
@@ -82,7 +81,7 @@ export default function AdminRouter() {
         {/* Profile & Settings */}
         <Route path="profile" element={<Profile />} />
         <Route path="editprofile" element={<EditProfile />} />
-        <Route path="settings" element={<AccountSettings />} /> {/* 👈 هون الإضافة */}
+        <Route path="settings" element={<Settings />} />
 
         {/* generic sections —  /admin  /client  /freelancer */}
         <Route path="projects" element={<ProjectsSwitch />} />

@@ -104,6 +104,11 @@ export const createCheckoutSession = async (req, res) => {
       const cancel_url = `${process.env.CLIENT_URL}/payment/cancel`;
 
       console.log("[Stripe] Free plan with yearly fee - creating session with 25 JD only");
+      console.log("[Stripe] Before Stripe create - mode, success_url, cancel_url:", {
+        mode: "payment",
+        success_url,
+        cancel_url,
+      });
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -224,8 +229,15 @@ export const createCheckoutSession = async (req, res) => {
       });
     }
 
-    const session = await getStripe().checkout.sessions.create({
+    const success_url = `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancel_url = `${process.env.CLIENT_URL}/payment/cancel`;
+    console.log("[Stripe] Before Stripe create (paid plan) - mode, success_url, cancel_url:", {
+      mode: "payment",
+      success_url,
+      cancel_url,
+    });
 
+    const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
@@ -243,18 +255,12 @@ export const createCheckoutSession = async (req, res) => {
     return res.json({ url: session.url });
 
   } catch (err) {
-    console.error("[Stripe] Create session error:", {
-      type: err.type,
-      message: err.message,
-      raw: err.raw?.message,
-      code: err.code,
-      statusCode: err.statusCode,
-      stack: err.stack,
-    });
-    return res.status(500).json({ 
-      error: "Stripe error",
+    console.error("[Stripe] Create session error - message:", err.message);
+    console.error("[Stripe] Create session error - stack:", err.stack);
+    if (err.raw != null) console.error("[Stripe] Create session error - raw:", err.raw);
+    return res.status(500).json({
       message: err.message || "Failed to create checkout session",
-      details: err.type || "Unknown error"
+      raw: err.raw?.message ?? undefined,
     });
   }
 };
