@@ -46,7 +46,7 @@ export const fetchSubSubCategoriesBySubId = async (subCategoryId) => {
 
 // Get all sub-sub-categories (for homepage search)
 export const fetchAllSubSubCategories = async () => {
-  const { data } = await axios.get(`${API_BASE}/all-sub-sub-categories`);
+  const { data } = await API.get("/category/all-sub-sub-categories");
   if (data.success) return data.data;
   throw new Error(data.message || "Failed to fetch all sub-sub-categories");
 };

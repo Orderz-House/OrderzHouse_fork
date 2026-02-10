@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setLogin } from "../../slice/auth/authSlice";
 import API from "../../api/client.js";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import arabCountries from "../../data/arabCountries.json";
 import {
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PageMeta from "../PageMeta.jsx";
+import { useToast } from "../toast/ToastProvider";
 
 
 const roles = [

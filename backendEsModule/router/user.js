@@ -20,8 +20,6 @@ import {
   getDeactivatedUsers,
   requestSignupOtp,
   verifyAndRegister,
-  forgotPassword,
-  resetPassword,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";
@@ -69,6 +67,7 @@ usersRouter.post("/rate", authentication, rateFreelancerValidator, validateReque
 // =============== PASSWORD & ACCOUNT ===============
 usersRouter.post("/verify-password", authentication, verifyPasswordValidator, validateRequest, verifyPassword);
 usersRouter.put("/update-password", authentication, updatePasswordValidator, validateRequest, updatePassword);
+usersRouter.patch("/change-password", authentication, updatePasswordValidator, validateRequest, updatePassword);
 usersRouter.put("/deactivate", authentication, deactivateValidator, validateRequest, deactivateAccount);
 usersRouter.get("/deactivated-users", authentication, getDeactivatedUsers); //Administer route to get deactivated users
 

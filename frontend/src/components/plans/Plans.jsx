@@ -6,9 +6,11 @@ import { loadStripe } from "@stripe/stripe-js";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PaymentMethodModal from "./PaymentMethodChooser.jsx";
 import PageMeta from "../PageMeta.jsx";
+import { useToast } from "../toast/ToastProvider";
 
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // =============== Auth Hook ===============
 const useAuth = () => {
@@ -154,38 +156,32 @@ export default function Plans() {
       return;
     }
 
-    const res = await API.post("/stripe/create-checkout-session", {
-      plan_id: selectedPlan.id,
-      user_id: user.id,
-    });
-
-
-      const payload = {
+    try {
+      const res = await API.post("/stripe/create-checkout-session", {
         plan_id: selectedPlan.id,
         user_id: user.id,
-      };
-      console.log("[Frontend] Sending request payload:", payload);
+      });
 
-      const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, payload);
+      const data = res.data;
+      console.log("Checkout session response:", data);
 
-      console.log("Checkout session response:", res.data);
-      
       // Handle free plan (no Stripe needed)
-      if (res.data?.free === true || res.data?.url === null) {
+      if (data?.free === true || data?.url === null) {
         toast.success("Free plan subscribed successfully!");
         return;
       }
-      
+
       // Handle Stripe checkout
-      if (res.data?.url) {
-        window.location.href = res.data.url;
+      if (data?.url) {
+        window.location.href = data.url;
       } else {
-        console.error("No checkout URL in response:", res.data);
+        console.error("No checkout URL in response:", data);
         alert("Invalid response from server. Please try again.");
       }
     } catch (err) {
       console.error("Failed to create checkout session:", err);
-      alert(err.response?.data?.error || err.message || "Failed to start checkout. Please try again.");
+      const msg = err.response?.data?.message ?? err.response?.data?.error ?? err.message ?? "Failed to start checkout. Please try again.";
+      alert(msg);
     }
   };
 

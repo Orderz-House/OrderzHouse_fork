@@ -1,6 +1,7 @@
 // src/components/login/Login.jsx
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
+import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import API from "../../api/client.js";
 
@@ -217,6 +218,33 @@ const Login = () => {
     setTempToken("");
   };
 
+  const handleGoogleSuccess = (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      dispatch(
+        setLogin({
+          token: credentialResponse.credential,
+          userId: decoded.sub,
+          roleId: 2,
+          is_verified: true,
+          userInfo: { email: decoded.email, first_name: decoded.given_name, last_name: decoded.family_name },
+        })
+      );
+      setStatus(true);
+      toast.success("Google login successful! Redirecting...");
+      connectSocket(credentialResponse.credential, decoded.sub);
+      setTimeout(() => navigate("/"), 1500);
+    } catch (error) {
+      setStatus(false);
+      toast.error("Google login failed. Please try again.");
+    }
+  };
+
+  const handleGoogleError = () => {
+    setStatus(false);
+    toast.error("Google login failed. Please try again.");
+  };
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       <PageMeta title="Log in – OrderzHouse" description="Log in to your OrderzHouse account to manage projects and connect with freelancers." />
@@ -307,14 +335,6 @@ const Login = () => {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
-                    <div className="mt-2 text-right">
-                      <Link
-                        to="/forgot-password"
-                        className="text-sm font-medium text-orange-600 hover:underline"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
                   </div>
                 </>
               )}
@@ -389,6 +409,29 @@ const Login = () => {
                   </div>
                 </GradientButton>
               </div>
+
+              {!isOtpStep && (
+                <>
+                  <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-2 bg-white text-slate-500 text-sm">Or continue with</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      theme="filled_blue"
+                      size="large"
+                      shape="pill"
+                      text="signin_with"
+                    />
+                  </div>
+                </>
+              )}
 
               {isOtpStep && (
                 <div className="text-center">
