@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,36 +21,86 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   final _otpController = TextEditingController();
+  int _resendCooldownSeconds = 30;
+  Timer? _cooldownTimer;
+  bool _isResending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldown();
+  }
+
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _resendCooldownSeconds = 30);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_resendCooldownSeconds <= 1) {
+          _resendCooldownSeconds = 0;
+          timer.cancel();
+        } else {
+          _resendCooldownSeconds--;
+        }
+      });
+    });
+  }
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _otpController.dispose();
     super.dispose();
   }
 
   Future<void> _handleVerify() async {
-    if (_otpController.text.isEmpty) {
+    final code = _otpController.text.trim();
+    if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter OTP')),
+        const SnackBar(content: Text('Please enter the verification code')),
       );
       return;
     }
 
     final authNotifier = ref.read(authStateProvider.notifier);
-    final success = await authNotifier.verifyEmail(
-      widget.email,
-      _otpController.text,
-    );
+    final success = await authNotifier.verifyOtpAndCompleteSignup(code);
 
     if (!mounted) return;
 
     if (success) {
-      context.go('/login');
+      final user = ref.read(authStateProvider).user;
+      final home = user?.roleId == 3 ? '/freelancer' : '/client';
+      context.go(home);
     } else {
       final error = ref.read(authStateProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Verification failed')),
+        SnackBar(content: Text(error ?? 'Verification failed. Check the code and try again.')),
       );
+    }
+  }
+
+  Future<void> _handleResend() async {
+    if (_resendCooldownSeconds > 0 || _isResending) return;
+    setState(() => _isResending = true);
+    final authNotifier = ref.read(authStateProvider.notifier);
+    final success = await authNotifier.resendSignupOtp(widget.email);
+    if (mounted) {
+      setState(() => _isResending = false);
+      if (success) {
+        _startCooldown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New code sent. Check your email (and spam folder).')),
+        );
+      } else {
+        final error = ref.read(authStateProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error ?? 'Failed to resend code. Try again.')),
+        );
+      }
     }
   }
 
@@ -85,6 +136,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Check your spam folder if you don\'t see it.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
                 label: 'Enter OTP',
@@ -95,11 +155,28 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               const SizedBox(height: AppSpacing.lg),
               PrimaryGradientButton(
                 label: 'Verify',
-                onPressed: _handleVerify,
+                onPressed: authState.isLoading ? null : _handleVerify,
                 isLoading: authState.isLoading,
                 width: double.infinity,
                 height: 54,
                 borderRadius: 999,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextButton(
+                onPressed: (_resendCooldownSeconds > 0 || _isResending)
+                    ? null
+                    : _handleResend,
+                child: _isResending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        _resendCooldownSeconds > 0
+                            ? 'Resend code ($_resendCooldownSeconds s)'
+                            : 'Resend code',
+                      ),
               ),
             ],
           ),

@@ -458,7 +458,7 @@ class _SectionExpansionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Padding(
-                      padding: const EdgeInsets.only(top: 6),
+                      padding: EdgeInsets.only(top: 6),
                       child: Icon(
                         Icons.check_circle_outline,
                         size: 18,

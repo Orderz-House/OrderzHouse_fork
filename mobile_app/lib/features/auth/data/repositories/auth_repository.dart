@@ -9,6 +9,7 @@ import '../../../../core/models/api_response.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_store.dart';
 import '../../../../core/config/app_config.dart';
+import '../models/signup_payload.dart';
 
 /*
   GOOGLE SIGN-IN CONFIGURATION CHECKLIST:
@@ -250,6 +251,100 @@ class AuthRepository {
     }
   }
 
+  /// Step A: Request OTP for signup. Does NOT create user. Backend stores OTP and sends email.
+  Future<ApiResponse<void>> requestSignupOtp(String email) async {
+    final uri = '${_dio.options.baseUrl}/users/request-signup-otp';
+    if (kDebugMode) {
+      developer.log('OTP REQUEST => POST $uri', name: 'Auth');
+    }
+    try {
+      final response = await _dio.post(
+        '/users/request-signup-otp',
+        data: {'email': email.trim().toLowerCase()},
+      );
+      final status = response.statusCode ?? 0;
+      final message = response.data is Map ? (response.data as Map)['message'] as String? : null;
+      if (kDebugMode) {
+        developer.log('OTP REQUEST => status=$status message=$message', name: 'Auth');
+      }
+      return ApiResponse(
+        success: status >= 200 && status < 300,
+        message: message ?? 'Verification code sent',
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data as Map<String, dynamic>?;
+      final message = data?['message'] as String? ?? 'Failed to send verification code';
+      if (kDebugMode) {
+        developer.log('OTP REQUEST FAILED => status=$status message=$message', name: 'Auth');
+        developer.log('OTP REQUEST response data: $data', name: 'Auth');
+      }
+      return ApiResponse(success: false, message: message);
+    }
+  }
+
+  /// Step B: Verify OTP and create user in one call. Saves token and returns user on success.
+  Future<ApiResponse<User>> verifyAndRegister({
+    required SignupPayload payload,
+    required String otp,
+  }) async {
+    final uri = '${_dio.options.baseUrl}/users/verify-and-register';
+    if (kDebugMode) {
+      developer.log('VERIFY_AND_REGISTER => POST $uri', name: 'Auth');
+    }
+    try {
+      final data = payload.toJson();
+      data['otp'] = otp;
+      final response = await _dio.post('/users/verify-and-register', data: data);
+      final status = response.statusCode ?? 0;
+      if (kDebugMode) {
+        developer.log('VERIFY_AND_REGISTER => status=$status', name: 'Auth');
+      }
+      final respData = response.data as Map<String, dynamic>;
+      final token = respData['token'] as String?;
+      if (token == null || token.isEmpty) {
+        return const ApiResponse(
+          success: false,
+          message: 'Invalid response from server',
+        );
+      }
+      await SecureStore.saveAccessToken(token);
+      final refreshToken = respData['refreshToken'] as String?;
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await SecureStore.saveRefreshToken(refreshToken);
+      }
+      final userInfo = respData['userInfo'] as Map<String, dynamic>?;
+      if (userInfo == null) {
+        return const ApiResponse(
+          success: false,
+          message: 'Invalid response from server',
+        );
+      }
+      final userData = Map<String, dynamic>.from(userInfo);
+      if (respData['must_accept_terms'] != null) {
+        userData['must_accept_terms'] = respData['must_accept_terms'];
+      }
+      if (respData['terms_version_required'] != null) {
+        userData['terms_version_required'] = respData['terms_version_required'];
+      }
+      final user = User.fromJson(userData);
+      return ApiResponse(
+        success: true,
+        message: respData['message'] as String?,
+        data: user,
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data as Map<String, dynamic>?;
+      final String message = data?['message'] as String? ?? 'Verification or registration failed';
+      if (kDebugMode) {
+        developer.log('VERIFY_AND_REGISTER FAILED => status=$status message=$message', name: 'Auth');
+        developer.log('VERIFY_AND_REGISTER response: $data', name: 'Auth');
+      }
+      return ApiResponse(success: false, message: message);
+    }
+  }
+
   Future<ApiResponse<void>> register({
     required int roleId,
     required String firstName,
@@ -289,10 +384,17 @@ class AuthRepository {
         message: response.data['message'] as String?,
       );
     } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.response?.data['message'] as String? ?? 'Registration failed',
-      );
+      final data = e.response?.data as Map<String, dynamic>?;
+      String message = data?['message'] as String? ?? 'Registration failed';
+      final error = data?['error']?.toString() ?? '';
+      if (error.contains('users_phone_number_key') || error.toLowerCase().contains('duplicate') && error.toLowerCase().contains('phone')) {
+        message = 'This phone number is already registered. Try logging in or use a different number.';
+      } else if (error.contains('users_email_key') || error.toLowerCase().contains('duplicate') && error.toLowerCase().contains('email')) {
+        message = 'This email is already registered. Try logging in or use a different email.';
+      } else if (error.contains('users_username_key') || error.toLowerCase().contains('duplicate') && error.toLowerCase().contains('username')) {
+        message = 'This username is already taken. Please choose another.';
+      }
+      return ApiResponse(success: false, message: message);
     }
   }
 

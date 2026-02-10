@@ -10,6 +10,7 @@ import '../../../../core/models/category.dart';
 import '../../../../core/widgets/gradient_button.dart';
 import '../providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
+import '../../data/models/signup_payload.dart';
 
 // Alias for backward compatibility
 typedef GradientButton = PrimaryGradientButton;
@@ -194,12 +195,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final authNotifier = ref.read(authStateProvider.notifier);
     final referralCode = _referralCodeController.text.trim().toUpperCase();
-    
-    final success = await authNotifier.register(
+    final email = _emailController.text.trim();
+    final payload = SignupPayload(
       roleId: _selectedRole!,
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
-      email: _emailController.text.trim(),
+      email: email,
       password: _passwordController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
       country: _countryController.text.trim(),
@@ -208,16 +209,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       referralCode: referralCode.isNotEmpty ? referralCode : null,
     );
 
+    // Step A: Request OTP only (no account created yet)
+    final success = await authNotifier.startSignup(payload);
+
     if (!mounted) return;
 
     if (success) {
-      context.go(
-        '/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}',
-      );
+      ref.read(pendingSignupPayloadProvider.notifier).state = payload;
+      context.go('/verify-email?email=${Uri.encodeComponent(email)}');
     } else {
       final error = ref.read(authStateProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Registration failed')),
+        SnackBar(content: Text(error ?? 'Could not send verification code. Check your email or try again.')),
       );
     }
   }

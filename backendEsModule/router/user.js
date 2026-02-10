@@ -18,6 +18,8 @@ import {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
+  requestSignupOtp,
+  verifyAndRegister,
   forgotPassword,
   resetPassword,
 } from "../controller/user.js";
@@ -46,6 +48,8 @@ usersRouter.post("/verify-email", verifyEmailValidator, validateRequest, verifyE
 usersRouter.post("/login", loginValidator, validateRequest, login);
 usersRouter.post("/verify-otp", verifyOtpValidator, validateRequest, verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);
+usersRouter.post("/request-signup-otp", requestSignupOtp);
+usersRouter.post("/verify-and-register", verifyAndRegister);
 usersRouter.post("/forgot-password", forgotPasswordValidator, validateRequest, forgotPassword);
 usersRouter.post("/reset-password", resetPasswordValidator, validateRequest, resetPassword);
 usersRouter.post("/refresh", refreshToken);
