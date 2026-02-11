@@ -9,9 +9,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setLogout, setUserData } from "../../slice/auth/authSlice";
+import { logout, setUserData } from "../../slice/auth/authSlice";
 import API from "../../api/client.js";
-import Cookies from "js-cookie";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
@@ -37,8 +36,9 @@ export default function Header() {
   const exploreRef = useRef(null);
 
   const dispatch = useDispatch();
-  const { token, userData } = useSelector((state) => state.auth);
-  const IsAuthenticated = !!token;
+  const { token, userData, isAuthenticated } = useSelector((state) => state.auth);
+  const IsAuthenticated = isAuthenticated && !!token;
+  console.log("NAV AUTH", { isAuthenticated, user: userData });
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,10 +142,9 @@ export default function Header() {
   // ===== Logout =====
   const handleLogout = () => {
     disconnectSocket();
-    Cookies.remove("userData");
     API.post("/users/logout").catch(() => {}); // clear refresh cookie
-    dispatch(setLogout());
-    navigate("/");
+    dispatch(logout());
+    navigate("/", { replace: true });
     window.location.reload();
   };
 
@@ -171,16 +170,13 @@ export default function Header() {
       })
       .catch((error) => {
         console.error("Error fetching user data:", error);
-        // Only logout on auth errors, not network errors
+        // Only logout on 401/403. For 500, network, etc. show message and keep user logged in.
         if (error.response?.status === 401 || error.response?.status === 403) {
           handleLogout();
-        } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
-          // Network error - show message but don't logout
+        } else if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
           console.warn("Network error: Server may be unreachable");
-        } else {
-          // Other errors - logout to be safe
-          handleLogout();
         }
+        // Other errors (500, 404, etc.): do NOT logout; user stays on page
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);

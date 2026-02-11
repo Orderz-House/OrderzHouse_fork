@@ -157,14 +157,25 @@ export default function Plans() {
     }
 
     try {
+<<<<<<< HEAD
       const res = await API.post("/stripe/create-checkout-session", {
+=======
+      const payload = {
+>>>>>>> ra
         plan_id: selectedPlan.id,
         user_id: user.id,
       });
 
+<<<<<<< HEAD
       const data = res.data;
       console.log("Checkout session response:", data);
 
+=======
+      const res = await API.post("/stripe/create-checkout-session", payload);
+
+      console.log("Checkout session response:", res.data);
+
+>>>>>>> ra
       // Handle free plan (no Stripe needed)
       if (data?.free === true || data?.url === null) {
         toast.success("Free plan subscribed successfully!");

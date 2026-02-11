@@ -25,8 +25,7 @@ import {
   ListChecks as SurveyIcon,
   PlaySquare,
 } from "lucide-react";
-import Cookies from "js-cookie";
-import { setLogout } from "../../slice/auth/authSlice";
+import { logout } from "../../slice/auth/authSlice";
 import API from "../../api/client.js";
 import { disconnectSocket } from "../../services/socketService";
 import TopBar from "../components/TopBar.jsx";
@@ -394,9 +393,8 @@ export default function AdminLayout() {
     try {
       disconnectSocket();
     } catch (_) {}
-    Cookies.remove("userData");
     API.post("/users/logout").catch(() => {}); // clear refresh cookie
-    dispatch(setLogout());
+    dispatch(logout());
     try {
       localStorage.removeItem("roled");
     } catch (_) {}

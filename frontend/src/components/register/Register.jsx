@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { setLogin } from "../../slice/auth/authSlice";
+import { loginSuccess } from "../../slice/auth/authSlice";
 import API from "../../api/client.js";
 import { useNavigate, useSearchParams } from "react-router-dom";
+<<<<<<< HEAD
+=======
+import { useToast } from "../toast/ToastProvider";
+>>>>>>> ra
 
 import arabCountries from "../../data/arabCountries.json";
 import {
@@ -93,10 +97,10 @@ const Register = () => {
       // User came from login page - show OTP field directly
       setEmail(emailParam);
       setShowOtpField(true);
-      // Auto-resend OTP (call API directly here to avoid dependency issues)
-      axios.post(`${API_URL}/users/resend-email-otp`, { email: emailParam })
+      // Auto-resend OTP
+      API.post("/users/resend-email-otp", { email: emailParam })
         .then((res) => {
-          toast.success(res.data.message || "OTP sent successfully");
+          toast.success(res.data?.message || "OTP sent successfully");
           setResendCooldown(60);
         })
         .catch((err) => {
@@ -306,8 +310,8 @@ const Register = () => {
     if (resendCooldown > 0) return;
 
     try {
-      const res = await axios.post(`${API_URL}/users/resend-email-otp`, { email });
-      toast.success(res.data.message || "OTP sent successfully");
+      const res = await API.post("/users/resend-email-otp", { email });
+      toast.success(res.data?.message || "OTP sent successfully");
       setResendCooldown(60); // Start 60s cooldown
     } catch (err) {
       toast.error(

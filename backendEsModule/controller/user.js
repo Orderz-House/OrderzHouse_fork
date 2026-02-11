@@ -1490,7 +1490,9 @@ const getUserdata = async (req, res) => {
 };
 
 /* =========================================
-   PASSWORD RESET (forgot / reset)
+   PASSWORD RESET (token-link strategy)
+   Uses password_reset_tokens: raw token emailed, SHA256 hash stored,
+   used_at marked on consume. Single strategy only (no OTP reset path).
 ========================================= */
 const RESET_EXPIRY_MINUTES = 30;
 
@@ -1897,6 +1899,9 @@ export {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
+<<<<<<< HEAD
   requestSignupOtp,
   verifyAndRegister,
+=======
+>>>>>>> ra
 };

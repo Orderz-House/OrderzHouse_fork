@@ -13,21 +13,18 @@ import {
   User
 } from "lucide-react";
 import { disconnectSocket } from "../../services/socketService";
-import { setLogout } from "../../slice/auth/authSlice";
-import Cookies from "js-cookie";
-
+import { logout } from "../../slice/auth/authSlice";
 
 const AccountSuspended = () => {
   const { userData } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState(false);
   const dispatch = useDispatch();
-  
+
   const handleLogout = () => {
     disconnectSocket();
-    Cookies.remove("userData");
-    dispatch(setLogout());
-    navigate("/");
+    dispatch(logout());
+    navigate("/", { replace: true });
   };
 
   
