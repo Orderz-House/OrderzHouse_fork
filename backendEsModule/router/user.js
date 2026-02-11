@@ -18,8 +18,6 @@ import {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
-  forgotPassword,
-  resetPassword,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";
@@ -43,6 +41,7 @@ const usersRouter = express.Router();
 // =============== PUBLIC ROUTES ===============
 usersRouter.post("/register", registerValidator, validateRequest, register);
 usersRouter.post("/verify-email", verifyEmailValidator, validateRequest, verifyEmailOtp);
+usersRouter.post("/resend-email-otp", resendEmailOtp);
 usersRouter.post("/login", loginValidator, validateRequest, login);
 usersRouter.post("/verify-otp", verifyOtpValidator, validateRequest, verifyOTP);
 usersRouter.post("/send-otp", sendOtpController);

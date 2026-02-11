@@ -1,6 +1,8 @@
 import axios from "axios";
 import store from "../store/store";
-import { setLogout, setToken } from "../slice/auth/authSlice";
+import { logout, setToken } from "../slice/auth/authSlice";
+
+const STORAGE_KEYS = { ACCESS_TOKEN: "accessToken" };
 
 /**
  * Centralized API Client
@@ -15,12 +17,15 @@ const API = axios.create({
 
 let refreshPromise = null;
 
-// Request interceptor: Add auth token from Redux store
+// Request interceptor: always read accessToken from localStorage first so it's set before Redux updates
 API.interceptors.request.use(
   (config) => {
-    const { auth } = store.getState();
-    if (auth?.token) {
-      config.headers.Authorization = `Bearer ${auth.token}`;
+    const token =
+      (typeof localStorage !== "undefined" && localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) ||
+      store.getState()?.auth?.token ||
+      null;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -40,12 +45,12 @@ API.interceptors.response.use(
     const isRefreshRequest = originalRequest.url?.includes("/users/refresh");
     if (isRefreshRequest) {
       refreshPromise = null;
-      store.dispatch(setLogout());
+      store.dispatch(logout());
       return Promise.reject(error);
     }
 
     if (originalRequest._retryAfterRefresh) {
-      store.dispatch(setLogout());
+      store.dispatch(logout());
       return Promise.reject(error);
     }
 
@@ -64,7 +69,7 @@ API.interceptors.response.use(
       }
     } catch (_) {
       refreshPromise = null;
-      store.dispatch(setLogout());
+      store.dispatch(logout());
     }
     return Promise.reject(error);
   }

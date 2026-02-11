@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import API from "../../api/client.js";
 
 import { useNavigate, Link } from "react-router-dom";
-import { setLogin } from "../../slice/auth/authSlice";
+import { loginSuccess } from "../../slice/auth/authSlice";
 import { connectSocket } from "../../services/socketService";
 import { useToast } from "../toast/ToastProvider";
 import {
@@ -20,6 +20,36 @@ import {
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PageMeta from "../PageMeta.jsx";
+
+const getDashboardPath = (roleId) => {
+  switch (Number(roleId)) {
+    case 1: return "/admin/dashboard";
+    case 2: return "/client/dashboard";
+    case 3: return "/freelancer/dashboard";
+    case 4: return "/apm";
+    case 5: return "/partner";
+    default: return "/dashboard";
+  }
+};
+
+const applyLoginSuccess = (dispatch, data, navigate, connectSocket) => {
+  const token = data.token;
+  const decoded = jwtDecode(token);
+  const userInfo = data.userInfo ?? {
+    id: decoded.userId,
+    role_id: decoded.role,
+    username: decoded.username,
+    email: decoded.email,
+  };
+  const roleId = userInfo.role_id ?? decoded.role;
+
+  dispatch(loginSuccess({ token, userInfo }));
+  console.log("LOGIN OK", { token: !!token, userInfo });
+
+  connectSocket(token, decoded.userId);
+  const path = getDashboardPath(roleId);
+  navigate(path, { replace: true });
+};
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -80,18 +110,7 @@ const Login = () => {
         if (data.token) {
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-          const decoded = jwtDecode(data.token);
-          dispatch(
-            setLogin({
-              token: data.token,
-              userId: decoded.userId,
-              roleId: decoded.role,
-              is_verified: decoded.is_verified,
-              userInfo: data.userInfo,
-            })
-          );
-          connectSocket(data.token, decoded.userId);
-          setTimeout(() => navigate("/"), 1500);
+          applyLoginSuccess(dispatch, data, navigate, connectSocket);
           return;
         }
 
@@ -134,22 +153,9 @@ const Login = () => {
         .then((res) => {
           setIsLoading(false);
           const data = res.data;
-
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-
-          const decoded = jwtDecode(data.token);
-          dispatch(
-            setLogin({
-              token: data.token,
-              userId: decoded.userId,
-              roleId: decoded.role,
-              is_verified: decoded.is_verified,
-              userInfo: data.userInfo,
-            })
-          );
-          connectSocket(data.token, decoded.userId);
-          setTimeout(() => navigate("/"), 1500);
+          applyLoginSuccess(dispatch, data, navigate, connectSocket);
         })
         .catch((err) => {
           setIsLoading(false);
@@ -172,22 +178,9 @@ const Login = () => {
         .then((res) => {
           setIsLoading(false);
           const data = res.data;
-
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-
-          const decoded = jwtDecode(data.token);
-          dispatch(
-            setLogin({
-              token: data.token,
-              userId: decoded.userId,
-              roleId: decoded.role,
-              is_verified: decoded.is_verified,
-              userInfo: data.userInfo,
-            })
-          );
-          connectSocket(data.token, decoded.userId);
-          setTimeout(() => navigate("/"), 1500);
+          applyLoginSuccess(dispatch, data, navigate, connectSocket);
         })
         .catch((err) => {
           setIsLoading(false);

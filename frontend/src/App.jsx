@@ -1,10 +1,11 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import "animate.css";
 // import "./components/loadingScreen/axiosLoading.js";
 import { useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { hydrateFromStorage } from "./slice/auth/authSlice";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Toaster } from "react-hot-toast";
@@ -88,12 +89,17 @@ function ScrollToTop() {
 
 function App() {
   const location = useLocation();
+  const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
   const userData = useSelector((state) => state.auth.userData);
 
   const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
+
+  useEffect(() => {
+    dispatch(hydrateFromStorage());
+  }, [dispatch]);
 
   useEffect(() => {
     if (token && userId) {
@@ -128,6 +134,9 @@ function App() {
 
         {/* --- Dashboard alias: redirect to role base or login --- */}
         <Route path="/dashboard" element={<DashboardRedirect />} />
+        <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+        <Route path="/client/dashboard" element={<Navigate to="/client" replace />} />
+        <Route path="/freelancer/dashboard" element={<Navigate to="/freelancer" replace />} />
 
         {/* --- My projects alias: redirect to role-based projects list --- */}
         <Route path="/my-projects" element={<MyProjectsRedirect />} />

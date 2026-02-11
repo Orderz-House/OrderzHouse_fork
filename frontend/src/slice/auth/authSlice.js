@@ -1,73 +1,120 @@
 import { createSlice } from "@reduxjs/toolkit";
-import Cookies from "js-cookie";
+
+const STORAGE_KEYS = {
+  ACCESS_TOKEN: "accessToken",
+  USER_INFO: "userInfo",
+};
+
+function readFromStorage() {
+  try {
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null;
+    const raw = localStorage.getItem(STORAGE_KEYS.USER_INFO);
+    let userInfo = null;
+    if (raw && raw !== "undefined" && raw !== "null") {
+      userInfo = JSON.parse(raw);
+    }
+    return { token, userInfo };
+  } catch (e) {
+    console.error("authSlice readFromStorage:", e);
+    return { token: null, userInfo: null };
+  }
+}
+
+const { token: initialToken, userInfo: initialUser } = readFromStorage();
 
 const initialState = {
-  token: localStorage.getItem("token") || null,
-  userId: localStorage.getItem("userId") || null,
-  roleId: localStorage.getItem("roleId") || null,
-  isLoggedIn: !!localStorage.getItem("token"),
-  isVerified: localStorage.getItem("is_verified") || null,
-  userData: (() => {
-  const data = Cookies.get("userData");
-  if (!data || data === "undefined" || data === "null") return null;
-
-  try {
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("Invalid userData cookie:", data);
-    return null;
-  }
-})(),
+  token: initialToken,
+  user: initialUser,
+  isAuthenticated: !!initialToken,
+  isAuthReady: false,
+  // Backward compatibility (derived from user)
+  userData: initialUser,
+  userId: initialUser?.id ?? initialUser?.userId ?? initialUser?.user_id ?? null,
+  roleId: initialUser?.role_id ?? initialUser?.roleId ?? initialUser?.role ?? null,
 };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setLogin: (state, action) => {
-      const { token, userId, roleId, is_verified } = action.payload;
+    loginSuccess(state, action) {
+      const { token, userInfo } = action.payload;
+      if (!token) return;
       state.token = token;
-      state.userId = userId;
-      state.roleId = roleId;
-      state.isVerified = is_verified;
-      state.isLoggedIn = true;
+      state.user = userInfo ?? state.user;
+      state.isAuthenticated = true;
+      state.isAuthReady = true;
+      state.userData = state.user;
+      state.userId = state.user?.id ?? state.user?.userId ?? state.user?.user_id ?? null;
+      state.roleId = state.user?.role_id ?? state.user?.roleId ?? state.user?.role ?? null;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("roleId", roleId);
-      localStorage.setItem("is_verified", is_verified);
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      if (userInfo != null) {
+        localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
+      }
     },
-    setToken: (state, action) => {
-      state.token = action.payload;
-      if (action.payload) localStorage.setItem("token", action.payload);
-    },
-    setUserId: (state, action) => {
-      state.userId = action.payload;
-      localStorage.setItem("userId", action.payload);
-    },
-    setLogout: (state) => {
+
+    logout(state) {
       state.token = null;
+      state.user = null;
+      state.isAuthenticated = false;
+      state.userData = null;
       state.userId = null;
       state.roleId = null;
-      state.isLoggedIn = false;
-      localStorage.clear();
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER_INFO);
     },
-    setUserData: (state, action) => {
-      state.userData = action.payload;
-      Cookies.set("userData", JSON.stringify(action.payload));
+
+    setAuthFromStorage(state, action) {
+      const { token, userInfo } = action.payload ?? {};
+      state.token = token ?? null;
+      state.user = userInfo ?? null;
+      state.isAuthenticated = !!(state.token);
+      state.isAuthReady = true;
+      state.userData = state.user;
+      state.userId = state.user?.id ?? state.user?.userId ?? state.user?.user_id ?? null;
+      state.roleId = state.user?.role_id ?? state.user?.roleId ?? state.user?.role ?? null;
     },
-    updateVerification: (state, action) => {
-      state.isVerified = action.payload;
+
+    setToken(state, action) {
+      const t = action.payload;
+      state.token = t ?? null;
+      state.isAuthenticated = !!state.token;
+      if (t) localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, t);
+      else localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    },
+
+    setUserData(state, action) {
+      const userInfo = action.payload;
+      state.user = userInfo ?? null;
+      state.userData = state.user;
+      state.userId = state.user?.id ?? state.user?.userId ?? state.user?.user_id ?? null;
+      state.roleId = state.user?.role_id ?? state.user?.roleId ?? state.user?.role ?? null;
+      if (userInfo != null) {
+        localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+      }
     },
   },
 });
 
 export const {
-  setLogin,
+  loginSuccess,
+  logout,
+  setAuthFromStorage,
   setToken,
-  setUserId,
-  setLogout,
   setUserData,
-  updateVerification,
 } = authSlice.actions;
+
+
+/** Call on app mount to sync Redux from localStorage (and log for debug). */
+export function hydrateFromStorage() {
+  return (dispatch) => {
+    const { token, userInfo } = readFromStorage();
+    console.log("HYDRATE", { tokenFromStorage: !!token, userFromStorage: !!userInfo });
+    dispatch(setAuthFromStorage({ token, userInfo }));
+  };
+}
+
 export default authSlice.reducer;

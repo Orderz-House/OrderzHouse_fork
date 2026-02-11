@@ -154,28 +154,23 @@ export default function Plans() {
       return;
     }
 
-    const res = await API.post("/stripe/create-checkout-session", {
-      plan_id: selectedPlan.id,
-      user_id: user.id,
-    });
-
-
+    try {
       const payload = {
         plan_id: selectedPlan.id,
         user_id: user.id,
       };
       console.log("[Frontend] Sending request payload:", payload);
 
-      const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, payload);
+      const res = await API.post("/stripe/create-checkout-session", payload);
 
       console.log("Checkout session response:", res.data);
-      
+
       // Handle free plan (no Stripe needed)
       if (res.data?.free === true || res.data?.url === null) {
         toast.success("Free plan subscribed successfully!");
         return;
       }
-      
+
       // Handle Stripe checkout
       if (res.data?.url) {
         window.location.href = res.data.url;
