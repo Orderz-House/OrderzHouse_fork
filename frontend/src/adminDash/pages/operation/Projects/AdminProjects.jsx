@@ -1145,6 +1145,7 @@ function FreelancerProjects() {
           ]}
           formFields={[]}
           desktopAsCards
+          mobileAsCards
           crudConfig={{
             showDetails: false,
             showRowEdit: false,

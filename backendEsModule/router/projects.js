@@ -298,6 +298,9 @@ projectsRouter.post(
   requestProjectChanges
 );
 
+/* GET single project by ID (must be after all other /:projectId and literal routes) */
+projectsRouter.get("/:projectId", authentication, getProjectById);
+
 projectsRouter.use(uploadErrorHandler);
 
 export default projectsRouter;
