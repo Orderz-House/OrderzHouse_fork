@@ -6,7 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import API from "../../api/client.js";
 
 import { useNavigate, Link } from "react-router-dom";
-import { loginSuccess } from "../../slice/auth/authSlice";
+import { loginSuccess, setUserData } from "../../slice/auth/authSlice";
 import { connectSocket } from "../../services/socketService";
 import { useToast } from "../toast/ToastProvider";
 import {
@@ -33,21 +33,46 @@ const getDashboardPath = (roleId) => {
   }
 };
 
-const applyLoginSuccess = (dispatch, data, navigate, connectSocket) => {
+const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
   const token = data.token;
-  const decoded = jwtDecode(token);
-  const userInfo = data.userInfo ?? {
-    id: decoded.userId,
-    role_id: decoded.role,
+  let decoded;
+  try {
+    decoded = jwtDecode(token);
+  } catch (e) {
+    decoded = {};
+  }
+  let userInfo = data.userInfo ?? {
+    id: decoded.userId ?? decoded.sub,
+    role_id: decoded.role ?? decoded.role_id,
     username: decoded.username,
     email: decoded.email,
   };
-  const roleId = userInfo.role_id ?? decoded.role;
+  let roleId = userInfo.role_id ?? decoded.role ?? decoded.role_id;
 
   dispatch(loginSuccess({ token, userInfo }));
-  console.log("LOGIN OK", { token: !!token, userInfo });
 
-  connectSocket(token, decoded.userId);
+  if (roleId == null || roleId === "" || Number.isNaN(Number(roleId))) {
+    try {
+      const res = await API.get("/users/getUserdata", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const fetched = res?.data?.user ?? res?.data?.data ?? res?.data?.result ?? res?.data;
+      if (fetched && (fetched.role_id != null || fetched.roleId != null)) {
+        const fullUser = { ...userInfo, ...fetched, role_id: fetched.role_id ?? fetched.roleId };
+        dispatch(setUserData(fullUser));
+        userInfo = fullUser;
+        roleId = fullUser.role_id ?? fullUser.roleId;
+      }
+    } catch (err) {
+      console.warn("Could not fetch user data after login:", err);
+    }
+  }
+
+  connectSocket(token, userInfo?.id ?? decoded?.userId ?? decoded?.sub);
+  if (data.must_accept_terms) {
+    navigate("/accept-terms", { replace: true });
+    return;
+  }
   const path = getDashboardPath(roleId);
   navigate(path, { replace: true });
 };
@@ -81,7 +106,7 @@ const Login = () => {
         email: email.toLowerCase(),
         password,
       })
-      .then((res) => {
+      .then(async (res) => {
         setIsLoading(false);
         const data = res.data;
 
@@ -111,7 +136,7 @@ const Login = () => {
         if (data.token) {
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-          applyLoginSuccess(dispatch, data, navigate, connectSocket);
+          await applyLoginSuccess(dispatch, data, navigate, connectSocket);
           return;
         }
 
@@ -151,12 +176,12 @@ const Login = () => {
           email: email.toLowerCase(),
           otp,
         })
-        .then((res) => {
+        .then(async (res) => {
           setIsLoading(false);
           const data = res.data;
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-          applyLoginSuccess(dispatch, data, navigate, connectSocket);
+          await applyLoginSuccess(dispatch, data, navigate, connectSocket);
         })
         .catch((err) => {
           setIsLoading(false);
@@ -176,12 +201,12 @@ const Login = () => {
           temp_token: tempToken,
           code: otp,
         })
-        .then((res) => {
+        .then(async (res) => {
           setIsLoading(false);
           const data = res.data;
           setStatus(true);
           toast.success("Login successful! Redirecting...");
-          applyLoginSuccess(dispatch, data, navigate, connectSocket);
+          await applyLoginSuccess(dispatch, data, navigate, connectSocket);
         })
         .catch((err) => {
           setIsLoading(false);

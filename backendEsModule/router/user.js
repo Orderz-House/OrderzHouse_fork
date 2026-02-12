@@ -18,8 +18,8 @@ import {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
-  forgotPassword,
-  resetPassword,
+  requestSignupOtp,
+  verifyAndRegister,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";

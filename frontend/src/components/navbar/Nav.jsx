@@ -170,13 +170,20 @@ export default function Header() {
       })
       .catch((error) => {
         console.error("Error fetching user data:", error);
-        // Only logout on 401/403. For 500, network, etc. show message and keep user logged in.
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        const code = error.response?.data?.code;
+        const status = error.response?.status;
+        // المستخدم الجديد لم يقبل الشروط → توجيه لصفحة قبول الشروط وعدم تسجيل الخروج
+        if (status === 403 && code === "TERMS_NOT_ACCEPTED") {
+          navigate("/accept-terms", { replace: true });
+          return;
+        }
+        if (status === 401 || status === 403) {
           handleLogout();
-        } else if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
+          return;
+        }
+        if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
           console.warn("Network error: Server may be unreachable");
         }
-        // Other errors (500, 404, etc.): do NOT logout; user stays on page
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, token]);
