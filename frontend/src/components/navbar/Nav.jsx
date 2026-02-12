@@ -4,7 +4,6 @@ import {
   Bell,
   User,
   LogOut,
-  LayoutDashboard,
   Plus,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -225,6 +224,11 @@ export default function Header() {
   // ===== Links =====
   const navLinks = [
     { label: "Home", path: "/", condition: true },
+    {
+      label: "Dashboard",
+      path: getDashboardPath(userData?.role_id),
+      condition: IsAuthenticated && userData,
+    },
     {
       label: "Projects",
       path: "/projectsPage",
@@ -515,15 +519,6 @@ export default function Header() {
                         </div>
 
                         <div className="py-2">
-                          <Link
-                            to={getDashboardPath(userData.role_id)}
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className={`flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50`}
-                          >
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Dashboard
-                          </Link>
-
                           <button
                             onClick={handleLogout}
                             className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
@@ -711,20 +706,9 @@ export default function Header() {
                 </div>
               )}
 
-              {/* Dashboard + Sign out */}
+              {/* Sign out */}
               {IsAuthenticated && userData ? (
-                <div className="pt-4 border-t space-y-2">
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      navigate(getDashboardPath(userData.role_id));
-                    }}
-                    className={`flex items-center text-base text-gray-800 ${ACCENT_HOVER}`}
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </button>
-
+                <div className="pt-4 border-t">
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);

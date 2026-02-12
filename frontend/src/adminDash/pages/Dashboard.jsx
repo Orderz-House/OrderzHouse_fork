@@ -1106,26 +1106,30 @@ function Sk({ className = "" }) {
 
 function DashboardSkeletonV2() {
   return (
-    <div className={cx(UI.pageBg)} aria-busy="true" aria-live="polite">
-      <div className={UI.container}>
+    <div
+      className={cx(UI.pageBg, "overflow-x-hidden min-w-0 pt-3 sm:pt-0")}
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className={cx(UI.container, "px-0 max-w-full")}>
         <div className="space-y-4">
           {/* Main grid - matches real dashboard layout */}
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] min-w-0">
             {/* LEFT COLUMN */}
-            <div>
+            <div className="min-w-0">
               {/* HelloSticker skeleton (mobile only) */}
               <div className="lg:hidden mb-4">
-                <Sk className="h-12 w-48" />
+                <Sk className="h-12 w-48 max-w-full" />
               </div>
 
               {/* Hero Banner Skeleton */}
-              <div className={cx(UI.card, UI.violetGrad, "relative overflow-hidden")} style={UI.ring}>
+              <div className={cx(UI.card, UI.violetGrad, "relative overflow-hidden min-w-0")} style={UI.ring}>
                 <div className="absolute -right-20 -top-16 h-56 w-56 sm:h-64 sm:w-64 rounded-full bg-white/10 blur-2xl" />
                 <div className="absolute left-6 sm:left-10 -bottom-24 h-56 w-56 sm:h-64 sm:w-64 rounded-full bg-black/10 blur-2xl" />
                 
-                <div className="relative p-4 sm:p-5 lg:p-6">
+                <div className="relative p-4 sm:p-5 lg:p-6 min-w-0">
                   <div className="lg:flex lg:items-end lg:justify-between lg:gap-6">
-                    <div className="min-w-0 lg:max-w-[68%]">
+                    <div className="min-w-0 flex-1 lg:max-w-[68%]">
                       {/* Eyebrow */}
                       <Sk className="h-3 w-32 mb-2 opacity-70" />
                       
@@ -1154,9 +1158,9 @@ function DashboardSkeletonV2() {
               </div>
 
               {/* KPI Row Skeleton */}
-              <div className="mt-4">
+              <div className="mt-4 min-w-0">
                 {/* Desktop/Tablet */}
-                <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3 min-w-0">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div key={i} className={cx(UI.chip, "px-3 py-2.5")} style={UI.ring}>
                       <div className="flex items-center gap-3">
@@ -1171,9 +1175,9 @@ function DashboardSkeletonV2() {
                 </div>
                 
                 {/* Mobile */}
-                <div className="sm:hidden grid grid-cols-2 gap-3">
+                <div className="sm:hidden grid grid-cols-2 gap-3 min-w-0">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className={cx(UI.chip, "px-3 py-3")} style={UI.ring}>
+                    <div key={i} className={cx(UI.chip, "px-3 py-3 min-w-0")} style={UI.ring}>
                       <div className="flex items-center gap-3">
                         <Sk className="h-9 w-9 rounded-2xl shrink-0" />
                         <div className="min-w-0 flex-1 space-y-1.5">
@@ -1187,19 +1191,19 @@ function DashboardSkeletonV2() {
               </div>
 
               {/* Continue Section Skeleton */}
-              <div className="mt-6">
+              <div className="mt-6 min-w-0">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 min-w-0">
                   <Sk className="h-5 w-32" />
                   <Sk className="h-4 w-16" />
                 </div>
                 
                 {/* Carousel cards */}
-                <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pr-10 sm:pr-16 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pr-2 sm:pr-16 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden min-w-0">
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="snap-start flex-none w-[82%] sm:w-[70%] md:w-[52%] lg:w-[calc((100%-1rem)/2.5)] xl:w-[calc((100%-1rem)/2.6)]"
+                      className="snap-start flex-none min-w-0 w-[82%] sm:w-[70%] md:w-[52%] lg:w-[calc((100%-1rem)/2.5)] xl:w-[calc((100%-1rem)/2.6)]"
                     >
                       <div className={cx(UI.card, "overflow-hidden")} style={UI.ring}>
                         {/* Image area */}
@@ -1226,9 +1230,9 @@ function DashboardSkeletonV2() {
             </div>
 
             {/* RIGHT COLUMN */}
-            <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
+            <div className="space-y-6 w-full min-w-0 xl:w-[360px] xl:justify-self-end">
               {/* RingProgress Skeleton */}
-              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+              <div className={cx(UI.card, "p-5 min-w-0")} style={UI.ring}>
                 <Sk className="h-5 w-24 mb-4" />
                 <div className="flex flex-col items-center mt-4">
                   <div className="relative h-28 w-28">
@@ -1248,7 +1252,7 @@ function DashboardSkeletonV2() {
               </div>
 
               {/* RightListCard Skeleton */}
-              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+              <div className={cx(UI.card, "p-5 min-w-0")} style={UI.ring}>
                 <Sk className="h-5 w-32 mb-4" />
                 <div className="mt-4 space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -1269,7 +1273,7 @@ function DashboardSkeletonV2() {
               </div>
 
               {/* Quick Actions Skeleton */}
-              <div className={cx(UI.card, "p-5")} style={UI.ring}>
+              <div className={cx(UI.card, "p-5 min-w-0")} style={UI.ring}>
                 <Sk className="h-5 w-28 mb-4" />
                 <div className="mt-4 grid gap-2">
                   {[1, 2, 3].map((i) => (
@@ -1423,7 +1427,6 @@ function FreelancerDashboard() {
   const [query, setQuery] = useState("");
   const [balanceCards, setBalanceCards] = useState([]);
   const [activeProjects, setActiveProjects] = useState([]);
-  const [latestClientProjects, setLatestClientProjects] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1439,11 +1442,6 @@ function FreelancerDashboard() {
       );
       setActiveProjects(
         Array.isArray(payload?.activeProjects) ? payload.activeProjects : []
-      );
-      setLatestClientProjects(
-        Array.isArray(payload?.latestClientProjects)
-          ? payload.latestClientProjects
-          : []
       );
       setSubscriptionStatus(payload?.subscriptionStatus || null);
     } catch (e) {
@@ -1480,13 +1478,6 @@ function FreelancerDashboard() {
     [navigate, base]
   );
 
-  // Latest 5 client projects (newest first) for mini-table
-  const latestFive = useMemo(() => {
-    const list = Array.isArray(latestClientProjects) ? [...latestClientProjects] : [];
-    list.sort((a, b) => getProjectTime(b) - getProjectTime(a));
-    return list.slice(0, 5);
-  }, [latestClientProjects]);
-
   // progress percent (best effort): available/total if values exist
   const totalBal = parseNumberLike(balanceCards?.[0]?.value);
   const availBal = parseNumberLike(balanceCards?.[1]?.value);
@@ -1495,8 +1486,8 @@ function FreelancerDashboard() {
       ? Math.round((availBal / totalBal) * 100)
       : 32;
 
-  // ✅ Account activation steps (inside Statistic for Freelancer only)
-  // Edit route if you have a dedicated verification page
+  // ✅ Account activation steps (hidden until ready — set to true when verification flow is complete)
+  const SHOW_ACCOUNT_ACTIVATION = false;
   const verifyHref = `${base}/contract-terms`;
   const accountVerified = isAccountVerified(userData);
 
@@ -1536,8 +1527,7 @@ function FreelancerDashboard() {
     loading &&
     !error &&
     balanceCards.length === 0 &&
-    activeProjects.length === 0 &&
-    latestClientProjects.length === 0;
+    activeProjects.length === 0;
 
   if (showSkeleton) return <DashboardSkeletonV2 />;
 
@@ -1634,7 +1624,7 @@ function FreelancerDashboard() {
                 percent={pct}
                 label={`Good morning ${userLabel} 🔥`}
                 subLabel="Stay on top of deliveries and deadlines."
-                extra={
+                extra={SHOW_ACCOUNT_ACTIVATION ? (
                   <ActivationStepperCard
                     embedded
                     title="Account activation"
@@ -1644,39 +1634,7 @@ function FreelancerDashboard() {
                     onCta={() => navigate(activationCtaHref)}
                     onStep={(href) => href && navigate(href)}
                   />
-                }
-              />
-
-              <RightListCard
-                title="Latest client projects"
-                items={latestClientProjects}
-                onSeeAll={() => navigate(`${base}/projects`)}
-                renderRow={(p) => (
-                  <>
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold text-slate-900 truncate">
-                        {p?.title || "Project"}
-                      </div>
-                      <div className="text-[11px] text-slate-500 truncate">
-                        {p?.type || p?.project_type || "—"}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (p?.id) {
-                          navigate(`${base}/projects/${p.id}`);
-                        } else {
-                          navigate(`${base}/projects`);
-                        }
-                      }}
-                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Open
-                    </button>
-                  </>
-                )}
+                ) : null}
               />
 
               <div className={cx(UI.card, "p-5")} style={UI.ring}>
