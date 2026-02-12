@@ -3,10 +3,6 @@ import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../slice/auth/authSlice";
 import API from "../../api/client.js";
 import { useNavigate, useSearchParams } from "react-router-dom";
-<<<<<<< HEAD
-=======
-import { useToast } from "../toast/ToastProvider";
->>>>>>> ra
 
 import arabCountries from "../../data/arabCountries.json";
 import {

@@ -20,6 +20,7 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
+import AcceptTerms from "./components/auth/AcceptTerms";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
@@ -160,6 +161,14 @@ function App() {
 
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<Help />} />
+        <Route
+          path="/accept-terms"
+          element={
+            <ProtectedRoute>
+              <AcceptTerms />
+            </ProtectedRoute>
+          }
+        />
 
         {/* --- Protected Pages --- */}
 

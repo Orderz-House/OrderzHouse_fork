@@ -260,11 +260,11 @@ export async function fetchAdminDashboard() {
 
 /* ===================== Freelancer dashboard ===================== */
 export async function fetchFreelancerDashboard() {
-  const [projectsRes, assignedTasksRes, openRes] = await Promise.allSettled([
+  const [projectsRes, assignedTasksRes, openRes, subscriptionRes] = await Promise.allSettled([
     API.get("/projects/myprojects"),
     API.get("/tasks/freelancer/assigned"),
     API.get("/offers/projects/open"),
-
+    API.get("/subscriptions/status"),
   ]);
 
   const projects =

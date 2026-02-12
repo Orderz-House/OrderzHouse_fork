@@ -71,7 +71,7 @@ function PlanCard({ plan, onSubscribe, canSubscribe }) {
       <div className="p-6 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">{plan.name}</p>
+            <p className="text-sm font-semibold text-slate-900">{plan.name ?? "Plan"}</p>
 
             <p className="mt-2 text-3xl font-semibold text-slate-900">
               {plan.price} <span className="text-sm font-normal text-slate-500">JD</span>
@@ -157,25 +157,14 @@ export default function Plans() {
     }
 
     try {
-<<<<<<< HEAD
       const res = await API.post("/stripe/create-checkout-session", {
-=======
-      const payload = {
->>>>>>> ra
         plan_id: selectedPlan.id,
         user_id: user.id,
       });
 
-<<<<<<< HEAD
       const data = res.data;
       console.log("Checkout session response:", data);
 
-=======
-      const res = await API.post("/stripe/create-checkout-session", payload);
-
-      console.log("Checkout session response:", res.data);
-
->>>>>>> ra
       // Handle free plan (no Stripe needed)
       if (data?.free === true || data?.url === null) {
         toast.success("Free plan subscribed successfully!");

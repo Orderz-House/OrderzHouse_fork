@@ -1899,9 +1899,6 @@ export {
   sendOtpController,
   getUserdata,
   getDeactivatedUsers,
-<<<<<<< HEAD
   requestSignupOtp,
   verifyAndRegister,
-=======
->>>>>>> ra
 };
