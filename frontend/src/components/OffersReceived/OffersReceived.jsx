@@ -125,35 +125,36 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                           return;
                         }
                         try {
-                          await API.post(
+                          const res = await API.post(
                             "/offers/offers/approve-reject",
                             { offerId: o.offer_id, action: "accept" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
-                          // Update the accepted offer and reject all others
+                          if (res?.data?.requiresPayment === true) {
+                            const payRes = await API.post(
+                              "/stripe/offer-accept-checkout",
+                              { offerId: o.offer_id },
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            if (payRes?.data?.url) {
+                              window.location.href = payRes.data.url;
+                              return;
+                            }
+                          }
                           setOffersForProject((prev) =>
                             prev.map((x) => {
-                              if (x.offer_id === o.offer_id) {
-                                return { ...x, offer_status: "accepted" };
-                              }
-                              // Reject all other pending offers
-                              if (x.offer_status === "pending") {
-                                return { ...x, offer_status: "rejected" };
-                              }
+                              if (x.offer_id === o.offer_id) return { ...x, offer_status: "accepted" };
+                              if (x.offer_status === "pending") return { ...x, offer_status: "rejected" };
                               return x;
                             })
                           );
                           toast.success("Offer accepted successfully! Other offers rejected.");
                         } catch (err) {
                           console.error("Accept offer failed", err);
-                          // Check if the error is due to offer expiration
                           if (err?.response?.data?.message?.includes("expired")) {
-                            // Update the offer status to expired in the UI
                             setOffersForProject((prev) =>
                               prev.map((x) =>
-                                x.offer_id === o.offer_id
-                                  ? { ...x, offer_status: "expired" }
-                                  : x
+                                x.offer_id === o.offer_id ? { ...x, offer_status: "expired" } : x
                               )
                             );
                           }

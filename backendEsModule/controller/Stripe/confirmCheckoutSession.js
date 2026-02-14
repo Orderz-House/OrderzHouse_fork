@@ -25,9 +25,15 @@ export const confirmCheckoutSession = async (req, res) => {
 
     const amount = session.amount_total / 1000;
 
-    if (!user_id || !purpose || !reference_id) {
+    if (!user_id || !purpose) {
       return res.status(400).json({ ok: false, error: "Invalid metadata" });
     }
+    if (purpose !== "offer" && !reference_id) {
+      return res.status(400).json({ ok: false, error: "Invalid metadata" });
+    }
+
+    // reference_id: plan_id | project_id | offer_id (for purpose 'offer')
+    const referenceIdForDb = purpose === "offer" ? Number(session.metadata.reference_id) : reference_id;
 
     // 2️⃣ Insert payment (idempotent)
     await pool.query(
@@ -50,7 +56,7 @@ export const confirmCheckoutSession = async (req, res) => {
     user_id,
     amount,
     purpose,
-    reference_id,
+    referenceIdForDb,
     session.id,
     session.payment_intent,
   ]
@@ -197,6 +203,19 @@ export const confirmCheckoutSession = async (req, res) => {
       } else {
         const project = updateResult.rows[0];
         console.log(`✅ Project ${project.id} "${project.title}" moved to pending_admin after payment`);
+      }
+    }
+
+    // 6️⃣ OFFER ACCEPT (BIDDING) → بعد دفع العميل مبلغ العرض: قبول العرض وتسليم المشروع للفريلانسر
+    if (purpose === "offer") {
+      const offerId = referenceIdForDb;
+      try {
+        const { completeOfferAcceptance } = await import("../offers.js");
+        await completeOfferAcceptance(offerId);
+        console.log(`✅ Offer ${offerId} accepted and freelancer assigned after payment`);
+      } catch (err) {
+        console.error("completeOfferAcceptance error:", err);
+        return res.status(500).json({ ok: false, error: "Failed to complete offer acceptance" });
       }
     }
 

@@ -457,6 +457,115 @@ export const createProjectCheckoutSession = async (req, res) => {
 };
 
 /* ============================================================
+   OFFER ACCEPT CHECKOUT (BIDDING: CLIENT PAYS BID AMOUNT TO ACCEPT OFFER)
+   بعد الدفع يُستدعى completeOfferAcceptance من confirmCheckoutSession
+============================================================ */
+export const createOfferAcceptCheckoutSession = async (req, res) => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY || String(process.env.STRIPE_SECRET_KEY).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "STRIPE_SECRET_KEY is not configured",
+      });
+    }
+    const clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl || String(clientUrl).trim() === "") {
+      return res.status(500).json({
+        success: false,
+        message: "CLIENT_URL is not configured",
+      });
+    }
+
+    const userId = req.token?.userId;
+    const { offerId } = req.body;
+    if (!userId || !offerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing offerId or not authenticated",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT o.id, o.project_id, o.freelancer_id, o.bid_amount, o.offer_status,
+              p.user_id AS client_id, p.title AS project_title, p.project_type
+       FROM offers o
+       JOIN projects p ON o.project_id = p.id
+       WHERE o.id = $1 AND p.is_deleted = false`,
+      [offerId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: "Offer not found" });
+    }
+    const offer = rows[0];
+    if (String(offer.client_id) !== String(userId)) {
+      return res.status(403).json({ success: false, message: "Not authorized to pay for this offer" });
+    }
+    if (String(offer.offer_status) !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Offer is no longer pending (already accepted or rejected)",
+      });
+    }
+    if (String(offer.project_type) !== "bidding") {
+      return res.status(400).json({
+        success: false,
+        message: "This offer is not for a bidding project",
+      });
+    }
+
+    const amount = Number(offer.bid_amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid offer amount",
+      });
+    }
+    const unitAmount = Math.round(amount * 1000);
+
+    const successUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-cancel`;
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "jod",
+            product_data: {
+              name: `Accept offer — ${offer.project_title}`,
+              description: `Pay ${amount} JOD to accept this offer and assign the freelancer to the project.`,
+            },
+            unit_amount: unitAmount,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        user_id: String(userId),
+        purpose: "offer",
+        reference_id: String(offerId),
+      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    });
+
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
+  } catch (err) {
+    console.error("createOfferAcceptCheckoutSession error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to create payment session",
+    });
+  }
+};
+
+/* ============================================================
    CONFIRM CHECKOUT SESSION (CREATE PROJECT AFTER PAYMENT)
 ============================================================ */
 export const confirmCheckoutSession = async (req, res) => {

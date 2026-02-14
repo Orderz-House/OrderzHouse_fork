@@ -561,7 +561,14 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
     if (!token) return;
     setOffersSubmitting(true);
     try {
-      await API.post("/offers/offers/approve-reject", { offerId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+      const res = await API.post("/offers/offers/approve-reject", { offerId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+      if (action === "accept" && res?.data?.requiresPayment === true) {
+        const payRes = await API.post("/stripe/offer-accept-checkout", { offerId }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+        if (payRes?.data?.url) {
+          window.location.href = payRes.data.url;
+          return;
+        }
+      }
       setOffersForProject((prev) => {
         if (action === "accept") {
           return prev.map((o) => {

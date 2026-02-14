@@ -60,8 +60,16 @@ export default function PaymentSuccess() {
           toast.success(
             "Payment completed successfully. Your project is waiting for admin approval."
           );
-          // Redirect to client dashboard or projects list
           navigate("/client", { replace: true });
+          return;
+        }
+
+        // 🔹 OFFER ACCEPT (BIDDING) — دفع العميل مبلغ العرض وقبول الفريلانسر
+        if (purpose === "offer") {
+          toast.success(
+            "Payment completed. The freelancer has been assigned and can start working."
+          );
+          navigate("/client/projects", { replace: true });
           return;
         }
 

@@ -50,6 +50,7 @@ import CopywritingTest from "./components/CopywritingTest";
 // import GlobalLoadingProvider from "./components/loadingScreen/GlobalLoadingProvider.jsx";
 // import ChatPage from "./components/Chat/ChatPage";
 import PaymentSuccess from "./components/success/PaymentSuccess";
+import PaymentCancel from "./components/success/PaymentCancel";
 import FreelancerContractTerms from "./components/Freelancer/FreelancerContractTerms.jsx";
 import FreelancerContractSignup from "./components/Freelancer/FreelancerContractSignup.jsx";
 import NotFound from "./components/NotFound.jsx";
@@ -354,6 +355,9 @@ function App() {
           }
         />
 
+        {/* مسارات الدفع ثابتة قبل المسار الديناميكي حتى لا يُفسَّر payment-cancel كـ id */}
+        <Route path="/projects/payment-success" element={<PaymentSuccess />} />
+        <Route path="/projects/payment-cancel" element={<PaymentCancel />} />
         <Route
           path="/projects/:id"
           element={
