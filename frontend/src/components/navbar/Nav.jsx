@@ -5,11 +5,12 @@ import {
   User,
   LogOut,
   Plus,
+  LayoutDashboard,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, setUserData } from "../../slice/auth/authSlice";
-import API from "../../api/client.js";
+import API, { clearProactiveRefresh } from "../../api/client.js";
 import { disconnectSocket } from "../../services/socketService";
 import CategoryMegaMenu from "../Catigories/CategoryMegaMenu";
 
@@ -107,6 +108,7 @@ export default function Header() {
   };
 
   const markAsRead = async (id) => {
+    const wasUnread = notifications.some((n) => n.id === id && !n.read_status);
     try {
       await API.put(
         `/notifications/${id}/read`,
@@ -116,7 +118,7 @@ export default function Header() {
       setNotifications((list) =>
         list.map((n) => (n.id === id ? { ...n, read_status: true } : n))
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -141,6 +143,7 @@ export default function Header() {
   // ===== Logout =====
   const handleLogout = () => {
     disconnectSocket();
+    clearProactiveRefresh();
     API.post("/users/logout").catch(() => {}); // clear refresh cookie
     dispatch(logout());
     navigate("/", { replace: true });
@@ -171,9 +174,8 @@ export default function Header() {
         console.error("Error fetching user data:", error);
         const code = error.response?.data?.code;
         const status = error.response?.status;
-        // المستخدم الجديد لم يقبل الشروط → توجيه لصفحة قبول الشروط وعدم تسجيل الخروج
+        // عدم إظهار لوحة قبول الشروط تلقائياً — المستخدم يبقى في الصفحة الحالية
         if (status === 403 && code === "TERMS_NOT_ACCEPTED") {
-          navigate("/accept-terms", { replace: true });
           return;
         }
         if (status === 401 || status === 403) {
@@ -221,14 +223,9 @@ export default function Header() {
     }
   };
 
-  // ===== Links =====
+  // ===== Links ===== (Dashboard مخفي من الهيدر – متوفر في قائمة المستخدم فقط)
   const navLinks = [
     { label: "Home", path: "/", condition: true },
-    {
-      label: "Dashboard",
-      path: getDashboardPath(userData?.role_id),
-      condition: IsAuthenticated && userData,
-    },
     {
       label: "Projects",
       path: "/projectsPage",
@@ -443,22 +440,32 @@ export default function Header() {
 
                         <div className="max-h-96 overflow-y-auto">
                           {notifications.length > 0 ? (
-                            notifications.map((n) => (
-                              <div
-                                key={n.id}
-                                className={`p-4 cursor-pointer ${
-                                  !n.read_status ? "bg-orange-50/60" : ""
-                                } hover:bg-gray-50`}
-                                onClick={() => markAsRead(n.id)}
-                              >
-                                <p className="text-sm text-gray-900">
-                                  {n.message}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-2">
-                                  {new Date(n.created_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                            ))
+                            notifications.map((n) => {
+                              const isUnread = !n.read_status;
+                              return (
+                                <div
+                                  key={n.id}
+                                  className={`p-4 cursor-pointer ${
+                                    isUnread ? "bg-orange-50/60" : ""
+                                  } hover:bg-gray-50`}
+                                  onClick={() => markAsRead(n.id)}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="text-sm text-gray-900 flex-1">
+                                      {n.message}
+                                    </p>
+                                    {isUnread && (
+                                      <span className="shrink-0 px-2 py-0.5 text-xs font-medium rounded-full border border-amber-300 bg-amber-50 text-amber-800">
+                                        New
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {new Date(n.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              );
+                            })
                           ) : (
                             <div className="p-8 text-center text-gray-500 text-sm">
                               No notifications yet
@@ -519,6 +526,14 @@ export default function Header() {
                         </div>
 
                         <div className="py-2">
+                          <Link
+                            to={getDashboardPath(userData?.role_id)}
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"
+                          >
+                            <LayoutDashboard className="h-4 w-4 mr-2 text-orange-600" />
+                            Dashboard
+                          </Link>
                           <button
                             onClick={handleLogout}
                             className="flex w-full items-center px-4 py-3 text-gray-700 hover:bg-gray-50"

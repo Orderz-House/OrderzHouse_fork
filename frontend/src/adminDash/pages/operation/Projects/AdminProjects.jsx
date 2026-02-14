@@ -970,6 +970,29 @@ function FreelancerProjects() {
 
       const items = data?.requests || data?.items || [];
       setNotifItems(Array.isArray(items) ? items : []);
+
+      // عند فتح اللوحة نعتبر الإشعارات مقروءة → نحدّث الباكند ونخفّي النقطة
+      const hadUnread = !!String(row?.change_request_message || "").trim() || !!Number(row?.change_requests_unresolved_count || 0);
+      if (hadUnread) {
+        try {
+          await API.put(`/projects/${projectId}/change-requests/mark-read`, {}, { headers });
+          helpers.setRows?.((prev) =>
+            prev.map((r) => {
+              if (String(helpers.getId(r)) === String(projectId)) {
+                return {
+                  ...r,
+                  change_request_message: null,
+                  change_request_at: null,
+                  change_requests_unresolved_count: 0,
+                };
+              }
+              return r;
+            })
+          );
+        } catch (e) {
+          console.error("Mark change requests as read:", e);
+        }
+      }
     } catch (err) {
       console.error(err);
       const msg = row?.change_request_message;
@@ -2561,4 +2584,12 @@ function capitalize(s) {
   return (s || "").charAt(0).toUpperCase() + (s || "").slice(1);
 }
 
-export { AdminProjects, ClientProjects, FreelancerProjects };
+export {
+  AdminProjects,
+  ClientProjects,
+  FreelancerProjects,
+  ClientReviewDrawer,
+  ClientApplicationsDrawer,
+  ClientOffersDrawer,
+  DeliverModal,
+};

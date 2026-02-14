@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import API from "../../api/client.js";
+import API, { clearProactiveRefresh } from "../../api/client.js";
 import {
   Shield,
   Loader,
@@ -257,6 +257,7 @@ export default function AccountSettings() {
 
       setSuccess("Account deactivated. You have 30 days to reactivate.");
       setTimeout(() => {
+        clearProactiveRefresh();
         dispatch({ type: "auth/logout" });
         window.location.href = "/login";
       }, 1500);

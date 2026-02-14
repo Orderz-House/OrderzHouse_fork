@@ -1,9 +1,10 @@
 // components/CreateProjects/steps/ProjectDetailsStep.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   fetchCategories,
   fetchSubSubCategoriesByCategoryId,
 } from "../api/category";
+import API from "../../../api/client.js";
 
 const THEME = {
   hero: "bg-gradient-to-b from-orange-400 to-red-500",
@@ -12,6 +13,9 @@ const THEME = {
   soft: "bg-orange-50 text-orange-700 border border-orange-200/70",
   ring: "focus:ring-2 focus:ring-orange-200/70 focus:border-orange-400",
 };
+
+/** غيّر إلى true عند تفعيل نوع المشروع "Hourly Rate" */
+const ENABLE_HOURLY_PROJECT_TYPE = false;
 
 export default function ProjectDetailsStep({
   onNext,
@@ -22,6 +26,11 @@ export default function ProjectDetailsStep({
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
   const [skillsInput, setSkillsInput] = useState("");
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [skillSuggestionsLoading, setSkillSuggestionsLoading] = useState(false);
+  const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const skillSuggestionsDebounceRef = useRef(null);
+  const skillInputWrapperRef = useRef(null);
 
   // ====================== Form state ======================
   const [form, setForm] = useState(() => {
@@ -81,6 +90,13 @@ export default function ProjectDetailsStep({
     setForm((prev) => ({ ...prev, sub_sub_category_id: "" }));
   }, [form.category_id]);
 
+  // عند إخفاء Hourly: إذا كان النوع hourly نرجعه إلى fixed
+  useEffect(() => {
+    if (!ENABLE_HOURLY_PROJECT_TYPE && form.project_type === "hourly") {
+      setForm((prev) => ({ ...prev, project_type: "fixed" }));
+    }
+  }, [ENABLE_HOURLY_PROJECT_TYPE, form.project_type]);
+
   // ====================== Helpers ======================
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,11 +124,15 @@ export default function ProjectDetailsStep({
     }
   };
 
-  const handleAddSkill = () => {
-    const newSkill = skillsInput.trim();
+  const handleAddSkill = (skillToAdd) => {
+    const newSkill = (skillToAdd ?? skillsInput).trim();
     if (!newSkill) return;
-    if (form.preferred_skills.includes(newSkill)) {
+    const isDuplicate = form.preferred_skills.some(
+      (s) => s.toLowerCase() === newSkill.toLowerCase()
+    );
+    if (isDuplicate) {
       setSkillsInput("");
+      setShowSkillDropdown(false);
       return;
     }
 
@@ -121,7 +141,37 @@ export default function ProjectDetailsStep({
       preferred_skills: [...prev.preferred_skills, newSkill],
     }));
     setSkillsInput("");
+    setShowSkillDropdown(false);
+    setSkillSuggestions([]);
   };
+
+  // جلب اقتراحات المهارات من إجابات المستخدمين السابقين (بدون تكرار)
+  useEffect(() => {
+    const query = skillsInput.trim();
+    if (skillSuggestionsDebounceRef.current) clearTimeout(skillSuggestionsDebounceRef.current);
+    if (!query) {
+      setSkillSuggestions([]);
+      setShowSkillDropdown(false);
+      return;
+    }
+    skillSuggestionsDebounceRef.current = setTimeout(() => {
+      setSkillSuggestionsLoading(true);
+      API.get(`/projects/skills-suggestions?q=${encodeURIComponent(query)}`)
+        .then((res) => {
+          const list = res?.data?.suggestions ?? [];
+          setSkillSuggestions(list);
+          setShowSkillDropdown(list.length > 0);
+        })
+        .catch(() => {
+          setSkillSuggestions([]);
+          setShowSkillDropdown(false);
+        })
+        .finally(() => setSkillSuggestionsLoading(false));
+    }, 280);
+    return () => {
+      if (skillSuggestionsDebounceRef.current) clearTimeout(skillSuggestionsDebounceRef.current);
+    };
+  }, [skillsInput]);
 
   const handleRemoveSkill = (skill) => {
     setForm((prev) => ({
@@ -165,7 +215,7 @@ export default function ProjectDetailsStep({
       newErrors.budget = "Budget must be greater than 0";
     }
 
-    if (!isTask && form.project_type === "hourly") {
+    if (ENABLE_HOURLY_PROJECT_TYPE && !isTask && form.project_type === "hourly") {
       if (Number(form.hourly_rate) <= 0) {
         newErrors.hourly_rate = "Hourly rate must be greater than 0";
       }
@@ -348,20 +398,59 @@ export default function ProjectDetailsStep({
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Preferred Skills
           </label>
-          <div className="flex gap-3 mb-3">
-            <input
-              type="text"
-              value={skillsInput}
-              onChange={(e) => setSkillsInput(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && (e.preventDefault(), handleAddSkill())
-              }
-              placeholder="Type a skill and press Enter or Add"
-              className={inputBase}
-            />
+          <div className="flex gap-3 mb-3 relative" ref={skillInputWrapperRef}>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={skillsInput}
+                onChange={(e) => setSkillsInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (showSkillDropdown && skillSuggestions.length > 0) {
+                      handleAddSkill(skillSuggestions[0].skill);
+                    } else {
+                      handleAddSkill();
+                    }
+                  }
+                }}
+                onFocus={() => skillSuggestions.length > 0 && setShowSkillDropdown(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowSkillDropdown(false), 180)
+                }
+                placeholder="Type a skill and press Enter or Add"
+                className={inputBase}
+              />
+              {showSkillDropdown && (skillSuggestions.length > 0 || skillSuggestionsLoading) && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                  {skillSuggestionsLoading ? (
+                    <div className="px-4 py-3 text-sm text-slate-500">
+                      Loading…
+                    </div>
+                  ) : (
+                    <ul className="max-h-52 overflow-y-auto py-1">
+                      {skillSuggestions.map((item, i) => (
+                        <li key={`${item.skill}-${i}`}>
+                          <button
+                            type="button"
+                            onClick={() => handleAddSkill(item.skill)}
+                            className="w-full text-left px-4 py-2.5 text-sm text-slate-800 hover:bg-orange-50 flex items-center justify-between gap-2"
+                          >
+                            <span>{item.skill}</span>
+                            <span className="text-xs text-slate-500 shrink-0">
+                              {item.percentage}%
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="button"
-              onClick={handleAddSkill}
+              onClick={() => handleAddSkill()}
               className={`px-5 rounded-xl font-semibold transition ${THEME.primaryBtn}`}
             >
               Add
@@ -454,10 +543,10 @@ export default function ProjectDetailsStep({
             <label className="block text-sm font-semibold text-slate-700 mb-3">
               Project Type <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid gap-3 ${ENABLE_HOURLY_PROJECT_TYPE ? "grid-cols-3" : "grid-cols-2"}`}>
               {[
                 { value: "fixed", label: "Fixed Price", icon: "💰" },
-                { value: "hourly", label: "Hourly Rate", icon: "⏰" },
+                ...(ENABLE_HOURLY_PROJECT_TYPE ? [{ value: "hourly", label: "Hourly Rate", icon: "⏰" }] : []),
                 { value: "bidding", label: "Bidding", icon: "🎯" },
               ].map((type) => {
                 const active = form.project_type === type.value;
@@ -519,7 +608,7 @@ export default function ProjectDetailsStep({
             </div>
           )}
 
-          {!isTask && form.project_type === "hourly" && (
+          {ENABLE_HOURLY_PROJECT_TYPE && !isTask && form.project_type === "hourly" && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Hourly rate <span className="text-red-500">*</span>

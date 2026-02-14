@@ -7,6 +7,7 @@ import { upload, uploadErrorHandler } from "../middleware/uploadMiddleware.js";
 import {
   createProject,
   uploadProjectMedia,
+  getSkillSuggestions,
   assignFreelancer,
   applyForProject,
   approveOrRejectApplication,
@@ -28,6 +29,7 @@ import {
   adminApproveProject,
   requestProjectChanges,
   getProjectChangeRequests,
+  markProjectChangeRequestsAsRead,
 } from "../controller/projectsManagment/projects.js";
 
 import {
@@ -72,6 +74,9 @@ projectsRouter.post(
 // );
 
 projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
+
+/* Skills suggestions for Preferred Skills (from previous projects, no auth) */
+projectsRouter.get("/skills-suggestions", getSkillSuggestions);
 
 /* --------------------------------
    DELETE (SOFT DELETE) PROJECT BY OWNER
@@ -290,6 +295,12 @@ projectsRouter.get(
   "/:projectId/change-requests",
   authentication,
   getProjectChangeRequests
+);
+
+projectsRouter.put(
+  "/:projectId/change-requests/mark-read",
+  authentication,
+  markProjectChangeRequestsAsRead
 );
 
 projectsRouter.post(

@@ -4,6 +4,7 @@ import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 import {
@@ -53,35 +54,55 @@ export const loginWithGoogle = async (req, res) => {
     }
 
     const email = payload.email.toLowerCase();
-    const { rows } = await pool.query(
+    const givenName = payload.given_name || payload.name || "";
+    const familyName = payload.family_name || "";
+    const picture = payload.picture || null;
+
+    let { rows } = await pool.query(
       "SELECT * FROM users WHERE email = $1 AND is_deleted = FALSE",
       [email]
     );
-    const user = rows[0];
+    let user = rows[0];
 
+    // First-time Google sign-in: create user and ask for profile completion
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "No account found with this Google email. Please register first.",
-      });
+      const randomPassword = crypto.randomBytes(32).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      const username = email;
+
+      const insertResult = await pool.query(
+        `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified, profile_pic_url)
+         VALUES (2, $1, $2, $3, $4, '', '', $5, TRUE, $6)
+         RETURNING id, email, first_name, last_name, username, role_id, profile_pic_url, phone_number, country, is_deleted, is_two_factor_enabled, email_verified`,
+        [givenName, familyName, email, hashedPassword, username, picture]
+      );
+      user = insertResult.rows[0];
     }
 
     const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
     const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
 
-    const tokenPayload = {
-      userId: user.id,
-      role: user.role_id,
-      is_verified: user.email_verified,
+    const tokenPayload = buildTokenPayload({
+      id: user.id,
+      role_id: user.role_id,
+      email_verified: user.email_verified,
       username: user.username,
       is_deleted: user.is_deleted,
       is_two_factor_enabled: user.is_two_factor_enabled,
-    };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    });
+    const token = issueAccessToken(tokenPayload);
+    const refreshToken = issueRefreshToken(tokenPayload);
+    setRefreshTokenCookie(res, refreshToken);
+
+    const needsProfileCompletion = !!(
+      (!user.phone_number || user.phone_number === "") &&
+      (!user.country || user.country === "") &&
+      user.role_id === 2
+    );
 
     return res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: needsProfileCompletion ? "Account created. Complete your profile." : "Login successful",
       token,
       userInfo: {
         id: user.id,
@@ -91,18 +112,25 @@ export const loginWithGoogle = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         profile_pic_url: user.profile_pic_url,
+        phone_number: user.phone_number,
+        country: user.country,
         is_deleted: user.is_deleted,
         is_two_factor_enabled: user.is_two_factor_enabled,
         email_verified: user.email_verified,
       },
       must_accept_terms: mustAcceptTerms,
       terms_version_required: CURRENT_TERMS_VERSION,
+      needs_profile_completion: !!needsProfileCompletion,
     });
   } catch (error) {
     console.error("GOOGLE_AUTH Error:", error);
+    const message =
+      !GOOGLE_CLIENT_ID
+        ? "Server: Google Client ID not set. Add GOOGLE_WEB_CLIENT_ID or GOOGLE_CLIENT_ID to backend .env"
+        : error.message || "Google sign-in failed";
     return res.status(500).json({
       success: false,
-      message: error.message || "Google sign-in failed",
+      message,
     });
   }
 };

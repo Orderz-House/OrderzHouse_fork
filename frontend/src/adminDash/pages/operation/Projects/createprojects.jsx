@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { getAllFreelancers, createAdminProject } from "../../api/adminRole4";
 import { ArrowLeft, Plus, Users } from "lucide-react";
 
+/** غيّر إلى true عند تفعيل نوع المشروع "Hourly Rate" */
+const ENABLE_HOURLY_PROJECT_TYPE = false;
+
 export default function CreateAdminProject() {
   const { userData } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -56,6 +59,12 @@ export default function CreateAdminProject() {
 
     fetchFreelancers();
   }, [userData]);
+
+  useEffect(() => {
+    if (!ENABLE_HOURLY_PROJECT_TYPE && formData.project_type === "hourly") {
+      setFormData((prev) => ({ ...prev, project_type: "fixed" }));
+    }
+  }, [ENABLE_HOURLY_PROJECT_TYPE, formData.project_type]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -202,7 +211,7 @@ export default function CreateAdminProject() {
               required
             >
               <option value="fixed">Fixed Price</option>
-              <option value="hourly">Hourly Rate</option>
+              {ENABLE_HOURLY_PROJECT_TYPE && <option value="hourly">Hourly Rate</option>}
               <option value="bidding">Bidding</option>
             </select>
           </div>
@@ -258,7 +267,7 @@ export default function CreateAdminProject() {
             </div>
           )}
 
-          {formData.project_type === "hourly" && (
+          {ENABLE_HOURLY_PROJECT_TYPE && formData.project_type === "hourly" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Hourly Rate ($) <span className="text-red-500">*</span>

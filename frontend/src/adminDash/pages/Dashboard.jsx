@@ -24,7 +24,6 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Heart,
   Activity,
   UserCheck,
   Users,
@@ -391,10 +390,6 @@ function ContinueCarouselCard({ badge, title, metaLeft, metaRight, onOpen }) {
           </div>
         ) : null}
 
-        {/* heart icon (top-right) */}
-        <div className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/85 border border-slate-200/70 grid place-items-center">
-          <Heart className="h-4 w-4 text-slate-700" />
-        </div>
       </div>
 
       {/* Footer content below image */}
@@ -558,19 +553,6 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
                         </div>
                       </div>
 
-                      {/* Heart / Favorite */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          // Toggle favorite logic (if needed)
-                        }}
-                        className="shrink-0 rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-orange-600 transition-colors"
-                        aria-label="Toggle favorite"
-                      >
-                        <Heart className="h-4 w-4" />
-                      </button>
                     </div>
 
                     <div className="mt-2 flex items-center justify-between">

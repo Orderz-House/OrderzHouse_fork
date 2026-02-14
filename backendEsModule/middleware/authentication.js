@@ -38,9 +38,12 @@ const authentication = (req, res, next) => {
           });
         }
 
-        // Check terms acceptance (exclude /auth/accept-terms endpoint)
+        // Check terms acceptance (exclude accept-terms and profile-completion flows)
         const path = req.originalUrl || req.url || "";
-        if (!path.includes("/auth/accept-terms")) {
+        const skipTermsCheck = path.includes("/auth/accept-terms") ||
+          path.includes("/users/complete-profile") ||
+          path.includes("/users/getUserdata");
+        if (!skipTermsCheck) {
           const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
           const user = userCheck.rows[0];
           const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;

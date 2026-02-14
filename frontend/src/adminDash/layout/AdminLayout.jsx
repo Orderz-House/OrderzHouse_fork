@@ -26,7 +26,7 @@ import {
   PlaySquare,
 } from "lucide-react";
 import { logout } from "../../slice/auth/authSlice";
-import API from "../../api/client.js";
+import API, { clearProactiveRefresh } from "../../api/client.js";
 import { disconnectSocket } from "../../services/socketService";
 import TopBar from "../components/TopBar.jsx";
 import { useToast } from "../../components/toast/ToastProvider.jsx";
@@ -393,6 +393,7 @@ export default function AdminLayout() {
     try {
       disconnectSocket();
     } catch (_) {}
+    clearProactiveRefresh();
     API.post("/users/logout").catch(() => {}); // clear refresh cookie
     dispatch(logout());
     try {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { disconnectSocket } from "../../services/socketService";
 import { logout } from "../../slice/auth/authSlice";
+import { clearProactiveRefresh } from "../../api/client";
 
 const AccountSuspended = () => {
   const { userData } = useSelector((state) => state.auth);
@@ -23,6 +24,7 @@ const AccountSuspended = () => {
 
   const handleLogout = () => {
     disconnectSocket();
+    clearProactiveRefresh();
     dispatch(logout());
     navigate("/", { replace: true });
   };

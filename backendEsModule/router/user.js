@@ -20,6 +20,7 @@ import {
   getDeactivatedUsers,
   requestSignupOtp,
   verifyAndRegister,
+  completeProfile,
 } from "../controller/user.js";
 
 import authentication from "../middleware/authentication.js";
@@ -57,6 +58,7 @@ usersRouter.post("/logout", logout);
 
 // =============== AUTHENTICATED ROUTES ===============
 usersRouter.get("/getUserdata", authentication, getUserdata);
+usersRouter.patch("/complete-profile", authentication, completeProfile);
 usersRouter.post("/uploadProfilePic",authentication,upload.single("file"),uploadProfilePic);
 
 // =============== USER PROFILE ===============

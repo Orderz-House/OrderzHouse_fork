@@ -226,6 +226,63 @@ export const createProject = async (req, res) => {
   }
 };
 
+/**
+ * GET /projects/skills-suggestions?q=...
+ * Returns skills used in previous projects: normalized (no duplicate wording), with count.
+ * Used for autocomplete in Preferred Skills; optional q filters by prefix.
+ */
+export const getSkillSuggestions = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim().toLowerCase();
+    const limit = Math.min(Number(req.query.limit) || 15, 30);
+
+    const { rows } = await pool.query(
+      `SELECT preferred_skills FROM projects WHERE preferred_skills IS NOT NULL AND is_deleted = false`
+    );
+
+    const countByNormalized = new Map();
+    const displayByNormalized = new Map();
+
+    for (const row of rows) {
+      let arr = row.preferred_skills;
+      if (typeof arr === "string") {
+        try {
+          arr = JSON.parse(arr);
+        } catch {
+          continue;
+        }
+      }
+      if (!Array.isArray(arr)) continue;
+      for (const s of arr) {
+        const raw = typeof s === "string" ? s.trim() : String(s).trim();
+        if (!raw) continue;
+        const normalized = raw.toLowerCase();
+        countByNormalized.set(normalized, (countByNormalized.get(normalized) || 0) + 1);
+        if (!displayByNormalized.has(normalized) || raw.length < (displayByNormalized.get(normalized)?.length ?? 999)) {
+          displayByNormalized.set(normalized, raw);
+        }
+      }
+    }
+
+    let list = [...countByNormalized.entries()]
+      .map(([norm, count]) => ({ skill: displayByNormalized.get(norm) || norm, normalized: norm, count }))
+      .filter((item) => !q || item.normalized.includes(q))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+
+    const total = list.reduce((s, i) => s + i.count, 0);
+    const suggestions = list.map(({ skill, count }) => ({
+      skill,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }));
+
+    return res.json({ success: true, suggestions });
+  } catch (error) {
+    console.error("getSkillSuggestions error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 // Admin approve project after payment
 
@@ -1788,6 +1845,29 @@ export const getProjectChangeRequests = async (req, res) => {
     return res.status(200).json({ success: true, requests: rows || [] });
   } catch (err) {
     console.error("getProjectChangeRequests error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/// Mark all change requests for a project as read (resolved) for the current freelancer
+/// PUT /projects/:projectId/change-requests/mark-read
+export const markProjectChangeRequestsAsRead = async (req, res) => {
+  const freelancerId = req.token?.userId;
+  const { projectId } = req.params;
+
+  if (!freelancerId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!projectId) return res.status(400).json({ success: false, message: "Missing projectId" });
+
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE project_change_requests
+       SET is_resolved = true
+       WHERE project_id = $1 AND freelancer_id = $2 AND is_resolved = false`,
+      [projectId, freelancerId]
+    );
+    return res.status(200).json({ success: true, marked: rowCount || 0 });
+  } catch (err) {
+    console.error("markProjectChangeRequestsAsRead error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

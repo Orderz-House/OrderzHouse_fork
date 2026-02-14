@@ -93,10 +93,9 @@ const Register = () => {
       // User came from login page - show OTP field directly
       setEmail(emailParam);
       setShowOtpField(true);
-      // Auto-resend OTP
+      // Auto-resend OTP (no toast so user does not see "OTP sent" on redirect from login)
       API.post("/users/resend-email-otp", { email: emailParam })
-        .then((res) => {
-          toast.success(res.data?.message || "OTP sent successfully");
+        .then(() => {
           setResendCooldown(60);
         })
         .catch((err) => {

@@ -892,7 +892,7 @@ const login = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      requires_email_otp: true,
       user_id: user.id,
       username: user.username,
     });
@@ -1430,6 +1430,64 @@ const rateFreelancer = async (req, res) => {
 };
 
 /* =========================================
+   COMPLETE PROFILE (Google first-time: role, country, phone, optional password)
+========================================= */
+const completeProfile = async (req, res) => {
+  const userId = req.token.userId;
+  const { role_id, country, phone_number, password } = req.body || {};
+
+  const roleId = role_id != null ? parseInt(role_id, 10) : null;
+  const allowedRoles = [2, 3, 5]; // Customer, Freelancer, Partner
+  if (roleId == null || !allowedRoles.includes(roleId)) {
+    return res.status(400).json({ success: false, message: "Valid role is required (2, 3, or 5)." });
+  }
+  if (!country || typeof country !== "string" || !country.trim()) {
+    return res.status(400).json({ success: false, message: "Country is required." });
+  }
+  if (!phone_number || typeof phone_number !== "string" || !phone_number.trim()) {
+    return res.status(400).json({ success: false, message: "Phone number is required." });
+  }
+
+  try {
+    const updates = ["role_id = $1", "country = $2", "phone_number = $3"];
+    const values = [roleId, country.trim(), phone_number.trim()];
+    let paramIndex = 4;
+
+    if (password && typeof password === "string" && password.length >= 8) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.push(`password = $${paramIndex}`);
+      values.push(hashedPassword);
+      paramIndex += 1;
+    }
+
+    values.push(userId);
+    const setClause = updates.join(", ");
+    await pool.query(
+      `UPDATE users SET ${setClause}, updated_at = NOW() WHERE id = $${paramIndex} AND is_deleted = FALSE`,
+      values
+    );
+
+    const { rows } = await pool.query(
+      "SELECT id, email, first_name, last_name, username, role_id, profile_pic_url, phone_number, country FROM users WHERE id = $1",
+      [userId]
+    );
+    const user = rows[0];
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile completed.",
+      user,
+    });
+  } catch (err) {
+    console.error("completeProfile error:", err);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+/* =========================================
    GET USER DATA (للفرونت)
 ========================================= */
 const getUserdata = async (req, res) => {
@@ -1901,4 +1959,5 @@ export {
   getDeactivatedUsers,
   requestSignupOtp,
   verifyAndRegister,
+  completeProfile,
 };
