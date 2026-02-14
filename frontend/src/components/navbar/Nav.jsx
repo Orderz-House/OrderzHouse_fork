@@ -37,7 +37,6 @@ export default function Header() {
   const dispatch = useDispatch();
   const { token, userData, isAuthenticated } = useSelector((state) => state.auth);
   const IsAuthenticated = isAuthenticated && !!token;
-  console.log("NAV AUTH", { isAuthenticated, user: userData });
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,7 +180,7 @@ export default function Header() {
           return;
         }
         if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
-          console.warn("Network error: Server may be unreachable");
+          // Network error: Server may be unreachable
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps

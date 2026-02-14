@@ -27,12 +27,8 @@ export default function ProjectsPage({ mode: propMode }) {
   const subcat = sp.get("subcat") || "";
   const page = sp.get("page") || "";
   
-  // Determine active category for tabs (default to "all" if no category param)
+  // Determine active category for tabs (UI only - URL is source of truth)
   const activeCategory = category ? String(category) : "all";
-  
-  // STEP 1: Debug logs
-  console.log("[ProjectsPage] category param:", category);
-  console.log("[ProjectsPage] activeCategory:", activeCategory);
 
   const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
@@ -95,7 +91,7 @@ export default function ProjectsPage({ mode: propMode }) {
                   _nameToSubCat[key] = { id: String(s.id), parentId: id };
                 });
               } catch (e) {
-                console.warn("Failed to load sub-categories for", id, e);
+                // Failed to load sub-categories
               }
             })
           );
@@ -243,17 +239,12 @@ export default function ProjectsPage({ mode: propMode }) {
   }, [category, subcat, sub]);
 
   const chooseCat = (id) => {
-    // STEP 3: Debug log
-    console.log("[ProjectsPage] chooseCat called with id:", id, "type:", typeof id);
-    
     const next = new URLSearchParams(sp);
     
-    // If "all" is selected, remove category filter
+    // If "all" is selected, remove category filter (URL is source of truth)
     if (id === "all" || id === "") {
-      console.log("[ProjectsPage] Removing cat param (All selected)");
       next.delete("cat");
     } else {
-      console.log("[ProjectsPage] Setting cat param to:", id);
       next.set("cat", id.toString());
     }
     
@@ -265,7 +256,6 @@ export default function ProjectsPage({ mode: propMode }) {
     // Reset to page 1 when changing category
     next.set("page", "1");
     
-    console.log("[ProjectsPage] New URL params:", next.toString());
     setSp(next, { replace: false });
   };
 
