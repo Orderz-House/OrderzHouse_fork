@@ -715,6 +715,35 @@ export const approveOrRejectApplication = async (req, res) => {
   WHERE id = $1
 `, [assignment.project_id]);
 
+    // B) Create escrow when freelancer starts working (if not already created)
+    const paymentResult = await client.query(
+      `SELECT id, amount FROM payments 
+       WHERE reference_id = $1 AND purpose = 'project' AND status = 'paid' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [assignment.project_id]
+    );
+    
+    if (paymentResult.rows.length > 0) {
+      const paymentId = paymentResult.rows[0].id;
+      const amount = paymentResult.rows[0].amount;
+      const projectResult = await client.query(
+        `SELECT user_id AS client_id FROM projects WHERE id = $1`,
+        [assignment.project_id]
+      );
+      
+      if (projectResult.rows.length > 0) {
+        const clientId = projectResult.rows[0].client_id;
+        const { createEscrowHeld } = await import("../../services/escrowService.js");
+        await createEscrowHeld({
+          projectId: assignment.project_id,
+          clientId,
+          freelancerId: assignment.freelancer_id,
+          amount,
+          paymentId,
+        }, client);
+      }
+    }
+
     await client.query("COMMIT");
     client.release();
 
@@ -782,6 +811,35 @@ export const acceptAssignment = async (req, res) => {
        WHERE id = $1`,
       [assignment.project_id]
     );
+
+    // B) Create escrow when freelancer starts working (if not already created)
+    const paymentResult = await pool.query(
+      `SELECT id, amount FROM payments 
+       WHERE reference_id = $1 AND purpose = 'project' AND status = 'paid' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [assignment.project_id]
+    );
+    
+    if (paymentResult.rows.length > 0) {
+      const paymentId = paymentResult.rows[0].id;
+      const amount = paymentResult.rows[0].amount;
+      const projectResult = await pool.query(
+        `SELECT user_id AS client_id FROM projects WHERE id = $1`,
+        [assignment.project_id]
+      );
+      
+      if (projectResult.rows.length > 0) {
+        const clientId = projectResult.rows[0].client_id;
+        const { createEscrowHeld } = await import("../../services/escrowService.js");
+        await createEscrowHeld({
+          projectId: assignment.project_id,
+          clientId,
+          freelancerId,
+          amount,
+          paymentId,
+        });
+      }
+    }
 
     // Activate subscription if pending
     await activateSubscriptionIfPending(freelancerId);
@@ -951,6 +1009,20 @@ export const approveWorkCompletion = async (req, res) => {
        WHERE id = $2`,
       [newStatus, projectId]
     );
+
+    // C) Release escrow and credit freelancer wallet when project is completed
+    if (action === "approve" && newStatus === "completed") {
+      const { releaseEscrowToFreelancer } = await import("../../services/escrowService.js");
+      try {
+        const releaseResult = await releaseEscrowToFreelancer(projectId);
+        if (releaseResult.released) {
+          console.log(`✅ Escrow released for project ${projectId}: ${releaseResult.amount} credited to freelancer ${releaseResult.freelancerId}`);
+        }
+      } catch (escrowError) {
+        console.error("[approveWorkCompletion] Escrow release error:", escrowError);
+        // Don't fail approval if escrow release fails - log and continue
+      }
+    }
 
     // 4) Optional notification (safe)
     try {

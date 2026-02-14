@@ -86,7 +86,9 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-teal-600" style={{ color: THEME }}>${o.bid_amount ?? "—"}</div>
+                    <div className="text-2xl font-bold text-teal-600" style={{ color: THEME }}>
+                      {o.bid_amount ? `${o.bid_amount} JD` : "—"}
+                    </div>
                     <span className={`inline-block mt-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColor}`}>
                       {(o.offer_status ?? "pending").charAt(0).toUpperCase() + (o.offer_status ?? "pending").slice(1)}
                     </span>

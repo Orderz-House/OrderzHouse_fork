@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import pool from "../../models/db.js";
+import { toStripeAmount } from "../../utils/stripeAmount.js";
 
 let _stripe = null;
 function getStripe() {
@@ -119,7 +120,7 @@ export const createCheckoutSession = async (req, res) => {
           price_data: {
             currency: "jod",
             product_data: { name: "Annual Plan Activation Fee" },
-            unit_amount: 25 * 1000,
+            unit_amount: toStripeAmount(25),
           },
           quantity: 1,
         },
@@ -223,7 +224,7 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(400).json({ error: "Invalid plan price" });
     }
 
-    const unit_amount = Math.round(planPrice * 1000);
+    const unit_amount = toStripeAmount(planPrice);
     if (unit_amount <= 0) {
       console.error("[Stripe] Invalid unit_amount:", unit_amount);
       return res.status(400).json({ error: "Invalid plan price amount" });
@@ -248,7 +249,7 @@ export const createCheckoutSession = async (req, res) => {
         price_data: {
           currency: "jod",
           product_data: { name: "Annual Plan Activation Fee" },
-          unit_amount: 25 * 1000,
+          unit_amount: toStripeAmount(25),
         },
         quantity: 1,
       });
@@ -357,7 +358,7 @@ export const createProjectCheckoutSession = async (req, res) => {
           code: null,
         });
       }
-      unitAmount = Math.round(budget * 1000);
+      unitAmount = toStripeAmount(budget);
     } else if (projectType === "hourly") {
       const hourlyRate = Number(projectData.hourly_rate);
       const durationHours = projectData.duration_hours != null
@@ -378,7 +379,7 @@ export const createProjectCheckoutSession = async (req, res) => {
         });
       }
       const amount = hourlyRate * durationHours;
-      unitAmount = Math.round(amount * 1000);
+      unitAmount = toStripeAmount(amount);
     } else {
       return res.status(400).json({
         success: false,
@@ -520,7 +521,7 @@ export const createOfferAcceptCheckoutSession = async (req, res) => {
         message: "Invalid offer amount",
       });
     }
-    const unitAmount = Math.round(amount * 1000);
+    const unitAmount = toStripeAmount(amount);
 
     const successUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${clientUrl.replace(/\/$/, "")}/projects/payment-cancel`;

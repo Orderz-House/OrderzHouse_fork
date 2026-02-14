@@ -246,20 +246,25 @@ export const completeOfferAcceptance = async (offerId) => {
       } else throw assignErr;
     }
 
-    try {
-      await client.query(
-        `INSERT INTO escrow (project_id, client_id, freelancer_id, amount, status)
-         VALUES ($1, $2, $3, $4, 'held')`,
-        [offer.project_id, offer.client_id, offer.freelancer_id, offer.bid_amount]
-      );
-    } catch (escrowErr) {
-      if (escrowErr.code === "23505") {
-        await client.query(
-          `UPDATE escrow SET amount = $2, status = 'held' WHERE project_id = $1`,
-          [offer.project_id, offer.bid_amount]
-        );
-      } else throw escrowErr;
-    }
+    // B) Create escrow when freelancer is assigned (for bidding projects)
+    // Get payment_id if project was paid (for fixed/hourly projects)
+    const paymentResult = await client.query(
+      `SELECT id, amount FROM payments 
+       WHERE reference_id = $1 AND purpose = 'project' AND status = 'paid' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [offer.project_id]
+    );
+    const paymentId = paymentResult.rows[0]?.id || null;
+    const escrowAmount = paymentId ? paymentResult.rows[0].amount : offer.bid_amount;
+
+    const { createEscrowHeld } = await import("../services/escrowService.js");
+    await createEscrowHeld({
+      projectId: offer.project_id,
+      clientId: offer.client_id,
+      freelancerId: offer.freelancer_id,
+      amount: escrowAmount,
+      paymentId,
+    }, client);
 
     try {
       eventBus.emit("offer.statusChanged", {

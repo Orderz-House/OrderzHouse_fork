@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import pool from "../../models/db.js";
+import { fromStripeAmount } from "../../utils/stripeAmount.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -25,13 +26,13 @@ export const handleStripeWebhook = async (req, res) => {
 
       const stripe_session_id = session.id;
       const stripe_payment_intent = session.payment_intent;
-      const amount_total = session.amount_total / 1000; 
+      const amount_total = fromStripeAmount(session.amount_total); 
 
 
      
       await pool.query(
-        `INSERT INTO payments (user_id, plan_id, amount, stripe_session_id, stripe_payment_intent)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO payments (user_id, plan_id, amount, currency, stripe_session_id, stripe_payment_intent, status)
+         VALUES ($1, $2, $3, 'JOD', $4, $5, 'paid')
          ON CONFLICT (stripe_session_id) DO NOTHING;`,
         [freelancer_id, plan_id, amount_total, stripe_session_id, stripe_payment_intent]
       );

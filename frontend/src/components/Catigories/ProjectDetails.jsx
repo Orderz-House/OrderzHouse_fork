@@ -554,7 +554,7 @@ export default function ProjectDetails({ mode: propMode }) {
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">
-                      $
+                      JD
                     </span>
                     <input
                       type="number"
