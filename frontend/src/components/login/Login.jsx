@@ -101,6 +101,9 @@ const Login = () => {
     setIsLoading(true);
     setMessage("");
 
+    // Debug: Log to verify single call
+    console.log("[Login] Attempting login for:", email.toLowerCase());
+
     API
       .post("/users/login", {
         email: email.toLowerCase(),

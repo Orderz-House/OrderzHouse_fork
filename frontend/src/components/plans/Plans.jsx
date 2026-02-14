@@ -42,7 +42,7 @@ function CheckIcon({ className = "" }) {
   );
 }
 
-function PlanCard({ plan, onSubscribe, canSubscribe }) {
+function PlanCard({ plan, onSubscribe, canSubscribe, hasActiveSubscription }) {
   const highlight = plan.plan_type === "popular";
 
   const durationLabel =
@@ -108,14 +108,25 @@ function PlanCard({ plan, onSubscribe, canSubscribe }) {
     {canSubscribe ? (
       <>
         <button
-          onClick={() => onSubscribe(plan)}
-          className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:opacity-95 active:scale-[0.99] transition"
+          onClick={() => !hasActiveSubscription && onSubscribe(plan)}
+          disabled={hasActiveSubscription}
+          className={`w-full rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+            hasActiveSubscription
+              ? "text-slate-400 bg-slate-100 cursor-not-allowed opacity-50"
+              : "text-white bg-slate-900 shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:opacity-95 active:scale-[0.99]"
+          }`}
         >
-          Subscribe
+          {hasActiveSubscription ? "Subscription Active" : "Subscribe"}
         </button>
-        <p className="mt-2 text-xs text-slate-500">
-          Secure checkout — choose online or offline payment.
-        </p>
+        {hasActiveSubscription ? (
+          <p className="mt-2 text-xs text-slate-500 text-center">
+            You already have an active subscription.
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">
+            Secure checkout — choose online or offline payment.
+          </p>
+        )}
       </>
     ) : (
       <div className="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-slate-400 bg-slate-100 text-center">
@@ -135,6 +146,8 @@ export default function Plans() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
 
   useEffect(() => {
     if (user && user.role_id === 2) navigate("/");
@@ -145,14 +158,47 @@ export default function Plans() {
       setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
       setLoading(false);
     });
-
   }, []);
+
+  // Fetch subscription status for freelancers
+  useEffect(() => {
+    if (user && user.role_id === 3) {
+      API.get("/subscriptions/status")
+        .then((res) => {
+          const data = res.data;
+          if (data?.success && data?.subscription) {
+            const sub = data.subscription;
+            const isActive = sub.status === "active" || sub.status === "pending_start";
+            setHasActiveSubscription(isActive);
+            if (isActive && sub.end_date) {
+              setSubscriptionExpiry(new Date(sub.end_date));
+            } else if (isActive && sub.start_date) {
+              setSubscriptionExpiry(new Date(sub.start_date));
+            }
+          } else {
+            setHasActiveSubscription(false);
+            setSubscriptionExpiry(null);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch subscription status:", err);
+          setHasActiveSubscription(false);
+          setSubscriptionExpiry(null);
+        });
+    }
+  }, [user]);
 
   const subscribeOnline = async () => {
     console.log("Subscribe Now clicked");
     if (!user) return navigate("/login");
     if (!selectedPlan) {
       console.error("No plan selected");
+      return;
+    }
+
+    // Prevent subscription if user has active subscription
+    if (hasActiveSubscription) {
+      toast.error("You already have an active subscription. You cannot change plans until it expires.");
       return;
     }
 
@@ -181,7 +227,7 @@ export default function Plans() {
     } catch (err) {
       console.error("Failed to create checkout session:", err);
       const msg = err.response?.data?.message ?? err.response?.data?.error ?? err.message ?? "Failed to start checkout. Please try again.";
-      alert(msg);
+      toast.error(msg);
     }
   };
 
@@ -220,6 +266,15 @@ export default function Plans() {
           </p>
         </div>
 
+        {/* Active Subscription Message */}
+        {hasActiveSubscription && subscriptionExpiry && (
+          <div className="mt-6 rounded-xl bg-orange-50 border border-orange-200 px-4 py-3">
+            <p className="text-sm font-semibold text-orange-900">
+              You already have an active subscription. You can change plans after it expires on {subscriptionExpiry.toLocaleDateString()}.
+            </p>
+          </div>
+        )}
+
         {/* Grid نفس Pricing */}
         <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((p) => (
@@ -228,6 +283,7 @@ export default function Plans() {
               plan={p} 
               onSubscribe={setSelectedPlan}
               canSubscribe={user?.role_id === 3}
+              hasActiveSubscription={hasActiveSubscription}
             />
           ))}
         </div>

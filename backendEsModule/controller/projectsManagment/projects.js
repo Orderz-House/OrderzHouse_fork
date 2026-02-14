@@ -37,9 +37,9 @@ export const createProject = async (req, res) => {
   try {
     const userId = req.token?.userId;
     
-    // Check if user is client (role_id = 2)
+    // Check if user is client (role_id = 2) and get can_post_without_payment
     const { rows: userRows } = await pool.query(
-      `SELECT role_id FROM users WHERE id = $1 AND is_deleted = false`,
+      `SELECT role_id, can_post_without_payment FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
     
@@ -49,6 +49,8 @@ export const createProject = async (req, res) => {
         message: "Only clients can create projects",
       });
     }
+
+    const canPostWithoutPayment = userRows[0]?.can_post_without_payment === true;
 
     await client.query("SELECT pg_advisory_xact_lock($1)", [userId]);
 
@@ -120,11 +122,19 @@ export const createProject = async (req, res) => {
       });
     }
 
+    // Set project status - for skip-payment users, ensure it's 'active' to appear in listings
     let projectStatus;
     if (project_type === "bidding") {
       projectStatus = "bidding";
     } else {
+      // For fixed/hourly projects, always set to 'active' so they appear in listings
+      // This applies to both paid and skip-payment users
       projectStatus = "active";
+    }
+
+    // Debug: Log status for skip-payment users
+    if (canPostWithoutPayment) {
+      console.log(`[createProject] Skip-payment user ${userId} creating project with status: ${projectStatus}, project_type: ${project_type}`);
     }
 
     const durationDaysValue =
@@ -144,6 +154,36 @@ export const createProject = async (req, res) => {
 
     const normalizedHourlyRate =
       project_type === "hourly" ? Number(hourly_rate) : null;
+
+    // ------------ Step 0: Check for duplicate submission (within last 10 seconds) ------------
+    const duplicateCheckQuery = `
+      SELECT id, title, created_at
+      FROM projects
+      WHERE user_id = $1
+        AND title = $2
+        AND created_at > NOW() - INTERVAL '10 seconds'
+        AND is_deleted = false
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    const { rows: duplicateRows } = await client.query(duplicateCheckQuery, [
+      userId,
+      title.trim(),
+    ]);
+
+    if (duplicateRows.length > 0) {
+      const duplicateProject = duplicateRows[0];
+      console.log(`[createProject] Duplicate submission detected for user ${userId}, returning existing project ${duplicateProject.id}`);
+      
+      // Return existing project instead of creating duplicate
+      return res.status(200).json({
+        success: true,
+        project: duplicateProject,
+        message: "Project already created (duplicate submission prevented)",
+        isDuplicate: true,
+      });
+    }
 
     // ------------ Step 1: Insert project ------------
     const insertQuery = `
@@ -215,6 +255,18 @@ export const createProject = async (req, res) => {
       }
     } catch (err) {
       console.error("Error emitting project.created:", err);
+    }
+
+    // Debug: Log final project state for skip-payment users
+    if (canPostWithoutPayment) {
+      console.log(`[createProject] Skip-payment project created:`, {
+        id: project.id,
+        title: project.title,
+        status: project.status,
+        project_type: project.project_type,
+        is_deleted: project.is_deleted,
+        user_id: project.user_id,
+      });
     }
 
     return res.status(201).json({ success: true, project });

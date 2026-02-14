@@ -76,6 +76,7 @@ function getActiveFromPath(pathname) {
 
   // ===== client =====
   if (base === "/client") {
+    if (p.startsWith("/tender-vault")) return "tender-vault";
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
@@ -110,7 +111,7 @@ function getActiveFromPath(pathname) {
   return "overview";
 }
 
-function getNav(role, navigate, base, onLogout) {
+function getNav(role, navigate, base, onLogout, userData = null) {
   if (role === "admin") {
     const navigation = [
       {
@@ -275,6 +276,17 @@ function getNav(role, navigate, base, onLogout) {
         icon: Clipboard,
         onClick: () => navigate(`${base}/projects`),
       },
+      // Add Tender Vault only for clients with permission
+      ...(role === "client" && userData?.can_manage_tender_vault === true
+        ? [
+            {
+              id: "tender-vault",
+              name: "Tender Vault",
+              icon: FolderKanban,
+              path: `${base}/tender-vault`,
+            },
+          ]
+        : []),
       {
         id: "payments",
         name: "Payments",
@@ -407,7 +419,8 @@ export default function AdminLayout() {
     role,
     navigate,
     base,
-    handleLogout
+    handleLogout,
+    userData
   );
 
   // Center FAB action (mobile bottom bar) for client/freelancer

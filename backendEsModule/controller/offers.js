@@ -286,17 +286,34 @@ export const approveOrRejectOffer = async (req, res) => {
         [offer.project_id, offerId]
       );
 
-      // ✅ FIX: status != 'bidding' (bidding is project_type)
-      await client.query(
-        `UPDATE projects
-            SET status = 'in_progress',
-                completion_status = 'in_progress',
-                updated_at = NOW()
-          WHERE id = $1
-            AND is_deleted = false
-            AND project_type = 'bidding'`,
+      // Check if this is a tender vault project (active tender)
+      // Look for temp_project_id in tender_vault_cycles
+      const { rows: tenderCheck } = await client.query(
+        `SELECT tv.id, tcy.order_id AS temp_project_id
+         FROM tender_vault_projects tv
+         JOIN tender_vault_cycles tcy ON tcy.tender_id = tv.id
+         WHERE tcy.order_id = $1 AND tv.status = 'active' AND tcy.status = 'active'`,
         [offer.project_id]
       );
+
+      if (tenderCheck.length > 0) {
+        // This is an active tender - convert to order
+        const { convertTenderToOrder } = await import("../services/tenderVaultRotation.js");
+        await convertTenderToOrder(tenderCheck[0].id, offer.freelancer_id, offer.id);
+        console.log(`✅ Tender ${tenderCheck[0].id} converted to order ${offer.project_id} after offer acceptance`);
+      } else {
+        // Normal project - update status
+        await client.query(
+          `UPDATE projects
+              SET status = 'in_progress',
+                  completion_status = 'in_progress',
+                  updated_at = NOW()
+            WHERE id = $1
+              AND is_deleted = false
+              AND project_type = 'bidding'`,
+          [offer.project_id]
+        );
+      }
 
       try {
         await client.query(

@@ -69,6 +69,31 @@ export const createCheckoutSession = async (req, res) => {
       });
     }
 
+    // Check if user already has an active or pending_start subscription
+    const activeSubscriptionCheck = await pool.query(
+      `SELECT id, status, end_date, start_date 
+       FROM subscriptions 
+       WHERE freelancer_id = $1 
+         AND status IN ('active', 'pending_start')
+         AND (end_date > NOW() OR start_date > NOW())
+       ORDER BY id DESC
+       LIMIT 1`,
+      [user_id]
+    );
+
+    if (activeSubscriptionCheck.rowCount > 0) {
+      const existingSub = activeSubscriptionCheck.rows[0];
+      const expirationDate = existingSub.end_date 
+        ? new Date(existingSub.end_date).toLocaleDateString()
+        : new Date(existingSub.start_date).toLocaleDateString();
+      
+      return res.status(400).json({
+        success: false,
+        error: "Active subscription exists",
+        message: `You already have an active or upcoming subscription. You cannot change plans until it expires.${existingSub.end_date ? ` Current subscription expires on ${expirationDate}.` : ''}`
+      });
+    }
+
     console.log("[Stripe] Plan data:", { id: plan.id, name: plan.name, price: plan.price });
     console.log("[Stripe] User data:", { id: user.id, role_id: user.role_id });
 
@@ -291,6 +316,7 @@ export const createProjectCheckoutSession = async (req, res) => {
     }
 
     const userId = req.token.userId;
+    const roleId = req.token.role || req.token.roleId;
     const projectData = req.body;
     const projectType = projectData.project_type;
     const title = projectData.title != null ? String(projectData.title).trim() : "";
@@ -300,6 +326,23 @@ export const createProjectCheckoutSession = async (req, res) => {
         success: false,
         message: "Project title is required",
         code: null,
+      });
+    }
+
+    // Check if user can post without payment (internal clients)
+    const userRes = await pool.query(
+      `SELECT can_post_without_payment FROM users WHERE id = $1 AND is_deleted = false`,
+      [userId]
+    );
+    const canPostWithoutPayment = userRes.rows[0]?.can_post_without_payment === true;
+    const isInternalClient = Number(roleId) === 2 && canPostWithoutPayment;
+
+    // If internal client, skip payment and return flag for frontend to create project directly
+    if (isInternalClient) {
+      return res.json({
+        success: true,
+        skipPayment: true,
+        message: "Payment skipped for internal client. Please create project directly.",
       });
     }
 

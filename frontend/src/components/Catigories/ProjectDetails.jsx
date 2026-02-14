@@ -9,7 +9,6 @@ import {
 } from "./api/projects";
 import {
   sendOfferApi,
-  getOffersForProjectApi,
   checkMyPendingOfferApi,
 } from "./api/offers";
 import { useSelector } from "react-redux";
@@ -17,7 +16,7 @@ import { useSelector } from "react-redux";
 import { useToast } from "../../components/toast/ToastProvider";
 import AttachmentList from "../Attachments/AttachmentList";
 import ProjectInfoCard from "./ProjectInfoCard";
-import OffersReceived from "../OffersReceived";
+import { formatPrice, formatBiddingRange } from "../../utils/formatPrice";
 
 const THEME = "#F97316";
 const THEME_DARK = "#C2410C";
@@ -52,7 +51,7 @@ function MobileSummaryCard({ item }) {
         <div>
           <p className="text-xs text-slate-500">Budget</p>
           <p className="text-xl font-extrabold" style={{ color: THEME_DARK }}>
-            {budget !== null ? `$${budget}` : "—"}
+            {formatPrice(budget)}
           </p>
         </div>
         <div className="text-right">
@@ -111,7 +110,9 @@ function MobileBottomBar({
   onContact,
   acceptDisabled,
 }) {
-  if (hidden) return null;
+  // Don't render if hidden or if no acceptLabel (user is not a freelancer)
+  if (hidden || !acceptLabel) return null;
+  
   return (
     <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur">
       <div className="px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
@@ -150,7 +151,6 @@ export default function ProjectDetails({ mode: propMode }) {
   const [offerAmount, setOfferAmount] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [offersForProject, setOffersForProject] = useState([]);
   const [descExpanded, setDescExpanded] = useState(false);
 
   const paymentInputRef = useRef(null);
@@ -226,65 +226,6 @@ export default function ProjectDetails({ mode: propMode }) {
     }
   })();
 }, [id, isFreelancer, mode, item]);
-
-
-  // =============================== Offers
-  const currentUserId =
-    userData?.id ??
-    userData?.user_id ??
-    userData?.userId ??
-    Number(localStorage.getItem("userId"));
-
-  useEffect(() => {
-    if (!item || !isClient || !currentUserId) return;
-    if (
-      String(item.user_id ?? item.userId ?? item.client_id ?? "") !==
-      String(currentUserId)
-    )
-      return;
-
-    let cancelled = false;
-
-    (async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      try {
-        const offers = await getOffersForProjectApi(item.id, token);
-        if (cancelled) return;
-
-        const normalized = (offers || []).map((o) => ({
-          offer_id: o.offer_id ?? o.id,
-          freelancer_id: o.freelancer_id,
-          freelancer_name:
-            (o.first_name || "") + (o.last_name ? ` ${o.last_name}` : "") ||
-            o.freelancer_name ||
-            o.username ||
-            "Freelancer",
-          bid_amount: o.bid_amount ?? o.bid_amount,
-          proposal: o.proposal || "",
-          offer_status: o.offer_status ?? o.status,
-          submitted_at: o.submitted_at || o.created_at,
-          rating: o.rating ?? null,
-          completed_jobs: o.completed_jobs ?? o.completed_count ?? 0,
-          avg_delivery_days: o.avg_delivery_days ?? o.avg_delivery_time ?? null,
-        }));
-
-        setOffersForProject(normalized);
-      } catch (err) {
-        console.error("Failed to load offers for project", err);
-        try {
-          toast.error(
-            (err && err.message) || "Failed to load offers for this project."
-          );
-        } catch {}
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [item, isClient, currentUserId, toast]);
 
   // =============================== Handlers
   const onApplyToProject = () => {
@@ -375,14 +316,14 @@ export default function ProjectDetails({ mode: propMode }) {
   let canAccept = true;
   if (isFreelancer && hasApplied) canAccept = false;
 
-  // ✅ إصلاح acceptLabel (كان غير معرّف)
+  // ✅ acceptLabel - only for freelancers
   const acceptLabel = isFreelancer
     ? hasApplied
       ? "Already Applied"
       : projectType === "bidding"
       ? "Send Offer"
       : "Apply"
-    : "Apply";
+    : null; // Hide button for non-freelancers (clients, admins, etc.)
 
   const acceptClasses =
     "w-full h-11 rounded-xl text-white font-semibold transition " +
@@ -493,6 +434,25 @@ export default function ProjectDetails({ mode: propMode }) {
   )}
 </div>
 
+            {/* Preferred Skills */}
+            {item?.preferred_skills && Array.isArray(item.preferred_skills) && item.preferred_skills.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 mt-6">
+                <h3 className="text-sm font-semibold text-slate-600 mb-2">
+                  Preferred Skills
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {item.preferred_skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-slate-100 rounded-md text-sm text-slate-700"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             {/* Attachments */}
             {item.attachments && (
@@ -540,26 +500,17 @@ export default function ProjectDetails({ mode: propMode }) {
             />
           </aside>
         </div>
-
-        {/* Offers */}
-        {isClient &&
-          String(item.user_id ?? item.userId ?? item.client_id ?? "") ===
-            String(currentUserId) && (
-            <OffersReceived
-              item={item}
-              offersForProject={offersForProject}
-              setOffersForProject={setOffersForProject}
-            />
-          )}
       </div>
 
-      {/* ✅ Bottom Action Bar للموبايل */}
-      <MobileBottomBar
-        hidden={readOnly}
-        acceptLabel={acceptLabel}
-        onAccept={onApplyToProject}
-        acceptDisabled={!canAccept || busy || !isFreelancer}
-      />
+      {/* ✅ Bottom Action Bar للموبايل - Only show for freelancers */}
+      {isFreelancer && (
+        <MobileBottomBar
+          hidden={readOnly}
+          acceptLabel={acceptLabel}
+          onAccept={onApplyToProject}
+          acceptDisabled={!canAccept || busy}
+        />
+      )}
 
       {/* Modal */}
       {showApplyModal && (
