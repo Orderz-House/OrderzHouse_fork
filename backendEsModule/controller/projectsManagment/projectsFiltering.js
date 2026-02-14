@@ -135,26 +135,39 @@ async function fetchPublishedTenders(filters) {
 export const getProjectsByCategory = async (req, res) => {
   const { category_id } = req.params;
   const userId = req.token?.userId;
-  
-  // Log FULL query object to debug
-  console.log('🔍 [getProjectsByCategory] FULL req.query:', JSON.stringify(req.query, null, 2));
-  console.log('🔍 [getProjectsByCategory] req.params:', JSON.stringify(req.params, null, 2));
-  
   const { search, sortBy } = req.query;
 
   try {
-    // Build WHERE conditions
-    let whereConditions = `p.category_id = $1 ${buildStatusCondition()}`;
-    const params = [category_id];
-    let paramIndex = 2;
+    // Build query using conditions array pattern
+    const conditions = [];
+    const params = [];
+    let paramIndex = 1;
+    
+    // Always exclude deleted projects
+    conditions.push(`p.is_deleted = false`);
+    
+    // Always apply status filter
+    conditions.push(`(
+      (p.project_type IN ('fixed', 'hourly') AND p.status = 'active')
+      OR (p.status = 'bidding')
+    )`);
+    
+    // Only apply category filter if NOT "all"
+    if (category_id && category_id !== "all") {
+      conditions.push(`p.category_id = $${paramIndex}`);
+      params.push(Number(category_id));
+      paramIndex++;
+    }
 
     // Add search filter if provided
     if (search && search.trim()) {
-      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      conditions.push(`(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`);
       params.push(`%${search.trim()}%`);
       paramIndex++;
-      console.log('✅ [getProjectsByCategory] Applied search filter:', search.trim());
     }
+    
+    // Build WHERE clause - always has conditions (at least is_deleted and status)
+    const whereClause = conditions.join(" AND ");
 
     // Build ORDER BY clause based on sortBy
     let orderBy = 'p.created_at DESC'; // Default: newest first
@@ -182,9 +195,9 @@ export const getProjectsByCategory = async (req, res) => {
         default:
           orderBy = 'p.created_at DESC';
       }
-      console.log('✅ [getProjectsByCategory] Applied sortBy:', sortBy, '-> ORDER BY:', orderBy);
     }
 
+    // Build final query with proper WHERE clause
     const query = `
       SELECT 
         p.*, 
@@ -199,17 +212,15 @@ export const getProjectsByCategory = async (req, res) => {
       LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
       LEFT JOIN sub_sub_categories ssc ON p.sub_sub_category_id = ssc.id
       LEFT JOIN users u ON u.id = p.user_id
-      WHERE ${whereConditions}
+      WHERE ${whereClause}
       ORDER BY ${orderBy}
     `;
 
-    console.log('🔍 [getProjectsByCategory] Final query params:', { category_id, search, sortBy, userId });
-
     const { rows: projectRows } = await pool.query(query, params);
 
-    // Fetch published tenders for the same category
+    // Fetch published tenders for the same category (or all if "all" selected)
     const tenderRows = await fetchPublishedTenders({
-      categoryId: category_id,
+      categoryId: (category_id && category_id !== "all") ? category_id : null,
       search,
     });
 
@@ -501,27 +512,46 @@ export const getProjectsByCategoryId = async (req, res) => {
     const { categoryId } = req.params;
     const { search, sortBy } = req.query;
 
-    if (!categoryId || isNaN(categoryId)) {
+    // STEP 2: Handle "all" category - skip category filter
+    const isAllCategory = !categoryId || categoryId === "all" || categoryId === "undefined" || categoryId === "null";
+    
+    // Only validate if NOT "all"
+    if (!isAllCategory && isNaN(categoryId)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid category ID" });
     }
 
-    // Build WHERE conditions
-    let whereConditions = `
-      p.category_id = $1 
-      AND p.is_deleted = false
-      AND p.status = 'bidding'
-    `;
-    const params = [categoryId];
-    let paramIndex = 2;
+    // STEP 2: Use conditions array pattern (CORRECT WAY)
+    const conditions = [];
+    const params = [];
+    let paramIndex = 1;
+    
+    // Add base status conditions
+    conditions.push(`p.is_deleted = false`);
+    
+    // Apply correct status filter for all project types (fixed, hourly, bidding)
+    conditions.push(`(
+      (p.project_type IN ('fixed', 'hourly') AND p.status = 'active')
+      OR (p.status = 'bidding')
+    )`);
+    
+    // Only add category filter if NOT "all"
+    if (!isAllCategory) {
+      conditions.push(`p.category_id = $${paramIndex}`);
+      params.push(categoryId);
+      paramIndex++;
+    }
 
     // Add search filter if provided
     if (search && search.trim()) {
-      whereConditions += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      conditions.push(`(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`);
       params.push(`%${search.trim()}%`);
       paramIndex++;
     }
+    
+    // Build WHERE clause - always has conditions (at least is_deleted and status)
+    const whereClause = conditions.join(" AND ");
 
     // Build ORDER BY clause based on sortBy
     let orderBy = 'p.created_at DESC'; // Default: newest first
@@ -553,6 +583,7 @@ export const getProjectsByCategoryId = async (req, res) => {
       }
     }
 
+    // Build final query with proper WHERE clause
     const query = `
       SELECT 
         p.*, 
@@ -564,18 +595,15 @@ export const getProjectsByCategoryId = async (req, res) => {
       FROM projects p
       JOIN users u ON u.id = p.user_id
       JOIN categories c ON c.id = p.category_id
-      WHERE ${whereConditions}
+      WHERE ${whereClause}
       ORDER BY ${orderBy}
     `;
 
-    console.log('🔍 [getProjectsByCategoryId] Query params:', { categoryId, search, sortBy });
-    console.log('🔍 [getProjectsByCategoryId] SQL ORDER BY:', orderBy);
-
     const { rows: projectRows } = await pool.query(query, params);
 
-    // Fetch published tenders for the same category
+    // Fetch published tenders for the same category (or all if "all" selected)
     const tenderRows = await fetchPublishedTenders({
-      categoryId,
+      categoryId: isAllCategory ? null : categoryId,
       search,
     });
 
@@ -602,7 +630,8 @@ export const getProjectsByCategoryId = async (req, res) => {
       allRows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
-    console.log(`✅ [getProjectsByCategoryId] Found ${allRows.length} projects (${projectRows.length} normal + ${tenderRows.length} tenders)`);
+    // Log to confirm backend is returning data
+    console.log(`✅ [getProjectsByCategoryId] Returned projects: ${allRows.length} (${projectRows.length} normal + ${tenderRows.length} tenders) for categoryId: ${categoryId}`);
 
     return res.json({ success: true, projects: allRows });
   } catch (error) {

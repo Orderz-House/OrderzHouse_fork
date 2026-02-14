@@ -97,16 +97,18 @@ export default function SubSidebar({
 
   // load items (projects / tasks)
   useEffect(() => {
-    // STEP 4: Debug log
-    console.log("[SubSideBar] categoryId:", categoryId, "type:", typeof categoryId);
-    console.log("[SubSideBar] subCategoryId:", subCategoryId);
-    console.log("[SubSideBar] activeSubSub:", activeSubSub);
-    
-    // STEP 4: When "All" is selected (categoryId is empty), we need to fetch all projects
-    // For now, if no categoryId, don't fetch (this needs to be fixed to fetch all)
-    if (!categoryId) {
-      console.log("[SubSideBar] No categoryId - setting items to empty (All tab selected)");
+    // URL is source of truth - categoryId is empty string when "All" is selected
+    // Don't fetch if we have subCategoryId or activeSubSub but no categoryId (invalid state)
+    if ((subCategoryId || activeSubSub) && !categoryId && !isTasks) {
       setItems([]);
+      setLoadingItems(false);
+      return;
+    }
+
+    // Tasks require a category
+    if (isTasks && !categoryId) {
+      setItems([]);
+      setLoadingItems(false);
       return;
     }
 
@@ -115,12 +117,18 @@ export default function SubSidebar({
     const run = async () => {
       try {
         if (isTasks) {
+          if (!categoryId) {
+            setItems([]);
+            setLoadingItems(false);
+            return;
+          }
           const data = await fetchTasksByFilter({
             category: Number(categoryId),
             subcat: subCategoryId ? Number(subCategoryId) : undefined,
             sub: activeSubSub ? Number(activeSubSub) : undefined,
           });
           setItems(Array.isArray(data) ? data : []);
+          setLoadingItems(false);
           return;
         }
 
@@ -135,7 +143,10 @@ export default function SubSidebar({
             Number(subCategoryId)
           );
         } else {
-          data = await fetchAuthProjectsByCategory(Number(categoryId));
+          // When categoryId is empty (All selected), pass "all" to backend
+          // Backend treats "all" as missing category filter
+          const catId = categoryId || "all";
+          data = await fetchAuthProjectsByCategory(catId === "all" ? "all" : Number(catId));
         }
 
         const projects = Array.isArray(data) ? data : [];
@@ -180,8 +191,6 @@ export default function SubSidebar({
 
     run();
   }, [categoryId, activeSubSub, subCategoryId, isTasks, userData]);
-
-  if (!categoryId) return null;
 
   const hasSidebar = subSubs.length > 0;
   const priceField = isTasks ? "price" : "budget";

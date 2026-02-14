@@ -48,10 +48,6 @@ export default function ProjectCard({
     return false;
   })();
 
-  // Debug log (remove after confirming it works)
-  if (process.env.NODE_ENV === 'development') {
-    console.log("project", project.id, "hasApplied", hasApplied);
-  }
 
   const to = `/${linkBase}/${id}`;
  const projectType = (project?.project_type ?? project?.type ?? "").toLowerCase();

@@ -58,9 +58,6 @@ export default function ProjectInfoCard({
     ? `${category} / ${subSubCategory}`
     : category;
 
-  // Debug: Log item to verify client_id exists
-  console.log("[ProjectInfoCard] item.client_id:", item?.client_id, "item.user_id:", item?.user_id);
-
   const clientId = item?.client_id ?? item?.user_id;
 
   return (

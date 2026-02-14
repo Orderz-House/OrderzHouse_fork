@@ -97,27 +97,18 @@ export function CategoriesRail({
 
   if (!list.length) return null;
 
-  // STEP 2: Debug logs
-  console.log("[TopbarCategories] active prop:", active, "type:", typeof active);
-  console.log("[TopbarCategories] list:", list.map(c => ({ id: c.id, name: c.name })));
-
   return (
     <div className="relative" onMouseLeave={handleLeave}>
       {/* الشريط الرئيسي مثل Fiverr: نصوص وخط تحت النشط */}
       <nav className="overflow-x-auto whitespace-nowrap">
         <div className="flex items-stretch gap-6 border-b border-slate-200 min-h-[44px]">
           {list.map((c) => {
-            // STEP 2: Debug log for each tab
-            console.log("[TopbarCategories] Tab id:", c.id, "type:", typeof c.id, "name:", c.name);
-            
             // "All" is active when active === "all"
             // Category tabs are active when their id matches active
             const isAll = c.id === "all";
             const isActive = isAll 
               ? String(active) === "all"
               : String(c.id) === String(active);
-            
-            console.log("[TopbarCategories] Tab", c.name, "isActive:", isActive, "isAll:", isAll);
 
             return (
               <button
@@ -126,8 +117,6 @@ export function CategoriesRail({
                 onClick={() => {
                   // Ensure "all" is passed correctly
                   const selectedId = c.id === "all" ? "all" : c.id.toString();
-                  // STEP 3: Debug log
-                  console.log("[TopbarCategories] Clicked tab:", c.name, "selectedId:", selectedId, "type:", typeof selectedId);
                   onSelect?.(selectedId);
                 }}
                 onMouseEnter={() => {
