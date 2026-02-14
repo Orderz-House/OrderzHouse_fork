@@ -177,9 +177,138 @@ export const sendOffer = async (req, res) => {
 
 
 /**
+ * إتمام قبول العرض بعد دفع العميل للمبلغ (يُستدعى من تأكيد الدفع Stripe)
+ */
+export const completeOfferAcceptance = async (offerId) => {
+  const client = await pool.connect();
+  try {
+    const { rows: offerRows } = await client.query(
+      `SELECT o.*, p.user_id AS client_id, p.title AS project_title, p.project_type
+       FROM offers o
+       JOIN projects p ON o.project_id = p.id
+       WHERE o.id = $1`,
+      [offerId]
+    );
+    if (!offerRows.length) throw new Error("Offer not found");
+    const offer = offerRows[0];
+    if (String(offer.offer_status) === "accepted") return; // already done (idempotent)
+
+    await client.query("BEGIN");
+
+    const { rows: otherPendingOffers } = await client.query(
+      `SELECT id, freelancer_id FROM offers
+       WHERE project_id = $1 AND id <> $2 AND offer_status = 'pending'`,
+      [offer.project_id, offerId]
+    );
+
+    await client.query(
+      `UPDATE offers SET offer_status = 'accepted' WHERE id = $1`,
+      [offerId]
+    );
+    await client.query(
+      `UPDATE offers SET offer_status = 'rejected'
+       WHERE project_id = $1 AND id <> $2 AND offer_status = 'pending'`,
+      [offer.project_id, offerId]
+    );
+
+    const { rows: tenderCheck } = await client.query(
+      `SELECT tv.id, tcy.order_id AS temp_project_id
+       FROM tender_vault_projects tv
+       JOIN tender_vault_cycles tcy ON tcy.tender_id = tv.id
+       WHERE tcy.order_id = $1 AND tv.status = 'active' AND tcy.status = 'active'`,
+      [offer.project_id]
+    );
+
+    if (tenderCheck.length > 0) {
+      const { convertTenderToOrder } = await import("../services/tenderVaultRotation.js");
+      await convertTenderToOrder(tenderCheck[0].id, offer.freelancer_id, offer.id);
+    } else {
+      await client.query(
+        `UPDATE projects SET status = 'in_progress', completion_status = 'in_progress', updated_at = NOW()
+         WHERE id = $1 AND is_deleted = false AND project_type = 'bidding'`,
+        [offer.project_id]
+      );
+    }
+
+    try {
+      await client.query(
+        `INSERT INTO project_assignments (project_id, freelancer_id, status, assigned_at)
+         VALUES ($1, $2, 'active', NOW())`,
+        [offer.project_id, offer.freelancer_id]
+      );
+    } catch (assignErr) {
+      if (assignErr.code === "23505") {
+        await client.query(
+          `UPDATE project_assignments SET status = 'active', assigned_at = NOW()
+           WHERE project_id = $1 AND freelancer_id = $2`,
+          [offer.project_id, offer.freelancer_id]
+        );
+      } else throw assignErr;
+    }
+
+    try {
+      await client.query(
+        `INSERT INTO escrow (project_id, client_id, freelancer_id, amount, status)
+         VALUES ($1, $2, $3, $4, 'held')`,
+        [offer.project_id, offer.client_id, offer.freelancer_id, offer.bid_amount]
+      );
+    } catch (escrowErr) {
+      if (escrowErr.code === "23505") {
+        await client.query(
+          `UPDATE escrow SET amount = $2, status = 'held' WHERE project_id = $1`,
+          [offer.project_id, offer.bid_amount]
+        );
+      } else throw escrowErr;
+    }
+
+    try {
+      eventBus.emit("offer.statusChanged", {
+        offerId: offer.id,
+        projectId: offer.project_id,
+        projectTitle: offer.project_title,
+        freelancerId: offer.freelancer_id,
+        accepted: true,
+      });
+      eventBus.emit("freelancer.assignmentChanged", {
+        projectId: offer.project_id,
+        projectTitle: offer.project_title,
+        freelancerId: offer.freelancer_id,
+        assigned: true,
+      });
+      eventBus.emit("escrow.funded", {
+        projectId: offer.project_id,
+        projectTitle: offer.project_title,
+        freelancerId: offer.freelancer_id,
+        amount: offer.bid_amount,
+      });
+      for (const o of otherPendingOffers || []) {
+        eventBus.emit("offer.statusChanged", {
+          offerId: o.id,
+          projectId: offer.project_id,
+          projectTitle: offer.project_title,
+          freelancerId: o.freelancer_id,
+          accepted: false,
+          autoRejected: true,
+        });
+      }
+    } catch (e) {
+      console.error("eventBus error (completeOfferAcceptance):", e);
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * -------------------------------
  * APPROVE OR REJECT OFFER (CLIENT)
  * -------------------------------
+ * For bidding: accept → requires payment; after payment, completeOfferAcceptance is called.
  */
 export const approveOrRejectOffer = async (req, res) => {
   const client = await pool.connect();
@@ -207,6 +336,17 @@ export const approveOrRejectOffer = async (req, res) => {
     const offer = offerRows[0];
     if (String(offer.client_id) !== String(clientId))
       return res.status(403).json({ success: false, message: "Not authorized" });
+
+    if (action === "accept" && String(offer.project_type) === "bidding") {
+      client.release();
+      return res.json({
+        success: true,
+        requiresPayment: true,
+        offerId: Number(offerId),
+        amount: Number(offer.bid_amount),
+        message: "Pay the full offer amount to accept and assign the freelancer",
+      });
+    }
 
     await client.query("BEGIN");
 

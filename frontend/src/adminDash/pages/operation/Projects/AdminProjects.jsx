@@ -462,7 +462,7 @@ function ClientProjects() {
     if (!token) return;
     setOffersSubmitting(true);
     try {
-      await API.post(
+      const res = await API.post(
         "/offers/offers/approve-reject",
         { offerId, action },
         {
@@ -470,6 +470,18 @@ function ClientProjects() {
           timeout: 15000,
         }
       );
+
+      if (action === "accept" && res?.data?.requiresPayment === true) {
+        const payRes = await API.post(
+          "/stripe/offer-accept-checkout",
+          { offerId },
+          { headers: { authorization: `Bearer ${token}` }, timeout: 15000 }
+        );
+        if (payRes?.data?.url) {
+          window.location.href = payRes.data.url;
+          return;
+        }
+      }
 
       setOffersListMap((prev) => {
         const next = { ...prev };

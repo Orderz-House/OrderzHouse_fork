@@ -179,29 +179,35 @@ export default function ProjectDetails({ mode: propMode }) {
   const isClient = roleId === 2;
   const isFreelancer = roleId === 3;
 
+  const isPaymentRoute = id === "payment-cancel" || id === "payment-success";
+
+  useEffect(() => {
+    if (!isPaymentRoute) return;
+    navigate(id === "payment-cancel" ? "/projects/payment-cancel" : "/projects/payment-success", { replace: true });
+  }, [id, isPaymentRoute, navigate]);
+
   // =============================== Fetch Project
   useEffect(() => {
+    if (isPaymentRoute || !id) return;
     const stateObj = location.state?.project;
     if (stateObj && String(stateObj.id) === String(id)) {
       setItem(stateObj);
       return;
     }
 
-    // ✅ إصلاح loader (كان غير معرّف)
     const loader = getProjectByIdApi;
-
     loader(id)
       .then((res) => setItem(res?.task || res?.project || res))
       .catch(() => toast.error("Failed to load details."));
-  }, [id, location.state, toast]);
+  }, [id, isPaymentRoute, location.state, toast]);
 
   // =============================== Files
   useEffect(() => {
-    if (!id || mode !== "projects") return;
+    if (!id || mode !== "projects" || isPaymentRoute) return;
     getProjectFilesApi(id)
       .then((files) => setProjectFiles(files))
       .catch(() => toast.error("Failed to load project files."));
-  }, [id, mode, toast]);
+  }, [id, mode, isPaymentRoute, toast]);
 
   // =============================== Applied/Assigned
  useEffect(() => {
@@ -283,6 +289,8 @@ export default function ProjectDetails({ mode: propMode }) {
     }
   };
 
+  if (isPaymentRoute) return null;
+
   // =============================== Skeleton
   if (!item) {
     return (
@@ -333,7 +341,7 @@ export default function ProjectDetails({ mode: propMode }) {
 
   
 
-  const description = item.description || "No description provided.";
+  const description = item?.description || "No description provided.";
   const shortDesc =
     description.length > 260 ? description.slice(0, 260) + "…" : description;
 
