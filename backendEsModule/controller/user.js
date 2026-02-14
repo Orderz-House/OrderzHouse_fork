@@ -1456,6 +1456,8 @@ const getUserdata = async (req, res) => {
          email_verified,
          terms_accepted_at,
          terms_version,
+         COALESCE(can_manage_tender_vault, false) as can_manage_tender_vault,
+         COALESCE(can_post_without_payment, false) as can_post_without_payment,
          created_at,
          updated_at
        FROM users 

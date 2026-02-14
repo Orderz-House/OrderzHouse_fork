@@ -97,7 +97,15 @@ export default function SubSidebar({
 
   // load items (projects / tasks)
   useEffect(() => {
+    // STEP 4: Debug log
+    console.log("[SubSideBar] categoryId:", categoryId, "type:", typeof categoryId);
+    console.log("[SubSideBar] subCategoryId:", subCategoryId);
+    console.log("[SubSideBar] activeSubSub:", activeSubSub);
+    
+    // STEP 4: When "All" is selected (categoryId is empty), we need to fetch all projects
+    // For now, if no categoryId, don't fetch (this needs to be fixed to fetch all)
     if (!categoryId) {
+      console.log("[SubSideBar] No categoryId - setting items to empty (All tab selected)");
       setItems([]);
       return;
     }

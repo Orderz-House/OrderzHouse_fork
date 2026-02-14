@@ -25,6 +25,9 @@ import Profile from "../pages/Profile.jsx";
 
 import Settings from "../pages/Settings.jsx";
 import EditProfile from "../pages/EditProfile.jsx";
+import TenderVaultManager from "../pages/TenderVaultManager.jsx";
+import CreateTender from "../pages/CreateTender.jsx";
+import TenderDetails from "../pages/TenderDetails.jsx";
 
 function ProjectsSwitch() {
   const { pathname } = useLocation();
@@ -86,6 +89,9 @@ export default function AdminRouter() {
         {/* generic sections —  /admin  /client  /freelancer */}
         <Route path="projects" element={<ProjectsSwitch />} />
         <Route path="payments" element={<Payments />} />
+        <Route path="tender-vault" element={<TenderVaultManager />} />
+        <Route path="tender-vault/new" element={<CreateTender />} />
+        <Route path="tender-vault/:id" element={<TenderDetails />} />
         {/* <Route path="courses" element={<Courses />} /> */}
         {/* <Route path="tasks" element={<Tasks />} /> */}
       </Route>

@@ -149,7 +149,7 @@ if (projectType === "fixed") {
         <div className="flex flex-wrap gap-2 text-xs text-slate-700">
           <span>
             Value:{" "}
-            <span className="font-bold">${offer?.bid_amount ?? "—"}</span>
+            <span className="font-bold">{offer?.bid_amount != null ? `${offer.bid_amount} JD` : "—"}</span>
           </span>
           <span>
             Rating:{" "}

@@ -1,5 +1,6 @@
 // components/Projects/ProjectInfoCard.jsx
 import { CheckCircle2 } from "lucide-react";
+import { formatPrice, formatBiddingRange } from "../../utils/formatPrice";
 
 const THEME = "#F97316";
 const THEME_DARK = "#C2410C";
@@ -33,16 +34,13 @@ export default function ProjectInfoCard({
 
   let budget = "—";
   if (isTasks) {
-    if (item?.price != null) budget = `$${item.price}`;
+    budget = formatPrice(item?.price);
   } else if (projectType === "fixed") {
-    if (item?.budget != null) budget = `$${item.budget}`;
-    else if (item?.price != null) budget = `$${item.price}`;
+    budget = formatPrice(item?.budget ?? item?.price);
   } else if (projectType === "hourly") {
-    if (item?.hourly_rate != null) budget = `$${item.hourly_rate}/hr`;
+    budget = formatPrice(item?.hourly_rate, { suffix: "/hr" });
   } else if (projectType === "bidding") {
-    const min = item?.budget_min;
-    const max = item?.budget_max ?? min;
-    if (min != null) budget = `$${min} - $${max ?? "—"}`;
+    budget = formatBiddingRange(item?.budget_min, item?.budget_max);
   }
 
   const duration =
@@ -60,9 +58,24 @@ export default function ProjectInfoCard({
     ? `${category} / ${subSubCategory}`
     : category;
 
+  // Debug: Log item to verify client_id exists
+  console.log("[ProjectInfoCard] item.client_id:", item?.client_id, "item.user_id:", item?.user_id);
+
+  const clientId = item?.client_id ?? item?.user_id;
+
   return (
     <div className="rounded-2xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-      <div className="p-6 border-b border-slate-100 space-y-3">
+      <div className="p-6 border-b border-slate-100 space-y-4">
+        {/* Client ID - at the very top with badge style */}
+        {clientId && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-500">Client ID</span>
+            <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded-md">
+              #{clientId}
+            </span>
+          </div>
+        )}
+
         {/* price / budget */}
         <div className="flex items-center justify-between">
           <span className="text-slate-500 text-sm">{budgetLabel}</span>

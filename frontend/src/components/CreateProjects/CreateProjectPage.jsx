@@ -21,6 +21,7 @@ const DEVELOPMENT_CATEGORY_ID = 3;
 
 export default function CreateProjectPage() {
   const token = useSelector((state) => state.auth.token);
+  const userData = useSelector((state) => state.auth.userData);
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -36,6 +37,12 @@ export default function CreateProjectPage() {
   const prevStep = () => setStep((p) => p - 1);
 
   const handleFinalSubmit = async () => {
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log("[CreateProject] Submission already in progress, ignoring duplicate call");
+      return;
+    }
+
     if (!token) {
       showToast("You must be logged in", "error");
       return;
@@ -67,12 +74,29 @@ export default function CreateProjectPage() {
       // ============================
       // 2️⃣ PAID PROJECT → STRIPE FIRST (or skip if permission granted)
       // ============================
+      // Check if user can skip payment (internal clients)
+      const canSkipPayment = userData?.can_post_without_payment === true && userData?.role_id === 2;
+      
+      if (canSkipPayment) {
+        // Skip payment and create project directly
+        const project = await createProjectApi(projectData, token);
+        const projectId = project.id;
+
+        if (files.length > 0) {
+          await uploadProjectFilesApi(projectId, files, token);
+        }
+
+        showToast("Project posted successfully (payment skipped for internal client)", "success");
+        navigate("/client", { replace: true });
+        return;
+      }
+
       const response = await createProjectCheckoutSessionApi(
         projectData,
         token
       );
 
-      // Check if payment was skipped
+      // Check if payment was skipped (backend response)
       if (response.skipPayment === true) {
         const projectId = response.project_id;
 
@@ -146,13 +170,38 @@ export default function CreateProjectPage() {
           />
         )}
 
-        {step === 4 && projectData.project_type !== "bidding" && (
+        {step === 4 && projectData.project_type !== "bidding" && !(userData?.can_post_without_payment === true && userData?.role_id === 2) && (
           <PaymentStep
             projectData={projectData}
             onBack={prevStep}
             onSubmit={handleFinalSubmit}
             isSubmitting={isSubmitting}
           />
+        )}
+        {step === 4 && projectData.project_type !== "bidding" && userData?.can_post_without_payment === true && userData?.role_id === 2 && (
+          <div className="bg-white rounded-lg border border-slate-200 p-6">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">
+                Internal posting enabled — payment step skipped
+              </div>
+              <p className="text-slate-600">Your project will be created without payment.</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={prevStep}
+                  className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleFinalSubmit}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition"
+                >
+                  {isSubmitting ? "Creating..." : "Create Project"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

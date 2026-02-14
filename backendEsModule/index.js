@@ -13,6 +13,7 @@ import "./cron/expireSubscriptions.js";
 import "./cron/autoExpireOldOffers.js";
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
+import { registerTenderVaultRotationJobs } from "./cron/tenderVaultRotation.js";
 import liveScreenRoutes from "./router/LiveScreen.js";
 
 dotenv.config();
@@ -41,6 +42,9 @@ cron.schedule("*/20 * * * *", async () => {
 console.log("Running cleanupDeactivatedUsers cron job...");
   await cleanupDeactivatedUsers();
 });
+
+// Register Tender Vault Rotation System cron jobs
+registerTenderVaultRotationJobs();
 
 
 
@@ -71,6 +75,7 @@ import StripeRouter from "./router/Stripe/stripe.js";
 import webhookRouter from "./router/Stripe/stripeWebhook.js";
 import searchRouter from "./router/search.js";
 import referralsRouter from "./router/referrals.js";
+import tenderVaultRouter from "./router/tenderVault.js";
 
 
 // DB connection
@@ -111,13 +116,21 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// Stricter limiter for auth endpoints
+// Stricter limiter for auth endpoints (environment-aware)
+const isDevelopment = process.env.NODE_ENV === "development";
+const authMaxRequests = isDevelopment ? 1000 : 5;
+
+// Log rate limit configuration on startup
+console.log(`🔒 Auth Rate Limiter: ${authMaxRequests} requests per 15 minutes (${isDevelopment ? "DEVELOPMENT" : "PRODUCTION"} mode)`);
+
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: authMaxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many login/register attempts, please try later." },
+  // Skip rate limiting in development if needed (uncomment if still having issues)
+  // skip: (req) => isDevelopment,
 });
 app.use("/users/login", authLimiter);
 app.use("/users/register", authLimiter);
@@ -175,6 +188,7 @@ app.use("/api", liveScreenRoutes);
 app.use("/stripe", StripeRouter);
 app.use("/search", searchRouter);
 app.use("/referrals", referralsRouter);
+app.use("/tender-vault", tenderVaultRouter);
 
 let server, io;
 

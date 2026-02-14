@@ -4,10 +4,8 @@ import {
   Settings,
   Mail,
   MapPin,
-  MessageSquare,
   Phone,
   Star,
-  User,
 } from "lucide-react";
 import { useToast } from "../../components/toast/ToastProvider";
 import API from "../api/axios";
@@ -20,8 +18,6 @@ const THEME = {
   PRIMARY_DARK: "#4F46E5",
   MUTED: "#64748B",
 };
-
-const ringStyle = { border: `1px solid ${THEME.RING}` };
 
 export default function Profile() {
   const { showToast } = useToast();
@@ -38,12 +34,6 @@ export default function Profile() {
 
   const [profile, setProfile] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("about");
-
-  // Role-based visibility
-  const roleId = profile?.role_id;
-  const isClient = roleId === 2;
-  const isFreelancer = roleId === 3;
 
   useEffect(() => {
     fetchUserProfile();
@@ -181,36 +171,6 @@ export default function Profile() {
     );
   };
 
-  const WorkItem = ({ item, fallbackLabel }) => {
-    const title = item?.title || fallbackLabel;
-    const tag = item?.tag || "";
-    const line1 = item?.address || "";
-    const line2 = item?.contact || "";
-
-    return (
-      <div className="py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-slate-800 truncate">
-              {title}
-            </p>
-            {line1 ? (
-              <p className="text-[11.5px] mt-0.5 text-slate-500">{line1}</p>
-            ) : null}
-            {line2 ? (
-              <p className="text-[11.5px] text-slate-500">{line2}</p>
-            ) : null}
-          </div>
-
-          {tag ? (
-            <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-orange-600 text-white">
-              {tag}
-            </span>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
 
   if (fetchLoading) {
     return (
@@ -257,57 +217,8 @@ export default function Profile() {
         </div>
 
         {/* Body */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 sm:gap-6">
-          {/* LEFT */}
-          <Card className="p-4 sm:p-5">
-            <div
-              className="w-full h-[210px] overflow-hidden rounded-[22px] bg-slate-100"
-              style={ringStyle}
-            >
-              {vm.profilePic ? (
-                <img
-                  src={vm.profilePic}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full grid place-items-center">
-                  <User className="w-12 h-12 text-slate-300" />
-                </div>
-              )}
-            </div>
-
-            {/* Work section - Only show for freelancers */}
-            {isFreelancer && (
-              <div className="mt-5">
-                <SectionTitle>Work</SectionTitle>
-                <div className="mt-2 divide-y divide-slate-100">
-                  <WorkItem
-                    item={{ title: "—", tag: "Primary", address: "", contact: "" }}
-                    fallbackLabel="—"
-                  />
-                  <WorkItem
-                    item={{ title: "—", tag: "Secondary", address: "", contact: "" }}
-                    fallbackLabel="—"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Skills section - Only show for freelancers */}
-            {isFreelancer && (
-              <div className="mt-5">
-                <SectionTitle>Skills</SectionTitle>
-                <ul className="mt-2 space-y-1 text-[12px] text-slate-500">
-                  {["—", "—", "—", "—", "—"].map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Card>
-
-          {/* RIGHT */}
+        <div className="grid grid-cols-1 gap-5 sm:gap-6">
+          {/* About Section */}
           <Card className="relative p-4 sm:p-6">
             <button
               type="button"
@@ -319,54 +230,7 @@ export default function Profile() {
               <Settings className="h-5 w-5 text-slate-700" />
             </button>
 
-            {/* Actions */}
-            <div className="pt-12 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Send message
-              </button>
-
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-orange-600 text-white shadow-sm hover:bg-orange-700 transition"
-              >
-                ✓ Contacts
-              </button>
-
-              <button
-                type="button"
-                className="text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline text-sm font-semibold px-2 py-1"
-              >
-                Report user
-              </button>
-
-            </div>
-
-            {/* Tabs - Removed Timeline tab */}
-            <div className="mt-5 flex items-center gap-3 border-b border-slate-100">
-              {[
-                { key: "about", label: "About" },
-              ].map((t) => {
-                const active = activeTab === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setActiveTab(t.key)}
-                    className={`py-3 text-xs font-extrabold transition-colors border-b-2 ${
-                      active ? "text-slate-900 border-orange-600" : "text-slate-500 hover:text-slate-700 border-transparent"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Content */}
+            {/* About Content */}
             <div className="pt-6">
               <div className="space-y-7">
                 {/* Contact */}
@@ -391,20 +255,8 @@ export default function Profile() {
                       E-mail:
                     </div>
                     <div className="font-semibold text-slate-900">{vm.email}</div>
-
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <span
-                        className="w-4 h-4 grid place-items-center text-[10px] font-extrabold border border-slate-200 rounded"
-                      >
-                        @
-                      </span>
-                      Site:
-                    </div>
-                    <div className="font-semibold text-slate-900">{vm.site}</div>
                   </div>
                 </div>
-
-                {/* Basic - Hide if empty (Birthday and Gender removed) */}
               </div>
             </div>
           </Card>

@@ -17,11 +17,15 @@ export function CategoriesRail({
   themeDark,
 }) {
   const list = useMemo(
-    () =>
-      Object.entries(catalog).map(([id, v]) => ({
+    () => {
+      // Add "All" as the first tab
+      const allTab = { id: "all", name: "All" };
+      const categoryTabs = Object.entries(catalog).map(([id, v]) => ({
         id,
         name: v.title,
-      })),
+      }));
+      return [allTab, ...categoryTabs];
+    },
     [catalog]
   );
 
@@ -93,21 +97,51 @@ export function CategoriesRail({
 
   if (!list.length) return null;
 
+  // STEP 2: Debug logs
+  console.log("[TopbarCategories] active prop:", active, "type:", typeof active);
+  console.log("[TopbarCategories] list:", list.map(c => ({ id: c.id, name: c.name })));
+
   return (
     <div className="relative" onMouseLeave={handleLeave}>
       {/* الشريط الرئيسي مثل Fiverr: نصوص وخط تحت النشط */}
       <nav className="overflow-x-auto whitespace-nowrap">
         <div className="flex items-stretch gap-6 border-b border-slate-200 min-h-[44px]">
           {list.map((c) => {
-            const isActive = c.id.toString() === active;
+            // STEP 2: Debug log for each tab
+            console.log("[TopbarCategories] Tab id:", c.id, "type:", typeof c.id, "name:", c.name);
+            
+            // "All" is active when active === "all"
+            // Category tabs are active when their id matches active
+            const isAll = c.id === "all";
+            const isActive = isAll 
+              ? String(active) === "all"
+              : String(c.id) === String(active);
+            
+            console.log("[TopbarCategories] Tab", c.name, "isActive:", isActive, "isAll:", isAll);
 
             return (
               <button
                 key={c.id}
                 type="button"
-                onClick={() => onSelect?.(c.id.toString())}
-                onMouseEnter={() => handleHover(c.id.toString())}
-                onFocus={() => handleHover(c.id.toString())}
+                onClick={() => {
+                  // Ensure "all" is passed correctly
+                  const selectedId = c.id === "all" ? "all" : c.id.toString();
+                  // STEP 3: Debug log
+                  console.log("[TopbarCategories] Clicked tab:", c.name, "selectedId:", selectedId, "type:", typeof selectedId);
+                  onSelect?.(selectedId);
+                }}
+                onMouseEnter={() => {
+                  // Don't show hover menu for "All" tab
+                  if (c.id !== "all") {
+                    handleHover(c.id.toString());
+                  }
+                }}
+                onFocus={() => {
+                  // Don't show hover menu for "All" tab
+                  if (c.id !== "all") {
+                    handleHover(c.id.toString());
+                  }
+                }}
                 className={
                   "relative pb-2 pt-2 text-sm md:text-[15px] whitespace-nowrap border-b-2 border-transparent transition-colors " +
                   (isActive

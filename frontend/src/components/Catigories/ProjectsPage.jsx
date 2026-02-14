@@ -26,6 +26,13 @@ export default function ProjectsPage({ mode: propMode }) {
   const sub = sp.get("sub") || "";
   const subcat = sp.get("subcat") || "";
   const page = sp.get("page") || "";
+  
+  // Determine active category for tabs (default to "all" if no category param)
+  const activeCategory = category ? String(category) : "all";
+  
+  // STEP 1: Debug logs
+  console.log("[ProjectsPage] category param:", category);
+  console.log("[ProjectsPage] activeCategory:", activeCategory);
 
   const [catalog, setCatalog] = useState({});
   const [indexReady, setIndexReady] = useState(false);
@@ -105,19 +112,21 @@ export default function ProjectsPage({ mode: propMode }) {
     buildIndex();
   }, [catalog, q]);
 
-  // default category
-  useEffect(() => {
-    if (!category && Object.keys(catalog).length > 0) {
-      const firstId = Object.keys(catalog)[0];
-      const next = new URLSearchParams(sp);
-      next.set("cat", firstId);
-      next.delete("sub");
-      next.delete("subcat");
-      next.delete("q");
-      next.set("page", "1");
-      setSp(next, { replace: true });
-    }
-  }, [catalog, category, sp, setSp]);
+  // STEP 4: Debug - Check if this auto-selection is interfering
+  // REMOVED: Auto-select first category - "All" should be the default
+  // This was preventing "All" tab from working correctly
+  // useEffect(() => {
+  //   if (!category && Object.keys(catalog).length > 0) {
+  //     const firstId = Object.keys(catalog)[0];
+  //     const next = new URLSearchParams(sp);
+  //     next.set("cat", firstId);
+  //     next.delete("sub");
+  //     next.delete("subcat");
+  //     next.delete("q");
+  //     next.set("page", "1");
+  //     setSp(next, { replace: true });
+  //   }
+  // }, [catalog, category, sp, setSp]);
 
   // search by text
   useEffect(() => {
@@ -234,12 +243,29 @@ export default function ProjectsPage({ mode: propMode }) {
   }, [category, subcat, sub]);
 
   const chooseCat = (id) => {
+    // STEP 3: Debug log
+    console.log("[ProjectsPage] chooseCat called with id:", id, "type:", typeof id);
+    
     const next = new URLSearchParams(sp);
-    next.set("cat", id.toString());
+    
+    // If "all" is selected, remove category filter
+    if (id === "all" || id === "") {
+      console.log("[ProjectsPage] Removing cat param (All selected)");
+      next.delete("cat");
+    } else {
+      console.log("[ProjectsPage] Setting cat param to:", id);
+      next.set("cat", id.toString());
+    }
+    
+    // Clear sub-category filters when changing category
     next.delete("sub");
     next.delete("subcat");
     next.delete("q");
+    
+    // Reset to page 1 when changing category
     next.set("page", "1");
+    
+    console.log("[ProjectsPage] New URL params:", next.toString());
     setSp(next, { replace: false });
   };
 
@@ -287,7 +313,7 @@ export default function ProjectsPage({ mode: propMode }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         {/* sticky topbar */}
         <TopbarCategories
-          active={category}
+          active={activeCategory}
           onSelect={chooseCat}
           onSelectSubCategory={handleSelectFromTopbar}
           theme={THEME}
