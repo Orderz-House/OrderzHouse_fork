@@ -6,6 +6,7 @@ import "animate.css";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { hydrateFromStorage } from "./slice/auth/authSlice";
+import { startProactiveRefresh } from "./api/client";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Toaster } from "react-hot-toast";
@@ -21,6 +22,7 @@ import Register from "./components/register/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import AcceptTerms from "./components/auth/AcceptTerms";
+import CompleteProfile from "./components/auth/CompleteProfile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socketService";
@@ -100,6 +102,8 @@ function App() {
 
   useEffect(() => {
     dispatch(hydrateFromStorage());
+    // Start proactive token refresh so user is not logged out after ~15 min
+    if (localStorage.getItem("accessToken")) startProactiveRefresh();
   }, [dispatch]);
 
   useEffect(() => {
@@ -166,6 +170,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AcceptTerms />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/complete-profile"
+          element={
+            <ProtectedRoute>
+              <CompleteProfile />
             </ProtectedRoute>
           }
         />

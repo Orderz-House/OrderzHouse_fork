@@ -14,9 +14,13 @@ import {
   User,
   TrendingUp,
   Calendar,
+  Bell,
+  CheckCircle,
+  FileText,
+  Eye,
 } from "lucide-react";
 
-
+import API from "../../../api/axios.js";
 import {
   getProjectByIdApi,
   getProjectFilesApi,
@@ -28,6 +32,12 @@ import { sendOfferApi, getOffersForProjectApi } from "../../../../components/Cat
 import { useSelector } from "react-redux";
 import { useToast } from "../../../../components/toast/ToastProvider";
 import AttachmentList from "../../../../components/Attachments/AttachmentList";
+import {
+  ClientReviewDrawer,
+  ClientApplicationsDrawer,
+  ClientOffersDrawer,
+  DeliverModal,
+} from "./AdminProjects";
 
 
 
@@ -182,6 +192,23 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
   const [busy, setBusy] = useState(false);
   const [offersForProject, setOffersForProject] = useState([]);
   const [descExpanded, setDescExpanded] = useState(false);
+
+  // Actions (كابينة + فريلانسر) — نفس أزرار الكاردات
+  const [deliverOpen, setDeliverOpen] = useState(false);
+  const [deliverSubmitting, setDeliverSubmitting] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifItems, setNotifItems] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [approveSubmitting, setApproveSubmitting] = useState(false);
+  // Client: لوحة واحدة للمراجعة/الاستلام/طلب التعديلات (نفس AdminProjects)
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [reviewDrawerMode, setReviewDrawerMode] = useState("review"); // "review" | "files" | "request"
+  const [offersModalOpen, setOffersModalOpen] = useState(false);
+  const [applicationsModalOpen, setApplicationsModalOpen] = useState(false);
+  const [applicationsList, setApplicationsList] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [offersSubmitting, setOffersSubmitting] = useState(false);
+  const [appsSubmitting, setAppsSubmitting] = useState(false);
 
   // ✅ inferred mode (projects/tasks) — keep compatible with old file
   const inferredMode = useMemo(() => {
@@ -454,6 +481,137 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
     isClient &&
     String(item.user_id ?? item.userId ?? item.client_id ?? "") ===
       String(currentUserId);
+
+  const completionKey = String(status || "").toLowerCase();
+  const isCompleted = /completed|done|finished/.test(completionKey);
+  const isWaitingForClient = /pending_review|awaiting_client|waiting_client/.test(completionKey);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const authHeaders = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+  const openDeliverModal = () => setDeliverOpen(true);
+  const openNotifPanel = async () => {
+    setNotifOpen(true);
+    setNotifLoading(true);
+    try {
+      const { data } = await API.get(`/projects/${id}/change-requests`, authHeaders);
+      setNotifItems(data?.requests || data?.items || []);
+      await API.put(`/projects/${id}/change-requests/mark-read`, {}, authHeaders).catch(() => {});
+    } catch (e) {
+      console.error(e);
+      setNotifItems([]);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+  const submitDeliverPayload = async (payload) => {
+    if (!id || !(payload?.files?.length)) {
+      toast.error("Please add at least one file.");
+      return;
+    }
+    setDeliverSubmitting(true);
+    try {
+      const fd = new FormData();
+      (payload.files || []).forEach((f) => fd.append("project_files", f));
+      await API.post(`/projects/${id}/deliver`, fd, authHeaders);
+      toast.success("Delivery submitted.");
+      setDeliverOpen(false);
+      getProjectByIdApi(id).then((res) => setItem(res?.task || res?.project || res));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Delivery failed.");
+    } finally {
+      setDeliverSubmitting(false);
+    }
+  };
+  const openReviewDrawer = (mode) => {
+    setReviewDrawerMode(mode);
+    setReviewDrawerOpen(true);
+  };
+  const approveWork = async () => {
+    setApproveSubmitting(true);
+    try {
+      await API.put(`/projects/${id}/approve`, { action: "approve" }, authHeaders);
+      toast.success("Work approved.");
+      getProjectByIdApi(id).then((res) => setItem(res?.task || res?.project || res));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Approve failed.");
+    } finally {
+      setApproveSubmitting(false);
+    }
+  };
+
+  const isBidding = String(projectType || "").toLowerCase() === "bidding";
+  const openApplicationsModal = async () => {
+    setApplicationsModalOpen(true);
+    setApplicationsLoading(true);
+    try {
+      const { data } = await API.get(`/projects/project/${id}/applications`, authHeaders);
+      const list = Array.isArray(data?.applications) ? data.applications : Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      setApplicationsList(list);
+    } catch (e) {
+      console.error(e);
+      setApplicationsList([]);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+  const openOffersModal = () => setOffersModalOpen(true);
+
+  const handleOfferAction = async (offerId, projectId, action) => {
+    if (!token) return;
+    setOffersSubmitting(true);
+    try {
+      await API.post("/offers/offers/approve-reject", { offerId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+      setOffersForProject((prev) => {
+        if (action === "accept") {
+          return prev.map((o) => {
+            const oid = o.offer_id ?? o.id;
+            if (String(oid) === String(offerId)) return { ...o, offer_status: "accepted" };
+            if (String(o.offer_status || "").toLowerCase() === "pending") return { ...o, offer_status: "rejected" };
+            return o;
+          });
+        }
+        return prev.map((o) => {
+          const oid = o.offer_id ?? o.id;
+          if (String(oid) === String(offerId)) return { ...o, offer_status: "rejected" };
+          return o;
+        });
+      });
+      toast.success(action === "accept" ? "Offer accepted." : "Offer rejected.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Action failed.");
+    } finally {
+      setOffersSubmitting(false);
+    }
+  };
+
+  const handleApplicationAction = async (assignmentId, projectId, action) => {
+    if (!token) return;
+    setAppsSubmitting(true);
+    try {
+      await API.post("/projects/applications/decision", { assignmentId, id: assignmentId, projectId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+      setApplicationsList((prev) => {
+        if (action === "accept") {
+          return prev.map((app) => {
+            const key = app.assignment_id ?? app.id;
+            if (key === assignmentId) return { ...app, status: "active" };
+            if (String(app.status || "").toLowerCase() === "pending_client_approval") return { ...app, status: "not_chosen" };
+            return app;
+          });
+        }
+        return prev.map((app) => {
+          const key = app.assignment_id ?? app.id;
+          if (key === assignmentId) return { ...app, status: "rejected" };
+          return app;
+        });
+      });
+      toast.success(action === "accept" ? "Application accepted." : "Application rejected.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Action failed.");
+    } finally {
+      setAppsSubmitting(false);
+    }
+  };
 
   return (
     <section className="relative">
@@ -729,8 +887,103 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
                 </div>
               </div>
 
-          
-              {readOnly ? (
+              {/* أزرار الإجراءات (كابينة + فريلانسر) — أسفل لوحة الـ Status — تظهر حتى من وضع read-only عند فتح الصفحة من الكارد */}
+              {id && token && ((isFreelancer && hasApplied) || isOwnerClient) ? (
+                <div className="mt-4 pt-4 border-t border-slate-200/70 space-y-2">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                    Actions
+                  </div>
+                  {isFreelancer && hasApplied ? (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={openNotifPanel}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                      >
+                        <Bell className="h-4 w-4" />
+                        Change requests
+                      </button>
+                      {!isCompleted && !isWaitingForClient ? (
+                        <button
+                          type="button"
+                          onClick={openDeliverModal}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
+                          style={{ backgroundColor: THEME_DARK }}
+                        >
+                          <SendHorizontal className="h-4 w-4" />
+                          Deliver
+                        </button>
+                      ) : isWaitingForClient ? (
+                        <div className="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium text-center">
+                          Awaiting client decision
+                        </div>
+                      ) : (
+                        <div className="py-2 px-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-medium text-center">
+                          Work approved
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  {isOwnerClient ? (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openReviewDrawer(isCompleted ? "files" : "review")}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
+                        style={{ backgroundColor: THEME_DARK }}
+                      >
+                        {isCompleted ? (
+                          <FolderOpen className="h-4 w-4" />
+                        ) : (
+                          <SendHorizontal className="h-4 w-4" />
+                        )}
+                        {isCompleted ? "Files" : "Receive"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openReviewDrawer("request")}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Request changes
+                      </button>
+                      {isWaitingForClient ? (
+                        <button
+                          type="button"
+                          onClick={approveWork}
+                          disabled={approveSubmitting}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
+                          style={{ backgroundColor: THEME_DARK }}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          {approveSubmitting ? "Approving…" : "Approve work"}
+                        </button>
+                      ) : null}
+                      {isBidding ? (
+                        <button
+                          type="button"
+                          onClick={() => setOffersModalOpen(true)}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Offers{offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length ? ` (${offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length})` : ""}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={openApplicationsModal}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Applicants
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {readOnly && !(id && token && ((isFreelancer && hasApplied) || isOwnerClient)) ? (
                 <div className="mt-3 text-[12px] text-slate-500">
                   Read-only mode: actions are disabled.
                 </div>
@@ -843,6 +1096,92 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Deliver — نفس لوحة AdminProjects (DeliverModal) */}
+      {deliverOpen && item && (
+        <DeliverModal
+          project={item}
+          onClose={() => setDeliverOpen(false)}
+          onSubmit={submitDeliverPayload}
+          submitting={deliverSubmitting}
+        />
+      )}
+
+      {/* Change requests panel */}
+      {notifOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800">Change requests</h3>
+              <button onClick={() => setNotifOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {notifLoading ? (
+                <p className="text-slate-500 text-sm">Loading…</p>
+              ) : notifItems.length === 0 ? (
+                <p className="text-slate-500 text-sm">No change requests.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {notifItems.map((n) => (
+                    <li key={n.id || n.created_at} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800">
+                      {n.message}
+                      {n.created_at ? <p className="text-xs text-slate-500 mt-1">{new Date(n.created_at).toLocaleString()}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* لوحة المراجعة/الاستلام/طلب التعديلات — نفس AdminProjects (ClientReviewDrawer) */}
+      {reviewDrawerOpen && item && (
+        <ClientReviewDrawer
+          project={item}
+          mode={reviewDrawerMode}
+          readOnly={reviewDrawerMode === "files"}
+          onClose={() => {
+            setReviewDrawerOpen(false);
+            setReviewDrawerMode("review");
+          }}
+          onApprove={async (projectId) => {
+            await API.put(`/projects/${projectId}/approve`, { action: "approve" }, authHeaders);
+            getProjectByIdApi(id).then((res) => setItem(res?.task || res?.project || res));
+            setReviewDrawerOpen(false);
+          }}
+          onRequestChanges={async (projectId, message) => {
+            await API.post(`/projects/${projectId}/request-changes`, { message }, authHeaders);
+            getProjectByIdApi(id).then((res) => setItem(res?.task || res?.project || res));
+          }}
+          token={token}
+        />
+      )}
+
+      {/* العروض — نفس لوحة AdminProjects (ClientOffersDrawer) */}
+      {offersModalOpen && (
+        <ClientOffersDrawer
+          project={{ id, title }}
+          offers={offersForProject}
+          onClose={() => setOffersModalOpen(false)}
+          onAction={handleOfferAction}
+          submitting={offersSubmitting}
+        />
+      )}
+
+      {/* المتقدمون — نفس لوحة AdminProjects (ClientApplicationsDrawer) */}
+      {applicationsModalOpen && (
+        <ClientApplicationsDrawer
+          project={{ id, title }}
+          applications={applicationsList}
+          onClose={() => {
+            setApplicationsModalOpen(false);
+            setApplicationsList([]);
+          }}
+          onAction={handleApplicationAction}
+          submitting={appsSubmitting}
+        />
       )}
 
       <style>{`

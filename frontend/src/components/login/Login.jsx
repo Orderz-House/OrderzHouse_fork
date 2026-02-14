@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-import API from "../../api/client.js";
+import API, { startProactiveRefresh } from "../../api/client.js";
 
 import { useNavigate, Link } from "react-router-dom";
 import { loginSuccess, setUserData } from "../../slice/auth/authSlice";
@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import GradientButton from "../buttons/GradientButton.jsx";
 import PageMeta from "../PageMeta.jsx";
+
+/** غيّر إلى true عند تفعيل تسجيل الدخول بـ Google */
+const ENABLE_GOOGLE_LOGIN = false;
 
 const getDashboardPath = (roleId) => {
   switch (Number(roleId)) {
@@ -50,6 +53,7 @@ const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
   let roleId = userInfo.role_id ?? decoded.role ?? decoded.role_id;
 
   dispatch(loginSuccess({ token, userInfo }));
+  startProactiveRefresh();
 
   if (roleId == null || roleId === "" || Number.isNaN(Number(roleId))) {
     try {
@@ -69,10 +73,7 @@ const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
   }
 
   connectSocket(token, userInfo?.id ?? decoded?.userId ?? decoded?.sub);
-  if (data.must_accept_terms) {
-    navigate("/accept-terms", { replace: true });
-    return;
-  }
+  // عدم إظهار لوحة قبول الشروط بعد تسجيل الدخول — التوجيه مباشرة للداشبورد
   const path = getDashboardPath(roleId);
   navigate(path, { replace: true });
 };
@@ -123,13 +124,9 @@ const Login = () => {
           return;
         }
 
-        // ===== Email OTP (محاولات كثيرة) =====
-        if (data.requires_email_otp) {
+        // ===== Email OTP (محاولات كثيرة أو باسورد غلط 3 مرات) =====
+        if (data.requires_email_otp || (data.user_id && !data.token)) {
           setStatus(true);
-          toast.info(
-            data.message ||
-              "Verification code sent. Please check your email and enter the code below."
-          );
           setOtp("");
           setOtpMode("email");
           return;
@@ -157,8 +154,7 @@ const Login = () => {
         // Special handling for email verification error
         if (err.response?.status === 403 && (err.response?.data?.error === "EMAIL_NOT_VERIFIED" || errorMessage.includes("verify your email"))) {
           const userEmail = err.response?.data?.email || email;
-          toast.info("Please verify your email. We sent you a code.");
-          // Redirect to verify email page with email in URL
+          // Redirect to verify email page with email in URL (no toast about OTP sent)
           navigate(`/register?email=${encodeURIComponent(userEmail)}&verify=true`);
         } else {
           toast.error(errorMessage);
@@ -239,25 +235,35 @@ const Login = () => {
     setTempToken("");
   };
 
-  const handleGoogleSuccess = (credentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      dispatch(
-        setLogin({
-          token: credentialResponse.credential,
-          userId: decoded.sub,
-          roleId: 2,
-          is_verified: true,
-          userInfo: { email: decoded.email, first_name: decoded.given_name, last_name: decoded.family_name },
-        })
-      );
-      setStatus(true);
+      const idToken = credentialResponse.credential;
+      const res = await API.post("/auth/google", { idToken });
+      const data = res.data;
+
+      if (!data.token || !data.userInfo) {
+        toast.error(data.message || "Google login failed.");
+        return;
+      }
+
+      dispatch(loginSuccess({ token: data.token, userInfo: data.userInfo }));
+      dispatch(setUserData(data.userInfo));
+      startProactiveRefresh();
+
+      if (data.needs_profile_completion) {
+        toast.success("Account created. Complete your profile.");
+        navigate("/complete-profile", { replace: true });
+        return;
+      }
+
+      // عدم إظهار لوحة قبول الشروط بعد تسجيل الدخول — التوجيه مباشرة للداشبورد
+      connectSocket(data.token, data.userInfo.id);
       toast.success("Google login successful! Redirecting...");
-      connectSocket(credentialResponse.credential, decoded.sub);
-      setTimeout(() => navigate("/"), 1500);
+      const path = getDashboardPath(data.userInfo.role_id);
+      navigate(path, { replace: true });
     } catch (error) {
-      setStatus(false);
-      toast.error("Google login failed. Please try again.");
+      const msg = error.response?.data?.message || "Google login failed. Please try again.";
+      toast.error(msg);
     }
   };
 
@@ -431,7 +437,7 @@ const Login = () => {
                 </GradientButton>
               </div>
 
-              {!isOtpStep && (
+              {!isOtpStep && ENABLE_GOOGLE_LOGIN && (
                 <>
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center">

@@ -261,7 +261,8 @@ function useTableData({ endpoint, api, refreshKey }) {
         setLocalRows(processedList);
         dispatch(setUsers(processedList));
       } catch (err) {
-        if (!axios.isCancel(err)) {
+        const isCancel = err?.name === "Canceled" || err?.name === "AbortError" || err?.code === "ERR_CANCELED";
+        if (!isCancel) {
           console.error(err);
           const msg = "Failed to load data";
           setErrorLocal(msg);

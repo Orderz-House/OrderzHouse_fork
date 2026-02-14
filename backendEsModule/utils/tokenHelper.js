@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const ACCESS_EXPIRES = "15m";
+const ACCESS_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES || "1h"; // was 15m; 1h reduces logout-after-idle
 const REFRESH_EXPIRES_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS) || 30;
 const REFRESH_COOKIE_NAME = "refreshToken";
 
