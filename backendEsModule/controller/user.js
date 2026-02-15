@@ -20,6 +20,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// ✅ OTP Feature Flag - OTP temporarily disabled via OTP_ENABLED flag
+// Set OTP_ENABLED=true in .env to re-enable OTP verification
+const OTP_ENABLED = process.env.OTP_ENABLED === "true";
+
 /* =========================================
    CLOUDINARY UPLOAD HELPER
 ========================================= */
@@ -477,43 +481,53 @@ const register = async (req, res) => {
     const user = userResult.rows[0];
 
     /* =========================
-       GENERATE AND SEND EMAIL OTP
+       OTP HANDLING (OTP temporarily disabled via OTP_ENABLED flag)
     ========================= */
-    const emailOtp = generateOtp();
-    const emailOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    if (OTP_ENABLED) {
+      // ✅ OTP Enabled: Generate and send email OTP
+      const emailOtp = generateOtp();
+      const emailOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    await client.query(
-      `UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3`,
-      [emailOtp, emailOtpExpires, user.id]
-    );
+      await client.query(
+        `UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3`,
+        [emailOtp, emailOtpExpires, user.id]
+      );
 
-    // Send OTP email - if this fails, rollback registration
-    try {
-      const mailOptions = {
-        from: `"OrderzHouse" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: "Verify your email - OrderzHouse",
-        html: `
-          <h2>Hello ${user.first_name}</h2>
-          <p>Welcome to OrderzHouse! Please verify your email address.</p>
-          <p>Your verification code:</p>
-          <h1 style="color:#007bff; font-size: 32px; letter-spacing:4px; text-align:center;">${emailOtp}</h1>
-          <p>This code expires in <b>5 minutes</b>.</p>
-          <br/>
-          <p>Thanks,<br/>OrderzHouse Team</p>
-        `,
-      };
+      // Send OTP email - if this fails, rollback registration
+      try {
+        const mailOptions = {
+          from: `"OrderzHouse" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+          to: user.email,
+          subject: "Verify your email - OrderzHouse",
+          html: `
+            <h2>Hello ${user.first_name}</h2>
+            <p>Welcome to OrderzHouse! Please verify your email address.</p>
+            <p>Your verification code:</p>
+            <h1 style="color:#007bff; font-size: 32px; letter-spacing:4px; text-align:center;">${emailOtp}</h1>
+            <p>This code expires in <b>5 minutes</b>.</p>
+            <br/>
+            <p>Thanks,<br/>OrderzHouse Team</p>
+          `,
+        };
 
-      await transporter.sendMail(mailOptions);
-      console.log(`✅ Registration OTP email sent to ${user.email}`);
-    } catch (emailError) {
-      await client.query("ROLLBACK");
-      console.error("❌ Failed to send registration OTP email:", emailError);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send verification email. Please try again or contact support.",
-        error: process.env.NODE_ENV === "development" ? emailError.message : undefined,
-      });
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Registration OTP email sent to ${user.email}`);
+      } catch (emailError) {
+        await client.query("ROLLBACK");
+        console.error("❌ Failed to send registration OTP email:", emailError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send verification email. Please try again or contact support.",
+          error: process.env.NODE_ENV === "development" ? emailError.message : undefined,
+        });
+      }
+    } else {
+      // ✅ OTP Disabled: Mark user as verified immediately
+      await client.query(
+        `UPDATE users SET email_verified = TRUE, email_otp = NULL, email_otp_expires = NULL WHERE id = $1`,
+        [user.id]
+      );
+      console.log(`✅ OTP disabled: User ${user.id} marked as verified automatically`);
     }
 
     /* =========================
@@ -602,8 +616,11 @@ const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Registered successfully. OTP sent to your email ✅",
+      message: OTP_ENABLED 
+        ? "Registered successfully. OTP sent to your email ✅"
+        : "Registered successfully ✅",
       user_id: user.id,
+      email_verified: !OTP_ENABLED, // Indicate if email is already verified
     });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -623,6 +640,14 @@ const register = async (req, res) => {
    VERIFY EMAIL OTP
 ====================================================== */
 const verifyEmailOtp = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   const { email, otp } = req.body;
 
   if (!email || !otp) {
@@ -686,6 +711,14 @@ const verifyEmailOtp = async (req, res) => {
    RESEND EMAIL OTP
 ====================================================== */
 const resendEmailOtp = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   const { email } = req.body;
 
   if (!email) {
@@ -807,8 +840,9 @@ const login = async (req, res) => {
         .json({ success: false, message: "No account found for these credentials" });
     }
 
-    // لو الإيميل مش مفاعَل
-    if (!user.email_verified) {
+    // ✅ OTP temporarily disabled via OTP_ENABLED flag
+    // If OTP is disabled, skip email verification check
+    if (OTP_ENABLED && !user.email_verified) {
       return res.status(403).json({
         success: false,
         error: "EMAIL_NOT_VERIFIED",
@@ -877,6 +911,45 @@ const login = async (req, res) => {
       }
     }
 
+    // ✅ OTP temporarily disabled via OTP_ENABLED flag
+    // If OTP is disabled, return token directly instead of requiring OTP
+    if (!OTP_ENABLED) {
+      // Reset failed attempts and return token
+      await pool.query(
+        "UPDATE users SET otp_code=NULL, otp_expires=NULL, failed_login_attempts=0 WHERE id=$1",
+        [user.id]
+      );
+
+      const tokenPayload = buildTokenPayload(user);
+      const token = issueAccessToken(tokenPayload);
+      const refreshToken = issueRefreshToken(tokenPayload);
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Check terms acceptance
+      const { CURRENT_TERMS_VERSION } = await import("../config/terms.js");
+      const mustAcceptTerms = !user.terms_accepted_at || user.terms_version !== CURRENT_TERMS_VERSION;
+
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        token,
+        userInfo: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role_id: user.role_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          profile_pic_url: user.profile_pic_url,
+          is_deleted: user.is_deleted,
+          is_two_factor_enabled: user.is_two_factor_enabled,
+          email_verified: user.email_verified,
+        },
+        must_accept_terms: mustAcceptTerms,
+        terms_version_required: CURRENT_TERMS_VERSION,
+      });
+    }
+
     // من هون وطالع → يا باسورد غلط أكثر من مرة أو عندنا login مشبوه → نرسل OTP
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 دقائق
@@ -908,6 +981,14 @@ const login = async (req, res) => {
    VERIFY OTP (LOGIN)
 ====================================================== */
 const verifyOTP = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   try {
     const { email, otp } = req.body;
 
@@ -984,6 +1065,14 @@ const verifyOTP = async (req, res) => {
    SEND OTP (MANUAL API)
 ====================================================== */
 const sendOtpController = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   try {
     const { email, method = "email" } = req.body;
     if (!email)
@@ -1016,6 +1105,14 @@ const sendOtpController = async (req, res) => {
    POST /users/request-signup-otp  body: { email }
 ====================================================== */
 const requestSignupOtp = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   try {
     const { email } = req.body;
     if (!email || typeof email !== "string" || !email.trim()) {

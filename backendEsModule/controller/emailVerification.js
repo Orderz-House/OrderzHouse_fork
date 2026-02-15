@@ -1,6 +1,17 @@
 import pool from "../models/db.js";
 
+// ✅ OTP Feature Flag - OTP temporarily disabled via OTP_ENABLED flag
+const OTP_ENABLED = process.env.OTP_ENABLED === "true";
+
 export const verifyEmailOtp = async (req, res) => {
+  // ✅ OTP temporarily disabled via OTP_ENABLED flag
+  if (!OTP_ENABLED) {
+    return res.status(200).json({
+      success: true,
+      message: "OTP is disabled",
+    });
+  }
+
   const { email, otp } = req.body;
 
   if (!email || !otp) {
