@@ -1,6 +1,6 @@
 // src/adminDash/api/dashboard.js
 import API from "./axios.js";
-import { Users, Briefcase, UserCheck, Wallet, ClipboardList } from "lucide-react";
+import { Users, Briefcase, UserCheck, Wallet, ClipboardList, Lock, Clock, CheckCircle, DollarSign } from "lucide-react";
 
 function pickArray(data, keys = []) {
   for (const k of keys) {
@@ -23,19 +23,48 @@ function formatMoney(n) {
   }).format(n);
 }
 
+// Format amount as "number JD"
+// Examples: 0 → "0 JD", 25 → "25 JD", 100.5 → "100.5 JD", 100.50 → "100.5 JD"
+function formatAmountJD(n) {
+  const num = Number.isFinite(+n) ? +n : 0;
+  // Remove trailing zeros: 100.50 → "100.5", 25.00 → "25"
+  const formatted = num % 1 === 0 
+    ? num.toString() 
+    : parseFloat(num.toFixed(3)).toString(); // Use 3 decimals for JOD, then parseFloat removes trailing zeros
+  return `${formatted} JD`;
+}
+
 /* ===================== Client dashboard (عندك موجود) ===================== */
 /* ===================== Client dashboard ===================== */
 export async function fetchClientDashboard() {
-  const [projectsRes, appsRes, offersRes] = await Promise.allSettled([
+  const [projectsRes, escrowRes, escrowSummaryRes, totalSpentRes, appsRes, offersRes] = await Promise.allSettled([
     API.get("/projects/myprojects"),
-    API.get("/projects/applications/my-projects"),
-    API.get("/offers/my-projects/offers"),
+    // Fetch payment history
+    API.get("/payments/client/history").catch(() => ({ data: { payments: [] } })),
+    // Fetch escrow summary (held, released, refunded)
+    API.get("/payments/client/escrow/summary").catch(() => ({ data: { summary: { held: 0, released: 0, refunded: 0 } } })),
+    // Fetch total spent from payments table
+    API.get("/payments/client/total-spent").catch(() => ({ data: { totalSpent: 0 } })),
+    // Fetch applications and offers for pending decisions
+    API.get("/projects/applications/my-projects").catch(() => ({ data: { applications: [] } })),
+    API.get("/offers/my-projects/offers").catch(() => ({ data: { offers: [] } })),
   ]);
 
   const projects =
     projectsRes.status === "fulfilled"
       ? pickArray(projectsRes.value?.data, ["projects", "data", "rows", null])
       : [];
+
+  // Get escrow data - we'll need to query it separately or get from payments
+  // For now, we'll calculate from projects and payments data
+  // Note: Escrow status might need a separate endpoint, but we can infer from project status and payments
+
+  // ===== Projects in Escrow (escrow status = "held") =====
+  // Projects with payment made but work not completed
+  // Check if project has a payment record and is not completed
+  const payments = escrowRes.status === "fulfilled" 
+    ? pickArray(escrowRes.value?.data, ["payments", "data", "rows", null])
+    : [];
 
   const applications =
     appsRes.status === "fulfilled"
@@ -46,91 +75,112 @@ export async function fetchClientDashboard() {
     offersRes.status === "fulfilled"
       ? pickArray(offersRes.value?.data, ["offers", "data", "rows", null])
       : [];
+  
+  const projectsInEscrow = projects.filter((p) => {
+    // Check if project has a payment record (payment made)
+    const hasPayment = payments.some(
+      (pay) => pay.reference_id === p.id && pay.purpose === "project" && pay.status === "paid"
+    );
+    
+    // Project must have payment AND not be completed/delivered
+    const status = String(p?.status || "").toLowerCase();
+    const completionStatus = String(p?.completion_status || "").toLowerCase();
+    const isNotCompleted = status !== "completed" && completionStatus !== "completed" && completionStatus !== "delivered";
+    
+    return hasPayment && isNotCompleted && (status === "in_progress" || status === "active");
+  });
 
-  // ===== Pending decisions (Applications + Offers) =====
-  const pendingApplications = applications.filter(
-    (a) => String(a?.status || "").toLowerCase() === "pending_client_approval"
-  );
+  // ===== Awaiting Delivery (project status = in_progress) =====
+  const awaitingDelivery = projects.filter((p) => {
+    const status = String(p?.status || "").toLowerCase();
+    return status === "in_progress";
+  });
 
-  const pendingOffers = offers.filter(
-    (o) => String(o?.offer_status || o?.status || "").toLowerCase() === "pending"
-  );
+  // ===== Awaiting Your Approval (project status = delivered) =====
+  const awaitingApproval = projects.filter((p) => {
+    const status = String(p?.status || "").toLowerCase();
+    const completionStatus = String(p?.completion_status || "").toLowerCase();
+    return status === "delivered" || completionStatus === "pending_review" || completionStatus === "delivered";
+  });
 
-  // ندمجهم في قائمة وحدة للـ Action Center (حتى لو شكل offer مختلف)
-  const pendingDecisions = [
-    ...pendingApplications,
-    ...pendingOffers.map((o) => ({
-      ...o,
-      // نحاول نوحّد أسماء الحقول قدر الإمكان (عشان الكارد يعرض بشكل أحسن)
-      project_title: o.project_title || o.projectTitle || o.title,
-      freelancer_name:
-        o.freelancer_name ||
-        o.freelancerName ||
-        o.freelancer_username ||
-        o.username,
-      applied_at: o.created_at || o.createdAt || o.offered_at || o.offeredAt,
-    })),
-  ];
+  // ===== Completed Projects (escrow released OR project completed) =====
+  const completedProjects = projects.filter((p) => {
+    const status = String(p?.status || "").toLowerCase();
+    const completionStatus = String(p?.completion_status || "").toLowerCase();
+    return status === "completed" || completionStatus === "completed";
+  });
 
-  // ===== Pending payments =====
-  const pendingPaymentProjects = projects.filter(
-    (p) => String(p?.status || "").toLowerCase() === "pending_payment"
-  );
+  // ===== Total Spent (from payments table) =====
+  // Get total spent from payments table (only paid status)
+  const totalSpent = totalSpentRes.status === "fulfilled"
+    ? toNum(totalSpentRes.value?.data?.totalSpent || 0)
+    : 0;
 
-  const pendingPaymentsAmount = pendingPaymentProjects.reduce(
-    (sum, p) => sum + toNum(p?.amount_to_pay ?? p?.amountToPay ?? 0),
-    0
-  );
-
-  // ===== Pending reviews =====
-  const pendingReviews = projects.filter(
-    (p) => String(p?.completion_status || "").toLowerCase() === "pending_review"
-  );
-
-  // ===== Active projects =====
-  const activeProjectsCount = projects.filter((p) => {
-    const s = String(p?.status || "").toLowerCase();
-    return ["in_progress", "active", "running", "started"].includes(s);
-  }).length;
+  // ===== Escrow Summary (for Financial Overview card) =====
+  // Get real escrow summary from backend
+  const escrowSummary = escrowSummaryRes.status === "fulfilled"
+    ? escrowSummaryRes.value?.data?.summary || { held: 0, released: 0, refunded: 0 }
+    : { held: 0, released: 0, refunded: 0 };
+  
+  // Money in Escrow = SUM(escrow.amount WHERE status = 'held')
+  const moneyInEscrow = toNum(escrowSummary.held || 0);
+  
+  // Total Released from Escrow = SUM(escrow.amount WHERE status = 'released')
+  const totalReleasedFromEscrow = toNum(escrowSummary.released || 0);
+  
+  // Total Refunded = SUM(escrow.amount WHERE status = 'refunded')
+  const totalRefunded = toNum(escrowSummary.refunded || 0);
 
   // ===== Stats cards =====
   const stats = [
     {
-      id: "active_projects",
-      title: "Active projects",
-      value: activeProjectsCount,
-      sub: "Currently running",
-      icon: Briefcase,
-      accent: "bg-sky-50",
-    },
-    {
-      id: "pending_decisions",
-      title: "Pending decisions",
-      value: pendingDecisions.length,
-      sub: "Offers / applications waiting for you",
-      icon: UserCheck,
+      id: "projects_in_escrow",
+      title: "Projects in Escrow",
+      value: projectsInEscrow.length,
+      sub: "Payment made, work in progress",
+      icon: Lock,
       accent: "bg-amber-50",
     },
     {
-      id: "pending_reviews",
-      title: "Pending reviews",
-      value: pendingReviews.length,
-      sub: "Work submitted, needs review",
+      id: "awaiting_delivery",
+      title: "Awaiting Delivery",
+      value: awaitingDelivery.length,
+      sub: "Currently in progress",
+      icon: Clock,
+      accent: "bg-blue-50",
+    },
+    {
+      id: "awaiting_approval",
+      title: "Awaiting Your Approval",
+      value: awaitingApproval.length,
+      sub: "Delivered, needs review",
       icon: ClipboardList,
       accent: "bg-indigo-50",
     },
     {
-      id: "pending_payments",
-      title: "Pending payments",
-      value: pendingPaymentProjects.length,
-      sub:
-        pendingPaymentProjects.length > 0
-          ? `Due: ${formatMoney(pendingPaymentsAmount)}`
-          : "No payments pending",
-      icon: Wallet,
-      accent: "bg-rose-50",
+      id: "completed_projects",
+      title: "Completed Projects",
+      value: completedProjects.length,
+      sub: "Fully finished",
+      icon: CheckCircle,
+      accent: "bg-emerald-50",
+    },
+    {
+      id: "total_spent",
+      title: "Total Spent",
+      value: formatAmountJD(totalSpent),
+      sub: "All successful payments",
+      icon: DollarSign,
+      accent: "bg-slate-50",
     },
   ];
+
+  // Financial overview data for the right panel
+  const financialOverview = {
+    moneyInEscrow,
+    totalReleased: totalReleasedFromEscrow,
+    totalRefunded,
+  };
 
   // ===== Recent projects =====
   const recentProjects = [...projects]
@@ -141,13 +191,151 @@ export async function fetchClientDashboard() {
     })
     .slice(0, 6);
 
+  // ===== Build Actionable Items (Priority Order) =====
+  const actionableItems = [];
+
+  // A) Approve Delivered Work (Priority 1)
+  const deliveredProjects = projects.filter((p) => {
+    const status = String(p?.status || "").toLowerCase();
+    const completionStatus = String(p?.completion_status || "").toLowerCase();
+    return status === "delivered" || completionStatus === "pending_review" || completionStatus === "delivered";
+  });
+
+  deliveredProjects.forEach((p) => {
+    actionableItems.push({
+      id: `approve_${p.id}`,
+      type: "approve_delivery",
+      priority: 1,
+      title: "Review & approve delivery",
+      projectTitle: p.title || "Untitled Project",
+      projectId: p.id,
+      reason: "Delivery submitted",
+      amount: p.budget || p.amount_to_pay || null,
+      actionLabel: "Approve",
+      href: `/client/project/${p.id}`,
+    });
+  });
+
+  // B) Release Escrow / Complete Payment Step (Priority 2)
+  // Projects with escrow held AND ready for release (completed and approved)
+  // Note: Escrow should only be released after project is completed (not just delivered)
+  const projectsWithHeldEscrow = projects.filter((p) => {
+    const hasPayment = payments.some(
+      (pay) => pay.reference_id === p.id && pay.purpose === "project" && pay.status === "paid"
+    );
+    const status = String(p?.status || "").toLowerCase();
+    const completionStatus = String(p?.completion_status || "").toLowerCase();
+    // Project is completed (not just delivered) and has payment (escrow likely held)
+    // Only show if project is fully completed, not just delivered (delivered needs approval first)
+    return (
+      hasPayment &&
+      (status === "completed" || completionStatus === "completed") &&
+      status !== "pending_payment" &&
+      status !== "delivered" // Delivered projects need approval first, not escrow release
+    );
+  });
+
+  projectsWithHeldEscrow.forEach((p) => {
+    const projectPayment = payments.find(
+      (pay) => pay.reference_id === p.id && pay.purpose === "project" && pay.status === "paid"
+    );
+    const amount = projectPayment?.amount || p.budget || p.amount_to_pay || 0;
+    
+    actionableItems.push({
+      id: `release_${p.id}`,
+      type: "release_escrow",
+      priority: 2,
+      title: `Release payment (${formatAmountJD(amount)})`,
+      projectTitle: p.title || "Untitled Project",
+      projectId: p.id,
+      reason: "Escrow awaiting release",
+      amount: amount,
+      actionLabel: "Release",
+      href: `/client/project/${p.id}`,
+    });
+  });
+
+  // C) Respond to Freelancer Requests / Decisions (Priority 3)
+  // Pending applications
+  const pendingApplications = applications.filter(
+    (a) => String(a?.status || "").toLowerCase() === "pending_client_approval"
+  );
+
+  pendingApplications.forEach((a) => {
+    actionableItems.push({
+      id: `decision_app_${a.id || a.assignment_id}`,
+      type: "decision_required",
+      priority: 3,
+      title: "Decision required",
+      projectTitle: a.project_title || a.projectTitle || "Project Application",
+      projectId: a.project_id || a.projectId,
+      reason: "Application waiting for your response",
+      actionLabel: "View request",
+      href: `/client/project/${a.project_id || a.projectId}`,
+    });
+  });
+
+  // Pending offers
+  const pendingOffers = offers.filter(
+    (o) => String(o?.offer_status || o?.status || "").toLowerCase() === "pending"
+  );
+
+  pendingOffers.forEach((o) => {
+    actionableItems.push({
+      id: `decision_offer_${o.id}`,
+      type: "decision_required",
+      priority: 3,
+      title: "Decision required",
+      projectTitle: o.project_title || o.projectTitle || "Project Offer",
+      projectId: o.project_id || o.projectId,
+      reason: "Offer waiting for your response",
+      actionLabel: "View request",
+      href: `/client/project/${o.project_id || o.projectId}`,
+    });
+  });
+
+  // D) Fix Incomplete Payment / Checkout (Priority 4)
+  // Projects created but not paid (status pending_payment or no payment record)
+  const unpaidProjects = projects.filter((p) => {
+    const status = String(p?.status || "").toLowerCase();
+    const hasPayment = payments.some(
+      (pay) => pay.reference_id === p.id && pay.purpose === "project" && pay.status === "paid"
+    );
+    // Project needs payment and doesn't have a paid payment record
+    return (
+      (status === "pending_payment" || (!hasPayment && p.project_type !== "bidding")) &&
+      p.project_type !== "bidding" // Bidding projects don't require upfront payment
+    );
+  });
+
+  unpaidProjects.forEach((p) => {
+    actionableItems.push({
+      id: `payment_${p.id}`,
+      type: "complete_payment",
+      priority: 4,
+      title: "Complete payment to start work",
+      projectTitle: p.title || "Untitled Project",
+      projectId: p.id,
+      reason: "Payment required to begin",
+      amount: p.budget || p.amount_to_pay || 0,
+      actionLabel: "Pay now",
+      href: `/client/project/${p.id}`, // Or payment page if exists
+    });
+  });
+
+  // Sort by priority and limit to 5 items
+  const sortedActions = actionableItems
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 5);
+
   return {
     stats,
     recentProjects,
+    actionableItems: sortedActions,
+    financialOverview,
     attention: {
-      pendingApplications: pendingDecisions.slice(0, 4),
-      pendingReviews: pendingReviews.slice(0, 4),
-      pendingPayments: pendingPaymentProjects.slice(0, 4),
+      // Keep for backward compatibility
+      pendingReviews: awaitingApproval.slice(0, 4),
     },
   };
 }

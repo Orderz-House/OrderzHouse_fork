@@ -17,7 +17,8 @@ export default function CleanFooter() {
   const exploreLinks = [
     { label: "Home", to: "/" },
     { label: "About Us", to: "/about" },
-    { label: "Blogs", to: "/blogs" },
+    // TEMPORARILY HIDDEN FOR LAUNCH - DO NOT DELETE
+    // { label: "Blogs", to: "/blogs" },
     { label: "Projects", to: "/projectsPage" },
     { label: "Plans", to: "/plans" },
   ];

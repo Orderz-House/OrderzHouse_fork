@@ -547,6 +547,20 @@ export const applyForProject = async (req, res) => {
     if (!freelancerRows[0].is_verified)
       return res.status(403).json({ success: false, message: "Freelancer must be verified to apply" });
 
+    // ✅ Enforce subscription restriction (server-side)
+    const { canApplyToProjects } = await import("../../utils/subscriptionCheck.js");
+    const subscriptionCheck = await canApplyToProjects(freelancerId);
+    if (!subscriptionCheck.canApply) {
+      return res.status(403).json({
+        success: false,
+        message: subscriptionCheck.reason === "No subscription found"
+          ? "You need an active subscription or pending subscription to apply to projects"
+          : subscriptionCheck.reason === "Subscription expired"
+          ? "Your subscription has expired. Please renew to continue applying to projects"
+          : "You cannot apply to projects at this time",
+      });
+    }
+
     const { rows: projectRows } = await pool.query(
       `SELECT id, user_id, title, project_type, status 
        FROM projects 
@@ -744,11 +758,16 @@ export const approveOrRejectApplication = async (req, res) => {
       }
     }
 
+    // ✅ Activate subscription if pending_start and this is first acceptance (within transaction)
+    const { activateSubscriptionOnFirstAcceptance } = await import("../../services/subscriptionActivation.js");
+    const subscriptionActivation = await activateSubscriptionOnFirstAcceptance(
+      assignment.freelancer_id,
+      client,
+      assignmentId
+    );
+
     await client.query("COMMIT");
     client.release();
-
-    // Activate subscription if pending (after transaction commit)
-    await activateSubscriptionIfPending(assignment.freelancer_id);
 
     // ✅ emit events
     try {
@@ -768,7 +787,17 @@ export const approveOrRejectApplication = async (req, res) => {
       console.error(e);
     }
 
-    return res.json({ success: true, message: "Freelancer accepted and project activated" });
+    return res.json({
+      success: true,
+      message: "Freelancer accepted and project activated",
+      subscription: subscriptionActivation.activated
+        ? {
+            status: subscriptionActivation.subscription.status,
+            start_date: subscriptionActivation.subscription.start_date,
+            end_date: subscriptionActivation.subscription.end_date,
+          }
+        : null,
+    });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("approveOrRejectApplication error:", error);
@@ -782,28 +811,32 @@ export const approveOrRejectApplication = async (req, res) => {
  * Freelancer → accept client invitation (assignment created by client)
  */
 export const acceptAssignment = async (req, res) => {
+  const client = await pool.connect();
   try {
     const freelancerId = req.token?.userId;
     const { assignmentId } = req.params;
 
-    const { rows } = await pool.query(
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
       `SELECT * FROM project_assignments 
        WHERE id = $1 AND freelancer_id = $2 AND status = 'pending_acceptance'`,
       [assignmentId, freelancerId]
     );
 
-    if (!rows.length)
+    if (!rows.length) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ success: false, message: "No pending invitation found" });
+    }
 
     const assignment = rows[0];
 
-    await pool.query(
+    await client.query(
       `UPDATE project_assignments SET status = 'active' WHERE id = $1`,
       [assignmentId]
     );
 
-    // ✅ كان عندك client.query بدون client -> نفس المنطق بس pool.query
-    await pool.query(
+    await client.query(
       `UPDATE projects
        SET status = 'in_progress',
            completion_status = 'in_progress',
@@ -813,7 +846,7 @@ export const acceptAssignment = async (req, res) => {
     );
 
     // B) Create escrow when freelancer starts working (if not already created)
-    const paymentResult = await pool.query(
+    const paymentResult = await client.query(
       `SELECT id, amount FROM payments 
        WHERE reference_id = $1 AND purpose = 'project' AND status = 'paid' 
        ORDER BY created_at DESC LIMIT 1`,
@@ -823,7 +856,7 @@ export const acceptAssignment = async (req, res) => {
     if (paymentResult.rows.length > 0) {
       const paymentId = paymentResult.rows[0].id;
       const amount = paymentResult.rows[0].amount;
-      const projectResult = await pool.query(
+      const projectResult = await client.query(
         `SELECT user_id AS client_id FROM projects WHERE id = $1`,
         [assignment.project_id]
       );
@@ -837,12 +870,20 @@ export const acceptAssignment = async (req, res) => {
           freelancerId,
           amount,
           paymentId,
-        });
+        }, client);
       }
     }
 
-    // Activate subscription if pending
-    await activateSubscriptionIfPending(freelancerId);
+    // ✅ Activate subscription if pending_start and this is first acceptance (within transaction)
+    const { activateSubscriptionOnFirstAcceptance } = await import("../../services/subscriptionActivation.js");
+    const subscriptionActivation = await activateSubscriptionOnFirstAcceptance(
+      freelancerId,
+      client,
+      assignmentId
+    );
+
+    await client.query("COMMIT");
+    client.release();
 
     await LogCreators.projectOperation(
       freelancerId,
@@ -861,10 +902,23 @@ export const acceptAssignment = async (req, res) => {
       console.error("Notification emit error:", err);
     }
 
-    res.json({ success: true, message: "Assignment accepted successfully, project now in progress" });
+    res.json({
+      success: true,
+      message: "Assignment accepted successfully, project now in progress",
+      subscription: subscriptionActivation.activated
+        ? {
+            status: subscriptionActivation.subscription.status,
+            start_date: subscriptionActivation.subscription.start_date,
+            end_date: subscriptionActivation.subscription.end_date,
+          }
+        : null,
+    });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("acceptAssignment error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  } finally {
+    client.release();
   }
 };
 

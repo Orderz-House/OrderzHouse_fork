@@ -4,12 +4,10 @@ import API from "../../api/axios.js";
 import {
   CreditCard,
   DollarSign,
-  Download,
   Search,
   ChevronDown,
   RefreshCcw,
   Activity,
-  Clock,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
@@ -44,12 +42,13 @@ const mapRole = (roleId) => {
   return "user";
 };
 
-const fmtMoney = (n, c = "USD") =>
-  new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: c,
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(+n) ? +n : 0);
+// Format amount as "number JD" (e.g., "250 JD")
+const fmtAmount = (n) => {
+  const num = Number.isFinite(+n) ? +n : 0;
+  // Format with up to 2 decimal places if needed, otherwise integer
+  const formatted = num % 1 === 0 ? num.toString() : num.toFixed(2);
+  return `${formatted} JD`;
+};
 
 /* ---------- endpoints ---------- */
 /* ---------- columns (dashboard-like) ---------- */
@@ -72,7 +71,7 @@ const toNum = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 const getCurrency = (rows) =>
-  rows?.find((r) => r?.currency)?.currency || "USD";
+  rows?.find((r) => r?.currency)?.currency || "JD";
 const norm = (v) => String(v ?? "").toLowerCase();
 const cx = (...a) => a.filter(Boolean).join(" ");
 
@@ -223,54 +222,87 @@ export default function Payments() {
     const fmtDate = (d) => {
       if (!d) return "—";
       try {
-        return new Date(d).toLocaleString();
+        const date = new Date(d);
+        // Format: "14 Feb 2026, 5:52 PM" (shorter format)
+        return date.toLocaleString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
       } catch {
         return String(d);
       }
     };
 
-    const amountCell = (r) => fmtMoney(r?.amount, r?.currency || "JOD");
+    const amountCell = (r) => fmtAmount(r?.amount);
 
     const cols = [];
+
+    // Add row numbering as first column
+    cols.push({
+      label: "#",
+      key: "_rowNumber",
+      width: "w-[60px]",
+      align: "center",
+      render: (r, index) => <div className="text-center">{index + 1}</div>,
+    });
 
     if (role === "admin") {
       cols.push({
         label: "User",
         key: "user",
+        width: "w-auto",
+        align: "left",
         render: (r) => r?.user_email || r?.user_name || (r?.user_id != null ? `#${r.user_id}` : "—"),
       });
     }
 
-    cols.push({ label: "Purpose", key: "purpose", render: (r) => r?.purpose || "—" });
+    cols.push({ 
+      label: "Purpose", 
+      key: "purpose", 
+      width: "w-[180px]",
+      align: "center",
+      render: (r) => <div className="text-center truncate" title={r?.purpose || "—"}>{r?.purpose || "—"}</div>
+    });
 
     cols.push({
       label: "Reference",
       key: "reference",
-      render: (r) => r?.plan_name || r?.project_title || (r?.reference_id != null ? `#${r.reference_id}` : "—"),
+      width: "w-[140px]",
+      align: "center",
+      render: (r) => {
+        const ref = r?.plan_name || r?.project_title || (r?.reference_id != null ? `#${r.reference_id}` : "—");
+        return <div className="text-center truncate" title={ref}>{ref}</div>;
+      },
     });
 
-    cols.push({ label: "Amount", key: "amount", render: amountCell });
+    cols.push({ 
+      label: "Amount", 
+      key: "amount", 
+      width: "w-[140px]",
+      align: "center",
+      render: (r) => <div className="text-center font-medium">{amountCell(r)}</div>
+    });
 
     cols.push({
       label: "Status",
       key: "status",
-      render: (r) => r?.status || "—",
+      width: "w-[130px]",
+      align: "center",
+      render: (r) => <div className="text-center">{r?.status || "—"}</div>,
     });
 
     cols.push({
       label: "Date",
       key: "created_at",
-      render: (r) => fmtDate(r?.created_at),
-    });
-
-    cols.push({
-      label: "Session",
-      key: "stripe_session_id",
+      width: "w-[190px]",
+      align: "center",
       render: (r) => {
-        const v = r?.stripe_session_id || "";
-        if (!v) return "—";
-        const short = v.length > 12 ? v.slice(0, 12) + "…" : v;
-        return <span title={v}>{short}</span>;
+        const dateStr = fmtDate(r?.created_at);
+        return <div className="text-center truncate" title={dateStr}>{dateStr}</div>;
       },
     });
 
@@ -313,7 +345,7 @@ export default function Payments() {
   const crudConfig =
     role === "admin"
       ? { showDetails: true, showRowEdit: true, showDelete: true }
-      : { showDetails: true, showRowEdit: false, showDelete: false };
+      : { showDetails: false, showRowEdit: false, showDelete: false };
 
   // ====== KPI Computations (works with or without backend totals) ======
   const currency = getCurrency(rows);
@@ -327,11 +359,9 @@ export default function Payments() {
 
   const statusCounts = useMemo(() => {
     const paidKeys = ["paid", "success", "succeeded", "completed"];
-    const pendingKeys = ["pending", "processing", "in_review", "awaiting"];
     const failedKeys = ["failed", "canceled", "cancelled", "refunded", "declined"];
 
     let paid = 0;
-    let pending = 0;
     let failed = 0;
 
     for (const r of filtered) {
@@ -339,18 +369,14 @@ export default function Payments() {
       if (!s) continue;
       if (paidKeys.includes(s)) paid++;
       else if (failedKeys.includes(s)) failed++;
-      else if (pendingKeys.includes(s)) pending++;
     }
-    return { paid, pending, failed };
+    return { paid, failed };
   }, [filtered]);
 
   // freelancer: keep your "available" behavior (from totals if provided)
   const available =
     totals?.available ??
     toNum(totals?.earned) - toNum(totals?.clearing) - toNum(totals?.withdrawn);
-
-  const exportRows = () =>
-    exportCSV(filtered, `${tableTitle.toLowerCase()}_${Date.now()}.csv`);
 
   return (
     <div className={UI.page}>
@@ -361,8 +387,8 @@ export default function Payments() {
             <div className="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute left-6 -bottom-24 h-56 w-56 rounded-full bg-black/10 blur-2xl" />
 
-            <div className="relative lg:flex lg:items-end lg:justify-between lg:gap-6">
-              <div className="min-w-0 lg:max-w-[70%]">
+            <div className="relative">
+              <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.22em] text-white/70 font-semibold">
                   {tableTitle}
                 </div>
@@ -382,33 +408,6 @@ export default function Payments() {
                     <RefreshCcw className="h-4 w-4" />
                     Refresh
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={exportRows}
-                    className="h-10 sm:h-11 px-4 rounded-2xl bg-white/15 hover:bg-white/20 border border-white/20 text-white text-[13px] sm:text-sm font-semibold inline-flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export CSV
-                  </button>
-                </div>
-              </div>
-
-              {/* Right slot: KPIs compact (only lg+) */}
-              <div className="hidden lg:block shrink-0">
-                <div className="grid gap-3 w-[320px]">
-                  <MiniKpi
-                    icon={CreditCard}
-                    label="Transactions"
-                    value={loading ? "…" : totalTx}
-                    tone="white"
-                  />
-                  <MiniKpi
-                    icon={DollarSign}
-                    label="Total amount"
-                    value={loading ? "…" : fmtMoney(totalAmount, currency)}
-                    tone="white"
-                  />
                 </div>
               </div>
             </div>
@@ -416,7 +415,7 @@ export default function Payments() {
         </div>
 
       {/* KPIs row (StatPill style) */}
-<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
   <StatPill
     icon={CreditCard}
     label="Transactions"
@@ -427,15 +426,8 @@ export default function Payments() {
   <StatPill
     icon={DollarSign}
     label="Total amount"
-    value={loading ? "…" : fmtMoney(totalAmount, currency)}
+    value={loading ? "…" : fmtAmount(totalAmount)}
     tone="emerald"
-  />
-
-  <StatPill
-    icon={Clock}
-    label="Pending"
-    value={loading ? "…" : statusCounts.pending}
-    tone="amber"
   />
 
   <StatPill
@@ -459,7 +451,7 @@ export default function Payments() {
                 </div>
               </div>
               <div className="text-lg sm:text-xl font-extrabold text-slate-900">
-                {fmtMoney(available || 0, currency)}
+                {fmtAmount(available || 0)}
               </div>
             </div>
           </div>
@@ -468,7 +460,7 @@ export default function Payments() {
    
 
         {/* Table */}
-        <div className="min-w-0">
+        <div className="w-full min-w-0">
           <PeopleTable
             title={tableTitle}
             addLabel="Add Payment"
@@ -564,29 +556,3 @@ function Select({ label, options, value, onChange }) {
   );
 }
 
-function exportCSV(rows, filename) {
-  if (!rows?.length) return;
-  const keys = Object.keys(rows[0]);
-  const csv =
-    keys.join(",") +
-    "\n" +
-    rows
-      .map((r) =>
-        keys
-          .map((k) => {
-            const v = r[k] ?? "";
-            return String(v).includes(",")
-              ? `"${String(v).replace(/"/g, '""')}"`
-              : v;
-          })
-          .join(",")
-      )
-      .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}

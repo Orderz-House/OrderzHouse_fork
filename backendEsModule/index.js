@@ -89,7 +89,8 @@ if (process.env.NODE_ENV !== "test") {
   
 }
 
-//stripe webhook needs the raw body
+// ✅ Stripe webhook needs the raw body (mounted BEFORE express.json())
+// This ensures the webhook route gets raw body for signature verification
 app.use("/stripe", webhookRouter);
 
 app.use(express.json());

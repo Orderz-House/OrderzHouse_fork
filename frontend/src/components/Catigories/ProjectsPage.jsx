@@ -344,11 +344,14 @@ export default function ProjectsPage({ mode: propMode }) {
           {(() => {
             const headerTitle =
               subSubInfo?.name || subCatInfo?.name || meta.title;
+            
+            // When "All" tab is active (no category) and mode is projects, show "All projects"
+            const isAllTabActive = !category && mode === "projects";
             const headerDesc =
               subSubInfo?.description ||
               subCatInfo?.description ||
               meta.subtitle ||
-              ` "${headerTitle}".`;
+              (isAllTabActive ? "All projects" : ` "${headerTitle}".`);
 
             return (
               <div className="mt-2">

@@ -47,8 +47,9 @@ export default function Header() {
     /^\/(admin|client|freelancer|apm|partner)(\/|$)/.test(pathname);
 
   // ✅ خلي Projects + Blogs نفس منطق الداشبورد
+  // TEMPORARILY HIDDEN FOR LAUNCH - blogs removed from regex but code kept
   const isDashboardLike =
-    isDashboardRoute || /^\/(projectspage|projects|blogs)(\/|$)/.test(pathname);
+    isDashboardRoute || /^\/(projectspage|projects)(\/|$)/.test(pathname);
 
   const [dashExpanded, setDashExpanded] = useState(false);
 
@@ -66,7 +67,8 @@ export default function Header() {
     const p = (location.pathname || "").toLowerCase();
     if (p === "/") setActiveLink("HOME");
     else if (p.startsWith("/about")) setActiveLink("ABOUT US");
-    else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
+    // TEMPORARILY HIDDEN FOR LAUNCH - DO NOT DELETE
+    // else if (p.startsWith("/blogs")) setActiveLink("BLOGS");
     else if (p.startsWith("/contact")) setActiveLink("CONTACT");
     else if (p.startsWith("/plans")) setActiveLink("PLANS");
     else if (
@@ -238,7 +240,8 @@ export default function Header() {
 
   const exploreItems = [
     { label: "ABOUT US", path: "/about" },
-    { label: "BLOGS", path: "/blogs" },
+    // TEMPORARILY HIDDEN FOR LAUNCH - DO NOT DELETE
+    // { label: "BLOGS", path: "/blogs" },
     { label: "CONTACT", path: "/contact" },
     { label: "PLANS", path: "/plans" },
   ];
@@ -296,7 +299,7 @@ export default function Header() {
                 onClick={() => handleNavigation("/", "HOME")}
                 className="text-[15px] font-extrabold tracking-tight text-gray-900"
               >
-                OrderzHouse
+                Orderz House
               </button>
 
               {/* Desktop links (lg+) */}

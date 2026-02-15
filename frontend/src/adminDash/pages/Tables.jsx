@@ -727,23 +727,33 @@ const DesktopTable = ({
     );
   }
 
+  // Determine if Actions column should be shown
+  const hasActions = renderActions || (!hideCrudActions && (crudConfig?.showDetails || crudConfig?.showRowEdit || crudConfig?.showDelete));
+
   return (
-    <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full border-collapse text-[13px]">
+    <div className="hidden md:block w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full border-collapse text-[13px] table-fixed">
         <thead className="border-b border-slate-200 bg-[#FCE7E0]">
           <tr>
-            {crudConfig.showExpand && <th className="w-10 px-3 py-2" />}
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left text-[12px] font-semibold text-[#C2410C]"
-              >
-                {col.label}
+            {crudConfig.showExpand && <th className="w-10 px-4 py-3 border-r border-gray-200" />}
+            {columns.map((col, colIdx) => {
+              const widthClass = col.width || "";
+              const alignClass = col.align === "center" ? "text-center" : col.align === "right" ? "text-right" : "text-left";
+              const isLastColumn = colIdx === columns.length - 1 && !hasActions;
+              return (
+                <th
+                  key={col.key}
+                  className={`whitespace-nowrap px-4 py-3 align-middle ${widthClass} ${alignClass} ${!isLastColumn ? "border-r border-gray-200" : ""} text-[12px] font-semibold text-[#C2410C]`}
+                >
+                  {col.label}
+                </th>
+              );
+            })}
+            {hasActions && (
+              <th className="w-[90px] px-4 py-3 text-center align-middle text-[12px] font-semibold text-[#C2410C]">
+                Actions
               </th>
-            ))}
-            <th className="w-28 px-3 py-2 text-center text-[12px] font-semibold text-[#C2410C]">
-              Actions
-            </th>
+            )}
           </tr>
         </thead>
 
@@ -751,7 +761,7 @@ const DesktopTable = ({
           {!rows.length ? (
             <tr>
               <td
-                colSpan={columns.length + (crudConfig.showExpand ? 2 : 1)}
+                colSpan={columns.length + (crudConfig.showExpand ? 1 : 0) + (hasActions ? 1 : 0)}
                 className="px-4 py-8 text-center text-slate-500"
               >
                 No records found
@@ -764,9 +774,9 @@ const DesktopTable = ({
 
               return (
                 <React.Fragment key={helpers.getId(row) ?? idx}>
-                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
+                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""} h-10`}>
                     {crudConfig.showExpand && (
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-4 py-3 text-center align-middle border-r border-gray-200">
                         <button
                           onClick={() => onToggleExpand(idx)}
                           className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
@@ -777,58 +787,63 @@ const DesktopTable = ({
                       </td>
                     )}
 
-                    {columns.map((col) => (
-                      <td key={col.key} className="px-3 py-2 text-slate-800">
-                        {col.render ? col.render(row, idx) : row[col.key]}
+                    {columns.map((col, colIdx) => {
+                      const alignClass = col.align === "center" ? "text-center" : col.align === "right" ? "text-right" : "text-left";
+                      const isLastColumn = colIdx === columns.length - 1 && !hasActions;
+                      return (
+                        <td key={col.key} className={`px-4 py-3 text-slate-800 align-middle ${alignClass} ${!isLastColumn ? "border-r border-gray-200" : ""}`}>
+                          {col.render ? col.render(row, idx) : row[col.key]}
+                        </td>
+                      );
+                    })}
+                    {hasActions && (
+                      <td className="px-4 py-3 text-center align-middle">
+                        <div className="flex items-center justify-center gap-1">
+                          {crudConfig.showDetails && (
+                            <button
+                              onClick={() => onOpenDrawer?.(row, idx)}
+                              className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
+                              title="View / Edit"
+                            >
+                              <AiOutlineEdit size={18} />
+                            </button>
+                          )}
+
+                          {renderActions ? (
+                            renderActions(row, helpers)
+                          ) : !hideCrudActions ? (
+                            <>
+                              {crudConfig.showRowEdit && (
+                                <button
+                                  onClick={() => onOpenDrawer?.(row, idx)}
+                                  className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
+                                  style={{ borderColor: PRIMARY, color: PRIMARY }}
+                                  title="Edit"
+                                >
+                                  <FiEdit2 />
+                                </button>
+                              )}
+
+                              {crudConfig.showDelete && (
+                                <button
+                                  onClick={() => helpers.handleDelete(idx)}
+                                  className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-2 text-sm text-red-600"
+                                  title="Delete"
+                                >
+                                  <FiTrash2 />
+                                </button>
+                              )}
+                            </>
+                          ) : null}
+                        </div>
                       </td>
-                    ))}
-
-                    <td className="px-3 py-2">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {crudConfig.showDetails && (
-                          <button
-                            onClick={() => onOpenDrawer?.(row, idx)}
-                            className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
-                            title="View / Edit"
-                          >
-                            <AiOutlineEdit size={18} />
-                          </button>
-                        )}
-
-                        {renderActions ? (
-                          renderActions(row, helpers)
-                        ) : !hideCrudActions ? (
-                          <>
-                            {crudConfig.showRowEdit && (
-                              <button
-                                onClick={() => onOpenDrawer?.(row, idx)}
-                                className="h-9 px-3 rounded-full border inline-flex items-center gap-2 text-sm"
-                                style={{ borderColor: PRIMARY, color: PRIMARY }}
-                                title="Edit"
-                              >
-                                <FiEdit2 />
-                              </button>
-                            )}
-
-                            {crudConfig.showDelete && (
-                              <button
-                                onClick={() => helpers.handleDelete(idx)}
-                                className="h-9 px-3 rounded-full border border-slate-200 hover:bg-red-50 inline-flex items-center gap-2 text-sm text-red-600"
-                                title="Delete"
-                              >
-                                <FiTrash2 />
-                              </button>
-                            )}
-                          </>
-                        ) : null}
-                      </div>
-                    </td>
+                    )}
                   </tr>
 
                   {isExpanded && (
                     <tr>
                       <td
-                        colSpan={columns.length + (crudConfig.showExpand ? 2 : 1)}
+                        colSpan={columns.length + (crudConfig.showExpand ? 1 : 0) + (hasActions ? 1 : 0)}
                         className="px-0 py-0"
                       >
                         <ExpandedRow
@@ -1289,7 +1304,9 @@ export default function PeopleTable({
         />
       )}
 
-      <Pagination page={page} total={rows.length} pageSize={pageSize} onPageChange={setPage} />
+      <div className="flex justify-center w-full mt-4">
+        <Pagination page={page} total={rows.length} pageSize={pageSize} onPageChange={setPage} />
+      </div>
 
       <Drawer
         open={drawerOpen}

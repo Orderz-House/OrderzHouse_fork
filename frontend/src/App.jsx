@@ -131,9 +131,12 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
-        {/* --- Blogs --- */}
-        <Route path="/blogs" element={<Blogs />} />
-        <Route path="/blogs/:id" element={<BlogPost />} />
+        {/* --- Blogs --- TEMPORARILY HIDDEN FOR LAUNCH - DO NOT DELETE */}
+        {/* <Route path="/blogs" element={<Blogs />} /> */}
+        {/* <Route path="/blogs/:id" element={<BlogPost />} /> */}
+        {/* Redirect /blogs to home to prevent direct access */}
+        <Route path="/blogs" element={<Navigate to="/" replace />} />
+        <Route path="/blogs/:id" element={<Navigate to="/" replace />} />
 
         {/* --- Account Suspended --- */}
         <Route path="/account/suspended" element={<AccountSuspended />} />

@@ -722,7 +722,7 @@ function RingProgress({ percent = 0, label, subLabel, extra }) {
   );
 }
 
-function RightListCard({ title, items, onSeeAll, renderRow }) {
+function RightListCard({ title, items, onSeeAll, renderRow, emptyMessage = "Nothing to show." }) {
   const list = Array.isArray(items) ? items : [];
   return (
     <div className={cx(UI.card, "p-5")} style={UI.ring}>
@@ -732,11 +732,11 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
 
       <div className="mt-4 space-y-3">
         {list.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500">
-            Nothing to show.
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-500 text-center">
+            {emptyMessage}
           </div>
         ) : (
-          list.slice(0, 3).map((it, idx) => (
+          list.slice(0, 5).map((it, idx) => (
             <div
               key={it?.id || it?.assignment_id || idx}
               className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5"
@@ -746,7 +746,7 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
           ))
         )}
 
-        {onSeeAll ? (
+        {onSeeAll && list.length > 0 ? (
           <button
             type="button"
             onClick={onSeeAll}
@@ -755,6 +755,66 @@ function RightListCard({ title, items, onSeeAll, renderRow }) {
             See All
           </button>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Financial Overview Card ===================== */
+function FinancialOverviewCard({ moneyInEscrow = 0, totalReleased = 0, totalRefunded = 0 }) {
+  const formatAmount = (amount) => {
+    const num = Number(amount) || 0;
+    const formatted = num % 1 === 0 ? num.toString() : num.toFixed(2);
+    return `${formatted} JD`;
+  };
+
+  return (
+    <div className={cx(UI.card, "p-5")} style={UI.ring}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm font-extrabold text-slate-900">💰 Financial Overview</div>
+      </div>
+
+      <div className="space-y-3">
+        {/* Money in Escrow */}
+        <div className="rounded-2xl bg-amber-50 border border-amber-200/70 px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold text-amber-700">Money in Escrow</div>
+              <div className="text-xs text-amber-600 mt-0.5">Held for active projects</div>
+            </div>
+            <div className="text-base font-extrabold text-amber-900">
+              {formatAmount(moneyInEscrow)}
+            </div>
+          </div>
+        </div>
+
+        {/* Total Released */}
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200/70 px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold text-emerald-700">Total Released</div>
+              <div className="text-xs text-emerald-600 mt-0.5">Paid to freelancers</div>
+            </div>
+            <div className="text-base font-extrabold text-emerald-900">
+              {formatAmount(totalReleased)}
+            </div>
+          </div>
+        </div>
+
+        {/* Total Refunded (if > 0) */}
+        {totalRefunded > 0 && (
+          <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-semibold text-slate-700">Total Refunded</div>
+                <div className="text-xs text-slate-600 mt-0.5">Returned to you</div>
+              </div>
+              <div className="text-base font-extrabold text-slate-900">
+                {formatAmount(totalRefunded)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1721,10 +1781,14 @@ function ClientDashboard() {
   const [query, setQuery] = useState("");
   const [stats, setStats] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
+  const [actionableItems, setActionableItems] = useState([]);
+  const [financialOverview, setFinancialOverview] = useState({
+    moneyInEscrow: 0,
+    totalReleased: 0,
+    totalRefunded: 0,
+  });
   const [attention, setAttention] = useState({
-    pendingApplications: [],
     pendingReviews: [],
-    pendingPayments: [],
   });
   const { pathname } = useLocation();
   const roleBase = useMemo(() => {
@@ -1757,17 +1821,19 @@ function ClientDashboard() {
       setRecentProjects(
         Array.isArray(payload?.recentProjects) ? payload.recentProjects : []
       );
+      setActionableItems(
+        Array.isArray(payload?.actionableItems) ? payload.actionableItems : []
+      );
+      setFinancialOverview(
+        payload?.financialOverview || {
+          moneyInEscrow: 0,
+          totalReleased: 0,
+          totalRefunded: 0,
+        }
+      );
       setAttention({
-        pendingApplications: Array.isArray(
-          payload?.attention?.pendingApplications
-        )
-          ? payload.attention.pendingApplications
-          : [],
         pendingReviews: Array.isArray(payload?.attention?.pendingReviews)
           ? payload.attention.pendingReviews
-          : [],
-        pendingPayments: Array.isArray(payload?.attention?.pendingPayments)
-          ? payload.attention.pendingPayments
           : [],
       });
     } catch (e) {
@@ -1802,45 +1868,12 @@ function ClientDashboard() {
     return list.slice(0, 5);
   }, [recentProjects]);
 
-  // best-effort completion percent from stats
-  const total =
-    parseNumberLike(
-      (stats || []).find((s) =>
-        String(s?.title || "")
-          .toLowerCase()
-          .includes("total")
-      )?.value
-    ) ??
-    parseNumberLike(
-      (stats || []).find((s) =>
-        String(s?.title || "")
-          .toLowerCase()
-          .includes("project")
-      )?.value
-    );
-
-  const completed =
-    parseNumberLike(
-      (stats || []).find((s) =>
-        String(s?.title || "")
-          .toLowerCase()
-          .includes("completed")
-      )?.value
-    ) ?? null;
-
-  const pct =
-    total && completed != null && total > 0
-      ? Math.round((completed / total) * 100)
-      : 32;
-
   const showSkeleton =
     loading &&
     !error &&
     stats.length === 0 &&
     recentProjects.length === 0 &&
-    !attention.pendingApplications.length &&
-    !attention.pendingReviews.length &&
-    !attention.pendingPayments.length;
+    !attention.pendingReviews.length;
 
   if (showSkeleton) return <DashboardSkeletonV2 />;
 
@@ -1894,36 +1927,6 @@ function ClientDashboard() {
               {/* KPI row (from stats) */}
               <KpiRow items={(stats || []).slice(0, 6)} />
 
-              {/* Continue watching = Recent projects */}
-              <ContinueSection
-                title="Continue"
-                rightAction={
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${base}/projects`)}
-                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 inline-flex items-center gap-1"
-                  >
-                    See all <ArrowUpRight className="h-3.5 w-3.5" />
-                  </button>
-                }
-                items={filteredRecent}
-                renderItem={(p, i) => (
-                  <ContinueCarouselCard
-                    key={p?.id || p?._id || i}
-                    badge={p?.status || p?.completion_status || "Project"}
-                    title={p?.title || "Untitled"}
-                    metaLeft={
-                      (p?.completion_status &&
-                        `Status: ${p.completion_status}`) ||
-                      (p?.status && `Status: ${p.status}`) ||
-                      "—"
-                    }
-                    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
-                    onOpen={() => openProjectDetails(p)}
-                  />
-                )}
-              />
-
               {/* Latest Projects mini-table (Your Lesson style) */}
               <LatestProjectsMiniTable
                 title="Your Lesson"
@@ -1937,69 +1940,72 @@ function ClientDashboard() {
 
             {/* RIGHT */}
             <div className="space-y-6 w-full xl:w-[360px] xl:justify-self-end">
-              <RingProgress
-                percent={pct}
-                label={`Good morning ${userLabel} 🔥`}
-                subLabel="Review deliveries and approve work faster."
+              {/* Financial Overview Card */}
+              <FinancialOverviewCard
+                moneyInEscrow={financialOverview.moneyInEscrow}
+                totalReleased={financialOverview.totalReleased}
+                totalRefunded={financialOverview.totalRefunded}
               />
 
-              {/* Like "Your mentor" but using your attention data */}
+              {/* Needs your action - Real actionable items */}
               <RightListCard
                 title="Needs your action"
-                items={[
-                  ...(attention.pendingApplications || [])
-                    .slice(0, 1)
-                    .map((x) => ({
-                      _type: "applications",
-                      title:
-                        x.project_title || x.projectTitle || "Applications",
-                      meta:
-                        (x.freelancer_name ||
-                          x.freelancerName ||
-                          "Freelancer") +
-                        " • " +
-                        (x.assigned_at || x.applied_at || ""),
-                    })),
-                  ...(attention.pendingReviews || []).slice(0, 1).map((x) => ({
-                    _type: "deliveries",
-                    title: x.title || "Delivery",
-                    meta:
-                      x.completion_status ||
-                      x.completionStatus ||
-                      x.status ||
-                      "—",
-                  })),
-                  ...(attention.pendingPayments || []).slice(0, 1).map((x) => ({
-                    _type: "payments",
-                    title: x.title || "Payment",
-                    meta: x.amount_to_pay ?? x.amountToPay ?? x.budget ?? "—",
-                  })),
-                ]}
-                onSeeAll={() => navigate(`${base}/projects`)}
+                items={actionableItems.map((item) => ({
+                  id: item.id,
+                  _type: item.type,
+                  title: item.title,
+                  projectTitle: item.projectTitle,
+                  reason: item.reason,
+                  amount: item.amount,
+                  actionLabel: item.actionLabel,
+                  href: item.href,
+                  projectId: item.projectId,
+                }))}
+                onSeeAll={() => {
+                  // Navigate to most relevant page based on action types
+                  const hasDeliveries = actionableItems.some((a) => a.type === "approve_delivery");
+                  const hasPayments = actionableItems.some((a) => a.type === "complete_payment" || a.type === "release_escrow");
+                  
+                  if (hasDeliveries) {
+                    // Navigate to projects filtered by delivered status
+                    navigate(`${base}/projects?status=delivered`);
+                  } else if (hasPayments) {
+                    navigate(`${base}/payments`);
+                  } else {
+                    navigate(`${base}/projects`);
+                  }
+                }}
                 renderRow={(it) => (
                   <>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-xs font-extrabold text-slate-900 truncate">
-                        {it?.title || "—"}
+                        {it?.title || "Action required"}
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate">
-                        {it?.meta || "—"}
+                      <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {it?.projectTitle || "Project"} {it?.reason ? ` • ${it.reason}` : ""}
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (it?._type === "payments")
+                        if (it?.href) {
+                          navigate(it.href);
+                        } else if (it?._type === "complete_payment" || it?._type === "release_escrow") {
                           navigate(`${base}/payments`);
-                        else navigate(`${base}/projects`);
+                        } else if (it?.projectId) {
+                          navigate(`${base}/project/${it.projectId}`);
+                        } else {
+                          navigate(`${base}/projects`);
+                        }
                       }}
-                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="shrink-0 h-9 px-3 rounded-2xl bg-white border border-slate-200/70 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                     >
-                      Open
+                      {it?.actionLabel || "View"}
                     </button>
                   </>
                 )}
+                emptyMessage="You're all caught up 🎉"
               />
 
               <div className={cx(UI.card, "p-5")} style={UI.ring}>

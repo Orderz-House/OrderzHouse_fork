@@ -150,10 +150,6 @@ export default function Plans() {
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
 
   useEffect(() => {
-    if (user && user.role_id === 2) navigate("/");
-  }, [user, navigate]);
-
-  useEffect(() => {
     API.get("/plans").then((res) => {
       setPlans(Array.isArray(res.data.plans) ? res.data.plans : []);
       setLoading(false);
