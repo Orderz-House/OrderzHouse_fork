@@ -717,18 +717,6 @@ const resendEmailOtp = async (req, res) => {
       });
     }
 
-    // Throttle: Allow resend only if previous OTP expired or doesn't exist
-    const now = new Date();
-    const lastExpiry = user.email_otp_expires ? new Date(user.email_otp_expires) : null;
-    
-    if (lastExpiry && now < lastExpiry) {
-      const secondsLeft = Math.ceil((lastExpiry - now) / 1000);
-      return res.status(429).json({
-        success: false,
-        message: `Please wait ${secondsLeft} seconds before requesting a new code`,
-      });
-    }
-
     // Generate new OTP
     const emailOtp = generateOtp();
     const emailOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes

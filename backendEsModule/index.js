@@ -118,7 +118,7 @@ app.use(globalLimiter);
 
 // Stricter limiter for auth endpoints (environment-aware)
 const isDevelopment = process.env.NODE_ENV === "development";
-const authMaxRequests = isDevelopment ? 1000 : 5;
+const authMaxRequests = isDevelopment ? 1000 : 20; // 20 per 15 min: protects from brute force, allows typos/retries
 
 // Log rate limit configuration on startup
 console.log(`🔒 Auth Rate Limiter: ${authMaxRequests} requests per 15 minutes (${isDevelopment ? "DEVELOPMENT" : "PRODUCTION"} mode)`);
