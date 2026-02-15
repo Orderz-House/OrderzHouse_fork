@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import API from '../api/client.js';
 
 export const fetchAllFreelancers = createAsyncThunk(
   'freelance/fetchAllFreelancers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('https://orderzhouse-backend.onrender.com/users/allfreelance');
+      const response = await API.get('/users/allfreelance');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

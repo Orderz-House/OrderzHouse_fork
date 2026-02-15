@@ -18,20 +18,17 @@ import liveScreenRoutes from "./router/LiveScreen.js";
 
 dotenv.config();
 
-// Check email configuration (dev only)
-if (process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "production") {
-  const hasEmailConfig = !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_PORT &&
-    process.env.EMAIL_USER &&
-    process.env.EMAIL_PASS &&
-    (process.env.EMAIL_FROM || process.env.EMAIL_USER)
-  );
-  console.log(`📧 SMTP configured: ${hasEmailConfig ? "✅ YES" : "❌ NO"}`);
-  if (!hasEmailConfig) {
-    console.warn("⚠️  Email OTP verification will fail without SMTP configuration");
-    console.warn("   Required: SMTP_HOST, SMTP_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_FROM (optional)");
-  }
+// Check email configuration (local + production) so OTP works everywhere
+const hasEmailConfig = !!(
+  process.env.SMTP_HOST &&
+  process.env.SMTP_PORT &&
+  process.env.EMAIL_USER &&
+  process.env.EMAIL_PASS &&
+  (process.env.EMAIL_FROM || process.env.EMAIL_USER)
+);
+console.log(`📧 SMTP configured: ${hasEmailConfig ? "✅ YES (OTP emails will be sent)" : "❌ NO (OTP will fail)"}`);
+if (!hasEmailConfig) {
+  console.warn("⚠️  Set SMTP_HOST, SMTP_PORT, EMAIL_USER, EMAIL_PASS (and optionally EMAIL_FROM) for OTP to work.");
 }
 
 // Start real-time deadline watcher

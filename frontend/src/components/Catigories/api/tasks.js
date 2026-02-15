@@ -1,4 +1,4 @@
-import API from "../../../api/client.js";
+import API, { getWebSocketBaseURL } from "../../../api/client.js";
 import store from "../../../store/store";
 
 const getAuthToken = () =>
@@ -155,7 +155,8 @@ let notificationSocket = null;
 
 export const connectNotifications = (userId, onMessage) => {
   if (notificationSocket) return;
-  notificationSocket = new WebSocket(`ws://localhost:5000/ws/notifications?user=${userId}`);
+  const wsBase = getWebSocketBaseURL();
+  notificationSocket = new WebSocket(`${wsBase}/ws/notifications?user=${userId}`);
 
   notificationSocket.onopen = () => console.log("🔔 Notifications connected");
   notificationSocket.onmessage = (msg) => {
@@ -182,8 +183,9 @@ let chatSocket = null;
 
 export const connectChat = (projectOrTaskId, userId, onMessage) => {
   if (chatSocket) return;
+  const wsBase = getWebSocketBaseURL();
   chatSocket = new WebSocket(
-    `ws://localhost:5000/ws/chat?room=${projectOrTaskId}&user=${userId}`
+    `${wsBase}/ws/chat?room=${projectOrTaskId}&user=${userId}`
   );
 
   chatSocket.onopen = () => console.log("💬 Chat connected");

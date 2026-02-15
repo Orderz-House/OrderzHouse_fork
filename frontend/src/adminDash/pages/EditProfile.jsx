@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { User } from "lucide-react";
+import { getApiBaseURL } from "../../api/client.js";
 
 const THEME = {
   BG: "#F6F7FB",
@@ -47,9 +48,7 @@ function EditProfile() {
         return;
       }
 
-      // Use environment variable with fallback
-      const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
-      
+      const API_BASE = getApiBaseURL();
       const response = await fetch(`${API_BASE}/users/getUserdata`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -211,9 +210,7 @@ function EditProfile() {
         return;
       }
 
-      // Use environment variable with fallback
-      const API_BASE = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
-      
+      const API_BASE = getApiBaseURL();
       const response = await fetch(`${API_BASE}/users/edit`, {
         method: "PUT",
         headers: {
