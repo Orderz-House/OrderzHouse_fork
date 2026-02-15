@@ -1,7 +1,7 @@
 // src/components/login/ForgotPassword.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import API from "../../api/client.js";
 import {
   Mail,
   Shield,
@@ -19,7 +19,6 @@ import { maskEmail } from "../../utils/maskEmail.js";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_APP_API_URL;
 
   // Load email and resetRequestId from sessionStorage on mount
   const [step, setStep] = useState(() => {
@@ -81,7 +80,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post(`${API_BASE}/users/forgot-password`, {
+      const response = await API.post("/users/forgot-password", {
         email: trimmedEmail.toLowerCase(),
       });
 
@@ -185,7 +184,7 @@ const ForgotPassword = () => {
         return;
       }
 
-      const response = await axios.post(`${API_BASE}/users/reset-password`, {
+      const response = await API.post("/users/reset-password", {
         resetRequestId: storedRequestId,
         code: otp, // Renamed from 'otp' to 'code' to match backend
         newPassword,

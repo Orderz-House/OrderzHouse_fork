@@ -8,10 +8,27 @@ const STORAGE_KEYS = { ACCESS_TOKEN: "accessToken" };
 const PROACTIVE_REFRESH_INTERVAL_MS = 12 * 60 * 1000;
 
 /**
- * Centralized API Client
- * Base URL: VITE_APP_API_URL or http://localhost:5000 (never undefined)
+ * API base URL: يختار تلقائياً حسب المكان (محلي أو لايف) بدون تغيير يدوي
+ * - من localhost → http://localhost:5000
+ * - من orderzhouse.com → https://orderzhouse-backend.onrender.com
  */
-const baseURL = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
+export function getApiBaseURL() {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return "http://localhost:5000";
+    if (host === "orderzhouse.com" || host === "www.orderzhouse.com") return "https://orderzhouse-backend.onrender.com";
+  }
+  return import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
+}
+
+const baseURL = getApiBaseURL();
+
+/** للـ WebSocket: نفس الـ host لكن بروتوكول ws/wss (يُستورد حيث يُحتاج) */
+export function getWebSocketBaseURL() {
+  const base = getApiBaseURL();
+  return base.replace(/^http/, "ws");
+}
+
 const API = axios.create({
   baseURL,
   withCredentials: true,

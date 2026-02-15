@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { getApiBaseURL } from "../api/client.js";
 
 let socket = null;
 
@@ -6,7 +7,7 @@ export const connectSocket = (token, userId) => {
   socket = null;
   if (!socket) {
     console.log("Connected Socket");
-    socket = io("https://orderzhouse-backend.onrender.com", {
+    socket = io(getApiBaseURL(), {
       auth: { token, userId },
     });
   }

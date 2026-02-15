@@ -109,10 +109,6 @@ const Sidebar = ({
   useEffect(() => {
     if (!token) return;
     if (profile?.email) return;
-    if (!API_BASE) {
-      console.error("API_BASE is not configured. Please set VITE_APP_API_URL environment variable.");
-      return;
-    }
 
     setProfileLoading(true);
     API
