@@ -266,7 +266,7 @@ export default function Header() {
         className={[
           isDashboardLike
             ? "w-full px-0 transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
-            : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6",
+            : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3",
           isDashboardLike ? (dashExpanded ? "pt-0" : "pt-6") : "",
         ].join(" ")}
       >
