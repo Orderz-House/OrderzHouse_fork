@@ -77,7 +77,7 @@ export default function TestimonialCarousel({ testimonials = DEFAULT_TESTIMONIAL
       className="mt-10"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      onFocusWithin={() => setIsPaused(true)}
+      onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
     >
       <div className="relative overflow-hidden min-h-[210px]">

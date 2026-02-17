@@ -6,6 +6,10 @@ import arabCountries from "../../data/arabCountries.json";
 import { Mail, Lock, Eye, EyeOff, Phone, MapPin, KeyRound } from "lucide-react";
 import PageMeta from "../PageMeta.jsx";
 import { useToast } from "../toast/ToastProvider";
+import { useAuthTransition } from "../auth/useAuthTransition.js";
+import AuthSplitLayout from "../auth/AuthSplitLayout.jsx";
+import { applyLoginSuccess } from "../login/Login.jsx";
+import { connectSocket } from "../../services/socketService";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -280,10 +284,13 @@ const Register = () => {
       startResendCooldown();
     } catch (error) {
       const errorMessage =
-        error.response?.data?.error ||
         error.response?.data?.message ||
+        error.response?.data?.error ||
         "Failed to send verification code";
       toast.error(errorMessage);
+      if (error.response?.status === 409) {
+        setTimeout(() => go("/login"), 1500);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -291,7 +298,8 @@ const Register = () => {
 
   // =============== VERIFY OTP AND REGISTER (Step 2) =============== //
   const handleVerifyOtp = async () => {
-    if (!otp || otp.length !== 6) {
+    const otpStr = String(otp ?? "").trim();
+    if (!otpStr || otpStr.length !== 6) {
       toast.error("Please enter the 6-digit code sent to your email.");
       return;
     }
@@ -306,35 +314,53 @@ const Register = () => {
       return;
     }
 
+    // Backend requires all of these; validate before sending to avoid generic 400
+    const required = [
+      { value: first_name?.trim(), name: "First name" },
+      { value: last_name?.trim(), name: "Last name" },
+      { value: password, name: "Password" },
+      { value: phone_number?.trim(), name: "Phone number" },
+      { value: country?.trim(), name: "Country" },
+      { value: username?.trim(), name: "Username" },
+    ];
+    const missing = required.find((r) => !r.value);
+    if (missing) {
+      toast.error(`${missing.name} is required.`);
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      // Step 2: Verify OTP and create account
       const userData = {
         email: email.toLowerCase().trim(),
-        otp,
-        role_id: parseInt(role_id),
-        first_name,
-        last_name,
+        otp: otpStr,
+        role_id: parseInt(role_id, 10),
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
         password,
-        phone_number,
-        country,
-        username,
-        profile_pic_url,
+        phone_number: phone_number.trim(),
+        country: country.trim(),
+        username: username.trim(),
+        profile_pic_url: profile_pic_url || undefined,
       };
       if (role_id === "3") userData.category_ids = selectedCategories;
 
       const result = await API.post("/users/verify-and-register", userData);
-      
-      // Account created successfully - log user in automatically
+
       toast.success(result.data.message || "Account created successfully! Redirecting...");
-      
-      // Use the same login success flow as Login component
       await applyLoginSuccess(dispatch, result.data, navigate, connectSocket);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Invalid or expired OTP. Please try again.";
+      const apiMessage = err.response?.data?.message;
+      const errorMessage = apiMessage
+        ? apiMessage
+        : err.response
+          ? "Invalid or expired OTP. Please try again or request a new code."
+          : "Account was created but something went wrong. Try logging in.";
       toast.error(errorMessage);
-      // Clear OTP on error so user can retry
+      if (!err.response && apiMessage !== "Invalid OTP") {
+        setTimeout(() => go("/login"), 2000);
+      }
       setOtp("");
     } finally {
       setIsVerifying(false);
@@ -350,15 +376,17 @@ const Register = () => {
     }
 
     try {
-      const res = await API.post("/users/request-signup-otp", { 
-        email: email.toLowerCase().trim() 
+      const res = await API.post("/users/request-signup-otp", {
+        email: email.toLowerCase().trim(),
       });
       toast.success(res.data?.message || "Verification code sent. Check your email.");
       startResendCooldown();
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to resend verification code. Please try again."
-      );
+      const msg = err.response?.data?.message || "Failed to resend verification code. Please try again.";
+      toast.error(msg);
+      if (err.response?.status === 409) {
+        setTimeout(() => go("/login"), 1500);
+      }
     }
   };
 
