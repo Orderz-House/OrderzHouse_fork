@@ -69,35 +69,74 @@ API.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // If FormData is being sent, remove Content-Type header to let axios/browser set it automatically
+    // This ensures multipart/form-data includes the correct boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: On 401 try refresh once, then retry or logout
+// Response interceptor: Handle 401 (refresh token) and 403 (terms not accepted)
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle 403 TERMS_NOT_ACCEPTED - redirect to accept-terms page
+    if (error.response?.status === 403 && error.response?.data?.code === "TERMS_NOT_ACCEPTED") {
+      // Only redirect if not already on accept-terms page to avoid redirect loop
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/accept-terms" && !currentPath.startsWith("/accept-terms")) {
+          // Use replace to avoid adding to browser history
+          window.location.replace("/accept-terms");
+        }
+      }
+      return Promise.reject(error);
+    }
+
+    // Only handle 401 errors for token refresh
     if (error.response?.status !== 401) {
       return Promise.reject(error);
     }
 
     const isRefreshRequest = originalRequest.url?.includes("/users/refresh");
+    
+    // If refresh endpoint itself returns 401, check if it's due to missing cookie or invalid token
     if (isRefreshRequest) {
       refreshPromise = null;
-      clearProactiveRefresh();
-      store.dispatch(logout());
+      const errorMessage = error.response?.data?.message || "";
+      
+      // Only logout if refresh token is truly invalid/expired, not if it's just missing
+      // This prevents logout on first 401 when cookie might not be sent yet
+      if (errorMessage.includes("Invalid or expired") || errorMessage.includes("expired")) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("🔄 Refresh token invalid/expired, logging out");
+        }
+        clearProactiveRefresh();
+        store.dispatch(logout());
+      } else if (process.env.NODE_ENV === "development") {
+        console.warn("🔄 Refresh token missing, but not logging out (might be cookie issue)");
+      }
       return Promise.reject(error);
     }
 
+    // Prevent infinite retry loops
     if (originalRequest._retryAfterRefresh) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("🔄 Already retried after refresh, not retrying again");
+      }
       clearProactiveRefresh();
       store.dispatch(logout());
       return Promise.reject(error);
     }
 
+    // Attempt to refresh token
     try {
       if (!refreshPromise) {
         refreshPromise = API.post("/users/refresh");
@@ -105,18 +144,40 @@ API.interceptors.response.use(
       const { data } = await refreshPromise;
       refreshPromise = null;
       const newToken = data?.token;
+      
       if (newToken) {
         store.dispatch(setToken(newToken));
         startProactiveRefresh();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         originalRequest._retryAfterRefresh = true;
+        
+        if (process.env.NODE_ENV === "development") {
+          console.log("✅ Token refreshed, retrying original request");
+        }
+        
         return API(originalRequest);
+      } else {
+        throw new Error("No token in refresh response");
       }
-    } catch (_) {
+    } catch (refreshError) {
       refreshPromise = null;
-      clearProactiveRefresh();
-      store.dispatch(logout());
+      const refreshErrorMessage = refreshError.response?.data?.message || "";
+      
+      // Only logout if refresh truly failed (invalid/expired token)
+      // Don't logout on network errors or missing cookies (might be temporary)
+      if (refreshErrorMessage.includes("Invalid or expired") || 
+          refreshErrorMessage.includes("expired") ||
+          (refreshError.response?.status === 401 && refreshErrorMessage.includes("missing"))) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("🔄 Refresh failed with invalid token, logging out");
+        }
+        clearProactiveRefresh();
+        store.dispatch(logout());
+      } else if (process.env.NODE_ENV === "development") {
+        console.warn("🔄 Refresh failed but not logging out (might be temporary):", refreshErrorMessage);
+      }
     }
+    
     return Promise.reject(error);
   }
 );

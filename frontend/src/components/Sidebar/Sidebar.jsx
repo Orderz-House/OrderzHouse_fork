@@ -218,175 +218,175 @@ const Sidebar = ({
       {/* ===================== Desktop Sidebar (NEW DESIGN) ===================== */}
       <aside
         className={`
-          hidden lg:block lg:h-screen lg:sticky lg:top-0
+          hidden lg:block
+          bg-white border-r border-gray-100 shadow-sm h-screen
+          flex flex-col overflow-hidden
           transition-all duration-300 ease-in-out
-          ${showDesktopSidebar ? "lg:w-[280px] xl:w-[300px]" : "lg:w-0 overflow-hidden"}
+          ${showDesktopSidebar ? "lg:w-64" : "lg:w-0 overflow-hidden"}
         `}
       >
-        <div className="h-full">
-          <div className="h-full bg-white border border-slate-100 shadow-sm px-5 py-6 flex flex-col items-center">
-            {/* User */}
-            <div className="w-full px-3 mb-2">
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-3">
-                <div
-                  className="relative h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm"
-                  style={{ background: BRAND.primary }}
-                  aria-hidden="true"
-                >
-                  <span className="text-white font-extrabold text-lg uppercase">
-                    {avatarChar}
+        {/* Top profile section */}
+        <div className="p-4 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-3 overflow-hidden">
+            <div
+              className="relative h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+              style={{ background: BRAND.primary }}
+              aria-hidden="true"
+            >
+              <span className="text-white font-extrabold text-lg uppercase">
+                {avatarChar}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-bold text-slate-900 truncate">
+                  {displayName}
+                </div>
+                {profileLoading && (
+                  <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                    Loading…
                   </span>
-                </div>
+                )}
+              </div>
+              <div className="text-xs text-slate-500 truncate">
+                {profile?.email || "—"}
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="text-[14px] font-bold text-slate-900 truncate">
-                      {displayName}
-                    </div>
-                    {profileLoading && (
-                      <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                        Loading…
-                      </span>
+        {/* Menu section - scrollable if needed */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+          {/* OVERVIEW */}
+          <div className="w-full">
+            <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+              OVERVIEW
+            </div>
+            <div className="flex flex-col space-y-1">
+              {navigation.map((item) => {
+                const Icon = item.icon || defaultIcons[item.id] || User;
+                const active = isItemActive(item);
+
+                return (
+                  <Clickable
+                    key={item.id}
+                    item={item}
+                    onClick={() => safeSetActivePage(item.id)}
+                    data-active={active ? "true" : "false"}
+                    className={`
+                      relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                      hover:bg-gray-100 active:scale-[0.98]
+                      ${active ? "bg-gray-100 text-slate-900" : "text-slate-700"}
+                    `}
+                  >
+                    {active && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-orange-500" />
                     )}
-                  </div>
-                  <div className="text-[12px] text-slate-500 truncate">
-                    {profile?.email || "—"}
-                  </div>
-                </div>
-              </div>
+                    <Icon
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        active ? "text-orange-600" : "text-slate-500"
+                      }`}
+                    />
+                    <span className="truncate flex-1 min-w-0">{item.name}</span>
+                  </Clickable>
+                );
+              })}
             </div>
+          </div>
 
-            {/* OVERVIEW */}
-            <div className="w-full pt-2 px-3">
-              <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                OVERVIEW
+          {/* FRIENDS */}
+          {friends?.length > 0 && (
+            <div className="w-full mt-6">
+              <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                FRIENDS
               </div>
-              <nav className="flex flex-col space-y-2 px-3">
-                {navigation.map((item) => {
-                  const Icon = item.icon || defaultIcons[item.id] || User;
-                  const active = isItemActive(item);
-
-                  return (
-                    <Clickable
-                      key={item.id}
-                      item={item}
-                      onClick={() => safeSetActivePage(item.id)}
-                      data-active={active ? "true" : "false"}
-                      className={`
-                        relative flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-800
-                        hover:bg-slate-100 active:scale-[0.99] transition
-                        ${active ? "bg-slate-100 text-slate-900" : ""}
-                      `}
+              <div className="flex flex-col gap-2">
+                {friends.map((f) => (
+                  <button
+                    key={f.id ?? f.name}
+                    type="button"
+                    onClick={() => onFriendClick?.(f)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-50 transition-colors overflow-hidden"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                      style={{ background: BRAND.primarySoft }}
                     >
-                      {active && (
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full bg-orange-500" />
+                      {f.avatarUrl ? (
+                        <img
+                          src={f.avatarUrl}
+                          alt={f.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: BRAND.primary }}
+                        >
+                          {(f.name?.charAt(0) || "U").toUpperCase()}
+                        </span>
                       )}
-                      <Icon
-                        className={`h-5 w-5 shrink-0 ${active ? "text-orange-600" : "text-slate-500"}`}
-                      />
-                      <span>{item.name}</span>
-                    </Clickable>
-                  );
-                })}
-              </nav>
-            </div>
+                    </div>
 
-            {/* FRIENDS */}
-            {friends?.length > 0 && (
-              <div className="w-full px-3 mt-2">
-                <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                  FRIENDS
-                </div>
-                <div className="flex flex-col gap-3 px-3">
-                  {friends.map((f) => (
-                    <button
-                      key={f.id ?? f.name}
-                      type="button"
-                      onClick={() => onFriendClick?.(f)}
-                      className="flex items-center gap-3 text-left"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                        style={{ background: BRAND.primarySoft }}
-                      >
-                        {f.avatarUrl ? (
-                          <img
-                            src={f.avatarUrl}
-                            alt={f.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: BRAND.primary }}
-                          >
-                            {(f.name?.charAt(0) || "U").toUpperCase()}
-                          </span>
-                        )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-slate-900 truncate">
+                        {f.name}
                       </div>
-
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-900 truncate">
-                          {f.name}
-                        </div>
-                        <div className="text-xs text-slate-400 truncate">
-                          {f.subtitle ?? ""}
-                        </div>
+                      <div className="text-xs text-slate-400 truncate">
+                        {f.subtitle ?? ""}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Push bottom */}
-            <div className="flex-1" />
-
-            {/* SETTINGS */}
-            <div className="w-full px-3">
-              <div className="px-6 mt-8 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                SETTINGS
-              </div>
-              <div className="flex flex-col space-y-2 px-3">
-                {bottomNavigation.map((item) => {
-                  const Icon = item.icon || defaultIcons[item.id] || User;
-                  const active = isItemActive(item);
-                  const isLogout = item.id === "logout";
-
-                  return (
-                    <Clickable
-                      key={item.id}
-                      item={item}
-                      onClick={() => {
-                        if (isLogout) onLogout?.();
-                        else safeSetActivePage(item.id);
-                      }}
-                      data-active={active ? "true" : "false"}
-                      className={`
-                        relative flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-800
-                        hover:bg-slate-100 active:scale-[0.99] transition
-                        ${active ? "bg-slate-100 text-slate-900" : ""}
-                        ${isLogout ? "text-orange-600 hover:text-orange-700" : ""}
-                      `}
-                    >
-                      {active && !isLogout && (
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full bg-orange-500" />
-                      )}
-                      <Icon
-                        className={`h-5 w-5 shrink-0 ${
-                          isLogout
-                            ? "text-orange-600"
-                            : active
-                            ? "text-orange-600"
-                            : "text-slate-500"
-                        }`}
-                      />
-                      <span>{item.name}</span>
-                    </Clickable>
-                  );
-                })}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
+          )}
+        </nav>
+
+        {/* Bottom fixed section */}
+        <div className="border-t border-gray-100 p-4 shrink-0 overflow-hidden">
+          <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+            SETTINGS
+          </div>
+          <div className="flex flex-col space-y-1">
+            {bottomNavigation.map((item) => {
+              const Icon = item.icon || defaultIcons[item.id] || User;
+              const active = isItemActive(item);
+              const isLogout = item.id === "logout";
+
+              return (
+                <Clickable
+                  key={item.id}
+                  item={item}
+                  onClick={() => {
+                    if (isLogout) onLogout?.();
+                    else safeSetActivePage(item.id);
+                  }}
+                  data-active={active ? "true" : "false"}
+                  className={`
+                    relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                    hover:bg-gray-100 active:scale-[0.98]
+                    ${active ? "bg-gray-100 text-slate-900" : "text-slate-700"}
+                    ${isLogout ? "text-orange-600 hover:text-orange-700" : ""}
+                  `}
+                >
+                  {active && !isLogout && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-orange-500" />
+                  )}
+                  <Icon
+                    className={`w-5 h-5 flex-shrink-0 ${
+                      isLogout
+                        ? "text-orange-600"
+                        : active
+                        ? "text-orange-600"
+                        : "text-slate-500"
+                    }`}
+                  />
+                  <span className="truncate flex-1 min-w-0">{item.name}</span>
+                </Clickable>
+              );
+            })}
           </div>
         </div>
       </aside>

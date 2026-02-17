@@ -15,6 +15,7 @@ import {
   uploadProjectFilesApi,
   createProjectCheckoutSessionApi,
 } from "./api/projects";
+import API from "../../api/client.js";
 import PageMeta from "../PageMeta.jsx";
 
 const DEVELOPMENT_CATEGORY_ID = 3;
@@ -67,7 +68,7 @@ export default function CreateProjectPage() {
           "success"
         );
 
-        navigate("/", { replace: true });
+        navigate(`/projects/success/${projectId}?lang=en`, { replace: true });
         return;
       }
 
@@ -87,7 +88,7 @@ export default function CreateProjectPage() {
         }
 
         showToast("Project posted successfully (payment skipped for internal client)", "success");
-        navigate("/client", { replace: true });
+        navigate(`/projects/success/${projectId}?lang=en`, { replace: true });
         return;
       }
 
@@ -106,7 +107,7 @@ export default function CreateProjectPage() {
         }
 
         showToast("Project posted successfully", "success");
-        navigate("/client", { replace: true });
+        navigate(`/projects/success/${projectId}?lang=en`, { replace: true });
         return;
       }
 
@@ -121,6 +122,50 @@ export default function CreateProjectPage() {
       console.error(err);
       showToast(
         err.response?.data?.message || "Failed to proceed",
+        "error"
+      );
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle offline payment (CliQ or Cash)
+  const handleOfflinePayment = async (method) => {
+    if (isSubmitting) return;
+    if (!token) {
+      showToast("You must be logged in", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // First create the project
+      const project = await createProjectApi(projectData, token);
+      const projectId = project.id;
+
+      // Upload files if any
+      if (files.length > 0) {
+        await uploadProjectFilesApi(projectId, files, token);
+      }
+
+      // Then set offline payment method
+      const { data } = await API.post(
+        `/projects/${projectId}/offline-payment`,
+        { method },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      showToast(
+        data.message || "Project created. Waiting for admin approval.",
+        "success"
+      );
+      navigate(`/projects/success/${projectId}?lang=en`, { replace: true });
+    } catch (err) {
+      console.error(err);
+      showToast(
+        err.response?.data?.message || "Failed to create project with offline payment",
         "error"
       );
       setIsSubmitting(false);
@@ -176,6 +221,7 @@ export default function CreateProjectPage() {
             onBack={prevStep}
             onSubmit={handleFinalSubmit}
             isSubmitting={isSubmitting}
+            onOfflinePayment={handleOfflinePayment}
           />
         )}
         {step === 4 && projectData.project_type !== "bidding" && userData?.can_post_without_payment === true && userData?.role_id === 2 && (

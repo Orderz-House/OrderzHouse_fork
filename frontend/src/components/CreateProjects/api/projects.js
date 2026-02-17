@@ -54,7 +54,7 @@ export const uploadProjectFilesApi = async (projectId, files, token) => {
 
   const authToken = token || getAuthToken();
   const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
+  files.forEach((file) => formData.append("attachments", file));
 
   const { data } = await API.post(
     `/projects/${projectId}/files`,
@@ -95,16 +95,19 @@ export const assignFreelancerApi = async (projectId, freelancerId, token) => {
 
 // -------------------- CREATE STRIPE PROJECT CHECKOUT --------------------
 export const createProjectCheckoutSessionApi = async (projectData, token) => {
-  const authToken = token || getAuthToken();
+  // API instance already handles Authorization header via interceptor
+  // No need to manually add it - the interceptor will use token from localStorage/Redux
+  // Only pass token if explicitly provided (for edge cases)
+  const config = token ? {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  } : {};
 
   const { data } = await API.post(
     "/stripe/project-checkout-session",
     projectData,
-    {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    }
+    config
   );
 
   return data;

@@ -108,6 +108,10 @@ GOOGLE_CLIENT_ID=your-google-oauth-client-id
 CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+# Email Configuration (Resend)
+RESEND_API_KEY=re_YOUR_RESEND_API_KEY
+EMAIL_FROM=no-reply@orderzhouse.com
 ```
 
 ## API Documentation
