@@ -1106,9 +1106,9 @@ export default function Hero() {
   const rightAvatar = "https://i.pravatar.cc/200?img=32";
 
   return (
-    <section className="relative isolate overflow-hidden bg-white h-screen">
-      <HoverCardsBackground className="min-h-screen">
-        <div className="pt-24 sm:pt-28 pb-10 lg:pb-14 2xl:pb-20">
+    <section className="relative isolate overflow-hidden bg-white h-screen max-h-screen min-h-0">
+      <HoverCardsBackground className="h-full min-h-0 oh-hero-bg">
+        <div className="pt-24 sm:pt-28 pb-10 lg:pb-14 2xl:pb-20 oh-hero-laptop">
           {/* ✅ Background soft glows (yellow + orange) */}
           <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
@@ -1137,7 +1137,7 @@ export default function Hero() {
                   rightAvatar={rightAvatar}
                 />
               </div>
-              <div className="relative mx-auto origin-center scale-100 lg:scale-[1.02] xl:scale-[1.08] 2xl:scale-[1.18] 3xl:scale-[1.28] 4xl:scale-[1.38]">
+              <div className="relative mx-auto origin-center scale-100 lg:scale-[1.02] xl:scale-[1.08] 2xl:scale-[1.18] 3xl:scale-[1.28] 4xl:scale-[1.38] oh-hero-illus">
                 <div
                   className="relative mx-auto w-full max-w-[1088px] aspect-[1365/420] hidden md:block"
                   style={{ "--dur": "5.8s" }}
@@ -1211,8 +1211,8 @@ export default function Hero() {
                 </div>
               </div>
               {/* Text */}
-              <div className="pb-16 sm:pb-20 pt-6 md:pt-12 lg:pt-10 xl:pt-32">
-                <h1 className="mx-auto max-w-3xl text-center font-extrabold tracking-tight text-gray-900 text-[clamp(1.8rem,6vw,2.6rem)] leading-[1.05] sm:text-[clamp(2.2rem,3.6vw,4.2rem)]">
+              <div className="pb-16 sm:pb-20 pt-6 md:pt-12 lg:pt-10 xl:pt-32 oh-hero-cta">
+                <h1 className="oh-hero-title mx-auto max-w-3xl text-center font-extrabold tracking-tight text-gray-900 text-[clamp(1.8rem,6vw,2.6rem)] leading-[1.05] sm:text-[clamp(2.2rem,3.6vw,4.2rem)]">
                   All-in-one
                   <br />
                   platform

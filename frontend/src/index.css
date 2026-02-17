@@ -266,6 +266,35 @@
   52% { transform: scale(1); filter: none; }
 }
 
+  /* ===== Hero: Laptop height fix (عرض ≥1024px و ارتفاع ≤900px) ===== */
+  @media (min-width: 1024px) and (max-height: 900px) {
+    .oh-hero-laptop {
+      /* padding-top: 3.5rem !important; */
+      padding-bottom: 2.5rem !important;
+      min-height: auto !important;
+      height: auto !important;
+    }
+    .oh-hero-no-clip {
+      overflow-x: hidden !important;
+      overflow-y: visible !important;
+    }
+    .oh-hero-illus {
+      transform: scale(0.78) !important;
+      transform-origin: center top !important;
+    }
+    .oh-hero-title {
+      font-size: clamp(2rem, 2.8vw, 2.75rem) !important;
+      line-height: 1.08 !important;
+    }
+    .oh-hero-cta {
+      margin-top: 0.75rem !important;
+      padding-top: 0.5rem !important;
+      padding-bottom: 1rem !important;
+    }
+    .oh-hero-bg {
+      min-height: auto !important;
+    }
+  }
 
   /* احترام إعداد تقليل الحركة */
   @media (prefers-reduced-motion: reduce) {
