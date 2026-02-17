@@ -5,6 +5,8 @@ import arabCountries from "../../data/arabCountries.json";
 import { Mail, Lock, Eye, EyeOff, Phone, MapPin, KeyRound } from "lucide-react";
 import PageMeta from "../PageMeta.jsx";
 import { useToast } from "../toast/ToastProvider";
+import AuthSplitLayout from "../auth/AuthSplitLayout.jsx";
+import { useAuthTransition } from "../auth/useAuthTransition.js";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -16,6 +18,11 @@ const Register = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
+  const { containerClass, go } = useAuthTransition();
+
+  const [step, setStep] = useState(1);
+  const [stepErrors, setStepErrors] = useState({});
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [role_id, setRole_id] = useState("");
   const [first_name, setFirst_name] = useState("");
@@ -29,6 +36,7 @@ const Register = () => {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [categories, setCategories] = useState([]);
@@ -229,17 +237,49 @@ const Register = () => {
     }
   };
 
+  // =============== STEP VALIDATION =============== //
+  const validateStep1 = () => {
+    const err = {};
+    const u = (username || "").trim();
+    if (!u) err.username = "Username is required.";
+    const em = (email || "").trim();
+    if (!em) err.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) err.email = "Please enter a valid email.";
+    if (!password) err.password = "Password is required.";
+    else if (password.length < 8) err.password = "Password must be at least 8 characters.";
+    if (password !== confirmPassword) err.confirmPassword = "Passwords do not match.";
+    setStepErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const err = {};
+    if (!role_id) err.role_id = "Please select a role.";
+    if (!(first_name || "").trim()) err.first_name = "First name is required.";
+    if (!(last_name || "").trim()) err.last_name = "Last name is required.";
+    if (!country) err.country = "Country is required.";
+    if (!(phone_number || "").trim()) err.phone_number = "Phone number is required.";
+    if (role_id === "3" && selectedCategories.length === 0) err.categories = "Please select at least one category.";
+    if (!acceptTerms) err.acceptTerms = "You must accept the Terms and Privacy Policy.";
+    setStepErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (step === 1) {
+      if (validateStep1()) {
+        setStepErrors({});
+        setStep(2);
+      }
+      return;
+    }
+    if (step === 2 && validateStep2()) register(e);
+  };
+
   // =============== REGISTER =============== //
   const register = (e) => {
     e?.preventDefault();
-    if (!acceptTerms) {
-      toast.error("Please accept the Terms and Privacy Policy.");
-      return;
-    }
-    if (role_id === "3" && selectedCategories.length === 0) {
-      toast.error("Please select at least one category.");
-      return;
-    }
     setIsLoading(true);
 
     const userData = {
@@ -339,45 +379,24 @@ const Register = () => {
   const inputPill = "h-12 rounded-xl bg-neutral-100 border border-transparent px-4 w-full focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]/40 placeholder:text-neutral-400 transition-colors";
 
   return (
-    <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4 md:p-8 md:pt-28">
+    <>
       <PageMeta title="Sign up – OrderzHouse" description="Create your OrderzHouse account as a client, freelancer, or partner." />
-      <div className="w-full max-w-6xl overflow-hidden rounded-[32px] shadow-2xl ring-1 ring-black/5 bg-white grid md:grid-cols-2 min-h-[560px]">
-        {/* —— Left Marketing Panel (Desktop only) —— */}
-        <div className="hidden md:flex flex-col bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-950 relative p-10 lg:p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(194,65,12,0.15)_0%,transparent_50%)] pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full">
-            <div className="flex-1 flex flex-col justify-center mt-8">
-              <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight">
-                Manage your projects anywhere
-              </h1>
-              <p className="text-neutral-400 text-sm mt-3 max-w-sm">
-                Join thousands of clients and freelancers. Create your account in seconds and start collaborating.
-              </p>
-              <div className="mt-10 rounded-2xl bg-white/10 border border-white/10 p-6 backdrop-blur-md">
-                <p className="text-neutral-200 text-sm leading-relaxed">
-                  &ldquo;OrderzHouse made it easy to find skilled freelancers and get projects done on time.&rdquo;
-                </p>
-                <div className="flex items-center gap-3 mt-4">
-                  <div className="w-10 h-10 rounded-full bg-[#C2410C]/30 flex items-center justify-center text-white font-medium">A</div>
-                  <div>
-                    <p className="text-white font-medium text-sm">Ahmed</p>
-                    <p className="text-neutral-400 text-xs">Freelancer</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                {[0, 1, 2, 3].map((i) => (
-                  <span key={i} className={`w-2 h-2 rounded-full ${i === 0 ? "bg-[#C2410C]" : "bg-white/30"}`} aria-hidden />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* —— Right Form Panel —— */}
-        <div className="flex flex-col justify-center p-6 sm:p-8 md:p-10 lg:p-12">
-          <div className="w-full max-w-[420px] mx-auto">
-            {showOtpField ? (
+      <AuthSplitLayout
+        cardClassName={containerClass}
+        footer={
+          <p className="text-center text-sm text-neutral-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => go("/login")}
+              className="font-medium text-[#C2410C] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 rounded"
+            >
+              Log in
+            </button>
+          </p>
+        }
+      >
+        {showOtpField ? (
               /* —— OTP View (same panel, same spacing) —— */
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-slate-900">Verify your email</h2>
@@ -421,156 +440,207 @@ const Register = () => {
                 </p>
               </div>
             ) : (
-              /* —— Registration Form —— */
-              <form onSubmit={register} className="space-y-5">
+              /* —— Registration Form (2-Step Wizard) —— */
+              <form onSubmit={handleFormSubmit} className="space-y-5">
                 <h2 className="text-2xl font-bold text-slate-900">Create an account</h2>
 
-                {/* Segmented control: role */}
-                <div role="tablist" aria-label="Account type" className="flex p-1 rounded-xl bg-neutral-100">
-                  {roles.map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      role="tab"
-                      aria-pressed={role_id === String(role.id)}
-                      onClick={() => setRole_id(String(role.id))}
-                      className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 ${
-                        role_id === String(role.id)
-                          ? "bg-neutral-900 text-white"
-                          : "text-neutral-600 hover:text-neutral-900"
-                      }`}
-                    >
-                      {role.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Freelancer categories (chips) */}
-                {role_id === "3" && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Categories (at least one)</label>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => handleCategoryToggle(cat.id)}
-                          className={`rounded-full border px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] ${
-                            selectedCategories.includes(cat.id)
-                              ? "bg-[#C2410C] text-white border-[#C2410C]"
-                              : "bg-neutral-100 text-slate-700 border-neutral-200 hover:border-[#C2410C]/50"
-                          }`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
+                {/* —— Step 1: Account —— */}
+                {step === 1 && (
+                  <div className="space-y-5 transition-opacity duration-200">
+                    <div>
+                      <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                      <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className={`${inputPill} ${stepErrors.username ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.username} aria-describedby={stepErrors.username ? "err-username" : undefined} />
+                      {stepErrors.username && <p id="err-username" className="text-xs text-red-600 mt-1">{stepErrors.username}</p>}
                     </div>
-                    {selectedCategories.length > 0 && <p className="text-xs text-neutral-500 mt-1">{selectedCategories.length} selected</p>}
+
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                      <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={`${inputPill} ${stepErrors.email ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.email} aria-describedby={stepErrors.email ? "err-email" : undefined} />
+                      {stepErrors.email && <p id="err-email" className="text-xs text-red-600 mt-1">{stepErrors.email}</p>}
+                    </div>
+
+                    <div>
+                      <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                      <div className="relative">
+                        <input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className={`${inputPill} pr-12 ${stepErrors.password ? "border-red-400 focus:ring-red-300" : ""}`}
+                          aria-invalid={!!stepErrors.password}
+                          aria-describedby={stepErrors.password ? "err-password" : "pwd-strength"}
+                        />
+                        <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#C2410C] focus:outline-none" aria-label={showPassword ? "Hide password" : "Show password"}>
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      <div id="pwd-strength" className="mt-1.5 flex items-center justify-between">
+                        <span className="text-xs text-neutral-500">Strength</span>
+                        <span className={`text-xs font-medium ${passwordStrengthInfo.color}`}>{passwordStrengthInfo.text}</span>
+                      </div>
+                      {stepErrors.password && <p id="err-password" className="text-xs text-red-600 mt-1">{stepErrors.password}</p>}
+                    </div>
+
+                    <div>
+                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
+                      <div className="relative">
+                        <input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className={`${inputPill} pr-12 ${stepErrors.confirmPassword ? "border-red-400 focus:ring-red-300" : ""}`}
+                          aria-invalid={!!stepErrors.confirmPassword}
+                          aria-describedby={stepErrors.confirmPassword ? "err-confirmPassword" : undefined}
+                        />
+                        <button type="button" onClick={() => setShowConfirmPassword((p) => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#C2410C] focus:outline-none" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {stepErrors.confirmPassword && <p id="err-confirmPassword" className="text-xs text-red-600 mt-1">{stepErrors.confirmPassword}</p>}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!username?.trim() || !email?.trim() || !password || password.length < 8 || password !== confirmPassword}
+                      className="w-full h-12 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:ring-offset-2"
+                    >
+                      Next
+                    </button>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="first_name" className="block text-sm font-medium text-slate-700 mb-1">First name</label>
-                    <input id="first_name" type="text" value={first_name} onChange={(e) => setFirst_name(e.target.value)} placeholder="First name" className={inputPill} required aria-required="true" />
+                {/* —— Step 2: Details —— */}
+                {step === 2 && (
+                  <div className="space-y-5 transition-opacity duration-200">
+                    {/* Segmented control: role */}
+                    <div>
+                      <span className="block text-sm font-medium text-slate-700 mb-2">Account type</span>
+                      <div role="tablist" aria-label="Account type" className="flex p-1 rounded-xl bg-neutral-100">
+                        {roles.map((role) => (
+                          <button
+                            key={role.id}
+                            type="button"
+                            role="tab"
+                            aria-pressed={role_id === String(role.id)}
+                            onClick={() => setRole_id(String(role.id))}
+                            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 ${
+                              role_id === String(role.id)
+                                ? "bg-neutral-900 text-white"
+                                : "text-neutral-600 hover:text-neutral-900"
+                            }`}
+                          >
+                            {role.label}
+                          </button>
+                        ))}
+                      </div>
+                      {stepErrors.role_id && <p className="text-xs text-red-600 mt-1">{stepErrors.role_id}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="first_name" className="block text-sm font-medium text-slate-700 mb-1">First name</label>
+                        <input id="first_name" type="text" value={first_name} onChange={(e) => setFirst_name(e.target.value)} placeholder="First name" className={`${inputPill} ${stepErrors.first_name ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.first_name} />
+                        {stepErrors.first_name && <p className="text-xs text-red-600 mt-1">{stepErrors.first_name}</p>}
+                      </div>
+                      <div>
+                        <label htmlFor="last_name" className="block text-sm font-medium text-slate-700 mb-1">Last name</label>
+                        <input id="last_name" type="text" value={last_name} onChange={(e) => setLast_name(e.target.value)} placeholder="Last name" className={`${inputPill} ${stepErrors.last_name ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.last_name} />
+                        {stepErrors.last_name && <p className="text-xs text-red-600 mt-1">{stepErrors.last_name}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+                      <select id="country" value={country} onChange={(e) => setCountry(e.target.value)} className={`${inputPill} ${stepErrors.country ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.country}>
+                        <option value="">Select country</option>
+                        {countries.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      {stepErrors.country && <p className="text-xs text-red-600 mt-1">{stepErrors.country}</p>}
+                    </div>
+
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">Phone number</label>
+                      <input id="phone" type="tel" value={phone_number} onChange={(e) => setPhone_number(e.target.value)} placeholder="+1234567890" className={`${inputPill} ${stepErrors.phone_number ? "border-red-400 focus:ring-red-300" : ""}`} aria-invalid={!!stepErrors.phone_number} />
+                      {stepErrors.phone_number && <p className="text-xs text-red-600 mt-1">{stepErrors.phone_number}</p>}
+                    </div>
+
+                    {/* Freelancer categories (chips) */}
+                    {role_id === "3" && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Categories (at least one)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map((cat) => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => handleCategoryToggle(cat.id)}
+                              className={`rounded-full border px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] ${
+                                selectedCategories.includes(cat.id)
+                                  ? "bg-[#C2410C] text-white border-[#C2410C]"
+                                  : "bg-neutral-100 text-slate-700 border-neutral-200 hover:border-[#C2410C]/50"
+                              }`}
+                            >
+                              {cat.name}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-1">{selectedCategories.length} selected</p>
+                        {stepErrors.categories && <p className="text-xs text-red-600 mt-1">{stepErrors.categories}</p>}
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-3">
+                      <input
+                        id="acceptTerms"
+                        type="checkbox"
+                        checked={acceptTerms}
+                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                        className={`h-4 w-4 rounded border-neutral-300 text-[#C2410C] focus:ring-[#C2410C] mt-0.5 ${stepErrors.acceptTerms ? "border-red-400" : ""}`}
+                        aria-invalid={!!stepErrors.acceptTerms}
+                        aria-describedby="terms-desc"
+                      />
+                      <label id="terms-desc" htmlFor="acceptTerms" className="text-sm text-slate-700">
+                        I agree to the <a href="#" className="text-[#C2410C] hover:underline">Terms and Conditions</a> and <a href="#" className="text-[#C2410C] hover:underline">Privacy Policy</a>.
+                      </label>
+                    </div>
+                    {stepErrors.acceptTerms && <p className="text-xs text-red-600 -mt-2">{stepErrors.acceptTerms}</p>}
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setStep(1); setStepErrors({}); }}
+                        className="flex-1 h-12 rounded-xl border-2 border-neutral-300 text-slate-700 font-medium hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:ring-offset-2 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex-1 h-12 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:ring-offset-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Creating account...
+                          </>
+                        ) : (
+                          "Create account"
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="last_name" className="block text-sm font-medium text-slate-700 mb-1">Last name</label>
-                    <input id="last_name" type="text" value={last_name} onChange={(e) => setLast_name(e.target.value)} placeholder="Last name" className={inputPill} required aria-required="true" />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">Username</label>
-                  <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className={inputPill} required aria-required="true" />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputPill} required aria-required="true" />
-                </div>
-
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-1">Country</label>
-                  <select id="country" value={country} onChange={(e) => setCountry(e.target.value)} className={inputPill} required aria-required="true">
-                    <option value="">Select country</option>
-                    {countries.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">Phone number</label>
-                  <input id="phone" type="tel" value={phone_number} onChange={(e) => setPhone_number(e.target.value)} placeholder="+1234567890" className={inputPill} required aria-required="true" />
-                </div>
-
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={`${inputPill} pr-12`}
-                      required
-                      aria-required="true"
-                    />
-                    <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#C2410C] focus:outline-none" aria-label={showPassword ? "Hide password" : "Show password"}>
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">Strength</span>
-                    <span className={`text-xs font-medium ${passwordStrengthInfo.color}`}>{passwordStrengthInfo.text}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <input
-                    id="acceptTerms"
-                    type="checkbox"
-                    checked={acceptTerms}
-                    onChange={(e) => setAcceptTerms(e.target.checked)}
-                    className="h-4 w-4 rounded border-neutral-300 text-[#C2410C] focus:ring-[#C2410C] mt-0.5"
-                    aria-describedby="terms-desc"
-                  />
-                  <label id="terms-desc" htmlFor="acceptTerms" className="text-sm text-slate-700">
-                    I agree to the <a href="#" className="text-[#C2410C] hover:underline">Terms and Conditions</a> and <a href="#" className="text-[#C2410C] hover:underline">Privacy Policy</a>.
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-12 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:ring-offset-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create account"
-                  )}
-                </button>
+                )}
               </form>
-            )}
-
-            {/* Footer: Log in link */}
-            <p className="mt-6 text-center text-sm text-neutral-600">
-              Already have an account?{" "}
-              <a href="/login" className="font-medium text-[#C2410C] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 rounded">
-                Log in
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </AuthSplitLayout>
+    </>
   );
 };
 
