@@ -19,8 +19,9 @@ import {
   Shield,
   KeyRound,
 } from "lucide-react";
-import GradientButton from "../buttons/GradientButton.jsx";
 import PageMeta from "../PageMeta.jsx";
+import AuthSplitLayout from "../auth/AuthSplitLayout.jsx";
+import { useAuthTransition } from "../auth/useAuthTransition.js";
 
 /** غيّر إلى true عند تفعيل تسجيل الدخول بـ Google */
 const ENABLE_GOOGLE_LOGIN = false;
@@ -78,10 +79,14 @@ const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
   navigate(path, { replace: true });
 };
 
+const inputPill =
+  "w-full h-12 rounded-xl bg-neutral-100 border border-transparent px-4 text-sm outline-none focus:ring-2 focus:ring-[#C2410C]/25 focus:border-[#C2410C]/30 placeholder:text-neutral-400 transition-colors";
+
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const toast = useToast();
+  const { containerClass, go } = useAuthTransition();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -273,240 +278,186 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <>
       <PageMeta title="Log in – OrderzHouse" description="Log in to your OrderzHouse account to manage projects and connect with freelancers." />
-      {/* <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
-          <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" /> */}
-      {/* ✅ Orange theme glows */}
-      {/* <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-orange-500/8 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-amber-300/10 blur-3xl" />
-      </div> */}
-
-      <div className="flex min-h-screen items-center justify-center pt-32 p-4 lg:px-8">
-        <div className="w-full max-w-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              Welcome back
-            </h1>
-            <p className="text-slate-500 mt-2 text-sm">
-              Sign in to continue to{" "}
-              <span className="font-semibold text-orange-600">ORDERZHOUSE</span>
+      <AuthSplitLayout
+        cardClassName={containerClass}
+        title="Welcome back"
+        subtitle="Sign in to continue to ORDERZHOUSE"
+        footer={
+          !isOtpStep ? (
+            <p className="text-center text-sm text-neutral-600">
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => go("/register")}
+                className="font-medium text-[#C2410C] hover:underline inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 rounded"
+              >
+                Sign up now <ArrowRight className="ml-1 h-4 w-4" />
+              </button>
             </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200/70 bg-white/90 backdrop-blur p-8 sm:p-10 shadow-sm">
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white">
-                {isOtpStep ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
-                <span className="text-sm">
-                  {isOtpStep ? "Verify Your Identity" : "Sign in"}
-                </span>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* فورم الإيميل + الباسورد */}
-              {!isOtpStep && (
-                <>
-                  <div>
-                    <label htmlFor="email" className="block text-sm text-slate-700 mb-1.5">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        id="email"
-                        placeholder="info@battechno.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={isLoading}
-                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label htmlFor="password" className="block text-sm text-slate-700">
-                        Password
-                      </label>
-                      <Link
-                        to="/forgot-password"
-                        className="text-sm text-orange-600 hover:text-orange-700 hover:underline font-medium"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <div className="relative">
-                      <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        id="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-orange-600"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* فورم الكود (OTP أو 2FA APP) */}
-              {isOtpStep && (
-                <div className="animate-fadeIn">
-                  <label htmlFor="otp" className="block text-sm text-slate-700 mb-1.5">
-                    {otpMode === "app" ? "Authenticator Code" : "Verification Code"}
-                  </label>
-                  <div className="relative">
-                    <Shield className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      id="otp"
-                      placeholder="6-digit code"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      maxLength={6}
-                      required
-                      autoFocus
-                      disabled={isLoading}
-                      className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 text-center tracking-widest"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2 text-center">
-                    {otpMode === "app"
-                      ? "Open your authenticator app and enter the 6-digit code."
-                      : "Enter the 6-digit code sent to your email."}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center">
-                {/* ✅ حاولت أعطي GradientButton ثيم برتقالي بدون ما أغير منطقها */}
-                <GradientButton
-                  type="submit"
-                  disabled={isLoading}
-                  className="from-orange-400 via-orange-500 to-red-500"
-                >
-                  <div className="relative z-10 flex items-center px-12">
-                    {isLoading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        {isOtpStep ? "Verifying..." : "Signing in..."}
-                      </>
-                    ) : (
-                      <>
-                        {isOtpStep ? <KeyRound className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
-                        {isOtpStep ? "Verify & Sign In" : "Sign in"}
-                      </>
-                    )}
-                  </div>
-                </GradientButton>
-              </div>
-
-              {!isOtpStep && ENABLE_GOOGLE_LOGIN && (
-                <>
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-slate-500 text-sm">Or continue with</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      theme="filled_blue"
-                      size="large"
-                      shape="pill"
-                      text="signin_with"
-                    />
-                  </div>
-                </>
-              )}
-
-              {isOtpStep && (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={resetToLogin}
-                    disabled={isLoading}
-                    className="text-orange-600 hover:underline font-medium text-sm"
-                  >
-                    ← Back to login
-                  </button>
-                </div>
-              )}
-            </form>
-
-            {!isOtpStep && (
-              <div className="mt-8 text-center pt-5 border-t border-slate-200">
-                <p className="text-sm text-slate-600">
-                  Don&apos;t have an account?{" "}
-                  <a
-                    href="/register"
-                    className="font-medium text-orange-600 inline-flex items-center hover:underline"
-                  >
-                    Sign up now <ArrowRight className="ml-1 h-4 w-4" />
-                  </a>
-                </p>
-              </div>
-            )}
+          ) : null
+        }
+      >
+        <div className="mb-6 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-200 text-slate-600 bg-neutral-50">
+            {isOtpStep ? <Shield className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+            <span className="text-sm">{isOtpStep ? "Verify Your Identity" : "Sign in"}</span>
           </div>
         </div>
-      </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {!isOtpStep && (
+            <>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" aria-hidden />
+                  <input
+                    type="email"
+                    id="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className={`${inputPill} pl-11`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
+                  <Link to="/forgot-password" className="text-sm text-[#C2410C] hover:underline font-medium">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" aria-hidden />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className={`${inputPill} pl-11 pr-12`}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#C2410C] focus:outline-none"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {isOtpStep && (
+            <div className="animate-fadeIn space-y-5">
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-slate-700 mb-1">
+                  {otpMode === "app" ? "Authenticator Code" : "Verification Code"}
+                </label>
+                <div className="relative">
+                  <Shield className="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" aria-hidden />
+                  <input
+                    type="text"
+                    id="otp"
+                    placeholder="6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                    required
+                    autoFocus
+                    disabled={isLoading}
+                    className={`${inputPill} pl-11 text-center tracking-widest`}
+                  />
+                </div>
+                <p className="text-xs text-neutral-500 mt-2 text-center">
+                  {otpMode === "app"
+                    ? "Open your authenticator app and enter the 6-digit code."
+                    : "Enter the 6-digit code sent to your email."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-center pt-1">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-12 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:ring-offset-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {isOtpStep ? "Verifying..." : "Signing in..."}
+                </>
+              ) : (
+                <>
+                  {isOtpStep ? <KeyRound className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                  {isOtpStep ? "Verify & Sign In" : "Sign in"}
+                </>
+              )}
+            </button>
+          </div>
+
+          {!isOtpStep && ENABLE_GOOGLE_LOGIN && (
+            <>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-neutral-200" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-2 bg-white text-neutral-500 text-sm">Or continue with</span>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  theme="filled_blue"
+                  size="large"
+                  shape="pill"
+                  text="signin_with"
+                />
+              </div>
+            </>
+          )}
+
+          {isOtpStep && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={resetToLogin}
+                disabled={isLoading}
+                className="text-[#C2410C] hover:underline font-medium text-sm"
+              >
+                ← Back to login
+              </button>
+            </div>
+          )}
+        </form>
+      </AuthSplitLayout>
 
       <style>{`
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.25s ease-out;
-        }
+        .animate-fadeIn { animation: fadeIn 0.25s ease-out; }
       `}</style>
-    </div>
+    </>
   );
 };
 
