@@ -63,10 +63,12 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/learning/categories")) return "categories";
     if (p.startsWith("/operation/verifications")) return "verifications";
     if (p.startsWith("/operation/projects")) return "projects";
+    if (p.startsWith("/operation/pending-approvals")) return "pending-approvals";
     // if (p.startsWith("/operation/tasks")) return "tasks";
     if (p.startsWith("/community/blogs")) return "blogs";
     if (p.startsWith("/finance/payments")) return "payments";
     if (p.startsWith("/finance/plans")) return "plans";
+    if (p.startsWith("/subscriptions")) return "subscriptions";
     if (p.startsWith("/analytics")) return "analytics";
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
@@ -157,6 +159,12 @@ function getNav(role, navigate, base, onLogout, userData = null) {
         icon: Clipboard,
         onClick: () => navigate(`${base}/operation/projects`),
       },
+      {
+        id: "pending-approvals",
+        name: "Pending Approvals",
+        icon: Clipboard,
+        onClick: () => navigate(`${base}/operation/pending-approvals`),
+      },
       // { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
       {
         id: "blogs",
@@ -175,6 +183,12 @@ function getNav(role, navigate, base, onLogout, userData = null) {
         name: "Plans",
         icon: DollarSign,
         onClick: () => navigate(`${base}/finance/plans`),
+      },
+      {
+        id: "subscriptions",
+        name: "Subscriptions",
+        icon: CreditCard,
+        onClick: () => navigate(`${base}/finance/subscriptions`),
       },
       {
         id: "analytics",
@@ -473,7 +487,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-[100dvh] md:min-h-screen flex bg-slate-50 text-slate-800">
+    <div className="min-h-screen flex bg-gray-50 text-slate-800">
       <Sidebar
         activePage={activePage}
         setActivePage={(id) => {
@@ -495,7 +509,7 @@ export default function AdminLayout() {
       />
 
       <main
-        className="flex-1 relative"
+        className="flex-1"
         style={{ backgroundColor: "#f8fafc" }}
       >
         <TopBar
@@ -503,7 +517,7 @@ export default function AdminLayout() {
           onToggleSidebar={handleToggleSidebar}
           rightContent={topBarRight}
         />
-        <div className="p-3 md:p-5  ">
+        <div className="p-3 md:p-5">
           <Outlet
             context={{
               setTopBarRight,

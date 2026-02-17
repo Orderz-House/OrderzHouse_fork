@@ -12,21 +12,28 @@ import pool from "../models/db.js";
 export const activateSubscriptionOnFirstAcceptance = async (freelancerId, client, excludeAssignmentId = null) => {
   try {
     // 1. Check if freelancer has a pending_start subscription
+    // Guard: Only activate if start_date is NULL (not already activated)
     const { rows: subscriptionRows } = await client.query(
-      `SELECT id, plan_id, status
+      `SELECT id, plan_id, status, start_date
        FROM subscriptions
        WHERE freelancer_id = $1
          AND status = 'pending_start'
-       ORDER BY created_at DESC
+         AND start_date IS NULL
+       ORDER BY id DESC
        LIMIT 1`,
       [freelancerId]
     );
 
     if (subscriptionRows.length === 0) {
-      return { activated: false, reason: "No pending_start subscription found" };
+      return { activated: false, reason: "No pending_start subscription found or already activated" };
     }
 
     const subscription = subscriptionRows[0];
+
+    // Guard: If start_date already exists, do not override
+    if (subscription.start_date) {
+      return { activated: false, reason: "Subscription already has start_date" };
+    }
 
     // 2. Check if this is the freelancer's FIRST EVER acceptance
     // Look for any historical acceptance (status = 'active' indicates accepted assignment)
@@ -84,26 +91,29 @@ export const activateSubscriptionOnFirstAcceptance = async (freelancerId, client
       return { activated: false, reason: "Invalid plan duration" };
     }
 
-    // 4. Calculate end_date based on plan_type
-    // Build interval string for PostgreSQL
+    // 4. Calculate end_date based on plan_type using SQL interval
+    // Use PostgreSQL interval calculation to avoid timezone/month-length bugs
     const intervalUnit = planType === 'yearly' ? 'years' : 'months';
     const intervalString = `${duration} ${intervalUnit}`;
 
-    // 5. Activate subscription: update status, dates, and activated_at
+    // 5. Activate subscription: update status, dates
+    // Use NOW() for start_date (timestamp) and calculate end_date using SQL interval
+    // Example: NOW() + (1 || ' months')::interval for 1 month plan
+    // Example: NOW() + (1 || ' years')::interval for 1 year plan
     const { rows: updatedRows } = await client.query(
       `UPDATE subscriptions
        SET status = 'active',
-           start_date = CURRENT_DATE,
-           end_date = CURRENT_DATE + ($2::text || ' ' || $3::text)::interval,
-           activated_at = NOW(),
+           start_date = NOW(),
+           end_date = NOW() + ($2::text || ' ' || $3::text)::interval,
            updated_at = NOW()
        WHERE id = $1
-       RETURNING id, status, start_date, end_date, activated_at`,
+         AND start_date IS NULL
+       RETURNING id, status, start_date, end_date`,
       [subscription.id, duration.toString(), intervalUnit]
     );
 
     if (updatedRows.length === 0) {
-      return { activated: false, reason: "Failed to update subscription" };
+      return { activated: false, reason: "Failed to update subscription (may have been activated concurrently)" };
     }
 
     return {

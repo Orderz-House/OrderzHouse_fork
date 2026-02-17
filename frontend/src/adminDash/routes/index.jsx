@@ -12,6 +12,7 @@ import SubSubCategories from "../pages/learning/SubSubCategories.jsx";
 import Verifications from "../pages/operation/Verifications.jsx";
 
 import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
+import AdminPendingProjects from "../pages/operation/Projects/AdminPendingProjects.jsx";
 import ClientsProjects from "../pages/operation/Projects/ClientsProjects.jsx";
 import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
 import ProjectDetails from "../pages/operation/Projects/ProjectDetailsDash.jsx";
@@ -19,6 +20,7 @@ import ProjectDetails from "../pages/operation/Projects/ProjectDetailsDash.jsx";
 import Blogs from "../pages/community/Blogs.jsx";
 import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
+import AdminSubscriptions from "../pages/finance/AdminSubscriptions.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
 // import Tasks from "../pages/operation/Tasks.jsx";
 import Profile from "../pages/Profile.jsx";
@@ -72,6 +74,7 @@ export default function AdminRouter() {
         <Route path="operation/verifications" element={<Verifications />} />
 
         <Route path="operation/projects" element={<AdminProjects />} />
+        <Route path="operation/pending-approvals" element={<AdminPendingProjects />} />
         <Route path="operation/projects/:projectId" element={<ProjectDetails />} />
         <Route path="project/:projectId" element={<ProjectDetails />} />
 
@@ -79,6 +82,7 @@ export default function AdminRouter() {
         <Route path="community/blogs" element={<Blogs />} />
         <Route path="finance/payments" element={<Payments />} />
         <Route path="finance/plans" element={<Plans />} />
+        <Route path="finance/subscriptions" element={<AdminSubscriptions />} />
         <Route path="analytics" element={<Analytics />} />
 
         {/* Profile & Settings */}

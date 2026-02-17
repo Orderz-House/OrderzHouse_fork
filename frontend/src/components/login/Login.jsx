@@ -26,7 +26,7 @@ import { useAuthTransition } from "../auth/useAuthTransition.js";
 /** غيّر إلى true عند تفعيل تسجيل الدخول بـ Google */
 const ENABLE_GOOGLE_LOGIN = false;
 
-const getDashboardPath = (roleId) => {
+export const getDashboardPath = (roleId) => {
   switch (Number(roleId)) {
     case 1: return "/admin/dashboard";
     case 2: return "/client/dashboard";
@@ -37,7 +37,7 @@ const getDashboardPath = (roleId) => {
   }
 };
 
-const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
+export const applyLoginSuccess = async (dispatch, data, navigate, connectSocket) => {
   const token = data.token;
   let decoded;
   try {

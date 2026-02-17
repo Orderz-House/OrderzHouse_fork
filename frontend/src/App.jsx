@@ -51,6 +51,7 @@ import CopywritingTest from "./components/CopywritingTest";
 // import ChatPage from "./components/Chat/ChatPage";
 import PaymentSuccess from "./components/success/PaymentSuccess";
 import PaymentCancel from "./components/success/PaymentCancel";
+import ProjectSuccess from "./pages/projects/ProjectSuccess";
 import FreelancerContractTerms from "./components/Freelancer/FreelancerContractTerms.jsx";
 import FreelancerContractSignup from "./components/Freelancer/FreelancerContractSignup.jsx";
 import NotFound from "./components/NotFound.jsx";
@@ -100,6 +101,12 @@ function App() {
 
   const hideNavbarRoutes = ["/account/suspended"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
+  
+  // Hide footer for admin dashboard routes
+  const isAdminRoute = location.pathname.startsWith("/admin") || 
+                       location.pathname.startsWith("/client") || 
+                       location.pathname.startsWith("/freelancer") || 
+                       location.pathname.startsWith("/partner");
 
   useEffect(() => {
     dispatch(hydrateFromStorage());
@@ -361,6 +368,7 @@ function App() {
         {/* مسارات الدفع ثابتة قبل المسار الديناميكي حتى لا يُفسَّر payment-cancel كـ id */}
         <Route path="/projects/payment-success" element={<PaymentSuccess />} />
         <Route path="/projects/payment-cancel" element={<PaymentCancel />} />
+        <Route path="/projects/success/:id" element={<ProjectSuccess />} />
         <Route
           path="/projects/:id"
           element={
@@ -389,7 +397,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {!shouldHideNavbar && <EnhancedFooter />}
+      {!shouldHideNavbar && !isAdminRoute && <EnhancedFooter />}
       <ToastContainer
         position="top-right"
         autoClose={5000}

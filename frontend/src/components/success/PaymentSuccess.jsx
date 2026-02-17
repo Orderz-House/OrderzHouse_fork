@@ -73,10 +73,15 @@ export default function PaymentSuccess() {
 
         // 🔹 PROJECT PAYMENT
         if (purpose === "project") {
-          toast.success(
-            "Payment completed successfully. Your project is waiting for admin approval."
-          );
-          navigate("/client", { replace: true });
+          const projectId = res.data?.project_id;
+          if (projectId) {
+            navigate(`/projects/success/${projectId}?lang=en`, { replace: true });
+          } else {
+            toast.success(
+              "Payment completed successfully. Your project is waiting for admin approval."
+            );
+            navigate("/client", { replace: true });
+          }
           return;
         }
 

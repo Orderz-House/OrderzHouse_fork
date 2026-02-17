@@ -35,6 +35,10 @@ export const uploadToCloudinary = (buffer, folder = "project_files") => {
 export const createProject = async (req, res) => {
   const client = await pool.connect();
   try {
+    // Debug: Log files and body
+    console.log("[createProject] req.files:", req.files);
+    console.log("[createProject] req.body:", req.body);
+    
     const userId = req.token?.userId;
     
     // Check if user is client (role_id = 2) and get can_post_without_payment
@@ -186,15 +190,19 @@ export const createProject = async (req, res) => {
     }
 
     // ------------ Step 1: Insert project ------------
+    // Set payment_method for skip-payment users
+    const paymentMethod = canPostWithoutPayment ? 'skipped' : null;
+    
     const insertQuery = `
       INSERT INTO projects (
         user_id, category_id, sub_category_id, sub_sub_category_id,
         title, description, budget, duration_days, duration_hours,
         project_type, budget_min, budget_max, hourly_rate,
-        preferred_skills, status, completion_status, is_deleted
+        preferred_skills, status, completion_status, is_deleted,
+        payment_method, admin_approval_status
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,
-        $10,$11,$12,$13,$14,$15,'not_started',false
+        $10,$11,$12,$13,$14,$15,'not_started',false,$16,$17
       ) RETURNING *;
     `;
 
@@ -214,6 +222,8 @@ export const createProject = async (req, res) => {
       normalizedHourlyRate,
       preferred_skills || [],
       projectStatus,
+      paymentMethod,
+      'none' // admin_approval_status: 'none' for normal flows
     ]);
 
     let project = rows[0];
@@ -1327,14 +1337,30 @@ export const addProjectFiles = async (req, res) => {
   const { projectId } = req.params;
   const userId = req.token?.userId;
 
+  // Debug: Log request details
+  console.log("[addProjectFiles] req.files:", req.files);
+  console.log("[addProjectFiles] req.body:", req.body);
+  console.log("[addProjectFiles] projectId:", projectId);
+
   if (!userId)
     return res
       .status(401)
       .json({ success: false, message: "Unauthorized" });
-  if (!req.files || req.files.length === 0)
+
+  // Validate projectId
+  const projectIdNum = Number(projectId);
+  if (!Number.isInteger(projectIdNum) || projectIdNum <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid project ID",
+    });
+  }
+
+  if (!req.files || req.files.length === 0) {
     return res
       .status(400)
       .json({ success: false, message: "No files uploaded" });
+  }
 
   try {
     const uploadedFiles = [];
@@ -1579,7 +1605,7 @@ export const getAllFreelancers = async (req, res) => {
   try {
     const { rows: freelancers } = await pool.query(
       `
-      SELECT id, username, email, first_name, last_name, profile_pic
+      SELECT id, username, email, first_name, last_name
       FROM users
       WHERE role_id = 3
         AND is_deleted = false
@@ -2109,5 +2135,448 @@ export const requestProjectChanges = async (req, res) => {
   } catch (err) {
     console.error("requestProjectChanges error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/* ======================================================================
+   OFFLINE PAYMENT (CliQ/Cash)
+====================================================================== */
+export const createOfflinePayment = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const userId = req.token.userId;
+    const projectId = parseInt(req.params.projectId, 10);
+    const { method } = req.body;
+
+    if (!method || !["cliq", "cash"].includes(method.toLowerCase())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method. Must be 'cliq' or 'cash'",
+      });
+    }
+
+    // Verify project exists and belongs to user
+    const projectCheck = await client.query(
+      `SELECT id, user_id, project_type, status, payment_method, admin_approval_status
+       FROM projects 
+       WHERE id = $1 AND user_id = $2 AND is_deleted = false`,
+      [projectId, userId]
+    );
+
+    if (projectCheck.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Project not found or you don't have permission",
+      });
+    }
+
+    const project = projectCheck.rows[0];
+
+    // Only allow for fixed/hourly projects (bidding doesn't need payment)
+    if (project.project_type === "bidding") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Bidding projects do not require payment",
+      });
+    }
+
+    // Check if already has payment method set
+    if (project.payment_method && project.payment_method !== "skipped") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Project already has a payment method assigned",
+      });
+    }
+
+    const paymentMethod = method.toLowerCase();
+
+    // Update project with offline payment method and pending approval
+    await client.query(
+      `UPDATE projects 
+       SET payment_method = $1,
+           admin_approval_status = 'pending',
+           status = 'pending_admin_approval'
+       WHERE id = $2`,
+      [paymentMethod, projectId]
+    );
+
+    await client.query("COMMIT");
+
+    // Get payment instructions from env vars
+    const cliqNumber = process.env.CLIQ_NUMBER || "0790000000";
+    const cashInstructions = process.env.CASH_INSTRUCTIONS || "Please contact admin for cash payment instructions.";
+
+    const instructions = paymentMethod === "cliq"
+      ? `Please send payment via CliQ to: ${cliqNumber}. Your project will be activated after admin approval.`
+      : cashInstructions;
+
+    return res.json({
+      success: true,
+      message: "Offline payment method set. Waiting for admin approval.",
+      payment_method: paymentMethod,
+      instructions,
+      project_id: projectId,
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("createOfflinePayment error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to set offline payment method",
+      error: err.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/* ======================================================================
+   ADMIN: APPROVE OFFLINE PAYMENT
+====================================================================== */
+export const adminApproveOfflinePayment = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const adminId = req.token.userId;
+    const adminRole = req.token.role || req.token.roleId;
+
+    // Check if user is admin (role_id = 1)
+    if (Number(adminRole) !== 1) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can approve offline payments",
+      });
+    }
+
+    // Handle both :id and :projectId route parameters
+    const projectIdParam = req.params.id || req.params.projectId;
+    const projectId = Number(projectIdParam);
+    
+    console.log("admin approve projectId param:", projectIdParam);
+    
+    // Validate projectId
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project id",
+      });
+    }
+
+    // Verify project exists and is pending approval
+    const projectCheck = await client.query(
+      `SELECT id, user_id, payment_method, admin_approval_status, status
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (projectCheck.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const project = projectCheck.rows[0];
+
+    if (project.admin_approval_status !== "pending") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: `Project is not pending approval. Current status: ${project.admin_approval_status}`,
+      });
+    }
+
+    // Approve: set status to approved and activate project
+    await client.query(
+      `UPDATE projects 
+       SET admin_approval_status = 'approved',
+           admin_approved_at = NOW(),
+           status = 'active'
+       WHERE id = $1`,
+      [projectId]
+    );
+
+    // Fetch updated project to return
+    const { rows: updatedProject } = await client.query(
+      `SELECT p.*, u.first_name || ' ' || u.last_name AS client_name
+       FROM projects p
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE p.id = $1`,
+      [projectId]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      success: true,
+      message: "Offline payment approved. Project is now active.",
+      project: updatedProject[0],
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("adminApproveOfflinePayment error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to approve offline payment",
+      error: err.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/* ======================================================================
+   ADMIN: REJECT OFFLINE PAYMENT
+====================================================================== */
+export const adminRejectOfflinePayment = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const adminId = req.token.userId;
+    const adminRole = req.token.role || req.token.roleId;
+
+    // Check if user is admin (role_id = 1)
+    if (Number(adminRole) !== 1) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can reject offline payments",
+      });
+    }
+
+    // Handle both :id and :projectId route parameters
+    const projectIdParam = req.params.id || req.params.projectId;
+    const projectId = Number(projectIdParam);
+    
+    console.log("admin reject projectId param:", projectIdParam);
+    
+    // Validate projectId
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project id",
+      });
+    }
+
+    const { reason } = req.body;
+
+    // Verify project exists and is pending approval
+    const projectCheck = await client.query(
+      `SELECT id, user_id, payment_method, admin_approval_status, status
+       FROM projects 
+       WHERE id = $1 AND is_deleted = false`,
+      [projectId]
+    );
+
+    if (projectCheck.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const project = projectCheck.rows[0];
+
+    if (project.admin_approval_status !== "pending") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: `Project is not pending approval. Current status: ${project.admin_approval_status}`,
+      });
+    }
+
+    // Reject: set status to rejected and keep project hidden
+    await client.query(
+      `UPDATE projects 
+       SET admin_approval_status = 'rejected',
+           admin_rejected_at = NOW(),
+           admin_decision_reason = $1,
+           status = 'cancelled'
+       WHERE id = $2`,
+      [reason || "Payment verification failed", projectId]
+    );
+
+    // Fetch updated project to return
+    const { rows: updatedProject } = await client.query(
+      `SELECT p.*, u.first_name || ' ' || u.last_name AS client_name
+       FROM projects p
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE p.id = $1`,
+      [projectId]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      success: true,
+      message: "Offline payment rejected. Project remains hidden.",
+      project: updatedProject[0],
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("adminRejectOfflinePayment error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reject offline payment",
+      error: err.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/* ======================================================================
+   ADMIN: GET PENDING APPROVAL PROJECTS
+====================================================================== */
+export const getPendingApprovalProjects = async (req, res) => {
+  try {
+    const adminRole = req.token.role || req.token.roleId;
+
+    // Check if user is admin (role_id = 1)
+    if (Number(adminRole) !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can view pending approval projects",
+      });
+    }
+
+    const { rows: projects } = await pool.query(
+      `SELECT 
+        p.*,
+        u.id AS client_id,
+        u.first_name || ' ' || u.last_name AS client_name,
+        u.email AS client_email,
+        c.name AS category_name,
+        ssc.name AS sub_sub_category_name
+       FROM projects p
+       LEFT JOIN users u ON p.user_id = u.id
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN sub_sub_categories ssc ON ssc.id = p.sub_sub_category_id
+       WHERE p.is_deleted = false
+         AND p.admin_approval_status = 'pending'
+       ORDER BY p.created_at DESC`
+    );
+
+    // Fetch project files for each project
+    const projectsWithFiles = await Promise.all(
+      projects.map(async (project) => {
+        try {
+          const { rows: files } = await pool.query(
+            `SELECT id, file_url, file_name, sent_at as uploaded_at
+             FROM project_files
+             WHERE project_id = $1
+             ORDER BY sent_at ASC, id ASC`,
+            [project.id]
+          );
+          return {
+            ...project,
+            attachments: files.map((f) => ({
+              url: f.file_url,
+              name: f.file_name || f.file_url?.split('/').pop() || 'File',
+              id: f.id,
+              uploaded_at: f.uploaded_at,
+            })),
+          };
+        } catch (fileError) {
+          console.error(`Error fetching files for project ${project.id}:`, fileError);
+          return {
+            ...project,
+            attachments: [],
+          };
+        }
+      })
+    );
+
+    return res.json({
+      success: true,
+      count: projectsWithFiles.length,
+      projects: projectsWithFiles,
+    });
+  } catch (err) {
+    console.error("getPendingApprovalProjects error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pending approval projects",
+      error: err.message,
+    });
+  }
+};
+
+/* ======================================================================
+   GET PROJECT FOR SUCCESS PAGE
+====================================================================== */
+export const getProjectSuccess = async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.id, 10);
+    const userId = req.token.userId;
+    const userRole = req.token.role || req.token.roleId;
+
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project id",
+      });
+    }
+
+    // Check if user is admin (role_id = 1) or owner
+    const { rows: projectRows } = await pool.query(
+      `SELECT 
+        p.id, p.title, p.description, p.budget, p.budget_min, p.budget_max, 
+        p.project_type, p.duration_days, p.duration_hours, p.preferred_skills,
+        p.payment_method, p.admin_approval_status, p.created_at, p.user_id,
+        c.name AS category_name,
+        ssc.name AS sub_sub_category_name
+       FROM projects p
+       LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN sub_sub_categories ssc ON ssc.id = p.sub_sub_category_id
+       WHERE p.id = $1 AND p.is_deleted = false`,
+      [projectId]
+    );
+
+    if (projectRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const project = projectRows[0];
+
+    // Check access: owner or admin
+    const isAdmin = Number(userRole) === 1;
+    const isOwner = project.user_id === userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to view this project",
+      });
+    }
+
+    return res.json({
+      success: true,
+      project,
+    });
+  } catch (err) {
+    console.error("getProjectSuccess error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch project details",
+      error: err.message,
+    });
   }
 };

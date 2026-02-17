@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import API from "../../api/client.js";
+import { useDispatch } from "react-redux";
+import API, { startProactiveRefresh } from "../../api/client.js";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import arabCountries from "../../data/arabCountries.json";
 import { Mail, Lock, Eye, EyeOff, Phone, MapPin, KeyRound } from "lucide-react";
 import PageMeta from "../PageMeta.jsx";
 import { useToast } from "../toast/ToastProvider";
-import AuthSplitLayout from "../auth/AuthSplitLayout.jsx";
-import { useAuthTransition } from "../auth/useAuthTransition.js";
 
 const roles = [
   { id: 2, label: "Customer" },
@@ -15,6 +14,7 @@ const roles = [
 ];
 
 const Register = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
@@ -75,30 +75,7 @@ const Register = () => {
     setCountries(arabCountries.sort((a, b) => a.localeCompare(b)));
   }, []);
 
-  // Check URL params for email verification flow (from login redirect)
-  useEffect(() => {
-    const emailParam = searchParams.get("email");
-    const verifyParam = searchParams.get("verify");
-    
-    if (emailParam && verifyParam === "true") {
-      // User came from login page - show OTP field directly
-      setEmail(emailParam);
-      setShowOtpField(true);
-      // Auto-send OTP only once per session (not on every refresh)
-      const storageKey = `otp_auto_sent_${emailParam}`;
-      if (!sessionStorage.getItem(storageKey)) {
-        sessionStorage.setItem(storageKey, "1");
-        API.post("/users/resend-email-otp", { email: emailParam })
-          .then(() => {
-            startResendCooldown();
-          })
-          .catch((err) => {
-            sessionStorage.removeItem(storageKey);
-            toast.error(err.response?.data?.message || "Failed to resend OTP. Please try again.");
-          });
-      }
-    }
-  }, [searchParams]);
+  // Note: Removed old email verification URL param handling (legacy flow)
 
   // Restore resend cooldown after refresh (persist 30s across page reload)
   useEffect(() => {
@@ -277,75 +254,110 @@ const Register = () => {
     if (step === 2 && validateStep2()) register(e);
   };
 
-  // =============== REGISTER =============== //
-  const register = (e) => {
+  // =============== REQUEST SIGNUP OTP (Step 1) =============== //
+  const register = async (e) => {
     e?.preventDefault();
-    setIsLoading(true);
-
-    const userData = {
-      role_id: parseInt(role_id),
-      first_name,
-      last_name,
-      email,
-      password,
-      phone_number,
-      country,
-      username,
-      profile_pic_url,
-    };
-    if (role_id === "3") userData.category_ids = selectedCategories;
-
-    API
-      .post("/users/register", userData)
-      .then((result) => {
-        toast.success(
-          result.data.message ||
-            "User registered successfully. OTP sent to email for verification."
-        );
-        setShowOtpField(true);
-        setIsLoading(false);
-        startResendCooldown();
-      })
-      .catch((error) => {
-        const errorMessage =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Registration failed";
-        toast.error(errorMessage);
-        setIsLoading(false);
-      });
-  };
-
-  // =============== VERIFY OTP =============== //
-  const handleVerifyOtp = () => {
-    if (!otp) {
-      toast.error("Please enter the OTP sent to your email.");
+    if (!acceptTerms) {
+      toast.error("Please accept the Terms and Privacy Policy.");
       return;
     }
+    if (role_id === "3" && selectedCategories.length === 0) {
+      toast.error("Please select at least one category.");
+      return;
+    }
+    setIsLoading(true);
+
+    try {
+      // Step 1: Request OTP
+      const result = await API.post("/users/request-signup-otp", { 
+        email: email.toLowerCase().trim() 
+      });
+      
+      toast.success(
+        result.data.message || "Verification code sent. Check your email (and spam folder)."
+      );
+      setShowOtpField(true);
+      startResendCooldown();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to send verification code";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // =============== VERIFY OTP AND REGISTER (Step 2) =============== //
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter the 6-digit code sent to your email.");
+      return;
+    }
+
+    // Validate form again (in case user navigated back)
+    if (!acceptTerms) {
+      toast.error("Please accept the Terms and Privacy Policy.");
+      return;
+    }
+    if (role_id === "3" && selectedCategories.length === 0) {
+      toast.error("Please select at least one category.");
+      return;
+    }
+
     setIsVerifying(true);
-    API
-      .post("/users/verify-email", { email, otp })
-      .then(() => {
-        toast.success("Email verified successfully ✅ Redirecting...");
-        setTimeout(() => navigate("/login"), 2000);
-      })
-      .catch((err) => {
-        toast.error(err.response?.data?.message || "Invalid or expired OTP ❌");
-      })
-      .finally(() => setIsVerifying(false));
+
+    try {
+      // Step 2: Verify OTP and create account
+      const userData = {
+        email: email.toLowerCase().trim(),
+        otp,
+        role_id: parseInt(role_id),
+        first_name,
+        last_name,
+        password,
+        phone_number,
+        country,
+        username,
+        profile_pic_url,
+      };
+      if (role_id === "3") userData.category_ids = selectedCategories;
+
+      const result = await API.post("/users/verify-and-register", userData);
+      
+      // Account created successfully - log user in automatically
+      toast.success(result.data.message || "Account created successfully! Redirecting...");
+      
+      // Use the same login success flow as Login component
+      await applyLoginSuccess(dispatch, result.data, navigate, connectSocket);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Invalid or expired OTP. Please try again.";
+      toast.error(errorMessage);
+      // Clear OTP on error so user can retry
+      setOtp("");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   // =============== RESEND OTP =============== //
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
+    if (!email || !email.trim()) {
+      toast.error("Email is required.");
+      return;
+    }
 
     try {
-      const res = await API.post("/users/resend-email-otp", { email });
-      toast.success(res.data?.message || "OTP sent successfully");
+      const res = await API.post("/users/request-signup-otp", { 
+        email: email.toLowerCase().trim() 
+      });
+      toast.success(res.data?.message || "Verification code sent. Check your email.");
       startResendCooldown();
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Failed to resend OTP. Please try again."
+        err.response?.data?.message || "Failed to resend verification code. Please try again."
       );
     }
   };
@@ -401,7 +413,7 @@ const Register = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-slate-900">Verify your email</h2>
                 <p className="text-neutral-500 text-sm">
-                  We&apos;ve sent a 6-digit code to <span className="font-medium text-[#C2410C]">{email}</span>.
+                  We sent a 6-digit code to <span className="font-medium text-[#C2410C]">{email}</span>. Enter it below to complete your registration.
                 </p>
                 <div className="relative">
                   <KeyRound className="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" aria-hidden />
