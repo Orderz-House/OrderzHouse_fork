@@ -1108,7 +1108,7 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-white h-screen max-h-screen min-h-0">
       <HoverCardsBackground className="h-full min-h-0 oh-hero-bg">
-        <div className="pt-24 sm:pt-28 pb-10 lg:pb-14 2xl:pb-20 oh-hero-laptop">
+        <div className="pt-24 sm:pt-16 3xl:pt-28 pb-10 lg:pb-14 2xl:pb-20 oh-hero-laptop">
           {/* ✅ Background soft glows (yellow + orange) */}
           <div className="pointer-events-none absolute -top-28 left-[-80px] h-[360px] w-[360px] rounded-full bg-yellow-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -top-28 right-[-90px] h-[380px] w-[380px] rounded-full bg-orange-400/20 blur-3xl" />
