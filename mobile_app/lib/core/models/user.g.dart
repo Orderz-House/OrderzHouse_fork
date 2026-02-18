@@ -19,6 +19,7 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       emailVerified: json['email_verified'] as bool? ?? false,
       mustAcceptTerms: json['must_accept_terms'] as bool? ?? false,
       termsVersionRequired: json['terms_version_required'] as String?,
+      canPostWithoutPayment: json['can_post_without_payment'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
@@ -35,4 +36,5 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'email_verified': instance.emailVerified,
       'must_accept_terms': instance.mustAcceptTerms,
       'terms_version_required': instance.termsVersionRequired,
+      'can_post_without_payment': instance.canPostWithoutPayment,
     };

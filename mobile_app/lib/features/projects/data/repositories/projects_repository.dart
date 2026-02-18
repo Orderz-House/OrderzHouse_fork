@@ -1014,7 +1014,7 @@ class ProjectsRepository implements IProjectsRepository {
   }
 
   /// Upload project files
-  /// Endpoint: POST /projects/:projectId/files
+  /// Endpoint: POST /projects/:projectId/files (backend expects field "attachments")
   Future<ApiResponse<void>> uploadProjectFiles(
     int projectId,
     List<String> filePaths,
@@ -1029,7 +1029,7 @@ class ProjectsRepository implements IProjectsRepository {
       for (var i = 0; i < filePaths.length; i++) {
         formData.files.add(
           MapEntry(
-            'project_files',
+            'attachments',
             await MultipartFile.fromFile(filePaths[i], filename: 'file_$i'),
           ),
         );
@@ -1082,65 +1082,115 @@ class ProjectsRepository implements IProjectsRepository {
     }
   }
 
-  /// Create Stripe checkout session for project
-  /// Endpoint: POST /stripe/project-checkout-session
-  Future<ApiResponse<String>> createProjectCheckoutSession(
-    Map<String, dynamic> projectData,
-  ) async {
+  /// Get project for success page (includes payment_method, admin_approval_status, etc.)
+  /// Endpoint: GET /projects/success/:id
+  Future<ApiResponse<Map<String, dynamic>>> getProjectSuccess(int projectId) async {
     try {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
-        print('📡 REQUEST[POST] => PATH: /stripe/project-checkout-session');
+        print('📡 REQUEST[GET] => PATH: /projects/success/$projectId');
       }
 
-      final response = await _dio.post('/stripe/project-checkout-session', data: projectData);
+      final response = await _dio.get('/projects/success/$projectId');
 
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /stripe/project-checkout-session');
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/success/$projectId');
       }
 
       final data = response.data as Map<String, dynamic>;
-
-      if (data['success'] == true && data['url'] != null) {
+      if (data['success'] == true && data['project'] != null) {
         return ApiResponse(
           success: true,
-          data: data['url'] as String,
-          message: 'Checkout session created',
+          data: data['project'] as Map<String, dynamic>,
+          message: null,
         );
       }
 
-      final backendMessage = data['message'] as String? ?? data['error'] as String?;
       return ApiResponse(
         success: false,
-        data: '',
-        message: backendMessage ?? 'Failed to create checkout session',
+        data: {},
+        message: data['message'] as String? ?? 'Failed to load project',
       );
     } on DioException catch (e) {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
-        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /stripe/project-checkout-session');
+        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /projects/success/$projectId');
       }
-
       final body = e.response?.data;
-      final backendMessage = body is Map
-          ? (body['message'] as String? ?? body['error'] as String?)
-          : null;
+      final msg = body is Map ? (body['message'] as String?) : null;
       return ApiResponse(
         success: false,
-        data: '',
-        message: backendMessage ?? 'Failed to create checkout session',
+        data: {},
+        message: msg ?? e.message ?? 'Failed to load project',
       );
     } catch (e) {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
-        print('❌ UNEXPECTED ERROR => /stripe/project-checkout-session: $e');
+        print('❌ UNEXPECTED ERROR => /projects/success/$projectId: $e');
       }
-
       return ApiResponse(
         success: false,
-        data: '',
-        message: 'Failed to create checkout session: ${e.toString()}',
+        data: {},
+        message: 'Failed to load project: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Set offline payment method for a project (CliQ or Cash).
+  /// Endpoint: POST /projects/:projectId/offline-payment
+  /// Body: { "method": "cliq" | "cash" }
+  Future<ApiResponse<void>> setProjectOfflinePayment(
+    int projectId,
+    String method,
+  ) async {
+    try {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('📡 REQUEST[POST] => PATH: /projects/$projectId/offline-payment');
+      }
+      final response = await _dio.post(
+        '/projects/$projectId/offline-payment',
+        data: {'method': method},
+      );
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('✅ RESPONSE[${response.statusCode}] => PATH: /projects/$projectId/offline-payment');
+      }
+      final data = response.data as Map<String, dynamic>;
+      if (response.statusCode == 200 && data['success'] != false) {
+        return ApiResponse(
+          success: true,
+          data: null,
+          message: data['message'] as String?,
+        );
+      }
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: data['message'] as String? ?? 'Failed to set offline payment',
+      );
+    } on DioException catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ ERROR[${e.response?.statusCode}] => PATH: /projects/$projectId/offline-payment');
+      }
+      final body = e.response?.data;
+      final msg = body is Map ? (body['message'] as String?) : null;
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: msg ?? e.message ?? 'Failed to set offline payment',
+      );
+    } catch (e) {
+      if (AppConfig.isDevelopment) {
+        // ignore: avoid_print
+        print('❌ UNEXPECTED ERROR => /projects/$projectId/offline-payment: $e');
+      }
+      return ApiResponse(
+        success: false,
+        data: null,
+        message: 'Failed to set offline payment: ${e.toString()}',
       );
     }
   }

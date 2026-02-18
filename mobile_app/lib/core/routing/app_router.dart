@@ -32,6 +32,7 @@ import '../../features/common/presentation/screens/support_screen.dart';
 import '../../features/common/presentation/screens/notifications_settings_screen.dart';
 import '../../features/common/presentation/screens/security_center_screen.dart';
 import '../../features/projects/presentation/pages/create_project_wizard_page.dart';
+import '../../features/projects/presentation/screens/project_success_screen.dart';
 import '../../features/common/presentation/screens/talent_details_screen.dart';
 import '../../features/common/presentation/screens/health_check_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
@@ -283,6 +284,14 @@ final List<RouteBase> _appRoutes = [
     GoRoute(
       path: '/create-project',
       builder: (context, state) => const CreateProjectWizardPage(),
+    ),
+    GoRoute(
+      path: '/project-success/:id',
+      builder: (context, state) {
+        final idStr = state.pathParameters['id'] ?? '0';
+        final id = int.tryParse(idStr) ?? 0;
+        return ProjectSuccessScreen(projectId: id);
+      },
     ),
     GoRoute(
       path: '/talent/:id',

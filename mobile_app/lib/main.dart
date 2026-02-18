@@ -22,11 +22,11 @@ void main() async {
   await AppPrefs.init();
   await RouteTracker.init();
 
-  // Step 3: Initialize Hive for local cache (non-sensitive data only; no tokens)
+  // Step 4: Initialize Hive for local cache (non-sensitive data only; no tokens)
   await Hive.initFlutter();
   await CacheService.init();
   
-  // Step 4: Load environment variables (gracefully handle missing .env file)
+  // Step 5: Load environment variables (gracefully handle missing .env file)
   try {
     await dotenv.load(fileName: '.env');
     // ignore: avoid_print
@@ -38,11 +38,11 @@ void main() async {
     dotenv.testLoad(fileInput: '');
   }
   
-  // Step 5: Log baseUrl for debugging
+  // Step 6: Log baseUrl for debugging
   // ignore: avoid_print
   print('🌐 API Base URL: ${AppConfig.baseUrl}');
   
-  // Step 6: Perform health check (non-blocking)
+  // Step 7: Perform health check (non-blocking)
   unawaited(HealthCheckService.ping().then((result) {
     if (result.success) {
       // ignore: avoid_print
@@ -56,7 +56,7 @@ void main() async {
     print('❌ Health check error: $error');
   }));
   
-  // Step 7: Run app (only once)
+  // Step 8: Run app (only once)
   runApp(
     const ProviderScope(
       child: MyApp(),

@@ -41,6 +41,8 @@ mixin _$User {
   bool get mustAcceptTerms => throw _privateConstructorUsedError;
   @JsonKey(name: 'terms_version_required')
   String? get termsVersionRequired => throw _privateConstructorUsedError;
+  @JsonKey(name: 'can_post_without_payment')
+  bool get canPostWithoutPayment => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -64,7 +66,8 @@ abstract class $UserCopyWith<$Res> {
       @JsonKey(name: 'is_two_factor_enabled') bool isTwoFactorEnabled,
       @JsonKey(name: 'email_verified') bool emailVerified,
       @JsonKey(name: 'must_accept_terms') bool mustAcceptTerms,
-      @JsonKey(name: 'terms_version_required') String? termsVersionRequired});
+      @JsonKey(name: 'terms_version_required') String? termsVersionRequired,
+      @JsonKey(name: 'can_post_without_payment') bool canPostWithoutPayment});
 }
 
 /// @nodoc
@@ -92,6 +95,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? emailVerified = null,
     Object? mustAcceptTerms = null,
     Object? termsVersionRequired = freezed,
+    Object? canPostWithoutPayment = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -142,6 +146,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.termsVersionRequired
           : termsVersionRequired // ignore: cast_nullable_to_non_nullable
               as String?,
+      canPostWithoutPayment: null == canPostWithoutPayment
+          ? _value.canPostWithoutPayment
+          : canPostWithoutPayment // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -165,7 +173,8 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       @JsonKey(name: 'is_two_factor_enabled') bool isTwoFactorEnabled,
       @JsonKey(name: 'email_verified') bool emailVerified,
       @JsonKey(name: 'must_accept_terms') bool mustAcceptTerms,
-      @JsonKey(name: 'terms_version_required') String? termsVersionRequired});
+      @JsonKey(name: 'terms_version_required') String? termsVersionRequired,
+      @JsonKey(name: 'can_post_without_payment') bool canPostWithoutPayment});
 }
 
 /// @nodoc
@@ -190,6 +199,7 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? emailVerified = null,
     Object? mustAcceptTerms = null,
     Object? termsVersionRequired = freezed,
+    Object? canPostWithoutPayment = null,
   }) {
     return _then(_$UserImpl(
       id: null == id
@@ -240,6 +250,10 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.termsVersionRequired
           : termsVersionRequired // ignore: cast_nullable_to_non_nullable
               as String?,
+      canPostWithoutPayment: null == canPostWithoutPayment
+          ? _value.canPostWithoutPayment
+          : canPostWithoutPayment // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -259,8 +273,10 @@ class _$UserImpl extends _User {
       @JsonKey(name: 'is_two_factor_enabled') this.isTwoFactorEnabled = false,
       @JsonKey(name: 'email_verified') this.emailVerified = false,
       @JsonKey(name: 'must_accept_terms') this.mustAcceptTerms = false,
-      @JsonKey(name: 'terms_version_required') this.termsVersionRequired})
-      : super._();
+      @JsonKey(name: 'terms_version_required') this.termsVersionRequired,
+      @JsonKey(name: 'can_post_without_payment') bool? canPostWithoutPayment})
+      : this.canPostWithoutPayment = canPostWithoutPayment ?? false,
+        super._();
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserImplFromJson(json);
@@ -298,10 +314,13 @@ class _$UserImpl extends _User {
   @override
   @JsonKey(name: 'terms_version_required')
   final String? termsVersionRequired;
+  @override
+  @JsonKey(name: 'can_post_without_payment')
+  final bool canPostWithoutPayment;
 
   @override
   String toString() {
-    return 'User(id: $id, username: $username, email: $email, roleId: $roleId, firstName: $firstName, lastName: $lastName, profilePicUrl: $profilePicUrl, isDeleted: $isDeleted, isTwoFactorEnabled: $isTwoFactorEnabled, emailVerified: $emailVerified, mustAcceptTerms: $mustAcceptTerms, termsVersionRequired: $termsVersionRequired)';
+    return 'User(id: $id, username: $username, email: $email, roleId: $roleId, firstName: $firstName, lastName: $lastName, profilePicUrl: $profilePicUrl, isDeleted: $isDeleted, isTwoFactorEnabled: $isTwoFactorEnabled, emailVerified: $emailVerified, mustAcceptTerms: $mustAcceptTerms, termsVersionRequired: $termsVersionRequired, canPostWithoutPayment: $canPostWithoutPayment)';
   }
 
   @override
@@ -329,7 +348,9 @@ class _$UserImpl extends _User {
             (identical(other.mustAcceptTerms, mustAcceptTerms) ||
                 other.mustAcceptTerms == mustAcceptTerms) &&
             (identical(other.termsVersionRequired, termsVersionRequired) ||
-                other.termsVersionRequired == termsVersionRequired));
+                other.termsVersionRequired == termsVersionRequired) &&
+            (identical(other.canPostWithoutPayment, canPostWithoutPayment) ||
+                other.canPostWithoutPayment == canPostWithoutPayment));
   }
 
   @JsonKey(ignore: true)
@@ -347,7 +368,8 @@ class _$UserImpl extends _User {
       isTwoFactorEnabled,
       emailVerified,
       mustAcceptTerms,
-      termsVersionRequired);
+      termsVersionRequired,
+      canPostWithoutPayment);
 
   @JsonKey(ignore: true)
   @override
@@ -377,7 +399,8 @@ abstract class _User extends User {
       @JsonKey(name: 'email_verified') final bool emailVerified,
       @JsonKey(name: 'must_accept_terms') final bool mustAcceptTerms,
       @JsonKey(name: 'terms_version_required')
-      final String? termsVersionRequired}) = _$UserImpl;
+      final String? termsVersionRequired,
+      @JsonKey(name: 'can_post_without_payment') final bool? canPostWithoutPayment}) = _$UserImpl;
   const _User._() : super._();
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
@@ -415,6 +438,9 @@ abstract class _User extends User {
   @override
   @JsonKey(name: 'terms_version_required')
   String? get termsVersionRequired;
+  @override
+  @JsonKey(name: 'can_post_without_payment')
+  bool get canPostWithoutPayment;
   @override
   @JsonKey(ignore: true)
   _$$UserImplCopyWith<_$UserImpl> get copyWith =>

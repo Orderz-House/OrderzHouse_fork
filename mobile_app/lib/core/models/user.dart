@@ -22,6 +22,7 @@ class User with _$User {
     @JsonKey(name: 'email_verified') @Default(false) bool emailVerified,
     @JsonKey(name: 'must_accept_terms') @Default(false) bool mustAcceptTerms,
     @JsonKey(name: 'terms_version_required') String? termsVersionRequired,
+    @JsonKey(name: 'can_post_without_payment') @Default(false) bool canPostWithoutPayment,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

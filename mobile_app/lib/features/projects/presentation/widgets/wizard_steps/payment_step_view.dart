@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../core/theme/app_spacing.dart';
+import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../providers/project_wizard_provider.dart';
 
@@ -31,12 +32,10 @@ class PaymentStepView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(projectWizardProvider);
 
-    // Calculate amount based on project type
     double? amount;
     if (draft.projectType == 'fixed' && draft.budget != null) {
       amount = draft.budget;
     } else if (draft.projectType == 'hourly' && draft.hourlyRate != null) {
-      // Minimum 3 hours for hourly projects
       amount = draft.hourlyRate! * 3;
     }
 
@@ -64,8 +63,6 @@ class PaymentStepView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-
-          // Summary Card
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
@@ -83,14 +80,9 @@ class PaymentStepView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Project Title
                 Row(
                   children: [
-                    const Icon(
-                      Icons.work_outline,
-                      color: Color(0xFF6D5FFD),
-                      size: 20,
-                    ),
+                    const Icon(Icons.work_outline, color: Color(0xFF6D5FFD), size: 20),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
@@ -107,79 +99,56 @@ class PaymentStepView extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 const Divider(),
                 const SizedBox(height: AppSpacing.md),
-
-                // Project Type
                 _buildSummaryRow(l10n.projectTypeLabel.replaceAll(' *', ''), _formatProjectType(l10n, draft.projectType)),
-                const SizedBox(height: AppSpacing.sm),
-
-                // Amount
                 if (amount != null) ...[
-                  _buildSummaryRow(l10n.amountLabel, formatter.format(amount)),
                   const SizedBox(height: AppSpacing.sm),
+                  _buildSummaryRow(l10n.amountLabel, formatter.format(amount)),
                 ],
-
-                // Duration
+                const SizedBox(height: AppSpacing.sm),
                 _buildSummaryRow(
                   l10n.durationLabel,
                   draft.durationType == 'days'
                       ? l10n.daysCount(draft.durationDays ?? 0)
                       : l10n.hoursCount(draft.durationHours ?? 0),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                const Divider(),
-                const SizedBox(height: AppSpacing.md),
-
-                // Total
-                if (amount != null)
+                if (amount != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        l10n.totalLabel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Color(0xFF111827),
-                        ),
-                      ),
-                      Text(
-                        formatter.format(amount),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Color(0xFF6D5FFD),
-                        ),
-                      ),
+                      Text(l10n.totalLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF111827))),
+                      Text(formatter.format(amount), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF6D5FFD))),
                     ],
                   ),
+                ],
               ],
             ),
           ),
-
           const SizedBox(height: AppSpacing.xl),
-
-          // Payment Info
+          _PaymentOptionCard(
+            icon: Icons.phone_android,
+            title: 'Pay via CliQ',
+            subtitle: 'Requires admin approval',
+            onTap: onSubmit,
+          ),
+          const SizedBox(height: AppSpacing.md),
           Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: const Color(0xFF6D5FFD).withValues(alpha: 0.1),
+              color: Colors.amber.shade50,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade200),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF6D5FFD),
-                  size: 20,
-                ),
-                const SizedBox(width: AppSpacing.sm),
+                Icon(Icons.info_outline, size: 20, color: Colors.amber.shade800),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    l10n.stripePaymentInfo,
-                    style: TextStyle(
-                      color: const Color(0xFF6D5FFD).withValues(alpha: 0.9),
-                      fontSize: 12,
-                    ),
+                    'Your project will be created but will remain hidden until admin approves your payment.',
+                    style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
                   ),
                 ),
               ],
@@ -194,22 +163,73 @@ class PaymentStepView extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF111827),
-            fontSize: 14,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF111827), fontSize: 14)),
       ],
+    );
+  }
+}
+
+class _PaymentOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _PaymentOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.accentOrange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppColors.accentOrange, size: 28),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Color(0xFF111827))),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
