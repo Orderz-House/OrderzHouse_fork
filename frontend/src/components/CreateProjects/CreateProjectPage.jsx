@@ -53,9 +53,11 @@ export default function CreateProjectPage() {
 
     try {
       // ============================
-      // 1️⃣ BIDDING PROJECT → CREATE IMMEDIATELY
+      // 1️⃣ BIDDING PROJECT → CREATE IMMEDIATELY (SKIP PAYMENT)
       // ============================
       if (projectData.project_type === "bidding") {
+        // Bidding projects are created directly with status "bidding" and go to the pool
+        // No payment step required
         const project = await createProjectApi(projectData, token);
         const projectId = project.id;
 
@@ -64,7 +66,7 @@ export default function CreateProjectPage() {
         }
 
         showToast(
-          "Project submitted successfully and is waiting for admin approval",
+          "Bidding project created successfully and added to the pool",
           "success"
         );
 
