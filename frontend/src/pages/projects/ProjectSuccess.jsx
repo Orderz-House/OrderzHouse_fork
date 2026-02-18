@@ -7,6 +7,51 @@ import { useToast } from "../../components/toast/ToastProvider";
 
 const WHATSAPP_NUMBER = "962791433341";
 
+function DetailRow({ icon: Icon, label, value, valueBold, clamp }) {
+  const valueContent =
+    typeof value === "string" ? (
+      <span className={valueBold ? "font-bold text-slate-900" : "text-slate-700"}>
+        {value}
+      </span>
+    ) : (
+      value
+    );
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-4 border-t border-slate-100 first:border-t-0">
+      <div className="flex items-center gap-2 sm:w-40 shrink-0">
+        {Icon && <Icon className="w-4 h-4 text-slate-400 shrink-0" />}
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      <div className={`sm:flex-1 min-w-0 ${clamp ? "line-clamp-2" : ""}`}>
+        {valueContent}
+      </div>
+    </div>
+  );
+}
+
+/** خلية مدمجة للبيانات القصيرة (يدخل عدة عناصر في صف واحد) */
+function CompactDetail({ icon: Icon, label, value }) {
+  const valueContent =
+    typeof value === "string" ? (
+      <span className="font-bold text-slate-900 text-sm">{value}</span>
+    ) : (
+      value
+    );
+  return (
+    <div className="flex flex-col gap-1 min-w-0">
+      <div className="flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      <div className="min-w-0">{valueContent}</div>
+    </div>
+  );
+}
+
 export default function ProjectSuccess() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -238,124 +283,105 @@ Description: ${shortDescription}`;
           </div>
         )}
 
-        {/* Project Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Project ID */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-2">
-              <Tag className="w-5 h-5 text-slate-400" />
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {isArabic ? "رقم المشروع" : "Project ID"}
-              </h3>
-            </div>
-            <p className="text-xl font-bold text-slate-900">#{project.id}</p>
+        {/* لوحة واحدة — تفاصيل المشروع */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h2 className="text-lg font-bold text-slate-900">
+              {isArabic ? "تفاصيل المشروع" : "Project details"}
+            </h2>
           </div>
-
-          {/* Title */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-2">
-              <FileText className="w-5 h-5 text-slate-400" />
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {isArabic ? "العنوان" : "Title"}
-              </h3>
-            </div>
-            <p className="text-lg font-semibold text-slate-900 line-clamp-2">{project.title}</p>
-          </div>
-
-          {/* Budget */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-5 h-5 text-slate-400" />
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {isArabic ? "الميزانية" : "Budget"}
-              </h3>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{formatBudget(project)}</p>
-          </div>
-
-          {/* Payment Method */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-2">
-              <CreditCard className="w-5 h-5 text-slate-400" />
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {isArabic ? "طريقة الدفع" : "Payment Method"}
-              </h3>
-            </div>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-              {formatPaymentMethod(project.payment_method)}
-            </span>
-          </div>
-
-          {/* Duration */}
-          {formatDuration(project) && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-5 h-5 text-slate-400" />
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  {isArabic ? "المدة" : "Duration"}
-                </h3>
-              </div>
-              <p className="text-lg font-semibold text-slate-900">{formatDuration(project)}</p>
-            </div>
-          )}
-
-          {/* Created Date */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-2">
-              <Calendar className="w-5 h-5 text-slate-400" />
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {isArabic ? "تاريخ الإنشاء" : "Created Date"}
-              </h3>
-            </div>
-            <p className="text-lg font-semibold text-slate-900">
-              {project.created_at
-                ? new Date(project.created_at).toLocaleDateString(isArabic ? "ar" : "en")
-                : "—"}
-            </p>
-          </div>
-        </div>
-
-        {/* Category & Skills */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Category */}
-          {(project.category_name || project.sub_sub_category_name) && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                {isArabic ? "التصنيف" : "Category"}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {project.category_name && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                    {project.category_name}
-                  </span>
+          <div className="p-6 space-y-0">
+            {/* صف مدمج: Project ID, Budget, Payment Method, Duration, Created Date */}
+            <div className="py-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+                <CompactDetail
+                  icon={Tag}
+                  label={isArabic ? "رقم المشروع" : "Project ID"}
+                  value={`#${project.id}`}
+                />
+                <CompactDetail
+                  icon={DollarSign}
+                  label={isArabic ? "الميزانية" : "Budget"}
+                  value={formatBudget(project)}
+                />
+                <CompactDetail
+                  icon={CreditCard}
+                  label={isArabic ? "طريقة الدفع" : "Payment Method"}
+                  value={
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {formatPaymentMethod(project.payment_method)}
+                    </span>
+                  }
+                />
+                {formatDuration(project) && (
+                  <CompactDetail
+                    icon={Clock}
+                    label={isArabic ? "المدة" : "Duration"}
+                    value={formatDuration(project)}
+                  />
                 )}
-                {project.sub_sub_category_name && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
-                    {project.sub_sub_category_name}
-                  </span>
-                )}
+                <CompactDetail
+                  icon={Calendar}
+                  label={isArabic ? "تاريخ الإنشاء" : "Created Date"}
+                  value={
+                    project.created_at
+                      ? new Date(project.created_at).toLocaleDateString(isArabic ? "ar" : "en")
+                      : "—"
+                  }
+                />
               </div>
             </div>
-          )}
-
-          {/* Skills */}
-          {project.preferred_skills && Array.isArray(project.preferred_skills) && project.preferred_skills.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                {isArabic ? "المهارات المفضلة" : "Preferred Skills"}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {project.preferred_skills.map((skill, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
-                  >
-                    {skill}
+            {/* العنوان — صف كامل لأنه قد يكون طويلاً */}
+            <DetailRow
+              icon={FileText}
+              label={isArabic ? "العنوان" : "Title"}
+              value={project.title}
+              valueBold
+              clamp
+            />
+            {(project.category_name || project.sub_sub_category_name) && (
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 py-4 border-t border-slate-100 first:border-t-0">
+                <div className="flex items-center gap-2 sm:w-40 shrink-0">
+                  <Tag className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    {isArabic ? "التصنيف" : "Category"}
                   </span>
-                ))}
+                </div>
+                <div className="flex flex-wrap gap-2 sm:flex-1">
+                  {project.category_name && (
+                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      {project.category_name}
+                    </span>
+                  )}
+                  {project.sub_sub_category_name && (
+                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                      {project.sub_sub_category_name}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {project.preferred_skills && Array.isArray(project.preferred_skills) && project.preferred_skills.length > 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 py-4 border-t border-slate-100">
+                <div className="flex items-center gap-2 sm:w-40 shrink-0">
+                  <Tag className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    {isArabic ? "المهارات المفضلة" : "Preferred Skills"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 sm:flex-1">
+                  {project.preferred_skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* CliQ Payment Instruction Banner */}
