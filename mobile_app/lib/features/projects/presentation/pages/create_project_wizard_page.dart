@@ -10,8 +10,10 @@ import '../widgets/wizard_steps/project_details_step_view.dart';
 import '../widgets/wizard_steps/project_cover_step_view.dart';
 import '../widgets/wizard_steps/project_files_step_view.dart';
 import '../widgets/wizard_steps/payment_step_view.dart';
+import '../widgets/wizard_steps/internal_skip_step_view.dart';
 import '../../data/repositories/projects_repository.dart';
-import '../../../../core/utils/stripe_checkout_launcher.dart';
+import '../../../../core/storage/secure_store.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class CreateProjectWizardPage extends ConsumerStatefulWidget {
   const CreateProjectWizardPage({super.key});
@@ -116,26 +118,42 @@ class _CreateProjectWizardPageState
 
   int _getTotalSteps() {
     final draft = ref.read(projectWizardProvider);
-    return draft.needsPayment ? 4 : 3;
+    return draft.projectType != 'bidding' ? 4 : 3;
   }
 
-  Future<void> _handleSubmit() async {
+  bool _isInternalSkipStep() {
+    final draft = ref.read(projectWizardProvider);
+    final user = ref.read(authStateProvider).user;
+    if (draft.projectType == 'bidding') return false;
+    return user?.canPostWithoutPayment == true && user?.roleId == 2;
+  }
+
+  Future<void> _submitProjectFlow() async {
     final l10n = AppLocalizations.of(context)!;
     final draft = ref.read(projectWizardProvider);
+    final user = ref.read(authStateProvider).user;
     final repository = ProjectsRepository();
 
-    // Validate all steps before final submission
+    if (_isSubmitting) return;
+    final token = await SecureStore.readAccessToken();
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.authRequired),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     final step1Errors = draft.validateStep1();
     final step2Errors = draft.validateStep2();
     final step3Errors = draft.validateStep3();
-    
     if (step1Errors.isNotEmpty || step2Errors.isNotEmpty || step3Errors.isNotEmpty) {
-      // Show first error found
       final allErrors = <String, String>{};
       allErrors.addAll(step1Errors);
       allErrors.addAll(step2Errors);
       allErrors.addAll(step3Errors);
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_getLocalizedValidationError(l10n, allErrors.values.first)),
@@ -146,14 +164,11 @@ class _CreateProjectWizardPageState
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
-      // If bidding: create project immediately
+      // A) BIDDING: create project directly, no payment
       if (draft.projectType == 'bidding') {
-        // Create project
         final createResponse = await repository.createProject(
           categoryId: draft.categoryId!,
           subCategoryId: draft.subCategoryId,
@@ -168,77 +183,118 @@ class _CreateProjectWizardPageState
           durationType: draft.durationType!,
           durationDays: draft.durationDays,
           durationHours: draft.durationHours,
-          preferredSkills: draft.preferredSkills.isNotEmpty
-              ? draft.preferredSkills
-              : null,
+          preferredSkills: draft.preferredSkills.isNotEmpty ? draft.preferredSkills : null,
           coverPicPath: draft.coverPic?.path,
         );
-
         if (!createResponse.success || createResponse.data == null) {
           throw Exception(createResponse.message ?? 'Failed to create project');
         }
-
         final projectId = createResponse.data!['id'] as int;
-
-        // Upload files if any
         if (draft.projectFiles.isNotEmpty) {
           final filePaths = draft.projectFiles.map((f) => f.path).toList();
-          final uploadResponse =
-              await repository.uploadProjectFiles(projectId, filePaths);
-
-          if (!uploadResponse.success) {
-            // Project created but files failed - show warning
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.projectCreatedButFilesFailed(uploadResponse.message ?? '')),
-                  backgroundColor: AppColors.accentOrange,
-                ),
-              );
-            }
+          final uploadResponse = await repository.uploadProjectFiles(projectId, filePaths);
+          if (!uploadResponse.success && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.projectCreatedButFilesFailed(uploadResponse.message ?? '')),
+                backgroundColor: AppColors.accentOrange,
+              ),
+            );
           }
         }
-
-        // Success
         if (mounted) {
           ref.read(projectWizardProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.projectCreated),
-              backgroundColor: Colors.green,
-            ),
+            SnackBar(content: Text(l10n.projectCreated), backgroundColor: Colors.green),
           );
-          context.go('/client');
+          context.go('/project-success/$projectId');
         }
-      } else {
-        // Fixed/Hourly: Create Stripe checkout session
-        final projectData = {
-          'category_id': draft.categoryId,
-          'sub_category_id': draft.subCategoryId,
-          'sub_sub_category_id': draft.subSubCategoryId,
-          'title': draft.title,
-          'description': draft.description,
-          'project_type': draft.projectType,
-          'budget': draft.budget,
-          'hourly_rate': draft.hourlyRate,
-          'duration_type': draft.durationType,
-          'duration_days': draft.durationDays,
-          'duration_hours': draft.durationHours,
-          'preferred_skills': draft.preferredSkills,
-        };
+        return;
+      }
 
-        final checkoutResponse =
-            await repository.createProjectCheckoutSession(projectData);
+      final canSkipPayment = user?.canPostWithoutPayment == true && user?.roleId == 2;
 
-        if (!checkoutResponse.success || checkoutResponse.data == null) {
-          throw Exception(
-              checkoutResponse.message ?? 'Failed to create checkout session');
+      // B) INTERNAL: skip payment, create project directly
+      if (canSkipPayment) {
+        final createResponse = await repository.createProject(
+          categoryId: draft.categoryId!,
+          subCategoryId: draft.subCategoryId,
+          subSubCategoryId: draft.subSubCategoryId!,
+          title: draft.title!,
+          description: draft.description!,
+          projectType: draft.projectType!,
+          budget: draft.budget,
+          hourlyRate: draft.hourlyRate,
+          budgetMin: draft.budgetMin,
+          budgetMax: draft.budgetMax,
+          durationType: draft.durationType!,
+          durationDays: draft.durationDays,
+          durationHours: draft.durationHours,
+          preferredSkills: draft.preferredSkills.isNotEmpty ? draft.preferredSkills : null,
+          coverPicPath: draft.coverPic?.path,
+        );
+        if (!createResponse.success || createResponse.data == null) {
+          throw Exception(createResponse.message ?? 'Failed to create project');
         }
+        final projectId = createResponse.data!['id'] as int;
+        if (draft.projectFiles.isNotEmpty) {
+          final filePaths = draft.projectFiles.map((f) => f.path).toList();
+          await repository.uploadProjectFiles(projectId, filePaths);
+        }
+        if (mounted) {
+          ref.read(projectWizardProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.projectCreated), backgroundColor: Colors.green),
+          );
+          context.go('/project-success/$projectId');
+        }
+        return;
+      }
 
-        final checkoutUrl = checkoutResponse.data!;
+      // C) CliQ: create project, upload files, set offline payment, go to success
+      final createResponse = await repository.createProject(
+        categoryId: draft.categoryId!,
+        subCategoryId: draft.subCategoryId,
+        subSubCategoryId: draft.subSubCategoryId!,
+        title: draft.title!,
+        description: draft.description!,
+        projectType: draft.projectType!,
+        budget: draft.budget,
+        hourlyRate: draft.hourlyRate,
+        budgetMin: draft.budgetMin,
+        budgetMax: draft.budgetMax,
+        durationType: draft.durationType!,
+        durationDays: draft.durationDays,
+        durationHours: draft.durationHours,
+        preferredSkills: draft.preferredSkills.isNotEmpty ? draft.preferredSkills : null,
+        coverPicPath: draft.coverPic?.path,
+      );
+      if (!createResponse.success || createResponse.data == null) {
+        throw Exception(createResponse.message ?? 'Failed to create project');
+      }
+      final projectId = createResponse.data!['id'] as int;
 
-        // Open Stripe checkout URL via launcher (external app → in-app browser → WebView fallback)
-        await openCheckoutUrl(context, checkoutUrl);
+      if (draft.projectFiles.isNotEmpty) {
+        final filePaths = draft.projectFiles.map((f) => f.path).toList();
+        await repository.uploadProjectFiles(projectId, filePaths);
+      }
+
+      final offlineResponse = await repository.setProjectOfflinePayment(projectId, 'cliq');
+      if (!offlineResponse.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(offlineResponse.message ?? 'Failed to set CliQ payment'),
+            backgroundColor: AppColors.accentOrange,
+          ),
+        );
+      }
+
+      if (mounted) {
+        ref.read(projectWizardProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.projectCreated), backgroundColor: Colors.green),
+        );
+        context.go('/project-success/$projectId');
       }
     } catch (e) {
       if (mounted) {
@@ -250,27 +306,17 @@ class _CreateProjectWizardPageState
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   String _getActionButtonLabel(AppLocalizations l10n) {
-    final draft = ref.read(projectWizardProvider);
     final totalSteps = _getTotalSteps();
-
-    if (_currentStep == totalSteps - 1) {
-      if (draft.projectType == 'bidding') {
-        return l10n.createProject;
-      } else {
-        // For fixed/hourly - payment step
-        return l10n.payWithStripe;
-      }
-    }
-    return l10n.continue_;
+    if (_currentStep != totalSteps - 1) return l10n.continue_;
+    final draft = ref.read(projectWizardProvider);
+    if (draft.projectType == 'bidding') return l10n.createProject;
+    if (_isInternalSkipStep()) return l10n.createProject;
+    return 'Submit via CliQ';
   }
 
   @override
@@ -363,10 +409,18 @@ class _CreateProjectWizardPageState
                 ),
                 ProjectCoverStepView(onNext: _nextStep), // _nextStep now validates internally
                 ProjectFilesStepView(
-                  onNext: draft.needsPayment ? _nextStep : null, // _nextStep now validates internally
+                  onNext: draft.projectType != 'bidding' ? _nextStep : null,
                 ),
-                if (draft.needsPayment)
-                  PaymentStepView(onSubmit: _handleSubmit),
+                if (draft.projectType != 'bidding')
+                  _isInternalSkipStep()
+                      ? InternalSkipStepView(
+                          onBack: _previousStep,
+                          onCreateProject: _submitProjectFlow,
+                          isSubmitting: _isSubmitting,
+                        )
+                      : PaymentStepView(
+                          onSubmit: _submitProjectFlow,
+                        ),
               ],
             ),
           ),
@@ -437,7 +491,7 @@ class _CreateProjectWizardPageState
                       onPressed: _isSubmitting
                           ? null
                           : (_currentStep == totalSteps - 1
-                              ? _handleSubmit
+                              ? _submitProjectFlow
                               : _nextStep),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

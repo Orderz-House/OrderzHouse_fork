@@ -101,11 +101,11 @@ class LoggingInterceptor extends Interceptor {
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Handle 401 globally (token expired/invalid)
-    // Don't clear on 403 as it might be role-based permission issue
+    // 401: clear stored auth so user is sent to login
     if (err.response?.statusCode == 401) {
       SecureStore.clearAll();
     }
+    // 401/403: backend message is in response.data.message and is used by callers
     handler.next(err);
   }
 }
