@@ -483,6 +483,14 @@ function ClientProjects() {
         }
       }
 
+      // Check if admin approval is required
+      if (action === "accept" && res?.data?.pendingAdminApproval === true) {
+        toast?.success?.("Offer accepted. Waiting for admin approval before project can start.");
+        // Refresh the project list to show updated status
+        helpers?.refresh?.();
+        return;
+      }
+
       setOffersListMap((prev) => {
         const next = { ...prev };
         const list = next[projectId] ? [...next[projectId]] : [];
@@ -1031,6 +1039,9 @@ function FreelancerProjects() {
 
     const completionKey = String(row?.completion_status || "").toLowerCase();
     const statusKey = String(row?.status || "").toLowerCase();
+    const isPendingAdminApproval = 
+      statusKey === "pending_admin_approval" || 
+      completionKey === "pending_admin_approval";
 
     // ✅ completed state (اعتمد على completion_status)
     const isCompleted =
@@ -1085,6 +1096,12 @@ function FreelancerProjects() {
             <span className="shiny-text">
               Awaiting the client's decision...
             </span>
+          </div>
+        ) : isPendingAdminApproval ? (
+          /* ✅ Awaiting Admin Approval */
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+            <Clock className="w-3 h-3" />
+            Awaiting Admin Approval
           </div>
         ) : (
           /* ✅ Deliver */

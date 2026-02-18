@@ -1,12 +1,52 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import API from "../../api/client.js";
 import { useToast } from "../../components/toast/ToastProvider";
-import { Archive, FileText, Search, Plus, Edit, Trash2, Eye } from "lucide-react";
+import {
+  Archive,
+  FileText,
+  Search,
+  Plus,
+  Loader2,
+  Edit,
+  Trash2,
+  X,
+} from "lucide-react";
+import TenderDetailsModal from "./components/TenderDetailsModal.jsx";
+
+/* ---------- Theme ---------- */
+const T = { primary: "#C2410C", dark: "#9A3412", ring: "rgba(15,23,42,.10)" };
+
+const cx = (...a) => a.filter(Boolean).join(" ");
+
+function ProjectsHero({ title, subtitle, eyebrow = "CLIENT" }) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 lg:p-6 text-white shadow-sm bg-gradient-to-b from-orange-400 to-red-500"
+    >
+      <div className="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute left-6 -bottom-24 h-56 w-56 rounded-full bg-black/10 blur-2xl" />
+
+      <div className="relative">
+        <div className="text-[10px] uppercase tracking-[0.22em] text-white/70 font-semibold">
+          {eyebrow}
+        </div>
+        <h2 className="mt-2 text-[18px] sm:text-[22px] lg:text-[26px] font-extrabold leading-tight text-white">
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className="mt-2 text-[12px] sm:text-sm text-white/80 max-w-2xl">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function TenderVaultManager() {
-  const { userData } = useSelector((s) => s.auth);
+  const { userData, token } = useSelector((s) => s.auth);
   const navigate = useNavigate();
   const toast = useToast();
   const [tenders, setTenders] = useState([]);
@@ -14,6 +54,12 @@ export default function TenderVaultManager() {
   const [activeTab, setActiveTab] = useState("stored");
   const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [selectedTender, setSelectedTender] = useState(null);
+  const [updating, setUpdating] = useState(false);
+
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
 
   // Check permission
   useEffect(() => {
@@ -25,7 +71,7 @@ export default function TenderVaultManager() {
 
   useEffect(() => {
     fetchTenders();
-  }, [activeTab, searchQuery, pagination.page]);
+  }, [activeTab, searchQuery, page]);
 
   const fetchTenders = async () => {
     try {
@@ -34,17 +80,15 @@ export default function TenderVaultManager() {
         params: {
           status: activeTab,
           q: searchQuery,
-          page: pagination.page,
-          limit: pagination.limit,
+          page: page,
+          limit: PAGE_SIZE,
         },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data?.success) {
         setTenders(res.data.tenders || []);
-        setPagination(res.data.pagination || pagination);
-        // If success=true and projects=[], show empty state (no error toast)
-        // Only show error toast when success=false or network error
+        setPagination(res.data.pagination || { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 });
       } else {
-        // Backend returned success=false
         toast.error(res.data?.message || "Failed to load tender vault projects");
         setTenders([]);
       }
@@ -54,10 +98,8 @@ export default function TenderVaultManager() {
         toast.error("Access denied. You do not have permission to manage tender vault.");
         navigate("/client");
       } else if (err.response?.status === 200 && err.response?.data?.success) {
-        // Success with empty list - no error toast
         setTenders([]);
       } else {
-        // Real error - show toast
         toast.error("Failed to load tender vault projects");
         setTenders([]);
       }
@@ -66,193 +108,472 @@ export default function TenderVaultManager() {
     }
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (tender, newStatus) => {
+    const id = tender?.id;
+    if (!id) return;
+
     try {
+      setUpdating(true);
       const res = await API.patch(`/tender-vault/${id}/status`, { status: newStatus });
       if (res.data?.success) {
         toast.success(`Tender status updated to ${newStatus}`);
         fetchTenders();
+        if (selectedTender?.id === id) {
+          setSelectedTender({ ...selectedTender, status: newStatus });
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update status");
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (tender) => {
+    const id = tender?.id;
+    if (!id) return;
+
     if (!window.confirm("Are you sure you want to delete this tender?")) return;
     try {
+      setUpdating(true);
       const res = await API.delete(`/tender-vault/${id}`);
       if (res.data?.success) {
         toast.success("Tender deleted successfully");
         fetchTenders();
+        if (selectedTender?.id === id) {
+          setSelectedTender(null);
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete tender");
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const statusTabs = [
-    { key: "stored", label: "Stored", count: 0 },
-    { key: "published", label: "Published", count: 0 },
-    { key: "archived", label: "Archived", count: 0 },
-  ];
+  const handleView = (tender) => {
+    setSelectedTender(tender);
+  };
+
+  const handleEdit = (tender) => {
+    navigate(`/client/tender-vault/${tender.id}/edit`);
+  };
+
+  const handlePublish = (tender) => {
+    handleStatusChange(tender, "published");
+  };
+
+  const handleUnpublish = (tender) => {
+    handleStatusChange(tender, "stored");
+  };
+
+  const handleArchive = (tender) => {
+    handleStatusChange(tender, "archived");
+  };
+
+  // Format currency (JD)
+  const formatJD = (value, { noDecimals = false } = {}) => {
+    if (value == null || value === "") return "—";
+    const num = Number(value);
+    if (isNaN(num)) return "—";
+    if (noDecimals && num % 1 === 0) {
+      return `${num} JD`;
+    }
+    return `${num.toFixed(2)} JD`;
+  };
+
+  // Format budget range
+  const formatBudget = (tender) => {
+    if (tender.budget_min && tender.budget_max) {
+      return `${formatJD(tender.budget_min, { noDecimals: true })} - ${formatJD(tender.budget_max, { noDecimals: true })}`;
+    }
+    if (tender.budget_min) {
+      return `From ${formatJD(tender.budget_min, { noDecimals: true })}`;
+    }
+    if (tender.budget_max) {
+      return `Up to ${formatJD(tender.budget_max, { noDecimals: true })}`;
+    }
+    return "—";
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "—";
+    }
+  };
+
+  // Format duration
+  const formatDuration = (tender) => {
+    if (tender.duration_value && tender.duration_unit) {
+      return `${tender.duration_value} ${tender.duration_unit}`;
+    }
+    return "—";
+  };
+
+  // Get status badge class
+  const getStatusBadgeClass = (status) => {
+    if (!status) return "bg-slate-100 text-slate-800";
+    switch (status.toLowerCase()) {
+      case "published":
+        return "bg-green-100 text-green-800";
+      case "stored":
+        return "bg-blue-100 text-blue-800";
+      case "archived":
+        return "bg-slate-100 text-slate-800";
+      default:
+        return "bg-amber-100 text-amber-800";
+    }
+  };
+
+  // Normalize skills to array of strings
+  const normalizeSkills = (skills) => {
+    if (!skills) return [];
+    if (Array.isArray(skills)) {
+      return skills.map((s) => (typeof s === "string" ? s : s?.name || s?.skill || String(s))).filter(Boolean);
+    }
+    if (typeof skills === "string") {
+      try {
+        const parsed = JSON.parse(skills);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // If not JSON, treat as comma-separated
+        return skills.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    return [];
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(tenders.length / PAGE_SIZE);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+  const pageItems = tenders.slice(startIndex, endIndex);
+  const showingStart = tenders.length > 0 ? startIndex + 1 : 0;
+  const showingEnd = Math.min(endIndex, tenders.length);
+
+  // Reset to page 1 when data changes
+  useEffect(() => {
+    if (tenders.length > 0 && page > totalPages) {
+      setPage(1);
+    }
+  }, [tenders.length, totalPages, page]);
+
+  // Loading skeleton rows
+  const SkeletonRow = () => (
+    <tr>
+      {[...Array(10)].map((_, i) => (
+        <td key={i} className="px-4 py-3">
+          <div className="h-4 bg-slate-200 rounded animate-pulse" />
+        </td>
+      ))}
+    </tr>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tender Vault</h1>
-          <p className="text-sm text-slate-600 mt-1">Manage your tender vault projects</p>
-        </div>
-        <button
-          onClick={() => navigate("/client/tender-vault/new")}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition"
-        >
-          <Plus className="w-4 h-4" />
-          New Tender
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search tenders..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setPagination((p) => ({ ...p, page: 1 }));
-          }}
-          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+    <>
+      <div className="space-y-5">
+        <ProjectsHero
+          eyebrow="CLIENT"
+          title="Tender Vault"
+          subtitle="Manage your tender vault projects: store, publish, and archive tenders."
         />
-      </div>
 
-      {/* Status Tabs */}
-      <div className="flex gap-2 border-b border-slate-200">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setPagination((p) => ({ ...p, page: 1 }));
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search tenders..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
             }}
-            className={`px-4 py-2 font-semibold text-sm border-b-2 transition ${
-              activeTab === tab.key
-                ? "border-orange-600 text-orange-600"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tenders List */}
-      {loading ? (
-        <div className="text-center py-12 text-slate-500">Loading...</div>
-      ) : tenders.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          No tenders found in {activeTab} status.
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          />
         </div>
-      ) : (
-        <div className="space-y-4">
-          {tenders.map((tender) => (
-            <div
-              key={tender.id}
-              className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md transition"
+
+        {/* Status Tabs */}
+        <div className="flex gap-2 border-b border-slate-200">
+          {[
+            { key: "stored", label: "Stored" },
+            { key: "published", label: "Published" },
+            { key: "archived", label: "Archived" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setPage(1);
+              }}
+              className={`px-4 py-2 font-semibold text-sm border-b-2 transition ${
+                activeTab === tab.key
+                  ? "border-orange-600 text-orange-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-slate-900">{tender.title}</h3>
-                  <p className="text-sm text-slate-600 mt-1 line-clamp-2">
-                    {tender.description}
-                  </p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-                    {tender.category_name && (
-                      <span>Category: {tender.category_name}</span>
-                    )}
-                    {tender.budget_min && tender.budget_max && (
-                      <span>
-                        Budget: {tender.budget_min} - {tender.budget_max} {tender.currency || 'JOD'}
-                      </span>
-                    )}
-                    {tender.closing_date && (
-                      <span>Closing: {new Date(tender.closing_date).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <button
-                    onClick={() => navigate(`/client/tender-vault/${tender.id}`)}
-                    className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition"
-                    title="View"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  {activeTab === "stored" && (
-                    <button
-                      onClick={() => handleStatusChange(tender.id, "published")}
-                      className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition"
-                      title="Publish"
-                    >
-                      <FileText className="w-4 h-4" />
-                    </button>
-                  )}
-                  {activeTab === "published" && (
-                    <button
-                      onClick={() => handleStatusChange(tender.id, "stored")}
-                      className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition"
-                      title="Unpublish"
-                    >
-                      <Archive className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleStatusChange(tender.id, "archived")}
-                    className="p-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition"
-                    title="Archive"
-                  >
-                    <Archive className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tender.id)}
-                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+              {tab.label}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))}
-            disabled={pagination.page === 1}
-            className="px-4 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-          >
-            Previous
-          </button>
-          <span className="px-4 py-2 text-sm text-slate-600">
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <button
-            onClick={() =>
-              setPagination((p) => ({ ...p, page: Math.min(p.totalPages, p.page + 1) }))
-            }
-            disabled={pagination.page === pagination.totalPages}
-            className="px-4 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-          >
-            Next
-          </button>
+        {/* Table */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Sub Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Sub-Sub Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Skills
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Budget Range
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Created At
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
+                ) : pageItems.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="px-4 py-8 text-center text-slate-500">
+                      {searchQuery ? (
+                        <>
+                          No tenders match your search "{searchQuery}" in {activeTab} status.
+                        </>
+                      ) : (
+                        <>No tenders found in {activeTab} status.</>
+                      )}
+                      <div className="mt-4">
+                        <button
+                          onClick={() => navigate("/client/tender-vault/new")}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition"
+                        >
+                          <Plus className="w-4 h-4" />
+                          New Tender
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  pageItems.map((tender) => {
+                    const skills = normalizeSkills(tender.metadata?.skills || tender.skills);
+                    return (
+                      <tr
+                        key={tender.id}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => handleView(tender)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-slate-900 max-w-xs truncate" title={tender.title}>
+                            {tender.title || "Untitled Tender"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                              tender.status
+                            )}`}
+                          >
+                            {tender.status ? tender.status.charAt(0).toUpperCase() + tender.status.slice(1) : "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {tender.category_name || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {tender.sub_category_name || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {tender.sub_sub_category_name || "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {skills.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {skills.slice(0, 3).map((skill, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                              {skills.length > 3 && (
+                                <span className="text-xs text-slate-500">+{skills.length - 3}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-slate-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {formatBudget(tender)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {formatDuration(tender)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {formatDate(tender.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            {activeTab === "stored" && (
+                              <button
+                                onClick={() => handlePublish(tender)}
+                                disabled={updating}
+                                className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
+                                title="Publish"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            )}
+                            {activeTab === "published" && (
+                              <button
+                                onClick={() => handleUnpublish(tender)}
+                                disabled={updating}
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                                title="Unpublish"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            )}
+                            {tender.status !== "archived" && (
+                              <button
+                                onClick={() => handleArchive(tender)}
+                                disabled={updating}
+                                className="p-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
+                                title="Archive"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleEdit(tender)}
+                              disabled={updating}
+                              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(tender)}
+                              disabled={updating}
+                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {tenders.length > 0 && (
+            <div className="px-4 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Showing <span className="font-medium">{showingStart}</span>–
+                <span className="font-medium">{showingEnd}</span> of{" "}
+                <span className="font-medium">{tenders.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
+                        page === pageNum
+                          ? "bg-orange-500 text-white"
+                          : "text-slate-700 bg-white border border-slate-300 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Tender Details Modal */}
+      {selectedTender && (
+        <TenderDetailsModal
+          tender={selectedTender}
+          onClose={() => setSelectedTender(null)}
+          onEdit={() => {
+            setSelectedTender(null);
+            handleEdit(selectedTender);
+          }}
+          onPublish={() => handlePublish(selectedTender)}
+          onUnpublish={() => handleUnpublish(selectedTender)}
+          onArchive={() => handleArchive(selectedTender)}
+          onDelete={() => {
+            handleDelete(selectedTender);
+            setSelectedTender(null);
+          }}
+          updating={updating}
+        />
       )}
-    </div>
+    </>
   );
 }

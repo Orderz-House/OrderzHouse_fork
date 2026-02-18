@@ -5,7 +5,7 @@ import { CheckCircle, MessageCircle, Calendar, DollarSign, CreditCard, Clock, Ta
 import API from "../../api/client.js";
 import { useToast } from "../../components/toast/ToastProvider";
 
-const WHATSAPP_NUMBER = "962791433341";
+const WHATSAPP_NUMBER = "971522857808";
 
 function DetailRow({ icon: Icon, label, value, valueBold, clamp }) {
   const valueContent =

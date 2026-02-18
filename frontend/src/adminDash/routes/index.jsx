@@ -13,6 +13,7 @@ import Verifications from "../pages/operation/Verifications.jsx";
 
 import AdminProjects from "../pages/operation/Projects/AdminProjects.jsx";
 import AdminPendingProjects from "../pages/operation/Projects/AdminPendingProjects.jsx";
+import AdminPendingBiddingApprovals from "../pages/operation/Projects/AdminPendingBiddingApprovals.jsx";
 import ClientsProjects from "../pages/operation/Projects/ClientsProjects.jsx";
 import FreelancersProjects from "../pages/operation/Projects/FreelancersProjects.jsx";
 import ProjectDetails from "../pages/operation/Projects/ProjectDetailsDash.jsx";
@@ -75,6 +76,7 @@ export default function AdminRouter() {
 
         <Route path="operation/projects" element={<AdminProjects />} />
         <Route path="operation/pending-approvals" element={<AdminPendingProjects />} />
+        <Route path="operation/pending-bidding-approvals" element={<AdminPendingBiddingApprovals />} />
         <Route path="operation/projects/:projectId" element={<ProjectDetails />} />
         <Route path="project/:projectId" element={<ProjectDetails />} />
 

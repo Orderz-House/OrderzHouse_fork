@@ -143,6 +143,20 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                               return;
                             }
                           }
+                          
+                          // Check if admin approval is required
+                          if (res?.data?.pendingAdminApproval === true) {
+                            setOffersForProject((prev) =>
+                              prev.map((x) => {
+                                if (x.offer_id === o.offer_id) return { ...x, offer_status: "accepted" };
+                                if (x.offer_status === "pending") return { ...x, offer_status: "rejected" };
+                                return x;
+                              })
+                            );
+                            toast.success("Offer accepted. Waiting for admin approval before project can start.");
+                            return;
+                          }
+                          
                           setOffersForProject((prev) =>
                             prev.map((x) => {
                               if (x.offer_id === o.offer_id) return { ...x, offer_status: "accepted" };

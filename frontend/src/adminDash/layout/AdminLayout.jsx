@@ -165,6 +165,12 @@ function getNav(role, navigate, base, onLogout, userData = null) {
         icon: Clipboard,
         onClick: () => navigate(`${base}/operation/pending-approvals`),
       },
+      {
+        id: "pending-bidding-approvals",
+        name: "Bidding Approvals",
+        icon: Clock,
+        onClick: () => navigate(`${base}/operation/pending-bidding-approvals`),
+      },
       // { id: "tasks", name: "Tasks", icon: Clipboard, onClick: () => navigate(`${base}/operation/tasks`) },
       {
         id: "blogs",
