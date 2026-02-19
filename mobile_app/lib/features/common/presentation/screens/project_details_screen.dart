@@ -489,7 +489,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     final project = _project;
     if (project == null) return false;
     final projectStatus = project.status.toLowerCase();
-    final isOpen = ['open', 'active', 'pending', 'in_progress'].contains(projectStatus);
+    final isOpen = ['open', 'active', 'pending', 'in_progress', 'bidding'].contains(projectStatus);
     
     return isOpen;
   }
@@ -1616,7 +1616,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     
     // Show Apply/Send Offer CTA if applicable (not owner, not assigned)
     if (isFreelancerRole && !isOwner && !isAssignedToMe && !isAssignedToSomeone) {
-      final isOpen = ['open', 'active', 'pending', 'in_progress'].contains(projectStatus);
+      final isOpen = ['open', 'active', 'pending', 'in_progress', 'bidding'].contains(projectStatus);
       if (isOpen) {
         if (AppConfig.isDevelopment) {
           debugPrint('✅ [ProjectDetails] Showing Apply/Send Offer CTA');
@@ -1721,15 +1721,17 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     );
   }
   
-  // Build Active Actions Row (Applicants + Receive) - for in-progress projects
+  // Build Active Actions Row (Offers for bidding / Applicants for fixed-hourly + Receive) - for in-progress projects
   Widget _buildActiveActionsRow(BuildContext context, {bool loading = false}) {
+    final isBidding = (_project?.projectType ?? '').toString().toLowerCase() == 'bidding';
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: loading ? null : () => _openApplications(context),
+            onPressed: loading ? null : () => isBidding ? _openOffers(context) : _openApplications(context),
             icon: const Icon(Icons.people_outline_rounded, size: 20),
-            label: Text(AppLocalizations.of(context)!.applicants),
+            label: Text(isBidding ? l10n.offers : l10n.applicants),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textPrimary,
               side: const BorderSide(color: AppColors.border),
@@ -3257,6 +3259,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 if (!response.success) {
                   throw Exception(response.message ?? 'Failed to process offer');
                 }
+                final data = response.data;
+                final pendingAdminApproval = data?['pendingAdminApproval'] == true;
+                final pid = data?['projectId'];
+                final projectId = pid is int ? pid : (pid is num ? pid.toInt() : null);
+
                 setModalState(() {
                   isSubmitting = false;
                   final updatedOffers = _offers.map((offer) {
@@ -3288,6 +3295,14 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 });
                 ref.invalidate(myProjectsProvider);
                 await ref.read(myProjectsProvider.future);
+
+                if (action == 'accept' && pendingAdminApproval && projectId != null && context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Offer accepted. Choose payment method on the next screen.')),
+                  );
+                  if (context.mounted) context.go('/project-success/$projectId');
+                }
               } catch (e) {
                 setModalState(() => isSubmitting = false);
                 rethrow;

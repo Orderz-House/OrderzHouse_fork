@@ -32,9 +32,6 @@ abstract final class ApiEndpoints {
   static String offersByProject(int projectId) => '/offers/project/$projectId/offers';
   static const String offersApproveReject = '/offers/offers/approve-reject';
 
-  // ——— Stripe ———
-  static const String stripeProjectCheckout = '/stripe/project-checkout-session';
-
   // ——— Notifications ———
   static const String notifications = '/notifications';
   static String notificationRead(int id) => '/notifications/$id/read';

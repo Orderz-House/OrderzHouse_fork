@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Survey / offline subscription flow (same as web: opens external survey URL).
 /// Route: /account-survey?planId=...
-const String kSurveyBaseUrl = 'https://appointments.battechno.com/survey';
-
 class AccountSurveyScreen extends StatelessWidget {
   final String? planId;
 
@@ -13,9 +12,10 @@ class AccountSurveyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseUrl = AppConfig.companySubscribeUrl;
     final uri = planId != null && planId!.isNotEmpty
-        ? Uri.parse('$kSurveyBaseUrl?planId=$planId')
-        : Uri.parse(kSurveyBaseUrl);
+        ? Uri.parse('$baseUrl?planId=$planId')
+        : Uri.parse(baseUrl);
 
     return Scaffold(
       appBar: AppBar(

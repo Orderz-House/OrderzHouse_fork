@@ -1091,7 +1091,10 @@ class ProjectsRepository implements IProjectsRepository {
         print('📡 REQUEST[GET] => PATH: /projects/success/$projectId');
       }
 
-      final response = await _dio.get('/projects/success/$projectId');
+      final response = await _dio.get(
+        '/projects/success/$projectId',
+        options: Options(receiveTimeout: const Duration(seconds: 25)),
+      );
 
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
@@ -1597,9 +1600,10 @@ class ProjectsRepository implements IProjectsRepository {
     }
   }
 
-  /// Approve or reject an offer (client)
+  /// Approve or reject an offer (client).
+  /// For bidding accept: returns data with pendingAdminApproval and projectId when admin approval is required.
   /// Endpoint: POST /offers/offers/approve-reject
-  Future<ApiResponse<void>> approveRejectOffer(int offerId, String action) async {
+  Future<ApiResponse<Map<String, dynamic>?>> approveRejectOffer(int offerId, String action) async {
     try {
       if (AppConfig.isDevelopment) {
         // ignore: avoid_print
@@ -1622,10 +1626,14 @@ class ProjectsRepository implements IProjectsRepository {
       final data = response.data as Map<String, dynamic>;
 
       if (data['success'] == true) {
-        return const ApiResponse(
+        final payload = <String, dynamic>{};
+        if (data['pendingAdminApproval'] == true) payload['pendingAdminApproval'] = true;
+        final pid = data['projectId'];
+        if (pid != null) payload['projectId'] = pid is int ? pid : int.tryParse(pid.toString());
+        return ApiResponse(
           success: true,
-          data: null,
-          message: 'Offer action completed successfully',
+          data: payload.isEmpty ? null : payload,
+          message: data['message'] as String? ?? 'Offer action completed successfully',
         );
       }
 

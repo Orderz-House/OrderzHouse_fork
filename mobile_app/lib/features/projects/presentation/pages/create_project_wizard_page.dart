@@ -189,7 +189,13 @@ class _CreateProjectWizardPageState
         if (!createResponse.success || createResponse.data == null) {
           throw Exception(createResponse.message ?? 'Failed to create project');
         }
-        final projectId = createResponse.data!['id'] as int;
+        final idRaw = createResponse.data!['id'];
+        final projectId = idRaw is int
+            ? idRaw
+            : (idRaw is num ? idRaw.toInt() : int.tryParse(idRaw?.toString() ?? '') ?? 0);
+        if (projectId <= 0) {
+          throw Exception(createResponse.message ?? 'Invalid project id');
+        }
         if (draft.projectFiles.isNotEmpty) {
           final filePaths = draft.projectFiles.map((f) => f.path).toList();
           final uploadResponse = await repository.uploadProjectFiles(projectId, filePaths);
@@ -236,17 +242,23 @@ class _CreateProjectWizardPageState
         if (!createResponse.success || createResponse.data == null) {
           throw Exception(createResponse.message ?? 'Failed to create project');
         }
-        final projectId = createResponse.data!['id'] as int;
+        final idRawB = createResponse.data!['id'];
+        final projectIdB = idRawB is int
+            ? idRawB
+            : (idRawB is num ? idRawB.toInt() : int.tryParse(idRawB?.toString() ?? '') ?? 0);
+        if (projectIdB <= 0) {
+          throw Exception(createResponse.message ?? 'Invalid project id');
+        }
         if (draft.projectFiles.isNotEmpty) {
           final filePaths = draft.projectFiles.map((f) => f.path).toList();
-          await repository.uploadProjectFiles(projectId, filePaths);
+          await repository.uploadProjectFiles(projectIdB, filePaths);
         }
         if (mounted) {
           ref.read(projectWizardProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.projectCreated), backgroundColor: Colors.green),
           );
-          context.go('/project-success/$projectId');
+          context.go('/project-success/$projectIdB');
         }
         return;
       }
@@ -272,14 +284,20 @@ class _CreateProjectWizardPageState
       if (!createResponse.success || createResponse.data == null) {
         throw Exception(createResponse.message ?? 'Failed to create project');
       }
-      final projectId = createResponse.data!['id'] as int;
+      final idRawC = createResponse.data!['id'];
+      final projectIdC = idRawC is int
+          ? idRawC
+          : (idRawC is num ? idRawC.toInt() : int.tryParse(idRawC?.toString() ?? '') ?? 0);
+      if (projectIdC <= 0) {
+        throw Exception(createResponse.message ?? 'Invalid project id');
+      }
 
       if (draft.projectFiles.isNotEmpty) {
         final filePaths = draft.projectFiles.map((f) => f.path).toList();
-        await repository.uploadProjectFiles(projectId, filePaths);
+        await repository.uploadProjectFiles(projectIdC, filePaths);
       }
 
-      final offlineResponse = await repository.setProjectOfflinePayment(projectId, 'cliq');
+      final offlineResponse = await repository.setProjectOfflinePayment(projectIdC, 'cliq');
       if (!offlineResponse.success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -294,7 +312,7 @@ class _CreateProjectWizardPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.projectCreated), backgroundColor: Colors.green),
         );
-        context.go('/project-success/$projectId');
+        context.go('/project-success/$projectIdC');
       }
     } catch (e) {
       if (mounted) {

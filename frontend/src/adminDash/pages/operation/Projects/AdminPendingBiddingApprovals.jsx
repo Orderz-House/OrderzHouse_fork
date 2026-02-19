@@ -96,7 +96,9 @@ export default function AdminPendingBiddingApprovals() {
       }
     } catch (err) {
       console.error("Failed to fetch pending bidding approvals:", err);
-      toast.error(err?.response?.data?.message || "Failed to load pending approvals");
+      const res = err?.response?.data;
+      const message = res?.error || res?.message || "Failed to load pending approvals";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

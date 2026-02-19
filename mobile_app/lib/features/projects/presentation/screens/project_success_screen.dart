@@ -16,10 +16,14 @@ class ProjectSuccessScreen extends ConsumerStatefulWidget {
   ConsumerState<ProjectSuccessScreen> createState() => _ProjectSuccessScreenState();
 }
 
+/// Default CliQ alias when not set from API/env.
+const String _defaultCliqAlias = 'Batman0';
+
 class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
   Map<String, dynamic>? _project;
   bool _loading = true;
   String? _error;
+  bool _paymentSubmitting = false;
 
   @override
   void initState() {
@@ -27,18 +31,26 @@ class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    final repo = ProjectsRepository();
-    final response = await repo.getProjectSuccess(widget.projectId);
-    if (!mounted) return;
-    setState(() {
-      _loading = false;
-      if (response.success && response.data != null) {
-        _project = response.data;
+  Future<void> _load({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _loading = true);
+    try {
+      final repo = ProjectsRepository();
+      final response = await repo.getProjectSuccess(widget.projectId);
+      if (!mounted) return;
+      final data = response.success && response.data != null && response.data!.isNotEmpty
+          ? response.data
+          : null;
+      if (data != null) {
+        _project = data;
+        _error = null;
       } else {
         _error = response.message ?? 'Failed to load project';
       }
-    });
+    } catch (e) {
+      if (mounted) _error = 'Failed to load project';
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   String _formatBudget(Map<String, dynamic>? p) {
@@ -46,7 +58,11 @@ class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
     final t = p['project_type'];
     if (t == 'fixed') return '${p['budget'] ?? '—'}';
     if (t == 'hourly') return '${p['hourly_rate'] ?? '—'}/hr';
-    if (t == 'bidding') return '${p['budget_min'] ?? '—'} - ${p['budget_max'] ?? '—'}';
+    if (t == 'bidding') {
+      final amount = p['accepted_offer_amount'];
+      if (amount != null) return amount is num ? amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2) : amount.toString();
+      return '${p['budget_min'] ?? '—'} - ${p['budget_max'] ?? '—'}';
+    }
     return '—';
   }
 
@@ -151,7 +167,13 @@ class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
     final p = _project!;
     final paymentMethod = p['payment_method'] as String?;
     final adminStatus = p['admin_approval_status'] as String?;
+    final status = (p['status'] as String? ?? '').toString().toLowerCase();
+    final isBidding = (p['project_type'] as String? ?? '').toString().toLowerCase() == 'bidding';
+    final showPaymentChooser = isBidding &&
+        (status == 'pending_admin_approval' || adminStatus == 'pending') &&
+        (paymentMethod == null || paymentMethod == 'skipped');
     final isCliq = paymentMethod == 'cliq';
+    final cliqDisplay = p['cliq_alias'] as String? ?? p['cliq_number'] as String? ?? _defaultCliqAlias;
 
     return Scaffold(
       body: SafeArea(
@@ -227,7 +249,9 @@ class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Your project will be created but will remain hidden until admin approves your payment.',
+                          showPaymentChooser
+                              ? 'Choose payment method (CliQ or Cash). After payment, admin will review your request.'
+                              : 'Your project will be created but will remain hidden until admin approves your payment.',
                           style: TextStyle(color: Colors.amber.shade900, fontSize: 13),
                         ),
                       ),
@@ -235,94 +259,254 @@ class _ProjectSuccessScreenState extends ConsumerState<ProjectSuccessScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: AppSpacing.xl),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.projectDetails,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _row('Project ID', '#${p['id']}'),
-                    _row('Title', p['title'] ?? '—'),
-                    _row(l10n.amountLabel, '${_formatBudget(p)} JOD'),
-                    _row('Payment method', _formatPaymentMethod(paymentMethod)),
-                    if (p['category_name'] != null)
-                      _row(l10n.categoryLabel, p['category_name'] as String? ?? '—'),
-                    if (p['created_at'] != null)
-                      _row('Created', _formatDate(p['created_at'])),
-                  ],
-                ),
-              ),
-              if (isCliq) ...[
-                const SizedBox(height: AppSpacing.lg),
+              if (showPaymentChooser) ...[
+                const SizedBox(height: AppSpacing.xl),
                 Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    border: Border.all(color: Colors.blue.shade200),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue.shade800, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Please send a screenshot of your CliQ payment on WhatsApp to confirm your payment.',
-                          style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                      Text(
+                        'Payment',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Choose your payment method to complete the project posting.',
+                        style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Project', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade800)),
+                            const SizedBox(height: 4),
+                            Text(p['title'] ?? '—', style: const TextStyle(color: Color(0xFF111827))),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Amount: ${_formatBudget(p)} JOD',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFEA580C),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _paymentSubmitting
+                              ? null
+                              : () async {
+                                  setState(() => _paymentSubmitting = true);
+                                  final repo = ProjectsRepository();
+                                  final res = await repo.setProjectOfflinePayment(widget.projectId, 'cliq');
+                                  if (!mounted) return;
+                                  setState(() => _paymentSubmitting = false);
+                                  if (res.success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('CliQ selected. Waiting for admin approval.')),
+                                    );
+                                    await _load(showLoading: false);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(res.message ?? 'Failed to set payment method')),
+                                    );
+                                  }
+                                },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: AppColors.accentOrange),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_paymentSubmitting)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              else
+                                const Icon(Icons.phone_android, color: AppColors.accentOrange),
+                              const SizedBox(width: 10),
+                              const Text('Pay via CliQ'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _paymentSubmitting
+                              ? null
+                              : () async {
+                                  setState(() => _paymentSubmitting = true);
+                                  final repo = ProjectsRepository();
+                                  final res = await repo.setProjectOfflinePayment(widget.projectId, 'cash');
+                                  if (!mounted) return;
+                                  setState(() => _paymentSubmitting = false);
+                                  if (res.success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Cash selected. Waiting for admin approval.')),
+                                    );
+                                    await _load(showLoading: false);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(res.message ?? 'Failed to set payment method')),
+                                    );
+                                  }
+                                },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: AppColors.accentOrange),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_paymentSubmitting)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              else
+                                const Icon(Icons.payments, color: AppColors.accentOrange),
+                              const SizedBox(width: 10),
+                              const Text('Pay Cash'),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ] else ...[
+                const SizedBox(height: AppSpacing.xl),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.projectDetails,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _row('Project ID', '#${p['id']}'),
+                      _row('Title', p['title'] ?? '—'),
+                      _row(l10n.amountLabel, '${_formatBudget(p)} JOD'),
+                      _row('Payment method', _formatPaymentMethod(paymentMethod)),
+                      if (isCliq)
+                        _row('CliQ transfer to', cliqDisplay),
+                      if (p['category_name'] != null)
+                        _row(l10n.categoryLabel, p['category_name'] as String? ?? '—'),
+                      if (p['created_at'] != null)
+                        _row('Created', _formatDate(p['created_at'])),
+                    ],
+                  ),
+                ),
+                if (isCliq) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      border: Border.all(color: Colors.blue.shade200),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Transfer to: $cliqDisplay',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFEA580C),
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Please send a screenshot of your CliQ payment on WhatsApp to confirm your payment.',
+                          style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _openWhatsApp,
+                    icon: const Icon(Icons.chat, size: 22),
+                    label: const Text('Send on WhatsApp'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => context.go('/client'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accentOrange,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Go to My Projects'),
+                  ),
+                ),
               ],
-              const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _openWhatsApp,
-                  icon: const Icon(Icons.chat, size: 22),
-                  label: const Text('Send on WhatsApp'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => context.go('/client'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accentOrange,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('Go to My Projects'),
-                ),
-              ),
             ],
           ),
         ),

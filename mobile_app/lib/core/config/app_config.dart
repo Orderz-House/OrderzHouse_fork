@@ -31,4 +31,14 @@ class AppConfig {
     }
     return null;
   }
+
+  /// Company subscription survey URL (offline payment / Subscribe from Company).
+  /// Set COMPANY_SUBSCRIBE_URL in .env, e.g. https://appointments.battechno.com/survey
+  static String get companySubscribeUrl {
+    if (dotenv.isInitialized) {
+      final url = dotenv.env['COMPANY_SUBSCRIBE_URL'];
+      if (url != null && url.isNotEmpty) return url;
+    }
+    return 'https://appointments.battechno.com/survey';
+  }
 }

@@ -1,10 +1,21 @@
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useToast } from "../toast/ToastProvider";
 import API from "../../api/client.js";
 
 const THEME = "#028090";
 
+function getToken(state) {
+  const t = state?.auth?.token;
+  if (t) return t;
+  if (typeof window !== "undefined") return localStorage.getItem("accessToken");
+  return null;
+}
+
 export default function OffersReceived({ item, offersForProject, setOffersForProject }) {
   const toast = useToast();
+  const navigate = useNavigate();
+  const token = useSelector(getToken);
 
   return (
     <div className="mt-8 rounded-2xl border-2 border-teal-100 bg-gradient-to-br from-white to-teal-50/30 p-6 shadow-sm">
@@ -121,7 +132,6 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                   <div className="flex items-center gap-2 pt-3 border-t border-slate-200">
                     <button
                       onClick={async () => {
-                        const token = localStorage.getItem("token");
                         if (!token) {
                           toast.error("Please login first.");
                           return;
@@ -132,31 +142,6 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                             { offerId: o.offer_id, action: "accept" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
-                          if (res?.data?.requiresPayment === true) {
-                            const payRes = await API.post(
-                              "/stripe/offer-accept-checkout",
-                              { offerId: o.offer_id },
-                              { headers: { Authorization: `Bearer ${token}` } }
-                            );
-                            if (payRes?.data?.url) {
-                              window.location.href = payRes.data.url;
-                              return;
-                            }
-                          }
-                          
-                          // Check if admin approval is required
-                          if (res?.data?.pendingAdminApproval === true) {
-                            setOffersForProject((prev) =>
-                              prev.map((x) => {
-                                if (x.offer_id === o.offer_id) return { ...x, offer_status: "accepted" };
-                                if (x.offer_status === "pending") return { ...x, offer_status: "rejected" };
-                                return x;
-                              })
-                            );
-                            toast.success("Offer accepted. Waiting for admin approval before project can start.");
-                            return;
-                          }
-                          
                           setOffersForProject((prev) =>
                             prev.map((x) => {
                               if (x.offer_id === o.offer_id) return { ...x, offer_status: "accepted" };
@@ -164,6 +149,12 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                               return x;
                             })
                           );
+                          if (res?.data?.pendingAdminApproval === true) {
+                            toast.success("Offer accepted. Choose payment method (CliQ/Cash). Project is pending admin approval.");
+                            const projectId = res?.data?.projectId ?? item?.id;
+                            if (projectId) navigate(`/projects/success/${projectId}`);
+                            return;
+                          }
                           toast.success("Offer accepted successfully! Other offers rejected.");
                         } catch (err) {
                           console.error("Accept offer failed", err);
@@ -174,7 +165,7 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                               )
                             );
                           }
-                          toast.error(err?.response?.data?.message || "Failed to accept offer");
+                          toast.error(err?.response?.data?.message || "Server error");
                         }
                       }}
                       className="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -183,7 +174,6 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                     </button>
                     <button
                       onClick={async () => {
-                        const token = localStorage.getItem("token");
                         if (!token) {
                           toast.error("Please login first.");
                           return;
