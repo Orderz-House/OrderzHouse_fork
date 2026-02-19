@@ -165,7 +165,8 @@ export default function ProjectDetails({ mode: propMode }) {
 
   const readOnly = !!location.state?.readOnly;
   const roleLabel = location.state?.role || "guest";
-  const { userData } = useSelector((s) => s?.auth || {}) || {};
+  const { userData, token: reduxToken } = useSelector((s) => s?.auth || {}) || {};
+  const token = reduxToken ?? (typeof window !== "undefined" ? localStorage.getItem("accessToken") : null);
 
   const roleIdFromRedux =
     userData?.role_id ?? userData?.roleId ?? userData?.role ?? null;
@@ -215,23 +216,23 @@ export default function ProjectDetails({ mode: propMode }) {
 
   (async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+      const authToken = reduxToken ?? (typeof window !== "undefined" ? localStorage.getItem("accessToken") : null);
+      if (!authToken) return;
 
       const projectType = item?.project_type ?? item?.type;
 
       if (projectType === "bidding") {
-        const r = await checkMyPendingOfferApi(id, token); // endpoint الجديد
-        setHasApplied(!!r?.hasPendingOffer); // مهم: true/false
+        const r = await checkMyPendingOfferApi(id, authToken);
+        setHasApplied(!!r?.hasPendingOffer);
       } else {
         const isAssigned = await checkIfAssignedApi(id);
-        setHasApplied(!!isAssigned); // مهم: true/false
+        setHasApplied(!!isAssigned);
       }
     } catch (e) {
       console.error(e);
     }
   })();
-}, [id, isFreelancer, mode, item]);
+}, [id, isFreelancer, mode, item, reduxToken]);
 
   // =============================== Handlers
   const onApplyToProject = () => {
@@ -246,7 +247,6 @@ export default function ProjectDetails({ mode: propMode }) {
   };
 
   const handleConfirmApply = async () => {
-    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Please login first.");
       setShowApplyModal(false);

@@ -348,6 +348,7 @@ function AdminProjects() {
 function ClientProjects() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const toast = useToast();
   const roleBase = useMemo(() => {
     const seg = (pathname.split("/")[1] || "").toLowerCase();
     return ["admin", "client", "freelancer", "partner"].includes(seg)
@@ -483,11 +484,32 @@ function ClientProjects() {
         }
       }
 
-      // Check if admin approval is required
+      // Check if admin approval is required (bidding flow)
       if (action === "accept" && res?.data?.pendingAdminApproval === true) {
-        toast?.success?.("Offer accepted. Waiting for admin approval before project can start.");
-        // Refresh the project list to show updated status
-        helpers?.refresh?.();
+        const pid = res?.data?.projectId ?? projectId;
+        setOffersListMap((prev) => {
+          const next = { ...prev };
+          const list = next[projectId] ? [...next[projectId]] : [];
+          next[projectId] = list.map((o) => {
+            const oid = o.offer_id ?? o.offerId ?? o.id;
+            if (String(oid) === String(offerId)) return { ...o, offer_status: "accepted" };
+            if (String(o.offer_status || "").toLowerCase() === "pending") return { ...o, offer_status: "rejected" };
+            return o;
+          });
+          const updated = next[projectId] || [];
+          const stats = { total: 0, pending: 0, accepted: 0 };
+          for (const o of updated) {
+            stats.total += 1;
+            if (String(o.offer_status || "").toLowerCase() === "pending") stats.pending += 1;
+            if (String(o.offer_status || "").toLowerCase() === "accepted") stats.accepted += 1;
+          }
+          setOffersMap((m) => ({ ...m, [projectId]: stats }));
+          return next;
+        });
+        toast.success("Offer accepted. Choose payment method on the next page.");
+        setOffersOpen(false);
+        setOffersProject(null);
+        if (pid) navigate(`/projects/success/${pid}`);
         return;
       }
 
@@ -548,9 +570,7 @@ function ClientProjects() {
         });
       }
 
-      try {
-        alert(msg || "Failed to update offer. Please try again.");
-      } catch {}
+      toast.error(msg || "Failed to update offer. Please try again.");
     } finally {
       setOffersSubmitting(false);
     }
@@ -671,12 +691,10 @@ function ClientProjects() {
       });
     } catch (err) {
       console.error("Failed to update application status", err);
-      try {
-        alert(
-          err?.response?.data?.message ||
-            "Failed to update application. Please try again."
-        );
-      } catch {}
+      toast.error(
+        err?.response?.data?.message ||
+          "Failed to update application. Please try again."
+      );
     } finally {
       setAppsSubmitting(false);
     }

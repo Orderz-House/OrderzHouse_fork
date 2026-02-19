@@ -6,6 +6,8 @@ const STORAGE_KEYS = { ACCESS_TOKEN: "accessToken" };
 
 /** Run refresh every 12 min so access token (e.g. 15m) never expires during use */
 const PROACTIVE_REFRESH_INTERVAL_MS = 12 * 60 * 1000;
+/** Delay first refresh after login/hydrate so refresh cookie is attached (avoids intermittent 401) */
+const FIRST_REFRESH_DELAY_MS = 3000;
 
 /**
  * API base URL: يختار تلقائياً حسب المكان (محلي أو لايف) بدون تغيير يدوي
@@ -37,22 +39,42 @@ const API = axios.create({
 
 let refreshPromise = null;
 let proactiveRefreshTimerId = null;
+let proactiveRefreshTimeoutId = null;
+
+async function doOneRefresh() {
+  if (!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) return;
+  try {
+    const { data } = await API.post("/users/refresh");
+    if (data?.token) store.dispatch(setToken(data.token));
+  } catch (err) {
+    const msg = err?.response?.data?.message || "";
+    if (msg.toLowerCase().includes("missing") && err?.response?.status === 401) {
+      await new Promise((r) => setTimeout(r, 1000));
+      try {
+        const { data: retryData } = await API.post("/users/refresh");
+        if (retryData?.token) store.dispatch(setToken(retryData.token));
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
 
 /** Start background refresh so user is not logged out after token expiry. Call on login/hydrate. */
 export function startProactiveRefresh() {
   clearProactiveRefresh();
-  proactiveRefreshTimerId = setInterval(async () => {
-    if (!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) return;
-    try {
-      const { data } = await API.post("/users/refresh");
-      if (data?.token) store.dispatch(setToken(data.token));
-    } catch {
-      // ignore; next run or next request will retry
-    }
-  }, PROACTIVE_REFRESH_INTERVAL_MS);
+  proactiveRefreshTimeoutId = setTimeout(() => {
+    proactiveRefreshTimeoutId = null;
+    doOneRefresh();
+    proactiveRefreshTimerId = setInterval(doOneRefresh, PROACTIVE_REFRESH_INTERVAL_MS);
+  }, FIRST_REFRESH_DELAY_MS);
 }
 
 export function clearProactiveRefresh() {
+  if (proactiveRefreshTimeoutId) {
+    clearTimeout(proactiveRefreshTimeoutId);
+    proactiveRefreshTimeoutId = null;
+  }
   if (proactiveRefreshTimerId) {
     clearInterval(proactiveRefreshTimerId);
     proactiveRefreshTimerId = null;
@@ -144,30 +166,47 @@ API.interceptors.response.use(
       const { data } = await refreshPromise;
       refreshPromise = null;
       const newToken = data?.token;
-      
+
       if (newToken) {
         store.dispatch(setToken(newToken));
         startProactiveRefresh();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         originalRequest._retryAfterRefresh = true;
-        
+
         if (process.env.NODE_ENV === "development") {
           console.log("✅ Token refreshed, retrying original request");
         }
-        
+
         return API(originalRequest);
       } else {
         throw new Error("No token in refresh response");
       }
     } catch (refreshError) {
+      const refreshErrorMessage = String(refreshError.response?.data?.message || "").toLowerCase();
+      const isMissing = refreshErrorMessage.includes("missing");
+
+      if (isMissing) {
+        refreshPromise = null;
+        await new Promise((r) => setTimeout(r, 1000));
+        try {
+          const retryRes = await API.post("/users/refresh");
+          const newToken = retryRes?.data?.token;
+          if (newToken) {
+            store.dispatch(setToken(newToken));
+            startProactiveRefresh();
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            originalRequest._retryAfterRefresh = true;
+            return API(originalRequest);
+          }
+        } catch (_) {}
+      }
+
       refreshPromise = null;
-      const refreshErrorMessage = refreshError.response?.data?.message || "";
-      
-      // Only logout if refresh truly failed (invalid/expired token)
-      // Don't logout on network errors or missing cookies (might be temporary)
-      if (refreshErrorMessage.includes("Invalid or expired") || 
-          refreshErrorMessage.includes("expired") ||
-          (refreshError.response?.status === 401 && refreshErrorMessage.includes("missing"))) {
+      // Only logout if refresh truly failed (invalid/expired token), not on "missing" after retry
+      if (
+        refreshErrorMessage.includes("invalid or expired") ||
+        refreshErrorMessage.includes("expired")
+      ) {
         if (process.env.NODE_ENV === "development") {
           console.warn("🔄 Refresh failed with invalid token, logging out");
         }
@@ -177,7 +216,7 @@ API.interceptors.response.use(
         console.warn("🔄 Refresh failed but not logging out (might be temporary):", refreshErrorMessage);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

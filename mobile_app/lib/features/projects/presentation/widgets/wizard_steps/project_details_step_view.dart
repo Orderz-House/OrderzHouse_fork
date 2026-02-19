@@ -43,33 +43,38 @@ class _ProjectDetailsStepViewState
 
   void _loadInitialData() {
     final draft = ref.read(projectWizardProvider);
-    _titleController.text = draft.title ?? '';
-    _descriptionController.text = draft.description ?? '';
-    if (draft.budget != null) _budgetController.text = draft.budget.toString();
-    if (draft.hourlyRate != null) {
-      _hourlyRateController.text = draft.hourlyRate.toString();
+    // Hourly rate option is disabled; reset to fixed if it was selected
+    if (draft.projectType == 'hourly') {
+      ref.read(projectWizardProvider.notifier).updateProjectType('fixed');
     }
-    if (draft.budgetMin != null) {
-      _budgetMinController.text = draft.budgetMin.toString();
+    final draftAfter = ref.read(projectWizardProvider);
+    _titleController.text = draftAfter.title ?? '';
+    _descriptionController.text = draftAfter.description ?? '';
+    if (draftAfter.budget != null) _budgetController.text = draftAfter.budget.toString();
+    if (draftAfter.hourlyRate != null) {
+      _hourlyRateController.text = draftAfter.hourlyRate.toString();
     }
-    if (draft.budgetMax != null) {
-      _budgetMaxController.text = draft.budgetMax.toString();
+    if (draftAfter.budgetMin != null) {
+      _budgetMinController.text = draftAfter.budgetMin.toString();
     }
-    if (draft.durationDays != null) {
-      _durationDaysController.text = draft.durationDays.toString();
+    if (draftAfter.budgetMax != null) {
+      _budgetMaxController.text = draftAfter.budgetMax.toString();
     }
-    if (draft.durationHours != null) {
-      _durationHoursController.text = draft.durationHours.toString();
+    if (draftAfter.durationDays != null) {
+      _durationDaysController.text = draftAfter.durationDays.toString();
     }
-    if (draft.preferredSkills.isNotEmpty) {
-      _skillsController.text = draft.preferredSkills.join(', ');
+    if (draftAfter.durationHours != null) {
+      _durationHoursController.text = draftAfter.durationHours.toString();
+    }
+    if (draftAfter.preferredSkills.isNotEmpty) {
+      _skillsController.text = draftAfter.preferredSkills.join(', ');
     }
 
-    if (draft.categoryId != null) {
-      _loadSubCategories(draft.categoryId!);
+    if (draftAfter.categoryId != null) {
+      _loadSubCategories(draftAfter.categoryId!);
     }
-    if (draft.subCategoryId != null && draft.categoryId != null) {
-      _loadSubSubCategories(draft.categoryId!, draft.subCategoryId!);
+    if (draftAfter.subCategoryId != null && draftAfter.categoryId != null) {
+      _loadSubSubCategories(draftAfter.categoryId!, draftAfter.subCategoryId!);
     }
   }
 
@@ -329,7 +334,7 @@ class _ProjectDetailsStepViewState
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                initialValue: draft.projectType,
+                initialValue: (draft.projectType == 'hourly') ? 'fixed' : draft.projectType,
                 decoration: InputDecoration(
                   hintText: l10n.selectProjectTypeHint,
                   border: OutlineInputBorder(
@@ -339,7 +344,6 @@ class _ProjectDetailsStepViewState
                 ),
                 items: [
                   DropdownMenuItem(value: 'fixed', child: Text(l10n.projectTypeFixed)),
-                  DropdownMenuItem(value: 'hourly', child: Text(l10n.projectTypeHourly)),
                   DropdownMenuItem(value: 'bidding', child: Text(l10n.projectTypeBidding)),
                 ],
                 onChanged: (value) {

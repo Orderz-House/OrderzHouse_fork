@@ -10,7 +10,6 @@ class AppPrefs {
   static const String _themeModeKey = 'app_theme_mode';
   static const String _onboardingSeenKey = 'onboarding_seen';
   static const String _lastRouteKey = 'last_route';
-  static const String _pendingStripeFilePathsKey = 'pending_stripe_file_paths';
 
   static SharedPreferences? _prefs;
   static bool _initDone = false;
@@ -77,21 +76,5 @@ class AppPrefs {
   static Future<void> clearLastRoute() async {
     final prefs = await _instance;
     await prefs.remove(_lastRouteKey);
-  }
-
-  // ——— Pending file paths for upload after Stripe success (deep link) ———
-  static Future<void> setPendingStripeFilePaths(List<String> paths) async {
-    final prefs = await _instance;
-    await prefs.setStringList(_pendingStripeFilePathsKey, paths);
-  }
-
-  static Future<List<String>> getPendingStripeFilePaths() async {
-    final prefs = await _instance;
-    return prefs.getStringList(_pendingStripeFilePathsKey) ?? [];
-  }
-
-  static Future<void> clearPendingStripeFilePaths() async {
-    final prefs = await _instance;
-    await prefs.remove(_pendingStripeFilePathsKey);
   }
 }

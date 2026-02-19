@@ -125,11 +125,6 @@ class ApiClient {
     return _dio.get('/offers/project/$projectId/offers');
   }
 
-  /// POST /stripe/project-checkout-session
-  Future<Response> createProjectCheckoutSession(Map<String, dynamic> body) {
-    return _dio.post('/stripe/project-checkout-session', data: body);
-  }
-
   // ——— Notifications ———
   /// GET /notifications
   Future<Response> getNotifications({

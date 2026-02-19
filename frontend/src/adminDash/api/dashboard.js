@@ -280,9 +280,9 @@ export async function fetchClientDashboard() {
     (o) => String(o?.offer_status || o?.status || "").toLowerCase() === "pending"
   );
 
-  pendingOffers.forEach((o) => {
+  pendingOffers.forEach((o, idx) => {
     actionableItems.push({
-      id: `decision_offer_${o.id}`,
+      id: `decision_offer_${o.id ?? o.offer_id ?? o.offerId ?? idx}`,
       type: "decision_required",
       priority: 3,
       title: "Decision required",

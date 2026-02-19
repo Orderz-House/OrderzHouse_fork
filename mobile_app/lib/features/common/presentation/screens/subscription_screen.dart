@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/empty_state.dart';
@@ -8,10 +9,11 @@ import '../../../../core/widgets/error_state.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../plans/presentation/providers/plans_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../subscriptions/presentation/providers/subscription_provider.dart';
-import '../../../subscriptions/presentation/widgets/stripe_checkout_webview.dart';
+import '../../../subscriptions/presentation/widgets/payment_method_chooser_sheet.dart';
 import '../../../../core/models/plan.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
@@ -23,7 +25,6 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   int _selectedTab = 0; // 0 = Plans, 1 = FAQ (UI only)
-  bool _isProcessingPayment = false;
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +376,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   Future<void> _handlePlanSelection(Plan plan) async {
     final authState = ref.read(authStateProvider);
     final user = authState.user;
-    
+
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -386,106 +387,43 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       return;
     }
 
-    if (_isProcessingPayment) {
-      return; // Prevent multiple taps
-    }
+    showPaymentMethodChooserSheet(
+      context: context,
+      onSubscribeFromCompany: () => _openCompanySubscribeUrl(),
+    );
+  }
 
-    setState(() => _isProcessingPayment = true);
-
+  Future<void> _openCompanySubscribeUrl() async {
+    final uri = Uri.parse(AppConfig.companySubscribeUrl);
     try {
-      final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
-      
-      // Create Stripe checkout session
-      final checkoutResponse = await subscriptionRepo.createCheckoutSession(
-        planId: plan.id,
-        userId: user.id,
-      );
-
-      if (!checkoutResponse.success || checkoutResponse.data == null) {
-        throw Exception(checkoutResponse.message ?? 'Failed to create checkout session');
-      }
-
-      final checkoutUrl = checkoutResponse.data!;
-
-      if (!mounted) return;
-
-      // Show WebView for Stripe checkout
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => StripeCheckoutWebView(
-            checkoutUrl: checkoutUrl,
-            onSuccess: (sessionId) async {
-              // Close WebView
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
-
-              // Confirm payment with backend
-              final confirmResponse = await subscriptionRepo.confirmCheckoutSession(sessionId);
-
-              if (!mounted) return;
-
-              if (confirmResponse.success) {
-                // Refresh plans to show updated subscription status
-                ref.invalidate(plansProvider);
-                
-                // Refresh user data to update verification status if applicable
-                await ref.read(authStateProvider.notifier).refreshUser();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Payment successful! Subscription activated.'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(confirmResponse.message ?? 'Payment received. Finalizing subscription...'),
-                    backgroundColor: Colors.orange,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            onCancel: () {
-              if (mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Payment cancelled'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            },
-            onError: (error) {
-              if (mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Payment error: $error'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Please complete the company subscription form. Your request will be reviewed.',
+            ),
+            backgroundColor: AppColors.accentOrange,
+            duration: const Duration(seconds: 4),
           ),
-        ),
-      );
+        );
+      }
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link. Please try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessingPayment = false);
       }
     }
   }
@@ -498,10 +436,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             : plan.planType;
 
     return InkWell(
-      onTap: _isProcessingPayment ? null : () => _handlePlanSelection(plan),
+      onTap: () => _handlePlanSelection(plan),
       borderRadius: BorderRadius.circular(18),
       child: Opacity(
-        opacity: _isProcessingPayment ? 0.6 : 1.0,
+        opacity: 1.0,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(

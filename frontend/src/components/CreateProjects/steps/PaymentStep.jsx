@@ -129,21 +129,9 @@ export default function PaymentStep({
               : 'border-slate-200 bg-white hover:border-orange-300 hover:shadow-md'
           } ${isSubmitting || selectedMethod !== null ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-lg font-semibold text-slate-900">Pay via CliQ</p>
-              
-              {/* CliQ Details Highlight Box */}
-              <div className="mt-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-sm">
-                  <span className="font-bold text-slate-900">Alias:</span>{' '}
-                  <span className="font-semibold text-slate-900">BATMAN0 — عاصم عبدالله القيسي — Capital Bank</span>
-                </p>
-              </div>
-              
-              <p className="text-sm text-slate-500 mt-2">Requires admin approval</p>
-            </div>
-            <div className="text-2xl flex-shrink-0 mt-1">📱</div>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-lg font-semibold text-slate-900">Pay via CliQ</p>
+            <div className="text-2xl flex-shrink-0">📱</div>
           </div>
         </button>
 
@@ -156,25 +144,9 @@ export default function PaymentStep({
               : 'border-slate-200 bg-white hover:border-orange-300 hover:shadow-md'
           } ${isSubmitting || selectedMethod !== null ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-lg font-semibold text-slate-900">Pay Cash</p>
-              
-              {/* Cash Payment Note */}
-              <p className="text-sm font-semibold text-slate-700 mt-2">
-                Cash should be paid at the company office.
-              </p>
-              
-              {/* Address Block */}
-              <div className="mt-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                  Amman, Madinah Street{'\n'}Al-Basem Complex 2, Office 405
-                </p>
-              </div>
-              
-              <p className="text-sm text-slate-500 mt-2">Requires admin approval</p>
-            </div>
-            <div className="text-2xl flex-shrink-0 mt-1">💵</div>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-lg font-semibold text-slate-900">Pay Cash</p>
+            <div className="text-2xl flex-shrink-0">💵</div>
           </div>
         </button>
       </div>

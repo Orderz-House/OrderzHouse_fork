@@ -6,6 +6,8 @@ import API from "../../api/client.js";
 import { useToast } from "../../components/toast/ToastProvider";
 
 const WHATSAPP_NUMBER = "971522857808";
+/** Default CliQ alias shown when not set in backend/frontend env */
+const DEFAULT_CLIQ_ALIAS = "Batman0";
 
 function DetailRow({ icon: Icon, label, value, valueBold, clamp }) {
   const valueContent =
@@ -63,6 +65,7 @@ export default function ProjectSuccess() {
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -74,9 +77,9 @@ export default function ProjectSuccess() {
     fetchProject();
   }, [id]);
 
-  const fetchProject = async () => {
+  const fetchProject = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const { data } = await API.get(`/projects/success/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -92,7 +95,7 @@ export default function ProjectSuccess() {
       toast.error(err.response?.data?.message || (isArabic ? "فشل تحميل المشروع" : "Failed to load project"));
       navigate("/", { replace: true });
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -171,7 +174,10 @@ export default function ProjectSuccess() {
   const handleWhatsApp = () => {
     if (!project) return;
 
-    const budgetFormatted = formatBudget(project, { forWhatsApp: true });
+    const budgetFormatted =
+      project.project_type === "bidding" && project.accepted_offer_amount != null
+        ? formatJD(project.accepted_offer_amount)
+        : formatBudget(project, { forWhatsApp: true });
     const durationText = formatDuration(project) || (isArabic ? "غير محدد" : "Not specified");
     const skillsJoined = project.preferred_skills && Array.isArray(project.preferred_skills) && project.preferred_skills.length > 0
       ? project.preferred_skills.join(", ")
@@ -250,6 +256,11 @@ Description: ${shortDescription}`;
     return null;
   }
 
+  const showPaymentChooser =
+    project.project_type === "bidding" &&
+    (project.status === "pending_admin_approval" || project.admin_approval_status === "pending") &&
+    (!project.payment_method || project.payment_method === "skipped");
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4" dir={isArabic ? "rtl" : "ltr"}>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -274,15 +285,95 @@ Description: ${shortDescription}`;
 
         {/* Admin Approval Banner */}
         {project.admin_approval_status === "pending" && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
             <p className="text-amber-800 text-sm font-medium">
               {isArabic
                 ? "⏳ في انتظار موافقة الإدارة — لن يكون المشروع مرئيًا حتى يتم الموافقة عليه."
                 : "⏳ Pending admin approval — project will not be visible until approved."}
             </p>
+            {project.project_type === "bidding" && (
+              <p className="text-amber-700 text-sm">
+                {isArabic
+                  ? "اختر طريقة الدفع (CliQ أو نقدي). بعد الدفع ستتم مراجعة الطلب من الإدارة."
+                  : "Choose payment method (CliQ or Cash). After payment, admin will review your request."}
+              </p>
+            )}
           </div>
         )}
 
+        {/* Payment method chooser for bidding (pending_admin_approval, no method set yet) */}
+        {project.project_type === "bidding" &&
+          (project.status === "pending_admin_approval" || project.admin_approval_status === "pending") &&
+          (!project.payment_method || project.payment_method === "skipped") && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                {isArabic ? "الدفع" : "Payment"}
+              </h2>
+              <p className="text-slate-600 mb-6">
+                {isArabic
+                  ? "اختر طريقة الدفع لإكمال الموافقة على العرض المقبول."
+                  : "Choose your payment method to complete the project posting."}
+              </p>
+              <div className="rounded-xl border border-slate-200 p-4 mb-6">
+                <p className="font-semibold text-slate-900">{isArabic ? "المشروع" : "Project"}</p>
+                <p className="text-slate-700">{project.title || "—"}</p>
+                <p className="mt-2 font-bold text-orange-600">
+                  {isArabic ? "المبلغ: " : "Amount: "}
+                  {project.accepted_offer_amount != null ? formatJD(project.accepted_offer_amount) : formatBudget(project)}
+                </p>
+              </div>
+              <div className="space-y-4">
+                <button
+                  onClick={async () => {
+                    if (paymentSubmitting) return;
+                    setPaymentSubmitting(true);
+                    try {
+                      await API.post(`/projects/${id}/offline-payment`, { method: "cliq" }, { headers: { Authorization: `Bearer ${token}` } });
+                      toast.success(isArabic ? "تم اختيار CliQ. في انتظار موافقة الإدارة." : "CliQ selected. Waiting for admin approval.");
+                      await fetchProject(false);
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || (isArabic ? "فشل تعيين طريقة الدفع" : "Failed to set payment method"));
+                    } finally {
+                      setPaymentSubmitting(false);
+                    }
+                  }}
+                  disabled={paymentSubmitting}
+                  className="w-full p-5 rounded-2xl border-2 border-slate-200 bg-white hover:border-orange-300 hover:shadow-md transition-all text-left disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-lg font-semibold text-slate-900">Pay via CliQ</p>
+                    <span className="text-2xl shrink-0">📱</span>
+                  </div>
+                </button>
+                <button
+                  onClick={async () => {
+                    if (paymentSubmitting) return;
+                    setPaymentSubmitting(true);
+                    try {
+                      await API.post(`/projects/${id}/offline-payment`, { method: "cash" }, { headers: { Authorization: `Bearer ${token}` } });
+                      toast.success(isArabic ? "تم اختيار الدفع نقدي. في انتظار موافقة الإدارة." : "Cash selected. Waiting for admin approval.");
+                      await fetchProject(false);
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || (isArabic ? "فشل تعيين طريقة الدفع" : "Failed to set payment method"));
+                    } finally {
+                      setPaymentSubmitting(false);
+                    }
+                  }}
+                  disabled={paymentSubmitting}
+                  className="w-full p-5 rounded-2xl border-2 border-slate-200 bg-white hover:border-orange-300 hover:shadow-md transition-all text-left disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-lg font-semibold text-slate-900">Pay Cash</p>
+                    <span className="text-2xl shrink-0">💵</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+        {/* Project details + CliQ banner + WhatsApp: only when NOT in payment chooser step */}
+        {!showPaymentChooser && (
+        <>
         {/* لوحة واحدة — تفاصيل المشروع */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-100">
@@ -302,7 +393,7 @@ Description: ${shortDescription}`;
                 <CompactDetail
                   icon={DollarSign}
                   label={isArabic ? "الميزانية" : "Budget"}
-                  value={formatBudget(project)}
+                  value={project.project_type === "bidding" && project.accepted_offer_amount != null ? formatJD(project.accepted_offer_amount) : formatBudget(project)}
                 />
                 <CompactDetail
                   icon={CreditCard}
@@ -313,6 +404,17 @@ Description: ${shortDescription}`;
                     </span>
                   }
                 />
+                {project.payment_method === "cliq" && (
+                  <CompactDetail
+                    icon={CreditCard}
+                    label={isArabic ? "التحويل إلى CliQ" : "CliQ transfer to"}
+                    value={
+                      <span className="text-base font-bold text-orange-600 tracking-wide">
+                        {project.cliq_alias || project.cliq_number || import.meta.env.VITE_CLIQ_ALIAS || import.meta.env.VITE_CLIQ_NUMBER || DEFAULT_CLIQ_ALIAS}
+                      </span>
+                    }
+                  />
+                )}
                 {formatDuration(project) && (
                   <CompactDetail
                     icon={Clock}
@@ -386,7 +488,13 @@ Description: ${shortDescription}`;
 
         {/* CliQ Payment Instruction Banner */}
         {project.payment_method === "cliq" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+            <p className="text-blue-900 text-sm font-semibold">
+              {isArabic ? "التحويل إلى: " : "Transfer to: "}
+              <span className="text-base font-bold text-orange-600 tracking-wide">
+                {project.cliq_alias || project.cliq_number || import.meta.env.VITE_CLIQ_ALIAS || import.meta.env.VITE_CLIQ_NUMBER || DEFAULT_CLIQ_ALIAS}
+              </span>
+            </p>
             <p className="text-blue-800 text-sm font-medium">
               {isArabic
                 ? "مهم: الرجاء إرسال صورة (Screenshot) من دفعة CliQ عبر واتساب لتأكيد الدفع."
@@ -405,6 +513,8 @@ Description: ${shortDescription}`;
             <span>{isArabic ? "إرسال على واتساب" : "Send on WhatsApp"}</span>
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
