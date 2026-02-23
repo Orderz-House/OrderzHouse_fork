@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/storage/app_prefs.dart';
 
 // Notification preferences providers
 final masterNotificationsEnabledProvider = StateProvider<bool>((ref) => true);
@@ -14,8 +15,40 @@ final messagesEnabledProvider = StateProvider<bool>((ref) => true);
 final paymentsEnabledProvider = StateProvider<bool>((ref) => true);
 final promotionsEnabledProvider = StateProvider<bool>((ref) => false);
 
-class NotificationsSettingsScreen extends ConsumerWidget {
+class NotificationsSettingsScreen extends ConsumerStatefulWidget {
   const NotificationsSettingsScreen({super.key});
+
+  @override
+  ConsumerState<NotificationsSettingsScreen> createState() => _NotificationsSettingsScreenState();
+}
+
+class _NotificationsSettingsScreenState extends ConsumerState<NotificationsSettingsScreen> {
+  bool _prefsLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    if (_prefsLoaded) return;
+    try {
+      final master = await AppPrefs.getNotificationsMaster();
+      final projects = await AppPrefs.getNotificationsProjects();
+      final messages = await AppPrefs.getNotificationsMessages();
+      final payments = await AppPrefs.getNotificationsPayments();
+      final offers = await AppPrefs.getNotificationsOffers();
+      if (mounted) {
+        ref.read(masterNotificationsEnabledProvider.notifier).state = master;
+        ref.read(projectUpdatesEnabledProvider.notifier).state = projects;
+        ref.read(messagesEnabledProvider.notifier).state = messages;
+        ref.read(paymentsEnabledProvider.notifier).state = payments;
+        ref.read(promotionsEnabledProvider.notifier).state = offers;
+        _prefsLoaded = true;
+      }
+    } catch (_) {}
+  }
 
   void _handleBack(BuildContext context) {
     final router = GoRouter.of(context);
@@ -27,18 +60,35 @@ class NotificationsSettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _savePreferences(WidgetRef ref) async {
-    // TODO: Implement API call to save preferences
-    // await ref.read(userRepositoryProvider).updateNotificationPreferences({
-    //   'enabled': ref.read(masterNotificationsEnabledProvider),
-    //   'projectUpdates': ref.read(projectUpdatesEnabledProvider),
-    //   'messages': ref.read(messagesEnabledProvider),
-    //   'payments': ref.read(paymentsEnabledProvider),
-    //   'promotions': ref.read(promotionsEnabledProvider),
-    // });
+    try {
+      await AppPrefs.setNotificationsMaster(ref.read(masterNotificationsEnabledProvider));
+      await AppPrefs.setNotificationsProjects(ref.read(projectUpdatesEnabledProvider));
+      await AppPrefs.setNotificationsMessages(ref.read(messagesEnabledProvider));
+      await AppPrefs.setNotificationsPayments(ref.read(paymentsEnabledProvider));
+      await AppPrefs.setNotificationsOffers(ref.read(promotionsEnabledProvider));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Preferences saved'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.error),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final masterEnabled = ref.watch(masterNotificationsEnabledProvider);
     final projectUpdates = ref.watch(projectUpdatesEnabledProvider);
     final messages = ref.watch(messagesEnabledProvider);

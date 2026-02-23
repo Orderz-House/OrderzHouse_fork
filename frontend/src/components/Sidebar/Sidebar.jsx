@@ -218,15 +218,17 @@ const Sidebar = ({
       {/* ===================== Desktop Sidebar (NEW DESIGN) ===================== */}
       <aside
         className={`
-          hidden lg:block
-          bg-white border-r border-gray-100 shadow-sm h-screen
-          flex flex-col overflow-hidden
+          hidden lg:flex
+          sticky top-0 self-start
+          h-screen min-h-0
+          bg-white border-r border-gray-100 shadow-sm
+          flex-col overflow-hidden
           transition-all duration-300 ease-in-out
           ${showDesktopSidebar ? "lg:w-64" : "lg:w-0 overflow-hidden"}
         `}
       >
-        {/* Top profile section */}
-        <div className="p-4 border-b border-gray-100 shrink-0">
+        {/* Top profile section - لا يتقلص */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-3 overflow-hidden">
             <div
               className="relative h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm"
@@ -256,10 +258,13 @@ const Sidebar = ({
           </div>
         </div>
 
-        {/* Menu section - scrollable if needed */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+        {/* منطقة OVERVIEW + spacer يملأ المساحة المتبقية حتى SETTINGS */}
+        <nav
+          className="sidebar-nav-scroll flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden px-2 py-3"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
           {/* OVERVIEW */}
-          <div className="w-full">
+          <div className="w-full flex-shrink-0">
             <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
               OVERVIEW
             </div>
@@ -275,7 +280,7 @@ const Sidebar = ({
                     onClick={() => safeSetActivePage(item.id)}
                     data-active={active ? "true" : "false"}
                     className={`
-                      relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                      relative w-full flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-medium transition-all
                       hover:bg-gray-100 active:scale-[0.98]
                       ${active ? "bg-gray-100 text-slate-900" : "text-slate-700"}
                     `}
@@ -284,11 +289,11 @@ const Sidebar = ({
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-orange-500" />
                     )}
                     <Icon
-                      className={`w-5 h-5 flex-shrink-0 ${
+                      className={`w-5 h-5 flex-shrink-0 mr-3 ${
                         active ? "text-orange-600" : "text-slate-500"
                       }`}
                     />
-                    <span className="truncate flex-1 min-w-0">{item.name}</span>
+                    <span className="flex-1 min-w-0 text-center truncate">{item.name}</span>
                   </Clickable>
                 );
               })}
@@ -297,7 +302,7 @@ const Sidebar = ({
 
           {/* FRIENDS */}
           {friends?.length > 0 && (
-            <div className="w-full mt-6">
+            <div className="w-full mt-6 flex-shrink-0">
               <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
                 FRIENDS
               </div>
@@ -342,10 +347,27 @@ const Sidebar = ({
               </div>
             </div>
           )}
+
+          {/* مساحة مرنة تملأ الأسفل (كلينت/فريلانسر) + تذييل خفيف */}
+          <div className="flex-1 min-h-[60px] flex flex-col justify-end pt-4">
+            {!isAdmin && (
+              <div className="px-2 pb-2 pt-3 flex-shrink-0 rounded-lg bg-slate-50/80 border border-slate-100">
+                <p className="text-xs font-semibold text-slate-600 truncate">
+                  {appName}
+                </p>
+                <a
+                  href="/help"
+                  className="text-[11px] text-slate-500 hover:text-orange-600 transition mt-1 inline-block"
+                >
+                  Need help?
+                </a>
+              </div>
+            )}
+          </div>
         </nav>
 
-        {/* Bottom fixed section */}
-        <div className="border-t border-gray-100 p-4 shrink-0 overflow-hidden">
+        {/* قسم SETTINGS ثابت في الأسفل */}
+        <div className="flex-shrink-0 border-t border-gray-100 pt-4 pb-4 px-2 bg-white">
           <div className="px-2 mb-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
             SETTINGS
           </div>
@@ -365,7 +387,7 @@ const Sidebar = ({
                   }}
                   data-active={active ? "true" : "false"}
                   className={`
-                    relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                    relative w-full flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-medium transition-all
                     hover:bg-gray-100 active:scale-[0.98]
                     ${active ? "bg-gray-100 text-slate-900" : "text-slate-700"}
                     ${isLogout ? "text-orange-600 hover:text-orange-700" : ""}
@@ -375,7 +397,7 @@ const Sidebar = ({
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-orange-500" />
                   )}
                   <Icon
-                    className={`w-5 h-5 flex-shrink-0 ${
+                    className={`w-5 h-5 flex-shrink-0 mr-3 ${
                       isLogout
                         ? "text-orange-600"
                         : active
@@ -383,7 +405,7 @@ const Sidebar = ({
                         : "text-slate-500"
                     }`}
                   />
-                  <span className="truncate flex-1 min-w-0">{item.name}</span>
+                  <span className="flex-1 min-w-0 text-center truncate">{item.name}</span>
                 </Clickable>
               );
             })}

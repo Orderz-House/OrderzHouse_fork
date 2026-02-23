@@ -2064,13 +2064,13 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
             await ref.read(myProjectsProvider.future);
 
             if (context.mounted) {
+              Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Delivery submitted successfully ✅'),
                   backgroundColor: Colors.green,
                 ),
               );
-              Navigator.pop(context);
             }
           },
           isSubmitting: false,
@@ -2865,10 +2865,11 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     );
   }
   
-  // Build History Item
+  // Build History Item (with downloadable files)
   Widget _buildHistoryItem(Map<String, dynamic> delivery) {
     final status = delivery['status'] as String? ?? 'submitted';
     final createdAt = delivery['created_at'];
+    final files = delivery['files'] as List<dynamic>? ?? [];
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2878,33 +2879,50 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderLight),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            _getHistoryIcon(status),
-            color: _getHistoryColor(status),
-            size: 20,
+          Row(
+            children: [
+              Icon(
+                _getHistoryIcon(status),
+                color: _getHistoryColor(status),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getHistoryTitle(status),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _formatDeliveryDate(createdAt),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getHistoryTitle(status),
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  _formatDeliveryDate(createdAt),
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ],
+          if (files.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Files:',
+              style: AppTextStyles.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
+            const SizedBox(height: 6),
+            ...files.map((file) => _buildFileItem(file)),
+          ],
         ],
       ),
     );

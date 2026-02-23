@@ -108,6 +108,10 @@ class ApplicationsBottomSheet extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final app = applications[index];
                           final freelancerName = app['freelancer_name'] ?? app['freelancerName'] ?? app['name'] ?? 'Freelancer';
+                          final freelancerIdRaw = app['freelancer_id'] ?? app['freelancerId'];
+                          final freelancerId = freelancerIdRaw is int
+                              ? freelancerIdRaw
+                              : (freelancerIdRaw is num ? freelancerIdRaw.toInt() : int.tryParse(freelancerIdRaw?.toString() ?? ''));
                           final proposal = app['proposal'] ?? app['message'] ?? app['cover_letter'] ?? '';
                           final status = app['status'] ?? 'pending';
                           final assignmentId = app['assignment_id'] ?? app['assignmentId'] ?? app['id'] ?? 0;
@@ -136,12 +140,30 @@ class ApplicationsBottomSheet extends StatelessWidget {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        freelancerName,
-                                        style: AppTextStyles.titleMedium.copyWith(
-                                          color: const Color(0xFF111827),
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              freelancerName,
+                                              style: AppTextStyles.titleMedium.copyWith(
+                                                color: const Color(0xFF111827),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (freelancerId != null && freelancerId > 0) ...[
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '#$freelancerId',
+                                              style: AppTextStyles.labelMedium.copyWith(
+                                                color: const Color(0xFF6B7280),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                     Container(

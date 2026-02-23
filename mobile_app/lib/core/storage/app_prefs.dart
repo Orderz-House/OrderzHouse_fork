@@ -10,6 +10,11 @@ class AppPrefs {
   static const String _themeModeKey = 'app_theme_mode';
   static const String _onboardingSeenKey = 'onboarding_seen';
   static const String _lastRouteKey = 'last_route';
+  static const String _notifMasterKey = 'notif_master';
+  static const String _notifProjectsKey = 'notif_projects';
+  static const String _notifMessagesKey = 'notif_messages';
+  static const String _notifPaymentsKey = 'notif_payments';
+  static const String _notifOffersKey = 'notif_offers';
 
   static SharedPreferences? _prefs;
   static bool _initDone = false;
@@ -76,5 +81,56 @@ class AppPrefs {
   static Future<void> clearLastRoute() async {
     final prefs = await _instance;
     await prefs.remove(_lastRouteKey);
+  }
+
+  // ——— Notification preferences ———
+  static Future<bool> getNotificationsMaster() async {
+    final prefs = await _instance;
+    return prefs.getBool(_notifMasterKey) ?? true;
+  }
+
+  static Future<void> setNotificationsMaster(bool value) async {
+    final prefs = await _instance;
+    await prefs.setBool(_notifMasterKey, value);
+  }
+
+  static Future<bool> getNotificationsProjects() async {
+    final prefs = await _instance;
+    return prefs.getBool(_notifProjectsKey) ?? true;
+  }
+
+  static Future<void> setNotificationsProjects(bool value) async {
+    final prefs = await _instance;
+    await prefs.setBool(_notifProjectsKey, value);
+  }
+
+  static Future<bool> getNotificationsMessages() async {
+    final prefs = await _instance;
+    return prefs.getBool(_notifMessagesKey) ?? true;
+  }
+
+  static Future<void> setNotificationsMessages(bool value) async {
+    final prefs = await _instance;
+    await prefs.setBool(_notifMessagesKey, value);
+  }
+
+  static Future<bool> getNotificationsPayments() async {
+    final prefs = await _instance;
+    return prefs.getBool(_notifPaymentsKey) ?? true;
+  }
+
+  static Future<void> setNotificationsPayments(bool value) async {
+    final prefs = await _instance;
+    await prefs.setBool(_notifPaymentsKey, value);
+  }
+
+  static Future<bool> getNotificationsOffers() async {
+    final prefs = await _instance;
+    return prefs.getBool(_notifOffersKey) ?? false;
+  }
+
+  static Future<void> setNotificationsOffers(bool value) async {
+    final prefs = await _instance;
+    await prefs.setBool(_notifOffersKey, value);
   }
 }

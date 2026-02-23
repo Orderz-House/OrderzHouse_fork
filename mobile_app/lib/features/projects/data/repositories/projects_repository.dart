@@ -1370,10 +1370,13 @@ class ProjectsRepository implements IProjectsRepository {
 
       final formData = FormData();
       for (var i = 0; i < filePaths.length; i++) {
+        final path = filePaths[i];
+        final filename = path.replaceAll(r'\', '/').split('/').last;
+        final nameWithExt = filename.isNotEmpty ? filename : 'file_$i';
         formData.files.add(
           MapEntry(
             'project_files',
-            await MultipartFile.fromFile(filePaths[i], filename: 'file_$i'),
+            await MultipartFile.fromFile(path, filename: nameWithExt),
           ),
         );
       }

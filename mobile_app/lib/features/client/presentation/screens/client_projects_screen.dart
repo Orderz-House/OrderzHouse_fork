@@ -476,8 +476,16 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
     );
   }
 
-  // 4) Projects Grid (clean list - actions moved to Project Details)
+  // 4) Projects Grid (responsive aspect ratio to avoid overflow on small screens)
   Widget _buildProjectsGrid(BuildContext context, List<Project> projects, {double bottomPadding = 0}) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    const crossAxisCount = 2;
+    final horizontalPadding = AppSpacing.lg * 2 + AppSpacing.md * (crossAxisCount - 1);
+    final cellWidth = (screenWidth - horizontalPadding) / crossAxisCount;
+    const imageHeight = 120.0;
+    const minContentHeight = 90.0;
+    final minCellHeight = imageHeight + minContentHeight;
+    final aspectRatio = cellWidth / minCellHeight;
     return GridView.builder(
       padding: EdgeInsets.only(
         top: AppSpacing.lg,
@@ -485,11 +493,11 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
         right: AppSpacing.lg,
         bottom: bottomPadding,
       ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.75, // Matching Explore grid
+        childAspectRatio: aspectRatio.clamp(0.68, 0.78),
       ),
       itemCount: projects.length,
       itemBuilder: (context, index) {
@@ -546,6 +554,14 @@ class _LoadingGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    const crossAxisCount = 2;
+    const horizontalPadding = AppSpacing.lg * 2 + AppSpacing.md * (crossAxisCount - 1);
+    final cellWidth = (screenWidth - horizontalPadding) / crossAxisCount;
+    const imageHeight = 120.0;
+    const minContentHeight = 90.0;
+    const minCellHeight = imageHeight + minContentHeight;
+    final aspectRatio = (cellWidth / minCellHeight).clamp(0.68, 0.78);
     return GridView.builder(
       padding: EdgeInsets.only(
         top: AppSpacing.lg,
@@ -553,11 +569,11 @@ class _LoadingGrid extends StatelessWidget {
         right: AppSpacing.lg,
         bottom: bottomPadding,
       ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.75, // Matching Explore grid
+        childAspectRatio: aspectRatio,
       ),
       itemCount: 6,
       itemBuilder: (context, index) {

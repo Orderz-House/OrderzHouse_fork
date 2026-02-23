@@ -399,12 +399,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
+          const SnackBar(
+            content: Text(
               'Please complete the company subscription form. Your request will be reviewed.',
             ),
             backgroundColor: AppColors.accentOrange,
-            duration: const Duration(seconds: 4),
+            duration: Duration(seconds: 4),
           ),
         );
       }
