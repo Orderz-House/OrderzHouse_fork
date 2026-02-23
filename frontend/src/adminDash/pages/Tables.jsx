@@ -37,37 +37,37 @@ const TableSkeleton = ({ columnsCount = 6, rowsCount = 6, showExpand = false }) 
   const rows = Math.max(3, rowsCount);
 
   return (
-    <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full border-collapse text-[13px]">
-        <thead className="border-b border-slate-200 bg-[#FCE7E0]">
+        <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
-            {showExpand && <th className="w-10 px-3 py-2" />}
+            {showExpand && <th className="w-10 px-4 py-3" />}
             {Array.from({ length: cols }).map((_, i) => (
-              <th key={i} className="px-3 py-2">
-                <Sk className={`h-3 ${i === 0 ? "w-24" : "w-16"} mx-auto md:mx-0`} />
+              <th key={i} className="px-4 py-3 text-left">
+                <Sk className={`h-3 ${i === 0 ? "w-24" : "w-16"}`} />
               </th>
             ))}
-            <th className="w-28 px-3 py-2" />
+            <th className="w-28 px-4 py-3" />
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-slate-200">
-          {Array.from({ length: rows }).map((_, r) => (
-            <tr key={r}>
+        <tbody className="divide-y divide-slate-100">
+            {Array.from({ length: rows }).map((_, r) => (
+            <tr key={r} className="hover:bg-slate-50">
               {showExpand && (
-                <td className="px-3 py-2">
+                <td className="px-4 py-3">
                   <Sk className="w-9 h-9 rounded-full" />
                 </td>
               )}
 
               {Array.from({ length: cols }).map((_, c) => (
-                <td key={c} className="px-3 py-2">
+                <td key={c} className="px-4 py-3 text-sm text-slate-600">
                   <Sk className={`h-3 ${c === 0 ? "w-40" : "w-28"}`} />
                 </td>
               ))}
 
-              <td className="px-3 py-2">
-                <div className="flex items-center justify-center gap-2">
+              <td className="px-4 py-3">
+                <div className="flex items-center justify-end gap-2">
                   <Sk className="w-9 h-9 rounded-full" />
                   <Sk className="w-16 h-9 rounded-full" />
                 </div>
@@ -294,16 +294,19 @@ function renderPrettyCell(col, row, idx) {
 
   if (label.includes("appointment status") || label.includes("status")) {
     const chipMap = {
-      completed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-      done: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-      confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-      rescheduled: "bg-amber-50 text-amber-700 ring-amber-200",
-      cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
-      unknown: "bg-slate-100 text-slate-600 ring-slate-200",
+      completed: "bg-green-100 text-green-800",
+      done: "bg-green-100 text-green-800",
+      confirmed: "bg-green-100 text-green-800",
+      active: "bg-green-100 text-green-800",
+      rescheduled: "bg-amber-100 text-amber-800",
+      pending_start: "bg-amber-100 text-amber-800",
+      cancelled: "bg-gray-100 text-gray-800",
+      expired: "bg-red-100 text-red-800",
+      unknown: "bg-slate-100 text-slate-800",
     };
-    const cls = chipMap[key] || "bg-slate-100 text-slate-600 ring-slate-200";
+    const cls = chipMap[key] || "bg-slate-100 text-slate-800";
     return (
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] ring-1 ${cls}`}>
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
         {val}
       </span>
     );
@@ -721,8 +724,8 @@ const DesktopTable = ({
 
   if (error) {
     return (
-      <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="p-8 text-center text-red-600">{error}</div>
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="p-8 text-center text-sm text-red-600">{error}</div>
       </div>
     );
   }
@@ -731,38 +734,36 @@ const DesktopTable = ({
   const hasActions = renderActions || (!hideCrudActions && (crudConfig?.showDetails || crudConfig?.showRowEdit || crudConfig?.showDelete));
 
   return (
-    <div className="hidden md:block w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full border-collapse text-[13px] table-fixed">
-        <thead className="border-b border-slate-200 bg-[#FCE7E0]">
+    <div className="hidden md:block w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full border-collapse text-[13px]">
+        <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
-            {crudConfig.showExpand && <th className="w-10 px-4 py-3 border-r border-gray-200" />}
-            {columns.map((col, colIdx) => {
-              const widthClass = col.width || "";
+            {crudConfig.showExpand && <th className="w-10 px-4 py-3 text-left" />}
+            {columns.map((col) => {
               const alignClass = col.align === "center" ? "text-center" : col.align === "right" ? "text-right" : "text-left";
-              const isLastColumn = colIdx === columns.length - 1 && !hasActions;
               return (
                 <th
                   key={col.key}
-                  className={`whitespace-nowrap px-4 py-3 align-middle ${widthClass} ${alignClass} ${!isLastColumn ? "border-r border-gray-200" : ""} text-[12px] font-semibold text-[#C2410C]`}
+                  className={`whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider align-middle ${alignClass}`}
                 >
                   {col.label}
                 </th>
               );
             })}
             {hasActions && (
-              <th className="w-[90px] px-4 py-3 text-center align-middle text-[12px] font-semibold text-[#C2410C]">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider align-middle">
                 Actions
               </th>
             )}
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-slate-200">
-          {!rows.length ? (
+        <tbody className="divide-y divide-slate-100">
+          {          !rows.length ? (
             <tr>
               <td
                 colSpan={columns.length + (crudConfig.showExpand ? 1 : 0) + (hasActions ? 1 : 0)}
-                className="px-4 py-8 text-center text-slate-500"
+                className="px-4 py-8 text-center text-sm text-slate-500"
               >
                 No records found
               </td>
@@ -774,9 +775,9 @@ const DesktopTable = ({
 
               return (
                 <React.Fragment key={helpers.getId(row) ?? idx}>
-                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""} h-10`}>
+                  <tr className={`hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
                     {crudConfig.showExpand && (
-                      <td className="px-4 py-3 text-center align-middle border-r border-gray-200">
+                      <td className="px-4 py-3 text-left align-middle">
                         <button
                           onClick={() => onToggleExpand(idx)}
                           className="w-9 h-9 grid place-items-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700"
@@ -787,18 +788,17 @@ const DesktopTable = ({
                       </td>
                     )}
 
-                    {columns.map((col, colIdx) => {
+                    {columns.map((col) => {
                       const alignClass = col.align === "center" ? "text-center" : col.align === "right" ? "text-right" : "text-left";
-                      const isLastColumn = colIdx === columns.length - 1 && !hasActions;
                       return (
-                        <td key={col.key} className={`px-4 py-3 text-slate-800 align-middle ${alignClass} ${!isLastColumn ? "border-r border-gray-200" : ""}`}>
+                        <td key={col.key} className={`px-4 py-3 text-sm text-slate-600 align-middle ${alignClass}`}>
                           {col.render ? col.render(row, idx) : row[col.key]}
                         </td>
                       );
                     })}
                     {hasActions && (
-                      <td className="px-4 py-3 text-center align-middle">
-                        <div className="flex items-center justify-center gap-1">
+                      <td className="px-4 py-3 align-middle">
+                        <div className="flex items-center justify-end gap-2">
                           {crudConfig.showDetails && (
                             <button
                               onClick={() => onOpenDrawer?.(row, idx)}

@@ -28,6 +28,7 @@ import {
   UserCheck,
   Users,
   Check,
+  Settings,
 } from "lucide-react";
 
 // 🧩 API (كما هو عندك)
@@ -37,6 +38,18 @@ import {
   fetchClientDashboard,
 } from "../api/dashboard";
 import PageMeta from "../../components/PageMeta.jsx";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart as RechartsPie,
+  Pie,
+  Cell,
+} from "recharts";
 
 /* ===================== Helpers (Role + Base paths) ===================== */
 function mapRole(roleId) {
@@ -1340,7 +1353,9 @@ function DashboardSkeletonV2() {
   );
 }
 
-/* ===================== Admin (keep old behavior - minimal changes) ===================== */
+/* ===================== Admin Dashboard — نفس أسلوب الداش في الصورة (3 أعمدة، كروت مالية) ===================== */
+const ADMIN_CARD = "bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden";
+
 function AdminDashboard() {
   const navigate = useNavigate();
   const base = useRoleBase();
@@ -1357,7 +1372,6 @@ function AdminDashboard() {
         setLoading(true);
         setError("");
         const payload = await fetchAdminDashboard();
-
         setTopStats(Array.isArray(payload?.topStats) ? payload.topStats : []);
         setPendingVerifications(
           Array.isArray(payload?.pendingVerifications)
@@ -1377,76 +1391,419 @@ function AdminDashboard() {
     load();
   }, []);
 
-  // لو تبغى نعمل Admin بنفس ستايل الصورة أيضاً—قلّي، وحأطبّقه بنفس النمط.
-  return (
-    <div className="space-y-4">
-      {error ? (
-        <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2">
-          {error}
-        </div>
-      ) : null}
+  const totalRevenue = topStats.find((s) => s?.id === "revenue")?.value ?? "—";
+  const projectsCount = topStats.find((s) => s?.id === "projects")?.value ?? 0;
+  const freelancersCount = topStats.find((s) => s?.id === "freelancers")?.value ?? 0;
+  const tasksCount = topStats.find((s) => s?.id === "tasks")?.value ?? 0;
 
-      <div className={cx(UI.card, "p-5")} style={UI.ring}>
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-extrabold text-slate-900">
-            Admin Overview
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate(`${base}/operation/verifications`)}
-            className="h-10 px-4 rounded-2xl bg-white border border-slate-200/70 text-sm font-semibold hover:bg-slate-50 inline-flex items-center gap-2"
-          >
-            <UserCheck className="h-4 w-4 text-slate-600" />
-            Verifications
-          </button>
-        </div>
+  const chartData = (revenuePoints || []).map((val, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (11 - i));
+    return {
+      name: d.toLocaleDateString("en", { month: "short" }),
+      value: Number(val) || 0,
+    };
+  });
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(topStats || []).slice(0, 4).map((s, i) => (
-            <MiniKpi
-              key={s?.id || s?.title || i}
-              icon={s?.icon}
-              label={s?.title}
-              value={s?.value}
-              tone={i % 3 === 0 ? "orange" : i % 3 === 1 ? "red" : "emerald"}
-            />
-          ))}
-        </div>
+  const pieData = [
+    { name: "Projects", value: Number(projectsCount) || 0, color: "#f97316" },
+    { name: "Freelancers", value: Number(freelancersCount) || 0, color: "#22c55e" },
+    { name: "Tasks", value: Number(tasksCount) || 0, color: "#3b82f6" },
+  ].filter((d) => d.value > 0);
+  if (pieData.length === 0) pieData.push({ name: "No data", value: 1, color: "#e2e8f0" });
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          <div className={cx(UI.card, "p-5 lg:col-span-2")} style={UI.ring}>
-            <div className="text-sm font-extrabold text-slate-900">Revenue</div>
-            <div className="mt-3 rounded-2xl bg-slate-50 border border-slate-200/70 h-36 grid place-items-center text-xs text-slate-400">
-              (Chart stays as your existing implementation)
-            </div>
-          </div>
+  const pendingTotal = pendingVerifications.length;
 
-          <div className={cx(UI.card, "p-5")} style={UI.ring}>
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-extrabold text-slate-900">
-                Pending
+  if (loading && topStats.length === 0) {
+    return (
+      <div className="min-h-[60vh] bg-[#F7F8FA] p-4 md:p-6">
+        <div className="max-w-[1600px] mx-auto space-y-4">
+          <div className="h-10 w-48 rounded-xl bg-slate-200 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className={ADMIN_CARD} style={{ minHeight: "180px" }}>
+                <div className="p-4 animate-pulse bg-slate-100 rounded-2xl m-3" />
               </div>
-              <span className="text-xs text-slate-500">
-                {pendingVerifications.length}
-              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F7F8FA] p-4 md:p-6">
+      <div className="max-w-[1600px] mx-auto space-y-4">
+        {error ? (
+          <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3">
+            {error}
+          </div>
+        ) : null}
+
+        {/* Top bar: Quick search + actions (مثل الصورة) */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Quick search..."
+              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-200/70"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`${base}/operation/verifications`)}
+              className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2"
+            >
+              <UserCheck className="h-4 w-4" />
+              Verifications
+            </button>
+            <button
+              type="button"
+              className="h-10 px-4 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 inline-flex items-center gap-2"
+              onClick={() => navigate(`${base}/analytics`)}
+            >
+              <Plus className="h-4 w-4" />
+              Add widget
+            </button>
+          </div>
+        </div>
+
+        {/* 3 columns like the reference dashboard */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+          {/* ——— Left column: Balance overview + Limit + Distribution ——— */}
+          <div className="xl:col-span-4 space-y-4">
+            <div className={ADMIN_CARD}>
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Revenue overview
+                </span>
+                <span className="text-xs text-slate-400">12 months</span>
+              </div>
+              <div className="p-4">
+                <div className="text-2xl font-bold text-slate-900">
+                  {totalRevenue}
+                </div>
+                <div className="mt-2 flex gap-2 text-[11px]">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    Revenue
+                  </span>
+                </div>
+                <div className="mt-3 h-[180px]">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748b" }} />
+                        <YAxis tick={{ fontSize: 10, fill: "#64748b" }} />
+                        <Tooltip
+                          contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0" }}
+                          formatter={(v) => [`${v}`, "Revenue"]}
+                        />
+                        <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} name="Revenue" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                      No revenue data
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="mt-3 space-y-2">
-              {(pendingVerifications || []).slice(0, 3).map((p, idx) => (
-                <div
-                  key={p?.id || p?.email || idx}
-                  className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2"
-                >
-                  <div className="text-xs font-semibold text-slate-800 truncate">
-                    {p?.name || "—"}
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-slate-900">
+                    Pending verifications
                   </div>
-                  <div className="text-[11px] text-slate-500 truncate">
-                    {p?.email || p?.role || "—"}
+                  <div className="text-xs text-slate-500">Recipient accounts</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${base}/operation/verifications`)}
+                  className="text-slate-400 hover:text-slate-600"
+                  aria-label="Edit"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-4 pb-4">
+                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-orange-500 transition-all"
+                    style={{
+                      width: `${Math.min(100, (pendingTotal / Math.max(pendingTotal, 1)) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-700">
+                  {pendingTotal} pending
+                </div>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4 border-b border-slate-100">
+                <div className="text-sm font-bold text-slate-900">Platform distribution</div>
+                <div className="text-xs text-slate-500">Overview</div>
+              </div>
+              <div className="p-4 space-y-2">
+                {(topStats || []).slice(0, 4).map((s, i) => {
+                  const numVal = Number(s?.value);
+                  const isNum = Number.isFinite(numVal);
+                  const total = (topStats || []).slice(0, 4).reduce(
+                    (sum, x) => sum + (Number(x?.value) || 0),
+                    0
+                  );
+                  const pct =
+                    isNum && total > 0 ? Math.round((numVal / total) * 100) : null;
+                  return (
+                    <div
+                      key={s?.id || i}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="text-slate-700">{s?.title || "—"}</span>
+                      {pct != null ? (
+                        <span className="font-semibold text-slate-900">{pct}%</span>
+                      ) : (
+                        <span className="font-semibold text-slate-900">{s?.value ?? "—"}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ——— Middle column: Summary stats + Tips + Doughnut + Goals ——— */}
+          <div className="xl:col-span-4 space-y-4">
+            <div className={ADMIN_CARD}>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Total revenue</span>
+                  <span className="text-sm font-bold text-emerald-600">↑</span>
+                </div>
+                <div className="text-lg font-bold text-slate-900">{totalRevenue}</div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-sm text-slate-600">Total projects</span>
+                </div>
+                <div className="text-lg font-bold text-slate-900">{projectsCount}</div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-sm text-slate-600">Freelancers</span>
+                </div>
+                <div className="text-lg font-bold text-slate-900">{freelancersCount}</div>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4 bg-gradient-to-br from-orange-50/80 to-emerald-50/50 rounded-2xl">
+                <div className="text-sm font-bold text-slate-900">
+                  Optimize your platform
+                </div>
+                <p className="mt-2 text-xs text-slate-600">
+                  Review pending verifications and analytics to keep the platform healthy.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${base}/analytics`)}
+                  className="mt-3 text-xs font-semibold text-orange-600 hover:text-orange-700"
+                >
+                  Read more →
+                </button>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4">
+                <div className="text-sm font-bold text-slate-900">Platform health</div>
+                <div className="text-xs text-slate-500 mt-0.5">Current status</div>
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="w-28 h-28 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPie>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={24}
+                          outerRadius={40}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="name"
+                        >
+                          {pieData.map((entry, i) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v) => [v, ""]} />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {projectsCount + freelancersCount + tasksCount > 0
+                      ? "Active"
+                      : "—"}
                   </div>
                 </div>
-              ))}
-              {pendingVerifications.length === 0 && (
-                <div className="text-[11px] text-slate-500">No pending.</div>
-              )}
+                <p className="mt-2 text-[11px] text-slate-500">
+                  Based on platform metrics
+                </p>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4 flex items-center justify-between">
+                <div className="text-sm font-bold text-slate-900">Pending queue</div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${base}/operation/verifications`)}
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+                >
+                  Add goals
+                </button>
+              </div>
+              <div className="p-4 pt-0 space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-600">Verifications</span>
+                    <span className="font-semibold text-slate-900">
+                      {pendingTotal} pending
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-orange-500"
+                      style={{
+                        width: `${Math.min(100, (pendingTotal / 10) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ——— Right column: Quick stats + Quick payment + Transaction history ——— */}
+          <div className="xl:col-span-4 space-y-4">
+            <div className={ADMIN_CARD}>
+              <div className="p-4 border-b border-slate-100">
+                <div className="text-sm font-bold text-slate-900">Quick stats</div>
+                <div className="text-xs text-slate-500">Quick actions</div>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {(topStats || []).slice(0, 4).map((s, i) => (
+                    <div
+                      key={s?.id || i}
+                      className="rounded-xl bg-slate-50 border border-slate-100 p-3"
+                    >
+                      <div className="text-[11px] font-medium text-slate-500">
+                        {s?.title}
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 mt-0.5">
+                        {s?.value ?? "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${base}/analytics`)}
+                  className="mt-3 w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  View analytics
+                </button>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4">
+                <div className="text-sm font-bold text-slate-900">Quick actions</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/people/freelancers`)}
+                    className="h-9 px-3 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Freelancers
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/people/clients`)}
+                    className="h-9 px-3 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Clients
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/operation/projects`)}
+                    className="h-9 px-3 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Projects
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/finance/payments`)}
+                    className="h-9 px-3 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Payments
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={ADMIN_CARD}>
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="text-sm font-bold text-slate-900">
+                  Pending verifications
+                </div>
+                <span className="text-xs text-slate-500">{pendingTotal} items</span>
+              </div>
+              <div className="p-4 max-h-64 overflow-y-auto space-y-2">
+                {pendingVerifications.length === 0 ? (
+                  <div className="text-xs text-slate-500 py-4 text-center">
+                    No pending verifications
+                  </div>
+                ) : (
+                  pendingVerifications.slice(0, 6).map((p, idx) => (
+                    <div
+                      key={p?.id || p?.email || idx}
+                      className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
+                        {p?.initials || "?"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-slate-800 truncate">
+                          {p?.name || "—"}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {p?.email || p?.role || "—"}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-medium text-amber-600 shrink-0">
+                        Pending
+                      </span>
+                    </div>
+                  ))
+                )}
+                {pendingVerifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/operation/verifications`)}
+                    className="w-full h-9 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    See all
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

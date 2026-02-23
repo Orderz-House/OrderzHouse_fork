@@ -31,6 +31,7 @@ import API, { clearProactiveRefresh } from "../../api/client.js";
 import { disconnectSocket } from "../../services/socketService";
 import TopBar from "../components/TopBar.jsx";
 import { useToast } from "../../components/toast/ToastProvider.jsx";
+import EnhancedFooter from "../../components/footer/Footer.jsx";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
@@ -494,45 +495,50 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 text-slate-800">
-      <Sidebar
-        activePage={activePage}
-        setActivePage={(id) => {
-          setActivePage(id);
-          const found = [...navigation, ...bottomNavigation].find(
-            (item) => item.id === id
-          );
-          if (found?.onClick) found.onClick();
-        }}
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        navigation={navigation}
-        bottomNavigation={bottomNavigation}
-        onLogout={handleLogout}
-        showDesktopSidebar={showDesktopSidebar} // 👈 جديد
-        role={role}
-        onCreateProject={handleCreateProject}
-        onCreateTask={handleCreateTask}
-      />
-
-      <main
-        className="flex-1"
-        style={{ backgroundColor: "#f8fafc" }}
-      >
-        <TopBar
-          title={pageTitle}
-          onToggleSidebar={handleToggleSidebar}
-          rightContent={topBarRight}
+    <div className="min-h-screen flex flex-col bg-gray-50 text-slate-800">
+      <div className="flex-1 flex min-h-0">
+        <Sidebar
+          activePage={activePage}
+          setActivePage={(id) => {
+            setActivePage(id);
+            const found = [...navigation, ...bottomNavigation].find(
+              (item) => item.id === id
+            );
+            if (found?.onClick) found.onClick();
+          }}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          navigation={navigation}
+          bottomNavigation={bottomNavigation}
+          onLogout={handleLogout}
+          showDesktopSidebar={showDesktopSidebar}
+          role={role}
+          onCreateProject={handleCreateProject}
+          onCreateTask={handleCreateTask}
         />
-        <div className="p-3 md:p-5">
-          <Outlet
-            context={{
-              setTopBarRight,
-              clearTopBarRight,
-            }}
+
+        <main
+          className="flex-1 flex flex-col min-h-0 overflow-auto"
+          style={{ backgroundColor: "#f8fafc" }}
+        >
+          <TopBar
+            title={pageTitle}
+            onToggleSidebar={handleToggleSidebar}
+            rightContent={topBarRight}
           />
-        </div>
-      </main>
+          <div className="flex-1 p-3 md:p-5 min-h-0">
+            <Outlet
+              context={{
+                setTopBarRight,
+                clearTopBarRight,
+              }}
+            />
+          </div>
+        </main>
+      </div>
+      <div className="flex-shrink-0 w-full">
+        <EnhancedFooter />
+      </div>
     </div>
   );
 }

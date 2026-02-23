@@ -88,9 +88,7 @@ class _DeliverModalState extends State<DeliverModal> {
 
     try {
       await widget.onSubmit(widget.project, _selectedFiles);
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      // Do not pop here: parent callback already closes the dialog to avoid double-pop (NavigatorState.dispose crash)
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

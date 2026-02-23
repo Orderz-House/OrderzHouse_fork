@@ -23,7 +23,7 @@ void showPaymentMethodChooserSheet({
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'Choose Payment Method',
               style: TextStyle(
                 fontSize: 22,
@@ -57,7 +57,7 @@ void showPaymentMethodChooserSheet({
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Online payments are temporarily unavailable.',
               style: TextStyle(
                 fontSize: 14,
@@ -66,7 +66,7 @@ void showPaymentMethodChooserSheet({
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               '* Annual account verification fee: 25 JD.',
               style: TextStyle(
                 fontSize: 12,
@@ -77,7 +77,7 @@ void showPaymentMethodChooserSheet({
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
+              child: const Text(
                 'Cancel',
                 style: TextStyle(
                   fontSize: 14,
