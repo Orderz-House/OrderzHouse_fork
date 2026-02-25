@@ -138,10 +138,10 @@ final exploreRefreshErrorProvider = StateProvider.autoDispose<String?>((ref) => 
 class ExploreProjectsNotifier extends AutoDisposeNotifier<AsyncValue<List<Project>>> {
   @override
   AsyncValue<List<Project>> build() {
-    ref.listen(selectedExploreCategoryIdProvider, (_, __) => _load());
-    ref.listen(exploreSortByProvider, (_, __) => _load());
-    ref.listen(searchQueryProvider, (_, __) => _load());
-    ref.listen(authStateProvider.select((s) => s.userId), (_, __) => _load());
+    ref.listen(selectedExploreCategoryIdProvider, (_, _) => _load());
+    ref.listen(exploreSortByProvider, (_, _) => _load());
+    ref.listen(searchQueryProvider, (_, _) => _load());
+    ref.listen(authStateProvider.select((s) => s.userId), (_, _) => _load());
     Future.microtask(() => _load());
     return const AsyncValue.loading();
   }

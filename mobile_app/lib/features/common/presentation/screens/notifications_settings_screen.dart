@@ -68,10 +68,10 @@ class _NotificationsSettingsScreenState extends ConsumerState<NotificationsSetti
       await AppPrefs.setNotificationsOffers(ref.read(promotionsEnabledProvider));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Preferences saved'),
+          const SnackBar(
+            content: Text('Preferences saved'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 1),
+            duration: Duration(seconds: 1),
           ),
         );
       }
@@ -93,7 +93,6 @@ class _NotificationsSettingsScreenState extends ConsumerState<NotificationsSetti
     final projectUpdates = ref.watch(projectUpdatesEnabledProvider);
     final messages = ref.watch(messagesEnabledProvider);
     final payments = ref.watch(paymentsEnabledProvider);
-    final promotions = ref.watch(promotionsEnabledProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -211,16 +210,17 @@ class _NotificationsSettingsScreenState extends ConsumerState<NotificationsSetti
                                 _savePreferences(ref);
                               },
                             ),
-                            const Divider(height: 1, color: AppColors.borderLight),
-                            _NotificationCategoryTile(
-                              title: l10n.offers,
-                              subtitle: l10n.inviteFriends,
-                              value: promotions,
-                              onChanged: (value) {
-                                ref.read(promotionsEnabledProvider.notifier).state = value;
-                                _savePreferences(ref);
-                              },
-                            ),
+                            // العروض / Invite friends — مخفي حسب الطلب
+                            // const Divider(height: 1, color: AppColors.borderLight),
+                            // _NotificationCategoryTile(
+                            //   title: l10n.offers,
+                            //   subtitle: l10n.inviteFriends,
+                            //   value: promotions,
+                            //   onChanged: (value) {
+                            //     ref.read(promotionsEnabledProvider.notifier).state = value;
+                            //     _savePreferences(ref);
+                            //   },
+                            // ),
                           ],
                         ),
                       ),

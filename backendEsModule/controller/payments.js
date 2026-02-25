@@ -141,9 +141,10 @@ export const getFreelancerWallet = async (req, res) => {
       [userId]
     );
 
+    const balance = Number(rows[0]?.balance ?? 0);
     res.json({
       success: true,
-      balance: rows[0]?.balance || 0,
+      balance,
     });
 
   } catch (err) {
@@ -161,22 +162,28 @@ export const getFreelancerWalletTransactions = async (req, res) => {
 
     const userId = req.token.userId;
 
-    const { rows } = await pool.query(
-      `
-      SELECT
-        id,
-        amount,
-        type,
-        note,
-        created_at
-      FROM wallet_transactions
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      `,
-      [userId]
-    );
+    const [txResult, walletResult] = await Promise.all([
+      pool.query(
+        `
+        SELECT
+          id,
+          amount,
+          type,
+          note,
+          created_at
+        FROM wallet_transactions
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        `,
+        [userId]
+      ),
+      pool.query(`SELECT balance FROM wallets WHERE user_id = $1`, [userId]),
+    ]);
 
-    res.json({ success: true, transactions: rows });
+    const rows = txResult.rows;
+    const balance = Number(walletResult.rows[0]?.balance ?? 0);
+
+    res.json({ success: true, balance, transactions: rows });
 
   } catch (err) {
     console.error("getFreelancerWalletTransactions:", err);
@@ -353,12 +360,97 @@ export const refundEscrow = async (req, res) => {
 };
 
 /* ============================================================
+   ADMIN – One-time repair: release stuck escrow for completed projects
+   Input: optional body { projectId } or query ?projectId=416 to release one project; else all stuck.
+   Idempotent: safe to run multiple times.
+============================================================ */
+export const releaseHeldEscrowForCompletedProjects = async (req, res) => {
+  try {
+    if (Number(req.token.role) !== 1) {
+      return res.status(403).json({ success: false, message: "Admin only" });
+    }
+
+    const { releaseEscrowToFreelancer } = await import("../services/escrowService.js");
+
+    const singleProjectId = Number(req.body?.projectId) || Number(req.query?.projectId) || null;
+
+    let stuck;
+    if (singleProjectId) {
+      const { rows } = await pool.query(
+        `SELECT e.id AS escrow_id, e.project_id, e.freelancer_id, e.amount
+         FROM escrow e
+         INNER JOIN projects p ON p.id = e.project_id AND p.is_deleted = false
+         WHERE e.project_id = $1 AND e.status = 'held'
+           AND (LOWER(COALESCE(p.completion_status, '')) = 'completed' OR LOWER(COALESCE(p.status, '')) = 'completed')`,
+        [singleProjectId]
+      );
+      stuck = rows;
+    } else {
+      const { rows } = await pool.query(
+        `SELECT e.id AS escrow_id, e.project_id, e.freelancer_id, e.amount
+         FROM escrow e
+         INNER JOIN projects p ON p.id = e.project_id AND p.is_deleted = false
+         WHERE e.status = 'held'
+           AND (LOWER(COALESCE(p.completion_status, '')) = 'completed' OR LOWER(COALESCE(p.status, '')) = 'completed')`
+      );
+      stuck = rows;
+    }
+
+    const results = [];
+    for (const row of stuck) {
+      const projectId = row.project_id;
+      try {
+        const result = await releaseEscrowToFreelancer(projectId);
+        if (result.released) {
+          try {
+            await pool.query(
+              `UPDATE projects SET payment_released_at = NOW() WHERE id = $1`,
+              [projectId]
+            );
+          } catch (upErr) {
+            console.warn("[releaseHeldEscrow] payment_released_at update failed for project", projectId, upErr.message);
+          }
+        }
+        results.push({
+          projectId,
+          freelancerId: row.freelancer_id,
+          amount: row.amount,
+          released: result.released,
+          alreadyReleased: result.alreadyReleased ?? false,
+          reason: result.reason ?? null,
+        });
+      } catch (err) {
+        results.push({
+          projectId,
+          freelancerId: row.freelancer_id,
+          amount: row.amount,
+          released: false,
+          error: err.message,
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: singleProjectId
+        ? `Processed project ${singleProjectId} (${results.length} row(s)).`
+        : `Processed ${stuck.length} completed project(s) with held escrow`,
+      count: stuck.length,
+      results,
+    });
+  } catch (err) {
+    console.error("releaseHeldEscrowForCompletedProjects:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/* ============================================================
    8️⃣ UNIFIED – PAYMENT HISTORY (All transactions)
 ============================================================ */
 export const getPaymentHistory = async (req, res) => {
   try {
     const userId = req.token.userId;
-    const roleId = req.token.role;
+    const roleId = Number(req.token.role) || Number(req.token.roleId);
     const { type = 'all', page = 1, limit = 50 } = req.query;
 
     // Fetch more records to combine and sort, then limit after
@@ -478,7 +570,7 @@ export const getPaymentHistory = async (req, res) => {
     }
 
     // 2️⃣ Get wallet transactions (for freelancers only)
-    if ((type === 'all' || type === 'wallet') && roleId === 3) {
+    if ((type === 'all' || type === 'wallet') && Number(roleId) === 3) {
       let walletQuery = `
         SELECT
           id,
@@ -522,7 +614,7 @@ export const getPaymentHistory = async (req, res) => {
 
     // 4️⃣ Get wallet balance for freelancers
     let balance = 0;
-    if (roleId === 3) {
+    if (Number(roleId) === 3) {
       const walletResult = await pool.query(
         `SELECT balance FROM wallets WHERE user_id = $1`,
         [userId]
@@ -532,8 +624,9 @@ export const getPaymentHistory = async (req, res) => {
 
     res.json({
       success: true,
-      balance: balance,
+      balance: Number(balance),
       currency: 'JOD',
+      totals: { available: Number(balance), totalAmount: Number(balance) },
       transactions: paginatedTransactions,
     });
 

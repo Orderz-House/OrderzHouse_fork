@@ -182,37 +182,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           borderRadius: 30, // Pill shape
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        // Or sign up with divider
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: const Color(0xFFE5E7EB),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                              child: Text(
-                                l10n.orContinueWith,
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: const Color(0xFF6B7280),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: const Color(0xFFE5E7EB),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        // Continue with Google
-                        _buildGoogleSignInButton(l10n),
-                        const SizedBox(height: AppSpacing.xl),
+                        // زر التسجيل عبر Google — مخفي حسب الطلب
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child: Container(
+                        //         height: 1,
+                        //         color: const Color(0xFFE5E7EB),
+                        //       ),
+                        //     ),
+                        //     Padding(
+                        //       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        //       child: Text(
+                        //         l10n.orContinueWith,
+                        //         style: AppTextStyles.bodySmall.copyWith(
+                        //           color: const Color(0xFF6B7280),
+                        //           fontSize: 12,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //     Expanded(
+                        //       child: Container(
+                        //         height: 1,
+                        //         color: const Color(0xFFE5E7EB),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+                        // const SizedBox(height: AppSpacing.lg),
+                        // _buildGoogleSignInButton(l10n),
+                        // const SizedBox(height: AppSpacing.xl),
                         // Bottom link
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -255,6 +254,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  // مخفي مع زر Google — يمكن إعادة الاستخدام لاحقاً
+  // ignore: unused_element
   Widget _buildGoogleSignInButton(AppLocalizations l10n) {
     final authState = ref.watch(authStateProvider);
     return GradientButton(

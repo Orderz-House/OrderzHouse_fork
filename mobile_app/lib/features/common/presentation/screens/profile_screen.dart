@@ -313,7 +313,7 @@ class _StatsRow extends ConsumerWidget {
           _StatItem(number: '—', label: l10n.active),
         ],
       ),
-      error: (_, __) => Row(
+      error: (_, _) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _StatItem(number: '—', label: l10n.projects),

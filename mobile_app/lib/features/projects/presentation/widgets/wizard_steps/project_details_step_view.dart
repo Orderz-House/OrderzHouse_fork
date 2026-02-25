@@ -270,7 +270,7 @@ class _ProjectDetailsStepViewState
               ],
             ),
             loading: () => const CircularProgressIndicator(),
-            error: (_, __) => Text(l10n.failedToLoadCategories),
+            error: (_, _) => Text(l10n.failedToLoadCategories),
           ),
 
           const SizedBox(height: AppSpacing.md),

@@ -480,11 +480,11 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
   Widget _buildProjectsGrid(BuildContext context, List<Project> projects, {double bottomPadding = 0}) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     const crossAxisCount = 2;
-    final horizontalPadding = AppSpacing.lg * 2 + AppSpacing.md * (crossAxisCount - 1);
+    const horizontalPadding = AppSpacing.lg * 2 + AppSpacing.md * (crossAxisCount - 1);
     final cellWidth = (screenWidth - horizontalPadding) / crossAxisCount;
     const imageHeight = 120.0;
     const minContentHeight = 90.0;
-    final minCellHeight = imageHeight + minContentHeight;
+    const minCellHeight = imageHeight + minContentHeight;
     final aspectRatio = cellWidth / minCellHeight;
     return GridView.builder(
       padding: EdgeInsets.only(

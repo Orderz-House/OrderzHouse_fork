@@ -242,6 +242,8 @@ function useTableData({ endpoint, api, refreshKey }) {
           ? data.payments
           : Array.isArray(data?.tasks)
           ? data.tasks
+          : Array.isArray(data?.transactions)
+          ? data.transactions
           : [];
 
         const processedList = list.map((row) => ({
