@@ -23,7 +23,7 @@ import PageMeta from "../PageMeta.jsx";
 import AuthSplitLayout from "../auth/AuthSplitLayout.jsx";
 import { useAuthTransition } from "../auth/useAuthTransition.js";
 
-/** غيّر إلى true عند تفعيل تسجيل الدخول بـ Google */
+/** غيّر إلى true عند تفعيل تسجيل الدخول بـ Google — حالياً مخفي */
 const ENABLE_GOOGLE_LOGIN = false;
 
 export const getDashboardPath = (roleId) => {
@@ -412,7 +412,7 @@ const Login = () => {
             </button>
           </div>
 
-          {!isOtpStep && ENABLE_GOOGLE_LOGIN && (
+          {false && !isOtpStep && ENABLE_GOOGLE_LOGIN && (
             <>
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center">

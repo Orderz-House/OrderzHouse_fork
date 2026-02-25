@@ -152,6 +152,19 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   bool _showReferAndEarn = false;
 
   @override
+  void initState() {
+    super.initState();
+    // عند فتح صفحة المدفوعات نحدّث الرصيد والمعاملات (خاصة بعد إتمام مشروع)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authStateProvider).user;
+      if (user?.roleId == 3) {
+        ref.invalidate(paymentHistoryProvider('all'));
+        ref.invalidate(balanceFromHistoryProvider);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();

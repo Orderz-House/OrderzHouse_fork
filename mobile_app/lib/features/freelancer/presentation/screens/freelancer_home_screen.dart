@@ -125,7 +125,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
     final balanceData = balanceAsync.when(
       data: (data) => data,
       loading: () => {'balance': 0.0, 'currency': 'JOD'},
-      error: (_, __) => {'balance': 0.0, 'currency': 'JOD'},
+      error: (_, _) => {'balance': 0.0, 'currency': 'JOD'},
     );
     final balance = balanceData['balance'] as double;
     final currency = balanceData['currency'] as String;
@@ -307,7 +307,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             scrollDirection: Axis.horizontal,
             itemCount: projects.length, // Already limited to 5 by provider
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, index) {
               final project = projects[index];
               return HomeProjectCard(
@@ -435,7 +435,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             scrollDirection: Axis.horizontal,
             itemCount: projects.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, index) {
               final project = projects[index];
               return HomeProjectCard(
@@ -458,7 +458,7 @@ class FreelancerHomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         scrollDirection: Axis.horizontal,
         itemCount: 3,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           return Container(
             width: 280,

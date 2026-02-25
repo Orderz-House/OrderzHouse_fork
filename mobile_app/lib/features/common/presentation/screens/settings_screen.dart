@@ -155,29 +155,27 @@ class SettingsScreen extends ConsumerWidget {
                       indent: 72,
                     ),
 
-                    // Security Center
-                    _buildSettingTile(
-                      context: context,
-                      icon: Icons.security_outlined,
-                      title: l10n.security,
-                      subtitle: l10n.securitySubtitle,
-                      trailing: const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.iconGray,
-                        size: 24,
-                      ),
-                      onTap: () {
-                        context.push('/settings/security');
-                      },
-                    ),
-                    
-                    // Divider
-                    const Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppColors.borderLight,
-                      indent: 72,
-                    ),
+                    // Security Center — مخفي حسب الطلب
+                    // _buildSettingTile(
+                    //   context: context,
+                    //   icon: Icons.security_outlined,
+                    //   title: l10n.security,
+                    //   subtitle: l10n.securitySubtitle,
+                    //   trailing: const Icon(
+                    //     Icons.chevron_right_rounded,
+                    //     color: AppColors.iconGray,
+                    //     size: 24,
+                    //   ),
+                    //   onTap: () {
+                    //     context.push('/settings/security');
+                    //   },
+                    // ),
+                    // const Divider(
+                    //   height: 1,
+                    //   thickness: 1,
+                    //   color: AppColors.borderLight,
+                    //   indent: 72,
+                    // ),
 
                     // Change Password Setting
                     _buildSettingTile(

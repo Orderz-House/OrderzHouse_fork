@@ -114,20 +114,23 @@ function StatPill({ icon: Icon, label, value, tone = "slate" }) {
    ========================================================= */
 export default function Payments() {
   const { userData, user, token } = useSelector((s) => s.auth);
-  const role = mapRole(userData?.role_id ?? user?.role_id);
+  // دعم كل أشكال تخزين الدور: role_id, roleId, role (من الـ API أو الـ store)
+  const roleId =
+    userData?.role_id ?? user?.role_id ?? userData?.roleId ?? user?.roleId ?? userData?.role ?? user?.role;
+  const role = mapRole(roleId);
 
   const userId =
     userData?.id ?? user?.id ?? userData?.user_id ?? user?.user_id ?? null;
 
-  // IMPORTANT: these match PaymentsRouter routes: /payments/user/:user_id and /payments/admin/all
+  // الفريلانسر: نفس الـ endpoint للصفحة والجدول حتى يُعرض الرصيد + المعاملات من /payments/history
   const endpoint =
-  role === "admin"
-    ? "/payments/admin/payments"
-    : role === "client"
-    ? "/payments/client/history"
-    : role === "freelancer"
-    ? "/payments/freelancer/wallet/transactions"
-    : null;
+    role === "admin"
+      ? "/payments/admin/payments"
+      : role === "client"
+      ? "/payments/client/history"
+      : role === "freelancer"
+      ? "/payments/history"
+      : null;
 
 
 
@@ -144,17 +147,35 @@ export default function Payments() {
     try {
       let data;
 
-      // 2) api
-      if (!data) {
-        const res = await API.get(endpoint, {
-          // headers: { authorization: `Bearer ${token}` },
-          // silent: true
-        });
+      if (role === "freelancer") {
+        // الفريلانسر: استخدم /payments/history للحصول على الرصيد + المعاملات معاً
+        const res = await API.get("/payments/history", { params: { type: "all" } });
         data = res.data;
       }
 
-      const items = pickArray(data);
-      const totalsObj = data?.totals ?? {};
+      if (!data) {
+        const res = await API.get(endpoint, {});
+        data = res.data;
+      }
+
+      let items = pickArray(data);
+      if (role === "freelancer" && Array.isArray(items)) {
+        items = items.map((t) => ({
+          ...t,
+          created_at: t.created_at ?? t.createdAt,
+          purpose: t.purpose ?? t.source ?? t.title ?? "—",
+          project_title: t.project_title ?? t.title,
+          reference_id: t.reference?.referenceId ?? t.reference_id,
+        }));
+      }
+      const totalsObj =
+        role === "freelancer"
+          ? {
+              available: data?.balance ?? 0,
+              totalAmount: data?.balance ?? 0,
+              ...(data?.totals || {}),
+            }
+          : data?.totals ?? {};
 
       setRows(items);
       setTotals(totalsObj);
@@ -165,7 +186,7 @@ export default function Payments() {
     } finally {
       setLoading(false);
     }
-  }, [endpoint]);
+  }, [endpoint, role]);
 
   useEffect(() => {
     let alive = true;
@@ -260,12 +281,15 @@ export default function Payments() {
       });
     }
 
-    cols.push({ 
-      label: "Purpose", 
-      key: "purpose", 
+    cols.push({
+      label: "Purpose",
+      key: "purpose",
       width: "w-[180px]",
       align: "center",
-      render: (r) => <div className="text-center truncate" title={r?.purpose || "—"}>{r?.purpose || "—"}</div>
+      render: (r) => {
+        const purpose = r?.purpose ?? r?.source ?? r?.title ?? "—";
+        return <div className="text-center truncate" title={purpose}>{purpose}</div>;
+      },
     });
 
     cols.push({
@@ -274,7 +298,11 @@ export default function Payments() {
       width: "w-[140px]",
       align: "center",
       render: (r) => {
-        const ref = r?.plan_name || r?.project_title || (r?.reference_id != null ? `#${r.reference_id}` : "—");
+        const ref =
+          r?.plan_name ??
+          r?.project_title ??
+          r?.title ??
+          (r?.reference_id != null ? `#${r.reference_id}` : r?.reference?.referenceId != null ? `#${r.reference.referenceId}` : "—");
         return <div className="text-center truncate" title={ref}>{ref}</div>;
       },
     });
@@ -301,7 +329,7 @@ export default function Payments() {
       width: "w-[190px]",
       align: "center",
       render: (r) => {
-        const dateStr = fmtDate(r?.created_at);
+        const dateStr = fmtDate(r?.created_at ?? r?.createdAt);
         return <div className="text-center truncate" title={dateStr}>{dateStr}</div>;
       },
     });
