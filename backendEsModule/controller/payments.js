@@ -445,191 +445,72 @@ export const releaseHeldEscrowForCompletedProjects = async (req, res) => {
 };
 
 /* ============================================================
-   8️⃣ UNIFIED – PAYMENT HISTORY (All transactions)
+   8️⃣ GET /payments/history – real wallet-based data (no TEMP placeholder)
+   Uses wallets + wallet_transactions for authenticated user.
 ============================================================ */
 export const getPaymentHistory = async (req, res) => {
   try {
-    const userId = req.token.userId;
-    const roleId = Number(req.token.role) || Number(req.token.roleId);
-    const { type = 'all', page = 1, limit = 50 } = req.query;
-
-    // Fetch more records to combine and sort, then limit after
-    const fetchLimit = type === 'all' ? Number(limit) * 2 : Number(limit);
-    const transactions = [];
-
-    // 1️⃣ Get payments (plan or project payments)
-    if (type === 'all' || type === 'plan' || type === 'project') {
-      let paymentQuery = `
-        SELECT
-          p.id,
-          p.amount,
-          p.currency,
-          p.status,
-          p.purpose,
-          p.reference_id,
-          p.stripe_session_id,
-          p.stripe_payment_intent,
-          p.created_at,
-          pr.title AS project_title,
-          pr.user_id AS project_client_id,
-          e.id AS escrow_id,
-          e.freelancer_id AS escrow_freelancer_id,
-          e.status AS escrow_status,
-          e.released_at AS escrow_released_at,
-          pl.name AS plan_name,
-          pl.duration AS plan_duration,
-          pl.plan_type AS plan_type
-        FROM payments p
-        LEFT JOIN projects pr ON p.purpose = 'project' AND p.reference_id = pr.id
-        LEFT JOIN escrow e ON p.id = e.payment_id
-        LEFT JOIN plans pl ON p.purpose = 'plan' AND p.reference_id = pl.id
-        WHERE p.user_id = $1
-      `;
-
-      const paymentParams = [userId];
-
-      if (type === 'plan') {
-        paymentQuery += ` AND p.purpose = 'plan'`;
-      } else if (type === 'project') {
-        paymentQuery += ` AND p.purpose = 'project'`;
-      }
-
-      paymentQuery += ` ORDER BY p.created_at DESC LIMIT $${paymentParams.length + 1}`;
-      paymentParams.push(fetchLimit);
-
-      const paymentRows = await pool.query(paymentQuery, paymentParams);
-
-      for (const row of paymentRows.rows) {
-        const transaction = {
-          id: row.id,
-          source: row.purpose, // 'plan' or 'project'
-          amount: parseFloat(row.amount) || 0,
-          currency: row.currency || 'JOD',
-          status: row.escrow_status || row.status || 'paid', // Use escrow status if available
-          createdAt: row.created_at,
-          title: '',
-          description: '',
-          project: null,
-          reference: {
-            paymentId: row.id,
-            purpose: row.purpose,
-            referenceId: row.reference_id,
-            stripeSessionId: row.stripe_session_id,
-            stripePaymentIntent: row.stripe_payment_intent,
-          },
-        };
-
-        // Build title and description based on purpose
-        if (row.purpose === 'plan') {
-          if (row.plan_name) {
-            transaction.title = row.plan_name;
-            if (row.plan_duration && row.plan_type) {
-              const durationLabel = row.plan_type === 'monthly' 
-                ? `${row.plan_duration} Month${row.plan_duration > 1 ? 's' : ''}`
-                : `${row.plan_duration} Year${row.plan_duration > 1 ? 's' : ''}`;
-              transaction.description = `Plan Subscription - ${durationLabel}`;
-            } else {
-              transaction.description = 'Plan Subscription';
-            }
-          } else {
-            transaction.title = 'Plan Subscription';
-            transaction.description = 'Subscription payment';
-          }
-        } else if (row.purpose === 'project') {
-          transaction.title = row.project_title || 'Project Payment';
-          
-          // Build description with escrow status if available
-          if (row.escrow_id) {
-            const escrowStatus = row.escrow_status || 'held';
-            if (escrowStatus === 'held') {
-              transaction.description = 'Escrow held for project';
-            } else if (escrowStatus === 'released') {
-              transaction.description = 'Escrow released - payment completed';
-            } else if (escrowStatus === 'refunded') {
-              transaction.description = 'Escrow refunded';
-            } else {
-              transaction.description = 'Project payment';
-            }
-          } else {
-            transaction.description = 'Project payment';
-          }
-
-          // Add project details
-          if (row.project_title && row.reference_id) {
-            transaction.project = {
-              projectId: row.reference_id,
-              title: row.project_title,
-              clientId: row.project_client_id || null,
-              freelancerId: row.escrow_freelancer_id || null,
-            };
-          }
-        }
-
-        transactions.push(transaction);
-      }
+    const userId = req.token?.userId ?? req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    // 2️⃣ Get wallet transactions (for freelancers only)
-    if ((type === 'all' || type === 'wallet') && Number(roleId) === 3) {
-      let walletQuery = `
-        SELECT
-          id,
-          amount,
-          type,
-          note,
-          created_at
-        FROM wallet_transactions
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-        LIMIT $2
-      `;
+    const { page = 1, limit = 50 } = req.query;
+    const offset = Math.max(0, (Number(page) - 1) * Number(limit));
+    const limitNum = Math.min(100, Math.max(1, Number(limit)));
 
-      const walletRows = await pool.query(walletQuery, [userId, fetchLimit]);
+    // [TEMP DEBUG]
+    console.log("[getPaymentHistory] req.user.id / req.token.userId:", req.user?.id ?? req.token?.userId);
 
-      for (const row of walletRows.rows) {
-        transactions.push({
-          id: row.id,
-          source: 'wallet',
-          amount: parseFloat(row.amount) || 0,
-          currency: 'JOD',
-          status: row.type === 'credit' ? 'paid' : 'debit',
-          createdAt: row.created_at,
-          title: 'Wallet Transaction',
-          description: row.note || (row.type === 'credit' ? 'Wallet credit' : 'Wallet debit'),
-          project: null,
-          reference: {
-            transactionId: row.id,
-            type: row.type, // 'credit' or 'debit'
-          },
-        });
-      }
-    }
+    // 1) Wallet balance: wallets where user_id = current user
+    const walletResult = await pool.query(
+      `SELECT balance FROM wallets WHERE user_id = $1`,
+      [userId]
+    );
+    const walletRow = walletResult.rows[0] ?? null;
+    const balance = Number(walletRow?.balance ?? 0);
 
-    // 3️⃣ Sort all transactions by date (newest first) and apply pagination
-    transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Apply pagination
-    const offset = (Number(page) - 1) * Number(limit);
-    const paginatedTransactions = transactions.slice(offset, offset + Number(limit));
+    // [TEMP DEBUG]
+    console.log("[getPaymentHistory] wallet row found:", !!walletRow, "balance:", balance);
 
-    // 4️⃣ Get wallet balance for freelancers
-    let balance = 0;
-    if (Number(roleId) === 3) {
-      const walletResult = await pool.query(
-        `SELECT balance FROM wallets WHERE user_id = $1`,
-        [userId]
-      );
-      balance = parseFloat(walletResult.rows[0]?.balance || 0);
-    }
+    // 2) Transaction rows: wallet_transactions where user_id = current user, newest first
+    const txResult = await pool.query(
+      `SELECT id, amount, type, note, created_at
+       FROM wallet_transactions
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limitNum, offset]
+    );
+    const rows = txResult.rows || [];
 
-    res.json({
+    // [TEMP DEBUG]
+    console.log("[getPaymentHistory] transactions count:", rows.length);
+
+    // 3) Map to UI table fields: id, purpose, reference, amount, status, date
+    const transactions = rows.map((row) => ({
+      id: row.id,
+      purpose: row.note ? (row.note.length > 80 ? row.note.slice(0, 80) + "…" : row.note) : (row.type === "credit" ? "Wallet credit" : "Wallet debit"),
+      reference: row.type === "credit" ? "Credit" : "Debit",
+      amount: Number(row.amount) || 0,
+      status: row.type === "credit" ? "paid" : "debit",
+      date: row.created_at,
+      created_at: row.created_at,
+      source: "wallet",
+      reference_id: row.id,
+    }));
+
+    const response = {
       success: true,
-      balance: Number(balance),
-      currency: 'JOD',
-      totals: { available: Number(balance), totalAmount: Number(balance) },
-      transactions: paginatedTransactions,
-    });
+      balance,
+      totalAmount: balance,
+      availableToWithdraw: balance,
+      currency: "JOD",
+      totals: { available: balance, totalAmount: balance },
+      transactions,
+    };
 
+    res.json(response);
   } catch (err) {
     console.error("getPaymentHistory:", err);
     res.status(500).json({ success: false, message: err.message });

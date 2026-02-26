@@ -328,13 +328,46 @@ export async function fetchClientDashboard() {
     .sort((a, b) => a.priority - b.priority)
     .slice(0, 5);
 
+  // My projects: last 8, incomplete first (same idea as freelancer)
+  const isCompleted = (p) => {
+    const s = String(p?.status || "").toLowerCase();
+    const c = String(p?.completion_status || "").toLowerCase();
+    return s === "completed" || c === "completed" || c === "delivered";
+  };
+  const getProjectTime = (p) => {
+    const raw = p?.updated_at ?? p?.updatedAt ?? p?.created_at ?? p?.createdAt ?? 0;
+    return new Date(raw).getTime() || 0;
+  };
+  const myProjects = [...projects]
+    .sort((a, b) => {
+      const aDone = isCompleted(a);
+      const bDone = isCompleted(b);
+      if (aDone !== bDone) return aDone ? 1 : -1;
+      return getProjectTime(b) - getProjectTime(a);
+    })
+    .slice(0, 8)
+    .map((p) => {
+      const budgetRaw = p?.budget ?? p?.amount_to_pay ?? p?.amountToPay;
+      const dueRaw = p?.due ?? p?.deadline ?? p?.end_date ?? p?.updated_at;
+      return {
+        id: p?.id,
+        title: p?.title,
+        client: p?.assignee ?? p?.freelancer_name ?? p?.client_name ?? "",
+        budget: budgetRaw != null ? String(budgetRaw) : "",
+        status: p?.status,
+        completion_status: p?.completion_status,
+        due: dueRaw ? safeDate(dueRaw) : "",
+        amount_to_pay: p?.amount_to_pay ?? p?.budget,
+      };
+    });
+
   return {
     stats,
     recentProjects,
+    myProjects,
     actionableItems: sortedActions,
     financialOverview,
     attention: {
-      // Keep for backward compatibility
       pendingReviews: awaitingApproval.slice(0, 4),
     },
   };
@@ -473,11 +506,31 @@ export async function fetchFreelancerDashboard() {
 
   if (!openProjects.length) {
     try {
-      const poolRes = await axios.get(`${API_BASE}/tasks/pool`);
+      const poolRes = await API.get("/tasks/pool");
       openProjects = pickArray(poolRes?.data, ["tasks", "data", "rows", null]);
     } catch {
       // ignore
     }
+  }
+
+  function mapProjectToCard(p) {
+    const budgetRaw = p?.budget ?? p?.amount_to_pay ?? p?.amountToPay;
+    const dueRaw = p?.due ?? p?.deadline ?? p?.end_date ?? p?.updated_at;
+    return {
+      id: p?.id,
+      title: p?.title,
+      client:
+        p?.client_name ||
+        p?.clientName ||
+        p?.client ||
+        p?.user_name ||
+        p?.owner_name,
+      budget: budgetRaw != null ? String(budgetRaw) : "",
+      status: p?.status,
+      completion_status: p?.completion_status,
+      due: dueRaw ? safeDate(dueRaw) : "",
+      amount_to_pay: p?.amount_to_pay ?? p?.budget,
+    };
   }
 
   const activeProjects = projects
@@ -486,24 +539,27 @@ export async function fetchFreelancerDashboard() {
       return ["in_progress", "active", "running", "started"].includes(s);
     })
     .slice(0, 6)
-    .map((p) => {
-      const budgetRaw = p?.budget ?? p?.amount_to_pay ?? p?.amountToPay;
-      const dueRaw = p?.due ?? p?.deadline ?? p?.end_date ?? p?.updated_at;
+    .map((p) => mapProjectToCard(p));
 
-      return {
-        id: p?.id,
-        title: p?.title,
-        client:
-          p?.client_name ||
-          p?.clientName ||
-          p?.client ||
-          p?.user_name ||
-          p?.owner_name,
-        budget: budgetRaw != null ? String(budgetRaw) : "",
-        status: p?.status,
-        due: dueRaw ? safeDate(dueRaw) : "",
-      };
-    });
+  // My projects: last 8, priority for incomplete (non-completed) first, then by date
+  const isCompleted = (p) => {
+    const s = String(p?.status || "").toLowerCase();
+    const c = String(p?.completion_status || "").toLowerCase();
+    return s === "completed" || c === "completed" || c === "delivered";
+  };
+  const getProjectTime = (p) => {
+    const raw = p?.updated_at ?? p?.updatedAt ?? p?.created_at ?? p?.createdAt ?? 0;
+    return new Date(raw).getTime() || 0;
+  };
+  const myProjects = [...projects]
+    .sort((a, b) => {
+      const aDone = isCompleted(a);
+      const bDone = isCompleted(b);
+      if (aDone !== bDone) return aDone ? 1 : -1; // incomplete first
+      return getProjectTime(b) - getProjectTime(a); // then newest first
+    })
+    .slice(0, 8)
+    .map((p) => mapProjectToCard(p));
 
   const latestClientProjects = openProjects
     .slice(0, 6)
@@ -544,11 +600,11 @@ export async function fetchFreelancerDashboard() {
     },
   ];
 
-  const subscriptionStatus = subscriptionRes.status === "fulfilled" 
-    ? subscriptionRes.value?.data 
+  const subscriptionStatus = subscriptionRes.status === "fulfilled"
+    ? subscriptionRes.value?.data
     : null;
 
-  return { balanceCards, activeProjects, latestClientProjects, subscriptionStatus };
+  return { balanceCards, activeProjects, myProjects, latestClientProjects, subscriptionStatus };
 }
 
 /* ===================== Helpers ===================== */

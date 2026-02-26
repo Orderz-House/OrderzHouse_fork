@@ -93,8 +93,17 @@ class Payment {
     final source = json['source'] as String? ?? json['purpose'] as String?;
     
     // Use enriched title/description if available, otherwise fallback to legacy
-    final title = json['title'] as String? ?? json['project_title'] as String?;
+    final title = json['title'] as String? ?? json['project_title'] as String? ?? json['purpose'] as String?;
     final description = json['description'] as String? ?? json['note'] as String?;
+
+    // reference can be string (e.g. "Credit") or Map from API
+    PaymentReference? ref;
+    final refRaw = json['reference'];
+    if (refRaw is Map<String, dynamic>) {
+      ref = parseReference(refRaw);
+    } else if (refRaw is String && refRaw.isNotEmpty) {
+      ref = PaymentReference(transactionType: refRaw);
+    }
 
     return Payment(
       id: json['id'] as int? ?? 0,
@@ -104,7 +113,7 @@ class Payment {
       purpose: json['purpose'] as String?,
       referenceId: json['reference_id'] as int? ?? json['referenceId'] as int?,
       projectTitle: json['project_title'] as String?,
-      createdAt: parseDateTime(json['createdAt'] ?? json['created_at']),
+      createdAt: parseDateTime(json['date'] ?? json['createdAt'] ?? json['created_at']),
       type: json['type'] as String?,
       note: json['note'] as String?,
       method: json['method'] as String?,
@@ -112,7 +121,7 @@ class Payment {
       title: title,
       description: description,
       project: parseProject(json['project'] as Map<String, dynamic>?),
-      reference: parseReference(json['reference'] as Map<String, dynamic>?),
+      reference: ref,
     );
   }
 

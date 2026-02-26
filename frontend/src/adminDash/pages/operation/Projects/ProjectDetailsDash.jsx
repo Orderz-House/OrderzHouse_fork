@@ -169,6 +169,78 @@ function MobileBottomBar({ hidden, acceptLabel, onAccept, onContact, acceptDisab
   );
 }
 
+/* ---------- Redesign: small UI blocks ---------- */
+function MetaPill({ icon: Icon, children, className = "" }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm",
+        className
+      )}
+    >
+      {Icon ? <Icon className="h-3.5 w-3.5 text-slate-500 shrink-0" /> : null}
+      {children}
+    </span>
+  );
+}
+
+function ProjectTabs({ tabs, active, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-1 border-b border-slate-200/80">
+      {tabs.map(({ id, label }) => {
+        const isActive = active === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onChange(id)}
+            className={cx(
+              "px-4 py-3 text-sm font-medium transition",
+              isActive
+                ? "text-orange-600 border-b-2 border-orange-500 -mb-px"
+                : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SectionBlock({ title, children }) {
+  return (
+    <div className="mb-6 last:mb-0">
+      <h3 className="text-sm font-bold text-slate-900 mb-2">{title}</h3>
+      <div className="text-sm text-slate-600 leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+function ActionPill({ primary, icon: Icon, children, onClick, disabled, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cx(
+        "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition shrink-0",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300",
+        primary
+          ? "text-white shadow-sm hover:opacity-95 active:scale-[0.98]"
+          : "bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-50",
+        disabled && "opacity-50 cursor-not-allowed",
+        className
+      )}
+      style={primary ? { backgroundColor: THEME } : undefined}
+    >
+      {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+      {children}
+    </button>
+  );
+}
+
 /**
  * Dashboard-themed Project Details (same endpoints/logic as old ProjectDetails).
  * Works for:
@@ -209,6 +281,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [offersSubmitting, setOffersSubmitting] = useState(false);
   const [appsSubmitting, setAppsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // ✅ inferred mode (projects/tasks) — keep compatible with old file
   const inferredMode = useMemo(() => {
@@ -621,9 +694,9 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
   };
 
   return (
-    <section className="relative">
+    <section className="relative min-h-screen bg-slate-50/80">
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/90 backdrop-blur lg:hidden">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -647,376 +720,203 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
         </div>
       </div>
 
-      <div className="mx-auto">
-        {/* Hero */}
-        <div className="rounded-3xl overflow-hidden">
-          <div
-            className="relative p-4 sm:p-6 text-white bg-gradient-to-b from-orange-400 to-red-500"
-          >
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute left-8 -bottom-28 h-72 w-72 rounded-full bg-black/10 blur-3xl" />
-
-            <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] uppercase tracking-[0.22em] text-white/70 font-semibold">
-                    PROJECT
+      <div className="max-w-5xl mx-auto  min-h-screen bg-slate-50/80">
+        {/* Header card: top row + title + meta pills */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden mb-6">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusChip status={status} />
+                {readOnly && (
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                    Read-only ({roleLabel})
                   </span>
-                  {readOnly ? (
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-white/15 border border-white/20">
-                      Read-only ({roleLabel})
-                    </span>
-                  ) : null}
-                </div>
-
-                <h1 className="mt-2 text-[20px] sm:text-[26px] lg:text-[30px] font-black tracking-tight leading-tight break-words [overflow-wrap:anywhere]">
-                  {title}
-                </h1>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <StatusChip status={status} />
-                  <span className="text-white/80 text-xs">
-                    Created: {formatDateSafe(createdAt)}
-                  </span>
-                </div>
-
-                {/* <p className="mt-3 text-white/85 text-sm max-w-3xl line-clamp-2">
-                  {description}
-                </p> */}
+                )}
               </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="rounded-2xl bg-white/15 border border-white/20 px-4 py-3 min-w-[160px]">
-                  <div className="text-[11px] text-white/75 font-semibold">
-                    Budget
-                  </div>
-                  <div className="text-xl font-extrabold">
-                    {budget !== null ? `$${budget}` : "—"}
-                  </div>
-                </div>
-
-               
-              </div>
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500">
+                <Clock className="h-3.5 w-3.5" />
+                Last sync {createdAt ? formatDateSafe(createdAt) : "Just now"}
+              </span>
             </div>
-          </div>
 
-          {/* Cover */}
-          <div className="bg-white p-4 sm:p-5">
-            {cover ? (
-              <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50">
-                <div className="w-full max-h-[420px] flex items-center justify-center">
-                  <img
-                    src={cover}
-                    alt={title}
-                    className="max-h-[420px] w-auto object-contain"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-100 h-[220px] flex items-center justify-center text-slate-400">
-                No cover image
-              </div>
-            )}
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight break-words">
+              {title}
+            </h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <MetaPill icon={User}>{valueOrDash(clientName) ? `@ ${valueOrDash(clientName)}` : "—"}</MetaPill>
+              <MetaPill icon={Calendar}>
+                {duration != null ? `${duration} days` : due ? formatDateSafe(due) : "—"}
+              </MetaPill>
+              <MetaPill icon={Tag}>{valueOrDash(projectType)}</MetaPill>
+              {progress != null && progress !== undefined && (
+                <MetaPill>
+                  <span className="font-semibold text-slate-800">{progress}%</span> progress
+                </MetaPill>
+              )}
+              {freelancerName && (
+                <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-slate-50 w-8 h-8 justify-center text-xs font-bold text-slate-600">
+                  {(freelancerName || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main grid */}
-        <div className="mt-6 grid lg:grid-cols-[1fr,360px] gap-6 lg:gap-8">
-          {/* Left */}
-          <div className="space-y-6 min-w-0">
-            {/* KPI pills */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <StatPill
-                icon={Wallet}
-                label="Budget"
-                value={budget !== null ? `$${budget}` : "—"}
-                tone="orange"
-              />
-              <StatPill
-                icon={Tag}
-                label="Type"
-                value={valueOrDash(projectType)}
-                tone="orange"
-              />
-              <StatPill
-                icon={Clock}
-                label="Duration"
-                value={duration !== null ? `${duration} day(s)` : "—"}
-                tone="amber"
-              />
-              <StatPill
-                icon={Tag}
-                label="Category"
-                value={valueOrDash(category)}
-                tone="slate"
-              />
-            </div>
-
-
-            {/* Key details
-            <SectionCard title="Key details" icon={ClipboardList}>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                    <Calendar className="h-4 w-4" />
-                    Due date
-                  </div>
-                  <div className="mt-1 font-extrabold text-slate-900 break-words [overflow-wrap:anywhere]">
-                    {formatDateSafe(due)}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                    <TrendingUp className="h-4 w-4" />
-                    Progress
-                  </div>
-                  <div className="mt-1 font-extrabold text-slate-900">
-                    {progress !== null && progress !== undefined ? `${progress}%` : "—"}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                    <User className="h-4 w-4" />
-                    Client
-                  </div>
-                  <div className="mt-1 font-extrabold text-slate-900 break-words [overflow-wrap:anywhere]">
-                    {valueOrDash(clientName)}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                    <User className="h-4 w-4" />
-                    Freelancer
-                  </div>
-                  <div className="mt-1 font-extrabold text-slate-900 break-words [overflow-wrap:anywhere]">
-                    {valueOrDash(freelancerName)}
-                  </div>
-                </div>
-
-                <div className="sm:col-span-2 rounded-2xl border border-slate-200/70 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                    <SendHorizontal className="h-4 w-4" />
-                    Offers
-                  </div>
-                  <div className="mt-1 font-extrabold text-slate-900">
-                    {offersCount !== null && offersCount !== undefined ? offersCount : "—"}
-                  </div>
-                </div>
-              </div>
-            </SectionCard> */}
-
-            {/* About */}
-            <SectionCard title="About this project" icon={Tag}>
-              <p className="text-slate-700 text-sm sm:text-base leading-6 sm:leading-7 break-words [overflow-wrap:anywhere]">
-                {descExpanded ? description : shortDesc}
-              </p>
-
-              {description?.length > 260 && (
-                <button
-                  type="button"
-                  onClick={() => setDescExpanded((v) => !v)}
-                  className="mt-3 inline-flex items-center text-sm font-semibold hover:opacity-90"
-                  style={{ color: THEME_DARK }}
+        {/* Actions bar */}
+        {id && token && ((isFreelancer && hasApplied) || isOwnerClient) && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {isFreelancer && hasApplied && (
+              <>
+                <ActionPill icon={Bell} onClick={openNotifPanel}>Change requests</ActionPill>
+                {!isCompleted && !isWaitingForClient && (
+                  <ActionPill primary icon={SendHorizontal} onClick={openDeliverModal}>Deliver</ActionPill>
+                )}
+                {isWaitingForClient && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600">Awaiting client decision</span>
+                )}
+                {isCompleted && !isWaitingForClient && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 font-medium">Work approved</span>
+                )}
+              </>
+            )}
+            {isOwnerClient && (
+              <>
+                <ActionPill
+                  primary
+                  icon={isCompleted ? FolderOpen : SendHorizontal}
+                  onClick={() => openReviewDrawer(isCompleted ? "files" : "review")}
                 >
-                  {descExpanded ? "Show less" : "Read more"}
-                </button>
-              )}
-            </SectionCard>
-
-            {/* Attachments */}
-            {item.attachments ? (
-              <SectionCard title="Project Attachments" icon={Paperclip}>
-                <AttachmentList attachments={item.attachments} title="" />
-              </SectionCard>
-            ) : null}
-
-            {projectFiles.length > 0 ? (
-              <SectionCard title="Project Files" icon={FolderOpen}>
-                <AttachmentList
-                  attachments={projectFiles.map((f) => f.file_url)}
-                  title=""
-                />
-              </SectionCard>
-            ) : null}
-
-          
+                  {isCompleted ? "Files" : "Receive"}
+                </ActionPill>
+                <ActionPill icon={FileText} onClick={() => openReviewDrawer("request")}>Request changes</ActionPill>
+                {isWaitingForClient && (
+                  <ActionPill primary onClick={approveWork} disabled={approveSubmitting} icon={CheckCircle}>
+                    {approveSubmitting ? "Approving…" : "Approve"}
+                  </ActionPill>
+                )}
+                {isBidding ? (
+                  <ActionPill icon={Eye} onClick={() => setOffersModalOpen(true)}>
+                    Offers{offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length ? ` (${offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length})` : ""}
+                  </ActionPill>
+                ) : (
+                  <ActionPill icon={Eye} onClick={openApplicationsModal}>Applicants</ActionPill>
+                )}
+              </>
+            )}
           </div>
+        )}
 
-          {/* Right */}
-          <aside className="space-y-4 lg:sticky lg:top-24 h-fit">
-            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-500">
-                    Status
-                  </div>
-                  <div className="mt-1">
-                    <StatusChip status={status} />
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-semibold text-slate-500">
-                    Created
-                  </div>
-                  <div className="mt-1 text-sm font-bold text-slate-900">
-                    {formatDateSafe(createdAt)}
-                  </div>
-                </div>
-              </div>
+        {readOnly && !(id && token && ((isFreelancer && hasApplied) || isOwnerClient)) && (
+          <p className="text-sm text-slate-500 mb-6">Read-only mode. Actions are disabled.</p>
+        )}
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-2xl bg-slate-50 border border-slate-200/60 p-3">
-                  <div className="text-[11px] text-slate-500 font-semibold">
-                    Budget
-                  </div>
-                  <div className="text-base font-extrabold" style={{ color: THEME_DARK }}>
-                    {budget !== null ? `$${budget}` : "—"}
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-slate-50 border border-slate-200/60 p-3">
-                  <div className="text-[11px] text-slate-500 font-semibold">
-                    Type
-                  </div>
-                  <div className="text-sm font-extrabold text-slate-900 truncate">
-                    {valueOrDash(projectType)}
-                  </div>
-                </div>
-                <div className="col-span-2 rounded-2xl bg-slate-50 border border-slate-200/60 p-3">
-                  <div className="text-[11px] text-slate-500 font-semibold">
-                    Category
-                  </div>
-                  <div className="text-sm font-extrabold text-slate-900 break-words [overflow-wrap:anywhere]">
-                    {valueOrDash(category)}
-                  </div>
-                </div>
-              </div>
+        {/* Tabs */}
+        <ProjectTabs
+          tabs={[
+            { id: "overview", label: "Overview" },
+            { id: "workstream", label: "Workstream" },
+            { id: "tasks", label: "Tasks" },
+            { id: "notes", label: "Notes" },
+            { id: "files", label: "Files" },
+            { id: "comments", label: "Comments" },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
 
-              {/* أزرار الإجراءات (كابينة + فريلانسر) — أسفل لوحة الـ Status — تظهر حتى من وضع read-only عند فتح الصفحة من الكارد */}
-              {id && token && ((isFreelancer && hasApplied) || isOwnerClient) ? (
-                <div className="mt-4 pt-4 border-t border-slate-200/70 space-y-2">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-                    Actions
-                  </div>
-                  {isFreelancer && hasApplied ? (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={openNotifPanel}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                      >
-                        <Bell className="h-4 w-4" />
-                        Change requests
-                      </button>
-                      {!isCompleted && !isWaitingForClient ? (
-                        <button
-                          type="button"
-                          onClick={openDeliverModal}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
-                          style={{ backgroundColor: THEME_DARK }}
-                        >
-                          <SendHorizontal className="h-4 w-4" />
-                          Deliver
-                        </button>
-                      ) : isWaitingForClient ? (
-                        <div className="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium text-center">
-                          Awaiting client decision
-                        </div>
-                      ) : (
-                        <div className="py-2 px-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-medium text-center">
-                          Work approved
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                  {isOwnerClient ? (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openReviewDrawer(isCompleted ? "files" : "review")}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
-                        style={{ backgroundColor: THEME_DARK }}
-                      >
-                        {isCompleted ? (
-                          <FolderOpen className="h-4 w-4" />
-                        ) : (
-                          <SendHorizontal className="h-4 w-4" />
-                        )}
-                        {isCompleted ? "Files" : "Receive"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openReviewDrawer("request")}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Request changes
-                      </button>
-                      {isWaitingForClient ? (
-                        <button
-                          type="button"
-                          onClick={approveWork}
-                          disabled={approveSubmitting}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-sm font-semibold"
-                          style={{ backgroundColor: THEME_DARK }}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          {approveSubmitting ? "Approving…" : "Approve work"}
-                        </button>
-                      ) : null}
-                      {isBidding ? (
-                        <button
-                          type="button"
-                          onClick={() => setOffersModalOpen(true)}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Offers{offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length ? ` (${offersForProject.filter((o) => String(o.offer_status || "").toLowerCase() === "pending").length})` : ""}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={openApplicationsModal}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Applicants
-                        </button>
-                      )}
-                    </div>
-                  ) : null}
+        {/* Content card */}
+        <div className="mt-0 rounded-b-2xl border border-t-0 border-slate-200/80 bg-white shadow-sm overflow-hidden">
+          {activeTab === "overview" && (
+            <div className="p-5 sm:p-6">
+              <SectionBlock title="Goals">
+                <p className="break-words">{descExpanded ? description : shortDesc}</p>
+                {description?.length > 260 && (
+                  <button type="button" onClick={() => setDescExpanded((v) => !v)} className="mt-2 text-sm font-semibold hover:opacity-90" style={{ color: THEME_DARK }}>
+                    {descExpanded ? "Show less" : "Read more"}
+                  </button>
+                )}
+              </SectionBlock>
+              <SectionBlock title="In scope">
+                <ul className="list-disc list-inside space-y-1 text-slate-600">
+                  {description ? <li>Project delivery as per agreement</li> : null}
+                  <li>Quality work within deadline</li>
+                  {!description && <li>—</li>}
+                </ul>
+              </SectionBlock>
+              <SectionBlock title="Out of scope">
+                <ul className="list-disc list-inside space-y-1 text-slate-600">
+                  <li>Additional work beyond original scope</li>
+                  <li>—</li>
+                </ul>
+              </SectionBlock>
+              <SectionBlock title="Expected outcomes">
+                <ul className="list-disc list-inside space-y-1 text-slate-600">
+                  <li>Completed deliverables</li>
+                  <li>Client approval and release</li>
+                </ul>
+              </SectionBlock>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-100">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                  <div className="text-[11px] font-semibold text-slate-500">Budget</div>
+                  <div className="text-sm font-bold text-slate-900">{budget != null ? `${budget} JD` : "—"}</div>
                 </div>
-              ) : null}
-
-              {readOnly && !(id && token && ((isFreelancer && hasApplied) || isOwnerClient)) ? (
-                <div className="mt-3 text-[12px] text-slate-500">
-                  Read-only mode: actions are disabled.
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                  <div className="text-[11px] font-semibold text-slate-500">Type</div>
+                  <div className="text-sm font-bold text-slate-900 truncate">{valueOrDash(projectType)}</div>
                 </div>
-              ) : null}
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5">
-              <div className="text-sm font-extrabold text-slate-900">
-                Trust & safety
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                  Secure checkout
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                  Money back guarantee
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                  24/7 support
-                </span>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                  <div className="text-[11px] font-semibold text-slate-500">Duration</div>
+                  <div className="text-sm font-bold text-slate-900">{duration != null ? `${duration} days` : "—"}</div>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                  <div className="text-[11px] font-semibold text-slate-500">Category</div>
+                  <div className="text-sm font-bold text-slate-900 truncate">{valueOrDash(category)}</div>
+                </div>
               </div>
             </div>
-          </aside>
+          )}
+
+          {activeTab === "files" && (
+            <div className="p-5 sm:p-6">
+              {cover && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 mb-6">
+                  <img src={cover} alt={title} className="w-full max-h-[320px] object-contain" />
+                </div>
+              )}
+              {item.attachments && (
+                <SectionCard title="Attachments" icon={Paperclip}>
+                  <AttachmentList attachments={item.attachments} title="" />
+                </SectionCard>
+              )}
+              {projectFiles.length > 0 ? (
+                <SectionCard title="Project Files" icon={FolderOpen}>
+                  <AttachmentList attachments={projectFiles.map((f) => f.file_url)} title="" />
+                </SectionCard>
+              ) : !item.attachments?.length && (
+                <p className="text-slate-500 text-sm">No files or attachments yet.</p>
+              )}
+            </div>
+          )}
+
+          {(activeTab === "workstream" || activeTab === "tasks" || activeTab === "notes" || activeTab === "comments") && (
+            <div className="p-5 sm:p-6 text-slate-500 text-sm">
+              {activeTab === "workstream" && "Workstream — coming soon."}
+              {activeTab === "tasks" && "Tasks — coming soon."}
+              {activeTab === "notes" && "Notes — coming soon."}
+              {activeTab === "comments" && "Comments — coming soon."}
+            </div>
+          )}
+        </div>
+
+        {/* Trust & safety */}
+        <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm p-4 sm:p-5">
+          <div className="text-sm font-bold text-slate-900">Trust & safety</div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" /> Secure checkout</span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" /> Money back guarantee</span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" /> 24/7 support</span>
+          </div>
         </div>
       </div>
 

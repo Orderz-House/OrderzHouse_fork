@@ -27,6 +27,9 @@ import Pagination from "../../components/Catigories/Pagination.jsx";
 const PRIMARY = "#C2410C";
 const DEBOUNCE_DELAY = 300;
 
+/** Class name helper: joins non-empty strings. */
+const cx = (...classes) => classes.filter(Boolean).join(" ");
+
 /* ====================== Skeletons ====================== */
 const Sk = ({ className = "" }) => (
   <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />
@@ -391,6 +394,7 @@ const CourseStyleCard = ({
   onCancelEdit,
   renderSubtitle,
   columns,
+  hideCardAvatar = false,
 }) => {
   const [liked, setLiked] = useState(false);
   const isEditing = editingRowId === helpers.getId(row);
@@ -451,20 +455,22 @@ const CourseStyleCard = ({
             <p className="mt-1 text-[12px] text-slate-500 line-clamp-2">{description}</p>
           )}
 
-          {/* Bottom row: avatar + name/role + actions */}
+          {/* Bottom row: avatar + name/role (optional) + actions */}
           <div className="mt-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 shrink-0 grid place-items-center text-[11px] font-semibold text-slate-600">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  initialsFrom(String(titleVal))
-                )}
+            {!hideCardAvatar && (
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 shrink-0 grid place-items-center text-[11px] font-semibold text-slate-600">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    initialsFrom(String(titleVal))
+                  )}
+                </div>
+                <span className="text-[12px] text-slate-600 truncate">{nameRoleText}</span>
               </div>
-              <span className="text-[12px] text-slate-600 truncate">{nameRoleText}</span>
-            </div>
+            )}
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 flex-row">
               {crudConfig?.showDetails && (
                 <button
                   type="button"
@@ -891,6 +897,7 @@ const DesktopCards = ({
   onCardClick,
   renderSubtitle,
   onOpenDrawer,
+  hideCardAvatar,
 }) => {
   if (loading) {
     return (
@@ -957,6 +964,7 @@ const DesktopCards = ({
             onCancelEdit={onCancelEdit}
             renderSubtitle={renderSubtitle}
             columns={columns}
+            hideCardAvatar={hideCardAvatar}
           />
         );
       })}
@@ -984,6 +992,7 @@ const CardsGrid = ({
   onCardClick,
   renderSubtitle,
   onOpenDrawer,
+  hideCardAvatar,
 }) => {
   if (loading) return <CardsSkeleton count={4} className="grid md:hidden grid-cols-1 gap-3" />;
   if (error) {
@@ -1043,6 +1052,7 @@ const CardsGrid = ({
             onCancelEdit={onCancelEdit}
             renderSubtitle={renderSubtitle}
             columns={columns}
+            hideCardAvatar={hideCardAvatar}
           />
         );
       })}
@@ -1067,6 +1077,7 @@ export default function PeopleTable({
   renderSubtitle,
   mobileAsCards = false,
   searchValue,
+  hideCardAvatar = false,
 }) {
   const dispatch = useDispatch();
   const api = useApi(token);
@@ -1243,6 +1254,7 @@ export default function PeopleTable({
           onCardClick={onCardClick}
           renderSubtitle={renderSubtitle}
           onOpenDrawer={openDrawer}
+          hideCardAvatar={hideCardAvatar}
         />
       ) : (
         <MobileCards
@@ -1284,6 +1296,7 @@ export default function PeopleTable({
           onCancelEdit={handleCancelEdit}
           onCardClick={onCardClick}
           renderSubtitle={renderSubtitle}
+          hideCardAvatar={hideCardAvatar}
           onOpenDrawer={openDrawer}
         />
       ) : (
