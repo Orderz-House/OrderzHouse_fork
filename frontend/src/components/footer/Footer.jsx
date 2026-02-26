@@ -83,19 +83,19 @@ export default function CleanFooter() {
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Get In Touch</h4>
                 <div className="space-y-2">
                   <a
-                    href="tel:+962791433341"
+                    href="tel:+971522857808"
                     className="flex w-fit items-center gap-3 text-gray-600 hover:text-[#028090] transition-colors"
                   >
                     <Phone className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">+962 791433341</span>
+                    <span className="text-sm">+971 522857808</span>
                   </a>
                   <a
-                    href="mailto:info@battechno.com"
+                    href="mailto:faz3at@icloud.com"
                     className="flex w-fit items-center gap-3 text-gray-600 hover:text-[#028090] transition-colors"
                   >
                     <Mail className="w-4 h-4 flex-shrink-0" />
                     <span className="text-sm break-all sm:break-normal">
-                      info@battechno.com
+                      faz3at@icloud.com
                     </span>
                   </a>
                   <a
