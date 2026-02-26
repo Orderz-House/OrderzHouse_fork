@@ -333,6 +333,7 @@ function AdminProjects() {
         ]}
         /* UI */
         desktopAsCards
+        hideCardAvatar
         /* Admin wants default CRUD inside cards */
         crudConfig={{ showDetails: false, showRowEdit: true, showDelete: true }}
         /* open details (admin route غالباً نسبي) */
@@ -836,6 +837,7 @@ function ClientProjects() {
           formFields={[]}
           /* UI */
           desktopAsCards
+          hideCardAvatar
           crudConfig={{
             showDetails: false,
             showRowEdit: false,
@@ -1216,6 +1218,7 @@ function FreelancerProjects() {
           formFields={[]}
           desktopAsCards
           mobileAsCards
+          hideCardAvatar
           crudConfig={{
             showDetails: false,
             showRowEdit: false,

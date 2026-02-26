@@ -119,8 +119,8 @@ class PaymentsRepository {
     }
   }
 
-  /// Get unified payment history (all transactions)
-  /// Endpoint: GET /payments/history?type=all|plan|project|wallet&page=1&limit=50
+  /// Get unified payment history from wallet (real API: balance + wallet_transactions)
+  /// Endpoint: GET /payments/history?page=1&limit=50
   Future<ApiResponse<Map<String, dynamic>>> getPaymentHistory({
     String type = 'all',
     int page = 1,
@@ -130,16 +130,15 @@ class PaymentsRepository {
       final response = await _dio.get(
         '/payments/history',
         queryParameters: {
-          'type': type,
           'page': page,
           'limit': limit,
         },
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         final data = response.data as Map<String, dynamic>;
-        
-        // Parse transactions array
+
+        // Backend returns: balance, totalAmount, availableToWithdraw, transactions
         List<dynamic> items = [];
         if (data['transactions'] != null && data['transactions'] is List) {
           items = data['transactions'] as List;
@@ -149,10 +148,17 @@ class PaymentsRepository {
             .map((item) => Payment.fromJson(item as Map<String, dynamic>))
             .toList();
 
+        final balance = (data['balance'] as num?)?.toDouble() ??
+            (data['availableToWithdraw'] as num?)?.toDouble() ??
+            (data['totalAmount'] as num?)?.toDouble() ??
+            0.0;
+
         return ApiResponse(
           success: true,
           data: {
-            'balance': (data['balance'] as num?)?.toDouble() ?? 0.0,
+            'balance': balance,
+            'totalAmount': (data['totalAmount'] as num?)?.toDouble() ?? balance,
+            'availableToWithdraw': (data['availableToWithdraw'] as num?)?.toDouble() ?? balance,
             'currency': data['currency'] as String? ?? 'JOD',
             'transactions': transactions,
           },
@@ -164,14 +170,12 @@ class PaymentsRepository {
         message: response.data['message'] as String? ?? 'Failed to fetch payment history',
       );
     } on DioException catch (e) {
-      // Handle 404 specifically - endpoint may not be deployed yet
       if (e.response?.statusCode == 404) {
         return const ApiResponse(
           success: false,
-          message: 'Payment history endpoint is not available. The server may need to be updated. Please try again later or contact support.',
+          message: 'Payment history endpoint is not available. Please try again later or contact support.',
         );
       }
-
       return ApiResponse(
         success: false,
         message: e.response?.data['message'] as String? ?? 'Failed to fetch payment history',

@@ -516,7 +516,7 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
   }, [renderItem, navigate, location.pathname]);
 
   return (
-    <div className="mt-6 overflow-hidden">
+    <div className="mt-6 overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm p-5">
       {/* Mobile Layout: Vertical List */}
       <div className="sm:hidden">
         <div className="flex items-center justify-between gap-3">
@@ -635,8 +635,7 @@ function ContinueSection({ title, rightAction, items, renderItem }) {
             overflow-x-auto scroll-smooth
             snap-x snap-mandatory
             overscroll-x-contain touch-pan-x
-            px-4 -mx-4 pb-2
-            pr-10 sm:pr-16
+            pl-4 pr-10 sm:pr-16 pb-2
             [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
           "
         >
@@ -1826,6 +1825,7 @@ function FreelancerDashboard() {
   const [query, setQuery] = useState("");
   const [balanceCards, setBalanceCards] = useState([]);
   const [activeProjects, setActiveProjects] = useState([]);
+  const [myProjects, setMyProjects] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1841,6 +1841,9 @@ function FreelancerDashboard() {
       );
       setActiveProjects(
         Array.isArray(payload?.activeProjects) ? payload.activeProjects : []
+      );
+      setMyProjects(
+        Array.isArray(payload?.myProjects) ? payload.myProjects : []
       );
       setSubscriptionStatus(payload?.subscriptionStatus || null);
     } catch (e) {
@@ -1859,14 +1862,14 @@ function FreelancerDashboard() {
     const q = String(query || "")
       .trim()
       .toLowerCase();
-    if (!q) return activeProjects;
-    return (activeProjects || []).filter((p) =>
+    if (!q) return myProjects;
+    return (myProjects || []).filter((p) =>
       [p?.title, p?.client, p?.status, p?.due, p?.budget]
         .map((x) => String(x ?? "").toLowerCase())
         .join(" ")
         .includes(q)
     );
-  }, [activeProjects, query]);
+  }, [myProjects, query]);
 
   const openFreelancerProject = useCallback(
     (p) => {
@@ -1926,6 +1929,7 @@ function FreelancerDashboard() {
     loading &&
     !error &&
     balanceCards.length === 0 &&
+    myProjects.length === 0 &&
     activeProjects.length === 0;
 
   if (showSkeleton) return <DashboardSkeletonV2 />;
@@ -1979,9 +1983,9 @@ function FreelancerDashboard() {
               {/* KPI row */}
               <KpiRow items={balanceCards} />
 
-              {/* Continue watching = Active projects */}
+              {/* My projects: last 8, incomplete first */}
               <ContinueSection
-                title="Continue Working"
+                title="My projects"
                 rightAction={
                   <button
                     type="button"
@@ -2138,6 +2142,7 @@ function ClientDashboard() {
   const [query, setQuery] = useState("");
   const [stats, setStats] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
+  const [myProjects, setMyProjects] = useState([]);
   const [actionableItems, setActionableItems] = useState([]);
   const [financialOverview, setFinancialOverview] = useState({
     moneyInEscrow: 0,
@@ -2178,6 +2183,7 @@ function ClientDashboard() {
       setRecentProjects(
         Array.isArray(payload?.recentProjects) ? payload.recentProjects : []
       );
+      setMyProjects(Array.isArray(payload?.myProjects) ? payload.myProjects : []);
       setActionableItems(
         Array.isArray(payload?.actionableItems) ? payload.actionableItems : []
       );
@@ -2218,6 +2224,19 @@ function ClientDashboard() {
     );
   }, [recentProjects, query]);
 
+  const filteredMyProjects = useMemo(() => {
+    const q = String(query || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return myProjects;
+    return (myProjects || []).filter((p) =>
+      [p?.title, p?.status, p?.completion_status, p?.budget]
+        .map((x) => String(x ?? "").toLowerCase())
+        .join(" ")
+        .includes(q)
+    );
+  }, [myProjects, query]);
+
   // Latest 5 projects (newest first) for mini-table
   const latestClientFive = useMemo(() => {
     const list = Array.isArray(recentProjects) ? [...recentProjects] : [];
@@ -2230,6 +2249,7 @@ function ClientDashboard() {
     !error &&
     stats.length === 0 &&
     recentProjects.length === 0 &&
+    myProjects.length === 0 &&
     !attention.pendingReviews.length;
 
   if (showSkeleton) return <DashboardSkeletonV2 />;
@@ -2283,6 +2303,40 @@ function ClientDashboard() {
 
               {/* KPI row (from stats) */}
               <KpiRow items={(stats || []).slice(0, 6)} />
+
+              {/* My projects: last 8, incomplete first */}
+              <ContinueSection
+                title="My projects"
+                rightAction={
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${base}/projects`)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 inline-flex items-center gap-1"
+                  >
+                    See all <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                }
+                items={filteredMyProjects}
+                renderItem={(p, i) => (
+                  <ContinueCarouselCard
+                    key={p?.id || p?._id || i}
+                    badge={p?.status || p?.completion_status || "Project"}
+                    title={p?.title || "Untitled"}
+                    metaLeft={
+                      (p?.completion_status &&
+                        `Status: ${p.completion_status}`) ||
+                      (p?.status && `Status: ${p.status}`) ||
+                      "—"
+                    }
+                    metaRight={p?.amount_to_pay ?? p?.budget ?? ""}
+                    onOpen={() =>
+                      p?.id
+                        ? openProjectDetails(p)
+                        : navigate(`${base}/projects`)
+                    }
+                  />
+                )}
+              />
 
               {/* Latest Projects mini-table (Your Lesson style) */}
               <LatestProjectsMiniTable

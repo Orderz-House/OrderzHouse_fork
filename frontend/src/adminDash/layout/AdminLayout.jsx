@@ -32,6 +32,7 @@ import { disconnectSocket } from "../../services/socketService";
 import TopBar from "../components/TopBar.jsx";
 import { useToast } from "../../components/toast/ToastProvider.jsx";
 import EnhancedFooter from "../../components/footer/Footer.jsx";
+import ComingSoonModal from "../components/ComingSoonModal.jsx";
 
 function mapRole(roleId) {
   if (roleId === 1) return "admin";
@@ -452,10 +453,15 @@ export default function AdminLayout() {
     navigate(`/create-project`);
   }, [navigate, base]);
 
+  const [showTaskComingSoon, setShowTaskComingSoon] = useState(false);
+
   const handleCreateTask = useCallback(() => {
-    // عدّل المسار حسب الراوت عندك
+    if (role === "freelancer") {
+      setShowTaskComingSoon(true);
+      return;
+    }
     navigate(`${base}/tasks/create`);
-  }, [navigate, base]);
+  }, [navigate, base, role]);
 
   const [activePage, setActivePage] = useState(() =>
     getActiveFromPath(location.pathname)
@@ -539,6 +545,15 @@ export default function AdminLayout() {
       <div className="flex-shrink-0 w-full">
         <EnhancedFooter />
       </div>
+
+      {/* Freelancer: Create Task → Coming Soon (feature disabled) */}
+      <ComingSoonModal
+        open={showTaskComingSoon}
+        onClose={() => setShowTaskComingSoon(false)}
+        title="Coming soon"
+        description="We're preparing a better task workflow for freelancers. This feature will be available soon."
+        buttonText="Got it"
+      />
     </div>
   );
 }
