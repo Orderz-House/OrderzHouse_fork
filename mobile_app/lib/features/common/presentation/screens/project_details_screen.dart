@@ -3254,6 +3254,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
     }
 
     bool isSubmitting = false;
+    final offersNotifier = ValueNotifier<List<Map<String, dynamic>>>(List.from(_offers));
 
     showModalBottomSheet(
       context: context,
@@ -3265,7 +3266,7 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
           if (project == null) return const SizedBox.shrink();
           return OffersBottomSheet(
             project: project,
-            offers: _offers,
+            offersNotifier: offersNotifier,
             isLoading: false,
             isSubmitting: isSubmitting,
             onClose: () => Navigator.pop(context),
@@ -3282,35 +3283,40 @@ class _ProjectDetailsScreenState extends ConsumerState<ProjectDetailsScreen> {
                 final pid = data?['projectId'];
                 final projectId = pid is int ? pid : (pid is num ? pid.toInt() : null);
 
-                setModalState(() {
-                  isSubmitting = false;
-                  final updatedOffers = _offers.map((offer) {
-                    if ((offer['id'] ?? offer['offer_id']) == offerId) {
-                      return {...offer, 'status': action == 'accept' ? 'accepted' : 'rejected'};
-                    }
-                    return offer;
-                  }).toList();
-                  setState(() {
-                    _offers = updatedOffers;
-                    int pending = 0, accepted = 0, rejected = 0;
-                    for (var offer in updatedOffers) {
-                      final status = (offer['status'] ?? 'pending').toString().toLowerCase();
-                      if (status == 'pending' || status == 'pending_client_approval') {
-                        pending++;
-                      } else if (status == 'accepted' || status == 'approved') {
-                        accepted++;
-                      } else if (status == 'rejected' || status == 'declined') {
-                        rejected++;
-                      }
-                    }
-                    _offersStats = {
-                      'pending': pending,
-                      'accepted': accepted,
-                      'rejected': rejected,
-                      'total': updatedOffers.length,
+                final newStatus = action == 'accept' ? 'accepted' : 'rejected';
+                final updatedOffers = _offers.map((offer) {
+                  final oid = offer['id'] ?? offer['offer_id'] ?? offer['offerId'];
+                  if (oid != null && oid.toString() == offerId.toString()) {
+                    return {
+                      ...offer,
+                      'status': newStatus,
+                      'offer_status': newStatus,
                     };
-                  });
+                  }
+                  return offer;
+                }).toList();
+                setState(() {
+                  _offers = updatedOffers;
+                  int pending = 0, accepted = 0, rejected = 0;
+                  for (var offer in updatedOffers) {
+                    final status = (offer['status'] ?? offer['offer_status'] ?? 'pending').toString().toLowerCase();
+                    if (status == 'pending' || status == 'pending_client_approval') {
+                      pending++;
+                    } else if (status == 'accepted' || status == 'approved') {
+                      accepted++;
+                    } else if (status == 'rejected' || status == 'declined') {
+                      rejected++;
+                    }
+                  }
+                  _offersStats = {
+                    'pending': pending,
+                    'accepted': accepted,
+                    'rejected': rejected,
+                    'total': updatedOffers.length,
+                  };
                 });
+                offersNotifier.value = updatedOffers;
+                if (mounted) setModalState(() => isSubmitting = false);
                 ref.invalidate(myProjectsProvider);
                 await ref.read(myProjectsProvider.future);
 

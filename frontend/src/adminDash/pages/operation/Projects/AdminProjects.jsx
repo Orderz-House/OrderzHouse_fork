@@ -465,7 +465,7 @@ function ClientProjects() {
     setOffersSubmitting(true);
     try {
       const res = await API.post(
-        "/offers/offers/approve-reject",
+        "/offers/approve-reject",
         { offerId, action },
         {
           headers: token ? { authorization: `Bearer ${token}` } : undefined,

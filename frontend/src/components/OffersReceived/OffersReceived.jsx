@@ -138,7 +138,7 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                         }
                         try {
                           const res = await API.post(
-                            "/offers/offers/approve-reject",
+                            "/offers/approve-reject",
                             { offerId: o.offer_id, action: "accept" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
@@ -180,7 +180,7 @@ export default function OffersReceived({ item, offersForProject, setOffersForPro
                         }
                         try {
                           await API.post(
-                            "/offers/offers/approve-reject",
+                            "/offers/approve-reject",
                             { offerId: o.offer_id, action: "reject" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );

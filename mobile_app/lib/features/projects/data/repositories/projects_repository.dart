@@ -1605,69 +1605,63 @@ class ProjectsRepository implements IProjectsRepository {
 
   /// Approve or reject an offer (client).
   /// For bidding accept: returns data with pendingAdminApproval and projectId when admin approval is required.
-  /// Endpoint: POST /offers/offers/approve-reject
+  /// Tries POST /offers/approve-reject first; on 404 retries POST /offers/offers/approve-reject (legacy).
   Future<ApiResponse<Map<String, dynamic>?>> approveRejectOffer(int offerId, String action) async {
-    try {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('📡 REQUEST[POST] => PATH: /offers/offers/approve-reject');
-      }
+    final body = {'offerId': offerId, 'action': action};
+    final paths = ['/offers/approve-reject', '/offers/offers/approve-reject'];
+    for (final path in paths) {
+      try {
+        if (AppConfig.isDevelopment) {
+          // ignore: avoid_print
+          print('📡 REQUEST[POST] => PATH: $path');
+        }
 
-      final response = await _dio.post(
-        '/offers/offers/approve-reject',
-        data: {
-          'offer_id': offerId,
-          'action': action, // 'accept' or 'reject'
-        },
-      );
+        final response = await _dio.post(path, data: body);
 
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('✅ RESPONSE[${response.statusCode}] => PATH: /offers/offers/approve-reject');
-      }
+        if (AppConfig.isDevelopment) {
+          // ignore: avoid_print
+          print('✅ RESPONSE[${response.statusCode}] => PATH: $path');
+        }
 
-      final data = response.data as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
 
-      if (data['success'] == true) {
-        final payload = <String, dynamic>{};
-        if (data['pendingAdminApproval'] == true) payload['pendingAdminApproval'] = true;
-        final pid = data['projectId'];
-        if (pid != null) payload['projectId'] = pid is int ? pid : int.tryParse(pid.toString());
+        if (data['success'] == true) {
+          final payload = <String, dynamic>{};
+          if (data['pendingAdminApproval'] == true) payload['pendingAdminApproval'] = true;
+          final pid = data['projectId'];
+          if (pid != null) payload['projectId'] = pid is int ? pid : int.tryParse(pid.toString());
+          return ApiResponse(
+            success: true,
+            data: payload.isEmpty ? null : payload,
+            message: data['message'] as String? ?? 'Offer action completed successfully',
+          );
+        }
+
         return ApiResponse(
-          success: true,
-          data: payload.isEmpty ? null : payload,
-          message: data['message'] as String? ?? 'Offer action completed successfully',
+          success: false,
+          data: null,
+          message: data['message'] as String? ?? 'Failed to process offer',
+        );
+      } on DioException catch (e) {
+        final is404 = e.response?.statusCode == 404;
+        if (AppConfig.isDevelopment) {
+          // ignore: avoid_print
+          print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: $path');
+        }
+        if (is404 && path == paths.first) continue;
+        return ApiResponse(
+          success: false,
+          data: null,
+          message: e.response?.data?['message'] as String? ?? 'Failed to process offer',
         );
       }
-
-      return ApiResponse(
-        success: false,
-        data: null,
-        message: data['message'] as String? ?? 'Failed to process offer',
-      );
-    } on DioException catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ ERROR[${e.response?.statusCode ?? 'null'}] => PATH: /offers/offers/approve-reject');
-      }
-
-      return ApiResponse(
-        success: false,
-        data: null,
-        message: e.response?.data?['message'] as String? ?? 'Failed to process offer',
-      );
-    } catch (e) {
-      if (AppConfig.isDevelopment) {
-        // ignore: avoid_print
-        print('❌ UNEXPECTED ERROR => /offers/offers/approve-reject: $e');
-      }
-
-      return ApiResponse(
-        success: false,
-        data: null,
-        message: 'Failed to process offer: ${e.toString()}',
-      );
     }
+
+    return const ApiResponse(
+      success: false,
+      data: null,
+      message: 'Failed to process offer',
+    );
   }
 
   /// Get applications for a project (client - fixed/hourly projects)
