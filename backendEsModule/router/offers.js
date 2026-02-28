@@ -56,9 +56,9 @@ offersRouter.get(
   getOffersForProject
 );
 
-// Approve or reject an offer (client)
+// Approve or reject an offer (client). Full path: POST /offers/approve-reject
 offersRouter.post(
-  "/offers/approve-reject",
+  "/approve-reject",
   authentication,
   approveOrRejectOffer
 );

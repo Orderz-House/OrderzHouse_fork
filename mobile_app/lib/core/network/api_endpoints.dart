@@ -30,7 +30,7 @@ abstract final class ApiEndpoints {
 
   // ——— Offers ———
   static String offersByProject(int projectId) => '/offers/project/$projectId/offers';
-  static const String offersApproveReject = '/offers/offers/approve-reject';
+  static const String offersApproveReject = '/offers/approve-reject';
 
   // ——— Notifications ———
   static const String notifications = '/notifications';

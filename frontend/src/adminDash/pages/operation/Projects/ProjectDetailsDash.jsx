@@ -634,7 +634,7 @@ export default function ProjectDetailsDashboard({ mode: propMode }) {
     if (!token) return;
     setOffersSubmitting(true);
     try {
-      const res = await API.post("/offers/offers/approve-reject", { offerId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+      const res = await API.post("/offers/approve-reject", { offerId, action }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
       if (action === "accept" && res?.data?.requiresPayment === true) {
         const payRes = await API.post("/stripe/offer-accept-checkout", { offerId }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
         if (payRes?.data?.url) {
