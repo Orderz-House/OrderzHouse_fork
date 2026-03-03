@@ -681,16 +681,14 @@ export const recordPartnerVisit = async (req, res) => {
     session_id = crypto.randomBytes(16).toString("hex");
   }
 
-  // 3) Cookie: 30 days, sameSite lax, secure in production
+  // 3) Cookie: 30d, path=/, sameSite=lax; secure only in production (false on http localhost so browser sends it)
   const cookieOptions = {
     maxAge: COOKIE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
     httpOnly: false,
     sameSite: "lax",
     path: "/",
+    secure: process.env.NODE_ENV === "production",
   };
-  if (process.env.NODE_ENV === "production") {
-    cookieOptions.secure = true;
-  }
   res.cookie(COOKIE_OH_REF_SID, session_id, cookieOptions);
 
   // 4) DB insert (idempotent); wrap in try/catch and return meaningful errors
