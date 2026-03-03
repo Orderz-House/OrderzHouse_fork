@@ -1,10 +1,39 @@
 /**
  * Partner referral tracking: capture ref/UTM params, store 30 days, log visit once per session, attach to signup.
+ * Visit logging is idempotent: pre-request lock + done key prevent duplicate POSTs (e.g. React StrictMode).
  */
 
 const STORAGE_KEY = "oh_partner_attribution";
 const STORAGE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const VISIT_LOGGED_KEY = "oh_visit_logged_sid";
+const CLIENT_SESSION_KEY = "oh_ref_sid_client";
+
+/** Per-source keys: done = already logged this session; lock = request in flight (set BEFORE network call). */
+function getVisitDoneKey(sourceLower) {
+  return `oh_visit_done_${sourceLower}`;
+}
+function getVisitLockKey(sourceLower) {
+  return `oh_visit_lock_${sourceLower}`;
+}
+
+/**
+ * Get or create a stable client-side session_id (localStorage) so backend receives same session_id
+ * even when cookie is not sent (e.g. cross-port). Backend uses cookie first, then body.session_id.
+ */
+function getOrCreateClientSessionId() {
+  if (typeof window === "undefined") return null;
+  try {
+    let sid = localStorage.getItem(CLIENT_SESSION_KEY);
+    if (!sid || typeof sid !== "string" || sid.length < 8) {
+      sid = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      localStorage.setItem(CLIENT_SESSION_KEY, sid);
+    }
+    return sid;
+  } catch (e) {
+    return null;
+  }
+}
 
 /**
  * Read ref + UTM from URL (window.location or passed search string).
@@ -67,33 +96,31 @@ export function getStoredAttribution() {
 }
 
 /**
- * Whether we already logged a visit for this session (by session_id from backend).
- */
-function getVisitLoggedSid() {
-  if (typeof window === "undefined") return null;
-  try {
-    return sessionStorage.getItem(VISIT_LOGGED_KEY);
-  } catch (e) {
-    return null;
-  }
-}
-
-function setVisitLoggedSid(sid) {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(VISIT_LOGGED_KEY, sid || "1");
-  } catch (e) {}
-}
-
-/**
- * Call POST /referrals/visit once per session. Call this on app load or register page mount.
- * Uses getApiBaseURL from api/client for base URL; pass API instance if you have it to avoid circular deps.
+ * Call POST /referrals/visit once per session per source.
+ * - doneKey: already logged this source this session → skip.
+ * - lockKey: set BEFORE the network call; if already set, another request is in flight → skip.
+ * - On success set doneKey; in finally always remove lockKey.
+ * - Sends session_id in body (from localStorage) so backend can reuse it when cookie is missing (cross-port).
+ * - Caller must pass apiPost with withCredentials: true so cookies are sent.
  */
 export function logPartnerVisitIfNeeded(attribution, apiPost) {
   if (typeof window === "undefined") return;
   const { source, ref } = attribution;
+  const rawSource = source || ref || "unknown";
   if (!source && !ref) return;
-  if (getVisitLoggedSid()) return; // already logged this session
+
+  const sourceLower = String(rawSource).trim().toLowerCase();
+  const doneKey = getVisitDoneKey(sourceLower);
+  const lockKey = getVisitLockKey(sourceLower);
+
+  if (sessionStorage.getItem(doneKey)) return; // already logged this source this session
+  if (sessionStorage.getItem(lockKey)) return; // request already in flight (e.g. StrictMode double mount)
+
+  try {
+    sessionStorage.setItem(lockKey, "1");
+  } catch (e) {
+    return;
+  }
 
   let baseURL = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
   if (typeof window !== "undefined") {
@@ -113,27 +140,35 @@ export function logPartnerVisitIfNeeded(attribution, apiPost) {
       return res.json();
     });
 
+  const clientSessionId = getOrCreateClientSessionId();
   const payload = {
-    source: attribution.source || attribution.ref || "unknown",
+    source: rawSource,
     medium: attribution.medium ?? undefined,
     campaign: attribution.campaign ?? undefined,
     ref: attribution.ref ?? undefined,
     landing_path: attribution.landing_path || (window.location?.pathname + window.location?.search) || "",
   };
+  if (clientSessionId) payload.session_id = clientSessionId;
 
   post("/referrals/visit", payload)
     .then((res) => {
-      if (res?.session_id) setVisitLoggedSid(res.session_id);
-      else setVisitLoggedSid("1");
+      if (res && (res.success === true || res.session_id)) {
+        try {
+          sessionStorage.setItem(doneKey, "1");
+        } catch (e) {}
+      }
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => {
+      try {
+        sessionStorage.removeItem(lockKey);
+      } catch (e) {}
+    });
 }
 
 /**
- * One-shot: read URL params, store attribution, and log visit once per session.
- * Call on app init or when Register (or any landing) mounts.
- * @param {string} [search] - Optional location.search
- * @param {(url: string, body: object) => Promise<any>} [apiPost] - Optional fetch/post for visit (e.g. API.post)
+ * One-shot: read URL params, store attribution, and optionally log visit (once per session per source).
+ * Call only from ONE place (App.jsx on route/search change). Do not call from Register or elsewhere.
  */
 export function captureAndLogReferral(search, apiPost) {
   const attribution = getAttributionFromUrl(search);

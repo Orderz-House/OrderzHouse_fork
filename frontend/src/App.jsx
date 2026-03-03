@@ -5,8 +5,9 @@ import "animate.css";
 // import "./components/loadingScreen/axiosLoading.js";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { captureAndLogReferral } from "./utils/partnerReferral.js";
 import { hydrateFromStorage } from "./slice/auth/authSlice";
-import { startProactiveRefresh } from "./api/client";
+import API, { startProactiveRefresh } from "./api/client";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Toaster } from "react-hot-toast";
@@ -126,7 +127,12 @@ function App() {
     };
   }, [token, userId]);
 
-  // Partner referral: visit logging is done only in Register.jsx on mount (avoids duplicate POST /referrals/visit)
+  // Partner referral: ONE call site only — App.jsx on route/search change. Lock+done in partnerReferral prevents duplicate POSTs (StrictMode).
+  const referralApiPost = (url, body) =>
+    API.post(url, body, { withCredentials: true }).then((r) => r.data);
+  useEffect(() => {
+    if (location.search) captureAndLogReferral(location.search, referralApiPost);
+  }, [location.search]);
 
   return (
     <>
