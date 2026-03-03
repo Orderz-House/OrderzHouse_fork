@@ -28,8 +28,13 @@ export default function CreateTender() {
 
     setIsSubmitting(true);
 
+    const payload = {
+      ...formData,
+      duration: Number(formData.duration_days) || Number(formData.duration),
+    };
+
     try {
-      const res = await API.post("/tender-vault/projects", formData, {
+      const res = await API.post("/tender-vault/projects", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -68,6 +73,7 @@ export default function CreateTender() {
           title="Create New Tender"
           submitLabel="Create Tender"
           showCancel={true}
+          durationDaysOnly={true}
         />
       </div>
     </div>

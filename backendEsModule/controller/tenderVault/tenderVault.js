@@ -1,4 +1,5 @@
 import pool from "../../models/db.js";
+import { countPublishedTenders } from "../../services/tenderPoolRotation.js";
 
 /**
  * Get all tender vault projects with filters
@@ -18,21 +19,15 @@ export const getTenderVaultProjects = async (req, res) => {
         tv.budget_min,
         tv.budget_max,
         tv.currency,
-        tv.duration_value,
-        tv.duration_unit,
-        tv.country,
+        tv.duration,
         tv.attachments,
         tv.metadata,
         tv.status,
         tv.created_at,
         tv.updated_at,
-        c.name AS category_name,
-        sc.name AS sub_category_name,
-        ssc.name AS sub_sub_category_name
+        c.name AS category_name
       FROM tender_vault_projects tv
       LEFT JOIN categories c ON c.id = tv.category_id
-      LEFT JOIN sub_categories sc ON sc.id = (tv.metadata->>'sub_category_id')::int
-      LEFT JOIN sub_sub_categories ssc ON ssc.id = (tv.metadata->>'sub_sub_category_id')::int
       WHERE tv.created_by = $1 AND tv.is_deleted = false
     `;
     const params = [userId];
@@ -59,6 +54,35 @@ export const getTenderVaultProjects = async (req, res) => {
 
     const { rows } = await pool.query(query, params);
 
+    // Parse JSONB fields (PostgreSQL may return metadata/attachments as strings)
+    const parsedRows = rows.map((row) => {
+      const r = { ...row };
+      if (typeof r.attachments === 'string') {
+        try {
+          r.attachments = JSON.parse(r.attachments);
+        } catch (e) {
+          r.attachments = [];
+        }
+      }
+      if (typeof r.metadata === 'string') {
+        try {
+          r.metadata = JSON.parse(r.metadata);
+        } catch (e) {
+          r.metadata = {};
+        }
+      }
+      if (!Array.isArray(r.attachments)) {
+        r.attachments = [];
+      }
+      if (!r.metadata || typeof r.metadata !== 'object') {
+        r.metadata = {};
+      }
+      return r;
+    });
+
+    // Temporary debug (remove after testing)
+    console.log("TenderVault LIST sample metadata type:", typeof parsedRows[0]?.metadata);
+
     // Get total count
     let countQuery = `
       SELECT COUNT(*) as total
@@ -84,7 +108,7 @@ export const getTenderVaultProjects = async (req, res) => {
 
     return res.json({
       success: true,
-      tenders: rows,
+      tenders: parsedRows,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -137,29 +161,19 @@ export const getTenderVaultProject = async (req, res) => {
         tv.title,
         tv.description,
         tv.category_id,
-        -- Extract subcategory IDs from metadata JSONB
-        (tv.metadata->>'sub_category_id')::int AS sub_category_id,
-        (tv.metadata->>'sub_sub_category_id')::int AS sub_sub_category_id,
         tv.budget_min,
         tv.budget_max,
         tv.currency,
-        tv.duration_value,
-        tv.duration_unit,
-        tv.country,
+        tv.duration,
         tv.attachments,
         tv.metadata,
         tv.created_at,
         tv.updated_at,
-        -- Rotation system fields
         tv.usage_count,
         tv.max_usage,
         tv.temporary_archived_until,
         tv.last_displayed_at,
-        -- Category names (join using extracted IDs)
         c.name AS category_name,
-        sc.name AS sub_category_name,
-        ssc.name AS sub_sub_category_name,
-        -- Creator info
         u.first_name AS creator_first_name,
         u.last_name AS creator_last_name,
         u.email AS creator_email,
@@ -169,7 +183,6 @@ export const getTenderVaultProject = async (req, res) => {
           u.username,
           'Unknown'
         ) AS creator_name,
-        -- Active cycle info from tender_vault_cycles (display window fields)
         tcy.cycle_number,
         tcy.client_public_id,
         tcy.status AS cycle_status,
@@ -177,8 +190,6 @@ export const getTenderVaultProject = async (req, res) => {
         tcy.display_end_time
       FROM tender_vault_projects tv
       LEFT JOIN categories c ON c.id = tv.category_id
-      LEFT JOIN sub_categories sc ON sc.id = (tv.metadata->>'sub_category_id')::int
-      LEFT JOIN sub_sub_categories ssc ON ssc.id = (tv.metadata->>'sub_sub_category_id')::int
       LEFT JOIN users u ON u.id = tv.created_by
       LEFT JOIN LATERAL (
         SELECT cycle_number, client_public_id, display_start_time, display_end_time, status
@@ -242,7 +253,6 @@ export const createTenderVaultProject = async (req, res) => {
   try {
     const userId = req.token.userId;
     
-    // Map request body fields from camelCase to snake_case
     const {
       title,
       description,
@@ -253,21 +263,18 @@ export const createTenderVaultProject = async (req, res) => {
       budgetMax,
       budget_max,
       currency = 'JD',
-      durationValue,
-      duration_value,
-      durationUnit,
-      duration_unit,
-      country,
+      duration,
+      duration_days,
       attachments,
       metadata,
     } = req.body;
 
-    // Normalize to snake_case
     const category_id_final = category_id || categoryId;
     const budget_min_final = budget_min || budgetMin;
     const budget_max_final = budget_max || budgetMax;
-    const duration_value_final = duration_value || durationValue;
-    const duration_unit_final = duration_unit || durationUnit;
+    // Tender Vault: duration is integer days only (prefer duration, else duration_days)
+    const durationDays = duration != null ? Number(duration) : (duration_days != null ? Number(duration_days) : null);
+    const durationFinal = durationDays != null && Number.isInteger(durationDays) ? durationDays : null;
 
     // Validation (same as normal bidding projects)
     if (!title || !title.trim()) {
@@ -318,40 +325,71 @@ export const createTenderVaultProject = async (req, res) => {
       });
     }
 
+    if (durationFinal == null || durationFinal < 1 || !Number.isInteger(durationFinal)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duration is required and must be a positive integer (days)",
+      });
+    }
+
     // Prepare JSONB fields
-    const attachmentsJson = Array.isArray(attachments) 
-      ? attachments 
+    const attachmentsJson = Array.isArray(attachments)
+      ? attachments
       : (typeof attachments === 'string' ? JSON.parse(attachments) : []);
     const metadataJson = typeof metadata === 'object' && metadata !== null
       ? metadata
-      : (typeof metadata === 'string' ? JSON.parse(metadata) : {});
+      : (typeof metadata === 'string' ? JSON.parse(metadata || '{}') : {});
 
-    // Insert using EXACT column names from table schema
-    const { rows } = await pool.query(
-      `INSERT INTO tender_vault_projects (
-        created_by, status, title, description, category_id, budget_min, budget_max, 
-        currency, duration_value, duration_unit, country, attachments, metadata
-      ) VALUES ($1, 'stored', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      RETURNING *`,
-      [
-        userId,
-        title.trim(),
-        description.trim(),
-        category_id_final,
-        Number(budget_min_final),
-        Number(budget_max_final),
-        currency,
-        duration_value_final ? Number(duration_value_final) : null,
-        duration_unit_final || null,
-        country || null,
-        JSON.stringify(attachmentsJson),
-        JSON.stringify(metadataJson),
-      ]
-    );
+    // Generate unique client_public_id (TV- + 12 base36 chars), retry on unique violation
+    const base36 = () => {
+      const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+      let s = '';
+      for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    };
+    let rows;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const clientPublicId = 'TV-' + base36();
+      try {
+        const result = await pool.query(
+          `INSERT INTO tender_vault_projects (
+            created_by, status, title, description, category_id, budget_min, budget_max, 
+            currency, duration, attachments, metadata, client_public_id
+          ) VALUES ($1, 'stored', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          RETURNING *`,
+          [
+            userId,
+            title.trim(),
+            description.trim(),
+            category_id_final,
+            Number(budget_min_final),
+            Number(budget_max_final),
+            currency,
+            durationFinal,
+            JSON.stringify(attachmentsJson),
+            JSON.stringify(metadataJson),
+            clientPublicId,
+          ]
+        );
+        rows = result.rows;
+        break;
+      } catch (insertErr) {
+        if (insertErr.code === '23505' && attempt < 4) continue; // unique violation, retry
+        throw insertErr;
+      }
+    }
+    if (!rows || rows.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create tender. Please try again.',
+      });
+    }
 
+    const tender = rows[0];
     return res.status(201).json({
       success: true,
-      tender: rows[0],
+      tender,
+      client_public_id: tender.client_public_id,
       message: "Tender vault project created successfully",
     });
   } catch (err) {
@@ -440,21 +478,13 @@ export const updateTenderVaultProject = async (req, res) => {
       params.push(req.body.currency);
       paramIndex++;
     }
-    // Map duration fields to new schema
-    if (req.body.durationValue !== undefined || req.body.duration_value !== undefined) {
-      updates.push(`duration_value = $${paramIndex}`);
-      params.push(Number(req.body.durationValue || req.body.duration_value) || null);
-      paramIndex++;
-    }
-    if (req.body.durationUnit !== undefined || req.body.duration_unit !== undefined) {
-      updates.push(`duration_unit = $${paramIndex}`);
-      params.push(req.body.durationUnit || req.body.duration_unit || null);
-      paramIndex++;
-    }
-    if (req.body.country !== undefined) {
-      updates.push(`country = $${paramIndex}`);
-      params.push(req.body.country || null);
-      paramIndex++;
+    if (req.body.duration !== undefined || req.body.duration_days !== undefined) {
+      const d = req.body.duration != null ? Number(req.body.duration) : Number(req.body.duration_days);
+      if (Number.isInteger(d) && d >= 1) {
+        updates.push(`duration = $${paramIndex}`);
+        params.push(d);
+        paramIndex++;
+      }
     }
     if (req.body.attachments !== undefined) {
       updates.push(`attachments = $${paramIndex}`);
@@ -594,6 +624,30 @@ export const deleteTenderVaultProject = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to delete tender vault project",
+    });
+  }
+};
+
+/**
+ * GET /tender-vault/rotation-status
+ * Returns pool rotation status: total published tenders, minimum required, whether rotation is active.
+ */
+export const getRotationStatus = async (req, res) => {
+  try {
+    const totalPublishedTenders = await countPublishedTenders();
+    const minimumRequired = 300;
+    const rotationActive = totalPublishedTenders >= minimumRequired;
+    return res.json({
+      success: true,
+      totalPublishedTenders,
+      minimumRequired,
+      rotationActive,
+    });
+  } catch (err) {
+    console.error("getRotationStatus error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get rotation status",
     });
   }
 };

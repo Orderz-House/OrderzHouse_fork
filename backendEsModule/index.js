@@ -14,6 +14,7 @@ import "./cron/autoExpireOldOffers.js";
 import { startDeadlineWatcher } from "./cron/realTimeDeadlineWatcher.js";
 import { cleanupDeactivatedUsers } from "./cron/cleanupDeactivatedUsers.js";
 import { registerTenderVaultRotationJobs } from "./cron/tenderVaultRotation.js";
+import { registerTenderPoolRotationCron } from "./cron/tenderPoolRotationCron.js";
 import liveScreenRoutes from "./router/LiveScreen.js";
 
 dotenv.config();
@@ -36,6 +37,8 @@ console.log("Running cleanupDeactivatedUsers cron job...");
 
 // Register Tender Vault Rotation System cron jobs
 registerTenderVaultRotationJobs();
+// Tender Pool Rotation (40–70 every 12h, visible in public Projects pool)
+registerTenderPoolRotationCron();
 
 
 

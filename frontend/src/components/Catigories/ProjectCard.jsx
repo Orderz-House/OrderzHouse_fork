@@ -50,6 +50,7 @@ export default function ProjectCard({
 
 
   const to = `/${linkBase}/${id}`;
+  const isRotatedDemo = project?.is_rotated_demo === true || (typeof id === "string" && String(id).startsWith("TV-"));
  const projectType = (project?.project_type ?? project?.type ?? "").toLowerCase();
 
 const toNumber = (v) => {
@@ -177,7 +178,11 @@ if (projectType === "fixed") {
             alt={title}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
-          {/* Already Applied Overlay Ribbon */}
+          {isRotatedDemo && (
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-xs font-semibold bg-amber-500/95 text-white shadow">
+              Promoted / Demo
+            </div>
+          )}
           {hasApplied && (
             <div 
               className="absolute inset-0 z-20 pointer-events-none overflow-hidden"
