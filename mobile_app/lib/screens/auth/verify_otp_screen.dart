@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:OrderzHouse/features/auth/presentation/providers/auth_provider.dart';
 import '../main/main_navigator.dart';
 
 class VerifyOtpScreen extends ConsumerStatefulWidget {

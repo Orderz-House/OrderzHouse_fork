@@ -25,6 +25,7 @@ import {
   ListChecks as SurveyIcon,
   PlaySquare,
   Clock,
+  Share2,
 } from "lucide-react";
 import { logout } from "../../slice/auth/authSlice";
 import API, { clearProactiveRefresh } from "../../api/client.js";
@@ -73,6 +74,7 @@ function getActiveFromPath(pathname) {
     if (p.startsWith("/finance/plans")) return "plans";
     if (p.startsWith("/subscriptions")) return "subscriptions";
     if (p.startsWith("/analytics")) return "analytics";
+    if (p.startsWith("/referrals")) return "referrals";
     if (p.startsWith("/projects")) return "projects";
     if (p.startsWith("/payments")) return "payments";
     if (p.startsWith("/profile")) return "profile";
@@ -204,6 +206,12 @@ function getNav(role, navigate, base, onLogout, userData = null) {
         name: "Analytics",
         icon: BarChart2,
         onClick: () => navigate(`${base}/analytics`),
+      },
+      {
+        id: "referrals",
+        name: "Referrals",
+        icon: Share2,
+        onClick: () => navigate(`${base}/referrals`),
       },
     ];
     const bottomNavigation = [

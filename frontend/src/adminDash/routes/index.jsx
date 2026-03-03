@@ -23,6 +23,7 @@ import Payments from "../pages/finance/Payments.jsx";
 import Plans from "../pages/finance/Plans.jsx";
 import AdminSubscriptions from "../pages/finance/AdminSubscriptions.jsx";
 import Analytics from "../pages/insights/Analytics.jsx";
+import PartnerReferrals from "../pages/referrals/PartnerReferrals.jsx";
 // import Tasks from "../pages/operation/Tasks.jsx";
 import Profile from "../pages/Profile.jsx";
 
@@ -86,6 +87,7 @@ export default function AdminRouter() {
         <Route path="finance/plans" element={<Plans />} />
         <Route path="finance/subscriptions" element={<AdminSubscriptions />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="referrals" element={<PartnerReferrals />} />
 
         {/* Profile & Settings */}
         <Route path="profile" element={<Profile />} />

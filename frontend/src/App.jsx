@@ -126,6 +126,8 @@ function App() {
     };
   }, [token, userId]);
 
+  // Partner referral: visit logging is done only in Register.jsx on mount (avoids duplicate POST /referrals/visit)
+
   return (
     <>
       <ScrollToTop />

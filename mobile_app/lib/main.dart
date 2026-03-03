@@ -59,13 +59,13 @@ void main() async {
   // Step 8: Run app (only once)
   runApp(
     const ProviderScope(
-      child: MyApp(),
+      child: OrderzHouse(),
     ),
   );
 }
 
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class OrderzHouse extends ConsumerWidget {
+  const OrderzHouse({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

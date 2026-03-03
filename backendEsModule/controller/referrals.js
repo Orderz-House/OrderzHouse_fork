@@ -645,3 +645,256 @@ export const completeReferral = async (req, res) => {
     client.release();
   }
 };
+
+// ============== Partner referral tracking (visits + signups) ==============
+
+const COOKIE_OH_REF_SID = "oh_ref_sid";
+const COOKIE_MAX_AGE_DAYS = 30;
+
+/**
+ * POST /referrals/visit — record a partner referral visit (public).
+ * Body: { source, medium?, campaign?, ref?, landing_path?, session_id? }
+ * Session: 1) req.cookies.oh_ref_sid, 2) body.session_id, 3) generate new.
+ * Always sets cookie so browser reuses same sid. Insert is idempotent (ON CONFLICT DO NOTHING).
+ * Requires referral_visits table and UNIQUE(source, session_id) — run migrations 015 + 017.
+ */
+export const recordPartnerVisit = async (req, res) => {
+  // 1) Safe body parsing (express.json() must be mounted before this route)
+  const { source, medium, campaign, ref, landing_path, session_id: bodySid } = req.body || {};
+  if (!source || typeof source !== "string") {
+    return res.status(400).json({ success: false, message: "source is required" });
+  }
+  const src = source.trim().toLowerCase();
+  const med = medium != null && medium !== "" ? String(medium).trim() : null;
+  const camp = campaign != null && campaign !== "" ? String(campaign).trim() : null;
+  const refVal = ref != null && ref !== "" ? String(ref).trim() : null;
+  const landing = landing_path != null && landing_path !== "" ? String(landing_path).trim() : null;
+
+  // 2) Session ID: cookie → body → new
+  let session_id;
+  const cookieSid = req.cookies && req.cookies[COOKIE_OH_REF_SID];
+  if (cookieSid && typeof cookieSid === "string" && cookieSid.trim()) {
+    session_id = cookieSid.trim();
+  } else if (bodySid && typeof bodySid === "string" && bodySid.trim()) {
+    session_id = bodySid.trim();
+  } else {
+    session_id = crypto.randomBytes(16).toString("hex");
+  }
+
+  // 3) Cookie: 30 days, sameSite lax, secure in production
+  const cookieOptions = {
+    maxAge: COOKIE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+    httpOnly: false,
+    sameSite: "lax",
+    path: "/",
+  };
+  if (process.env.NODE_ENV === "production") {
+    cookieOptions.secure = true;
+  }
+  res.cookie(COOKIE_OH_REF_SID, session_id, cookieOptions);
+
+  // 4) DB insert (idempotent); wrap in try/catch and return meaningful errors
+  try {
+    await pool.query(
+      `INSERT INTO referral_visits (source, medium, campaign, ref, session_id, landing_path)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (source, session_id) DO NOTHING`,
+      [src, med, camp, refVal, session_id, landing]
+    );
+  } catch (err) {
+    console.error("[referrals/visit] error", err);
+    return res.status(500).json({
+      success: false,
+      message: "referrals visit insert failed",
+      code: err.code ?? undefined,
+      detail: err.detail ?? undefined,
+      error: err.message,
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Visit recorded",
+    session_id,
+  });
+};
+
+/**
+ * GET /referrals/partners — admin only. Returns list of partners for dropdown.
+ * If table referral_partners does not exist, returns [] (run migration 016_referral_partners.sql).
+ */
+export const getReferralPartners = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT code, name FROM referral_partners WHERE is_active = true ORDER BY name"
+    );
+    return res.status(200).json(rows);
+  } catch (err) {
+    const isMissingTable =
+      err.code === "42P01" ||
+      (err.message && err.message.includes("referral_partners") && err.message.includes("does not exist"));
+    if (isMissingTable) {
+      console.warn(
+        "referral_partners table missing. Run migration: backendEsModule/migrations/016_referral_partners.sql"
+      );
+      return res.status(200).json([]);
+    }
+    console.error("getReferralPartners error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/** Default date range when from/to not provided: last 30 days (inclusive). */
+function getDefaultDateRange() {
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(from.getDate() - 30);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * GET /referrals/stats?source=efe&from=YYYY-MM-DD&to=YYYY-MM-DD — admin only.
+ * If from/to omitted or empty string, uses last 30 days. Source compared case-insensitive (LOWER).
+ * Date range: created_at::date between from and to (inclusive).
+ */
+export const getPartnerReferralStats = async (req, res) => {
+  try {
+    const { source, from, to } = req.query;
+    if (!source || typeof source !== "string" || !source.trim()) {
+      return res.status(400).json({ success: false, message: "source is required" });
+    }
+    const sourceVal = source.trim().toLowerCase();
+    const fromStr = typeof from === "string" ? from.trim() : "";
+    const toStr = typeof to === "string" ? to.trim() : "";
+    let fromDate = /^\d{4}-\d{2}-\d{2}$/.test(fromStr) ? fromStr : null;
+    let toDate = /^\d{4}-\d{2}-\d{2}$/.test(toStr) ? toStr : null;
+    if (!fromDate || !toDate) {
+      const def = getDefaultDateRange();
+      if (!fromDate) fromDate = def.from;
+      if (!toDate) toDate = def.to;
+    }
+
+    const paramsVisits = [sourceVal, fromDate, toDate];
+    const visitsResult = await pool.query(
+      `SELECT COUNT(*) AS total, COUNT(DISTINCT session_id) AS unique_sessions
+       FROM referral_visits
+       WHERE LOWER(TRIM(source)) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+      paramsVisits
+    );
+    const visits = parseInt(visitsResult.rows[0]?.total ?? "0", 10);
+    const uniqueVisits = parseInt(visitsResult.rows[0]?.unique_sessions ?? "0", 10);
+
+    const signupsResult = await pool.query(
+      `SELECT COUNT(*) AS total FROM users
+       WHERE LOWER(TRIM(COALESCE(signup_source, ''))) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+      [sourceVal, fromDate, toDate]
+    );
+    const signups = parseInt(signupsResult.rows[0]?.total ?? "0", 10);
+    const conversionRate = uniqueVisits > 0 ? Math.round((signups / uniqueVisits) * 10000) / 100 : 0;
+
+    // Temporary debug: DB identity and raw counts (remove when confirmed)
+    let debug = null;
+    try {
+      const [idRow, totalRow, sourceExactRow, sourceLowerRow] = await Promise.all([
+        pool.query(
+          "SELECT current_database() AS db, current_user AS db_user, inet_server_addr()::text AS addr, inet_server_port() AS port"
+        ),
+        pool.query("SELECT COUNT(*)::int AS total_rows FROM referral_visits"),
+        pool.query("SELECT COUNT(*)::int AS source_rows FROM referral_visits WHERE source = $1", [sourceVal]),
+        pool.query(
+          "SELECT COUNT(*)::int AS source_rows_lower, COUNT(DISTINCT session_id)::int AS source_unique FROM referral_visits WHERE LOWER(TRIM(source)) = $1",
+          [sourceVal]
+        ),
+      ]);
+      debug = {
+        db: idRow.rows[0]?.db ?? null,
+        db_user: idRow.rows[0]?.db_user ?? null,
+        addr: idRow.rows[0]?.addr ?? null,
+        port: idRow.rows[0]?.port ?? null,
+        total_rows: totalRow.rows[0]?.total_rows ?? 0,
+        source_rows_exact: sourceExactRow.rows[0]?.source_rows ?? 0,
+        source_rows_lower: sourceLowerRow.rows[0]?.source_rows_lower ?? 0,
+        source_unique: sourceLowerRow.rows[0]?.source_unique ?? 0,
+        date_range: { from: fromDate, to: toDate },
+      };
+    } catch (debugErr) {
+      debug = { error: String(debugErr.message) };
+    }
+
+    return res.status(200).json({
+      source: sourceVal,
+      visits,
+      uniqueVisits,
+      signups,
+      conversionRate,
+      debug,
+    });
+  } catch (err) {
+    console.error("getPartnerReferralStats error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * GET /referrals/signups?source=efe&from=&to=&page=1&limit=20 — admin only.
+ * Paginated list of users who signed up from this partner. Source in lowercase.
+ */
+export const getPartnerSignups = async (req, res) => {
+  try {
+    const { source, from, to, page = "1", limit = "20" } = req.query;
+    if (!source || typeof source !== "string" || !source.trim()) {
+      return res.status(400).json({ success: false, message: "source is required" });
+    }
+    const sourceVal = source.trim().toLowerCase();
+    let fromDate = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
+    let toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : null;
+    if (!fromDate || !toDate) {
+      const def = getDefaultDateRange();
+      if (!fromDate) fromDate = def.from;
+      if (!toDate) toDate = def.to;
+    }
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total FROM users
+       WHERE LOWER(TRIM(COALESCE(signup_source, ''))) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+      [sourceVal, fromDate, toDate]
+    );
+    const total = parseInt(countResult.rows[0]?.total ?? "0", 10);
+
+    const listResult = await pool.query(
+      `SELECT id, first_name, last_name, email, created_at,
+              signup_source, signup_campaign, signup_medium, signup_landing_path
+       FROM users
+       WHERE LOWER(TRIM(COALESCE(signup_source, ''))) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date
+       ORDER BY created_at DESC
+       LIMIT $4 OFFSET $5`,
+      [sourceVal, fromDate, toDate, limitNum, offset]
+    );
+    const items = listResult.rows.map((row) => ({
+      id: row.id,
+      name: [row.first_name, row.last_name].filter(Boolean).join(" ") || null,
+      email: row.email,
+      created_at: row.created_at,
+      signup_source: row.signup_source,
+      signup_campaign: row.signup_campaign ?? null,
+      signup_medium: row.signup_medium ?? null,
+      signup_landing_path: row.signup_landing_path ?? null,
+    }));
+
+    return res.status(200).json({
+      items,
+      page: pageNum,
+      limit: limitNum,
+      total,
+    });
+  } catch (err) {
+    console.error("getPartnerSignups error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
