@@ -84,6 +84,7 @@ if (process.env.NODE_ENV !== "test") {
 // This ensures the webhook route gets raw body for signature verification
 app.use("/stripe", webhookRouter);
 
+// Body and cookies: must be before all API routes (e.g. /referrals, /users) so req.body and req.cookies are set
 app.use(express.json());
 app.use(cookieParser());
 

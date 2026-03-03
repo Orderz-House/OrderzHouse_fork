@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const fromUrl = process.env.DB_URL;
+const fromUrl = process.env.DB_URL || process.env.DATABASE_URL;
 const shouldUseSsl = (process.env.DB_SSL || "true").toLowerCase() !== "false";
 
 // 🔹 Config object
@@ -24,11 +24,24 @@ const config = fromUrl
 // 🔹 Initialize pool
 const pool = new Pool(config);
 
-// ✅ Test connection once at startup
+// ✅ Test connection once at startup + log DB identity (masked, for debugging env mismatch)
 (async () => {
   try {
     const result = await pool.query("SELECT NOW()");
     console.log("✅ Connected to PostgreSQL! Current time:", result.rows[0].now);
+    const connStr = typeof fromUrl === "string" ? fromUrl : "";
+    if (connStr) {
+      try {
+        const u = new URL(connStr.replace(/^postgresql?:\/\//, "https://"));
+        const host = u.hostname || "";
+        const masked = host ? `${host.substring(0, 24)}${host.length > 24 ? "..." : ""}` : "(parsed)";
+        console.log("📎 DB host (masked):", masked);
+      } catch (_) {
+        console.log("📎 DB: connection from env (URL not parsed)");
+      }
+    } else {
+      console.log("📎 DB host:", config.host || "localhost");
+    }
   } catch (err) {
     console.error("❌ DB connection error:", err.message);
   }

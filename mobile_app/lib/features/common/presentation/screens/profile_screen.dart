@@ -7,8 +7,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/gradient_button.dart';
-import 'package:mobile_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:mobile_app/core/models/user.dart';
+import 'package:OrderzHouse/features/auth/presentation/providers/auth_provider.dart';
+import 'package:OrderzHouse/core/models/user.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {

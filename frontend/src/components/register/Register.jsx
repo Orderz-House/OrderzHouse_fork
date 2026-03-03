@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import API, { startProactiveRefresh } from "../../api/client.js";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { getStoredAttribution, getAttributionFromUrl, storeAttribution, captureAndLogReferral } from "../../utils/partnerReferral.js";
 import arabCountries from "../../data/arabCountries.json";
 import { Mail, Lock, Eye, EyeOff, Phone, MapPin, KeyRound } from "lucide-react";
 import PageMeta from "../PageMeta.jsx";
@@ -115,6 +116,22 @@ const Register = () => {
       hasNumber: /\d/.test(password),
     });
   }, [password]);
+
+  // Partner referral: store attribution from URL when landing on register (visit is logged once from App.jsx)
+  useEffect(() => {
+    const search = searchParams.toString() ? `?${searchParams.toString()}` : window.location?.search || "";
+    const attribution = getAttributionFromUrl(search);
+    if (attribution.source || attribution.ref) storeAttribution(attribution);
+  }, [searchParams]);
+
+  // Fallback: log referral visit on mount so POST /referrals/visit runs even if App.jsx didn't (e.g. direct hit to /register?ref=...)
+  useEffect(() => {
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    if (!search) return;
+    const apiPost = (url, body) =>
+      API.post(url, body, { withCredentials: true }).then((r) => r.data);
+    captureAndLogReferral(search, apiPost);
+  }, []);
 
   // ========= freelancer categories =========//
   useEffect(() => {
@@ -345,6 +362,9 @@ const Register = () => {
         profile_pic_url: profile_pic_url || undefined,
       };
       if (role_id === "3") userData.category_ids = selectedCategories;
+
+      const attribution = getStoredAttribution();
+      if (attribution) Object.assign(userData, attribution);
 
       const result = await API.post("/users/verify-and-register", userData);
 

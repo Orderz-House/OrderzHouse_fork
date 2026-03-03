@@ -960,6 +960,11 @@ const verifyAndRegister = async (req, res) => {
       username,
       category_ids = [],
       referral_code,
+      signup_source,
+      signup_medium,
+      signup_campaign,
+      signup_ref,
+      signup_landing_path,
     } = req.body;
 
     if (!email || !otp) {
@@ -1042,11 +1047,23 @@ const verifyAndRegister = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const hasAttribution = signup_source != null && String(signup_source).trim().length > 0;
+    const signupSourceVal = hasAttribution ? String(signup_source).trim().toLowerCase() : null;
+    const signupMediumVal = hasAttribution && signup_medium != null ? String(signup_medium).trim() : null;
+    const signupCampaignVal = hasAttribution && signup_campaign != null ? String(signup_campaign).trim() : null;
+    const signupRefVal = hasAttribution && signup_ref != null ? String(signup_ref).trim() : null;
+    const signupLandingVal = hasAttribution && signup_landing_path != null ? String(signup_landing_path).trim() : null;
+
     const userResult = await client.query(
-      `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE)
+      `INSERT INTO users (role_id, first_name, last_name, email, password, phone_number, country, username, email_verified,
+        signup_source, signup_medium, signup_campaign, signup_ref, signup_landing_path, signup_attributed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE,$9,$10,$11,$12,$13,$14)
        RETURNING id, email, first_name, last_name, username, role_id, profile_pic_url, is_deleted, is_two_factor_enabled, email_verified`,
-      [roleId, first_name, last_name, emailLower, hashedPassword, phone_number, country, username]
+      [
+        roleId, first_name, last_name, emailLower, hashedPassword, phone_number, country, username,
+        signupSourceVal, signupMediumVal, signupCampaignVal, signupRefVal, signupLandingVal,
+        hasAttribution ? new Date() : null,
+      ]
     );
     const user = userResult.rows[0];
 
