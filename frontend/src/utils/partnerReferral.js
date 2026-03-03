@@ -7,10 +7,7 @@ const STORAGE_KEY = "oh_partner_attribution";
 const STORAGE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const CLIENT_SESSION_KEY = "oh_ref_sid_client";
 
-/** Per-source keys: done = already logged this session; lock = request in flight (set BEFORE network call). */
-function getVisitDoneKey(sourceLower) {
-  return `oh_visit_done_${sourceLower}`;
-}
+/** Per-source lock: set BEFORE network call so concurrent runs (e.g. StrictMode) don't send duplicate requests. */
 function getVisitLockKey(sourceLower) {
   return `oh_visit_lock_${sourceLower}`;
 }
@@ -96,11 +93,11 @@ export function getStoredAttribution() {
 }
 
 /**
- * Call POST /referrals/visit once per session per source.
- * - doneKey: already logged this source this session → skip.
- * - lockKey: set BEFORE the network call; if already set, another request is in flight → skip.
- * - On success set doneKey; in finally always remove lockKey.
- * - Sends session_id in body (from localStorage) so backend can reuse it when cookie is missing (cross-port).
+ * Call POST /referrals/visit on every relevant page load (including refresh). Backend records
+ * each call in referral_pageviews (total visits) and referral_visits only when session is new (unique visits).
+ * - lockKey: set BEFORE the network call; if set, another request is in flight (e.g. StrictMode) → skip.
+ * - No "done" key: we send on every load so refresh adds a pageview.
+ * - Sends session_id in body so backend can reuse it when cookie is missing (cross-port).
  * - Caller must pass apiPost with withCredentials: true so cookies are sent.
  */
 export function logPartnerVisitIfNeeded(attribution, apiPost) {
@@ -110,10 +107,8 @@ export function logPartnerVisitIfNeeded(attribution, apiPost) {
   if (!source && !ref) return;
 
   const sourceLower = String(rawSource).trim().toLowerCase();
-  const doneKey = getVisitDoneKey(sourceLower);
   const lockKey = getVisitLockKey(sourceLower);
 
-  if (sessionStorage.getItem(doneKey)) return; // already logged this source this session
   if (sessionStorage.getItem(lockKey)) return; // request already in flight (e.g. StrictMode double mount)
 
   try {
@@ -151,13 +146,6 @@ export function logPartnerVisitIfNeeded(attribution, apiPost) {
   if (clientSessionId) payload.session_id = clientSessionId;
 
   post("/referrals/visit", payload)
-    .then((res) => {
-      if (res && (res.success === true || res.session_id)) {
-        try {
-          sessionStorage.setItem(doneKey, "1");
-        } catch (e) {}
-      }
-    })
     .catch(() => {})
     .finally(() => {
       try {
