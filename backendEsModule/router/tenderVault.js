@@ -8,6 +8,7 @@ import {
   updateTenderVaultProject,
   updateTenderVaultProjectStatus,
   deleteTenderVaultProject,
+  getRotationStatus,
 } from "../controller/tenderVault/tenderVault.js";
 import pool from "../models/db.js";
 
@@ -58,6 +59,7 @@ router.use(async (req, res, next) => {
 });
 
 router.get("/projects", getTenderVaultProjects);
+router.get("/rotation-status", getRotationStatus);
 router.get("/projects/:id", getTenderVaultProject);
 router.post("/projects", createTenderVaultProject);
 router.put("/projects/:id", updateTenderVaultProject);

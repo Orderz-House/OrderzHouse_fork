@@ -74,6 +74,13 @@ export const sendOffer = async (req, res) => {
       });
     }
 
+    if (String(projectId).trim().startsWith("TV-")) {
+      return res.status(400).json({
+        success: false,
+        message: "This listing is promotional and cannot receive offers.",
+      });
+    }
+
     const bid = Number(bid_amount);
     if (!Number.isFinite(bid) || bid <= 0) {
       return res.status(400).json({
@@ -189,6 +196,89 @@ export const sendOffer = async (req, res) => {
   }
 };
 
+/**
+ * Send offer for a rotating tender (by cycle_id). No project record; award is blocked.
+ */
+export const sendOfferForTenderCycle = async (req, res) => {
+  try {
+    const freelancerId = req.token?.userId;
+    const { cycleId } = req.params;
+    const bid_amount = req.body.bid_amount ?? req.body.offer_amount ?? null;
+    const proposal = req.body.proposal ?? "";
+
+    if (!freelancerId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!cycleId || bid_amount == null) {
+      return res.status(400).json({ success: false, message: "Missing cycleId or bid_amount" });
+    }
+
+    const bid = Number(bid_amount);
+    if (!Number.isFinite(bid) || bid <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid bid amount" });
+    }
+
+    const { canApplyToProjects } = await import("../utils/subscriptionCheck.js");
+    const subscriptionCheck = await canApplyToProjects(freelancerId);
+    if (!subscriptionCheck.canApply) {
+      return res.status(403).json({
+        success: false,
+        message: subscriptionCheck.reason || "You cannot submit offers at this time",
+      });
+    }
+
+    const { rows: cycleRows } = await pool.query(
+      `SELECT tcy.id, tcy.tender_id, tv.title, tv.budget_min, tv.budget_max
+       FROM tender_vault_cycles tcy
+       JOIN tender_vault_projects tv ON tv.id = tcy.tender_id
+       WHERE tcy.id = $1 AND tcy.status = 'active' AND tcy.display_end_time > NOW()
+         AND tv.status = 'published' AND tv.is_deleted = false`,
+      [cycleId]
+    );
+    if (!cycleRows.length) {
+      return res.status(404).json({ success: false, message: "Tender cycle not found or no longer active" });
+    }
+    const cycle = cycleRows[0];
+
+    if (
+      (cycle.budget_min != null && bid < Number(cycle.budget_min)) ||
+      (cycle.budget_max != null && bid > Number(cycle.budget_max))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Bid must be between ${cycle.budget_min} and ${cycle.budget_max}`,
+      });
+    }
+
+    const { rows: existing } = await pool.query(
+      `SELECT id FROM offers WHERE tender_cycle_id = $1 AND freelancer_id = $2 AND offer_status IN ('pending', 'accepted') LIMIT 1`,
+      [cycleId, freelancerId]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already submitted an offer for this tender",
+      });
+    }
+
+    const { rows: insertRows } = await pool.query(
+      `INSERT INTO offers (freelancer_id, project_id, tender_cycle_id, bid_amount, proposal, offer_status)
+       VALUES ($1, NULL, $2, $3, $4, 'pending')
+       RETURNING *`,
+      [freelancerId, cycleId, bid, proposal || ""]
+    );
+    const newOffer = insertRows[0];
+
+    return res.status(201).json({
+      success: true,
+      message: "Offer sent successfully. Note: rotating tenders cannot be awarded.",
+      offer: newOffer,
+    });
+  } catch (err) {
+    console.error("sendOfferForTenderCycle error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 /**
  * إتمام قبول العرض بعد دفع العميل للمبلغ (يُستدعى من تأكيد الدفع Stripe)
@@ -197,14 +287,16 @@ export const completeOfferAcceptance = async (offerId) => {
   const client = await pool.connect();
   try {
     const { rows: offerRows } = await client.query(
-      `SELECT o.*, p.user_id AS client_id, p.title AS project_title, p.project_type
+      `SELECT o.*, o.tender_cycle_id, p.user_id AS client_id, p.title AS project_title, p.project_type
        FROM offers o
-       JOIN projects p ON o.project_id = p.id
+       LEFT JOIN projects p ON o.project_id = p.id
        WHERE o.id = $1`,
       [offerId]
     );
     if (!offerRows.length) throw new Error("Offer not found");
     const offer = offerRows[0];
+    if (offer.tender_cycle_id)
+      throw new Error("Rotating tenders cannot be awarded. They are for display only.");
     if (String(offer.offer_status) === "accepted") return; // already done (idempotent)
 
     await client.query("BEGIN");
@@ -355,9 +447,9 @@ export const approveOrRejectOffer = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid action" });
 
     const { rows: offerRows } = await client.query(
-      `SELECT o.*, p.user_id AS client_id, p.title AS project_title, p.project_type
+      `SELECT o.*, o.tender_cycle_id, p.user_id AS client_id, p.title AS project_title, p.project_type
        FROM offers o
-       JOIN projects p ON o.project_id = p.id
+       LEFT JOIN projects p ON o.project_id = p.id
        WHERE o.id = $1`,
       [offerId]
     );
@@ -366,6 +458,12 @@ export const approveOrRejectOffer = async (req, res) => {
       return res.status(404).json({ success: false, message: "Offer not found" });
 
     const offer = offerRows[0];
+    if (offer.tender_cycle_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Rotating tenders cannot be awarded. They are for display only.",
+      });
+    }
     if (String(offer.client_id) !== String(clientId))
       return res.status(403).json({ success: false, message: "Not authorized" });
 
@@ -1034,7 +1132,7 @@ export const adminApproveBiddingOffer = async (req, res) => {
 
     // Get project and accepted offer (client = project owner from p.user_id)
     const { rows: projectRows } = await client.query(
-      `SELECT p.*, p.user_id AS client_id, o.id AS offer_id, o.freelancer_id, o.bid_amount
+      `SELECT p.*, p.user_id AS client_id, o.id AS offer_id, o.tender_cycle_id, o.freelancer_id, o.bid_amount
        FROM projects p
        JOIN offers o ON o.project_id = p.id AND o.offer_status = 'accepted'
        WHERE p.id = $1 
@@ -1053,6 +1151,13 @@ export const adminApproveBiddingOffer = async (req, res) => {
     }
 
     const project = projectRows[0];
+    if (project.tender_cycle_id) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Rotating tenders cannot be approved or awarded.",
+      });
+    }
     const offerId = project.offer_id;
     const freelancerId = project.freelancer_id;
 

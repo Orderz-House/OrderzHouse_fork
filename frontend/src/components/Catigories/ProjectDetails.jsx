@@ -320,12 +320,13 @@ export default function ProjectDetails({ mode: propMode }) {
   const title = item.title || "Project";
   const cover = item.cover_pic || item.cover;
   const projectType = item?.project_type ?? item?.type;
+  const isRotatedDemo = item?.is_rotated_demo === true || (typeof id === "string" && String(id).startsWith("TV-"));
 
   let canAccept = true;
-  if (isFreelancer && hasApplied) canAccept = false;
+  if (isRotatedDemo || (isFreelancer && hasApplied)) canAccept = false;
 
-  // ✅ acceptLabel - only for freelancers
-  const acceptLabel = isFreelancer
+  // ✅ acceptLabel - only for freelancers; hide for promotional/demo listings
+  const acceptLabel = isFreelancer && !isRotatedDemo
     ? hasApplied
       ? "Already Applied"
       : projectType === "bidding"
@@ -378,12 +379,19 @@ export default function ProjectDetails({ mode: propMode }) {
         {/* Header للديسكتوب */}
        {/* Header للديسكتوب */}
 <header className="mb-6 hidden lg:grid lg:grid-cols-[1fr,600px] lg:gap-10 lg:items-start">
-  <h1
-    className="min-w-0 text-3xl md:text-4xl font-black tracking-tight leading-tight break-all"
-    style={{ color: THEME_DARK }}
-  >
-    {title}
-  </h1>
+  <div>
+    <h1
+      className="min-w-0 text-3xl md:text-4xl font-black tracking-tight leading-tight break-all"
+      style={{ color: THEME_DARK }}
+    >
+      {title}
+    </h1>
+    {isRotatedDemo && (
+      <p className="mt-2 text-sm text-amber-700 font-medium">
+        This listing is promotional and cannot be awarded.
+      </p>
+    )}
+  </div>
 
   <div className="flex justify-end">
     {readOnly && (
@@ -498,7 +506,7 @@ export default function ProjectDetails({ mode: propMode }) {
               isClient={isClient}
               isFreelancer={isFreelancer}
               busy={busy}
-              onApplyToProject={isFreelancer ? onApplyToProject : undefined}
+              onApplyToProject={isFreelancer && !isRotatedDemo ? onApplyToProject : undefined}
               acceptLabel={acceptLabel}
               acceptClasses={acceptClasses}
               // لو عندك payment فعلاً داخل ProjectInfoCard اتركها، وإلا احذفها من ProjectInfoCard نفسه

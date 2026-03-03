@@ -1,6 +1,8 @@
 /**
  * Tender Vault Rotation System - Cron Jobs
- * Daily rotation and expiration checks
+ * - Daily rotation (stored tenders → active with temp projects)
+ * - Hourly expiration of active tenders
+ * - Every 5 min: cycle-only rotation (expire cycles, refill 8–12 from published tenders, no projects table)
  */
 
 import cron from "node-cron";
@@ -8,13 +10,9 @@ import {
   performDailyRotation,
   checkAndExpireActiveTenders,
 } from "../services/tenderVaultRotation.js";
+import { runTenderRotation } from "../services/tenderRotationEngine.js";
 
-/**
- * Register daily rotation job
- * Runs once per day at 00:00 (midnight)
- */
 export const registerTenderVaultRotationJobs = () => {
-  // Daily rotation: Select and activate 30-70 tenders
   cron.schedule("0 0 * * *", async () => {
     console.log("🔄 [CRON] Starting daily tender vault rotation...");
     try {
@@ -25,7 +23,6 @@ export const registerTenderVaultRotationJobs = () => {
     }
   });
 
-  // Expiration check: Runs every hour to check for expired active tenders
   cron.schedule("0 * * * *", async () => {
     console.log("⏰ [CRON] Checking for expired active tenders...");
     try {
@@ -36,5 +33,17 @@ export const registerTenderVaultRotationJobs = () => {
     }
   });
 
-  console.log("✅ Tender Vault Rotation cron jobs registered");
+  // Cycle-only rotation: every 5 min — expire cycles, keep 8–12 active from published tenders
+  cron.schedule("*/5 * * * *", async () => {
+    try {
+      const result = await runTenderRotation();
+      if (result.created > 0 || result.expired > 0) {
+        console.log(`✅ [CRON] Tender rotation:`, result);
+      }
+    } catch (error) {
+      console.error("❌ [CRON] Tender rotation failed:", error);
+    }
+  });
+
+  console.log("✅ Tender Vault Rotation cron jobs registered (including cycle-only rotation)");
 };

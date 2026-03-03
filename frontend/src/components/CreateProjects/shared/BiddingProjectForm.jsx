@@ -22,6 +22,7 @@ export default function BiddingProjectForm({
   title = "Project Details",
   submitLabel = "Continue to Files",
   showCancel = false,
+  durationDaysOnly = false,
 }) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
@@ -453,34 +454,46 @@ export default function BiddingProjectForm({
           <label className="block text-sm font-semibold text-slate-700 mb-3">
             Project Duration
           </label>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <select
-              name="duration_type"
-              value={form.duration_type}
-              onChange={handleChange}
-              className={inputBase}
-            >
-              <option value="days">Days</option>
-              <option value="hours">Hours</option>
-            </select>
+          {durationDaysOnly ? (
             <input
-              name={
-                form.duration_type === "days"
-                  ? "duration_days"
-                  : "duration_hours"
-              }
+              name="duration_days"
               type="number"
               min={1}
-              placeholder={`Duration in ${form.duration_type}`}
-              value={
-                form.duration_type === "days"
-                  ? form.duration_days
-                  : form.duration_hours
-              }
+              placeholder="Duration in days"
+              value={form.duration_days}
               onChange={handleChange}
               className={inputBase}
             />
-          </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <select
+                name="duration_type"
+                value={form.duration_type}
+                onChange={handleChange}
+                className={inputBase}
+              >
+                <option value="days">Days</option>
+                <option value="hours">Hours</option>
+              </select>
+              <input
+                name={
+                  form.duration_type === "days"
+                    ? "duration_days"
+                    : "duration_hours"
+                }
+                type="number"
+                min={1}
+                placeholder={`Duration in ${form.duration_type}`}
+                value={
+                  form.duration_type === "days"
+                    ? form.duration_days
+                    : form.duration_hours
+                }
+                onChange={handleChange}
+                className={inputBase}
+              />
+            </div>
+          )}
         </div>
 
         {/* Submit */}

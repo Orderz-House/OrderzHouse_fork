@@ -56,6 +56,7 @@ export default function TenderVaultManager() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [selectedTender, setSelectedTender] = useState(null);
   const [updating, setUpdating] = useState(false);
+  const [rotationStatus, setRotationStatus] = useState(null); // { totalPublishedTenders, minimumRequired, rotationActive }
 
   // Pagination
   const PAGE_SIZE = 10;
@@ -72,6 +73,17 @@ export default function TenderVaultManager() {
   useEffect(() => {
     fetchTenders();
   }, [activeTab, searchQuery, page]);
+
+  useEffect(() => {
+    if (!token) return;
+    API.get("/tender-vault/rotation-status", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (res.data?.success && res.data.totalPublishedTenders != null) {
+          setRotationStatus(res.data);
+        }
+      })
+      .catch(() => {});
+  }, [token]);
 
   const fetchTenders = async () => {
     try {
@@ -114,7 +126,7 @@ export default function TenderVaultManager() {
 
     try {
       setUpdating(true);
-      const res = await API.patch(`/tender-vault/${id}/status`, { status: newStatus });
+      const res = await API.patch(`/tender-vault/projects/${id}/status`, { status: newStatus });
       if (res.data?.success) {
         toast.success(`Tender status updated to ${newStatus}`);
         fetchTenders();
@@ -136,7 +148,7 @@ export default function TenderVaultManager() {
     if (!window.confirm("Are you sure you want to delete this tender?")) return;
     try {
       setUpdating(true);
-      const res = await API.delete(`/tender-vault/${id}`);
+      const res = await API.delete(`/tender-vault/projects/${id}`);
       if (res.data?.success) {
         toast.success("Tender deleted successfully");
         fetchTenders();
@@ -210,10 +222,10 @@ export default function TenderVaultManager() {
     }
   };
 
-  // Format duration
+  // Format duration (single column: integer days)
   const formatDuration = (tender) => {
-    if (tender.duration_value && tender.duration_unit) {
-      return `${tender.duration_value} ${tender.duration_unit}`;
+    if (tender.duration != null && tender.duration !== "") {
+      return `${tender.duration} days`;
     }
     return "—";
   };
@@ -231,24 +243,6 @@ export default function TenderVaultManager() {
       default:
         return "bg-amber-100 text-amber-800";
     }
-  };
-
-  // Normalize skills to array of strings
-  const normalizeSkills = (skills) => {
-    if (!skills) return [];
-    if (Array.isArray(skills)) {
-      return skills.map((s) => (typeof s === "string" ? s : s?.name || s?.skill || String(s))).filter(Boolean);
-    }
-    if (typeof skills === "string") {
-      try {
-        const parsed = JSON.parse(skills);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        // If not JSON, treat as comma-separated
-        return skills.split(",").map((s) => s.trim()).filter(Boolean);
-      }
-    }
-    return [];
   };
 
   // Pagination calculations
@@ -269,7 +263,7 @@ export default function TenderVaultManager() {
   // Loading skeleton rows
   const SkeletonRow = () => (
     <tr>
-      {[...Array(10)].map((_, i) => (
+      {[...Array(7)].map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 bg-slate-200 rounded animate-pulse" />
         </td>
@@ -286,19 +280,39 @@ export default function TenderVaultManager() {
           subtitle="Manage your tender vault projects: store, publish, and archive tenders."
         />
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search tenders..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
+        {/* Vault rotation notice: minimum 300 published tenders */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="font-medium">⚠️ Vault rotation activates only after you have at least 300 published tenders.</span>
+          {rotationStatus != null && (
+            <span className="mt-1 block text-amber-700">
+              You currently have {rotationStatus.totalPublishedTenders} published.
+            </span>
+          )}
+        </div>
+
+        {/* Header: Search + New Tender */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search tenders..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/client/tender-vault/new")}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            New Tender
+          </button>
         </div>
 
         {/* Status Tabs */}
@@ -341,15 +355,6 @@ export default function TenderVaultManager() {
                     Category
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Sub Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Sub-Sub Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Skills
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Budget Range
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -374,7 +379,7 @@ export default function TenderVaultManager() {
                   </>
                 ) : pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
                       {searchQuery ? (
                         <>
                           No tenders match your search "{searchQuery}" in {activeTab} status.
@@ -394,9 +399,7 @@ export default function TenderVaultManager() {
                     </td>
                   </tr>
                 ) : (
-                  pageItems.map((tender) => {
-                    const skills = normalizeSkills(tender.metadata?.skills || tender.skills);
-                    return (
+                  pageItems.map((tender) => (
                       <tr
                         key={tender.id}
                         className="hover:bg-slate-50 cursor-pointer"
@@ -418,31 +421,6 @@ export default function TenderVaultManager() {
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600">
                           {tender.category_name || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {tender.sub_category_name || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {tender.sub_sub_category_name || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          {skills.length > 0 ? (
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {skills.slice(0, 3).map((skill, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
-                                >
-                                  {skill}
-                                </span>
-                              ))}
-                              {skills.length > 3 && (
-                                <span className="text-xs text-slate-500">+{skills.length - 3}</span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-slate-500">—</span>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600">
                           {formatBudget(tender)}
@@ -504,8 +482,7 @@ export default function TenderVaultManager() {
                           </div>
                         </td>
                       </tr>
-                    );
-                  })
+                    ))
                 )}
               </tbody>
             </table>

@@ -3,7 +3,6 @@ import {
   X,
   FileText,
   Calendar,
-  Globe,
   DollarSign,
   Clock,
   Package,
@@ -86,26 +85,6 @@ export default function TenderDetailsModal({
   const attachments = Array.isArray(tender.attachments) ? tender.attachments : [];
   const metadata = tender.metadata && typeof tender.metadata === "object" ? tender.metadata : {};
 
-  // Normalize skills to array of strings
-  const normalizeSkills = (skills) => {
-    if (!skills) return [];
-    if (Array.isArray(skills)) {
-      return skills.map((s) => (typeof s === "string" ? s : s?.name || s?.skill || String(s))).filter(Boolean);
-    }
-    if (typeof skills === "string") {
-      try {
-        const parsed = JSON.parse(skills);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        // If not JSON, treat as comma-separated
-        return skills.split(",").map((s) => s.trim()).filter(Boolean);
-      }
-    }
-    return [];
-  };
-
-  const skills = normalizeSkills(metadata?.skills || tender.skills);
-
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -187,21 +166,6 @@ export default function TenderDetailsModal({
                 Category
               </h4>
               <p className="text-slate-900">{formatValue(tender.category_name)}</p>
-              {tender.sub_category_name && (
-                <p className="text-sm text-slate-600 mt-1">Sub: {tender.sub_category_name}</p>
-              )}
-              {tender.sub_sub_category_name && (
-                <p className="text-sm text-slate-600 mt-1">Sub-Sub: {tender.sub_sub_category_name}</p>
-              )}
-            </div>
-
-            {/* Country */}
-            <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1 flex items-center gap-2">
-                <Globe className="w-3 h-3" />
-                Country
-              </h4>
-              <p className="text-slate-900">{formatValue(tender.country)}</p>
             </div>
 
             {/* Budget Range */}
@@ -224,8 +188,8 @@ export default function TenderDetailsModal({
                 Duration
               </h4>
               <p className="text-slate-900">
-                {tender.duration_value && tender.duration_unit
-                  ? `${tender.duration_value} ${tender.duration_unit}`
+                {tender.duration != null && tender.duration !== ""
+                  ? `${tender.duration} days`
                   : "—"}
               </p>
             </div>
@@ -270,26 +234,6 @@ export default function TenderDetailsModal({
               </div>
             )}
           </div>
-
-          {/* Skills Section */}
-          {skills.length > 0 && (
-            <div className="pt-6 border-t border-slate-200">
-              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Skills
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Attachments Section */}
           <div className="pt-6 border-t border-slate-200">
