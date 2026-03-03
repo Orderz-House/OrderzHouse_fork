@@ -13,15 +13,23 @@ export default function PartnerReferrals() {
   const { token, userData } = useSelector((s) => s.auth);
   const isAdmin = Number(userData?.role_id) === 1;
 
+  const RANGE_OPTIONS = [
+    { value: "24h", label: "Last 24h" },
+    { value: "7d", label: "Last 7 days" },
+    { value: "30d", label: "Last 30 days" },
+    { value: "90d", label: "Last 90 days" },
+    { value: "all", label: "All time" },
+  ];
+
   const [partners, setPartners] = useState([]);
   const [selectedCode, setSelectedCode] = useState("efe");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [selectedRange, setSelectedRange] = useState("30d");
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState(null);
   const [signups, setSignups] = useState({ items: [], page: 1, limit: 20, total: 0 });
   const [signupsLoading, setSignupsLoading] = useState(false);
+  const [signupsError, setSignupsError] = useState(null);
 
   const fetchPartners = useCallback(async () => {
     if (!token) return;
@@ -44,9 +52,7 @@ export default function PartnerReferrals() {
     setStatsLoading(true);
     setStatsError(null);
     try {
-      const params = { source: selectedCode };
-      if (from && from.trim()) params.from = from.trim();
-      if (to && to.trim()) params.to = to.trim();
+      const params = { source: selectedCode, range: selectedRange };
       const response = await API.get("/referrals/stats", { params });
       const data = response?.data ?? response;
       const statsPayload = data?.data ?? data;
@@ -62,15 +68,15 @@ export default function PartnerReferrals() {
     } finally {
       setStatsLoading(false);
     }
-  }, [selectedCode, from, to, token]);
+  }, [selectedCode, selectedRange, token]);
 
-  const fetchSignups = useCallback(async () => {
+  const fetchSignups = useCallback(async (pageOverride) => {
     if (!selectedCode || !token) return;
     setSignupsLoading(true);
+    setSignupsError(null);
+    const page = pageOverride !== undefined ? pageOverride : signups.page;
     try {
-      const params = { source: selectedCode, page: signups.page, limit: signups.limit };
-      if (from && from.trim()) params.from = from.trim();
-      if (to && to.trim()) params.to = to.trim();
+      const params = { source: selectedCode, range: selectedRange, page, limit: signups.limit };
       const response = await API.get("/referrals/signups", { params });
       const data = response?.data ?? response;
       const payload = data?.data ?? data;
@@ -81,11 +87,13 @@ export default function PartnerReferrals() {
         total: payload?.total ?? 0,
       });
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to load signups";
+      setSignupsError(msg);
       setSignups((s) => ({ ...s, items: [] }));
     } finally {
       setSignupsLoading(false);
     }
-  }, [selectedCode, from, to, token, signups.page, signups.limit]);
+  }, [selectedCode, selectedRange, token, signups.page, signups.limit]);
 
   useEffect(() => {
     fetchPartners();
@@ -94,16 +102,16 @@ export default function PartnerReferrals() {
   useEffect(() => {
     if (!selectedCode) return;
     fetchStats();
-  }, [selectedCode, from, to, fetchStats]);
+  }, [selectedCode, selectedRange, fetchStats]);
 
   useEffect(() => {
     if (!selectedCode) return;
     fetchSignups();
-  }, [selectedCode, from, to, signups.page, fetchSignups]);
+  }, [selectedCode, selectedRange, signups.page, fetchSignups]);
 
-  const handleFetch = () => {
+  const handleRefresh = () => {
     fetchStats();
-    setSignups((s) => ({ ...s, page: 1 }));
+    fetchSignups(1);
   };
 
   const totalPages = Math.max(1, Math.ceil(signups.total / signups.limit));
@@ -135,7 +143,7 @@ export default function PartnerReferrals() {
 
         {/* Filters */}
         <div className={CARD_CLASS}>
-          <div className="p-4 flex flex-wrap items-end gap-4">
+          <div className="p-4 flex flex-wrap items-center gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Partner</label>
               <select
@@ -153,51 +161,55 @@ export default function PartnerReferrals() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">From (optional)</label>
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">To (optional)</label>
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
-              />
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Range</label>
+              {/* Pills on md+, Select on small screens */}
+              <div className="hidden md:flex flex-wrap gap-1.5">
+                {RANGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSelectedRange(opt.value)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition border ${
+                      selectedRange === opt.value
+                        ? "text-white border-transparent"
+                        : "text-slate-600 border-slate-200 bg-white hover:bg-slate-50"
+                    }`}
+                    style={selectedRange === opt.value ? { backgroundColor: PRIMARY } : {}}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={selectedRange}
+                onChange={(e) => setSelectedRange(e.target.value)}
+                className="md:hidden border border-slate-200 rounded-lg px-3 py-2 text-sm w-full max-w-[200px] bg-white"
+              >
+                {RANGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               type="button"
-              onClick={handleFetch}
-              disabled={statsLoading}
+              onClick={handleRefresh}
+              disabled={statsLoading || signupsLoading}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition"
               style={{ backgroundColor: PRIMARY }}
             >
-              <RefreshCw className={`w-4 h-4 ${statsLoading ? "animate-spin" : ""}`} />
-              Fetch
+              <RefreshCw className={`w-4 h-4 ${statsLoading || signupsLoading ? "animate-spin" : ""}`} />
+              Refresh
             </button>
           </div>
         </div>
 
-        {statsError && (
+        {(statsError || signupsError) && (
           <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-            {statsError}
+            {statsError || signupsError}
           </div>
-        )}
-
-        {/* Temporary debug: DB identity and raw counts (remove after confirming) */}
-        {stats?.debug && (
-          <details className={`${CARD_CLASS} p-4`}>
-            <summary className="text-sm font-medium text-slate-600 cursor-pointer">Debug: DB identity &amp; counts</summary>
-            <pre className="mt-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-lg overflow-auto">
-              {JSON.stringify(stats.debug, null, 2)}
-            </pre>
-          </details>
         )}
 
         {/* Stats cards */}
@@ -205,17 +217,17 @@ export default function PartnerReferrals() {
           <div className={`${CARD_CLASS} p-4`}>
             <div className="flex items-center gap-2 text-slate-500 mb-1">
               <Share2 className="w-4 h-4" />
-              <span className="text-xs font-medium">Visits</span>
+              <span className="text-xs font-medium">Total page visits</span>
             </div>
             <p className="text-lg font-bold text-slate-900">
               {statsLoading ? "…" : stats != null && typeof stats.visits === "number" ? stats.visits : "—"}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">Total visit rows</p>
+            <p className="text-xs text-slate-400 mt-0.5">Every landing with ref/utm</p>
           </div>
           <div className={`${CARD_CLASS} p-4`}>
             <div className="flex items-center gap-2 text-slate-500 mb-1">
               <Users className="w-4 h-4" />
-              <span className="text-xs font-medium">Unique visits</span>
+              <span className="text-xs font-medium">Distinct sessions</span>
             </div>
             <p className="text-lg font-bold text-slate-900">
               {statsLoading ? "…" : stats != null && typeof stats.uniqueVisits === "number" ? stats.uniqueVisits : "—"}
@@ -243,12 +255,6 @@ export default function PartnerReferrals() {
             <p className="text-xs text-slate-400 mt-0.5">Signups ÷ unique visits</p>
           </div>
         </div>
-
-        {statsError && (
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-            {statsError}
-          </div>
-        )}
 
         {/* Table: Registered users from this partner */}
         <div className={CARD_CLASS}>

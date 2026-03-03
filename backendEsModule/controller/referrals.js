@@ -652,14 +652,15 @@ const COOKIE_OH_REF_SID = "oh_ref_sid";
 const COOKIE_MAX_AGE_DAYS = 30;
 
 /**
- * POST /referrals/visit — record a partner referral visit (public).
+ * POST /referrals/visit — record partner referral hit (public).
  * Body: { source, medium?, campaign?, ref?, landing_path?, session_id? }
  * Session: 1) req.cookies.oh_ref_sid, 2) body.session_id, 3) generate new.
- * Always sets cookie so browser reuses same sid. Insert is idempotent (ON CONFLICT DO NOTHING).
- * Requires referral_visits table and UNIQUE(source, session_id) — run migrations 015 + 017.
+ * Writes two tables:
+ * - referral_pageviews: every call (total page visits). No ON CONFLICT.
+ * - referral_visits: one row per (source, session_id) — unique sessions. ON CONFLICT DO NOTHING.
+ * Cookie: 30d, path=/, sameSite=lax, secure only in production.
  */
 export const recordPartnerVisit = async (req, res) => {
-  // 1) Safe body parsing (express.json() must be mounted before this route)
   const { source, medium, campaign, ref, landing_path, session_id: bodySid } = req.body || {};
   if (!source || typeof source !== "string") {
     return res.status(400).json({ success: false, message: "source is required" });
@@ -670,7 +671,6 @@ export const recordPartnerVisit = async (req, res) => {
   const refVal = ref != null && ref !== "" ? String(ref).trim() : null;
   const landing = landing_path != null && landing_path !== "" ? String(landing_path).trim() : null;
 
-  // 2) Session ID: cookie → body → new
   let session_id;
   const cookieSid = req.cookies && req.cookies[COOKIE_OH_REF_SID];
   if (cookieSid && typeof cookieSid === "string" && cookieSid.trim()) {
@@ -681,7 +681,6 @@ export const recordPartnerVisit = async (req, res) => {
     session_id = crypto.randomBytes(16).toString("hex");
   }
 
-  // 3) Cookie: 30d, path=/, sameSite=lax; secure only in production (false on http localhost so browser sends it)
   const cookieOptions = {
     maxAge: COOKIE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
     httpOnly: false,
@@ -691,14 +690,35 @@ export const recordPartnerVisit = async (req, res) => {
   };
   res.cookie(COOKIE_OH_REF_SID, session_id, cookieOptions);
 
-  // 4) DB insert (idempotent); wrap in try/catch and return meaningful errors
+  const userAgent = req.get("User-Agent") || req.headers?.["user-agent"] || null;
+  let ip = null;
   try {
+    const raw = req.ip || req.connection?.remoteAddress;
+    if (raw && typeof raw === "string") ip = raw;
+  } catch (e) {}
+
+  try {
+    // (1) Total visits: insert every hit into referral_pageviews
     await pool.query(
+      `INSERT INTO referral_pageviews (source, medium, campaign, ref, session_id, landing_path, user_agent, ip)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [src, med, camp, refVal, session_id, landing, userAgent, ip]
+    );
+
+    // (2) Unique visits: one row per (source, session_id) in referral_visits
+    const visitInsert = await pool.query(
       `INSERT INTO referral_visits (source, medium, campaign, ref, session_id, landing_path)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (source, session_id) DO NOTHING`,
+       ON CONFLICT (source, session_id) DO NOTHING
+       RETURNING id`,
       [src, med, camp, refVal, session_id, landing]
     );
+    const sessionCreated = visitInsert.rowCount > 0;
+    return res.status(200).json({
+      success: true,
+      session_id,
+      logged: { pageview: true, sessionCreated },
+    });
   } catch (err) {
     console.error("[referrals/visit] error", err);
     return res.status(500).json({
@@ -709,12 +729,6 @@ export const recordPartnerVisit = async (req, res) => {
       error: err.message,
     });
   }
-
-  return res.status(200).json({
-    success: true,
-    message: "Visit recorded",
-    session_id,
-  });
 };
 
 /**
@@ -753,37 +767,91 @@ function getDefaultDateRange() {
   };
 }
 
+/** Compute from/to (YYYY-MM-DD) from range param. Timezone-safe using UTC. range: 24h | 7d | 30d | 90d | all. */
+function getDateRangeFromRangeParam(range) {
+  const r = typeof range === "string" ? range.trim().toLowerCase() : "";
+  const now = new Date();
+  const toDate = now.toISOString().slice(0, 10);
+  if (r === "all") {
+    return { from: "2000-01-01", to: toDate };
+  }
+  const ms = now.getTime();
+  let fromDate;
+  if (r === "24h") {
+    fromDate = new Date(ms - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  } else if (r === "7d") {
+    fromDate = new Date(ms - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  } else if (r === "90d") {
+    fromDate = new Date(ms - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  } else {
+    // 30d or default
+    fromDate = new Date(ms - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+  return { from: fromDate, to: toDate };
+}
+
 /**
- * GET /referrals/stats?source=efe&from=YYYY-MM-DD&to=YYYY-MM-DD — admin only.
- * If from/to omitted or empty string, uses last 30 days. Source compared case-insensitive (LOWER).
+ * GET /referrals/stats?source=efe&range=24h|7d|30d|90d|all — admin only.
+ * Also accepts from/to (YYYY-MM-DD). If range is provided it takes precedence; else from/to; else default 30d.
  * Date range: created_at::date between from and to (inclusive).
  */
 export const getPartnerReferralStats = async (req, res) => {
   try {
-    const { source, from, to } = req.query;
+    const { source, range, from, to } = req.query;
     if (!source || typeof source !== "string" || !source.trim()) {
       return res.status(400).json({ success: false, message: "source is required" });
     }
     const sourceVal = source.trim().toLowerCase();
-    const fromStr = typeof from === "string" ? from.trim() : "";
-    const toStr = typeof to === "string" ? to.trim() : "";
-    let fromDate = /^\d{4}-\d{2}-\d{2}$/.test(fromStr) ? fromStr : null;
-    let toDate = /^\d{4}-\d{2}-\d{2}$/.test(toStr) ? toStr : null;
-    if (!fromDate || !toDate) {
-      const def = getDefaultDateRange();
-      if (!fromDate) fromDate = def.from;
-      if (!toDate) toDate = def.to;
+    let fromDate, toDate;
+    const rangeVal = typeof range === "string" ? range.trim() : "";
+    if (rangeVal && /^(24h|7d|30d|90d|all)$/i.test(rangeVal)) {
+      const computed = getDateRangeFromRangeParam(rangeVal);
+      fromDate = computed.from;
+      toDate = computed.to;
+    } else {
+      const fromStr = typeof from === "string" ? from.trim() : "";
+      const toStr = typeof to === "string" ? to.trim() : "";
+      fromDate = /^\d{4}-\d{2}-\d{2}$/.test(fromStr) ? fromStr : null;
+      toDate = /^\d{4}-\d{2}-\d{2}$/.test(toStr) ? toStr : null;
+      if (!fromDate || !toDate) {
+        const def = getDefaultDateRange();
+        if (!fromDate) fromDate = def.from;
+        if (!toDate) toDate = def.to;
+      }
     }
 
-    const paramsVisits = [sourceVal, fromDate, toDate];
-    const visitsResult = await pool.query(
-      `SELECT COUNT(*) AS total, COUNT(DISTINCT session_id) AS unique_sessions
-       FROM referral_visits
-       WHERE LOWER(TRIM(source)) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
-      paramsVisits
-    );
-    const visits = parseInt(visitsResult.rows[0]?.total ?? "0", 10);
-    const uniqueVisits = parseInt(visitsResult.rows[0]?.unique_sessions ?? "0", 10);
+    const paramsSource = [sourceVal, fromDate, toDate];
+    // visits = total page hits (referral_pageviews); uniqueVisits = distinct sessions (referral_visits)
+    let visits = 0;
+    let uniqueVisits = 0;
+    try {
+      const [pageviewsResult, sessionsResult] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*) AS total FROM referral_pageviews
+           WHERE LOWER(TRIM(source)) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+          paramsSource
+        ),
+        pool.query(
+          `SELECT COUNT(*) AS total FROM referral_visits
+           WHERE LOWER(TRIM(source)) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+          paramsSource
+        ),
+      ]);
+      visits = parseInt(pageviewsResult.rows[0]?.total ?? "0", 10);
+      uniqueVisits = parseInt(sessionsResult.rows[0]?.total ?? "0", 10);
+    } catch (tableErr) {
+      if (tableErr.code === "42P01" && tableErr.message && tableErr.message.includes("referral_pageviews")) {
+        const fallback = await pool.query(
+          `SELECT COUNT(*) AS total FROM referral_visits
+           WHERE LOWER(TRIM(source)) = $1 AND created_at::date >= $2::date AND created_at::date <= $3::date`,
+          paramsSource
+        );
+        uniqueVisits = parseInt(fallback.rows[0]?.total ?? "0", 10);
+        visits = uniqueVisits;
+      } else {
+        throw tableErr;
+      }
+    }
 
     const signupsResult = await pool.query(
       `SELECT COUNT(*) AS total FROM users
@@ -793,42 +861,12 @@ export const getPartnerReferralStats = async (req, res) => {
     const signups = parseInt(signupsResult.rows[0]?.total ?? "0", 10);
     const conversionRate = uniqueVisits > 0 ? Math.round((signups / uniqueVisits) * 10000) / 100 : 0;
 
-    // Temporary debug: DB identity and raw counts (remove when confirmed)
-    let debug = null;
-    try {
-      const [idRow, totalRow, sourceExactRow, sourceLowerRow] = await Promise.all([
-        pool.query(
-          "SELECT current_database() AS db, current_user AS db_user, inet_server_addr()::text AS addr, inet_server_port() AS port"
-        ),
-        pool.query("SELECT COUNT(*)::int AS total_rows FROM referral_visits"),
-        pool.query("SELECT COUNT(*)::int AS source_rows FROM referral_visits WHERE source = $1", [sourceVal]),
-        pool.query(
-          "SELECT COUNT(*)::int AS source_rows_lower, COUNT(DISTINCT session_id)::int AS source_unique FROM referral_visits WHERE LOWER(TRIM(source)) = $1",
-          [sourceVal]
-        ),
-      ]);
-      debug = {
-        db: idRow.rows[0]?.db ?? null,
-        db_user: idRow.rows[0]?.db_user ?? null,
-        addr: idRow.rows[0]?.addr ?? null,
-        port: idRow.rows[0]?.port ?? null,
-        total_rows: totalRow.rows[0]?.total_rows ?? 0,
-        source_rows_exact: sourceExactRow.rows[0]?.source_rows ?? 0,
-        source_rows_lower: sourceLowerRow.rows[0]?.source_rows_lower ?? 0,
-        source_unique: sourceLowerRow.rows[0]?.source_unique ?? 0,
-        date_range: { from: fromDate, to: toDate },
-      };
-    } catch (debugErr) {
-      debug = { error: String(debugErr.message) };
-    }
-
     return res.status(200).json({
       source: sourceVal,
       visits,
       uniqueVisits,
       signups,
       conversionRate,
-      debug,
     });
   } catch (err) {
     console.error("getPartnerReferralStats error:", err);
@@ -837,22 +875,30 @@ export const getPartnerReferralStats = async (req, res) => {
 };
 
 /**
- * GET /referrals/signups?source=efe&from=&to=&page=1&limit=20 — admin only.
- * Paginated list of users who signed up from this partner. Source in lowercase.
+ * GET /referrals/signups?source=efe&range=30d&page=1&limit=20 — admin only.
+ * Also accepts from/to. If range provided it takes precedence; else from/to; else default 30d.
  */
 export const getPartnerSignups = async (req, res) => {
   try {
-    const { source, from, to, page = "1", limit = "20" } = req.query;
+    const { source, range, from, to, page = "1", limit = "20" } = req.query;
     if (!source || typeof source !== "string" || !source.trim()) {
       return res.status(400).json({ success: false, message: "source is required" });
     }
     const sourceVal = source.trim().toLowerCase();
-    let fromDate = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
-    let toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : null;
-    if (!fromDate || !toDate) {
-      const def = getDefaultDateRange();
-      if (!fromDate) fromDate = def.from;
-      if (!toDate) toDate = def.to;
+    let fromDate, toDate;
+    const rangeVal = typeof range === "string" ? range.trim() : "";
+    if (rangeVal && /^(24h|7d|30d|90d|all)$/i.test(rangeVal)) {
+      const computed = getDateRangeFromRangeParam(rangeVal);
+      fromDate = computed.from;
+      toDate = computed.to;
+    } else {
+      fromDate = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
+      toDate = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : null;
+      if (!fromDate || !toDate) {
+        const def = getDefaultDateRange();
+        if (!fromDate) fromDate = def.from;
+        if (!toDate) toDate = def.to;
+      }
     }
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
