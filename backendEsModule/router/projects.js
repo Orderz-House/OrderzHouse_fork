@@ -61,7 +61,7 @@ const rejectTenderVaultAction = (req, res, next) => {
   if (rawId.startsWith("TVX-") || rawId.startsWith("TV-")) {
     return res.status(400).json({
       success: false,
-      message: "Tender Vault promoted items are display-only and cannot be actioned.",
+      message: "This listing is not currently accepting applications.",
     });
   }
   return next();

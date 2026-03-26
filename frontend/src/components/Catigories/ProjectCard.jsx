@@ -24,6 +24,10 @@ export default function ProjectCard({
   // Get current user ID to check if they've applied
   const currentUserId = useSelector((state) => state?.auth?.userId) || 
                         (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
+  const roleId =
+    useSelector((state) => state?.auth?.userData?.role_id) ||
+    (typeof window !== "undefined" ? Number(localStorage.getItem("roleId") || 0) : 0);
+  const isStaff = Number(roleId) === 1;
   
   // Check if current user has applied to this project
   const hasApplied = (() => {
@@ -196,9 +200,9 @@ if (projectType === "fixed") {
             alt={title}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
-          {isRotatedDemo && (
-            <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-xs font-semibold bg-amber-500/95 text-white shadow">
-              Promoted / Demo
+          {isRotatedDemo && isStaff && (
+            <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-slate-900/70 text-white">
+              Internal: Tender Vault
             </div>
           )}
           {hasApplied && (
