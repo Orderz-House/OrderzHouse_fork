@@ -50,7 +50,11 @@ export default function ProjectCard({
 
 
   const to = `/${linkBase}/${id}`;
-  const isRotatedDemo = project?.is_rotated_demo === true || (typeof id === "string" && String(id).startsWith("TV-"));
+  const isRotatedDemo =
+    project?.is_rotated_demo === true ||
+    project?.source_type === "tender_vault" ||
+    project?.is_actionable === false ||
+    (typeof id === "string" && (String(id).startsWith("TVX-") || String(id).startsWith("TV-")));
  const projectType = (project?.project_type ?? project?.type ?? "").toLowerCase();
 
 const toNumber = (v) => {

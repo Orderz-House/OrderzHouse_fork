@@ -246,6 +246,9 @@ export default function ProjectDetails({ mode: propMode }) {
 
   // =============================== Handlers
   const onApplyToProject = () => {
+    if (item?.is_actionable === false || item?.source_type === "tender_vault") {
+      return toast.error("This Tender Vault listing is display-only.");
+    }
     if (!isFreelancer)
       return toast.error("Only freelancers can apply to projects.");
     if (hasApplied)
@@ -333,7 +336,11 @@ export default function ProjectDetails({ mode: propMode }) {
     item.cover ||
     firstAttachmentCoverUrl(item.attachments);
   const projectType = item?.project_type ?? item?.type;
-  const isRotatedDemo = item?.is_rotated_demo === true || (typeof id === "string" && String(id).startsWith("TV-"));
+  const isRotatedDemo =
+    item?.is_rotated_demo === true ||
+    item?.source_type === "tender_vault" ||
+    item?.is_actionable === false ||
+    (typeof id === "string" && (String(id).startsWith("TVX-") || String(id).startsWith("TV-")));
 
   let canAccept = true;
   if (isRotatedDemo || (isFreelancer && hasApplied)) canAccept = false;
