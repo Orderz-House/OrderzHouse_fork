@@ -183,27 +183,30 @@ export default function TenderVaultManager() {
     handleStatusChange(tender, "archived");
   };
 
-  // Format currency (JD)
-  const formatJD = (value, { noDecimals = false } = {}) => {
-    if (value == null || value === "") return "—";
-    const num = Number(value);
-    if (isNaN(num)) return "—";
-    if (noDecimals && num % 1 === 0) {
-      return `${num} JD`;
-    }
-    return `${num.toFixed(2)} JD`;
+  const jdInt = (value) => {
+    if (value == null || value === "") return null;
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) ? n : null;
   };
 
-  // Format budget range
+  /** Whole JD only — no decimals in listing UI */
+  const formatJD = (value) => {
+    const n = jdInt(value);
+    if (n === null) return "—";
+    return `${n} JD`;
+  };
+
   const formatBudget = (tender) => {
-    if (tender.budget_min && tender.budget_max) {
-      return `${formatJD(tender.budget_min, { noDecimals: true })} - ${formatJD(tender.budget_max, { noDecimals: true })}`;
+    const min = jdInt(tender.budget_min);
+    const max = jdInt(tender.budget_max);
+    if (min != null && max != null) {
+      return `${min} - ${max} JD`;
     }
-    if (tender.budget_min) {
-      return `From ${formatJD(tender.budget_min, { noDecimals: true })}`;
+    if (min != null) {
+      return `From ${min} JD`;
     }
-    if (tender.budget_max) {
-      return `Up to ${formatJD(tender.budget_max, { noDecimals: true })}`;
+    if (max != null) {
+      return `Up to ${max} JD`;
     }
     return "—";
   };

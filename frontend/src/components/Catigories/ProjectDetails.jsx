@@ -36,6 +36,16 @@ function valueOrDash(v) {
   return v;
 }
 
+function firstAttachmentCoverUrl(attachments) {
+  if (!Array.isArray(attachments) || attachments.length === 0) return null;
+  const a = attachments[0];
+  if (typeof a === "string") return a;
+  if (a && typeof a === "object") {
+    return a.url || a.path || a.file_url || null;
+  }
+  return null;
+}
+
 function MobileSummaryCard({ item }) {
   const budget = item?.budget ?? item?.price ?? item?.amount ?? null;
   const projectType = item?.project_type ?? item?.type ?? "—";
@@ -318,7 +328,10 @@ export default function ProjectDetails({ mode: propMode }) {
 
   // =============================== UI Computations
   const title = item.title || "Project";
-  const cover = item.cover_pic || item.cover;
+  const cover =
+    item.cover_pic ||
+    item.cover ||
+    firstAttachmentCoverUrl(item.attachments);
   const projectType = item?.project_type ?? item?.type;
   const isRotatedDemo = item?.is_rotated_demo === true || (typeof id === "string" && String(id).startsWith("TV-"));
 

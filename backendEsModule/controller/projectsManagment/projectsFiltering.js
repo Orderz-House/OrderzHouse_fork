@@ -213,6 +213,9 @@ export const getProjectsByCategory = async (req, res) => {
   const { category_id } = req.params;
   const userId = req.token?.userId;
   const { search, sortBy } = req.query;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
 
   try {
     // Build query using conditions array pattern
@@ -332,7 +335,13 @@ export const getProjectsByCategory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      projects: allRows,
+      projects: allRows.slice(offset, offset + limit),
+      pagination: {
+        page,
+        limit,
+        total: allRows.length,
+        totalPages: Math.ceil(allRows.length / limit),
+      },
       userId,
       note:
         allRows.length === 0
@@ -352,6 +361,9 @@ export const getProjectsBySubCategory = async (req, res) => {
   const { sub_category_id } = req.params;
   const userId = req.token?.userId;
   const { search, sortBy } = req.query;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
 
   try {
     let whereConditions = `p.sub_category_id = $1 ${buildStatusCondition()}`;
@@ -446,7 +458,13 @@ export const getProjectsBySubCategory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      projects: allRows,
+      projects: allRows.slice(offset, offset + limit),
+      pagination: {
+        page,
+        limit,
+        total: allRows.length,
+        totalPages: Math.ceil(allRows.length / limit),
+      },
       userId,
       note:
         allRows.length === 0
@@ -466,6 +484,9 @@ export const getProjectsBySubSubCategory = async (req, res) => {
   const { sub_sub_category_id } = req.params;
   const userId = req.token?.userId;
   const { search, sortBy } = req.query;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
 
   try {
     let whereConditions = `p.sub_sub_category_id = $1 ${buildStatusCondition()}`;
@@ -560,7 +581,13 @@ export const getProjectsBySubSubCategory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      projects: allRows,
+      projects: allRows.slice(offset, offset + limit),
+      pagination: {
+        page,
+        limit,
+        total: allRows.length,
+        totalPages: Math.ceil(allRows.length / limit),
+      },
       userId,
       note:
         allRows.length === 0

@@ -246,14 +246,29 @@ export default function TenderDetailsModal({
                 {attachments.map((attachment, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200"
+                    className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200"
                   >
+                    {attachment.url && (attachment.type === "image" || /\.(jpe?g|png|webp|gif)(\?|$)/i.test(attachment.url)) ? (
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 block rounded-md overflow-hidden border border-slate-200 bg-white"
+                      >
+                        <img
+                          src={attachment.url}
+                          alt=""
+                          className="w-32 h-20 object-cover"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : null}
                     {attachment.url ? (
                       <a
                         href={attachment.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex items-center gap-2 text-blue-600 hover:text-blue-800 underline"
+                        className="flex-1 flex items-center gap-2 text-blue-600 hover:text-blue-800 underline min-w-0"
                       >
                         <FileText className="w-4 h-4 shrink-0" />
                         <span className="truncate">
