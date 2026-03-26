@@ -1,0 +1,2474 @@
+[
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Digital & Print Advertising package for Healthcare launch",
+    "description": "We need digital & print advertising for a healthcare use case tied to new service launch and aimed at young professionals.\nThe visual direction should feel minimal and modern, while staying suitable for local rollout and launch workstreams.\nExpected delivery includes editable source files and polished final copy, with clear hierarchy, production-friendly files, and strong presentation quality for operations teams.\nThe output should support operations teams with clear approval-ready structure.\nTarget range is 86 to 407 JD with an expected timeline of about 5 days.",
+    "category_id": 1,
+    "budget_min": 86,
+    "budget_max": 407,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Business Design",
+      "sub_sub_category_name": "Digital & Print Advertising",
+      "sub_category_id": 1,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "starter",
+      "audience_segment": "young professionals",
+      "business_context": "new service launch",
+      "primary_goal": "improve clarity",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "digital-print-advertising"
+    },
+    "is_deleted": false,
+    "created_at": "2025-11-26T21:44:40.441Z",
+    "updated_at": "2025-12-05T21:44:40.441Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 3,
+    "duration": 5,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "professional Tables & Charts Design deliverables for cross-team coordination",
+    "description": "We need tables & charts design for a logistics use case tied to cross-team coordination and aimed at executive stakeholders.\nThe visual direction should feel presentation-led and professional, while staying suitable for cross-functional deployment and pilot workstreams.\nExpected delivery includes research-backed structure and team-facing guidance notes, with clear hierarchy, production-friendly files, and strong presentation quality for executive stakeholders.\nThe final package should stay practical for day-to-day use and future iteration.\nTarget range is 160 to 576 JD with an expected timeline of about 8 days.",
+    "category_id": 1,
+    "budget_min": 160,
+    "budget_max": 576,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Academic Design",
+      "sub_sub_category_name": "Tables & Charts Design",
+      "sub_category_id": 2,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design",
+        "Data Visualization",
+        "Information Hierarchy",
+        "Presentation Design"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "standard",
+      "audience_segment": "executive stakeholders",
+      "business_context": "cross-team coordination",
+      "primary_goal": "document workflows",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "design",
+      "seed_leaf_slug": "tables-charts-design"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-06T01:05:53.443Z",
+    "updated_at": "2025-10-13T01:05:53.443Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 21,
+    "duration": 8,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Mockups Design system for online shoppers engagement in Food & Beverage",
+    "description": "We need mockups design for a food & beverage use case tied to customer experience upgrade and aimed at online shoppers.\nThe visual direction should feel campaign-ready and confident, while staying suitable for multi-branch rollout and optimization workstreams.\nExpected delivery includes launch-ready package and quality assurance pass, with clear hierarchy, production-friendly files, and strong presentation quality for client-facing staff.\nPriority is to keep the work aligned with cleaner reporting quality and clean stakeholder communication.\nTarget range is 146 to 703 JD with an expected timeline of about 10 days.",
+    "category_id": 1,
+    "budget_min": 146,
+    "budget_max": 703,
+    "currency": "JD",
+    "duration_value": 10,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Personal Design",
+      "sub_sub_category_name": "Mockups Design",
+      "sub_category_id": 3,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "growth",
+      "audience_segment": "online shoppers",
+      "business_context": "customer experience upgrade",
+      "primary_goal": "increase credibility",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "design",
+      "seed_leaf_slug": "mockups-design"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-14T22:54:23.443Z",
+    "updated_at": "2025-08-28T22:54:23.443Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 38,
+    "duration": 10,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Clear Business Business Plans for students",
+    "description": "Looking for business plans that fits legal services needs and supports procurement workflow cleanup for students.\nThe writing should be clear business, fast-turnaround, and structured to help with win stakeholder approval while remaining easy to review and approve.\nThe final handoff should include polished final copy and review notes, with accurate wording, logical flow, and consistent tone across sections.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nBudget expectations fall between 594 and 2507 JD, with an estimated completion window of 5 weeks.",
+    "category_id": 2,
+    "budget_min": 594,
+    "budget_max": 2507,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "weeks",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "Business Plans",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "Business Analysis",
+        "Executive Summary Writing",
+        "Persuasive Structuring"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "premium",
+      "audience_segment": "students",
+      "business_context": "procurement workflow cleanup",
+      "primary_goal": "win stakeholder approval",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "writing",
+      "seed_leaf_slug": "business-plans"
+    },
+    "is_deleted": false,
+    "created_at": "2025-06-20T15:09:15.443Z",
+    "updated_at": "2025-06-28T15:09:15.443Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 56,
+    "duration": 5,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "Manufacturing Academic Editing with clear decision-ready structure",
+    "description": "Looking for academic editing that fits manufacturing needs and supports lead generation support for job applicants.\nThe writing should be conversion-aware, premium, and structured to help with support launch readiness while remaining easy to review and approve.\nThe final handoff should include clean database integration and handoff-ready assets, with accurate wording, logical flow, and consistent tone across sections.\nThe output should support marketing coordinators with clean stakeholder presentation.\nBudget expectations fall between 143 and 642 JD, with an estimated completion window of 5 days.",
+    "category_id": 2,
+    "budget_min": 143,
+    "budget_max": 642,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Academic Editing",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "premium",
+      "audience_segment": "job applicants",
+      "business_context": "lead generation support",
+      "primary_goal": "support launch readiness",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "academic-editing"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-08T10:54:30.443Z",
+    "updated_at": "2025-10-15T10:54:30.443Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 79,
+    "duration": 5,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Invitations for Sports department handoff",
+    "description": "Looking for invitations that fits sports needs and supports department handoff for premium clients.\nThe writing should be formal, engaging, and structured to help with prepare for publication while remaining easy to review and approve.\nThe final handoff should include clear file organization and launch-ready package, with accurate wording, logical flow, and consistent tone across sections.\nThe final package should stay practical for day-to-day use and future iteration.\nBudget expectations fall between 166 and 753 JD, with an estimated completion window of 16 days.",
+    "category_id": 2,
+    "budget_min": 166,
+    "budget_max": 753,
+    "currency": "JD",
+    "duration_value": 16,
+    "duration_unit": "days",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Personal Writing",
+      "sub_sub_category_name": "Invitations",
+      "sub_category_id": 6,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "enterprise",
+      "audience_segment": "premium clients",
+      "business_context": "department handoff",
+      "primary_goal": "prepare for publication",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "invitations"
+    },
+    "is_deleted": false,
+    "created_at": "2025-09-05T13:20:12.443Z",
+    "updated_at": "2025-09-11T13:20:12.443Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 96,
+    "duration": 16,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "conversion-focused Enterprise Software (erp/crm) solution for knowledge base refresh",
+    "description": "Need enterprise software (erp/crm) for a NGO operations scenario connected to knowledge base refresh and serving sales teams.\nThe implementation should prioritize clean API boundaries, remain conversion-focused, and fit stakeholder review cycle requirements for a quality-sensitive deliverable.\nExpected outcome includes review notes and presentation-ready output, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nPriority is to keep the work aligned with cleaner decision support and clean stakeholder communication.\nPlanned budget is 1083 to 6933 JD with a likely delivery window of 7 weeks.",
+    "category_id": 3,
+    "budget_min": 1083,
+    "budget_max": 6933,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "weeks",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "Enterprise Software (ERP/CRM)",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "advanced",
+      "audience_segment": "B2B buyers",
+      "business_context": "knowledge base refresh",
+      "primary_goal": "raise conversion",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "development",
+      "seed_leaf_slug": "enterprise-software-erpcrm"
+    },
+    "is_deleted": false,
+    "created_at": "2026-01-26T09:55:38.443Z",
+    "updated_at": "2026-01-30T09:55:38.443Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 113,
+    "duration": 7,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Database Programming build for product owners",
+    "description": "Need database programming for a education scenario connected to client onboarding improvement and serving product owners.\nThe implementation should prioritize deployment readiness, remain academic, and fit regional operations requirements with room for future expansion.\nExpected outcome includes implementation checklist and responsive UI flow, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nPlanned budget is 303 to 1250 JD with a likely delivery window of 1 weeks.",
+    "category_id": 3,
+    "budget_min": 303,
+    "budget_max": 1250,
+    "currency": "JD",
+    "duration_value": 1,
+    "duration_unit": "weeks",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Academic Programming",
+      "sub_sub_category_name": "Database Programming",
+      "sub_category_id": 8,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Node.js",
+        "PostgreSQL",
+        "REST API"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "standard",
+      "audience_segment": "conference attendees",
+      "business_context": "client onboarding improvement",
+      "primary_goal": "strengthen brand consistency",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "development",
+      "seed_leaf_slug": "database-programming"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-02T21:07:38.443Z",
+    "updated_at": "2025-08-11T21:07:38.443Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 128,
+    "duration": 1,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "Real Estate Price Tracking Tools with data integrity",
+    "description": "Need price tracking tools for a real estate scenario connected to market entry support and serving department managers.\nThe implementation should prioritize data integrity, remain data-driven, and fit local rollout requirements within an existing workflow.\nExpected outcome includes structured documentation and clear file organization, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe output should support department managers with clear approval-ready structure.\nPlanned budget is 117 to 386 JD with a likely delivery window of 8 days.",
+    "category_id": 3,
+    "budget_min": 117,
+    "budget_max": 386,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "Price Tracking Tools",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Automation",
+        "Parsing",
+        "Scheduling"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "standard",
+      "audience_segment": "community members",
+      "business_context": "market entry support",
+      "primary_goal": "speed up delivery",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "development",
+      "seed_leaf_slug": "price-tracking-tools"
+    },
+    "is_deleted": false,
+    "created_at": "2026-01-12T04:17:47.444Z",
+    "updated_at": "2026-01-26T04:17:47.444Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 160,
+    "duration": 8,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Signage & Banners set supporting support teams and local customers",
+    "description": "We need signage & banners for a construction use case tied to investor-facing preparation and aimed at local customers.\nThe visual direction should feel clean corporate and clean, while staying suitable for cross-functional deployment and migration workstreams.\nExpected delivery includes presentation-ready output and review checkpoint summary, with clear hierarchy, production-friendly files, and strong presentation quality for support teams.\nThe final package should stay practical for day-to-day use and future iteration.\nTarget range is 288 to 1108 JD with an expected timeline of about 11 days.",
+    "category_id": 1,
+    "budget_min": 288,
+    "budget_max": 1108,
+    "currency": "JD",
+    "duration_value": 11,
+    "duration_unit": "days",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Business Design",
+      "sub_sub_category_name": "Signage & Banners",
+      "sub_category_id": 1,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "growth",
+      "audience_segment": "local customers",
+      "business_context": "investor-facing preparation",
+      "primary_goal": "reduce manual work",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "design",
+      "seed_leaf_slug": "signage-banners"
+    },
+    "is_deleted": false,
+    "created_at": "2025-11-18T05:55:32.444Z",
+    "updated_at": "2025-11-30T05:55:32.444Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 6,
+    "duration": 11,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Editable Templates package for Beauty launch",
+    "description": "We need editable templates for a beauty use case tied to proposal readiness and aimed at research supervisors.\nThe visual direction should feel editorial and clear, while staying suitable for multi-branch rollout and launch workstreams.\nExpected delivery includes team-facing guidance notes and research-backed structure, with clear hierarchy, production-friendly files, and strong presentation quality for founders.\nPriority is to keep the work aligned with better launch readiness and clean stakeholder communication.\nTarget range is 124 to 482 JD with an expected timeline of about 11 days.",
+    "category_id": 1,
+    "budget_min": 124,
+    "budget_max": 482,
+    "currency": "JD",
+    "duration_value": 11,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Academic Design",
+      "sub_sub_category_name": "Editable Templates",
+      "sub_category_id": 2,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "advanced",
+      "audience_segment": "research supervisors",
+      "business_context": "proposal readiness",
+      "primary_goal": "simplify onboarding",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "design",
+      "seed_leaf_slug": "editable-templates"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-27T21:33:37.444Z",
+    "updated_at": "2025-09-09T21:33:37.444Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 24,
+    "duration": 11,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "practical Personal Presentations deliverables for quarterly campaign support",
+    "description": "We need personal presentations for a events use case tied to quarterly campaign support and aimed at technical users.\nThe visual direction should feel premium and practical, while staying suitable for growth-phase expansion and pilot workstreams.\nExpected delivery includes deployment-ready module and structured documentation, with clear hierarchy, production-friendly files, and strong presentation quality for program coordinators.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nTarget range is 234 to 1171 JD with an expected timeline of about 20 days.",
+    "category_id": 1,
+    "budget_min": 234,
+    "budget_max": 1171,
+    "currency": "JD",
+    "duration_value": 20,
+    "duration_unit": "days",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Personal Design",
+      "sub_sub_category_name": "Personal Presentations",
+      "sub_category_id": 3,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "premium",
+      "audience_segment": "technical users",
+      "business_context": "quarterly campaign support",
+      "primary_goal": "support automation",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "design",
+      "seed_leaf_slug": "personal-presentations"
+    },
+    "is_deleted": false,
+    "created_at": "2025-06-19T12:12:42.444Z",
+    "updated_at": "2025-06-23T12:12:42.444Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 41,
+    "duration": 20,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Presentations package supporting shorter approval cycles",
+    "description": "Looking for presentations that fits media needs and supports operations standardization for internal teams.\nThe writing should be publication-ready, polished, and structured to help with upgrade presentation quality while remaining easy to review and approve.\nThe final handoff should include review checkpoint summary and revision-ready working files, with accurate wording, logical flow, and consistent tone across sections.\nThe output should support operations teams with clean stakeholder presentation.\nBudget expectations fall between 333 and 1413 JD, with an estimated completion window of 7 days.",
+    "category_id": 2,
+    "budget_min": 333,
+    "budget_max": 1413,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "days",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "Presentations",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "enterprise",
+      "audience_segment": "internal teams",
+      "business_context": "operations standardization",
+      "primary_goal": "upgrade presentation quality",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "presentations"
+    },
+    "is_deleted": false,
+    "created_at": "2025-04-04T22:53:24.444Z",
+    "updated_at": "2025-04-22T22:53:24.444Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 59,
+    "duration": 7,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "Clear Business Publication Support for investors",
+    "description": "Looking for publication support that fits professional services needs and supports internal process refresh for investors.\nThe writing should be clear business, minimal, and structured to help with improve clarity while remaining easy to review and approve.\nThe final handoff should include handoff-ready assets and clean database integration, with accurate wording, logical flow, and consistent tone across sections.\nThe final package should stay practical for day-to-day use and future iteration.\nBudget expectations fall between 344 and 1443 JD, with an estimated completion window of 7 days.",
+    "category_id": 2,
+    "budget_min": 344,
+    "budget_max": 1443,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "days",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Publication Support",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "starter",
+      "audience_segment": "investors",
+      "business_context": "internal process refresh",
+      "primary_goal": "improve clarity",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "publication-support"
+    },
+    "is_deleted": false,
+    "created_at": "2025-09-13T17:53:27.444Z",
+    "updated_at": "2025-09-27T17:53:27.444Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 82,
+    "duration": 7,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Retail Memoirs & Diaries with clear decision-ready structure",
+    "description": "Looking for memoirs & diaries that fits retail needs and supports brand refresh cycle for young professionals.\nThe writing should be conversion-aware, modern, and structured to help with document workflows while remaining easy to review and approve.\nThe final handoff should include brand-consistent assets and deployment-ready module, with accurate wording, logical flow, and consistent tone across sections.\nPriority is to keep the work aligned with cleaner reporting quality and clean stakeholder communication.\nBudget expectations fall between 74 and 306 JD, with an estimated completion window of 8 days.",
+    "category_id": 2,
+    "budget_min": 74,
+    "budget_max": 306,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Personal Writing",
+      "sub_sub_category_name": "Memoirs & Diaries",
+      "sub_category_id": 6,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "starter",
+      "audience_segment": "young professionals",
+      "business_context": "brand refresh cycle",
+      "primary_goal": "document workflows",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "writing",
+      "seed_leaf_slug": "memoirs-diaries"
+    },
+    "is_deleted": false,
+    "created_at": "2026-03-06T17:30:35.444Z",
+    "updated_at": "2026-03-07T17:30:35.444Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 99,
+    "duration": 8,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "Cloud-native Applications implementation for Travel expansion",
+    "description": "Need cloud-native applications for a travel scenario connected to new service launch and serving procurement leads.\nThe implementation should prioritize extensible architecture, remain professional, and fit regional operations requirements with room for future expansion.\nExpected outcome includes revision-ready working files and editable source files, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nPlanned budget is 720 to 3420 JD with a likely delivery window of 14 days.",
+    "category_id": 3,
+    "budget_min": 720,
+    "budget_max": 3420,
+    "currency": "JD",
+    "duration_value": 14,
+    "duration_unit": "days",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "Cloud-Native Applications",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Docker",
+        "CI/CD",
+        "Deployment"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "advanced",
+      "audience_segment": "executive stakeholders",
+      "business_context": "new service launch",
+      "primary_goal": "increase credibility",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "development",
+      "seed_leaf_slug": "cloud-native-applications"
+    },
+    "is_deleted": false,
+    "created_at": "2025-04-03T15:05:54.444Z",
+    "updated_at": "2025-04-15T15:05:54.444Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 116,
+    "duration": 14,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "confident Desktop Application Development solution for cross-team coordination",
+    "description": "Need desktop application development for a fintech scenario connected to cross-team coordination and serving marketing coordinators.\nThe implementation should prioritize scalable structure, remain confident, and fit local rollout requirements within an existing workflow.\nExpected outcome includes responsive UI flow and implementation checklist, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe output should support marketing coordinators with clear approval-ready structure.\nPlanned budget is 322 to 1383 JD with a likely delivery window of 6 days.",
+    "category_id": 3,
+    "budget_min": 322,
+    "budget_max": 1383,
+    "currency": "JD",
+    "duration_value": 6,
+    "duration_unit": "days",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Academic Programming",
+      "sub_sub_category_name": "Desktop Application Development",
+      "sub_category_id": 8,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "advanced",
+      "audience_segment": "online shoppers",
+      "business_context": "cross-team coordination",
+      "primary_goal": "win stakeholder approval",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "development",
+      "seed_leaf_slug": "desktop-application-development"
+    },
+    "is_deleted": false,
+    "created_at": "2025-07-19T17:55:18.445Z",
+    "updated_at": "2025-07-29T17:55:18.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 146,
+    "duration": 6,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Custom Gui Tools build for research supervisors",
+    "description": "Need custom gui tools for a e-commerce scenario connected to customer experience upgrade and serving research supervisors.\nThe implementation should prioritize secure access flow, remain fast-turnaround, and fit cross-functional deployment requirements as a new initiative.\nExpected outcome includes quality assurance pass and brand-consistent assets, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe final package should stay practical for day-to-day use and future iteration.\nPlanned budget is 306 to 1422 JD with a likely delivery window of 3 weeks.",
+    "category_id": 3,
+    "budget_min": 306,
+    "budget_max": 1422,
+    "currency": "JD",
+    "duration_value": 3,
+    "duration_unit": "weeks",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "Custom GUI Tools",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "JavaScript",
+        "React",
+        "UI Integration"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "advanced",
+      "audience_segment": "students",
+      "business_context": "customer experience upgrade",
+      "primary_goal": "support launch readiness",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "development",
+      "seed_leaf_slug": "custom-gui-tools"
+    },
+    "is_deleted": false,
+    "created_at": "2025-03-30T01:28:29.445Z",
+    "updated_at": "2025-04-03T01:28:29.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 163,
+    "duration": 3,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "Modern Environmental Design rollout for multi-branch rollout",
+    "description": "We need environmental design for a hospitality use case tied to procurement workflow cleanup and aimed at job applicants.\nThe visual direction should feel modern and premium, while staying suitable for multi-branch rollout and validation workstreams.\nExpected delivery includes editable source files and polished final copy, with clear hierarchy, production-friendly files, and strong presentation quality for sales teams.\nPriority is to keep the work aligned with cleaner decision support and clean stakeholder communication.\nTarget range is 362 to 1447 JD with an expected timeline of about 12 days.",
+    "category_id": 1,
+    "budget_min": 362,
+    "budget_max": 1447,
+    "currency": "JD",
+    "duration_value": 12,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Business Design",
+      "sub_sub_category_name": "Environmental Design",
+      "sub_category_id": 1,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "premium",
+      "audience_segment": "job applicants",
+      "business_context": "procurement workflow cleanup",
+      "primary_goal": "prepare for publication",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "design",
+      "seed_leaf_slug": "environmental-design"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-28T15:40:51.445Z",
+    "updated_at": "2025-09-07T15:40:51.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 9,
+    "duration": 12,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Mind Maps & Illustrations set supporting product owners and premium clients",
+    "description": "We need mind maps & illustrations for a agriculture use case tied to lead generation support and aimed at premium clients.\nThe visual direction should feel data-led and engaging, while staying suitable for growth-phase expansion and migration workstreams.\nExpected delivery includes research-backed structure and team-facing guidance notes, with clear hierarchy, production-friendly files, and strong presentation quality for product owners.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nTarget range is 340 to 1318 JD with an expected timeline of about 16 days.",
+    "category_id": 1,
+    "budget_min": 340,
+    "budget_max": 1318,
+    "currency": "JD",
+    "duration_value": 16,
+    "duration_unit": "days",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Academic Design",
+      "sub_sub_category_name": "Mind Maps & Illustrations",
+      "sub_category_id": 2,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "enterprise",
+      "audience_segment": "premium clients",
+      "business_context": "lead generation support",
+      "primary_goal": "raise conversion",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "design",
+      "seed_leaf_slug": "mind-maps-illustrations"
+    },
+    "is_deleted": false,
+    "created_at": "2025-04-12T01:29:29.445Z",
+    "updated_at": "2025-04-29T01:29:29.445Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 27,
+    "duration": 16,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "On-demand Rapid Design package for Healthcare launch",
+    "description": "We need on-demand rapid design for a healthcare use case tied to department handoff and aimed at B2B buyers.\nThe visual direction should feel bold visual and conversion-focused, while staying suitable for bilingual launch support and launch workstreams.\nExpected delivery includes launch-ready package and quality assurance pass, with clear hierarchy, production-friendly files, and strong presentation quality for department managers.\nThe output should support department managers with clean stakeholder presentation.\nTarget range is 177 to 953 JD with an expected timeline of about 9 days.",
+    "category_id": 1,
+    "budget_min": 177,
+    "budget_max": 953,
+    "currency": "JD",
+    "duration_value": 9,
+    "duration_unit": "days",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Personal Design",
+      "sub_sub_category_name": "On-Demand Rapid Design",
+      "sub_category_id": 3,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "urgent",
+      "audience_segment": "B2B buyers",
+      "business_context": "department handoff",
+      "primary_goal": "strengthen brand consistency",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "on-demand-rapid-design"
+    },
+    "is_deleted": false,
+    "created_at": "2025-11-15T20:32:39.445Z",
+    "updated_at": "2025-11-21T20:32:39.445Z",
+    "usage_count": 0,
+    "max_usage": 3,
+    "sub_sub_category_id": 44,
+    "duration": 9,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "academic User Manuals crafted for support teams",
+    "description": "Looking for user manuals that fits logistics needs and supports knowledge base refresh for conference attendees.\nThe writing should be concise professional, academic, and structured to help with speed up delivery while remaining easy to review and approve.\nThe final handoff should include polished final copy and review notes, with accurate wording, logical flow, and consistent tone across sections.\nThe final package should stay practical for day-to-day use and future iteration.\nBudget expectations fall between 121 and 466 JD, with an estimated completion window of 2 days.",
+    "category_id": 2,
+    "budget_min": 121,
+    "budget_max": 466,
+    "currency": "JD",
+    "duration_value": 2,
+    "duration_unit": "days",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "User Manuals",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "Technical Documentation",
+        "Instructional Design",
+        "Process Clarity"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "starter",
+      "audience_segment": "conference attendees",
+      "business_context": "knowledge base refresh",
+      "primary_goal": "speed up delivery",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "user-manuals"
+    },
+    "is_deleted": false,
+    "created_at": "2025-06-29T09:48:15.445Z",
+    "updated_at": "2025-07-08T09:48:15.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 62,
+    "duration": 2,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "Scientific Abstracts package supporting better launch readiness",
+    "description": "Looking for scientific abstracts that fits food & beverage needs and supports client onboarding improvement for community members.\nThe writing should be publication-ready, data-driven, and structured to help with reduce manual work while remaining easy to review and approve.\nThe final handoff should include clean database integration and handoff-ready assets, with accurate wording, logical flow, and consistent tone across sections.\nPriority is to keep the work aligned with better launch readiness and clean stakeholder communication.\nBudget expectations fall between 90 and 381 JD, with an estimated completion window of 8 days.",
+    "category_id": 2,
+    "budget_min": 90,
+    "budget_max": 381,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Scientific Abstracts",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "standard",
+      "audience_segment": "community members",
+      "business_context": "client onboarding improvement",
+      "primary_goal": "reduce manual work",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "writing",
+      "seed_leaf_slug": "scientific-abstracts"
+    },
+    "is_deleted": false,
+    "created_at": "2025-05-24T04:31:06.445Z",
+    "updated_at": "2025-06-09T04:31:06.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 85,
+    "duration": 8,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Clear Business Card & Gift Texts for local customers",
+    "description": "Looking for card & gift texts that fits legal services needs and supports market entry support for local customers.\nThe writing should be clear business, clean, and structured to help with simplify onboarding while remaining easy to review and approve.\nThe final handoff should include clear file organization and launch-ready package, with accurate wording, logical flow, and consistent tone across sections.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nBudget expectations fall between 35 and 123 JD, with an estimated completion window of 5 days.",
+    "category_id": 2,
+    "budget_min": 35,
+    "budget_max": 123,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Personal Writing",
+      "sub_sub_category_name": "Card & Gift Texts",
+      "sub_category_id": 6,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "growth",
+      "audience_segment": "local customers",
+      "business_context": "market entry support",
+      "primary_goal": "simplify onboarding",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "writing",
+      "seed_leaf_slug": "card-gift-texts"
+    },
+    "is_deleted": false,
+    "created_at": "2025-07-25T09:07:44.445Z",
+    "updated_at": "2025-08-06T09:07:44.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 102,
+    "duration": 5,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Artificial Intelligence (ai) project supporting shorter approval cycles",
+    "description": "Need artificial intelligence (ai) for a manufacturing scenario connected to investor-facing preparation and serving operations teams.\nThe implementation should prioritize maintainability, remain clear, and fit local rollout requirements within an existing workflow.\nExpected outcome includes review notes and presentation-ready output, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe output should support operations teams with clear approval-ready structure.\nPlanned budget is 853 to 4593 JD with a likely delivery window of 7 weeks.",
+    "category_id": 3,
+    "budget_min": 853,
+    "budget_max": 4593,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "weeks",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "Artificial Intelligence (AI)",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Python",
+        "Model Integration",
+        "Data Pipelines"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "standard",
+      "audience_segment": "research supervisors",
+      "business_context": "investor-facing preparation",
+      "primary_goal": "support automation",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "development",
+      "seed_leaf_slug": "artificial-intelligence-ai"
+    },
+    "is_deleted": false,
+    "created_at": "2025-04-08T10:33:51.445Z",
+    "updated_at": "2025-04-08T10:33:51.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 119,
+    "duration": 7,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "Research Paper Programming Support implementation for Sports expansion",
+    "description": "Need research paper programming support for a sports scenario connected to proposal readiness and serving executive stakeholders.\nThe implementation should prioritize automation reliability, remain practical, and fit cross-functional deployment requirements as a new initiative.\nExpected outcome includes implementation checklist and responsive UI flow, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe final package should stay practical for day-to-day use and future iteration.\nPlanned budget is 366 to 1751 JD with a likely delivery window of 23 days.",
+    "category_id": 3,
+    "budget_min": 366,
+    "budget_max": 1751,
+    "currency": "JD",
+    "duration_value": 23,
+    "duration_unit": "days",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Academic Programming",
+      "sub_sub_category_name": "Research Paper Programming Support",
+      "sub_category_id": 8,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "premium",
+      "audience_segment": "technical users",
+      "business_context": "proposal readiness",
+      "primary_goal": "upgrade presentation quality",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "development",
+      "seed_leaf_slug": "research-paper-programming-support"
+    },
+    "is_deleted": false,
+    "created_at": "2025-05-17T11:49:52.445Z",
+    "updated_at": "2025-05-26T11:49:52.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 149,
+    "duration": 23,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "polished Personal Websites solution for quarterly campaign support",
+    "description": "Need personal websites for a NGO operations scenario connected to quarterly campaign support and serving client-facing staff.\nThe implementation should prioritize integration clarity, remain polished, and fit multi-branch rollout requirements under tight review cycles.\nExpected outcome includes structured documentation and clear file organization, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nPriority is to keep the work aligned with cleaner reporting quality and clean stakeholder communication.\nPlanned budget is 423 to 1674 JD with a likely delivery window of 26 days.",
+    "category_id": 3,
+    "budget_min": 423,
+    "budget_max": 1674,
+    "currency": "JD",
+    "duration_value": 26,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "Personal Websites",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "JavaScript",
+        "React",
+        "UI Integration"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "enterprise",
+      "audience_segment": "internal teams",
+      "business_context": "quarterly campaign support",
+      "primary_goal": "improve clarity",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "development",
+      "seed_leaf_slug": "personal-websites"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-14T15:42:55.445Z",
+    "updated_at": "2025-08-18T15:42:55.445Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 166,
+    "duration": 26,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "Visual Content Creation system for investors engagement in Education",
+    "description": "We need visual content creation for a education use case tied to operations standardization and aimed at investors.\nThe visual direction should feel refined and minimal, while staying suitable for growth-phase expansion and internal adoption workstreams.\nExpected delivery includes presentation-ready output and review checkpoint summary, with clear hierarchy, production-friendly files, and strong presentation quality for procurement leads.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nTarget range is 193 to 1075 JD with an expected timeline of about 9 days.",
+    "category_id": 1,
+    "budget_min": 193,
+    "budget_max": 1075,
+    "currency": "JD",
+    "duration_value": 9,
+    "duration_unit": "days",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Business Design",
+      "sub_sub_category_name": "Visual Content Creation",
+      "sub_category_id": 1,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "urgent",
+      "audience_segment": "investors",
+      "business_context": "operations standardization",
+      "primary_goal": "document workflows",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "design",
+      "seed_leaf_slug": "visual-content-creation"
+    },
+    "is_deleted": false,
+    "created_at": "2026-03-17T12:14:06.445Z",
+    "updated_at": "2026-03-25T12:14:06.445Z",
+    "usage_count": 0,
+    "max_usage": 3,
+    "sub_sub_category_id": 12,
+    "duration": 9,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "High-contrast Fast & Collaborative Design rollout for bilingual launch support",
+    "description": "We need fast & collaborative design for a real estate use case tied to internal process refresh and aimed at young professionals.\nThe visual direction should feel high-contrast and modern, while staying suitable for bilingual launch support and validation workstreams.\nExpected delivery includes team-facing guidance notes and research-backed structure, with clear hierarchy, production-friendly files, and strong presentation quality for marketing coordinators.\nThe output should support marketing coordinators with clean stakeholder presentation.\nTarget range is 103 to 486 JD with an expected timeline of about 7 days.",
+    "category_id": 1,
+    "budget_min": 103,
+    "budget_max": 486,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "days",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Academic Design",
+      "sub_sub_category_name": "Fast & Collaborative Design",
+      "sub_category_id": 2,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "starter",
+      "audience_segment": "young professionals",
+      "business_context": "internal process refresh",
+      "primary_goal": "increase credibility",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "fast-collaborative-design"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-10T20:55:11.445Z",
+    "updated_at": "2025-10-12T20:55:11.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 30,
+    "duration": 7,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "Construction Policies & Procedures with clear decision-ready structure",
+    "description": "Looking for policies & procedures that fits construction needs and supports brand refresh cycle for executive stakeholders.\nThe writing should be persuasive, professional, and structured to help with win stakeholder approval while remaining easy to review and approve.\nThe final handoff should include deployment-ready module and structured documentation, with accurate wording, logical flow, and consistent tone across sections.\nThe final package should stay practical for day-to-day use and future iteration.\nBudget expectations fall between 78 and 340 JD, with an estimated completion window of 6 days.",
+    "category_id": 2,
+    "budget_min": 78,
+    "budget_max": 340,
+    "currency": "JD",
+    "duration_value": 6,
+    "duration_unit": "days",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "Policies & Procedures",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "standard",
+      "audience_segment": "executive stakeholders",
+      "business_context": "brand refresh cycle",
+      "primary_goal": "win stakeholder approval",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "policies-procedures"
+    },
+    "is_deleted": false,
+    "created_at": "2025-08-26T19:31:43.445Z",
+    "updated_at": "2025-09-03T19:31:43.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 47,
+    "duration": 6,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Research Papers for Beauty new service launch",
+    "description": "Looking for research papers that fits beauty needs and supports new service launch for online shoppers.\nThe writing should be executive, confident, and structured to help with support launch readiness while remaining easy to review and approve.\nThe final handoff should include review checkpoint summary and revision-ready working files, with accurate wording, logical flow, and consistent tone across sections.\nPriority is to keep the work aligned with cleaner decision support and clean stakeholder communication.\nBudget expectations fall between 325 and 1500 JD, with an estimated completion window of 3 weeks.",
+    "category_id": 2,
+    "budget_min": 325,
+    "budget_max": 1500,
+    "currency": "JD",
+    "duration_value": 3,
+    "duration_unit": "weeks",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Research Papers",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "advanced",
+      "audience_segment": "online shoppers",
+      "business_context": "new service launch",
+      "primary_goal": "support launch readiness",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "writing",
+      "seed_leaf_slug": "research-papers"
+    },
+    "is_deleted": false,
+    "created_at": "2025-06-21T16:42:03.445Z",
+    "updated_at": "2025-06-29T16:42:03.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 71,
+    "duration": 3,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "fast-turnaround Medical Writing crafted for product owners",
+    "description": "Looking for medical writing that fits events needs and supports cross-team coordination for students.\nThe writing should be concise professional, fast-turnaround, and structured to help with prepare for publication while remaining easy to review and approve.\nThe final handoff should include handoff-ready assets and clean database integration, with accurate wording, logical flow, and consistent tone across sections.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nBudget expectations fall between 413 and 1916 JD, with an estimated completion window of 5 days.",
+    "category_id": 2,
+    "budget_min": 413,
+    "budget_max": 1916,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Medical Writing",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "premium",
+      "audience_segment": "students",
+      "business_context": "cross-team coordination",
+      "primary_goal": "prepare for publication",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "writing",
+      "seed_leaf_slug": "medical-writing"
+    },
+    "is_deleted": false,
+    "created_at": "2025-11-16T19:20:25.445Z",
+    "updated_at": "2025-11-18T19:20:25.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 88,
+    "duration": 5,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "Frontend Development build for department managers",
+    "description": "Need frontend development for a media scenario connected to customer experience upgrade and serving department managers.\nThe implementation should prioritize data integrity, remain premium, and fit local rollout requirements within an existing workflow.\nExpected outcome includes brand-consistent assets and deployment-ready module, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe output should support department managers with clear approval-ready structure.\nPlanned budget is 479 to 2200 JD with a likely delivery window of 3 weeks.",
+    "category_id": 3,
+    "budget_min": 479,
+    "budget_max": 2200,
+    "currency": "JD",
+    "duration_value": 3,
+    "duration_unit": "weeks",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "Frontend Development",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "JavaScript",
+        "React",
+        "UI Integration"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "enterprise",
+      "audience_segment": "job applicants",
+      "business_context": "customer experience upgrade",
+      "primary_goal": "raise conversion",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "development",
+      "seed_leaf_slug": "frontend-development"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-09T20:55:37.445Z",
+    "updated_at": "2025-10-14T20:55:37.445Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 105,
+    "duration": 3,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Professional Services Computer Vision with performance stability",
+    "description": "Need computer vision for a professional services scenario connected to procurement workflow cleanup and serving support teams.\nThe implementation should prioritize performance stability, remain engaging, and fit cross-functional deployment requirements as a new initiative.\nExpected outcome includes revision-ready working files and editable source files, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe final package should stay practical for day-to-day use and future iteration.\nPlanned budget is 1490 to 8335 JD with a likely delivery window of 6 weeks.",
+    "category_id": 3,
+    "budget_min": 1490,
+    "budget_max": 8335,
+    "currency": "JD",
+    "duration_value": 6,
+    "duration_unit": "weeks",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "Computer Vision",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Python",
+        "Model Integration",
+        "Data Pipelines"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "advanced",
+      "audience_segment": "premium clients",
+      "business_context": "procurement workflow cleanup",
+      "primary_goal": "strengthen brand consistency",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "development",
+      "seed_leaf_slug": "computer-vision"
+    },
+    "is_deleted": false,
+    "created_at": "2025-09-18T17:58:34.445Z",
+    "updated_at": "2025-10-01T17:58:34.445Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 122,
+    "duration": 6,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "Code Tutoring project supporting better launch readiness",
+    "description": "Need code tutoring for a retail scenario connected to lead generation support and serving founders.\nThe implementation should prioritize monitoring readiness, remain conversion-focused, and fit multi-branch rollout requirements under tight review cycles.\nExpected outcome includes responsive UI flow and implementation checklist, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nPriority is to keep the work aligned with better launch readiness and clean stakeholder communication.\nPlanned budget is 62 to 307 JD with a likely delivery window of 4 days.",
+    "category_id": 3,
+    "budget_min": 62,
+    "budget_max": 307,
+    "currency": "JD",
+    "duration_value": 4,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Academic Programming",
+      "sub_sub_category_name": "Code Tutoring",
+      "sub_category_id": 8,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "urgent",
+      "audience_segment": "B2B buyers",
+      "business_context": "lead generation support",
+      "primary_goal": "speed up delivery",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "development",
+      "seed_leaf_slug": "code-tutoring"
+    },
+    "is_deleted": false,
+    "created_at": "2025-12-21T23:52:47.445Z",
+    "updated_at": "2026-01-07T23:52:47.445Z",
+    "usage_count": 0,
+    "max_usage": 3,
+    "sub_sub_category_id": 152,
+    "duration": 4,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Educational Projects implementation for Travel expansion",
+    "description": "Need educational projects for a travel scenario connected to department handoff and serving program coordinators.\nThe implementation should prioritize testing coverage, remain academic, and fit growth-phase expansion requirements with recurring stakeholder feedback.\nExpected outcome includes quality assurance pass and brand-consistent assets, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nPlanned budget is 194 to 847 JD with a likely delivery window of 8 days.",
+    "category_id": 3,
+    "budget_min": 194,
+    "budget_max": 847,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "Educational Projects",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "starter",
+      "audience_segment": "conference attendees",
+      "business_context": "department handoff",
+      "primary_goal": "reduce manual work",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "development",
+      "seed_leaf_slug": "educational-projects"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-22T15:05:01.445Z",
+    "updated_at": "2025-10-22T15:05:01.445Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 169,
+    "duration": 8,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "data-driven Interactive Content Design deliverables for knowledge base refresh",
+    "description": "We need interactive content design for a fintech use case tied to knowledge base refresh and aimed at community members.\nThe visual direction should feel minimal and data-driven, while staying suitable for bilingual launch support and stabilization workstreams.\nExpected delivery includes editable source files and polished final copy, with clear hierarchy, production-friendly files, and strong presentation quality for operations teams.\nThe output should support operations teams with clean stakeholder presentation.\nTarget range is 420 to 1786 JD with an expected timeline of about 5 days.",
+    "category_id": 1,
+    "budget_min": 420,
+    "budget_max": 1786,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Business Design",
+      "sub_sub_category_name": "Interactive Content Design",
+      "sub_category_id": 1,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design",
+        "Figma",
+        "User Flow",
+        "Prototype Mapping"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "growth",
+      "audience_segment": "community members",
+      "business_context": "knowledge base refresh",
+      "primary_goal": "simplify onboarding",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "interactive-content-design"
+    },
+    "is_deleted": false,
+    "created_at": "2026-01-02T18:59:07.446Z",
+    "updated_at": "2026-01-10T18:59:07.446Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 15,
+    "duration": 5,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Brand Style Guide system for local customers engagement in E-commerce",
+    "description": "We need brand style guide for a e-commerce use case tied to client onboarding improvement and aimed at local customers.\nThe visual direction should feel presentation-led and clean, while staying suitable for single-market delivery and internal adoption workstreams.\nExpected delivery includes research-backed structure and team-facing guidance notes, with clear hierarchy, production-friendly files, and strong presentation quality for executive stakeholders.\nThe final package should stay practical for day-to-day use and future iteration.\nTarget range is 358 to 1298 JD with an expected timeline of about 4 weeks.",
+    "category_id": 1,
+    "budget_min": 358,
+    "budget_max": 1298,
+    "currency": "JD",
+    "duration_value": 4,
+    "duration_unit": "weeks",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Personal Design",
+      "sub_sub_category_name": "Brand Style Guide",
+      "sub_category_id": 3,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design",
+        "Brand Strategy",
+        "Visual Identity",
+        "Typography"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "advanced",
+      "audience_segment": "local customers",
+      "business_context": "client onboarding improvement",
+      "primary_goal": "support automation",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "brand-style-guide"
+    },
+    "is_deleted": false,
+    "created_at": "2025-07-25T19:39:06.446Z",
+    "updated_at": "2025-07-26T19:39:06.446Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 33,
+    "duration": 4,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Instructional Ad Copywriting for research supervisors",
+    "description": "Looking for ad copywriting that fits hospitality needs and supports market entry support for research supervisors.\nThe writing should be instructional, clear, and structured to help with upgrade presentation quality while remaining easy to review and approve.\nThe final handoff should include launch-ready package and quality assurance pass, with accurate wording, logical flow, and consistent tone across sections.\nPriority is to keep the work aligned with cleaner reporting quality and clean stakeholder communication.\nBudget expectations fall between 116 and 530 JD, with an estimated completion window of 13 days.",
+    "category_id": 2,
+    "budget_min": 116,
+    "budget_max": 530,
+    "currency": "JD",
+    "duration_value": 13,
+    "duration_unit": "days",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "Ad Copywriting",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "SEO Writing",
+        "Hook Writing",
+        "Tone Adaptation"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "advanced",
+      "audience_segment": "research supervisors",
+      "business_context": "market entry support",
+      "primary_goal": "upgrade presentation quality",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "writing",
+      "seed_leaf_slug": "ad-copywriting"
+    },
+    "is_deleted": false,
+    "created_at": "2025-09-26T13:16:33.446Z",
+    "updated_at": "2025-10-11T13:16:33.446Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 50,
+    "duration": 13,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "Agriculture Thesis & Dissertation Assistance with clear decision-ready structure",
+    "description": "Looking for thesis & dissertation assistance that fits agriculture needs and supports investor-facing preparation for technical users.\nThe writing should be persuasive, practical, and structured to help with improve clarity while remaining easy to review and approve.\nThe final handoff should include polished final copy and review notes, with accurate wording, logical flow, and consistent tone across sections.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nBudget expectations fall between 984 and 4033 JD, with an estimated completion window of 9 weeks.",
+    "category_id": 2,
+    "budget_min": 984,
+    "budget_max": 4033,
+    "currency": "JD",
+    "duration_value": 9,
+    "duration_unit": "weeks",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Thesis & Dissertation Assistance",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "enterprise",
+      "audience_segment": "technical users",
+      "business_context": "investor-facing preparation",
+      "primary_goal": "improve clarity",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "writing",
+      "seed_leaf_slug": "thesis-dissertation-assistance"
+    },
+    "is_deleted": false,
+    "created_at": "2025-07-29T06:16:37.446Z",
+    "updated_at": "2025-08-12T06:16:37.446Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 74,
+    "duration": 9,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Cover Letters for Healthcare proposal readiness",
+    "description": "Looking for cover letters that fits healthcare needs and supports proposal readiness for internal teams.\nThe writing should be executive, polished, and structured to help with document workflows while remaining easy to review and approve.\nThe final handoff should include clean database integration and handoff-ready assets, with accurate wording, logical flow, and consistent tone across sections.\nThe output should support marketing coordinators with clear approval-ready structure.\nBudget expectations fall between 47 and 184 JD, with an estimated completion window of 5 days.",
+    "category_id": 2,
+    "budget_min": 47,
+    "budget_max": 184,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Personal Writing",
+      "sub_sub_category_name": "Cover Letters",
+      "sub_category_id": 6,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "Resume Structuring",
+        "Career Positioning",
+        "ATS Optimization"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "enterprise",
+      "audience_segment": "internal teams",
+      "business_context": "proposal readiness",
+      "primary_goal": "document workflows",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "cover-letters"
+    },
+    "is_deleted": false,
+    "created_at": "2025-09-13T15:47:46.446Z",
+    "updated_at": "2025-09-20T15:47:46.446Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 91,
+    "duration": 5,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "minimal Cms Development solution for quarterly campaign support",
+    "description": "Need cms development for a logistics scenario connected to quarterly campaign support and serving research supervisors.\nThe implementation should prioritize secure access flow, remain minimal, and fit cross-functional deployment requirements as a new initiative.\nExpected outcome includes clear file organization and launch-ready package, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe final package should stay practical for day-to-day use and future iteration.\nPlanned budget is 302 to 1609 JD with a likely delivery window of 12 days.",
+    "category_id": 3,
+    "budget_min": 302,
+    "budget_max": 1609,
+    "currency": "JD",
+    "duration_value": 12,
+    "duration_unit": "days",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Business Programming",
+      "sub_sub_category_name": "CMS Development",
+      "sub_category_id": 7,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "urgent",
+      "audience_segment": "investors",
+      "business_context": "quarterly campaign support",
+      "primary_goal": "increase credibility",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "development",
+      "seed_leaf_slug": "cms-development"
+    },
+    "is_deleted": false,
+    "created_at": "2025-05-18T11:54:58.446Z",
+    "updated_at": "2025-06-05T11:54:58.446Z",
+    "usage_count": 0,
+    "max_usage": 3,
+    "sub_sub_category_id": 108,
+    "duration": 12,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Academic Project Development build for sales teams",
+    "description": "Need academic project development for a food & beverage scenario connected to operations standardization and serving sales teams.\nThe implementation should prioritize clean API boundaries, remain modern, and fit multi-branch rollout requirements under tight review cycles.\nExpected outcome includes review notes and presentation-ready output, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nPriority is to keep the work aligned with cleaner decision support and clean stakeholder communication.\nPlanned budget is 164 to 738 JD with a likely delivery window of 8 days.",
+    "category_id": 3,
+    "budget_min": 164,
+    "budget_max": 738,
+    "currency": "JD",
+    "duration_value": 8,
+    "duration_unit": "days",
+    "country": "United Arab Emirates",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Academic Programming",
+      "sub_sub_category_name": "Academic Project Development",
+      "sub_category_id": 8,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation"
+      ],
+      "scope_label": "multi-branch rollout",
+      "service_level": "starter",
+      "audience_segment": "young professionals",
+      "business_context": "operations standardization",
+      "primary_goal": "win stakeholder approval",
+      "delivery_pattern": "feedback-driven iteration",
+      "seed_group": "development",
+      "seed_leaf_slug": "academic-project-development"
+    },
+    "is_deleted": false,
+    "created_at": "2025-07-11T01:35:06.446Z",
+    "updated_at": "2025-07-13T01:35:06.446Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 138,
+    "duration": 8,
+    "client_public_id": 49
+  },
+  {
+    "created_by": 161,
+    "status": "stored",
+    "title": "Legal Services Browser Automation Scripts with deployment readiness",
+    "description": "Need browser automation scripts for a legal services scenario connected to internal process refresh and serving product owners.\nThe implementation should prioritize deployment readiness, remain professional, and fit growth-phase expansion requirements with recurring stakeholder feedback.\nExpected outcome includes implementation checklist and responsive UI flow, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nPlanned budget is 156 to 521 JD with a likely delivery window of 7 days.",
+    "category_id": 3,
+    "budget_min": 156,
+    "budget_max": 521,
+    "currency": "JD",
+    "duration_value": 7,
+    "duration_unit": "days",
+    "country": "Qatar",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "Browser Automation Scripts",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Automation",
+        "Parsing",
+        "Scheduling"
+      ],
+      "scope_label": "growth-phase expansion",
+      "service_level": "standard",
+      "audience_segment": "executive stakeholders",
+      "business_context": "internal process refresh",
+      "primary_goal": "support launch readiness",
+      "delivery_pattern": "single consolidated handoff",
+      "seed_group": "development",
+      "seed_leaf_slug": "browser-automation-scripts"
+    },
+    "is_deleted": false,
+    "created_at": "2026-01-03T01:47:45.446Z",
+    "updated_at": "2026-01-05T01:47:45.446Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 155,
+    "duration": 7,
+    "client_public_id": 161
+  },
+  {
+    "created_by": 202,
+    "status": "stored",
+    "title": "Ai Integration Tools project supporting higher campaign clarity",
+    "description": "Need ai integration tools for a manufacturing scenario connected to brand refresh cycle and serving department managers.\nThe implementation should prioritize data integrity, remain confident, and fit bilingual launch support requirements for teams handling multiple priorities.\nExpected outcome includes structured documentation and clear file organization, plus testing awareness, readable logic, and a handoff structure that supports future expansion.\nThe output should support department managers with clean stakeholder presentation.\nPlanned budget is 861 to 4417 JD with a likely delivery window of 6 weeks.",
+    "category_id": 3,
+    "budget_min": 861,
+    "budget_max": 4417,
+    "currency": "JD",
+    "duration_value": 6,
+    "duration_unit": "weeks",
+    "country": "Kuwait",
+    "attachments": [
+      {
+        "name": "Development default cover",
+        "filename": "programming-default.png",
+        "type": "image",
+        "url": "/seed-assets/programming-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Development",
+      "sub_category_name": "Personal Programming",
+      "sub_sub_category_name": "AI Integration Tools",
+      "sub_category_id": 9,
+      "skills": [
+        "Problem Solving",
+        "Testing",
+        "Documentation",
+        "Python",
+        "Model Integration",
+        "Data Pipelines"
+      ],
+      "scope_label": "bilingual launch support",
+      "service_level": "starter",
+      "audience_segment": "online shoppers",
+      "business_context": "brand refresh cycle",
+      "primary_goal": "prepare for publication",
+      "delivery_pattern": "staged milestone delivery",
+      "seed_group": "development",
+      "seed_leaf_slug": "ai-integration-tools"
+    },
+    "is_deleted": false,
+    "created_at": "2025-04-25T10:21:06.446Z",
+    "updated_at": "2025-05-10T10:21:06.446Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 172,
+    "duration": 6,
+    "client_public_id": 202
+  },
+  {
+    "created_by": 324,
+    "status": "stored",
+    "title": "Conference Standards Review package for Sports expansion",
+    "description": "We need conference standards review for a sports use case tied to new service launch and aimed at students.\nThe visual direction should feel clean corporate and fast-turnaround, while staying suitable for single-market delivery and expansion workstreams.\nExpected delivery includes presentation-ready output and review checkpoint summary, with clear hierarchy, production-friendly files, and strong presentation quality for support teams.\nThe final package should stay practical for day-to-day use and future iteration.\nTarget range is 151 to 766 JD with an expected timeline of about 14 days.",
+    "category_id": 1,
+    "budget_min": 151,
+    "budget_max": 766,
+    "currency": "JD",
+    "duration_value": 14,
+    "duration_unit": "days",
+    "country": "Oman",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Academic Design",
+      "sub_sub_category_name": "Conference Standards Review",
+      "sub_category_id": 2,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "single-market delivery",
+      "service_level": "advanced",
+      "audience_segment": "students",
+      "business_context": "new service launch",
+      "primary_goal": "raise conversion",
+      "delivery_pattern": "final-ready packaged delivery",
+      "seed_group": "design",
+      "seed_leaf_slug": "conference-standards-review"
+    },
+    "is_deleted": false,
+    "created_at": "2025-06-10T12:29:48.446Z",
+    "updated_at": "2025-06-17T12:29:48.446Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 19,
+    "duration": 14,
+    "client_public_id": 324
+  },
+  {
+    "created_by": 343,
+    "status": "stored",
+    "title": "premium Invitations & Greeting Cards deliverables for cross-team coordination",
+    "description": "We need invitations & greeting cards for a NGO operations use case tied to cross-team coordination and aimed at job applicants.\nThe visual direction should feel editorial and premium, while staying suitable for stakeholder review cycle and stabilization workstreams.\nExpected delivery includes team-facing guidance notes and research-backed structure, with clear hierarchy, production-friendly files, and strong presentation quality for founders.\nPriority is to keep the work aligned with better launch readiness and clean stakeholder communication.\nTarget range is 104 to 461 JD with an expected timeline of about 15 days.",
+    "category_id": 1,
+    "budget_min": 104,
+    "budget_max": 461,
+    "currency": "JD",
+    "duration_value": 15,
+    "duration_unit": "days",
+    "country": "Bahrain",
+    "attachments": [
+      {
+        "name": "Design default cover",
+        "filename": "design-default.png",
+        "type": "image",
+        "url": "/seed-assets/design-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Design",
+      "sub_category_name": "Personal Design",
+      "sub_sub_category_name": "Invitations & Greeting Cards",
+      "sub_category_id": 3,
+      "skills": [
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Layout Design"
+      ],
+      "scope_label": "stakeholder review cycle",
+      "service_level": "premium",
+      "audience_segment": "job applicants",
+      "business_context": "cross-team coordination",
+      "primary_goal": "strengthen brand consistency",
+      "delivery_pattern": "review-first workflow",
+      "seed_group": "design",
+      "seed_leaf_slug": "invitations-greeting-cards"
+    },
+    "is_deleted": false,
+    "created_at": "2025-10-15T14:37:52.447Z",
+    "updated_at": "2025-10-26T14:37:52.447Z",
+    "usage_count": 0,
+    "max_usage": 5,
+    "sub_sub_category_id": 36,
+    "duration": 15,
+    "client_public_id": 343
+  },
+  {
+    "created_by": 368,
+    "status": "stored",
+    "title": "Newsletters package supporting stronger stakeholder confidence",
+    "description": "Looking for newsletters that fits education needs and supports customer experience upgrade for premium clients.\nThe writing should be research-backed, engaging, and structured to help with speed up delivery while remaining easy to review and approve.\nThe final handoff should include deployment-ready module and structured documentation, with accurate wording, logical flow, and consistent tone across sections.\nThe delivery needs to remain easy to review, revise, and approve across teams.\nBudget expectations fall between 139 and 565 JD, with an estimated completion window of 17 days.",
+    "category_id": 2,
+    "budget_min": 139,
+    "budget_max": 565,
+    "currency": "JD",
+    "duration_value": 17,
+    "duration_unit": "days",
+    "country": "Egypt",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Business Writing",
+      "sub_sub_category_name": "Newsletters",
+      "sub_category_id": 4,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "regional operations",
+      "service_level": "enterprise",
+      "audience_segment": "premium clients",
+      "business_context": "customer experience upgrade",
+      "primary_goal": "speed up delivery",
+      "delivery_pattern": "priority-first execution",
+      "seed_group": "writing",
+      "seed_leaf_slug": "newsletters"
+    },
+    "is_deleted": false,
+    "created_at": "2026-02-15T22:29:56.447Z",
+    "updated_at": "2026-02-16T22:29:56.447Z",
+    "usage_count": 0,
+    "max_usage": 6,
+    "sub_sub_category_id": 54,
+    "duration": 17,
+    "client_public_id": 368
+  },
+  {
+    "created_by": 374,
+    "status": "stored",
+    "title": "Instructional Literature Reviews for B2B buyers",
+    "description": "Looking for literature reviews that fits real estate needs and supports procurement workflow cleanup for B2B buyers.\nThe writing should be instructional, conversion-focused, and structured to help with reduce manual work while remaining easy to review and approve.\nThe final handoff should include review checkpoint summary and revision-ready working files, with accurate wording, logical flow, and consistent tone across sections.\nThe output should support operations teams with clear approval-ready structure.\nBudget expectations fall between 164 and 813 JD, with an estimated completion window of 1 weeks.",
+    "category_id": 2,
+    "budget_min": 164,
+    "budget_max": 813,
+    "currency": "JD",
+    "duration_value": 1,
+    "duration_unit": "weeks",
+    "country": "Jordan",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Academic Writing",
+      "sub_sub_category_name": "Literature Reviews",
+      "sub_category_id": 5,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing",
+        "APA/MLA Formatting",
+        "Citation Management",
+        "Academic Synthesis"
+      ],
+      "scope_label": "local rollout",
+      "service_level": "starter",
+      "audience_segment": "B2B buyers",
+      "business_context": "procurement workflow cleanup",
+      "primary_goal": "reduce manual work",
+      "delivery_pattern": "phased delivery",
+      "seed_group": "writing",
+      "seed_leaf_slug": "literature-reviews"
+    },
+    "is_deleted": false,
+    "created_at": "2026-01-01T07:09:02.447Z",
+    "updated_at": "2026-01-14T07:09:02.447Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 77,
+    "duration": 1,
+    "client_public_id": 374
+  },
+  {
+    "created_by": 49,
+    "status": "stored",
+    "title": "Construction Love, Apology & Thank You Letters with clear decision-ready structure",
+    "description": "Looking for love, apology & thank you letters that fits construction needs and supports lead generation support for conference attendees.\nThe writing should be persuasive, academic, and structured to help with simplify onboarding while remaining easy to review and approve.\nThe final handoff should include handoff-ready assets and clean database integration, with accurate wording, logical flow, and consistent tone across sections.\nThe final package should stay practical for day-to-day use and future iteration.\nBudget expectations fall between 79 and 328 JD, with an estimated completion window of 5 days.",
+    "category_id": 2,
+    "budget_min": 79,
+    "budget_max": 328,
+    "currency": "JD",
+    "duration_value": 5,
+    "duration_unit": "days",
+    "country": "Saudi Arabia",
+    "attachments": [
+      {
+        "name": "Content Writing default cover",
+        "filename": "writing-default.png",
+        "type": "image",
+        "url": "/seed-assets/writing-default.png"
+      }
+    ],
+    "metadata": {
+      "top_category": "Content Writing",
+      "sub_category_name": "Personal Writing",
+      "sub_sub_category_name": "Love, Apology & Thank You Letters",
+      "sub_category_id": 6,
+      "skills": [
+        "Research",
+        "Structured Writing",
+        "Editing"
+      ],
+      "scope_label": "cross-functional deployment",
+      "service_level": "starter",
+      "audience_segment": "conference attendees",
+      "business_context": "lead generation support",
+      "primary_goal": "simplify onboarding",
+      "delivery_pattern": "draft then refinement cycle",
+      "seed_group": "writing",
+      "seed_leaf_slug": "love-apology-thank-you-letters"
+    },
+    "is_deleted": false,
+    "created_at": "2025-05-20T08:08:39.447Z",
+    "updated_at": "2025-06-07T08:08:39.447Z",
+    "usage_count": 0,
+    "max_usage": 4,
+    "sub_sub_category_id": 94,
+    "duration": 5,
+    "client_public_id": 49
+  }
+]

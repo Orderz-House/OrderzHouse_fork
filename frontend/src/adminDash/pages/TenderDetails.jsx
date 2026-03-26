@@ -95,6 +95,19 @@ export default function TenderDetails() {
     return value;
   };
 
+  /** Budget line: whole JD integers only, e.g. "149 - 318 JD" */
+  const formatBudgetRangeJd = (min, max, currency = "JD") => {
+    const a = min != null && min !== "" ? Math.round(Number(min)) : null;
+    const b = max != null && max !== "" ? Math.round(Number(max)) : null;
+    const cur = currency && String(currency).trim() ? String(currency).trim() : "JD";
+    if (a != null && Number.isFinite(a) && b != null && Number.isFinite(b)) {
+      return `${a} - ${b} ${cur}`;
+    }
+    if (a != null && Number.isFinite(a)) return `${a} ${cur}`;
+    if (b != null && Number.isFinite(b)) return `${b} ${cur}`;
+    return "—";
+  };
+
   // Helper function to format date
   const formatDate = (dateString) => {
     if (!dateString) return '—';
@@ -213,9 +226,7 @@ export default function TenderDetails() {
               Budget Range
             </h4>
             <p className="text-slate-900">
-              {tender.budget_min && tender.budget_max 
-                ? `${tender.budget_min} - ${tender.budget_max} ${formatValue(tender.currency || 'JD')}`
-                : '—'}
+              {formatBudgetRangeJd(tender.budget_min, tender.budget_max, tender.currency || "JD")}
             </p>
           </div>
 
@@ -319,16 +330,21 @@ export default function TenderDetails() {
           {attachments.length > 0 ? (
             <div className="space-y-2">
               {attachments.map((attachment, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                <div key={index} className="flex items-start gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  {attachment.url && (attachment.type === "image" || /\.(jpe?g|png|webp|gif)(\?|$)/i.test(attachment.url)) ? (
+                    <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-md overflow-hidden border border-slate-200 bg-white">
+                      <img src={attachment.url} alt="" className="w-32 h-20 object-cover" loading="lazy" />
+                    </a>
+                  ) : null}
                   {attachment.url ? (
                     <a
                       href={attachment.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2"
+                      className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2 min-w-0"
                     >
-                      <FileText className="w-4 h-4" />
-                      {attachment.name || attachment.filename || `Attachment ${index + 1}`}
+                      <FileText className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{attachment.name || attachment.filename || `Attachment ${index + 1}`}</span>
                     </a>
                   ) : (
                     <span className="text-slate-700">
@@ -358,7 +374,7 @@ export default function TenderDetails() {
                 </div>
               )}
               <div className="space-y-1">
-                {Object.entries(metadata).map(([key, value]) => {
+                {Object.entries(metadata).filter(([key]) => key !== "generated_label").map(([key, value]) => {
                   if (key === 'sub_category_id') return null; // Already shown above
                   return (
                     <div key={key} className="flex items-start gap-2">

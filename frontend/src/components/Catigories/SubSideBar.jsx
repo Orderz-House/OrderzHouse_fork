@@ -1,6 +1,7 @@
 // components/Projects/SubSideBar.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { fetchSubSubCategoriesByCategoryId } from "./api/category";
 
 // Projects API
@@ -37,6 +38,15 @@ export default function SubSidebar({
   const [durationFilter, setDurationFilter] = useState("any");
   const [withFilesOnly, setWithFilesOnly] = useState(false);
   const [withFreelancerOnly, setWithFreelancerOnly] = useState(false);
+  const [serverPagination, setServerPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  });
+  const [sp, setSp] = useSearchParams();
+  const pageFromUrl = Math.max(1, Number(sp.get("page") || 1));
+  const PAGE_SIZE = 20;
 
   // Mobile filters sheet (phone UI)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -128,6 +138,12 @@ export default function SubSidebar({
             sub: activeSubSub ? Number(activeSubSub) : undefined,
           });
           setItems(Array.isArray(data) ? data : []);
+          setServerPagination({
+            page: 1,
+            limit: PAGE_SIZE,
+            total: Array.isArray(data) ? data.length : 0,
+            totalPages: 1,
+          });
           setLoadingItems(false);
           return;
         }
@@ -135,22 +151,41 @@ export default function SubSidebar({
         // projects
         let data;
         if (activeSubSub) {
-          data = await fetchAuthProjectsBySubSubCategory(
-            Number(activeSubSub)
-          );
+          data = await fetchAuthProjectsBySubSubCategory(Number(activeSubSub), {
+            page: pageFromUrl,
+            limit: PAGE_SIZE,
+            sortBy: sortFilter,
+          });
         } else if (subCategoryId) {
-          data = await fetchAuthProjectsBySubCategory(
-            Number(subCategoryId)
-          );
+          data = await fetchAuthProjectsBySubCategory(Number(subCategoryId), {
+            page: pageFromUrl,
+            limit: PAGE_SIZE,
+            sortBy: sortFilter,
+          });
         } else {
           // When categoryId is empty (All selected), pass "all" to backend
           // Backend treats "all" as missing category filter
           const catId = categoryId || "all";
-          data = await fetchAuthProjectsByCategory(catId === "all" ? "all" : Number(catId));
+          data = await fetchAuthProjectsByCategory(
+            catId === "all" ? "all" : Number(catId),
+            {
+              page: pageFromUrl,
+              limit: PAGE_SIZE,
+              sortBy: sortFilter,
+            }
+          );
         }
 
-        const projects = Array.isArray(data) ? data : [];
+        const projects = Array.isArray(data?.projects) ? data.projects : [];
         setItems(projects);
+        setServerPagination(
+          data?.pagination || {
+            page: pageFromUrl,
+            limit: PAGE_SIZE,
+            total: projects.length,
+            totalPages: 1,
+          }
+        );
 
         // Batch check which projects user has applied to (only for freelancers)
         if (projects.length > 0 && !isTasks) {
@@ -190,7 +225,33 @@ export default function SubSidebar({
     };
 
     run();
-  }, [categoryId, activeSubSub, subCategoryId, isTasks, userData]);
+  }, [
+    categoryId,
+    activeSubSub,
+    subCategoryId,
+    isTasks,
+    userData,
+    sortFilter,
+    pageFromUrl,
+  ]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(sp);
+    if (next.get("page") !== "1") {
+      next.set("page", "1");
+      setSp(next, { replace: true });
+    }
+  }, [
+    categoryId,
+    activeSubSub,
+    subCategoryId,
+    projectTypeFilter,
+    budgetFilter,
+    durationFilter,
+    withFilesOnly,
+    withFreelancerOnly,
+    sortFilter,
+  ]);
 
   const hasSidebar = subSubs.length > 0;
   const priceField = isTasks ? "price" : "budget";
@@ -584,7 +645,7 @@ export default function SubSidebar({
       {!isTasks && (
         <div className="mb-4 flex items-center justify-between text-sm px-3">
           <span className="text-slate-600">
-            {visibleItems.length.toLocaleString()} results
+            {(serverPagination.total || visibleItems.length).toLocaleString()} results
           </span>
             <div className="hidden sm:flex items-center gap-2">
             <span className="text-slate-500">Sort by:</span>
@@ -639,6 +700,44 @@ export default function SubSidebar({
           )}
         </div>
       </div>
+
+      {!isTasks && (serverPagination.totalPages || 1) > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <button
+            type="button"
+            disabled={pageFromUrl <= 1}
+            onClick={() => {
+              const next = new URLSearchParams(sp);
+              next.set("page", String(Math.max(1, pageFromUrl - 1)));
+              setSp(next, { replace: false });
+            }}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-slate-600">
+            Page {serverPagination.page || pageFromUrl} of{" "}
+            {serverPagination.totalPages || 1}
+          </span>
+          <button
+            type="button"
+            disabled={pageFromUrl >= (serverPagination.totalPages || 1)}
+            onClick={() => {
+              const next = new URLSearchParams(sp);
+              next.set(
+                "page",
+                String(
+                  Math.min(serverPagination.totalPages || 1, pageFromUrl + 1)
+                )
+              );
+              setSp(next, { replace: false });
+            }}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

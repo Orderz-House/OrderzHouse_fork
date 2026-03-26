@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.mobile_app"
+    namespace = "com.orderzhouse.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mobile_app"
+        applicationId = "com.orderzhouse.app"
         minSdk = flutter.minSdkVersion  // Required for Google Sign-In
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

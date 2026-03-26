@@ -126,11 +126,25 @@ if (projectType === "fixed") {
       ? project.attachments[0]
       : null;
 
+  const attachmentCoverUrl = (() => {
+    if (!firstAttachment) return null;
+    if (typeof firstAttachment === "string") return firstAttachment;
+    if (typeof firstAttachment === "object") {
+      return (
+        firstAttachment.url ||
+        firstAttachment.path ||
+        firstAttachment.file_url ||
+        null
+      );
+    }
+    return null;
+  })();
+
   const coverSrc =
     cover_pic ||
     cover ||
     image ||
-    firstAttachment ||
+    attachmentCoverUrl ||
     "/placeholder.svg?height=200&width=320";
 
   let offerBlock = null;

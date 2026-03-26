@@ -13,45 +13,78 @@ const getAuthHeaders = () => {
 /* ==============================
    🔒 Authenticated (Token Required)
 ============================== */
-export const fetchAuthProjectsByCategory = async (categoryId) => {
+export const fetchAuthProjectsByCategory = async (categoryId, options = {}) => {
+  const { page = 1, limit = 20, search, sortBy } = options;
   try {
     const { data } = await API.get(
       `/projects/category/${categoryId}`,
-      getAuthHeaders()
+      {
+        ...getAuthHeaders(),
+        params: { page, limit, search, sortBy },
+      }
     );
-    if (data.success) return data.projects;
+    if (data.success) {
+      return {
+        projects: Array.isArray(data.projects) ? data.projects : [],
+        pagination: data.pagination || null,
+      };
+    }
     throw new Error(data.message || "Failed to fetch projects");
   } catch (err) {
     console.error("fetchAuthProjectsByCategory error:", err);
-    return [];
+    return { projects: [], pagination: null };
   }
 };
 
-export const fetchAuthProjectsBySubCategory = async (subCategoryId) => {
+export const fetchAuthProjectsBySubCategory = async (
+  subCategoryId,
+  options = {}
+) => {
+  const { page = 1, limit = 20, search, sortBy } = options;
   try {
     const { data } = await API.get(
       `/projects/sub-category/${subCategoryId}`,
-      getAuthHeaders()
+      {
+        ...getAuthHeaders(),
+        params: { page, limit, search, sortBy },
+      }
     );
-    if (data.success) return data.projects;
+    if (data.success) {
+      return {
+        projects: Array.isArray(data.projects) ? data.projects : [],
+        pagination: data.pagination || null,
+      };
+    }
     throw new Error(data.message || "Failed to fetch projects");
   } catch (err) {
     console.error("fetchAuthProjectsBySubCategory error:", err);
-    return [];
+    return { projects: [], pagination: null };
   }
 };
 
-export const fetchAuthProjectsBySubSubCategory = async (subSubCategoryId) => {
+export const fetchAuthProjectsBySubSubCategory = async (
+  subSubCategoryId,
+  options = {}
+) => {
+  const { page = 1, limit = 20, search, sortBy } = options;
   try {
     const { data } = await API.get(
       `/projects/sub-sub-category/${subSubCategoryId}`,
-      getAuthHeaders()
+      {
+        ...getAuthHeaders(),
+        params: { page, limit, search, sortBy },
+      }
     );
-    if (data.success) return data.projects;
+    if (data.success) {
+      return {
+        projects: Array.isArray(data.projects) ? data.projects : [],
+        pagination: data.pagination || null,
+      };
+    }
     throw new Error(data.message || "Failed to fetch projects");
   } catch (err) {
     console.error("fetchAuthProjectsBySubSubCategory error:", err);
-    return [];
+    return { projects: [], pagination: null };
   }
 };
 
@@ -87,23 +120,29 @@ export const fetchProjectsBySubSubCategory = async (subSubCategoryId) => {
 
 export const fetchProjectsByCategoryAuto = async (categoryId) => {
   const token = getAuthToken();
-  return token
-    ? fetchAuthProjectsByCategory(categoryId)
-    : fetchProjectsByCategory(categoryId);
+  if (token) {
+    const result = await fetchAuthProjectsByCategory(categoryId);
+    return result.projects;
+  }
+  return fetchProjectsByCategory(categoryId);
 };
 
 export const fetchProjectsBySubCategoryAuto = async (subCategoryId) => {
   const token = getAuthToken();
-  return token
-    ? fetchAuthProjectsBySubCategory(subCategoryId)
-    : fetchProjectsBySubCategory(subCategoryId);
+  if (token) {
+    const result = await fetchAuthProjectsBySubCategory(subCategoryId);
+    return result.projects;
+  }
+  return fetchProjectsBySubCategory(subCategoryId);
 };
 
 export const fetchProjectsBySubSubCategoryAuto = async (subSubCategoryId) => {
   const token = getAuthToken();
-  return token
-    ? fetchAuthProjectsBySubSubCategory(subSubCategoryId)
-    : fetchProjectsBySubSubCategory(subSubCategoryId);
+  if (token) {
+    const result = await fetchAuthProjectsBySubSubCategory(subSubCategoryId);
+    return result.projects;
+  }
+  return fetchProjectsBySubSubCategory(subSubCategoryId);
 };
 
 /* ==============================

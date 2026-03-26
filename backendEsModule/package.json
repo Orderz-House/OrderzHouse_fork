@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test jest",
+    "seed:tender-vault": "node scripts/seedTenderVaultFakeOrders.mjs",
+    "seed:tender-bundle:preview": "node scripts/tender_seed_bundle/tender_vault_fake_seeder.cjs --mode=preview --count=20",
+    "seed:tender-bundle:sql": "node scripts/tender_seed_bundle/tender_vault_fake_seeder.cjs --mode=sql --count=1000",
+    "seed:tender-bundle:insert": "node scripts/tender_seed_bundle/tender_vault_fake_seeder.cjs --mode=insert --count=1000 --batch=100"
   },
   "keywords": [],
   "author": "",
@@ -38,7 +42,7 @@
     "lucide-react": "^0.543.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
-    "pg": "^8.16.3",
+    "pg": "^8.20.0",
     "qrcode": "^1.5.4",
     "recharts": "^3.2.0",
     "reselect": "^5.1.1",
