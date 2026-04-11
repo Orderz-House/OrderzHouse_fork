@@ -1880,9 +1880,11 @@ function FreelancerDashboard() {
     [navigate, base]
   );
 
-  // progress percent (best effort): available/total if values exist
-  const totalBal = parseNumberLike(balanceCards?.[0]?.value);
-  const availBal = parseNumberLike(balanceCards?.[1]?.value);
+  // progress percent (best effort): available/total if values exist (match by card id — order may change)
+  const activeCard = balanceCards?.find((c) => c?.id === "active_projects");
+  const tasksCard = balanceCards?.find((c) => c?.id === "assigned_tasks");
+  const totalBal = parseNumberLike(activeCard?.value);
+  const availBal = parseNumberLike(tasksCard?.value);
   const pct =
     totalBal && availBal != null && totalBal > 0
       ? Math.round((availBal / totalBal) * 100)

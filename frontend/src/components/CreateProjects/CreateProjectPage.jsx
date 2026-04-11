@@ -1,5 +1,5 @@
 // CreateProjectPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../components/toast/ToastProvider";
@@ -33,6 +33,34 @@ export default function CreateProjectPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showDevPopup, setShowDevPopup] = useState(false);
+
+  const canAssignFreelancer =
+    userData?.role_id === 2 && userData?.can_assign_freelancer_on_create === true;
+  const [freelancersForAssign, setFreelancersForAssign] = useState([]);
+  const [freelancersForAssignLoading, setFreelancersForAssignLoading] =
+    useState(false);
+
+  useEffect(() => {
+    if (!canAssignFreelancer || !token) {
+      setFreelancersForAssign([]);
+      return;
+    }
+    let cancelled = false;
+    setFreelancersForAssignLoading(true);
+    API.get("/projects/freelancers/selectable-for-create")
+      .then((res) => {
+        if (!cancelled) setFreelancersForAssign(res?.data?.freelancers || []);
+      })
+      .catch(() => {
+        if (!cancelled) setFreelancersForAssign([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFreelancersForAssignLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canAssignFreelancer, token]);
 
   const nextStep = () => setStep((p) => p + 1);
   const prevStep = () => setStep((p) => p - 1);
@@ -183,6 +211,9 @@ export default function CreateProjectPage() {
           <ProjectDetailsStep
             projectData={projectData}
             setProjectData={setProjectData}
+            canAssignFreelancer={canAssignFreelancer}
+            freelancersForAssign={freelancersForAssign}
+            freelancersForAssignLoading={freelancersForAssignLoading}
             onNext={() => {
               if (Number(projectData.category_id) === DEVELOPMENT_CATEGORY_ID) {
                 setShowDevPopup(true);

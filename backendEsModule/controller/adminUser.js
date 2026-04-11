@@ -237,6 +237,9 @@ export const updateUser = async (req, res) => {
     "bio",
     "is_two_factor_enabled",
     "is_locked",
+    "can_assign_freelancer_on_create",
+    "can_post_without_payment",
+    "can_manage_tender_vault",
   ];
 
   try {

@@ -52,4 +52,9 @@ export const createProjectValidator = [
     .toFloat(),
   body("duration_days").optional().isInt({ min: 1 }).toInt(),
   body("duration_hours").optional().isInt({ min: 1 }).toInt(),
+  body("assigned_freelancer_id")
+    .optional({ checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("assigned_freelancer_id must be a positive integer")
+    .toInt(),
 ];

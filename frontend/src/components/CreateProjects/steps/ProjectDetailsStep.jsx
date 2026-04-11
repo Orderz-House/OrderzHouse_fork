@@ -22,6 +22,9 @@ export default function ProjectDetailsStep({
   projectData,
   setProjectData,
   isTask = false,
+  canAssignFreelancer = false,
+  freelancersForAssign = [],
+  freelancersForAssignLoading = false,
 }) {
   const [categories, setCategories] = useState([]);
   const [subSubCategories, setSubSubCategories] = useState([]);
@@ -48,6 +51,7 @@ export default function ProjectDetailsStep({
       budget_max: 1,
       hourly_rate: 1,
       preferred_skills: [],
+      assigned_freelancer_id: "",
     };
 
     const merged = { ...base, ...(projectData || {}) };
@@ -96,6 +100,13 @@ export default function ProjectDetailsStep({
       setForm((prev) => ({ ...prev, project_type: "fixed" }));
     }
   }, [ENABLE_HOURLY_PROJECT_TYPE, form.project_type]);
+
+  useEffect(() => {
+    if (form.project_type !== "bidding") return;
+    setForm((prev) =>
+      prev.assigned_freelancer_id ? { ...prev, assigned_freelancer_id: "" } : prev
+    );
+  }, [form.project_type]);
 
   // ====================== Helpers ======================
   const handleChange = (e) => {
@@ -392,6 +403,42 @@ export default function ProjectDetailsStep({
             </p>
           )}
         </div>
+
+        {/* ========== Assign Freelancer (eligible clients only; fixed/hourly) ========== */}
+        {canAssignFreelancer && !isTask && form.project_type !== "bidding" && (
+          <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4 space-y-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Assign Freelancer
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                (optional — leave empty to post for applications)
+              </span>
+            </label>
+            {freelancersForAssignLoading ? (
+              <p className="text-sm text-slate-500">Loading freelancers…</p>
+            ) : (
+              <select
+                name="assigned_freelancer_id"
+                value={form.assigned_freelancer_id === "" ? "" : String(form.assigned_freelancer_id)}
+                onChange={handleChange}
+                className={inputBase}
+              >
+                <option value="">— No selection (default) —</option>
+                {(freelancersForAssign || []).map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {[f.first_name, f.last_name].filter(Boolean).join(" ") || f.username}{" "}
+                    {f.username ? `(@${f.username})` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+            {!freelancersForAssignLoading &&
+              (!freelancersForAssign || freelancersForAssign.length === 0) && (
+                <p className="text-xs text-amber-700">
+                  No verified freelancers are available to list right now.
+                </p>
+              )}
+          </div>
+        )}
 
         {/* ========== Preferred Skills ========== */}
         <div>

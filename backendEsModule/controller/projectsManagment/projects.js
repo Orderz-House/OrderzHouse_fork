@@ -4,6 +4,7 @@ import cloudinary from "../../cloudinary/setupfile.js";
 import { Readable } from "stream";
 import { upload } from "../../middleware/uploadMiddleware.js";
 import eventBus from "../../events/eventBus.js";
+import { maybeApplyClientPickFreelancerOnCreate } from "../../services/clientDirectFreelancerPick.js";
 
 /**
  * Upload fields for cover + project files (if sent as form-data)
@@ -43,7 +44,9 @@ export const createProject = async (req, res) => {
     
     // Check if user is client (role_id = 2) and get can_post_without_payment
     const { rows: userRows } = await pool.query(
-      `SELECT role_id, can_post_without_payment FROM users WHERE id = $1 AND is_deleted = false`,
+      `SELECT role_id, can_post_without_payment,
+              COALESCE(can_assign_freelancer_on_create, false) AS can_assign_freelancer_on_create
+       FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
     
@@ -55,6 +58,8 @@ export const createProject = async (req, res) => {
     }
 
     const canPostWithoutPayment = userRows[0]?.can_post_without_payment === true;
+    const canAssignFreelancerOnCreate =
+      userRows[0]?.can_assign_freelancer_on_create === true;
 
     await client.query("SELECT pg_advisory_xact_lock($1)", [userId]);
 
@@ -73,7 +78,32 @@ export const createProject = async (req, res) => {
       budget_max,
       hourly_rate,
       preferred_skills,
+      assigned_freelancer_id: assignedFreelancerIdBody,
     } = req.body;
+
+    const rawPickId =
+      assignedFreelancerIdBody != null && String(assignedFreelancerIdBody).trim() !== ""
+        ? assignedFreelancerIdBody
+        : null;
+
+    if (project_type === "bidding" && rawPickId != null) {
+      return res.status(400).json({
+        success: false,
+        message: "Manual freelancer assignment is not available for bidding projects",
+      });
+    }
+
+    if (rawPickId != null && !canAssignFreelancerOnCreate) {
+      return res.status(403).json({
+        success: false,
+        message: "Manual freelancer assignment is not enabled for your account",
+      });
+    }
+
+    const willDirectAssignAtCreate =
+      canAssignFreelancerOnCreate &&
+      project_type !== "bidding" &&
+      rawPickId != null;
 
     // ------------ Required validation ------------
     const missingFields = [];
@@ -228,6 +258,34 @@ export const createProject = async (req, res) => {
 
     let project = rows[0];
 
+    if (willDirectAssignAtCreate) {
+      try {
+        const pickResult = await maybeApplyClientPickFreelancerOnCreate({
+          queryClient: client,
+          clientUserId: userId,
+          projectId: project.id,
+          rawFreelancerId: rawPickId,
+          paymentId: null,
+          escrowAmount: null,
+          softFailUnauthorized: false,
+        });
+        if (pickResult.applied) {
+          const { rows: refreshed } = await client.query(
+            `SELECT * FROM projects WHERE id = $1`,
+            [project.id]
+          );
+          if (refreshed.length) project = refreshed[0];
+        }
+      } catch (pickErr) {
+        console.error("[createProject] client direct pick failed:", pickErr);
+        const code = pickErr?.statusCode || 500;
+        return res.status(code).json({
+          success: false,
+          message: pickErr?.message || "Failed to assign freelancer",
+        });
+      }
+    }
+
     // ------------ Step 2: Upload cover pic (optional) ------------
     if (req.files?.cover_pic && req.files.cover_pic.length > 0) {
       const coverPicFile = req.files.cover_pic[0];
@@ -254,8 +312,9 @@ export const createProject = async (req, res) => {
 
     // ✅ only notify freelancers when project is ACTIVE
     // (bidding projects will be notified on adminApproveProject)
+    // Skip pool notification when the project was directly assigned to one freelancer at create.
     try {
-      if (String(project.status) === "active") {
+      if (String(project.status) === "active" && !willDirectAssignAtCreate) {
         eventBus.emit("project.created", {
           projectId: project.id,
           projectTitle: project.title,

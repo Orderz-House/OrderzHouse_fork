@@ -352,7 +352,9 @@ export const createProjectCheckoutSession = async (req, res) => {
 
     // Check if user can post without payment (internal clients)
     const userRes = await pool.query(
-      `SELECT can_post_without_payment FROM users WHERE id = $1 AND is_deleted = false`,
+      `SELECT can_post_without_payment,
+              COALESCE(can_assign_freelancer_on_create, false) AS can_assign_freelancer_on_create
+       FROM users WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
     const canPostWithoutPayment = userRes.rows[0]?.can_post_without_payment === true;
@@ -414,6 +416,38 @@ export const createProjectCheckoutSession = async (req, res) => {
         message: "Calculated amount must be greater than zero",
         code: null,
       });
+    }
+
+    const rawPickStripe = projectData.assigned_freelancer_id;
+    if (rawPickStripe != null && String(rawPickStripe).trim() !== "") {
+      const canPick = userRes.rows[0]?.can_assign_freelancer_on_create === true;
+      if (!canPick) {
+        return res.status(403).json({
+          success: false,
+          message: "Manual freelancer assignment is not enabled for your account",
+          code: null,
+        });
+      }
+      const fid = parseInt(String(rawPickStripe), 10);
+      if (!Number.isFinite(fid) || fid < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid assigned_freelancer_id",
+          code: null,
+        });
+      }
+      const fr = await pool.query(
+        `SELECT id FROM users
+         WHERE id = $1 AND role_id = 3 AND is_deleted = false AND COALESCE(is_verified, false) = true`,
+        [fid]
+      );
+      if (!fr.rows.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or unverified freelancer",
+          code: null,
+        });
+      }
     }
 
     const successUrl = bodySuccessUrl

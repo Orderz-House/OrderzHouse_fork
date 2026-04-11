@@ -529,6 +529,27 @@ export const confirmCheckoutSession = async (req, res) => {
             console.log(`✅ Project ${project.id} "${project.title}" created with status ${projectStatus} after payment`);
             console.log(`✅ Payment record updated: ${updateResult.rowCount} row(s) updated`);
 
+            // Optional: client-enabled direct freelancer pick (metadata.project_data)
+            try {
+              const pickRaw = projectData?.assigned_freelancer_id;
+              if (pickRaw != null && String(pickRaw).trim() !== "") {
+                const { maybeApplyClientPickFreelancerOnCreate } = await import(
+                  "../../services/clientDirectFreelancerPick.js"
+                );
+                await maybeApplyClientPickFreelancerOnCreate({
+                  queryClient: pool,
+                  clientUserId: user_id,
+                  projectId,
+                  rawFreelancerId: pickRaw,
+                  paymentId,
+                  escrowAmount: amount,
+                  softFailUnauthorized: true,
+                });
+              }
+            } catch (pickErr) {
+              console.error("[confirmCheckoutSession] direct freelancer pick:", pickErr);
+            }
+
             // A) Create escrow if freelancer is already assigned (rare but possible)
             // Check if project has an active freelancer assignment
             const assignmentCheck = await pool.query(

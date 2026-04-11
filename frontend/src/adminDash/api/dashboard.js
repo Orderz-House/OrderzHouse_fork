@@ -481,12 +481,16 @@ export async function fetchAdminDashboard() {
 
 /* ===================== Freelancer dashboard ===================== */
 export async function fetchFreelancerDashboard() {
-  const [projectsRes, assignedTasksRes, openRes, subscriptionRes] = await Promise.allSettled([
-    API.get("/projects/myprojects"),
-    API.get("/tasks/freelancer/assigned"),
-    API.get("/offers/projects/open"),
-    API.get("/subscriptions/status"),
-  ]);
+  const [projectsRes, assignedTasksRes, openRes, subscriptionRes, directStatsRes] =
+    await Promise.allSettled([
+      API.get("/projects/myprojects"),
+      API.get("/tasks/freelancer/assigned"),
+      API.get("/offers/projects/open"),
+      API.get("/subscriptions/status"),
+      API.get("/projects/freelancer/client-direct-assignment-stats").catch(() => ({
+        data: { todayClientDirectAssignments: 0, totalCompletedProjects: 0 },
+      })),
+    ]);
 
   const projects =
     projectsRes.status === "fulfilled"
@@ -573,7 +577,30 @@ export async function fetchFreelancerDashboard() {
       };
     });
 
+  const directStats =
+    directStatsRes.status === "fulfilled"
+      ? directStatsRes.value?.data || {}
+      : {};
+  const todayClientDirect = toNum(directStats.todayClientDirectAssignments);
+  const totalCompletedFreelancer = toNum(directStats.totalCompletedProjects);
+
   const balanceCards = [
+    {
+      id: "client_direct_today",
+      title: "Today's client-assigned",
+      value: todayClientDirect,
+      sub: "Projects assigned to you by clients (direct pick, UTC day)",
+      icon: UserCheck,
+      accent: "bg-emerald-50",
+    },
+    {
+      id: "completed_all_time",
+      title: "Total completed projects",
+      value: totalCompletedFreelancer,
+      sub: "Completed projects where you are the assigned freelancer",
+      icon: CheckCircle,
+      accent: "bg-teal-50",
+    },
     {
       id: "active_projects",
       title: "Active projects",

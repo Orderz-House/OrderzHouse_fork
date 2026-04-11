@@ -54,6 +54,10 @@ import {
 import {getAssignmentsForProject} from "../controller/projectsManagment/assignments.js";
 import validateRequest from "../middleware/validateRequest.js";
 import { createProjectValidator } from "../middleware/validators/projectValidators.js";
+import {
+  getFreelancersSelectableForCreate,
+  getFreelancerClientDirectAssignmentStats,
+} from "../controller/projectsManagment/clientDirectAssignment.js";
 
 const projectsRouter = express.Router();
 const rejectTenderVaultAction = (req, res, next) => {
@@ -93,6 +97,18 @@ projectsRouter.get("/myprojects", authentication, getProjectsByUserRole);
 
 /* Skills suggestions for Preferred Skills (from previous projects, no auth) */
 projectsRouter.get("/skills-suggestions", getSkillSuggestions);
+
+/* Manual freelancer assignment at create (eligible clients + freelancer stats) */
+projectsRouter.get(
+  "/freelancers/selectable-for-create",
+  authentication,
+  getFreelancersSelectableForCreate
+);
+projectsRouter.get(
+  "/freelancer/client-direct-assignment-stats",
+  authentication,
+  getFreelancerClientDirectAssignmentStats
+);
 
 /* --------------------------------
    DELETE (SOFT DELETE) PROJECT BY OWNER
