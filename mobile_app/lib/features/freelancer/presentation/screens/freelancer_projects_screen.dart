@@ -414,9 +414,11 @@ class _FreelancerProjectsScreenState extends ConsumerState<FreelancerProjectsScr
       (l10n.completed, 'completed'),
     ];
     return Container(
-      height: 50,
+      height: 56,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      alignment: Alignment.center,
       child: ListView.separated(
+        clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: tabs.length,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import API from "../../api/client.js";
 import { toast } from "react-hot-toast";
@@ -8,6 +8,8 @@ import PageMeta from "../PageMeta.jsx";
 export default function ResetPassword() {
   const navigate = useNavigate();
   const { token: tokenParam } = useParams();
+  const [searchParams] = useSearchParams();
+  const tokenFromQuery = (searchParams.get("token") || "").trim();
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,8 +19,9 @@ export default function ResetPassword() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (tokenParam) setToken(tokenParam);
-  }, [tokenParam]);
+    if (tokenParam) setToken(tokenParam.trim());
+    else if (tokenFromQuery) setToken(tokenFromQuery);
+  }, [tokenParam, tokenFromQuery]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,7 +34,8 @@ export default function ResetPassword() {
       setMessage("Passwords do not match.");
       return;
     }
-    const resetToken = token.trim() || tokenParam?.trim();
+    const resetToken =
+      token.trim() || tokenParam?.trim() || tokenFromQuery;
     if (!resetToken) {
       setMessage("Reset link is missing. Use the link from your email or enter the token.");
       return;
@@ -68,7 +72,7 @@ export default function ResetPassword() {
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {!tokenParam && (
+              {!tokenParam && !tokenFromQuery && (
                 <div>
                   <label htmlFor="token" className="block text-sm text-slate-700 mb-1.5">
                     Reset token (if not in URL)

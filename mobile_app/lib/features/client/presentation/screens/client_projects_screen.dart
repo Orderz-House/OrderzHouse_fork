@@ -450,9 +450,11 @@ class _ClientProjectsScreenState extends ConsumerState<ClientProjectsScreen> {
       BuildContext context, List<String> statuses, String? selectedStatus) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      height: 50,
+      height: 56,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      alignment: Alignment.center,
       child: ListView.separated(
+        clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: statuses.length,

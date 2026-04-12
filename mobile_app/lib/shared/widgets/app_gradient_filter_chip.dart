@@ -36,8 +36,7 @@ class AppGradientFilterChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          height: 40, // Fixed height for consistent vertical centering
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
             gradient: selected
                 ? const LinearGradient(
@@ -113,7 +112,7 @@ class AppGradientFilterChip extends StatelessWidget {
                             ? Colors.white
                             : AppColors.textPrimary,
                         fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                        height: 1.0, // Stable line height for perfect centering
+                        height: 1.15,
                       ),
                       textAlign: TextAlign.center,
                     ),
