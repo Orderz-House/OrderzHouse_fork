@@ -14,7 +14,11 @@ export default function ForgotPassword() {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
-    API.post("/users/forgot-password", { email: email.trim().toLowerCase() })
+    API.post("/users/forgot-password", {
+      email: email.trim().toLowerCase(),
+      clientBaseUrl:
+        typeof window !== "undefined" ? window.location.origin : undefined,
+    })
       .then(() => {
         setSent(true);
       })
@@ -26,12 +30,12 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="bg-white relative overflow-hidden flex items-center justify-center min-h-[calc(100dvh-5.5rem)] px-4 py-10 sm:py-12">
       <PageMeta title="Forgot password – OrderzHouse" description="Request a password reset link." />
-      <section className="relative bg-white border-b border-slate-100">
-        <div className="h-2 w-full bg-gradient-to-b from-orange-400 to-red-500" />
-        <div className="relative mx-auto max-w-lg px-4 sm:px-6 pt-24 pb-16">
-          <div className="rounded-3xl border border-slate-200/70 bg-white shadow-sm p-6 sm:p-8">
+      <div className="relative w-full max-w-lg">
+        <div className="rounded-3xl border border-slate-200/70 bg-white shadow-sm overflow-hidden">
+          <div className="h-2 w-full bg-gradient-to-b from-orange-400 to-red-500" />
+          <div className="p-6 sm:p-8">
             <h1 className="text-2xl font-semibold text-slate-900">Forgot password</h1>
             <p className="text-slate-600 mt-2 text-sm">
               Enter your email and we&apos;ll send you a link to reset your password.
@@ -87,7 +91,7 @@ export default function ForgotPassword() {
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

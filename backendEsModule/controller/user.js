@@ -1484,11 +1484,90 @@ const getUserdata = async (req, res) => {
 ========================================= */
 const RESET_EXPIRY_MINUTES = 30;
 
+/**
+ * Only these origins may be used in password-reset links (anti-phishing).
+ * Production OrderzHouse must use HTTPS. Local dev uses common Vite ports.
+ */
+const isAllowedPasswordResetOrigin = (urlStr) => {
+  if (!urlStr || typeof urlStr !== "string") return false;
+  let u;
+  try {
+    u = new URL(urlStr);
+  } catch {
+    return false;
+  }
+  const host = u.hostname.toLowerCase();
+  const port = u.port;
+
+  if (host === "orderzhouse.com" || host === "www.orderzhouse.com") {
+    return u.protocol === "https:";
+  }
+  if (host === "localhost" || host === "127.0.0.1") {
+    const p = port || "";
+    const okPort = !p || ["5173", "5174", "3000"].includes(p);
+    return okPort && (u.protocol === "http:" || u.protocol === "https:");
+  }
+
+  const envBase = (process.env.FRONTEND_URL || "").trim();
+  if (envBase) {
+    try {
+      const e = new URL(envBase);
+      if (host === e.hostname.toLowerCase() && u.protocol === e.protocol) {
+        return true;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
+};
+
+/**
+ * Prefer client-reported origin (body then Origin header) so reset links match
+ * where the user actually requested the reset; fall back to FRONTEND_URL, then local dev.
+ */
+const getPasswordResetFrontendBase = (req) => {
+  const envBase = (process.env.FRONTEND_URL || "").trim().replace(/\/$/, "");
+  const candidates = [];
+
+  const fromBody = (req.body?.clientBaseUrl || "").trim().replace(/\/$/, "");
+  if (fromBody) candidates.push(fromBody);
+
+  const origin = (req.headers.origin || "").trim().replace(/\/$/, "");
+  if (origin) candidates.push(origin);
+
+  if (envBase) candidates.push(envBase);
+
+  for (const c of candidates) {
+    if (isAllowedPasswordResetOrigin(c)) {
+      try {
+        const u = new URL(c);
+        return `${u.protocol}//${u.host}`;
+      } catch {
+        /* next */
+      }
+    }
+  }
+
+  return envBase && isAllowedPasswordResetOrigin(envBase)
+    ? (() => {
+        try {
+          const u = new URL(envBase);
+          return `${u.protocol}//${u.host}`;
+        } catch {
+          return "http://localhost:5173";
+        }
+      })()
+    : "http://localhost:5173";
+};
+
 const hashToken = (raw) =>
   crypto.createHash("sha256").update(raw).digest("hex");
 
-const sendPasswordResetEmail = async (destination, resetUrl) => {
+const sendPasswordResetEmail = async (destination, resetUrl, resetUrlQueryFallback) => {
   try {
+    const safePrimary = resetUrl.replace(/"/g, "&quot;");
+    const safeFallback = resetUrlQueryFallback.replace(/"/g, "&quot;");
     await sendEmail({
       to: destination,
       subject: "Reset your password - OrderzHouse",
@@ -1496,13 +1575,15 @@ const sendPasswordResetEmail = async (destination, resetUrl) => {
         <div style="font-family:Arial,sans-serif;line-height:1.5;color:#333">
           <h2>Password reset</h2>
           <p>You requested a password reset. Click the link below (valid for ${RESET_EXPIRY_MINUTES} minutes):</p>
-          <p><a href="${resetUrl}" style="color:#ea580c;text-decoration:underline;">${resetUrl}</a></p>
+          <p><a href="${safePrimary}" style="color:#ea580c;text-decoration:underline;">${safePrimary}</a></p>
+          <p style="color:#666;font-size:13px;margin-top:16px">If the link above does not open correctly, use this alternative:</p>
+          <p><a href="${safeFallback}" style="color:#ea580c;text-decoration:underline;word-break:break-all">${safeFallback}</a></p>
           <p style="color:#666; font-size:12px; margin-top:20px;">If you did not request this, please ignore this email.</p>
           <br/>
           <p>— OrderzHouse Team</p>
         </div>
       `,
-      text: `You requested a password reset. Click the link below (valid for ${RESET_EXPIRY_MINUTES} minutes): ${resetUrl}. If you did not request this, please ignore this email.`,
+      text: `You requested a password reset. Use this link (valid for ${RESET_EXPIRY_MINUTES} minutes): ${resetUrl}\n\nAlternative (if the first link fails): ${resetUrlQueryFallback}\n\nIf you did not request this, please ignore this email.`,
     });
   } catch (err) {
     console.error("sendPasswordResetEmail error:", err);
@@ -1512,7 +1593,7 @@ const sendPasswordResetEmail = async (destination, resetUrl) => {
 
 const forgotPassword = async (req, res) => {
   const email = (req.body.email || "").toLowerCase().trim();
-  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+  const frontendBase = getPasswordResetFrontendBase(req);
 
   try {
     const userResult = await pool.query(
@@ -1527,17 +1608,24 @@ const forgotPassword = async (req, res) => {
       const expiresAt = new Date(Date.now() + RESET_EXPIRY_MINUTES * 60 * 1000);
 
       await pool.query(
+        `DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL`,
+        [userId]
+      );
+
+      await pool.query(
         `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at)
          VALUES ($1, $2, $3, NOW())`,
         [userId, tokenHash, expiresAt]
       );
 
-      const resetUrl = `${frontendUrl}/reset-password/${rawToken}`;
+      const resetUrl = `${frontendBase}/reset-password/${rawToken}`;
+      const resetUrlQueryFallback = `${frontendBase}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
       if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-        await sendPasswordResetEmail(email, resetUrl);
+        await sendPasswordResetEmail(email, resetUrl, resetUrlQueryFallback);
       } else {
         console.log("[DEV] Password reset URL (no email config):", resetUrl);
+        console.log("[DEV] Password reset URL (query fallback):", resetUrlQueryFallback);
       }
     }
   } catch (err) {

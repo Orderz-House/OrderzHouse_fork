@@ -462,8 +462,9 @@ class _ExploreProjectsScreenState
     int? selectedCategoryId,
   ) {
     return Container(
-      height: 50,
+      height: 56,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      alignment: Alignment.center,
       child: categoriesAsync.when(
         data: (categories) {
           final l10n = AppLocalizations.of(context)!;
@@ -499,6 +500,7 @@ class _ExploreProjectsScreenState
           }
 
           return ListView.separated(
+            clipBehavior: Clip.none,
             controller: _categoryScrollController,
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -527,6 +529,7 @@ class _ExploreProjectsScreenState
           );
         },
         loading: () => ListView.builder(
+          clipBehavior: Clip.none,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           itemCount: 5,
@@ -623,8 +626,9 @@ class _ExploreProjectsScreenState
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SizedBox(
-                    height: 50,
+                    height: 56,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: searchResult.categories.length,
                       separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),

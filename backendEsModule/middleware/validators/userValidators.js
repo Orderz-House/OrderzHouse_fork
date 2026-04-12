@@ -80,11 +80,21 @@ export const forgotPasswordValidator = [
     .isEmail()
     .withMessage("Invalid email format")
     .normalizeEmail(),
+  body("clientBaseUrl")
+    .optional({ values: "null" })
+    .trim()
+    .isLength({ max: 256 })
+    .withMessage("Invalid client base URL"),
 ];
 
 /** POST /users/reset-password */
 export const resetPasswordValidator = [
-  body("token").notEmpty().trim().withMessage("Reset token is required"),
+  body("token")
+    .trim()
+    .notEmpty()
+    .withMessage("Reset token is required")
+    .matches(/^[a-f0-9]{64}$/i)
+    .withMessage("Invalid or expired reset link. Request a new one."),
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
